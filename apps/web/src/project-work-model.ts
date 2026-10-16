@@ -107,7 +107,7 @@ export function coordinatorLabel(state: CoordinatorView['state']): string {
  * The header chip and its muted session line (12.2, D91): the chat stream can be ahead of the view, so `working` decides
  * the working state; the session is the current one, else the planned one. `runtime` maps a runtime id to its display name.
  */
-export function coordinatorChip(view: Pick<ProjectWorkView, 'coordinator'>, events: readonly ProjectLedgerEvent[], runtime: (id: string) => string):
+export function coordinatorChip(view: Pick<ProjectWorkView, 'coordinator'> & Partial<Pick<ProjectWorkView, 'lastEventId'>>, events: readonly ProjectLedgerEvent[], runtime: (id: string) => string):
   { label: string; tone: 'idle' | 'running' | 'unavailable' | 'offline'; session: string | null } {
   const busy = working(events, view); const state = view.coordinator.state;
   const shown = view.coordinator.session ?? view.coordinator.planned;
@@ -539,14 +539,16 @@ export function chatItems(events: readonly ProjectLedgerEvent[], titles: ThreadT
 
 /**
  * The `Coordinator is working…` line: the view says running, or (while the view is idle or not assigned yet) the latest
- * coordinator turn started without ending. An unavailable or offline coordinator never shows it.
+ * coordinator turn beyond the view's ledger head started without ending. Replayed history cannot override a newer view.
+ * An unavailable or offline coordinator never shows it.
  */
-export function working(events: readonly ProjectLedgerEvent[], view: Pick<ProjectWorkView, 'coordinator'>): boolean {
+export function working(events: readonly ProjectLedgerEvent[], view: Pick<ProjectWorkView, 'coordinator'> & Partial<Pick<ProjectWorkView, 'lastEventId'>>): boolean {
   const state = view.coordinator.state;
   if (state === 'running') return true;
   if (state === 'unavailable' || state === 'offline') return false;
   let open: number | undefined;
   for (const event of [...events].sort((a, b) => a.id - b.id)) {
+    if (event.id <= (view.lastEventId ?? 0)) continue;
     const started = payload(event, 'coordinator-turn-start'); if (started) open = started.turn;
     const ended = payload(event, 'coordinator-turn-end'); if (ended && ended.turn === open) open = undefined;
   }

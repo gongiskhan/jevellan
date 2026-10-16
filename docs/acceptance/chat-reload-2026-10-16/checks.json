@@ -1,0 +1,119 @@
+{
+  "schema": "project-chat-reload-evidence-v1",
+  "at": "2026-10-16",
+  "sourceBase": "6fde2609",
+  "decision": 842,
+  "regressionBefore": {
+    "label": "simulated",
+    "result": "failed as expected",
+    "assertion": "idle history prefix returned working"
+  },
+  "unit": {
+    "label": "simulated",
+    "files": 3,
+    "passed": 47
+  },
+  "browser": {
+    "label": "simulated",
+    "passed": 4,
+    "runner": "installed Chrome",
+    "duration": "1.5m",
+    "fixture": "existing Projects fixture, one server/worker, unchanged assertions and readiness timeout",
+    "screenshots": [
+      {
+        "layout": "desktop-light",
+        "screenshot": "docs/acceptance/chat-reload-2026-10-16/simulated-desktop-light.png",
+        "sha256": "a23f3efefd02a67b74de817c7591d4d4d40d04ec0adfc1886ce21d956f53dd35"
+      },
+      {
+        "layout": "phone-light",
+        "screenshot": "docs/acceptance/chat-reload-2026-10-16/simulated-phone-light.png",
+        "sha256": "ab28125e432a71f33fa09981a09b75f11d27edc2253999a954bc53292335c196"
+      },
+      {
+        "layout": "desktop-dark",
+        "screenshot": "docs/acceptance/chat-reload-2026-10-16/simulated-desktop-dark.png",
+        "sha256": "ad2bac2f1c89e4533bec14f69e5b0069a5ec91d90720dcf8db3c207f24aa41d2"
+      },
+      {
+        "layout": "phone-dark",
+        "screenshot": "docs/acceptance/chat-reload-2026-10-16/simulated-phone-dark.png",
+        "sha256": "5363ed0b4bd04550437bac6dce5bb6f0cc8f7e1797aa62abbecbf10e25ed7d79"
+      }
+    ]
+  },
+  "live": {
+    "label": "live",
+    "version": "0.3.6",
+    "activatedAt": "2026-10-16T09:29:54.687Z",
+    "webIndexSha256": "352c407be62b892f94824345c55de3d49daf3383724ff6c8d23a5cd270968992",
+    "serviceRestarted": false,
+    "rollbackRetained": true,
+    "beforeSamples": "before-ui.json",
+    "afterSamples": "after-ui.json",
+    "settledEntryCount": 328,
+    "status": "Idle",
+    "composerEnabled": true,
+    "noMessageSent": true,
+    "originalThemeAndViewportRestored": true,
+    "screenshots": [
+      {
+        "layout": "desktop-light",
+        "screenshot": "docs/acceptance/chat-reload-2026-10-16/live-desktop-light.png",
+        "sha256": "0fb52ef9692576c195943a80590fd329e5caea2f4f7dbca851b0c11c29e2e4dd"
+      },
+      {
+        "layout": "phone-light",
+        "screenshot": "docs/acceptance/chat-reload-2026-10-16/live-phone-light.png",
+        "sha256": "467dc9caafc5751fbda1c0267a02fca167c550fe6a90f7cc0dc047a42d5d9e18"
+      },
+      {
+        "layout": "desktop-dark",
+        "screenshot": "docs/acceptance/chat-reload-2026-10-16/live-desktop-dark.png",
+        "sha256": "87d7c1a590e9a7bc11934fa6a698b615fce8d3ebbeba86ba63c2e79245247610"
+      },
+      {
+        "layout": "phone-dark",
+        "screenshot": "docs/acceptance/chat-reload-2026-10-16/live-phone-dark.png",
+        "sha256": "ae134e9ebc7737a4bba42f1b01cd8e476cdd1b39b468ca26d5a56a80f58ff229"
+      }
+    ],
+    "waitingWebUpdateApplied": true,
+    "updatePromptRemaining": false,
+    "finalScreenshot": {
+      "path": "docs/acceptance/chat-reload-2026-10-16/live-applied-phone.png",
+      "sha256": "5b8fe7063529b8f261b72c6d46422544a9025cd2c73b094e0b915a90ca3302a7"
+    }
+  },
+  "validation": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed",
+    "compatibleBuild": "passed",
+    "whitespace": "passed",
+    "closingInspection": "one, no serious issue"
+  },
+  "notRun": [
+    "dedicated model vision: missing test credential",
+    "full backend and full browser suites",
+    "physical phone / Safari"
+  ],
+  "infrastructureAttempts": [
+    {
+      "label": "blocked",
+      "reason": "Sandbox refused local fixture listen."
+    },
+    {
+      "label": "blocked",
+      "reason": "Default multi-server fixture timeout before journey; cleanup permission error retained."
+    },
+    {
+      "label": "blocked",
+      "reason": "Bundled Chromium not installed."
+    },
+    {
+      "label": "simulated",
+      "reason": "Same fixture and regression passed all layouts with installed Chrome."
+    }
+  ]
+}

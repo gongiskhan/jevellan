@@ -317,6 +317,16 @@ test('working: the view decides when running, unavailable or offline; otherwise 
   expect(working(open, coordinator('offline'))).toBe(false);
 });
 
+test('replayed turns covered by the current view never make an idle coordinator work again', () => {
+  const view = { ...coordinator('idle'), lastEventId: 6 };
+  const history = [turnStart(1, [], 1), turnEnd(1, 2), turnStart(2, [], 3), turnEnd(2, 4)];
+  for (let length = 1; length <= history.length; length++) expect(working(history.slice(0, length), view)).toBe(false);
+  expect(working([...history, turnStart(3, [], 7)], view)).toBe(true);
+  expect(working([...history, turnStart(3, [], 7), turnEnd(3, 8)], view)).toBe(false);
+  expect(working([turnStart(3, [], 7)], { ...view, lastEventId: 8 })).toBe(false);
+  expect(working(history, { ...view, coordinator: { ...view.coordinator, state: 'running' } })).toBe(true);
+});
+
 const text = (id: string, role: CursorTurn['role'], value: string, automated = false): CursorTurn =>
   ({ id, role, blocks: [{ type: 'text', text: value }], ...(automated ? { automated } : {}) });
 const reporting = (id: string, summary: string): CursorTurn => ({ id, role: 'assistant', blocks: [

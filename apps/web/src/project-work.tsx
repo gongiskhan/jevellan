@@ -24,6 +24,7 @@ import {
   threadSections, toolIcon, withdrawals, working, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
 } from './project-work-model.js';
 import { queuedRefresh } from './refresh.js';
+import { projectHistory } from './project-history.js';
 import { ProjectGoals, type GoalEntry } from './project-goals.js';
 import { TaskQueue } from './task-queue.js';
 import { relativeDuration, shortTime, timeStamp } from './time.js';
@@ -244,6 +245,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const [tasks, setTasks] = useState<ProjectWorkTask[]>([]);
   const [loadError, setLoadError] = useState('');
   const [events, setEvents] = useState<ProjectLedgerEvent[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [stream, setStream] = useState<'connecting' | 'open' | 'reconnecting' | 'closed'>('connecting');
   const [tab, setTab] = useState<ProjectTab>();
   const [dialog, setDialog] = useState<'new-thread' | 'settings' | 'coordinator'>();
@@ -262,19 +264,31 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     // The chat stream resumes by itself after a dropped connection; a refused one (the coordinator lives elsewhere) is
     // reopened from the last event with a growing delay, and the view's notices explain the coordinator meanwhile.
     let source: EventSource | undefined; let retry: ReturnType<typeof setTimeout> | undefined; let last = 0; let delay = 5000; let stopped = false;
+    let history = projectHistory(); let historyReady = false;
+    const publishHistory = (snapshot: ProjectLedgerEvent[] | undefined) => {
+      if (!snapshot) return false;
+      historyReady = true; setEvents(snapshot); setHistoryLoaded(true);
+      return true;
+    };
     const open = () => {
       const current = new EventSource(`/api/projects/${id}/coordinator/events${last ? `?after=${last}` : ''}`);
       source = current; setStream('connecting');
-      current.onopen = () => { delay = 5000; setStream('open'); };
+      current.onopen = () => { if (stopped || current !== source) return; delay = 5000; setStream('open'); };
       current.onerror = () => {
+        if (stopped || current !== source) return;
         if (current.readyState !== EventSource.CLOSED) { setStream('reconnecting'); return; }
         setStream('closed');
         if (!stopped) { retry = setTimeout(open, delay); delay = Math.min(delay * 2, 60_000); }
       };
       current.addEventListener('project', (frame: MessageEvent<string>) => {
+        if (stopped || current !== source) return;
         try {
           const value = ProjectEventFrameSchema.parse(JSON.parse(frame.data)).event;
           last = Math.max(last, value.id);
+          if (!historyReady) {
+            if (publishHistory(history.add(value))) refresh.current();
+            return;
+          }
           setEvents((previous) => previous.some((entry) => entry.id === value.id) ? previous : [...previous, value].sort((a, b) => a.id - b.id));
           refresh.current();
         } catch (failure) {
@@ -288,6 +302,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     let streaming: string | undefined;
     const restart = () => {
       source?.close(); clearTimeout(retry); last = 0; delay = 5000;
+      history = projectHistory(); historyReady = false; setHistoryLoaded(false);
       seen.current = new Set(); setEvents([]);
       if (!stopped) open();
     };
@@ -298,6 +313,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         if (after.current === undefined) setTab(defaultTab(next));
         if (after.current === undefined || moved) after.current = next.lastEventId;
         if (moved) restart();
+        if (!historyReady) publishHistory(history.snapshot(next.lastEventId));
         setView(next); setLoadError('');
         setTasks(queue.tasks); setGoals(goalList.goals); setDaily(dailyList);
       },
@@ -511,7 +527,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       {current === 'terminal' && <div className="pw-terminal-tab"><TerminalLauncher props={props} projectId={id} threads={view.threads} {...(coordinator.deviceId ? { coordinatorDeviceId: coordinator.deviceId } : {})} /></div>}
       <div className="pw-layout" data-tab={current}>
         <div className="pw-chat" id={chatId} ref={chat} {...chatPanel}>
-          {items.length ? (
+          {!historyLoaded ? <p className="page-loading" role="status">{copy.LOADING_CHAT}</p> : items.length ? (
             <div className="timeline pw-timeline" aria-label={copy.CHAT_LABEL}>
               {items.map((item) => <ChatEntry key={item.id} item={item} projectId={id} navigate={navigate} />)}
             </div>

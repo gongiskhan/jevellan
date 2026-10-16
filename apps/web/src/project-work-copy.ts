@@ -13,6 +13,7 @@ export const runningCount = (count: number): string => `${count} running`;
 /** Read after the magenta waiting count for screen readers. */
 export const WAITING_SUFFIX = ' waiting';
 export const LOADING_PROJECT = 'Loading project…';
+export const LOADING_CHAT = 'Loading chat…';
 export const LOADING_THREAD = 'Loading thread…';
 export const BACK_TO_PROJECT = 'Back to the project';
 

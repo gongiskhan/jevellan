@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { DeviceRosterSchema, MergeDocumentsViewSchema, ProjectDailyListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
+import { DeviceRosterSchema, MergeDocumentsViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
@@ -1799,5 +1799,76 @@ test('CACHE2 cold checkpoints preserve earlier transcripts and the owner setting
   dialog = page.getByRole('dialog', { name: 'Earlier session', exact: true });
   await expect(dialog).toContainText('Session usage is recorded.'); await shot(page, 'thread-earlier-session', false);
   await dialog.getByRole('button', { name: 'Close panel', exact: true }).click();
+  expect(errors).toEqual([]);
+});
+
+test('PJ replay loads history once without historical working states and keeps live events', async ({ page }, info) => {
+  const errors = await begin(page);
+  const original = await work(page);
+  await page.context().route(`**${PROJECT}/work`, route => route.fulfill({ json: {
+    ...original, lastEventId: 6, coordinator: { ...original.coordinator, state: 'idle' },
+  } }));
+  await page.addInitScript(() => {
+    const Native = window.EventSource;
+    const streams: Array<EventTarget & { url: string; readyState: number; onerror?: () => void }> = [];
+    Object.defineProperty(window, '__replayStreams', { value: streams });
+    Object.defineProperty(window, 'EventSource', { value: function (url: string, options?: EventSourceInit) {
+      if (!url.includes('/coordinator/events')) return new Native(url, options);
+      const stream = Object.assign(new EventTarget(), { url, readyState: 1, close() { this.readyState = 2; } });
+      streams.push(stream); return stream;
+    } });
+    for (const [name, value] of Object.entries({ CONNECTING: 0, OPEN: 1, CLOSED: 2 })) Object.defineProperty(window.EventSource, name, { value });
+  });
+  const deliver = async (id: number, type: string, data: unknown) => {
+    const frame = ProjectEventFrameSchema.parse({ schema: 'project-event-v1', event: {
+      schema: 'project-ledger-event-v1', id, type, t: new Date().toISOString(), data,
+    } });
+    await page.evaluate(value => {
+      const streams = (window as unknown as { __replayStreams: EventTarget[] }).__replayStreams;
+      streams.at(-1)!.dispatchEvent(new MessageEvent('project', { data: JSON.stringify(value) }));
+    }, frame);
+  };
+  const start = (turn: number) => ({ schema: 'coordinator-turn-v1', turn, fresh: false, runtime: 'claude',
+    modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', eventIds: [] });
+  const end = (turn: number) => ({ schema: 'coordinator-turn-end-v1', turn, status: 'completed' });
+  const text = (value: string) => ({ schema: 'coordinator-text-v1', text: value });
+  await page.goto('/projects/projects_fixture');
+  await expect(page.locator('.pw-coordinator .chip')).toHaveText('Idle');
+  await deliver(1, 'coordinator-turn-start', start(1));
+  await deliver(2, 'coordinator-text', text('First historical reply.'));
+  await deliver(3, 'coordinator-turn-end', end(1));
+  await expect(page.getByText('Loading chat…', { exact: true })).toBeVisible();
+  await expect(page.locator('.pw-timeline')).toHaveCount(0);
+  await expect(page.locator('.pw-coordinator .chip')).toHaveText('Idle');
+  // A refused connection resumes the partial replay from its accepted cursor, without showing it in pieces.
+  await page.evaluate(() => {
+    const source = (window as unknown as { __replayStreams: Array<{ readyState: number; onerror(): void }> }).__replayStreams.at(-1)!;
+    source.readyState = 2; source.onerror();
+  });
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __replayStreams: Array<{ url: string }> }).__replayStreams.at(-1)!.url)).toContain('after=3');
+  await page.evaluate(() => {
+    const old = (window as unknown as { __replayStreams: EventTarget[] }).__replayStreams[0]!;
+    old.dispatchEvent(new MessageEvent('project', { data: JSON.stringify({ schema: 'project-event-v1', event: {
+      schema: 'project-ledger-event-v1', id: 99, t: new Date().toISOString(), type: 'coordinator-text',
+      data: { schema: 'coordinator-text-v1', text: 'Stale connection reply.' },
+    } }) }));
+  });
+  await deliver(4, 'coordinator-turn-start', start(2));
+  await deliver(5, 'coordinator-text', text('Latest historical reply.'));
+  await expect(page.getByText('Loading chat…', { exact: true })).toBeVisible();
+  await expect(page.locator('.pw-timeline')).toHaveCount(0);
+  await expect(page.locator('.pw-coordinator .chip')).toHaveText('Idle');
+  await deliver(6, 'coordinator-turn-end', end(2));
+  await expect(page.getByText('Loading chat…', { exact: true })).toHaveCount(0);
+  await expect(page.locator('.pw-timeline')).toContainText('First historical reply.');
+  await expect(page.locator('.pw-timeline')).toContainText('Latest historical reply.');
+  await expect(page.locator('.pw-coordinator .chip')).toHaveText('Idle');
+  await deliver(7, 'coordinator-turn-start', start(3));
+  await expect(page.locator('.pw-coordinator .chip')).toHaveText('Working…');
+  await deliver(8, 'coordinator-text', text('New live reply.'));
+  await deliver(9, 'coordinator-turn-end', end(3));
+  await expect(page.locator('.pw-coordinator .chip')).toHaveText('Idle');
+  await expect(page.locator('.pw-timeline')).toContainText('New live reply.');
+  await page.screenshot({ path: `test-results/project-replay-${layout(info)}.png`, fullPage: false });
   expect(errors).toEqual([]);
 });

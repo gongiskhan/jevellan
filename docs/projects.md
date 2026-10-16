@@ -576,3 +576,6 @@ Saved screenshots appear as thumbnails alongside thread entries. Images in the s
 For new visual work, thread instructions ask for desktop and phone screenshots saved in the worktree, a plain explanation of the result, how to try it, tests actually run and any remaining limitation. Reports allow4000 characters. Older reports retain their original wording.
 
 The gallery lists up to200 saved-file references, accepts PNG/JPEG/GIF/WebP up to8MB and uses the authenticated thread-owner route (including member forwarding). Images are read-only current worktree files. A removed file or one outside the thread's worktree cannot be opened. Embedded-only native images without a saved path are not recovered. Historical screenshots may precede the latest changes; their filenames and transcript position provide context. Decisions840–841 and the thread-images acceptance evidence record this scope.
+
+
+Coordinator chat reload (Decision842): the initial history appears together after it reaches the current work snapshot. It shows Loading chat while that read completes; historical turn events do not make an idle coordinator appear to work again. New turns still stream normally. Reconnects resume their cursor, and moving the coordinator starts the correct device history.

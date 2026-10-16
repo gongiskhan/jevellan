@@ -1,0 +1,16 @@
+# Coordinator chat reload, 16 October 2026
+
+Decision842. Loading Ekoa Code's project chat replayed historical turn-start/end records as if they were live. The chat also grew and followed each partial batch. This caused false Idle/Working transitions and repeated scrolling.
+
+The initial history now waits for the first work snapshot's ledger head and appears together. Later polls do not move that boundary. Only stream events newer than a work snapshot supplement its current activity. Reconnects preserve the buffer/cursor; a coordinator-device move resets it, and late callbacks from an old source are ignored. Stored history, messages, decisions, accounts and thread execution are untouched.
+
+- **Simulated:**the new activity regression fails before repair (expected idle, received working). All47 focused cases pass after repair, including replay ordering/deduplication, snapshot-before/after-events, empty history, independent device history and queued refresh behaviour.
+- **Simulated:**the browser regression passes in all4 layouts using the installed Chrome and the existing disposable Projects fixture. It deliberately delivers historical turns in pieces, interrupts/reconnects after event3, rejects a stale old-source event99, shows history only at event6 and verifies that new events7–9 still show live activity. Screenshots are retained beside this report. Assertions and timeouts are unchanged.
+- **Live:**the original owner browser reload shows many partial entry counts and false Idle/Working transitions; the sanitized DOM samples are in before-ui.json. After activation, samples show Loading chat with0 entries, then the complete328-entry timeline with Idle, in after-ui.json. No owner/coordinator message was sent. These are observations at sampled points, with controlled browser assertions providing the slow-replay proof.
+- **Live:**compatible0.3.6 web assets are active on the Pro with a before-web rollback. No daemon restart, native-home change, data migration, model call or Madrid deployment. Future normal page loads use the repair.
+- **Earlier infrastructure failures:**the restricted test process could not listen on localhost. The ordinary four-server launcher later timed out before a journey and reported a fixture cleanup permission error. A scoped configuration uses the same Projects fixture with the same readiness limit and one worker. Its first attempt could not launch the missing bundled Chromium; selecting the already installed Chrome then passes all4 layouts. These failures remain recorded, not counted as product passes.
+- **Not run:**dedicated model vision (test credential absent), full backend/full browser suites, physical phone/Safari acceptance. Direct screenshot inspection is separate from model vision and owner acceptance.
+
+Typecheck, lint, production build, compatible web build and whitespace checks pass. One closing crucial-issues inspection finds no serious issue; no second review. Source/current-main and the Pro's compatible web overlay are distinct installations. The app's existing separate nightly warnings remain outside this fix.
+
+The waiting web-worker update was applied through the owner UI Reload button, without sending a message. The update prompt is gone; live-applied-phone.png shows the settled chat. Original theme and viewport are restored.
