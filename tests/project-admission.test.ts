@@ -18,6 +18,38 @@ function index(id: string, state: ThreadState, ownerDeviceId = 'dev_studio', pro
 const reservation = (id: string, threadId: string, paths: string[], projectId = 'proj_app'): FileReservation => FileReservationSchema.parse({ schema: 'file-reservation-v1', revision: 1, id,
   projectId, threadId, deviceId: 'dev_studio', paths, reason: '', createdAt: at, expiresAt: '2026-10-03T11:00:00.000Z' });
 const settings = (over: Partial<ProjectWorkSettings> = {}) => ProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings('proj_app'), revision: 3, ...over });
+
+test.each(['paused', 'archived'] as const)('a %s project admits no new turn', async status => {
+  const { admission: value } = admission([], { work: settings({ status }) });
+  expect(await value.admit('proj_app', 'dev_mini', 'thread_new')).toMatchObject({ ok: false, reason: 'The project is paused.' });
+});
+
+test('the daily new-thread cap uses calendar midnight in the project zone, deduplicates durable plans and does not count replacements', async () => {
+  let clock = Date.parse('2026-10-17T09:59:30Z');
+  const work = settings({ maxNewThreadsPerDay: 1, nightlyWindow: { enabled: true, time: '02:00', timezone: 'Pacific/Kiritimati' } });
+  const root = { ...index('root', 'done'), createdAt: new Date(clock).toISOString(), restartedAs: 'replacement' };
+  const replacement = { ...index('replacement', 'idle'), createdAt: new Date(clock).toISOString() };
+  const rows = [root, replacement], stub = hub(rows, work);
+  const value = new Admission({ hub: stub, deviceId: 'dev_mini', deviceName: 'Mac mini', localLive: () => [], now: () => clock, createdThreads: () => [root, replacement] });
+  expect(await value.newThreadRefusal('proj_app')).toBe('New threads per day reached (1). The next one starts tomorrow, or after you raise the limit in Project settings.');
+  work.maxNewThreadsPerDay = 2;
+  expect(await value.newThreadRefusal('proj_app')).toBeUndefined();
+  work.maxNewThreadsPerDay = 1; clock += 60_000;
+  expect(await value.newThreadRefusal('proj_app')).toBeUndefined();
+  // A durable member start not indexed yet consumes its identity once, also after recreating admission.
+  const plan = { ...index('new_plan', 'queued'), createdAt: new Date(clock).toISOString() };
+  const restored = new Admission({ hub: stub, deviceId: 'dev_mini', deviceName: 'Mac mini', localLive: () => [], now: () => clock, createdThreads: () => [root, replacement, plan] });
+  expect(await restored.newThreadRefusal('proj_app')).toContain('New threads per day reached (1)');
+});
+
+test('an older remote start plan cannot hide the indexed restart relationship when counting the daily cap', async () => {
+  const clock = Date.parse(at), root = { ...index('root', 'stopped'), restartedAs: 'replacement' }, replacement = index('replacement', 'idle');
+  const work = settings({ maxNewThreadsPerDay: 2, nightlyWindow: { enabled: false, time: '02:00', timezone: 'UTC' } });
+  const stub = hub([root, replacement], work);
+  const oldPlan = index('root', 'preparing');
+  const value = new Admission({ hub: stub, deviceId: 'dev_mini', deviceName: 'Mac mini', localLive: () => [], now: () => clock, createdThreads: () => [oldPlan] });
+  expect(await value.newThreadRefusal('proj_app')).toBeUndefined();
+});
 /** Hub stub: pages of 100 by id like the hub, and an outage switch. */
 function hub(indexes: ThreadIndex[], work?: ProjectWorkSettings) {
   const state = { down: false, failure: undefined as Error | undefined, pages: 0 };

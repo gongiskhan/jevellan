@@ -13,7 +13,7 @@ import type { Admission } from './admission.js';
 import type { ProjectMemoryReader, ProjectToolHandlers } from './bridge-tools.js';
 import { ProjectTools } from './bridge-tools.js';
 import {
-  CHECKOUT_LEFT_AS_IS, DISCARD_REFUSED, MAIN_CHECKOUT_RELEASED, MESSAGE_ID_REUSED, MORE_TURNS, NO_CHANGES, NO_SESSION_TO_ATTACH, OWNER_STOPPED_THREAD, PROCESS_UNCONFIRMED, RESTART_OPEN_PULL_REQUEST,
+  PROJECT_PAUSED, CHECKOUT_LEFT_AS_IS, DISCARD_REFUSED, MAIN_CHECKOUT_RELEASED, MESSAGE_ID_REUSED, MORE_TURNS, NO_CHANGES, NO_SESSION_TO_ATTACH, OWNER_STOPPED_THREAD, PROCESS_UNCONFIRMED, RESTART_OPEN_PULL_REQUEST,
   RESTART_PUBLISHED_TO_MAIN, SESSION_REPLACED, TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, THREAD_WORKING, TOOL_NOT_IN_TURN, TURN_FAILED,
   TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WAITING_FOR_MAIN, WORKTREE_DISCARDED, accountMovedNotice, alreadyAttached,
   attachedRefusal, cleanupFailed, commitsSavedReason, isRestarted, mainCheckoutKept, mainConflictPrompt, messagesNotDelivered, messagesPrompt, ownerWorkedLine, savedCommitsRef,
@@ -338,8 +338,11 @@ export class ThreadRunner {
    * step 4 main; no setup command there). Idempotent, so a preparation interrupted by a restart runs again before the next turn (D67);
    * the fields are stored only once preparation passed. False when the thread failed or stopped.
    */
-  async #prepare(): Promise<boolean> {
+  async #prepare(next?: NextTurn): Promise<boolean> {
     let thread = this.#thread();
+    if ((await this.#c.workSettings(thread.projectId)).status !== 'active') {
+      this.#rest(next ?? { reason: 'task', body: taskPrompt(thread.title, thread.task), messages: [] }, PROJECT_PAUSED); return false;
+    }
     if (!liveWork(thread.state)) thread = this.#set((current) => withState(current, 'preparing'));
     const release = this.#c.enterOperation(this.threadId, thread.title);
     try {
@@ -388,6 +391,7 @@ export class ThreadRunner {
   /** One turn (2.6.9 steps 1 and 3-9); returns the turn that continues the live step, if any. */
   async #turnOnce(next: NextTurn): Promise<NextTurn | null> {
     let thread = this.#thread();
+    if ((await this.#c.workSettings(thread.projectId)).status !== 'active') { this.#rest(next, PROJECT_PAUSED); return null; }
     if (atTurnLimit(thread)) { await this.#atLimit(); return null; }
     if (this.#c.routeMessages && next.messages.some(id => thread.queuedMessages.some(message => message.id === id && message.from === 'owner'))) {
       const release = this.#c.enterOperation(thread.id, 'Classifying a thread follow-up');
@@ -415,7 +419,7 @@ export class ThreadRunner {
     // A main thread is prepared once (a second preparation refuses its own commits); later turns only claim the checkout again.
     const ready = thread.isolation === 'main' ? await this.#c.main.ready(project, thread) : !!thread.cwd && await this.#c.worktrees.exists(project, thread);
     if (!ready) {
-      if (!(await this.#prepare())) return null;
+      if (!(await this.#prepare(next))) return null;
       thread = this.#thread();
     }
     if (this.#halted()) return null;

@@ -484,7 +484,7 @@ export const MESSAGE_ID_REUSED = 'This message id was already used for different
 export const REPORT_ALREADY_SENT = 'This turn already reported. Put everything in one report.';
 export const TOOL_NOT_IN_TURN = 'This turn cannot use that tool.';
 export const TURN_ENDED = 'This turn has ended. Report in your next turn.';
-export const SETTINGS_CHANGED = 'Project settings changed elsewhere. Reload and try again.';
+export const SETTINGS_CHANGED = 'These settings changed elsewhere. Reload to see them.';
 export const NOTEBOOK_CHANGED = 'The coordinator changed the notebook. Reload to see its version.';
 export const notebookConflict = (revision: number, content: string): string => `The notebook changed (revision ${revision}). Current content:\n${content}`;
 export const MERGE_CONFLICTS = 'This pull request has conflicts. Ask the thread to resolve them first.';
@@ -527,3 +527,6 @@ export const attachedRefusal = (threadId: string): string =>
 export const ATTACH_RUNTIMES_ONLY = 'Only Claude and Codex threads can be taken over in a terminal.';
 /** A thread notice when detach could not search the account home: the thread continues its earlier session. */
 export const sessionNotAdopted = (message: string): string => `The session from the terminal could not be found, so the thread keeps its earlier session. ${message}`.trim().slice(0, 400);
+
+export const PROJECT_PAUSED = 'The project is paused.';
+export const newThreadsPerDayReached = (count: number) => `New threads per day reached (${count}). The next one starts tomorrow, or after you raise the limit in Project settings.`;

@@ -788,8 +788,8 @@
   {
     "id": "parity-settings",
     "title": "Project settings, pause, archive and daily cap",
-    "why": "BRIEF.md phase 1. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
-    "status": "planned"
+    "why": "BRIEF.md phase 1: settings v4/vault v2 migration, standalone settings page, vault-only environment secrets, pause/archive gates and calendar-day thread admission are implemented. 429 distinct affected backend cases and eight four-layout browser journeys pass; typecheck, lint, build and working-tree secret scan pass. Dedicated model vision is blocked by its missing test credential; full suites, release and LP journeys remain phase 10 gates. See docs/acceptance/projects-parity-2026-10/phase-1/.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "parity-coordinator-chat",

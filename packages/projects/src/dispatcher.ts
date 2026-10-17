@@ -1,4 +1,4 @@
-import { HubUnavailable, ProjectWorkTaskSchema, stableJson, type CoordinatorEvent, type ProjectWorkTask, type TaskPlacementContext } from '@jevellan/core';
+import { HubUnavailable, ProjectWorkTaskSchema, stableJson, type CoordinatorEvent, type ProjectWorkTask, type TaskPlacementContext, type ProjectWorkSettings } from '@jevellan/core';
 import { derivedId } from './decision-items.js';
 import { ProjectTasks, taskOrder, taskRankBetween, taskThreadState } from './tasks.js';
 import type { ThreadService } from './threads.js';
@@ -6,6 +6,7 @@ import type { ThreadService } from './threads.js';
 export class ProjectDispatcher {
   readonly #running = new Map<string, Promise<void>>();
   constructor(readonly o: { tasks: ProjectTasks; threads: Pick<ThreadService, 'start' | 'list' | 'sweepQueue'>; deviceId: string;
+    settings(projectId: string): Promise<ProjectWorkSettings>;
     text(task: ProjectWorkTask): Promise<{ brief: string; assembled: string; taskContext?: TaskPlacementContext }>;
     review?(task: ProjectWorkTask): Promise<void>;
     job?(task: ProjectWorkTask): Promise<void>;
@@ -48,6 +49,8 @@ export class ProjectDispatcher {
         tasks[index] = await this.o.tasks.save({ ...previous, ...state });
       }
     }
+    const settings = await this.o.settings(projectId);
+    if (settings.status !== 'active') return;
     for (let task of tasks.filter(task => task.state === 'queued' && !task.held).sort(taskOrder)) {
       if (task.after.some(id => !tasks.some(parent => parent.id === id && ['done', 'cancelled'].includes(parent.state)))) continue;
       if (this.o.eligible && !await this.o.eligible(task, tasks)) continue;
@@ -75,7 +78,7 @@ export class ProjectDispatcher {
       } catch (error) {
         if (error instanceof HubUnavailable || (error as { status?: number }).status === undefined) throw error;
         if ((error as { resourceRefusal?: boolean }).resourceRefusal) {
-          const { dispatchText: _text, dispatchBrief: _brief, ...pending } = task; void _text; void _brief; await this.o.tasks.save(pending); break;
+          const { dispatchText: _text, dispatchBrief: _brief, ...pending } = task; void _text; void _brief; await this.o.tasks.save({ ...pending, endNote: this.o.tasks.o.redactor.text(error instanceof Error ? error.message : 'Waiting for resources.').slice(0, 400) }); break;
         }
         const reason = this.o.tasks.o.redactor.text(error instanceof Error ? error.message : 'The task could not start.').slice(0, 400);
         const failed = await this.o.tasks.save({ ...task, state: 'failed', endNote: reason, endedAt: this.o.tasks.at() });

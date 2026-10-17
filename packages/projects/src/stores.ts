@@ -1,7 +1,8 @@
+import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, rmSync } from 'node:fs';
 import {
-  CoordinatorLocalSchema, CoordinatorStateSchema, SecretRedactor, ThreadIndexSchema, ThreadLocalSchema, ThreadSchema, ThreadStartReceiptSchema, readDocument, redactWithin, stableJson,
+  ThreadStartPlanSchema, CoordinatorLocalSchema, CoordinatorStateSchema, SecretRedactor, ThreadIndexSchema, ThreadLocalSchema, ThreadSchema, ThreadStartReceiptSchema, readDocument, redactWithin, stableJson,
   writeDocument, type CoordinatorLocal, type CoordinatorState, type ProjectLedgerEvent, type Thread, type ThreadIndex, type ThreadLocal, type ThreadStartReceipt,
 } from '@jevellan/core';
 import { START_REQUEST_REUSED, THREAD_NOT_FOUND } from './copy.js';
@@ -72,6 +73,17 @@ export class ThreadStore {
   /** Every thread on this device, oldest first. */
   all(): Thread[] { return [...this.#all().values()].sort((a, b) => a.id.localeCompare(b.id)).map((thread) => structuredClone(thread)); }
   list(projectId: string): Thread[] { return this.all().filter((thread) => thread.projectId === projectId); }
+  /** Local threads and durable starts not yet indexed by a member, deduplicated by admission. */
+  created(projectId: string): Thread[] {
+    const rows = this.list(projectId), folder = join(this.paths.project(projectId), 'start-plans');
+    if (existsSync(folder)) for (const entry of readdirSync(folder, { withFileTypes: true })) {
+      if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+      const plan = readDocument(join(folder, entry.name), ThreadStartPlanSchema);
+      if (plan.projectId !== projectId) throw new Error('A start plan belongs to another project.');
+      if (!rows.some(row => row.id === plan.thread.id)) rows.push(plan.thread);
+    }
+    return rows;
+  }
   get(threadId: string): Thread | undefined { const thread = this.#all().get(threadId); return thread && structuredClone(thread); }
   #require(threadId: string): Thread {
     const thread = this.#all().get(threadId); if (!thread) throw refuse(THREAD_NOT_FOUND, 404);

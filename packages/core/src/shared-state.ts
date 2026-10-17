@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { EnvNameSchema, ProjectEnvSecretSummarySchema, type ProjectEnvSecretSummary } from './project-parity-schemas.js';
 import { AddRiggingSchema, ConfigWriteSchema, CredentialInputSchema, GitHubTokenStateSchema, RiggingEntrySchema, RiggingViewSchema, SecretStateSchema, SecretSummarySchema, UpdateRiggingSchema, type GitHubTokenState } from './client-schemas.js';
 import { ProjectViewSchema } from './conversation-schemas.js';
 import { ConfigRevisionSchema, IdSchema, ProjectSchema, RiggingItemSchema, type ConfigRevision, type Project, type RiggingItem } from './schemas.js';
@@ -36,9 +37,18 @@ export interface SharedGitHub {
   remove(clientRequestId?: string, projectId?: string): Available<GitHubTokenState>;
   credential(projectId?: string): Available<string | undefined>;
 }
+export interface SharedProjectEnvironment {
+  summary(projectId: string, name: string): Available<ProjectEnvSecretSummary>;
+  put(projectId: string, name: string, value: string): Available<ProjectEnvSecretSummary>;
+  remove(projectId: string, name: string): Available<ProjectEnvSecretSummary>;
+  credentials(projectId: string): Available<Record<string, string>>;
+}
 const base = { schema: z.literal('shared-state-request-v1') };
 const runtimes = z.array(IdSchema).max(64);
 export const SharedStateRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ ...base, operation: z.enum(['project-env-summary', 'project-env-remove']), projectId: IdSchema, name: EnvNameSchema }),
+  z.strictObject({ ...base, operation: z.literal('project-env-put'), projectId: IdSchema, name: EnvNameSchema, value: CredentialInputSchema }),
+  z.strictObject({ ...base, operation: z.literal('project-env-credentials'), projectId: IdSchema }),
   z.strictObject({ ...base, operation: z.enum(['configuration', 'configuration-history', 'projects', 'jev-summary', 'jev-credential']) }),
   z.strictObject({ ...base, operation: z.enum(['github-summary', 'github-credential']), projectId: IdSchema.optional() }),
   z.strictObject({ ...base, operation: z.literal('configuration-put'), input: ConfigWriteSchema }),
@@ -56,6 +66,8 @@ export const SharedStateRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...base, operation: z.literal('rigging-items'), runtime: IdSchema, runtimes }),
 ]);
 export const SharedStateResultSchema = z.discriminatedUnion('schema', [
+  z.strictObject({ schema: z.literal('shared-project-env-summary-v1'), summary: ProjectEnvSecretSummarySchema }),
+  z.strictObject({ schema: z.literal('shared-project-env-credentials-v1'), values: z.record(EnvNameSchema, CredentialInputSchema) }),
   z.strictObject({ schema: z.literal('shared-configuration-v1'), revision: ConfigRevisionSchema }),
   z.strictObject({ schema: z.literal('shared-configuration-history-v1'), revisions: z.array(ConfigRevisionSchema) }),
   z.strictObject({ schema: z.literal('shared-project-v1'), project: ProjectViewSchema.nullable() }),

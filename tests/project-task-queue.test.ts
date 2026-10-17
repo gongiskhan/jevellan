@@ -1,3 +1,4 @@
+import { defaultProjectWorkSettings } from '../packages/core/dist/index.js';
 import { afterEach, expect, test, vi } from 'vitest';
 import { SecretRedactor, TaskCreateRequestSchema, ThreadCreateRequestSchema, ThreadIndexSchema, type CoordinatorEvent, type ProjectWorkTask } from '../packages/core/dist/index.js';
 import { HubProjectAccess } from '../packages/mesh/dist/index.js';
@@ -66,7 +67,7 @@ function dispatcher(tasks: ProjectTasks) {
       return { threadId: id, state: 'running' as const, placement: 'Fixture', repeated: starts.length > 1 };
     }) };
   let rules = 'Original rules.';
-  const make = () => new ProjectDispatcher({ tasks, threads: service, deviceId: tasks.o.deviceId, text: async task => ({ brief: task.brief, assembled: `${task.brief}\n${rules}` }), event: async (_id, event) => { events.push(event); } });
+  const make = () => new ProjectDispatcher({ settings: async id => defaultProjectWorkSettings(id), tasks, threads: service, deviceId: tasks.o.deviceId, text: async task => ({ brief: task.brief, assembled: `${task.brief}\n${rules}` }), event: async (_id, event) => { events.push(event); } });
   return { indexes, starts, events, service, make, changeRules: () => { rules = 'New rules.'; } };
 }
 

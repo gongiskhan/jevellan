@@ -2,12 +2,12 @@
 
 ## Projects parity, October 2026
 
-Authority: root untracked BRIEF.md,17October2026, supersedes conflicting older plans. Decisions846–847. Baseline da6a9bc9/0.4.1; current machine Pro, local hub0.3.6 verified by doctor. Other installations remain separate.
+Authority: root untracked BRIEF.md,17October2026, supersedes conflicting older plans. Decisions846–849. Baseline da6a9bc9/0.4.1; current machine Pro, local hub0.3.6 verified by doctor. Other installations remain separate.
 
 The build clock starts at this run's first commit, lasts14hours, and closes new feature phases at12hours. The separate3-hour live clock starts at0.5.0 installation. Exact times and all evidence are in docs/acceptance/projects-parity-2026-10/README.md. Orientation is limited to30minutes.
 
 0. Orientation: save brief, read required context, freeze AppendixA reference, inventory, plan and roadmap.
-1. Settings v4/vault migration, dedicated settings page, pause/archive gates and daily admission cap.
+1. Settings v4/vault migration, dedicated settings page, pause/archive gates and daily admission cap. Source complete;429 affected backend cases and8 four-layout browser journeys pass. Dedicated model vision is blocked; see the phase1 checkpoint.
 2. Shared project instructions, answer-in-place, live chat cards, enforced proposals, owner-authorized settings changes and Undo.
 3. Overview groups, resolution/auto-resolution and applicable thread actions.
 4. Code-driven pull request checks/conflict/comment fixes, bounded rounds and owner decisions.

@@ -219,7 +219,7 @@ test('coordinator routes: session required, assignment by the first message, ide
       context: expect.objectContaining({ schema: 'project-session-context-v1', thresholdPercent: 70, compactions: [], lastCompactionAt: null, needsFreshContext: false }), cacheSessionKey: expect.stringMatching(/^[a-f0-9]{64}$/u) }, sessionHistory: [], planned, canMoveHere: false });
   expect(after.lastEventId).toBe(lastOne);
   expect(ProjectWorkListViewSchema.parse(await call(f, '/api/project-work', 'GET', undefined, 200)).projects)
-    .toEqual([{ projectId: pid, name: 'Shop', waiting: 0, running: 0, inReview: 0, coordinator: { deviceId: f.app.device.deviceId, state: 'idle' } }]);
+    .toEqual([{ projectId: pid, name: 'Shop', status: 'active', waiting: 0, running: 0, inReview: 0, coordinator: { deviceId: f.app.device.deviceId, state: 'idle' } }]);
 
   // Resume: Last-Event-ID, else ?after=; the header wins; a resumed stream continues live.
   const resumed = await watch(f, { headers: { 'Last-Event-ID': '2' } });

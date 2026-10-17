@@ -44,12 +44,13 @@ import * as copy from './project-work-copy.js';
 /** Window event every Projects mutation dispatches so the sidebar refreshes at once (like `jevellan-conversation-updated`). */
 export const PROJECT_WORK_UPDATED = 'jevellan-project-work-updated';
 
-export type ProjectRoute = { projectId: string; threadId?: string; taskId?: string };
+export type ProjectRoute = { projectId: string; threadId?: string; taskId?: string; settings?: true };
 /** `/projects/<id>` and `/projects/<id>/threads/<tid>` with valid ids; anything else is not a Projects page. */
 export function projectRoute(path: string): ProjectRoute | null {
   const parts = path.split(/[?#]/)[0]!.split('/');
   const valid = (value: string | undefined): value is string => value !== undefined && IdSchema.safeParse(value).success;
   if (parts[0] !== '' || parts[1] !== 'projects' || !valid(parts[2])) return null;
+  if (parts.length === 4 && parts[3] === 'settings') return { projectId: parts[2], settings: true };
   if (parts.length === 5 && parts[3] === 'tasks' && valid(parts[4])) return { projectId: parts[2], taskId: parts[4] };
   if (parts.length === 5 && parts[3] === 'threads' && valid(parts[4])) return { projectId: parts[2], threadId: parts[4] };
   return parts.length === 3 ? { projectId: parts[2] } : null;
@@ -187,7 +188,7 @@ export function threadCreateRequest(clientRequestId: string, form: ThreadForm) {
 }
 
 export type SettingsForm = { defaultIsolation: Isolation; isolationChanged: boolean; modelId: string; effort: Effort; setupCommand: string;
-  refill?: ProjectWorkView['settings']['refill']; nightlyWindow?: ProjectWorkView['settings']['nightlyWindow']; autoMerge?: boolean; riskyAreas?: string; requiredChecks?: string[]; threadRules?: string; allowMainIsolation?: boolean;
+  refill?: ProjectWorkView['settings']['refill']; nightlyWindow?: ProjectWorkView['settings']['nightlyWindow']; autoMerge?: boolean; riskyAreas?: string; requiredChecks?: string[]; instructions?: string; allowMainIsolation?: boolean;
   sessionCheckpoints?: ProjectWorkView['settings']['sessionCheckpoints']; compactAtPercent?: number; maxRunningThreads: number; maxRunningPerDevice: number; perDeviceLimits?: Record<string, number>; threadTurnCap: number };
 /**
  * `PUT /api/projects/:id/work-settings`. Reads show a stored `main` default as worktree with a notice (D205); unless the
@@ -195,13 +196,13 @@ export type SettingsForm = { defaultIsolation: Isolation; isolationChanged: bool
  */
 export function settingsRequest(view: Pick<ProjectWorkView, 'settings' | 'settingsNotice'>, form: SettingsForm) {
   const keptMain = !form.isolationChanged && view.settingsNotice !== undefined;
-  const settings = { allowMainIsolation: view.settings.allowMainIsolation, threadRules: view.settings.threadRules,
+  const settings = { allowMainIsolation: view.settings.allowMainIsolation, instructions: view.settings.instructions,
     autoMerge: view.settings.autoMerge, riskyAreas: view.settings.riskyAreas, requiredChecks: view.settings.requiredChecks, nightlyWindow: view.settings.nightlyWindow, refill: view.settings.refill };
   return { schema: 'project-work-settings-request-v1' as const, revision: view.settings.revision, settings: {
     ...settings, refill: form.refill ?? view.settings.refill, nightlyWindow: form.nightlyWindow ?? view.settings.nightlyWindow,
     defaultIsolation: keptMain ? 'main' as const : form.defaultIsolation,
     coordinator: { ...view.settings.coordinator, modelId: form.modelId || null, effort: form.effort }, setupCommand: form.setupCommand.trim() || null,
-    autoMerge: form.autoMerge ?? view.settings.autoMerge, riskyAreas: form.riskyAreas ?? view.settings.riskyAreas, requiredChecks: form.requiredChecks ?? view.settings.requiredChecks, threadRules: form.threadRules ?? view.settings.threadRules,
+    autoMerge: form.autoMerge ?? view.settings.autoMerge, riskyAreas: form.riskyAreas ?? view.settings.riskyAreas, requiredChecks: form.requiredChecks ?? view.settings.requiredChecks, instructions: form.instructions ?? view.settings.instructions,
     allowMainIsolation: form.allowMainIsolation ?? view.settings.allowMainIsolation,
     sessionCheckpoints: form.sessionCheckpoints ?? view.settings.sessionCheckpoints,
     compactAtPercent: form.compactAtPercent ?? view.settings.compactAtPercent,

@@ -19,9 +19,9 @@ test('settings default to 70%, enforce production bounds, and migrate old settin
   for (const value of [50, 90]) expect(ProjectWorkSettingsSchema.parse({ ...settings, compactAtPercent: value }).compactAtPercent).toBe(value);
   const old = { schema: 'project-work-settings-v1', projectId: 'proj_context', revision: 7, defaultIsolation: 'main', coordinator: { modelId: 'chosen', effort: 'high' },
     setupCommand: 'npm ci', maxRunningThreads: 9, maxRunningPerDevice: 3, threadTurnCap: 51 };
-  expect(StoredProjectWorkSettingsSchema.parse(old)).toMatchObject({ ...old, schema: 'project-work-settings-v3', compactAtPercent: 70 });
+  expect(StoredProjectWorkSettingsSchema.parse(old)).toMatchObject({ ...old, schema: 'project-work-settings-v4', compactAtPercent: 70 });
   expect(StoredProjectWorkSettingsSchema.parse({ ...old, schema: 'project-work-settings-v2', threadRules: 'Keep my rules', coordinatorReview: false, nightlyWindow: { enabled: true, time: '01:00', timezone: 'Europe/Lisbon' } }))
-    .toMatchObject({ compactAtPercent: 70, threadRules: 'Keep my rules', nightlyWindow: { enabled: true, time: '01:00' } });
+    .toMatchObject({ compactAtPercent: 70, instructions: 'Keep my rules', nightlyWindow: { enabled: true, time: '01:00' } });
 });
 
 test('the low test threshold is accepted only by an uninstalled test daemon', () => {

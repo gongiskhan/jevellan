@@ -176,9 +176,10 @@ export class MemberHubClient {
   improverDevice(input: unknown) { return this.#request('improver-device', ImproverDeviceResultSchema, ImproverDeviceRequestSchema.parse(input)); }
   async state(input: unknown) {
     const request = SharedStateRequestSchema.parse(input);
-    if (request.operation === 'jev-put' || request.operation === 'github-put') this.options.redactor.add(request.value);
+    if (request.operation === 'jev-put' || request.operation === 'github-put' || request.operation === 'project-env-put') this.options.redactor.add(request.value);
     const result = await this.#request('state', SharedStateResultSchema, request);
     if ((result.schema === 'shared-jev-credential-v1' || result.schema === 'shared-github-credential-v1') && result.value) this.options.redactor.add(result.value);
+    if (result.schema === 'shared-project-env-credentials-v1') for (const value of Object.values(result.values)) this.options.redactor.add(value);
     return result;
   }
   /** Project hub state: one route per collection; the reply must answer the requested operation. */

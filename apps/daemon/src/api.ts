@@ -1,3 +1,4 @@
+import { EnvNameSchema, ProjectEnvSecretSummarySchema } from '@jevellan/core';
 import { EkoaSettingsInputSchema, EmptySchema as EkoaEmptySchema } from '@jevellan/core';
 import { handleSessionListApi } from './session-list-api.js';
 import { handleGitApi } from './git-api.js';
@@ -231,6 +232,13 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (path === '/hub/secrets/jev' && method === 'GET') {
       send(await app.state.jev.summary());
       return;
+    }
+    const environmentSecret = /^\/api\/projects\/([A-Za-z0-9_-]+)\/env-secrets\/([A-Z_][A-Z0-9_]{0,63})$/u.exec(path);
+    if (environmentSecret) {
+      const projectId = IdSchema.parse(environmentSecret[1]), name = EnvNameSchema.parse(environmentSecret[2]); retryable = true;
+      if (method === 'GET') { send(ProjectEnvSecretSummarySchema.parse(await app.state.environment.summary(projectId, name))); return; }
+      if (method === 'PUT') { const input = SecretInputSchema.parse(await body(request)); send(ProjectEnvSecretSummarySchema.parse(await app.state.environment.put(projectId, name, input.value))); return; }
+      if (method === 'DELETE') { EmptySchema.parse(await body(request)); send(ProjectEnvSecretSummarySchema.parse(await app.state.environment.remove(projectId, name))); return; }
     }
     if (path === '/hub/secrets/github') {
       const projectId = url.searchParams.has('projectId') ? IdSchema.parse(url.searchParams.get('projectId')) : undefined;

@@ -72,6 +72,7 @@ export class ProjectGoals {
   async sweep(projectId: string): Promise<void> {
     await this.o.tasks.exclusive(projectId, async () => {
       await this.o.tasks.assertWriter(projectId);
+      if ((await this.o.settings(projectId)).status !== 'active') return;
       if (await this.o.windowOpen?.(projectId)) return;
       const last = await this.o.hub.refill(projectId);
       // Re-delivery is harmless: the coordinator durably deduplicates IDs, including after a crash before enqueue.

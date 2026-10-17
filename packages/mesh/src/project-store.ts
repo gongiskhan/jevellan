@@ -430,7 +430,7 @@ export class HubProjectStore {
       const counts = workCounts(threads, decisions); counts.waiting += drafts;
       const assigned = this.coordinator(project.id)?.document.deviceId; const view = assigned === undefined ? undefined : devices.get(assigned);
       const status = assigned === undefined ? undefined : this.coordinatorStatus(project.id)?.document;
-      return ProjectWorkSummarySchema.parse({ schema: 'project-work-summary-v1', projectId: project.id, name: project.name, ...counts,
+      return ProjectWorkSummarySchema.parse({ schema: 'project-work-summary-v1', projectId: project.id, name: project.name, status: this.settings(project.id)?.document.status ?? 'active', ...counts,
         coordinator: assigned === undefined ? null : { deviceId: assigned, device: view ? { name: view.device.name, status: view.status, revoked: view.revoked } : null,
           state: status && status.deviceId === assigned ? status.state : null } });
     });

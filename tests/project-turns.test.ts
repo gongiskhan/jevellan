@@ -48,7 +48,7 @@ test('thread tools accept exactly one report per turn, an identical retry repeat
   expect(await rejects(fresh.call('jevellan_thread_report', { status: 'needs-decision', summary: 'One choice left.' })))
     .toMatchObject({ status: 400, message: 'question: A needs-decision report needs a question. Check the tool input.' });
   expect((await rejects(fresh.call('jevellan_thread_report', { status: 'done', summary: 'x', extra: 1 }))).message).toMatch(/^Unrecognized key.*"extra"\. Check the tool input\.$/);
-  expect((await rejects(fresh.call('jevellan_thread_report', { status: 'done', summary: 'x'.repeat(1201) }))).message).toMatch(/^summary: .*1200.*\. Check the tool input\.$/);
+  expect((await rejects(fresh.call('jevellan_thread_report', { status: 'done', summary: 'x'.repeat(4001) }))).message).toMatch(/^summary: .*4000.*\. Check the tool input\.$/);
   expect((await rejects(fresh.call('jevellan_thread_report', { status: 'later', summary: 'x' }))).message).toMatch(/^status: .*\. Check the tool input\.$/);
   // Arguments are redacted before they are stored.
   redactor.add('fixture-secret-value-0001');

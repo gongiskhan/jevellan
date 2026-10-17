@@ -30,6 +30,7 @@ import { AgentsPage } from './agents.js';
 import { ProjectsPage } from './projects.js';
 import { ConversationPage, ConversationSidebar, NewConversation } from './conversations.js';
 import { CursorConversationPage } from './cursor-sessions.js';
+import { ProjectSettingsPage } from './project-settings.js';
 import { ProjectWorkPage, ProjectsSidebar } from './project-work.js';
 import { projectRoute } from './project-work-model.js';
 import { TaskPage } from './task-page.js';
@@ -549,6 +550,8 @@ function App() {
             </div>
           ) : /^\/terminals\/[A-Za-z0-9_-]+$/u.test(path) ? (
             <TerminalPage {...props} id={path.split('/')[2]!} navigation={navigation} key={path} />
+          ) : project?.settings ? (
+            <ProjectSettingsPage {...props} id={project.projectId} navigation={navigation} key={path} />
           ) : project?.taskId ? (
             <TaskPage {...props} projectId={project.projectId} taskId={project.taskId} key={path} />
           ) : project?.threadId ? (

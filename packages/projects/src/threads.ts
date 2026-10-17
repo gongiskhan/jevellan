@@ -13,7 +13,7 @@ import {
 import type { PlacementFixed } from '@jevellan/decisions';
 import { DISPATCH_HOLD_MS, type Admission } from './admission.js';
 import {
-  COORDINATOR_ELSEWHERE, MODEL_SAME_RUNTIME, NEXT_TURN_FIELDS, NO_RELAY, PROJECT_NOT_FOUND, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, UNKNOWN_PLACEMENT_MODEL, WAITING_FOR_HUB, WAITING_FOR_MAIN,
+  PROJECT_PAUSED, COORDINATOR_ELSEWHERE, MODEL_SAME_RUNTIME, NEXT_TURN_FIELDS, NO_RELAY, PROJECT_NOT_FOUND, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, UNKNOWN_PLACEMENT_MODEL, WAITING_FOR_HUB, WAITING_FOR_MAIN,
   attachedRefusal, isWaitingForAccount, isWaitingForSlot, overrideSummary, ownerStartedLine, placementSummary, queuedReason, restartedReason,
 } from './copy.js';
 import type { CoordinatorService } from './coordinator.js';
@@ -104,7 +104,7 @@ export type ThreadServiceOptions = {
   workRefusal?(): string | undefined;
   store: ThreadStore; ledgers: ProjectLedgers; receipts: StartReceipts;
   hub: Pick<ProjectHub, 'threads' | 'thread' | 'coordinator' | 'addOverride'>; projects: Pick<SharedProjects, 'get'>;
-  admission: Pick<Admission, 'admit' | 'counts' | 'settings' | 'dispatched' | 'isDispatched'>; placement: Pick<Placement, 'place' | 'refusal'>; accounts: Pick<AccountService, 'list'>;
+  admission: Pick<Admission, 'newThreadRefusal' | 'admit' | 'counts' | 'settings' | 'dispatched' | 'isDispatched'>; placement: Pick<Placement, 'place' | 'refusal'>; accounts: Pick<AccountService, 'list'>;
   /** The configuration: the menu resolves an overridden model. */
   settings(): Promise<Configuration['x-jevellan']>;
   transcripts: Pick<ThreadTranscripts, 'read'>;
@@ -231,7 +231,9 @@ export class ThreadService {
       const project = (await this.#o.projects.get(projectId))?.project;
       if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
       const settings = await this.#o.admission.settings(projectId);
-      const task = request.assembledTask ?? [request.task, settings.threadRules ? `Rules for every thread:\n${settings.threadRules}` : ''].filter(Boolean).join('\n\n');
+      const dailyRefusal = settings.status !== 'active' ? PROJECT_PAUSED : request.exclude ? undefined : await this.#o.admission.newThreadRefusal(projectId);
+      if (dailyRefusal) throw Object.assign(refuse(dailyRefusal, 409), { resourceRefusal: true });
+      const task = request.assembledTask ?? [request.task, settings.instructions ? `Rules for every thread:\n${settings.instructions}` : ''].filter(Boolean).join('\n\n');
       if (task.length > 32768) throw refuse('The assembled task exceeds 32768 characters. Shorten the brief or thread rules.', 400);
       const counts = await this.#o.admission.counts(projectId);
       const projectFull = counts.project >= counts.limits.project;
@@ -502,7 +504,7 @@ export class ThreadService {
     // Also threads whose turn waits for an account a terminal holds (phase 8), or for their claimed checkout to be back on main (P8 review
     // TH-1), with its messages or the turn it kept.
     const waiting = this.#o.store.all().filter((thread) => REST_STATES.includes(thread.state)
-      && (isWaitingForSlot(thread.stateReason) || thread.stateReason === WAITING_FOR_HUB || isWaitingForAccount(thread.stateReason) || thread.stateReason === WAITING_FOR_MAIN)
+      && (thread.stateReason === PROJECT_PAUSED || isWaitingForSlot(thread.stateReason) || thread.stateReason === WAITING_FOR_HUB || isWaitingForAccount(thread.stateReason) || thread.stateReason === WAITING_FOR_MAIN)
       && (thread.queuedMessages.length || this.#o.store.local(thread.id).pendingTurn))
       .sort((a, b) => oldestMessage(a).localeCompare(oldestMessage(b)));
     for (const thread of waiting) { if (this.#closed) return; await this.runner(thread.id)?.resume(); }

@@ -100,7 +100,7 @@ export class ProjectJobRunner {
   }
   // Called while the queue's writer lock is held. Reserve before starting a command or GitHub mutation.
   async start(task: ProjectWorkTask): Promise<void> {
-    if (this.#closed || this.busy(task.projectId)) return;
+    if (this.#closed || this.busy(task.projectId) || (await this.o.settings(task.projectId)).status !== 'active') return;
     this.#starting.add(task.projectId);
     try { await this.#start(task); } finally { this.#starting.delete(task.projectId); }
   }
@@ -147,6 +147,7 @@ export class ProjectJobRunner {
   async #execute(initial: ProjectJobRun, _job: ProjectJob, signal: AbortSignal): Promise<void> {
     let run = (await this.o.hub.jobRun(initial.id))?.document ?? initial;
     if (run.conclusion) return this.#sync(run);
+    if (run.phase === 'reserved' && (await this.o.settings(run.projectId)).status !== 'active') return;
     if (run.workflowHandoff?.state === 'blocked') { await this.#finish(run, 'failed', `Workflow handoff blocked: ${run.workflowHandoff.reason ?? 'Cannot read the pull request.'}`); return; }
     if (run.phase === 'executing') { await this.#stopRecordedProcess(run); await this.#finish(run, 'failed', 'The daemon restarted during execution. The operation was not repeated. Run it again explicitly.'); return; }
     try {
@@ -232,6 +233,7 @@ export class ProjectJobRunner {
       if (run.conclusion) { await this.#sync(run); await this.#deleteDispatchRef(run).catch(() => undefined); continue; }
       if (run.deviceId !== this.o.deviceId) { await this.#finish(run, 'failed', 'The coordinator device changed during this job. It was not repeated.'); continue; }
       if (run.pollAfter && Date.parse(run.pollAfter) > this.o.now()) continue;
+      if (run.phase === 'reserved' && (await this.o.settings(projectId)).status !== 'active') continue;
       const task = await this.o.tasks.read(projectId, run.taskId);
       if (task.state === 'cancelled') { await this.#finish(run, 'cancelled', 'Cancelled before execution.'); continue; }
       const job = (await this.o.hub.job(run.jobId))?.document;

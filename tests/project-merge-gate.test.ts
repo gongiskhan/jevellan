@@ -71,6 +71,19 @@ test('automatic merging is opt-in and squash-merges only the routed head, with d
   const merges = f.github.requests.filter(row => row.method === 'PUT' && row.path.endsWith('/merge')); expect(merges).toHaveLength(1); expect(merges[0]?.body).toMatchObject({ merge_method: 'squash', sha: thread.pr!.headSha });
   expect(git(f.checkout, 'rev-parse', 'HEAD')).toBe(before); await f.restart(); await gate(f); expect(f.github.requests.filter(row => row.method === 'PUT' && row.path.endsWith('/merge'))).toHaveLength(1);
 }, 90_000);
+test.each(['paused', 'archived'] as const)('%s keeps pull request polling and owner merging available without automatic routing', async status => {
+  const { f, jev } = await setup(), thread = await published(f);
+  await settings(f, { status });
+  f.github.setChecks(thread.pr!.number, 'failing'); await gate(f);
+  expect(f.thread(thread.id).pr?.checks).toBe('failing');
+  f.github.setChecks(thread.pr!.number, 'passing'); await gate(f);
+  expect(f.thread(thread.id).pr).toMatchObject({ state: 'open', checks: 'passing' });
+  expect(jev.state.calls).toHaveLength(0);
+  expect(f.github.requests.some(row => row.method === 'PUT' && row.path.endsWith('/merge'))).toBe(false);
+  const response = await f.request(`/api/projects/project/threads/${thread.id}/pr/merge`, 'POST', { schema: 'empty-request-v1' });
+  expect(response.status).toBe(200);
+  expect(f.thread(thread.id).pr?.state).toBe('merged');
+}, 90_000);
 test('a workflow handoff is always ask-owner even when Jev chooses merge', async () => {
   const { f } = await setup(), thread = await published(f);
   await f.app.projectWork.daily.createJob('project', { schema: 'job-create-request-v1', clientRequestId: 'handoff', name: 'Nightly', goalId: null, enabled: true, gate: null,

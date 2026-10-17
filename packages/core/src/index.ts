@@ -95,3 +95,5 @@ export * from './terminal-schemas.js';
 
 export * from './checkpoint-schemas.js';
 export * from './vault-schemas.js';
+
+export * from './project-parity-schemas.js';

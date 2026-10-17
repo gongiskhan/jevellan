@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ProjectEnvironmentSchema, ProjectPlacementSettingsSchema, ProjectPrAutoFixSettingsSchema } from './project-parity-schemas.js';
 import { SessionCheckpointSettingsSchema, SessionCheckpointedSchema, SessionHistorySchema, SessionHistoryLinkSchema } from './checkpoint-schemas.js';
 import { SessionTurnCacheSchema, SessionCacheSummarySchema } from './session-cache-schemas.js';
 import { JournalConfigSchema, JournalDocumentSchema, JournalThreadSchema, ProjectJournalRecordSchema } from './project-journal-schemas.js';
@@ -42,14 +43,27 @@ export const ProjectWorkSettingsSchemaV2 = ProjectWorkSettingsSchemaV1.extend({
     .default({ enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }),
   refill: z.strictObject({ enabled: z.boolean(), minIntervalMinutes: z.number().int().min(10).max(1440) }).default({ enabled: true, minIntervalMinutes: 30 }),
 });
-export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV2.omit({ coordinatorReview: true }).extend({ schema: z.literal('project-work-settings-v3'), autoMerge: z.boolean().default(false), riskyAreas: z.string().max(2000).default(''), requiredChecks: z.array(z.string().min(1).max(200)).max(50).default([]),
+export const ProjectWorkSettingsSchemaV3 = ProjectWorkSettingsSchemaV2.omit({ coordinatorReview: true }).extend({ schema: z.literal('project-work-settings-v3'), autoMerge: z.boolean().default(false), riskyAreas: z.string().max(2000).default(''), requiredChecks: z.array(z.string().min(1).max(200)).max(50).default([]),
   sessionCheckpoints: SessionCheckpointSettingsSchema.default({ enabled: false, checkpointMinTokens: 40000 }),
   compactAtPercent: z.number().int().min(50).max(90).default(70),
   memory: ProjectMemorySettingsSchema.default({ mode: 'hub', capture: true, dreamMode: 'apply' }),
   perDeviceLimits: z.record(IdSchema, z.number().int().min(1).max(10)).default({}) });
+export const ProjectWorkSettingsSchemaV4 = ProjectWorkSettingsSchemaV3.omit({ threadRules: true }).extend({
+  schema: z.literal('project-work-settings-v4'), status: z.enum(['active', 'paused', 'archived']).default('active'),
+  instructions: z.string().max(16000).default(''), startMode: z.enum(['start', 'propose']).default('start'),
+  maxNewThreadsPerDay: z.number().int().min(1).max(500).default(100),
+  placement: ProjectPlacementSettingsSchema.default({ allowedModelIds: null, minEffort: null, guidance: '' }),
+  prAutoFix: ProjectPrAutoFixSettingsSchema.default({ checks: true, conflicts: true, comments: true, maxRounds: 3 }),
+  environment: ProjectEnvironmentSchema.default({ variables: [], secrets: [], copyFiles: [] }),
+  notifications: z.enum(['everything', 'standard', 'needs-you', 'off']).default('standard'),
+});
+export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV4;
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
-export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchema])
-  .transform(value => { const { coordinatorReview: _retired, ...fields } = { coordinatorReview: undefined, ...value }; void _retired; return ProjectWorkSettingsSchema.parse({ ...fields, schema: 'project-work-settings-v3' }); });
+export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4])
+  .transform(value => {
+    const { coordinatorReview: _retired, threadRules, ...fields } = { coordinatorReview: undefined, threadRules: undefined, ...value }; void _retired;
+    return ProjectWorkSettingsSchemaV4.parse({ ...fields, instructions: 'instructions' in value ? value.instructions : threadRules ?? '', schema: 'project-work-settings-v4' });
+  });
 export const ProjectRequestOutcomeSchema = z.strictObject({ schema: z.literal('project-request-outcome-v1'), projectId: IdSchema, eventId: IdSchema,
   goal: z.enum(['answer', 'change', 'run-app', 'verify', 'other']).nullable(), source: z.enum(['jev', 'unavailable']),
   probabilities: z.record(z.string(), z.number().min(0).max(1)).optional(), calls: z.array(JevCallSchema), at: TimestampSchema });
@@ -64,7 +78,7 @@ export const ProjectAppSchema = z.strictObject({ schema: z.literal('project-app-
   startedAt: TimestampSchema, stoppedAt: TimestampSchema.optional() });
 export type ProjectApp = z.infer<typeof ProjectAppSchema>;
 export function defaultProjectWorkSettings(projectId: string): ProjectWorkSettings {
-  return ProjectWorkSettingsSchema.parse({ schema: 'project-work-settings-v3', projectId, revision: 0, defaultIsolation: 'worktree',
+  return ProjectWorkSettingsSchema.parse({ schema: 'project-work-settings-v4', projectId, revision: 0, defaultIsolation: 'worktree',
     coordinator: { modelId: null, effort: 'medium' }, setupCommand: null, maxRunningThreads: 6, maxRunningPerDevice: 4, threadTurnCap: 30 });
 }
 
@@ -413,7 +427,7 @@ export function parseProjectLedgerData<T extends ProjectLedgerEventType>(type: T
 // HTTP views (brief 11)
 const CoordinatorStateNameSchema = z.enum(['idle', 'running', 'unavailable', 'offline', 'none']);
 export const ProjectWorkListViewSchema = z.strictObject({ schema: z.literal('project-work-list-view-v1'),
-  projects: z.array(z.strictObject({ projectId: IdSchema, name: text, waiting: count, running: count, inReview: count,
+  projects: z.array(z.strictObject({ projectId: IdSchema, name: text, status: z.enum(['active', 'paused', 'archived']).optional(), waiting: count, running: count, inReview: count,
     coordinator: z.strictObject({ deviceId: IdSchema.nullable(), state: CoordinatorStateNameSchema }) })) });
 export type ProjectWorkListView = z.infer<typeof ProjectWorkListViewSchema>;
 export const CoordinatorViewSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), state: CoordinatorStateNameSchema,
@@ -474,12 +488,19 @@ export const DecisionAnswerRequestSchema = z.strictObject({ schema: z.literal('d
   ...DecisionAnswerFieldsSchema.shape }).refine(answerPresent, DECISION_ANSWER_REQUIRED);
 export const ProjectWorkSettingsRequestSchema = z.strictObject({ schema: z.literal('project-work-settings-request-v1'), revision,
   settings: ProjectWorkSettingsSchema.omit({ schema: true, projectId: true, revision: true }).extend({
-    allowMainIsolation: z.boolean().optional(), threadRules: z.string().max(4000).optional(), autoMerge: z.boolean().optional(), riskyAreas: z.string().max(2000).optional(), requiredChecks: z.array(z.string().min(1).max(200)).max(50).optional(),
+    allowMainIsolation: z.boolean().optional(), instructions: z.string().max(16000).optional(), autoMerge: z.boolean().optional(), riskyAreas: z.string().max(2000).optional(), requiredChecks: z.array(z.string().min(1).max(200)).max(50).optional(),
     nightlyWindow: ProjectWorkSettingsSchema.shape.nightlyWindow.removeDefault().optional(), refill: ProjectWorkSettingsSchema.shape.refill.removeDefault().optional(),
     compactAtPercent: ProjectWorkSettingsSchema.shape.compactAtPercent.removeDefault().optional(),
     sessionCheckpoints: ProjectWorkSettingsSchema.shape.sessionCheckpoints.removeDefault().optional(),
     memory: ProjectWorkSettingsSchema.shape.memory.removeDefault().optional(),
     perDeviceLimits: ProjectWorkSettingsSchema.shape.perDeviceLimits.removeDefault().optional(),
+    status: ProjectWorkSettingsSchema.shape.status.removeDefault().optional(),
+    startMode: ProjectWorkSettingsSchema.shape.startMode.removeDefault().optional(),
+    maxNewThreadsPerDay: ProjectWorkSettingsSchema.shape.maxNewThreadsPerDay.removeDefault().optional(),
+    placement: ProjectWorkSettingsSchema.shape.placement.removeDefault().optional(),
+    prAutoFix: ProjectWorkSettingsSchema.shape.prAutoFix.removeDefault().optional(),
+    environment: ProjectWorkSettingsSchema.shape.environment.removeDefault().optional(),
+    notifications: ProjectWorkSettingsSchema.shape.notifications.removeDefault().optional(),
   }), clientRequestId: IdSchema.optional() });
 export const NotebookRequestSchema = z.strictObject({ schema: z.literal('notebook-request-v1'), expectedRevision: revision,
   content: z.string().max(65536) });

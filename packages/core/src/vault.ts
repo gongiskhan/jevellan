@@ -3,16 +3,26 @@ import { chmodSync, lstatSync, readFileSync, writeFileSync } from 'node:fs';
 import type { DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
 import type { Homes } from './homes.js';
+import { EnvNameSchema } from './project-parity-schemas.js';
 import { IdSchema, TimestampSchema } from './schemas.js';
 import type { SecretRedactor } from './environment.js';
 import type { SecretSummary } from './client-schemas.js';
 export { SecretSummarySchema, type SecretSummary } from './client-schemas.js';
 
-const EnvelopeSchema = z.strictObject({
+const EnvelopeSchemaV1 = z.strictObject({
   schema: z.literal('secret-envelope-v1'), id: IdSchema, nonce: z.base64(), ciphertext: z.base64(), tag: z.base64(),
   lastFour: z.string().max(4), updatedAt: TimestampSchema,
 });
 
+
+const ProjectEnvironmentKeySchema = z.string().superRefine((key, context) => {
+  const match = /^project-env\/([^/]+)\/([^/]+)$/u.exec(key);
+  if (!match || !IdSchema.safeParse(match[1]).success || !EnvNameSchema.safeParse(match[2]).success)
+    context.addIssue({ code: 'custom', message: 'Invalid project environment secret name.' });
+});
+const SecretKeySchema = z.union([IdSchema, ProjectEnvironmentKeySchema]);
+const EnvelopeSchemaV2 = EnvelopeSchemaV1.extend({ schema: z.literal('secret-envelope-v2'), id: ProjectEnvironmentKeySchema });
+const EnvelopeSchema = z.discriminatedUnion('schema', [EnvelopeSchemaV1, EnvelopeSchemaV2]);
 
 export class SecretVault {
   readonly #key: Buffer;
@@ -36,14 +46,15 @@ export class SecretVault {
     if (this.redactor) for (const row of db.prepare('SELECT id FROM secrets').all()) this.forLaunch(String(row.id));
   }
   put(id: string, value: string): SecretSummary {
-    IdSchema.parse(id);
+    SecretKeySchema.parse(id);
     if (!value || value.length > 64 * 1024) throw new Error('Secret must be nonempty and at most 64 KB.');
     this.redactor?.add(value);
+    const schema = id.startsWith('project-env/') ? 'secret-envelope-v2' : 'secret-envelope-v1';
     const nonce = randomBytes(12);
     const cipher = createCipheriv('aes-256-gcm', this.#key, nonce);
-    cipher.setAAD(Buffer.from(`secret-envelope-v1:${id}`));
+    cipher.setAAD(Buffer.from(`${schema}:${id}`));
     const ciphertext = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]);
-    const envelope = EnvelopeSchema.parse({ schema: 'secret-envelope-v1', id, nonce: nonce.toString('base64'), ciphertext: ciphertext.toString('base64'), tag: cipher.getAuthTag().toString('base64'), lastFour: value.length > 4 ? value.slice(-4) : '••••', updatedAt: new Date().toISOString() });
+    const envelope = EnvelopeSchema.parse({ schema, id, nonce: nonce.toString('base64'), ciphertext: ciphertext.toString('base64'), tag: cipher.getAuthTag().toString('base64'), lastFour: value.length > 4 ? value.slice(-4) : '••••', updatedAt: new Date().toISOString() });
     this.db.prepare('INSERT INTO secrets(id,document) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET document=excluded.document').run(id, JSON.stringify(envelope));
     return { schema: 'secret-summary-v1', id, saved: true, lastFour: envelope.lastFour };
   }
@@ -51,7 +62,7 @@ export class SecretVault {
     return createHmac('sha256', this.#key).update('jevellan-credential-request-v1\0').update(value).digest('hex');
   }
   #read(id: string) {
-    IdSchema.parse(id);
+    SecretKeySchema.parse(id);
     const row = this.db.prepare('SELECT document FROM secrets WHERE id=?').get(id);
     if (!row) throw new Error('Saved secret is unavailable.');
     const envelope = EnvelopeSchema.parse(JSON.parse(String(row.document)));
@@ -70,12 +81,12 @@ export class SecretVault {
     const envelope = this.#read(id);
     try {
       const decipher = createDecipheriv('aes-256-gcm', this.#key, Buffer.from(envelope.nonce, 'base64'));
-      decipher.setAAD(Buffer.from(`secret-envelope-v1:${id}`));
+      decipher.setAAD(Buffer.from(`${envelope.schema}:${id}`));
       decipher.setAuthTag(Buffer.from(envelope.tag, 'base64'));
       const value = Buffer.concat([decipher.update(Buffer.from(envelope.ciphertext, 'base64')), decipher.final()]).toString('utf8');
       this.redactor?.add(value);
       return value;
     } catch { throw new Error('Saved secret could not be authenticated.'); }
   }
-  remove(id: string): void { this.db.prepare('DELETE FROM secrets WHERE id=?').run(IdSchema.parse(id)); }
+  remove(id: string): void { this.db.prepare('DELETE FROM secrets WHERE id=?').run(SecretKeySchema.parse(id)); }
 }

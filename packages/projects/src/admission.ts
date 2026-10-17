@@ -1,5 +1,6 @@
-import { HubUnavailable, defaultProjectWorkSettings, deviceResourceRefusal, liveWork, type DeviceFacts, type ProjectHub, type ProjectWorkSettings } from '@jevellan/core';
-import { queuedReason, waitingForSlotReason, waitingForResourceReason } from './copy.js';
+import { HubUnavailable, defaultProjectWorkSettings, deviceResourceRefusal, liveWork, type DeviceFacts, type ProjectHub, type ProjectWorkSettings, type ThreadIndex } from '@jevellan/core';
+import { projectDay } from './project-day.js';
+import { queuedReason, waitingForSlotReason, waitingForResourceReason, PROJECT_PAUSED, newThreadsPerDayReached } from './copy.js';
 
 export type AdmissionCounts = {
   /** Live threads of the project (remote indexes, local runners and pending dispatches, each thread once). */
@@ -41,15 +42,17 @@ export class Admission {
   readonly #names: ((deviceId: string) => Promise<string | undefined>) | undefined;
   readonly #now: () => number;
   readonly #facts: (() => DeviceFacts) | undefined;
+  readonly #created: ((projectId: string) => Iterable<Pick<ThreadIndex, 'id' | 'createdAt' | 'restartedAs'>>) | undefined;
   readonly #guard: ((projectId: string, deviceId: string, threadId: string) => Promise<string | undefined>) | undefined;
   constructor(o: { hub: Pick<ProjectHub, 'threads' | 'settings'>; deviceId: string; deviceName: string;
     /** Local threads of the project in a live step, from the runners' memory. */
     localLive(projectId: string): Iterable<string>;
     /** Names for the device-limit text; this device's name is known. */
     nameOf?(deviceId: string): Promise<string | undefined>; now?(): number; facts?(): DeviceFacts;
+    createdThreads?(projectId: string): Iterable<Pick<ThreadIndex, 'id' | 'createdAt' | 'restartedAs'>>;
     guard?(projectId: string, deviceId: string, threadId: string): Promise<string | undefined> }) {
     this.#hub = o.hub; this.#deviceId = o.deviceId; this.#deviceName = o.deviceName; this.#localLive = o.localLive; this.#names = o.nameOf; this.#now = o.now ?? Date.now;
-    this.#facts = o.facts;
+    this.#facts = o.facts; this.#created = o.createdThreads;
     this.#guard = o.guard;
   }
   async #read<T>(cache: Map<string, T>, projectId: string, load: () => Promise<T>, fallback: () => T): Promise<T> {
@@ -90,6 +93,17 @@ export class Admission {
     for (const deviceId of work.values()) devices.set(deviceId, (devices.get(deviceId) ?? 0) + 1);
     return { project: work.size, devices, limits: { project: settings.maxRunningThreads, device: settings.maxRunningPerDevice, ...(Object.keys(settings.perDeviceLimits).length ? { perDevice: settings.perDeviceLimits } : {}) } };
   }
+  /** New identities only: retries/restarts use their existing receipt and never consume another daily place. */
+  async newThreadRefusal(projectId: string): Promise<string | undefined> {
+    const settings = await this.settings(projectId); if (settings.status !== 'active') return PROJECT_PAUSED;
+    const rows = new Map<string, Pick<ThreadIndex, 'id' | 'createdAt' | 'restartedAs'>>(); let after: string | undefined;
+    do { const page = await this.#hub.threads(projectId, after); for (const row of page.records) rows.set(row.id, row); after = page.next ?? undefined; } while (after);
+    for (const row of this.#created?.(projectId) ?? []) rows.set(row.id, { ...row, restartedAs: row.restartedAs ?? rows.get(row.id)?.restartedAs });
+    const replacements = new Set([...rows.values()].flatMap(row => row.restartedAs ? [row.restartedAs] : []));
+    const day = projectDay(this.#now(), '00:00', settings.nightlyWindow.timezone);
+    const count = [...rows.values()].filter(row => !replacements.has(row.id) && projectDay(Date.parse(row.createdAt), '00:00', settings.nightlyWindow.timezone) === day).length;
+    return count >= settings.maxNewThreadsPerDay ? newThreadsPerDayReached(settings.maxNewThreadsPerDay) : undefined;
+  }
   /** Counts a dispatch that is not live yet (a start or a turn about to begin) until `release`. */
   hold(projectId: string, deviceId: string, threadId: string): () => void {
     const key = Symbol(threadId); this.#pending.set(key, { projectId, threadId, deviceId });
@@ -123,6 +137,7 @@ export class Admission {
     return result;
   }
   async #admit(projectId: string, deviceId: string, threadId: string): Promise<AdmissionResult> {
+    if ((await this.settings(projectId)).status !== 'active') return { ok: false, scope: 'project', limit: 0, device: null, reason: PROJECT_PAUSED, queued: PROJECT_PAUSED };
     const resource = (deviceId === this.#deviceId ? deviceResourceRefusal(this.#deviceName, this.#facts?.()) : undefined) ?? await this.#guard?.(projectId, deviceId, threadId);
     if (resource) return { ok: false, scope: 'device', limit: 0, device: this.#deviceName, reason: waitingForResourceReason(resource), queued: resource };
     const counts = await this.counts(projectId, threadId);

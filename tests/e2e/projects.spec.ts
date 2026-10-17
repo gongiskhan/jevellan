@@ -262,8 +262,9 @@ const region = (page: Page, name: string) => page.getByRole('region', { name, ex
 async function openSettings(page: Page) {
   await tap(page, page.locator('summary[aria-label="Project menu"]'));
   await tap(page, page.getByRole('button', { name: 'Project settings', exact: true }));
-  const dialog = page.getByRole('dialog', { name: 'Project settings', exact: true });
-  // The dialog reads the settings when it opens and saves with the revision it read.
+  const dialog = page.locator('.pw-settings-page');
+  await expect(page).toHaveURL(/\/projects\/[^/]+\/settings$/);
+  // The settings page reads the current revision rather than the previous work snapshot.
   await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
   return dialog;
 }
@@ -299,6 +300,7 @@ test('Home opens the first sidebar project while New conversation stays availabl
   await page.unrouteAll({ behavior: 'wait' });
   expect(errors).toEqual([]);
 });
+
 
 test('PJ3 project page opens from the sidebar and the coordinator chat streams', async ({ page }, info) => {
   const errors = await begin(page);
@@ -1904,4 +1906,75 @@ test('PJ replay loads history once without historical working states and keeps l
   await expect(page.locator('.pw-timeline')).toContainText('New live reply.');
   await page.screenshot({ path: `test-results/project-replay-${layout(info)}.png`, fullPage: false });
   expect(errors).toEqual([]);
+});
+
+test('PAR1 project settings save, conflict, pause and archive', async ({ page }, info) => {
+  const errors = await begin(page);
+  const original = (await work(page)).settings;
+  const restore = async () => {
+    const current = (await work(page)).settings;
+    const { schema: _schema, projectId: _project, revision: _revision, ...settings } = original; void _schema; void _project; void _revision;
+    const response = await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision: current.revision, settings } });
+    expect(response.ok()).toBe(true);
+    await page.request.delete(`${PROJECT}/env-secrets/PARITY_TOKEN`, { data: { schema: 'empty-request-v1' } });
+  };
+  try {
+    await page.goto('/projects/projects_fixture');
+    let settings = await openSettings(page);
+    await expect(settings.getByRole('navigation', { name: 'Project settings sections' })).toBeVisible();
+    await settings.getByLabel('Project instructions', { exact: true }).fill('Keep changes small and explain the result.');
+    await expect(settings).toContainText('42 / 16,000');
+    await settings.getByLabel('Guidance for Jev', { exact: true }).fill('Choose a careful model for UI work.');
+    await settings.getByLabel('New threads per day', { exact: true }).fill('17');
+    await settings.getByRole('button', { name: 'Add variable', exact: true }).click();
+    await settings.getByLabel('Variable 1 name', { exact: true }).fill('PARITY_DATA');
+    await settings.getByLabel('Variable 1 value', { exact: true }).fill('/tmp/parity-data');
+    await settings.getByRole('button', { name: 'Add secret', exact: true }).click();
+    await settings.getByLabel('Secret 1 name', { exact: true }).fill('PARITY_TOKEN');
+    await settings.getByLabel('Secret 1 value', { exact: true }).fill('fixture-private-environment-value');
+    await settings.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page).toHaveURL(/\/projects\/projects_fixture$/);
+    await expect.poll(async () => (await work(page)).settings.maxNewThreadsPerDay).toBe(17);
+    settings = await openSettings(page);
+    await expect(settings.getByLabel('Project instructions', { exact: true })).toHaveValue('Keep changes small and explain the result.');
+    await expect(settings.getByLabel('Secret 1 value', { exact: true })).toHaveValue('');
+    await expect(settings).toContainText('Saved · updated');
+    await page.screenshot({ path: `test-results/PAR1-settings-${layout(info)}.png`, fullPage: true });
+    // A real revision conflict from another owner request keeps the local draft until Reload.
+    const current = (await work(page)).settings;
+    const { schema: _schema, projectId: _project, revision, ...changed } = current; void _schema; void _project;
+    expect((await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision, settings: { ...changed, maxRunningThreads: 13 } } })).ok()).toBe(true);
+    await settings.getByLabel('Max running threads', { exact: true }).fill('2');
+    await settings.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(settings.getByRole('alert')).toContainText('These settings changed elsewhere. Reload to see them.');
+    await page.screenshot({ path: `test-results/PAR1-conflict-${layout(info)}.png`, fullPage: true });
+    await settings.getByRole('button', { name: 'Reload', exact: true }).click();
+    await expect(settings.getByLabel('Max running threads', { exact: true })).toHaveValue('13');
+    await settings.getByRole('button', { name: 'Paused', exact: true }).click();
+    await expect(settings.getByRole('button', { name: 'Paused', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await settings.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(page.getByText('This project is paused. Nothing new starts until you resume it.', { exact: true })).toBeVisible();
+    await page.screenshot({ path: `test-results/PAR1-paused-${layout(info)}.png`, fullPage: true });
+    await page.getByRole('button', { name: 'Resume', exact: true }).click();
+    await expect(page.getByText('This project is paused. Nothing new starts until you resume it.', { exact: true })).toHaveCount(0);
+    settings = await openSettings(page);
+    await settings.getByRole('button', { name: 'Archived', exact: true }).click();
+    await expect(settings.getByRole('button', { name: 'Archived', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await settings.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(page.getByText('This project is archived. Nothing runs and it is hidden from the sidebar.', { exact: true })).toBeVisible();
+    await page.screenshot({ path: `test-results/PAR1-archived-${layout(info)}.png`, fullPage: true });
+    const sidebar = await projectsSection(page);
+    await expect(sidebar.locator('.pw-sidebar-list').getByRole('button', { name: /^Projects fixture/ })).toHaveCount(0);
+    await expect(sidebar.locator('.pw-archived-projects')).toHaveJSProperty('open', false);
+    await expect(sidebar.getByText('Archived (1)', { exact: true })).toBeVisible();
+    await sidebar.locator('.pw-archived-projects > summary').click();
+    await expect(sidebar.locator('.pw-archived-projects').getByRole('button', { name: 'Projects fixture', exact: true })).toBeVisible();
+    await page.screenshot({ path: `test-results/PAR1-archived-sidebar-${layout(info)}.png`, fullPage: false });
+    await closeDrawer(page, info);
+    await page.getByRole('button', { name: 'Unarchive', exact: true }).click();
+    await expect(page.getByText('This project is paused. Nothing new starts until you resume it.', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Resume', exact: true }).click();
+    await expect.poll(async () => (await work(page)).settings.status).toBe('active');
+    expect(errors).toEqual([]);
+  } finally { await restore(); }
 });

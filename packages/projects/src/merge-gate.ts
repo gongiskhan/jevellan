@@ -85,7 +85,7 @@ export class ProjectMergeGate {
       this.#concluded.add(threadId); return;
     }
     const settings = await this.o.settings(thread.projectId);
-    if (!this.#ready(thread, settings)) return;
+    if (settings.status !== 'active' || !this.#ready(thread, settings)) return;
     const commit = thread.pr.headSha, id = derivedId('mroute', threadId, commit);
     for (const row of records) if (row.schema === 'merge-route-v1' && row.commit !== commit && row.decisionId) {
       const old = (await this.o.hub.decision(row.decisionId))?.document; if (old && !old.answer && !old.withdrawnAt) await this.o.hub.withdrawDecision(old.id, new Date(this.o.now()).toISOString());

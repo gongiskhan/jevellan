@@ -20,6 +20,14 @@ First real A1 failed under the unchanged assertion: the old coordinator system r
 
 The owner's 13 October brief is planned after the existing real A–D scenarios finish. No cache checkpoint or journal behavior is delivered by this intake. The ledger remains the source of truth. The requested hub journal is a code-built folder of thread, day and night Markdown files plus INDEX.md, mirrored read-only to members and read with ordinary file tools. Cache measurement uses existing usage events; it introduces no keep-warm traffic. Warm and small cold sessions keep their native session; enabled large cold coordinator/thread sessions restart from notebook/open state/index or task/thread journal, preserving pending delivery and earlier transcripts. Reviews, verification and memory sessions are measured but do not restart. Checkpoints default off until L2/L3 pass; memory, dream, Conversations and merge gate are outside this extension. See PLAN.md and docs/acceptance/cache-journal-2026-10-13.md for the unmet prerequisite, clocks and owner-approved 0.3.4 target.
 
+## Projects parity settings, October 2026
+
+Source work follows the root Projects parity brief. Project work settings v4 migrate v1–v3 explicitly and rename thread rules to project instructions (16,000 characters). The dedicated `/projects/{projectId}/settings` page saves one revision, detects conflicts and supports immediate Active, Paused and Archived changes. Archived projects are listed under a collapsed sidebar section. New settings for placement, automatic fixes, environment and notifications are stored now; their execution phases are tracked separately in the [run log](acceptance/projects-parity-2026-10/README.md).
+
+Pause and archive prevent new coordinator/thread turns, task dispatch, goal refills, jobs, nightly items and memory sessions. Running turns finish, messages stay queued, and pull request polling and owner merge/stop/discard actions continue. Resume sweeps queued work. New-thread admission counts calendar days in the project's time zone, including durable remote starts; replacement threads do not consume another slot.
+
+Environment secret values use vault keys `project-env/{projectId}/{NAME}`. Owner routes return only saved-state metadata; authenticated member credential fetches return configured values for launch. Variable values and secret names are portable in vault-project-v2; secret values and project status are not. Restored projects begin active. Environment injection and copied-file handling follow in phase 7.
+
 ## Concepts
 
 | Term | Meaning |

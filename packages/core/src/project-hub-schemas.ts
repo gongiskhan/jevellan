@@ -28,7 +28,7 @@ const count = z.number().int().nonnegative();
  * One project's row of the Projects list as the hub computes it (D267): the sidebar counts and where the coordinator lives, with
  * that device's presence from the roster and the state it last published (only when the publisher is the assigned device).
  */
-export const ProjectWorkSummarySchema = z.strictObject({ schema: z.literal('project-work-summary-v1'), projectId: IdSchema, name: z.string().min(1),
+export const ProjectWorkSummarySchema = z.strictObject({ schema: z.literal('project-work-summary-v1'), projectId: IdSchema, name: z.string().min(1), status: z.enum(['active', 'paused', 'archived']).optional(),
   waiting: count, running: count, inReview: count,
   coordinator: z.strictObject({ deviceId: IdSchema, device: z.strictObject({ name: z.string().min(1), status: DevicePresenceSchema, revoked: z.boolean() }).nullable(),
     state: z.enum(['idle', 'running', 'unavailable']).nullable() }).nullable() });

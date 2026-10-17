@@ -158,7 +158,7 @@ export class ProjectViews {
    */
   async list(): Promise<ProjectWorkListView> {
     const summaries = await this.#o.hub.workSummaries();
-    return ProjectWorkListViewSchema.parse({ schema: 'project-work-list-view-v1', projects: summaries.map((summary) => ({ projectId: summary.projectId, name: summary.name,
+    return ProjectWorkListViewSchema.parse({ schema: 'project-work-list-view-v1', projects: summaries.map((summary) => ({ projectId: summary.projectId, name: summary.name, ...(summary.status ? { status: summary.status } : {}),
       waiting: summary.waiting, running: summary.running, inReview: summary.inReview, coordinator: this.#summaryState(summary) })) });
   }
   /** `GET /api/projects/:id/work`: the project page. */

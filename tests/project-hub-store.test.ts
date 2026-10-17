@@ -13,10 +13,11 @@ import { Application, createDaemon } from '../apps/daemon/dist/index.js';
 let root: string; let app: Application; let server: Server; let base: string;
 const at = new Date().toISOString();
 test('stored v1 settings migrate explicitly without losing fixed coordinator choices or unrelated fields', async () => {
-  const legacy = ProjectWorkSettingsSchemaV1.parse({ ...Object.fromEntries(Object.entries(defaultProjectWorkSettings('project')).filter(([key]) => !['allowMainIsolation', 'threadRules', 'coordinatorReview', 'autoMerge', 'riskyAreas', 'requiredChecks', 'nightlyWindow', 'refill', 'perDeviceLimits', 'compactAtPercent', 'memory', 'sessionCheckpoints'].includes(key))), schema: 'project-work-settings-v1', coordinator: { runtimeId: 'claude', accountId: 'fixed', modelId: 'chosen', effort: 'high' }, setupCommand: 'npm ci', maxRunningThreads: 9 });
+  const legacy = ProjectWorkSettingsSchemaV1.parse({ schema: 'project-work-settings-v1', projectId: 'project', revision: 0, defaultIsolation: 'worktree',
+    coordinator: { runtimeId: 'claude', accountId: 'fixed', modelId: 'chosen', effort: 'high' }, setupCommand: 'npm ci', maxRunningThreads: 9, maxRunningPerDevice: 4, threadTurnCap: 30 });
   app.hub.put('project-work-settings', 'project', ProjectWorkSettingsSchemaV1, { ...legacy, revision: 1 }, 0);
   const left = await member('left'), migrated = await left.hub.settings('project');
-  expect(migrated?.document).toMatchObject({ schema: 'project-work-settings-v3', revision: 1, coordinator: legacy.coordinator, setupCommand: 'npm ci', maxRunningThreads: 9, autoMerge: false, riskyAreas: '', allowMainIsolation: true, sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 } });
+  expect(migrated?.document).toMatchObject({ schema: 'project-work-settings-v4', revision: 1, coordinator: legacy.coordinator, setupCommand: 'npm ci', maxRunningThreads: 9, autoMerge: false, riskyAreas: '', allowMainIsolation: true, sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 } });
   expect((await left.hub.putSettings(migrated!.document, 1)).document).toEqual({ ...migrated!.document, revision: 2 });
 });
 beforeEach(async () => {
@@ -328,9 +329,9 @@ test('work summaries give every project its counts and coordinator with the devi
   await leftAccess.putCoordinatorStatus({ schema: 'project-coordinator-status-v1', revision: 0, projectId: 'project', deviceId: 'left', state: 'running', failedTurnsInARow: 0, session: null, updatedAt: at });
   await new HubProjectAccess(app.hub, 'right').assignCoordinator('other', 'right', 0);
   const expected = [
-    { schema: 'project-work-summary-v1', projectId: 'other', name: 'other', waiting: 0, running: 1, inReview: 0,
+    { schema: 'project-work-summary-v1', projectId: 'other', name: 'other', status: 'active', waiting: 0, running: 1, inReview: 0,
       coordinator: { deviceId: 'right', device: { name: 'right', status: 'offline', revoked: false }, state: null } },
-    { schema: 'project-work-summary-v1', projectId: 'project', name: 'project', waiting: 1, running: 2, inReview: 1,
+    { schema: 'project-work-summary-v1', projectId: 'project', name: 'project', status: 'active', waiting: 1, running: 2, inReview: 1,
       coordinator: { deviceId: 'left', device: { name: 'left', status: 'online', revoked: false }, state: 'running' } },
   ];
   expect(await left.hub.workSummaries()).toEqual(expected);

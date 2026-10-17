@@ -1,6 +1,6 @@
 import {
-  CheckoutClaimSchema, ConfigWriteSchema, ConversationIndexSchema, CredentialInputSchema, GitHubTokenStateSchema, IdSchema, ProjectSchema, ProjectViewSchema, RiggingEntrySchema, RiggingStore, SecretSummarySchema, SharedStateRequestSchema, SharedStateResultSchema, ThreadIndexSchema, isTerminal, stableJson,
-  type GitHubTokenState, type Project, type SharedConfiguration, type SharedGitHub, type SharedJev, type SharedProjects, type SharedRigging,
+  EnvNameSchema, StoredProjectWorkSettingsSchema, ProjectEnvSecretSummarySchema, CheckoutClaimSchema, ConfigWriteSchema, ConversationIndexSchema, CredentialInputSchema, GitHubTokenStateSchema, IdSchema, ProjectSchema, ProjectViewSchema, RiggingEntrySchema, RiggingStore, SecretSummarySchema, SharedStateRequestSchema, SharedStateResultSchema, ThreadIndexSchema, isTerminal, stableJson,
+  type SharedProjectEnvironment, type GitHubTokenState, type Project, type SharedConfiguration, type SharedGitHub, type SharedJev, type SharedProjects, type SharedRigging,
 } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
 import { HubProtocolError, type MemberHubClient } from './client.js';
@@ -14,6 +14,7 @@ export class HubState {
   readonly projects: SharedProjects;
   readonly jev: SharedJev;
   readonly github: SharedGitHub;
+  readonly environment: SharedProjectEnvironment;
   readonly rigging: RiggingStore;
   constructor(readonly hub: HubDatabase, readonly deviceId: string, runtimes: readonly string[]) {
     IdSchema.parse(deviceId); this.rigging = new HubRigging(hub, deviceId, runtimes);
@@ -61,6 +62,24 @@ export class HubState {
       },
       credential: () => { if (!hub.db.prepare('SELECT id FROM secrets WHERE id=?').get('jev')) return undefined; return hub.vault.forLaunch('jev'); },
     };
+    const environmentKey = (projectId: string, name: string) => {
+      if (!hub.get('projects', IdSchema.parse(projectId), ProjectSchema)) throw Object.assign(new Error('Project not found.'), { status: 404 });
+      return `project-env/${projectId}/${EnvNameSchema.parse(name)}`;
+    };
+    const environmentSummary = (projectId: string, name: string) => {
+      const key = environmentKey(projectId, name), saved = !!hub.db.prepare('SELECT id FROM secrets WHERE id=?').get(key);
+      return ProjectEnvSecretSummarySchema.parse({ schema: 'project-env-secret-summary-v1', name, saved, ...(saved ? { updatedAt: hub.vault.details(key).updatedAt } : {}) });
+    };
+    this.environment = {
+      summary: environmentSummary,
+      put: (projectId, name, value) => { hub.vault.put(environmentKey(projectId, name), CredentialInputSchema.parse(value)); return environmentSummary(projectId, name); },
+      remove: (projectId, name) => { hub.vault.remove(environmentKey(projectId, name)); return environmentSummary(projectId, name); },
+      credentials: projectId => {
+        if (!hub.get('projects', IdSchema.parse(projectId), ProjectSchema)) throw Object.assign(new Error('Project not found.'), { status: 404 });
+        const names = hub.get('project-work-settings', projectId, StoredProjectWorkSettingsSchema)?.document.environment.secrets ?? [];
+        return Object.fromEntries(names.flatMap(name => { const key = environmentKey(projectId, name); return hub.db.prepare('SELECT id FROM secrets WHERE id=?').get(key) ? [[name, hub.vault.forLaunch(key)]] : []; }));
+      },
+    };
     const githubKey = (projectId?: string) => {
       if (!projectId) return 'github';
       if (!hub.get('projects', IdSchema.parse(projectId), ProjectSchema)) throw Object.assign(new Error('Project not found.'), { status: 404 });
@@ -90,6 +109,10 @@ export class HubState {
   async request(raw: unknown) {
     const request = SharedStateRequestSchema.parse(raw); let result: unknown;
     switch (request.operation) {
+      case 'project-env-summary': result = { schema: 'shared-project-env-summary-v1', summary: await this.environment.summary(request.projectId, request.name) }; break;
+      case 'project-env-put': result = { schema: 'shared-project-env-summary-v1', summary: await this.environment.put(request.projectId, request.name, request.value) }; break;
+      case 'project-env-remove': result = { schema: 'shared-project-env-summary-v1', summary: await this.environment.remove(request.projectId, request.name) }; break;
+      case 'project-env-credentials': result = { schema: 'shared-project-env-credentials-v1', values: await this.environment.credentials(request.projectId) }; break;
       case 'configuration': result = { schema: 'shared-configuration-v1', revision: await this.configuration.current() }; break;
       case 'configuration-history': result = { schema: 'shared-configuration-history-v1', revisions: await this.configuration.history() }; break;
       case 'configuration-put': result = { schema: 'shared-configuration-v1', revision: await this.configuration.put(request.input) }; break;
@@ -121,6 +144,7 @@ export class MemberState {
   readonly projects: SharedProjects;
   readonly jev: SharedJev;
   readonly github: SharedGitHub;
+  readonly environment: SharedProjectEnvironment;
   readonly rigging: SharedRigging;
   constructor(readonly client: MemberHubClient, readonly runtimes: readonly string[]) {
     const request = async <S extends ReturnType<typeof SharedStateResultSchema.parse>['schema']>(operation: string, schema: S, fields = {}) => {
@@ -153,6 +177,16 @@ export class MemberState {
       put: (value, clientRequestId, projectId) => github('github-put', { value, clientRequestId, projectId }),
       remove: (clientRequestId, projectId) => github('github-remove', { clientRequestId, projectId }),
       credential: async projectId => (await request('github-credential', 'shared-github-credential-v1', { projectId })).value ?? undefined,
+    };
+    const environment = async (operation: string, projectId: string, name: string, value?: string) => {
+      const summary = (await request(operation, 'shared-project-env-summary-v1', { projectId, name, ...(value === undefined ? {} : { value }) })).summary;
+      if (summary.name !== name) throw new HubProtocolError(); return summary;
+    };
+    this.environment = {
+      summary: (projectId, name) => environment('project-env-summary', projectId, name),
+      put: (projectId, name, value) => environment('project-env-put', projectId, name, value),
+      remove: (projectId, name) => environment('project-env-remove', projectId, name),
+      credentials: async projectId => (await request('project-env-credentials', 'shared-project-env-credentials-v1', { projectId })).values,
     };
     this.rigging = {
       get: async id => { const item = (await request('rigging-get', 'shared-rigging-view-v1', { ...rigging, id })).item; if (item.item.id !== id) throw new HubProtocolError(); return item; },

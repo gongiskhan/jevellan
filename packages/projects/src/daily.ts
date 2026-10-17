@@ -5,6 +5,7 @@ import { derivedId } from './decision-items.js';
 import type { ProjectJobRunner } from './job-runner.js';
 import { projectBoundary, projectDay, shiftProjectDate } from './project-day.js';
 import { taskRankBetween, type ProjectTasks } from './tasks.js';
+import { PROJECT_PAUSED } from './copy.js';
 const refuse = (message: string, status = 409): never => { throw Object.assign(new Error(message), { status }); };
 export const NIGHTLY_MERGE_HOLD = 'Merges are held while the nightly window runs.';
 const ended = (task: ProjectWorkTask) => ['done', 'failed', 'cancelled', 'in-review'].includes(task.state);
@@ -44,7 +45,7 @@ export class ProjectDailyWork {
   async mergesHeld(projectId: string): Promise<boolean> {
     const window = await this.window(projectId); if (window) return window.mergesHeld && this.o.now() < Date.parse(window.openedAt) + 7 * 3_600_000;
     // Fence merges at the configured time even while the coordinator is creating its durable window.
-    const settings = await this.o.settings(projectId); if (!settings.nightlyWindow.enabled) return false;
+    const settings = await this.o.settings(projectId); if (settings.status !== 'active' || !settings.nightlyWindow.enabled) return false;
     const date = await this.day(projectId), boundary = await this.dayStart(projectId, date);
     return this.o.now() >= boundary && !(await this.o.hub.window(derivedId('window', projectId, date))) && (await this.dailies(projectId)).some(row => row.enabled && Date.parse(row.enabledSince ?? row.createdAt) <= boundary);
   }
@@ -171,6 +172,7 @@ export class ProjectDailyWork {
     const { clientRequestId } = ProjectRunRequestSchema.parse(raw);
     const definition = (await this.o.hub.daily(id))?.document;
     if (definition?.projectId === projectId && definition.target.kind === 'memory-dream') {
+      if ((await this.o.settings(projectId)).status !== 'active') return refuse(PROJECT_PAUSED);
       if (!definition.enabled || !this.o.memoryDream) throw new Error('This memory dream is unavailable or disabled.');
       return this.o.memoryDream(projectId, clientRequestId);
     }
@@ -209,6 +211,7 @@ export class ProjectDailyWork {
   }
   async sweep(projectId: string): Promise<void> {
     await this.o.runner.sweep(projectId);
+    if ((await this.o.settings(projectId)).status !== 'active') return;
     await this.o.tasks.exclusive(projectId, async () => {
       await this.o.tasks.assertWriter(projectId);
       let window = await this.window(projectId); const tasks = await this.o.tasks.list(projectId);
@@ -248,7 +251,7 @@ export class ProjectDailyWork {
           await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-opened', id: derivedId('cev', 'window-opened', window.id), at: window.openedAt, pending: window.taskIds.length }); return;
         }
       }
-      const settings = await this.o.settings(projectId); if (!settings.nightlyWindow.enabled) return;
+      const settings = await this.o.settings(projectId); if (settings.status !== 'active' || !settings.nightlyWindow.enabled) return;
       const last = (await this.windows(projectId)).find(row => row.state === 'finished');
       if (last) await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-finished', id: derivedId('cev', 'window-finished', last.id), at: last.finishedAt!, outcome: last.outcome ?? '' });
       const date = await this.day(projectId), boundary = await this.dayStart(projectId, date);

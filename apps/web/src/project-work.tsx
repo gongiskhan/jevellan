@@ -6,10 +6,10 @@ import { ProjectDailyListViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
-  EkoaCodeSetupReceiptSchema, openQuestions,
+  openQuestions,
   CoordinatorMessageReceiptSchema, DecisionAnsweredViewSchema, EffortSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema,
   GoalListViewSchema, ProjectWorkListViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskListViewSchema, TaskReceiptSchema, TaskTypeSchema, ThreadViewSchema,
-  type Effort, type Isolation, type ProjectDecision, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkView, type PullRequestEntry,
+  type ProjectDecision, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkView, type PullRequestEntry,
   type ThreadIndex, type ProjectWorkTask,
 } from '@jevellan/core/client';
 import { ApiError, api, empty, isCancelled } from './api.js';
@@ -20,7 +20,7 @@ import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
   PROJECT_WORK_UPDATED, chatItems, checksBadge, coordinatorChip, decisionSource, defaultTab, deviceBlock, deviceChoices, dotClass, mainIsolationBlock, mergeBlock,
-  nearestEffort, openPullRequests, outcomeText, projectDot, projectRoute, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadCreateRequest, threadMeta,
+  nearestEffort, openPullRequests, outcomeText, projectDot, projectRoute, rowClockMs, sentText, showSent, sidebarProjects, threadCreateRequest, threadMeta,
   threadSections, toolIcon, withdrawals, working, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
 } from './project-work-model.js';
 import { queuedRefresh } from './refresh.js';
@@ -98,9 +98,10 @@ export function ProjectsSidebar({ navigate, onError, selected, openHome }: Pick<
       window.removeEventListener(PROJECT_WORK_UPDATED, changed);
     };
   }, [onError, selected]);
-  const rows = view ? sidebarProjects(view) : [];
+  const allRows = view ? sidebarProjects(view) : [];
+  const rows = allRows.filter(row => row.status !== 'archived'), archived = allRows.filter(row => row.status === 'archived');
   useEffect(() => {
-    if (view && selected.split('?')[0] === '/') openHome(sidebarProjects(view)[0]?.projectId);
+    if (view && selected.split('?')[0] === '/') openHome(sidebarProjects(view).find(row => row.status !== 'archived')?.projectId);
   }, [view, selected, openHome]);
   const current = projectRoute(selected)?.projectId;
   const waiting = rows.reduce((total, row) => total + row.waiting, 0);
@@ -151,10 +152,29 @@ export function ProjectsSidebar({ navigate, onError, selected, openHome }: Pick<
           ))
         )}
       </div>
+      {section.expanded && archived.length > 0 && <details className="pw-archived-projects">
+        <summary>{copy.archivedProjects(archived.length)}</summary>
+        {archived.map(row => <button type="button" key={row.projectId} className={`pw-sidebar-row ${current === row.projectId ? 'selected' : ''}`} aria-current={current === row.projectId ? 'page' : undefined} onClick={() => navigate(`/projects/${row.projectId}`)}>
+          <i className={projectDot(row)} aria-hidden="true" /><span className="pw-sidebar-name">{row.name}</span>
+        </button>)}
+      </details>}
     </nav>
   );
 }
 
+
+function ProjectStatusBanner({ view, props }: { view: ProjectWorkView; props: PageProps }) {
+  const local = useLocalError(props.onError), task = useTask(local.fail), save = useSettingsSave();
+  const archived = view.settings.status === 'archived';
+  return <div className="pw-project-status" role="status"><p>{archived ? copy.PROJECT_ARCHIVED_BANNER : copy.PROJECT_PAUSED_BANNER}</p>
+    <button type="button" className="secondary" disabled={task.busy} onClick={() => void task.run(async signal => {
+      const { schema: _schema, projectId, revision, ...settings } = view.settings; void _schema;
+      await save(`/api/projects/${projectId}/work-settings`, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision,
+        settings: { ...settings, defaultIsolation: view.settingsNotice ? 'main' : settings.defaultIsolation, status: archived ? 'paused' : 'active' } }, signal);
+      updated();
+    })}>{archived ? copy.UNARCHIVE_PROJECT : copy.RESUME_PROJECT}</button>{local.error && <p className="error">{local.error}</p>}
+  </div>;
+}
 
 // ---------- shared pieces of the Projects pages ----------
 
@@ -251,7 +271,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [stream, setStream] = useState<'connecting' | 'open' | 'reconnecting' | 'closed'>('connecting');
   const [tab, setTab] = useState<ProjectTab>();
-  const [dialog, setDialog] = useState<'new-thread' | 'settings' | 'coordinator'>();
+  const [dialog, setDialog] = useState<'new-thread' | 'coordinator'>();
   const [notebook, setNotebook] = useState(false);
   const [merging, setMerging] = useState<PullRequestEntry>();
   const [sent, setSent] = useState<{ text: string; known: string[] }>();
@@ -477,7 +497,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           <details className="conversation-menu" ref={menu}>
             <summary aria-label={copy.PROJECT_MENU}><Icon name="more" /></summary>
             <div>
-              <button type="button" onClick={() => { closeMenu(); setDialog('settings'); }}>{copy.PROJECT_SETTINGS}</button>
+              <button type="button" onClick={() => { closeMenu(); navigate(`/projects/${id}/settings`); }}>{copy.PROJECT_SETTINGS}</button>
               {coordinator.canMoveHere && (
                 <button type="button" disabled={moving.busy || !!coordinator.moveRefusal} aria-describedby={coordinator.moveRefusal ? menuMoveNote : undefined}
                   onClick={() => { closeMenu(); move(); }}>{copy.MOVE_COORDINATOR}</button>
@@ -507,6 +527,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       <SessionHistory entries={coordinator.sessionHistory} path={`/api/projects/${id}/session-transcript`} />
       <SessionsCache rows={view.sessionCache} timezone={view.settings.nightlyWindow.timezone} titles={Object.fromEntries([[id, 'Coordinator'], ...view.threads.map(thread => [thread.id, thread.title])])} />
       {coordinator.session?.context?.notice && <p className="notice" role="status">{coordinator.session.context.notice}</p>}
+      {view.settings.status !== 'active' && <ProjectStatusBanner view={view} props={props} />}
       {daily && <NightlyBanner view={daily} />}
       {coordinator.state === 'unavailable' && coordinator.unavailableReason && <p className="notice">{copy.coordinatorUnavailableNotice(coordinator.unavailableReason)}</p>}
       {offline && <OfflineNotice device={coordinatorDevice} canMove={coordinator.canMoveHere} refusal={coordinator.moveRefusal} moving={moving.busy} move={move} />}
@@ -589,7 +610,6 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       </div>
       {dialog === 'new-thread' && <NewThreadDialog props={props} view={view} tasks={tasks} goals={goals} move={moveHere} close={() => setDialog(undefined)} />}
       {dialog === 'coordinator' && <CoordinatorOverrideDialog props={props} view={view} close={() => setDialog(undefined)} />}
-      {dialog === 'settings' && <SettingsDialog props={props} view={view} close={() => setDialog(undefined)} />}
       {merging?.pr && (
         <MergeDialog projectId={id} entry={merging} fallbackBase={view.project.baseBranch} onError={onError}
           close={() => setMerging(undefined)} merged={() => { setMerging(undefined); updated(); }} />
@@ -975,147 +995,6 @@ function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: Pa
   );
 }
 
-type SettingsBase = Pick<ProjectWorkView, 'settings' | 'settingsNotice'>;
-const settingsForm = (from: SettingsBase) => ({
-  defaultIsolation: from.settings.defaultIsolation, isolationChanged: false, modelId: from.settings.coordinator.modelId ?? '',
-  effort: from.settings.coordinator.effort, setupCommand: from.settings.setupCommand ?? '', maxRunningThreads: String(from.settings.maxRunningThreads),
-  sessionCheckpoints: from.settings.sessionCheckpoints, compactAtPercent: String(from.settings.compactAtPercent), maxRunningPerDevice: String(from.settings.maxRunningPerDevice), threadTurnCap: String(from.settings.threadTurnCap),
-  perDeviceLimits: from.settings.perDeviceLimits,
-  refill: from.settings.refill, nightlyWindow: from.settings.nightlyWindow, autoMerge: from.settings.autoMerge, riskyAreas: from.settings.riskyAreas, requiredChecks: from.settings.requiredChecks, threadRules: from.settings.threadRules, allowMainIsolation: from.settings.allowMainIsolation,
-});
-/**
- * Project settings (12.2). The dialog reads the settings when it opens (the page view may predate a save made a moment
- * ago) and keeps its fields disabled until then; it saves with the revision it read. A revision conflict stays in the
- * dialog with a Reload that reads the current settings again (never the app's global 409 reload).
- */
-function SettingsDialog({ props, view, close }: { props: PageProps; view: ProjectWorkView; close(): void }) {
-  const { data } = props;
-  const { error, setError, fail } = useLocalError(props.onError);
-  const task = useTask(fail);
-  const save = useSettingsSave();
-  const mainNote = useId();
-  const [base, setBase] = useState<SettingsBase>(() => ({ settings: view.settings, ...(view.settingsNotice ? { settingsNotice: view.settingsNotice } : {}) }));
-  const [form, setForm] = useState(() => settingsForm(base));
-  const [loaded, setLoaded] = useState(false);
-  const [stale, setStale] = useState(false);
-  const change = (fields: Partial<typeof form>) => setForm((previous) => ({ ...previous, ...fields }));
-  const runtimeName = runtimeNames(data);
-  const models = data.config.configuration['x-jevellan'].menu.filter((entry) => entry.enabled || entry.id === base.settings.coordinator.modelId);
-  const mainBlock = mainIsolationBlock(view);
-  const path = `/api/projects/${view.project.id}/work-settings`;
-  const read = useCallback(async (signal: AbortSignal) => {
-    const next = await api(path, ProjectWorkSettingsViewSchema, 'GET', undefined, { signal, waitForHub: true });
-    const fresh: SettingsBase = { settings: next.settings, ...(next.notice ? { settingsNotice: next.notice } : {}) };
-    setBase(fresh); setForm(settingsForm(fresh)); setLoaded(true); setStale(false); setError('');
-  }, [path, setError]);
-  useEffect(() => {
-    const controller = new AbortController();
-    read(controller.signal).catch((failure: unknown) => { if (!controller.signal.aborted) { setStale(true); fail(failure); } });
-    return () => controller.abort();
-  }, [read, fail]);
-  const reload = () => void task.run(read);
-  const isolation = (value: Isolation) => change({ defaultIsolation: value, isolationChanged: true });
-  return (
-    <Modal title={copy.PROJECT_SETTINGS} close={close}>
-      <form className="pw-settings" onSubmit={(event) => {
-        event.preventDefault();
-        void task.run(async (signal) => {
-          setError(''); setStale(false);
-          const request = settingsRequest(base, { ...form, compactAtPercent: Number(form.compactAtPercent), maxRunningThreads: Number(form.maxRunningThreads),
-            maxRunningPerDevice: Number(form.maxRunningPerDevice), threadTurnCap: Number(form.threadTurnCap) });
-          try {
-            await save(path, ProjectWorkSettingsViewSchema, 'PUT', request, signal);
-          } catch (failure) {
-            if (failure instanceof ApiError && failure.status === 409) setStale(true);
-            throw failure;
-          }
-          updated(); afterDialogs(props.message, copy.SETTINGS_SAVED); close();
-        });
-      }}>
-        <fieldset className="pw-fields" disabled={!loaded}>
-          <fieldset className="pw-isolation">
-            <legend>{copy.DEFAULT_ISOLATION}</legend>
-            <label><input type="radio" name="pw-isolation" checked={form.defaultIsolation === 'worktree'} onChange={() => isolation('worktree')} />{copy.WORKTREE_AND_PULL_REQUEST}</label>
-            <label className={mainBlock ? 'pw-disabled' : undefined}>
-              <input type="radio" name="pw-isolation" checked={form.defaultIsolation === 'main'} disabled={!!mainBlock}
-                aria-describedby={mainBlock ? mainNote : undefined} onChange={() => isolation('main')} />{copy.MAIN}
-            </label>
-            {mainBlock && <p className="pw-field-note pw-radio-note" id={mainNote}>{mainBlock}</p>}
-            {!mainBlock && view.project.branchPolicy === 'external' && <p className="pw-field-note pw-radio-note">{copy.MANUAL_MAIN_HELP}</p>}
-          </fieldset>
-          <div className="form-grid">
-            <label>{copy.COORDINATOR_MODEL}
-              <select value={form.modelId} onChange={(event) => change({ modelId: event.target.value })}>
-                <option value="">{copy.AUTOMATIC_FIRST_AVAILABLE}</option>
-                {models.map((entry) => <option key={entry.id} value={entry.id}>{`${runtimeName(entry.runtime)} ${entry.label}`}</option>)}
-              </select>
-            </label>
-            <label>{copy.COORDINATOR_EFFORT}
-              <select value={form.effort} onChange={(event) => change({ effort: event.target.value as Effort })}>
-                {EffortSchema.options.map((effort) => <option key={effort} value={effort}>{effort}</option>)}
-              </select>
-            </label>
-          </div>
-          <label>{copy.SETUP_COMMAND}
-            <input value={form.setupCommand} maxLength={500} placeholder={copy.SETUP_COMMAND_PLACEHOLDER} spellCheck={false}
-              onChange={(event) => change({ setupCommand: event.target.value })} />
-          </label>
-          <label className="checkbox"><input type="checkbox" checked={form.sessionCheckpoints.enabled} onChange={event => change({ sessionCheckpoints: { ...form.sessionCheckpoints, enabled: event.target.checked } })} />Checkpoint large cold sessions</label>
-          <label>Checkpoint minimum context tokens<input type="number" required min={20000} max={200000} step={1000} value={form.sessionCheckpoints.checkpointMinTokens} onChange={event => change({ sessionCheckpoints: { ...form.sessionCheckpoints, checkpointMinTokens: Number(event.target.value) } })} /></label>
-          <label>Compact at percent<input type="number" required min={50} max={90} step={1} inputMode="numeric" value={form.compactAtPercent}
-            onChange={event => change({ compactAtPercent: event.target.value })} /></label>
-          <label className="checkbox"><input type="checkbox" checked={form.autoMerge} onChange={event => change({ autoMerge: event.target.checked })} />Merge automatically after checks</label>
-          <label>Required checks<textarea value={(form.requiredChecks ?? []).join('\n')} onChange={event => change({ requiredChecks: event.target.value.split('\n').map(line => line.trim()).filter(Boolean) })} /></label>
-          <label>Risky areas<textarea maxLength={2000} value={form.riskyAreas} onChange={event => change({ riskyAreas: event.target.value })} /></label>
-          <label className="checkbox"><input type="checkbox" checked={form.allowMainIsolation} onChange={event => change({ allowMainIsolation: event.target.checked })} />Allow work directly on main</label>
-          <label className="checkbox"><input type="checkbox" checked={form.refill.enabled} onChange={event => change({ refill: { ...form.refill, enabled: event.target.checked } })} />Refill goals automatically</label>
-          <label>Minutes between refills<input type="number" min={10} max={1440} value={form.refill.minIntervalMinutes} onChange={event => change({ refill: { ...form.refill, minIntervalMinutes: Number(event.target.value) } })} /></label>
-          <label className="checkbox"><input type="checkbox" checked={form.nightlyWindow.enabled} onChange={event => change({ nightlyWindow: { ...form.nightlyWindow, enabled: event.target.checked } })} />Nightly window</label>
-          <div className="form-grid"><label>Time<input type="time" value={form.nightlyWindow.time} onChange={event => change({ nightlyWindow: { ...form.nightlyWindow, time: event.target.value } })} /></label><label>Time zone<input value={form.nightlyWindow.timezone} maxLength={64} onChange={event => change({ nightlyWindow: { ...form.nightlyWindow, timezone: event.target.value } })} /></label></div>
-          <label>Rules for every thread<textarea rows={5} value={form.threadRules} maxLength={4000} onChange={event => change({ threadRules: event.target.value })} /></label>
-          <div className="form-grid pw-limits">
-            <label>{copy.MAX_RUNNING_THREADS}
-              <input type="number" required min={1} max={20} step={1} inputMode="numeric" value={form.maxRunningThreads}
-                onChange={(event) => change({ maxRunningThreads: event.target.value })} />
-            </label>
-            <label>{copy.MAX_PER_DEVICE}
-              <input type="number" required min={1} max={10} step={1} inputMode="numeric" value={form.maxRunningPerDevice}
-                onChange={(event) => change({ maxRunningPerDevice: event.target.value })} />
-            </label>
-            <label>{copy.TURN_LIMIT}
-              <input type="number" required min={5} max={200} step={1} inputMode="numeric" value={form.threadTurnCap}
-                onChange={(event) => change({ threadTurnCap: event.target.value })} />
-            </label>
-          </div>
-          <div className="form-grid pw-limits">
-            {data.roster.devices.filter(row => !row.revoked && row.device.workPolicy?.mode !== 'apps-only').map(row => (
-              <label key={row.device.id}>Limit on {row.device.name}
-                <input type="number" min={1} max={10} step={1} inputMode="numeric" placeholder={`Default: ${form.maxRunningPerDevice}`}
-                  value={form.perDeviceLimits[row.device.id] ?? ''} onChange={event => {
-                    const limits = { ...form.perDeviceLimits };
-                    if (event.target.value) limits[row.device.id] = Number(event.target.value); else delete limits[row.device.id];
-                    change({ perDeviceLimits: limits });
-                  }} />
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        {error && (
-          <p className="error">{error}{stale && <button type="button" className="text-button" disabled={task.busy} onClick={reload}>{copy.RELOAD}</button>}</p>
-        )}
-        <div className="form-actions">
-          {view.project.name === 'Ekoa Code' && <button type="button" className="secondary" disabled={task.busy || !loaded || !form.modelId} onClick={() => void task.run(async signal => {
-            await api(`/api/projects/${view.project.id}/ekoa-code-setup`, EkoaCodeSetupReceiptSchema, 'POST', { schema: 'ekoa-code-setup-request-v1', modelId: form.modelId, workflowPull: 208 }, { signal, waitForHub: true });
-            updated(); await read(signal);
-          })}>Apply Ekoa Code setup</button>}
-          <button type="button" className="secondary" onClick={close}>{copy.CANCEL}</button>
-          <button disabled={task.busy || !loaded}>{task.busy ? copy.SAVING : copy.SAVE}</button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
 /**
  * The coordinator's notebook in the inspector (12.2): Markdown to read, Edit to change it with the revision it was read
  * at. When the coordinator wrote in between, the save is refused and Reload shows its version. The panel follows the
@@ -1214,7 +1093,7 @@ function CoordinatorOverrideDialog({ props, view, close }: { props: PageProps; v
         setError('');
         const kept = { defaultIsolation: base.defaultIsolation, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads,
           maxRunningPerDevice: base.maxRunningPerDevice, perDeviceLimits: base.perDeviceLimits, threadTurnCap: base.threadTurnCap, allowMainIsolation: base.allowMainIsolation,
-          threadRules: base.threadRules, autoMerge: base.autoMerge, riskyAreas: base.riskyAreas, requiredChecks: base.requiredChecks, nightlyWindow: base.nightlyWindow, refill: base.refill };
+          instructions: base.instructions, autoMerge: base.autoMerge, riskyAreas: base.riskyAreas, requiredChecks: base.requiredChecks, nightlyWindow: base.nightlyWindow, refill: base.refill };
         await save(path, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision: base.revision,
           settings: { ...kept, coordinator: { ...base.coordinator, modelId: modelId || null, effort } } }, signal);
         if (fresh) await api(`/api/projects/${view.project.id}/coordinator/fresh`, ProjectWorkViewSchema, 'POST', empty, { signal });

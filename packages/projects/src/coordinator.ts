@@ -340,7 +340,7 @@ export class Coordinator {
   sweep(): void {
     if (!this.#started || this.#closed || this.#moved) return;
     if (this.fallbackActive()) void this.#fallback(this.state().queue);
-    if (this.state().state === 'unavailable') this.kick();
+    if (this.state().state === 'unavailable' || this.state().queue.length) this.kick();
     // A status the hub missed is written again, else the hub keeps the last one it got (a turn it thinks still runs, P8 review C-2).
     if (this.#statusDirty && !this.#running) this.#publish();
   }
@@ -445,6 +445,7 @@ export class Coordinator {
   }
   async #turn(): Promise<TurnEnd> {
     const fenced = await this.#fence(); if (fenced) return fenced;
+    if ((await this.c.workSettings(this.projectId)).status !== 'active') return 'wait';
     const events = this.state().queue;
     if (!events.length) return 'wait';
     // Fresh pressed from here on applies to the next turn: this one never writes its session back (D194).

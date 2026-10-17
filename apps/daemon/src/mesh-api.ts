@@ -89,7 +89,7 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
     const result = await new HubState(app.hub, device.id, 'runtimes' in input ? input.runtimes : [...app.runtimes.keys()]).request(input);
     app.devices.authenticate(authorization!.slice(7));
     // Credential replies bypass redaction, which would otherwise replace the token (GitHub tokens also match a pattern).
-    if (input.operation === 'jev-credential' || input.operation === 'github-credential') json(response, result); else send(result); return true;
+    if (input.operation === 'jev-credential' || input.operation === 'github-credential' || input.operation === 'project-env-credentials') json(response, result); else send(result); return true;
   }
   const projects = path.match(PROJECT_HUB_ROUTE);
   if (projects && method === 'POST') {

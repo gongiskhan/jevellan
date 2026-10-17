@@ -200,7 +200,7 @@ export class ProjectWork {
       },
       protectedPaths: async () => { const [projects, roster] = await Promise.all([o.projects.list(), o.roster()]); return [...new Set([
         ...projects.flatMap(row => row.project.paths[o.deviceId] ? [row.project.paths[o.deviceId]!] : []), ...(roster.devices.find(row => row.device.id === o.deviceId)?.device.protectedPaths ?? [])])]; } });
-    this.admission = new Admission({ hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
+    this.admission = new Admission({ createdThreads: id => this.store.created(id), hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
       facts,
       guard: async (_projectId, deviceId, threadId) => {
         if (deviceId === o.deviceId && !deviceAllowsWork(o.homes)) return 'This device serves apps only; project work runs on a working device.';
@@ -347,11 +347,11 @@ export class ProjectWork {
       memory: async id => o.memory.project(await this.#project(id), o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'review' }),
       settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, project: id => this.#project(id), repository: project => worktrees.repository(project), baseBranch: repo => worktrees.baseBranch(repo), timeoutMs: timers.threadTurnTimeoutMs,
       event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
-    this.dispatcher = new ProjectDispatcher({ tasks: this.tasks, threads: this.threads, deviceId: o.deviceId,
+    this.dispatcher = new ProjectDispatcher({ settings: id => this.admission.settings(id), tasks: this.tasks, threads: this.threads, deviceId: o.deviceId,
       text: async task => {
         const goal = task.goalId ? await this.goals.read(task.projectId, task.goalId) : null;
         const brief = `${task.brief}${goal ? `\n\nGoal: ${goal.name}. Why it matters: ${goal.motivation}` : ''}\n\nTask type: ${task.type}.`, settings = await this.admission.settings(task.projectId);
-        return { brief, taskContext: { type: task.type, needs: task.needs, goal: goal ? { name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: [brief, settings.threadRules ? `Rules for every thread:\n${settings.threadRules}` : ''].filter(Boolean).join('\n\n') };
+        return { brief, taskContext: { type: task.type, needs: task.needs, goal: goal ? { name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: [brief, settings.instructions ? `Rules for every thread:\n${settings.instructions}` : ''].filter(Boolean).join('\n\n') };
       }, review: task => this.reviews.start(task), job: task => this.jobs.start(task), eligible: async (task, tasks) => await this.daily.eligible(task, tasks) && await this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
     this.tracker = new PullRequestTracker({ threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
@@ -511,10 +511,10 @@ export class ProjectWork {
             lastEventId: version, updatedAt: new Date(this.#timers.now()).toISOString(), records: sessionCacheSnapshot(cacheRecords(ledger)) });
           this.#cachePublished.set(project.id, version);
         }
-        await this.memoryProgramme?.sweep(project);
+        if ((await this.admission.settings(project.id)).status === 'active') await this.memoryProgramme?.sweep(project);
         await this.#exportToVault(project).catch(() => undefined);
-        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.#withdrawSignIns(project.id); await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
-        await this.memoryProgramme?.sweep(project);
+        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.#withdrawSignIns(project.id); if ((await this.admission.settings(project.id)).status === 'active') await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
+        if ((await this.admission.settings(project.id)).status === 'active') await this.memoryProgramme?.sweep(project);
       }
       this.mergeGate.sweep();
     } catch (error) { if (!(error instanceof HubUnavailable)) throw error; }
@@ -719,13 +719,20 @@ export class ProjectWork {
   async putSettings(projectId: string, input: z.infer<typeof ProjectWorkSettingsRequestSchema>, clientRequestId?: string): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
     let project = await this.#project(projectId);
     const current = (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId);
-    const settings = ProjectWorkSettingsSchema.parse({ ...current, ...input.settings, schema: 'project-work-settings-v3', projectId, revision: input.revision });
+    const settings = ProjectWorkSettingsSchema.parse({ ...current, ...input.settings, schema: 'project-work-settings-v4', projectId, revision: input.revision });
     const requestId = input.clientRequestId ?? clientRequestId;
     if (input.settings.memory && input.settings.memory.mode !== project.memory.mode && this.#o.switchMemory) {
       if (current.revision !== input.revision) throw refuse(SETTINGS_CHANGED, 409);
       project = await this.#o.switchMemory(projectId, input.settings.memory.mode, requestId ?? newId('memory_mode'));
     }
-    try { return this.#settingsView(project, (await this.#o.hub.putSettings(settings, input.revision, ...(requestId === undefined ? [] : [requestId]))).document); }
+    try {
+      const saved = (await this.#o.hub.putSettings(settings, input.revision, ...(requestId === undefined ? [] : [requestId]))).document;
+      if (saved.status === 'active' && current.status !== 'active') {
+        this.coordinators.get(projectId).kick();
+        void this.threads.sweep().then(() => this.#sweepTasks()).catch(() => undefined);
+      }
+      return this.#settingsView(project, saved);
+    }
     catch (error) { if (statusOf(error) === 409) throw refuse(SETTINGS_CHANGED, 409); throw error; }
   }
   async notebookView(projectId: string): Promise<z.infer<typeof ProjectNotebookViewSchema>> {
