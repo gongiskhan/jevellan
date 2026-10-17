@@ -156,7 +156,7 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
 }
 
 // 9.4 Thread system append and turn prompts
-export function threadSystemAppend(input: { projectName: string; cwd: string; isolation: Isolation; branch?: string | undefined; baseBranch: string;
+export function threadSystemAppend(input: { copiedFiles?: string[] | undefined; projectName: string; cwd: string; isolation: Isolation; branch?: string | undefined; baseBranch: string;
   deviceName: string; testCommand?: string | undefined; gitPolicy?: 'main' | 'external' | undefined; instructions?: string | undefined }): string {
   const manual = input.isolation === 'main' && input.gitPolicy === 'external';
   const isolation = input.isolation === 'worktree'
@@ -174,7 +174,7 @@ ${isolation}
 - Project memory is shared by every session in this project, on Claude and on Codex. Read the Project memory and Project now sections you receive. Search memory with memory_search before working in an unfamiliar area. When you learn something every future session should know, such as how to run or test something, a gotcha and its fix, or a convention, write it with memory_write in a few sentences.
 - If your pull request's checks fail, read them with jevellan_github.
 - If the owner must run something, because you are not allowed to or it needs their sign-in, put the exact command in ownerCommands of your jevellan_thread_report with why, and report blocked or needs-decision. Never ask the owner to run something you can run yourself. When the owner runs it, its output comes back to you as a message.
-- Don't review your own work beyond normal care. Tests run after you, and a nightly review covers everything that merges.${input.instructions ? `\n\nProject instructions from the owner:\n${input.instructions}` : ''}`;
+- Don't review your own work beyond normal care. Tests run after you, and a nightly review covers everything that merges.${input.copiedFiles?.length ? `\n- ${copiedFilesInstructions(input.copiedFiles)}` : ''}${input.instructions ? `\n\nProject instructions from the owner:\n${input.instructions}` : ''}`;
 }
 
 export const taskPrompt = (title: string, task: string): string => `Task: ${title}\n\n${task}`;
@@ -611,3 +611,28 @@ export const notificationFailedBody = (reason: string) => `Failed: ${reason}`;
 export const notificationCoordinatorStopped = (error: string) => `The coordinator stopped: ${error}`;
 export const NOTIFICATION_TEST_TITLE = 'Jevellan';
 export const NOTIFICATION_TEST_BODY = 'Notifications work on this device.';
+
+export const unsafeCopyFile = (path: string) => `Cannot copy ${path}: use a regular file inside the project, without a symlink.`;
+export const skippedCopyFile = (path: string, device?: string) => device ? `Skipped ${path}: not in ${device}'s project folder.` : `Skipped ${path}: the repository tracks it.`;
+export const copiedFileCommitted = (commit: string, path: string) => `Commit ${commit.slice(0, 7)} adds ${path}, which was copied from the project folder and must not be committed. Remove it from this branch's history and report done again.`;
+export const copiedFilesInstructions = (paths: string[]) => `These files were copied from the project folder and are not part of the repository; never commit them: ${paths.join(', ')}.`;
+export const LIBRARY_TOO_LARGE = 'Files up to 50 MB.';
+export const LIBRARY_FULL = "This project's library is full (2 GB). Delete files to add more.";
+export const libraryInstructions = (directory: string, thread: boolean) => `The project library is at ${directory}. Attached files appear in messages as library/<path>; read them from that folder.${thread ? '\nTo keep a file for the owner (a report, an export, an image), add it to the library with jevellan_library_add and mention it in your report.' : ''}`;
+export const libraryAdded = (path: string) => `Added to the library as library/${path}.`;
+export const LIBRARY_FOLDER_ALIAS = 'Library folders cannot alias another location.';
+export const LIBRARY_INVALID_PAGE = 'The hub returned an invalid library page.';
+export const LIBRARY_FILE_NOT_FOUND = 'Library file not found.';
+export const LIBRARY_RELOAD = 'Reload the library to see its current files.';
+export const LIBRARY_CONTENT_TYPE = 'Give the file a content type.';
+export const LIBRARY_THREAD_REQUIRED = 'A thread output needs its thread.';
+export const LIBRARY_INVALID_FILE = 'The hub returned an invalid library file.';
+export const LIBRARY_SHORT_NAME = 'Use a shorter file name.';
+export const LIBRARY_INCOMPLETE = 'The upload ended before the whole file arrived.';
+export const LIBRARY_UNAVAILABLE = 'The project library is unavailable.';
+export const LIBRARY_FILE_UNAVAILABLE = 'The library file is unavailable.';
+export const LIBRARY_HASH_FAILED = 'The library file failed its hash check.';
+export const LIBRARY_HEADERS_REQUIRED = 'Content-Type and Content-Length are required.';
+export const LIBRARY_THREAD_FORBIDDEN = 'This thread cannot add files to that library.';
+export const LIBRARY_OPERATION_MISSING = 'Library operation not found.';
+export const LIBRARY_READ_ONLY = 'This session can only read the project library.';

@@ -71,11 +71,11 @@ export class RiggingStore {
     if (current.item.builtIn && (value.name !== current.item.name || value.content !== current.item.content || value.state !== 'owned')) throw new Error('Built-in content is read-only. Use its runtime toggles.');
     this.#validate(value, current.item.kind, Boolean(current.item.packageRef));
     if (current.item.packageRef && (value.content !== current.item.content || value.name !== current.item.name)) throw new Error('Package-managed content is read-only.');
-    const item = RiggingEntrySchema.parse({ ...current.item, name: value.name, content: value.content, runtimes: value.runtimes, state: value.state, updatedAt: new Date().toISOString() });
+    const item = RiggingEntrySchema.parse({ ...current.item, name: value.name, content: value.content, runtimes: value.runtimes, projects: value.projects ?? current.item.projects, state: value.state, updatedAt: new Date().toISOString() });
     this.store.put('rigging', id, RiggingEntrySchema, item, value.revision); return this.get(id);
   }
-  items(runtime: string): RiggingItem[] {
-    return this.store.list('rigging', RiggingEntrySchema).filter((row) => row.document.id !== 'builtin_safety').map(({ document: item }) => RiggingItemSchema.parse({
+  items(runtime: string, projectId?: string): RiggingItem[] {
+    return this.store.list('rigging', RiggingEntrySchema).filter((row) => row.document.id !== 'builtin_safety' && (!row.document.projects?.length || !!projectId && row.document.projects.includes(projectId))).map(({ document: item }) => RiggingItemSchema.parse({
       schema: 'rigging-item-v1', id: item.id, runtime, name: item.name, kind: item.kind, state: item.state,
       enabled: item.runtimes[runtime] === true, builtIn: item.builtIn, content: item.id === PROJECT_MEMORY_ID ? JSON.stringify(projectMemoryHooks()) : item.content,
       ...(item.packageRef ? { packageRef: item.packageRef } : {}), ...(item.bundle ? { bundle: item.bundle } : {}), updatedAt: item.updatedAt,

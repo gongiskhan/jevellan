@@ -25,3 +25,10 @@ test('a screenshot path is not offered before its capture tool has finished writ
   expect(turnImages({ id: 'turn', role: 'assistant', blocks: [block] })).toEqual([]);
   expect(turnImages({ id: 'turn', role: 'assistant', blocks: [{ ...block, state: 'completed' }] })).toEqual(['shots/phone.png']);
 });
+
+test('library attachments and library metadata stay out of the worktree image viewer', () => {
+  expect(imageReferences('Attached file: library/uploads/2026-10-18/phone view.png (image/png, 1.2 MB)')).toEqual([]);
+  expect(turnImages({ id: 'library', role: 'assistant', blocks: [{ type: 'tool', id: 'files', name: 'mcp__jevellan__jevellan_library_list', input: '{}', output: JSON.stringify({ items: [{ path: 'uploads/2026-10-18/phone view.png', name: 'phone view.png' }] }), state: 'completed' }] })).toEqual([]);
+  expect(imageReferences('/data/library/project/uploads/2026-10-18/screen.png')).toEqual([]);
+  expect(imageReferences('![Preview](<library/outputs/thread_a/phone view.png>)')).toEqual([]);
+});

@@ -14,6 +14,7 @@ import { ImproverDeviceRequestSchema, ImproverDeviceResultSchema, ImproverReques
 import { ProjectHubCollectionSchema, ProjectHubRequestSchema, ProjectHubResultSchema, collectionOf, type ProjectHubCollection, type ProjectHubResult } from '@jevellan/core';
 import { ProjectEnvelopeSchema, type ProjectEnvelope, type UnreadableEnvelope } from '@jevellan/core';
 import { z } from 'zod';
+import type { Readable } from 'node:stream';
 import { TerminalHubRequestSchema, TerminalHubResultSchema } from '@jevellan/core';
 import { AgentAccessHubRequestSchema, AgentAccessHubResultSchema } from '@jevellan/core';
 
@@ -91,6 +92,28 @@ function unreadableEnvelope(raw: unknown): UnreadableEnvelope {
   return { id: id(record.id), projectId: id(record.projectId), sourceDeviceId: id(record.sourceDeviceId), kind: kind.success ? kind.data : null };
 }
 export class MemberHubClient {
+  /** Library bytes use a bounded streaming route, separately from the 2 MB JSON control plane. */
+  async libraryFetch(path: string, input: { method?: 'GET' | 'PUT' | 'DELETE'; body?: Readable; mime?: string; size?: number; note?: string | undefined; ownerSession?: string | undefined } = {}): Promise<Response> {
+    if (!/^[A-Za-z0-9_-]+(?:[/?].*)?$/u.test(path) || decodeURIComponent(path.split('?')[0]!).split('/').includes('..') || path.includes('\\')) throw new HubProtocolError();
+    const token = this.options.token(); this.options.redactor.add(token); if (input.ownerSession) this.options.redactor.add(input.ownerSession);
+    const request: RequestInit & { duplex?: 'half' } = { method: input.method ?? 'GET', redirect: 'manual', signal: AbortSignal.timeout(300_000),
+      headers: { Authorization: `Bearer ${DeviceTokenSchema.parse(token)}`, ...(input.ownerSession ? { 'X-Jevellan-Owner-Session': input.ownerSession } : {}),
+        ...(input.mime ? { 'Content-Type': input.mime } : {}), ...(input.size === undefined ? {} : { 'Content-Length': String(input.size) }), ...(input.note ? { 'X-Jevellan-Library-Note': encodeURIComponent(input.note) } : {}) },
+      ...(input.body ? { body: input.body as unknown as BodyInit, duplex: 'half' } : {}) };
+    let response: Response;
+    try { response = await (this.options.fetch ?? fetch)(`${this.#transport.origin}/hub/mesh/library/${path}`, request); }
+    catch { throw new HubUnavailable(this.options.hubName); }
+    if (response.status >= 300 && response.status < 400) { await response.body?.cancel(); throw new HubProtocolError(); }
+    if (!response.ok) {
+      const reader = response.body?.getReader(); let text = '';
+      try { if (reader) for (;;) { const chunk = await reader.read(); if (chunk.done) break; text += Buffer.from(chunk.value).toString('utf8'); if (text.length > 16_384) throw new HubProtocolError(); } }
+      finally { await reader?.cancel(); }
+      let error; try { error = ErrorDocumentSchema.parse(JSON.parse(text)); } catch { throw new HubProtocolError(); }
+      throw Object.assign(new Error(this.options.redactor.text(error.message)), { status: response.status });
+    }
+    const version = response.headers.get('x-jevellan-version'); if (version && VERSION_PATTERN.test(version)) this.#transport.hubVersion = version;
+    return response;
+  }
   async projectJournal(input: unknown) {
     const { ProjectJournalRequestSchema, ProjectJournalResultSchema } = await import('@jevellan/core');
     return this.#request('journal', ProjectJournalResultSchema, ProjectJournalRequestSchema.parse(input), 30000);

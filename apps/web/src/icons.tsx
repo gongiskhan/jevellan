@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 // Line icons on a 20px grid, matching the website's symbol set.
 const paths = {
+  attachment: <path d="M7 10l5-5a3 3 0 014 4l-7 7a4 4 0 01-6-6l7-7M6 11l6-6" />,
   agents: <><path d="M7 3v4M13 3v4M5 7h10v3a5 5 0 01-10 0zM10 15v3" /></>,
   send: <path d="M10 16V4M4.5 9.5L10 4l5.5 5.5" />,
   queue: <><path d="M3 4h9M3 8h6M3 12h3" /><circle cx="13" cy="13" r="4.5" /><path d="M13 10.5V13l1.5 1" /></>,

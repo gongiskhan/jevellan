@@ -78,7 +78,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   });
   const enabledModels = data.config.configuration['x-jevellan'].menu.filter(model => model.enabled);
   const models = data.config.configuration['x-jevellan'].menu.filter(model => model.enabled || model.id === draft?.coordinator.modelId);
-  const rigging = data.rigging.items.filter(row => row.item.state === 'owned').map(row => row.item.name);
+  const rigging = data.rigging.items.filter(row => row.item.state === 'owned' && (!row.item.projects?.length || row.item.projects.includes(id))).map(row => row.item.name);
   const section = (key: typeof sections[number][0], children: ReactNode) => <section id={`project-settings-${key}`} className="pw-settings-section" aria-labelledby={`project-settings-title-${key}`}>
     <h2 id={`project-settings-title-${key}`}>{sections.find(row => row[0] === key)![1]}</h2>{children}</section>;
   const number = (label: string, value: number, min: number, max: number, onChange: (value: number) => void) => <label>{label}<input type="number" required min={min} max={max} step={1} value={Number.isNaN(value) ? '' : value} onChange={event => onChange(event.target.valueAsNumber)} /></label>;

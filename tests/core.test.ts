@@ -191,3 +191,11 @@ test('requested menu labels use only discovered identifiers and efforts without 
   expect(reconcileMenu([], 'claude', [{ id: 'subscription-opus', label: 'Claude Opus 5.5', efforts: ['high'] }])[0]).toMatchObject({ model: 'subscription-opus', efforts: ['high'], enabled: true });
   expect(reconcileMenu([], 'codex', [{ id: 'unsupported', label: 'GPT-6.1 Sol', efforts: [] }])).toEqual([]);
 });
+
+
+test('project environment is explicit and cannot override runtime or internal variables', () => {
+  expect(minimalEnvironment('claude', '/isolated', {}, {}, { PATH: '/bin', LEAK: 'native' }, { SANDBOX_DATA_DIR: '/data', TZ: 'UTC' })).toMatchObject({ HOME: '/isolated', SANDBOX_DATA_DIR: '/data', TZ: 'UTC' });
+  expect(minimalEnvironment('claude', '/isolated', {}, {}, { LEAK: 'native' })).not.toHaveProperty('LEAK');
+  for (const name of ['HOME', 'PATH', 'CLAUDE_CONFIG_DIR', 'GIT_CONFIG_COUNT', 'OPENAI_API_KEY'])
+    expect(() => minimalEnvironment('claude', '/isolated', {}, {}, {}, { [name]: 'bad' })).toThrow('reserved');
+});

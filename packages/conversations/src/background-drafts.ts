@@ -20,7 +20,7 @@ const RecordSchema = z.strictObject({ schema: z.literal('background-draft-record
 type Operation = { fingerprint: string; abort: AbortController; promise: Promise<BackgroundDraftResult>; execution?: StretchExecution };
 type Options = {
   homes: Homes; deviceId: string; accounts: Pick<AccountService, 'list' | 'resolve' | 'markUsed' | 'recordUsage' | 'recordError'>; runtimes: ReadonlyMap<string, RuntimeAdapter>; bridges: StretchBridges; redactor: SecretRedactor;
-  settings(): Configuration['x-jevellan'] | Promise<Configuration['x-jevellan']>; riggingItems(runtime: string): RiggingItem[] | Promise<RiggingItem[]>;
+  settings(): Configuration['x-jevellan'] | Promise<Configuration['x-jevellan']>; riggingItems(runtime: string, projectId?: string): RiggingItem[] | Promise<RiggingItem[]>;
   accountRuns: Set<string>; enterOperation(id: string, title: string): () => void;
 };
 const unavailableMemory: ProjectMemory = {
@@ -105,7 +105,7 @@ export class BackgroundDrafts {
         this.options.accountRuns.add(account.id); accountId = account.id;
       }
       const resolved = await this.options.accounts.resolve(account.id); this.#current(operation);
-      await adapter.materialiseRigging(resolved.home, await this.options.riggingItems(selected.model.runtime)); this.#current(operation);
+      await adapter.materialiseRigging(resolved.home, await this.options.riggingItems(selected.model.runtime, request.projectId ?? undefined)); this.#current(operation);
       const cwd = this.options.homes.ensure('tmp', `draft_${request.id}`);
       if (cwd !== join(this.options.homes.root, 'tmp', `draft_${request.id}`)) throw new Error('Draft input directories cannot alias another location.');
       for (const [name, content] of Object.entries(request.files)) {

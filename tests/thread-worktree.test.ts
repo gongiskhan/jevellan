@@ -156,3 +156,25 @@ test('thread git reads identity and the raw origin url, and fetches only into pr
   await expect(git.fetchPrivate(checkout, 'missing', 'refs/jevellan/threads/thread_x/base')).rejects.toThrow(/^Git fetch failed \(128\)/);
   await expect(git.run(checkout, ['rev-parse', 'refs/heads/none'])).rejects.toThrow(/^Git rev-parse failed \(128\)/);
 });
+
+
+test('worktree files copy only untracked regular files and preserve private mode', async () => {
+  const { chmodSync, statSync } = await import('node:fs');
+  writeFileSync(join(checkout, '.env.local'), 'private fixture\n'); chmodSync(join(checkout, '.env.local'), 0o600);
+  const created = await worktrees.create(project, thread());
+  const ledger = new ProjectLedgers(paths, { redactor }).thread(project.id, thread().id);
+  const copied = await worktrees.copyFiles(project, { ...thread(), ...created }, ['.env.local', 'value.txt', 'missing'], ledger);
+  expect(copied).toEqual(['.env.local']); expect(readFileSync(join(created.cwd, '.env.local'), 'utf8')).toBe('private fixture\n');
+  expect(statSync(join(created.cwd, '.env.local')).mode & 0o777).toBe(0o600);
+  symlinkSync(join(root, 'user'), join(checkout, 'escape'));
+  await expect(worktrees.copyFiles(project, { ...thread(), ...created }, ['escape/secret'], ledger)).rejects.toThrow('symlink');
+});
+
+test('publication leftover commits exclude copied files, including already staged paths', async () => {
+  const created = await worktrees.create(project, thread());
+  writeFileSync(join(created.cwd, '.env.local'), 'private fixture\n'); writeFileSync(join(created.cwd, 'feature'), 'yes\n');
+  run(created.cwd, 'add', '-A');
+  await git.commitAll(created.cwd, 'Feature', undefined, ['.env.local']);
+  expect(run(created.cwd, 'show', '--format=', '--name-only', 'HEAD')).toBe('feature');
+  expect(existsSync(join(created.cwd, '.env.local'))).toBe(true);
+});

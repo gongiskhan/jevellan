@@ -1,3 +1,4 @@
+import { AttachmentControls, LibraryMessage, ProjectLibraryPanel, useProjectAttachments } from './project-library.js';
 import { ThreadMergeHoldContext } from './thread-actions.js';
 import { ThreadCard } from './thread-card.js';
 import { ChatWorkCards, ChatSettingsChanges } from './chat-work-cards.js';
@@ -253,7 +254,7 @@ export function Stamp({ at, label }: { at: string; label?: string }) {
 export const runtimeNames = (data: PageProps['data']) => (runtime: string) => data.runtimes.find((entry) => entry.id === runtime)?.displayName ?? runtime;
 export const deviceNames = (data: PageProps['data']) => (deviceId: string) => data.devices.devices.find((entry) => entry.id === deviceId)?.name ?? deviceId;
 const TABS: readonly ProjectTab[] = ['chat', 'overview'];
-const OVERVIEW_TABS = ['threads', 'pull-requests', 'queue', 'routines'] as const;
+const OVERVIEW_TABS = ['threads', 'pull-requests', 'queue', 'routines', 'library'] as const;
 
 /**
  * The project page (12.2): the coordinator chat with Waiting for you, Running, Pull requests and Concluded beside it from
@@ -572,7 +573,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         <div className="pw-side" id={sideId} {...sidePanel}>
           <h2 className="pw-overview-title">{copy.OVERVIEW}</h2>
           <div className="pw-overview-tabs" role="tablist" aria-label={copy.OVERVIEW}>
-            {OVERVIEW_TABS.map(name => <button key={name} role="tab" className="pw-tab" aria-selected={overviewTab === name} onClick={() => setOverviewTab(name)}>{name === 'routines' ? copy.ROUTINES : copy.TAB_LABELS[name]}</button>)}
+            {OVERVIEW_TABS.map(name => <button key={name} role="tab" className="pw-tab" aria-selected={overviewTab === name} onClick={() => setOverviewTab(name)}>{name === 'routines' ? copy.ROUTINES : name === 'library' ? copy.LIBRARY : copy.TAB_LABELS[name]}</button>)}
           </div>
           <section className="pw-section" hidden={overviewTab !== 'threads'} data-tab="waiting" aria-labelledby={`${sideId}-waiting`}>
             {sectionHeading(`${sideId}-waiting`, copy.WAITING_FOR_YOU, open.length + drafts.length + groups.waiting.length)}
@@ -584,6 +585,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             {groups.waiting.map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} deviceName={deviceName} navigate={navigate} changed={updated} onError={onError} />)}
             {view.decisions.answered.length > 0 && <AnsweredList decisions={view.decisions.answered} titles={titles} now={now} />}
           </section>
+          <div hidden={overviewTab !== 'library'}>{overviewTab === 'library' && <ProjectLibraryPanel projectId={id} threadTitle={threadId => titles(threadId) ?? threadId} onError={onError} />}</div>
           <section className="pw-section" hidden={overviewTab !== 'queue'} data-tab="queue" aria-labelledby={`${sideId}-queue`}>
             {sectionHeading(`${sideId}-queue`, 'Queue', tasks.filter(task => ['draft', 'queued', 'active', 'in-review'].includes(task.state)).length)}
             <TaskQueue projectId={id} tasks={tasks} goals={goals} threads={view.threads} grouped navigate={navigate} changed={updated} onError={onError} />
@@ -658,7 +660,7 @@ function ChatEntry({ item, projectId, navigate, tasks, threads, settings, change
       return (
         <article className="user-message pw-owner">
           <div className="message-heading"><strong>{copy.YOU}</strong><Stamp at={item.at} /></div>
-          <Markdown>{item.text}</Markdown>
+          <LibraryMessage projectId={projectId} text={item.text} />
           {!item.delivered && <p className="pw-pending">{copy.WAITING_FOR_COORDINATOR}</p>}
         </article>
       );
@@ -697,18 +699,20 @@ function Composer({ projectId, busy, offline, offlineText, behind, jump, stoppin
   projectId: string; busy: boolean; offline: boolean; offlineText: string; behind: boolean; jump(): void; stopping: boolean; stop(): void; onError(error: unknown): void;
 }) {
   const [text, setText] = useState('');
+  const attachments = useProjectAttachments(projectId, onError);
   const send = useTask(onError);
   const ids = useClientIds('message');
   return (
-    <form className="composer card pw-composer" ref={composerClearance} onSubmit={(event) => {
+    <form onPaste={attachments.paste} onDragOver={attachments.dragOver} onDrop={attachments.drop} className="composer card pw-composer" ref={composerClearance} onSubmit={(event) => {
       event.preventDefault();
-      if (send.busy || offline || !text.trim()) return;
-      const value = text;
+      if (send.busy || offline || (!text.trim() && !attachments.entries.length)) return;
+      const typed = text;
       void send.run(async (signal) => {
+        const prepared = await attachments.prepare(typed, signal), value = prepared.text;
         await api(`/api/projects/${projectId}/coordinator/messages`, CoordinatorMessageReceiptSchema, 'POST',
           { schema: 'coordinator-message-request-v1', clientMessageId: ids.id(value), text: value }, { signal, waitForHub: true });
-        ids.done();
-        setText((typed) => typed === value ? '' : typed);
+        ids.done(); prepared.clear();
+        setText((current) => current === typed ? '' : current);
         updated();
       });
     }}>
@@ -718,6 +722,7 @@ function Composer({ projectId, busy, offline, offlineText, behind, jump, stoppin
           {behind && <button type="button" className="text-button pw-jump jump-latest" onClick={jump}>{copy.JUMP_TO_LATEST}<Icon name="chevron" size={14} /></button>}
         </div>
       )}
+      <AttachmentControls attachments={attachments} disabled={send.busy || offline} />
       <div className="message-input-row">
         <MessageInput value={text} change={setText} label={copy.CHAT_INPUT_LABEL} placeholder={copy.CHAT_PLACEHOLDER} />
         <div className="message-actions">
@@ -727,7 +732,7 @@ function Composer({ projectId, busy, offline, offlineText, behind, jump, stoppin
             </button>
           )}
           <button type="submit" className="send-icon" aria-label={copy.SEND} title={offline ? offlineText : undefined}
-            disabled={send.busy || offline || !text.trim()}><Icon name="send" size={20} /></button>
+            disabled={send.busy || offline || (!text.trim() && !attachments.entries.length)}><Icon name="send" size={20} /></button>
         </div>
       </div>
     </form>

@@ -619,3 +619,11 @@ Phase5 source checkpoint:193 affected backend cases and4 browser layouts pass fo
 ### Projects parity phase6: notifications
 
 Source implementation adds hub-owned encrypted Web Push delivery, owner subscriptions in Settings and a schema-validated PWA worker. Existing ledgers, hub questions and the mesh provide durable triggers and retries. Levels and per-device delivery receipts prevent duplicate finished sends and preserve failed-device retries. 142 affected backend cases and all4layouts pass; dedicated vision is not run. This is not an installed or physical-phone result. Decisions875–879 and phase6 evidence are in acceptance/projects-parity-2026-10/.
+
+
+### Projects parity phase7: shared files and launch environment
+
+The source now connects project variables and vault-only secrets to worktree setup, threads, verification and command jobs, and records copied files so publication cannot include them. Hub Library storage, authenticated streaming transfers, read-only device mirrors, scoped bridge tools and composer attachments extend the existing services. Rigging can apply to selected projects. Verification is in progress; see Decisions880–884 and the parity run log. Nothing here claims an installed release or live provider acceptance.
+
+
+Phase7 source closure (Decisions880–887):121 distinct affected backend cases, PAR7/PAR7b in all4layouts, typecheck/lint/build pass. Library streaming cancellation no longer crashes the daemon. Dedicated vision and real-provider LP6 remain not run; source is not yet an installed release. See acceptance/projects-parity-2026-10/phase-7/.

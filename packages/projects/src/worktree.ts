@@ -1,8 +1,8 @@
-import { existsSync, lstatSync, rmSync, symlinkSync } from 'node:fs';
-import { isAbsolute, join } from 'node:path';
-import { resolveProjectPath, resolvedPath, threadBranch, type Homes, type Project, type SecretRedactor, type Thread } from '@jevellan/core';
+import { copyFileSync, chmodSync, existsSync, lstatSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
+import { dirname, isAbsolute, join } from 'node:path';
+import { ProjectRelativePathSchema, inside, resolveProjectPath, resolvedPath, threadBranch, type Homes, type Project, type SecretRedactor, type Thread } from '@jevellan/core';
 import { ProjectContext } from '@jevellan/memory';
-import { commandTimedOut, contextLinkSkipped, contextUnreadable, exitCodeLine, worktreeSetupFailed } from './copy.js';
+import { commandTimedOut, contextLinkSkipped, contextUnreadable, exitCodeLine, skippedCopyFile, unsafeCopyFile, worktreeSetupFailed } from './copy.js';
 import { THREAD_REF_PREFIX, firstLine, threadBaseRef, type ThreadGit } from './git.js';
 import type { ProjectLedger } from './ledger.js';
 import type { ProjectPaths } from './paths.js';
@@ -36,8 +36,9 @@ export type SetupResult = { ok: true; outputRef: string } | { ok: false; reason:
 export class ThreadWorktree {
   readonly #git: ThreadGit; readonly #homes: Homes; readonly #paths: ProjectPaths; readonly #redactor: SecretRedactor;
   readonly #deviceId: string; readonly #deviceName: string;
-  constructor(o: { git: ThreadGit; homes: Homes; paths: ProjectPaths; redactor: SecretRedactor; deviceId: string; deviceName: string }) {
-    this.#git = o.git; this.#homes = o.homes; this.#paths = o.paths; this.#redactor = o.redactor; this.#deviceId = o.deviceId; this.#deviceName = o.deviceName;
+  readonly #projectEnvironment: ((projectId: string) => Promise<Record<string, string>>) | undefined;
+  constructor(o: { projectEnvironment?(projectId: string): Promise<Record<string, string>>; git: ThreadGit; homes: Homes; paths: ProjectPaths; redactor: SecretRedactor; deviceId: string; deviceName: string }) {
+    this.#projectEnvironment = o.projectEnvironment; this.#git = o.git; this.#homes = o.homes; this.#paths = o.paths; this.#redactor = o.redactor; this.#deviceId = o.deviceId; this.#deviceName = o.deviceName;
   }
   /** The project checkout on this device (brief 8.3 repository). */
   repository(project: Project): string { return resolveProjectPath(project, this.#deviceId, this.#deviceName); }
@@ -111,11 +112,30 @@ export class ThreadWorktree {
     }
     return notes.length ? notes.join(' ') : undefined;
   }
+  /** Copy only owner-selected untracked regular files, without following any source or destination links. */
+  async copyFiles(project: Project, thread: Thread, paths: string[], ledger: ProjectLedger): Promise<string[]> {
+    const root = this.repository(project), copied: string[] = [];
+    for (const raw of paths) {
+      const path = ProjectRelativePathSchema.parse(raw), source = join(root, path), target = join(thread.cwd, path);
+      if (!inside(root, source) || !inside(thread.cwd, target)) throw new Error(unsafeCopyFile(path));
+      for (const base of [root, thread.cwd]) {
+        let current = base;
+        for (const part of path.split('/')) { current = join(current, part); if (present(current) && lstatSync(current).isSymbolicLink()) throw new Error(unsafeCopyFile(path)); }
+      }
+      const tracked = (await this.#git.run(thread.cwd, ['--literal-pathspecs', 'ls-tree', '-z', thread.baseCommit, '--', path])).stdout.length > 0;
+      const missing = !existsSync(source);
+      if (tracked || missing) { ledger.append({ type: 'notice', data: { schema: 'project-notice-v1', kind: 'info', text: skippedCopyFile(path, tracked ? undefined : this.#deviceName) } }); continue; }
+      const stat = lstatSync(source); if (!stat.isFile()) throw new Error(unsafeCopyFile(path));
+      if (!existsSync(target)) { mkdirSync(dirname(target), { recursive: true }); copyFileSync(source, target); chmodSync(target, stat.mode & 0o777); }
+      copied.push(path);
+    }
+    return copied;
+  }
   /** The project's setup command in the worktree (15 minutes); the output is a blob in the thread ledger. */
   async setup(thread: Thread, command: string, ledger: ProjectLedger, o: { timeoutMs?: number; signal?: AbortSignal } = {}): Promise<SetupResult> {
     if (!thread.cwd || !isAbsolute(thread.cwd)) throw new Error('The thread worktree is not ready.');
     const timeoutMs = o.timeoutMs ?? SETUP_TIMEOUT_MS;
-    const result = await runThreadCommand(thread.cwd, command, { homes: this.#homes, workId: thread.id, timeoutMs, redactor: this.#redactor, signal: o.signal });
+    const result = await runThreadCommand(thread.cwd, command, { homes: this.#homes, workId: thread.id, timeoutMs, redactor: this.#redactor, projectEnv: await this.#projectEnvironment?.(thread.projectId) ?? {}, signal: o.signal });
     const outputRef = ledger.putBlob({ stdout: result.stdout, stderr: result.stderr, timedOut: result.timedOut }).ref;
     if (result.code === 0 && !result.timedOut) return { ok: true, outputRef };
     const line = result.timedOut ? commandTimedOut(timeoutMs) : firstLine(result.stderr) || firstLine(result.stdout) || exitCodeLine(result.code);

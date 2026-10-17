@@ -93,10 +93,12 @@ export type ProjectWorkOptions = {
   /** Why this device may not start new work now (B5: it runs a newer version than its hub). */
   workRefusal?(): string | undefined;
   journal?: Pick<JournalOptions, 'isHub' | 'request'>;
+  library?: import('@jevellan/core').ProjectLibrary;
   terminalRead?(scope: import('./bridge-tools.js').ProjectScope, input: unknown): Promise<unknown>;
   homes: Homes; deviceId: string; deviceName: string; redactor: SecretRedactor;
   facts?(): DeviceFacts;
   projects: SharedProjects; hub: ProjectHub;
+  environment?: { credentials(projectId: string): Promise<Record<string, string>> };
   github: { credential(projectId?: string): Promise<string | undefined>; fetch?: typeof fetch | undefined; baseUrl?: string | undefined };
   accounts: Pick<AccountService, 'list' | 'resolve' | 'markUsed' | 'recordUsage' | 'recordError'>;
   runtimes: ReadonlyMap<string, RuntimeAdapter>; accountRuns: Set<string>;
@@ -107,7 +109,7 @@ export type ProjectWorkOptions = {
   sendCapture?(request: ProjectMemoryRequest): Promise<void>;
   hubMemory?: import('@jevellan/memory').HubMemoryStore;
   switchMemory?(projectId: string, mode: Project['memory']['mode'], requestId: string): Promise<Project>;
-  settings(): Promise<Configuration['x-jevellan']>; riggingItems(runtime: string): Promise<RiggingItem[]>;
+  settings(): Promise<Configuration['x-jevellan']>; riggingItems(runtime: string, projectId?: string): Promise<RiggingItem[]>;
   /** Jev placement (phase 4). */
   decisionClient?(): Promise<DecisionClient>;
   roster(): Promise<DeviceRoster>;
@@ -177,9 +179,14 @@ export class ProjectWork {
     const git = new ThreadGit({ homes: o.homes, redactor: o.redactor });
     this.transcripts = new ThreadTranscripts({ homes: o.homes, deviceId: o.deviceId, deviceName: o.deviceName });
     // A thread attached in a terminal holds its account for every turn on this device, read from the threads themselves (phase 8).
+    const projectEnvironment = async (projectId: string) => {
+      const settings = await this.admission.settings(projectId), secrets = await o.environment?.credentials(projectId) ?? {};
+      for (const value of Object.values(secrets)) o.redactor.add(value);
+      return { ...Object.fromEntries(settings.environment.variables.map(row => [row.name, row.value])), ...secrets };
+    };
     const held = (): ReadonlySet<string> => new Set(this.store.all().filter((thread) => thread.state === 'attached').map((thread) => thread.placement.accountId));
     const launcher = new TurnLauncher({ accounts: o.accounts, runtimes: o.runtimes, accountRuns: o.accountRuns, riggingItems: o.riggingItems, bridges: o.bridges, homes: o.homes,
-      deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held, projectSettings: projectId => this.admission.settings(projectId),
+      deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held, projectEnvironment, library: o.library, projectSettings: projectId => this.admission.settings(projectId),
       sessionLedger: projectId => this.ledgers.coordinator(projectId), now, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false,
       cacheWindowMinutes: async runtime => (await o.settings()).runtimes[runtime]?.cacheWindowMinutes ?? (runtime === 'claude' ? 60 : 10),
       chooseAccount: async (request, ranking) => {
@@ -243,11 +250,11 @@ export class ProjectWork {
       }
       return owners;
     } });
-    const worktrees = new ThreadWorktree({ git, homes: o.homes, paths: this.paths, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName });
+    const worktrees = new ThreadWorktree({ projectEnvironment, git, homes: o.homes, paths: this.paths, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName });
     this.#github = new ProjectGithub({ github, redactor: o.redactor, now, project: id => this.#project(id),
       thread: async id => (await o.hub.thread(id))?.document, baseBranch: async project => worktrees.baseBranch(worktrees.repository(project)),
       repository: async project => parseGitHubRemote(await git.remoteUrl(worktrees.repository(project)) ?? '') });
-    const publication = new ThreadPublication({ git, homes: o.homes, redactor: o.redactor, github, deviceId: o.deviceId, deviceName: o.deviceName, testTimeoutMs: timers.testTimeoutMs,
+    const publication = new ThreadPublication({ projectEnvironment, git, homes: o.homes, redactor: o.redactor, github, deviceId: o.deviceId, deviceName: o.deviceName, testTimeoutMs: timers.testTimeoutMs,
       leaseRetryMs: timers.mainLeaseRetryMs, now, ...(o.leases ? { leases: o.leases } : {}), ...(o.ownership ? { ownership: o.ownership } : {}) });
     const main = new MainCheckout({ git, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName, ownership: o.ownership, outside: o.outside });
     this.coordinators = new CoordinatorService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: coordinatorStore, ledgers: this.ledgers, hub: o.hub,
@@ -307,6 +314,7 @@ export class ProjectWork {
       refreshLanding: (projectId, threadId) => this.daily.assertMerge(projectId, threadId),
       queueChanged: projectId => { void this.dispatcher.sweep(projectId).catch(() => undefined); },
       runner: {
+        library: o.library,
         routeMessages: (thread, body, ids, signal) => followups.route(thread, body, ids, signal),
         reconsider: async (thread, reason, trouble, signal, minimumEffort) => placement.reconsider(await this.#project(thread.projectId), await this.admission.settings(thread.projectId), thread, reason, trouble, signal, minimumEffort),
       ...(this.journal ? { journalContents: (projectId: string, threadId: string) => this.journal!.contents(projectId, threadId) } : {}),
@@ -347,7 +355,7 @@ export class ProjectWork {
         },
         runtimeName: (runtime) => o.runtimes.get(runtime)?.displayName ?? runtime, enterOperation: o.enterOperation,
         timers: { threadTurnTimeoutMs: timers.threadTurnTimeoutMs, setupTimeoutMs: timers.setupTimeoutMs }, now } });
-    this.jobs = new ProjectJobRunner({ homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
+    this.jobs = new ProjectJobRunner({ projectEnvironment, homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
       project: id => this.#project(id), settings: id => this.admission.settings(id), baseBranch: repo => worktrees.baseBranch(repo), event: (id, event) => delivery.toCoordinator(id, event),
       windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
     this.daily = new ProjectDailyWork({ landing: (threadId, held) => { if (!this.store.get(threadId)) return; if (held) this.store.setIndexFields(threadId, { landing: 'held' }); else if (this.store.local(threadId).landing === 'held') this.store.setIndexFields(threadId, { landing: undefined }); }, fixCutoffMinutes: nightlyFixMinutes(o.homes), hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
@@ -372,7 +380,7 @@ export class ProjectWork {
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
       hub: o.hub, deviceId: o.deviceId, assertMerge: (id, tid) => this.daily.assertMerge(id, tid),
       redactor: o.redactor, now, pollMs: timers.prPollMs, periodic: timers.periodic });
-    const verification = new PullRequestVerification({ sessionEnd: evidence => this.ledgers.sessionEnd(evidence), hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, facts, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs,
+    const verification = new PullRequestVerification({ projectEnvironment, sessionEnd: evidence => this.ledgers.sessionEnd(evidence), hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, facts, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs,
       memory: project => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'verification' }) });
     this.mergeGate = new ProjectMergeGate({ hub: o.hub, store: this.store, tracker: this.tracker, github, verification, deviceId: o.deviceId, redactor: o.redactor, now,
       settings: id => this.admission.settings(id), configuration: o.settings, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}), project: id => this.#project(id), repository: project => worktrees.repository(project),
@@ -433,7 +441,7 @@ export class ProjectWork {
   #coordinatorTools(): CoordinatorToolHandlers {
     return this.#tools ??= { ...coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, tasks: this.tasks, goals: this.goals, daily: this.daily, jobs: this.jobs, store: this.store, decisions: this.decisions,
       settingsUpdate: (id, input, requestId) => this.coordinatorSettings(id, input, requestId),
-      pullRequests: this.tracker, github: this.#github, terminalRead: this.#o.terminalRead, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
+      library: this.#o.library, pullRequests: this.tracker, github: this.#github, terminalRead: this.#o.terminalRead, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
       memory: async (projectId, scope) => this.#o.memory.project(await this.#project(projectId), this.#o.deviceId, () => { throw new Error(COORDINATOR_MEMORY_READ_ONLY); },
         { kind: 'coordinator', ...(scope?.provenance ? { provenance: scope.provenance } : {}) }) }),
       capture: async (scope, payload) => {

@@ -296,6 +296,7 @@ export const PullCommentSchema = z.strictObject({ id: z.string().min(1).max(64),
 export type PullComment = z.infer<typeof PullCommentSchema>;
 export const PullCommentsSchema = z.strictObject({ schema: z.literal('pr-comment-batch-v1'), prNumber: positive, since: TimestampSchema, remoteUpdatedAt: TimestampSchema.optional(), fetchedAt: TimestampSchema, items: z.array(PullCommentSchema).max(3000), deliveredIds: z.array(z.string().max(64)).max(500) });
 export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-local-v1'),
+  copiedFiles: z.array(z.string().min(1).max(300)).max(20).optional(),
   escalatedBlockedTurn: count.optional(),
   waitingForAccount: z.strictObject({ since: TimestampSchema, runtime: IdSchema, modelId: IdSchema, earliestEligibleAt: TimestampSchema.nullable(), moved: z.boolean() }).optional(),
   escalations: z.array(z.strictObject({ at: TimestampSchema, reason: z.enum(['verification', 'blocked']), from: z.strictObject({ modelId: IdSchema, effort: EffortSchema }), to: z.strictObject({ modelId: IdSchema, effort: EffortSchema }) })).max(20).optional(),

@@ -9,7 +9,7 @@ import {
 import { memoryConflictResolutions } from '@jevellan/memory';
 import {
   BRANCH_PUSHED_NO_TOKEN, MAIN_CHANGED_THREE_TIMES, MAIN_LEASE_BUSY, MAIN_NO_REMOTE, MAIN_OPERATION_PENDING, NOT_GITHUB, NO_REMOTE, REMOTE_CREDENTIALS, VERIFICATION_HEAD_MOVED,
-  VERIFICATION_TREE_CHANGED, commandTimedOut, githubRefused, leftoverCommitSubject, mainCheckoutMessage, pullRequestBody,
+  VERIFICATION_TREE_CHANGED, copiedFileCommitted, commandTimedOut, githubRefused, leftoverCommitSubject, mainCheckoutMessage, pullRequestBody,
 } from './copy.js';
 import { GIT_NETWORK_TIMEOUT_MS, tail, type ThreadGit } from './git.js';
 import type { ProjectLedger } from './ledger.js';
@@ -92,13 +92,14 @@ export class ThreadPublication {
   readonly #deviceId: string; readonly #deviceName: string; readonly #testTimeoutMs: number; readonly #leaseRetryMs: number; readonly #now: () => number;
   /** Main isolation (phase 6) publishes under these; the worktree path needs neither. */
   readonly leases: PublicationLeaseService | undefined; readonly ownership: CheckoutOwnership | undefined;
-  constructor(o: { git: ThreadGit; homes: Homes; redactor: SecretRedactor; github: GitHubAccess; deviceName: string; testTimeoutMs?: number; now?(): number;
+  readonly #projectEnvironment: ((projectId: string) => Promise<Record<string, string>>) | undefined;
+  constructor(o: { projectEnvironment?(projectId: string): Promise<Record<string, string>>; git: ThreadGit; homes: Homes; redactor: SecretRedactor; github: GitHubAccess; deviceName: string; testTimeoutMs?: number; now?(): number;
     leases?: PublicationLeaseService; ownership?: CheckoutOwnership;
     /** This device's id, named in memory notes merged during a rebase (as conversations do); the name when absent. */
     deviceId?: string;
     /** The wait before a busy publication lease is tried again (D45, 20 seconds in the daemon). */
     leaseRetryMs?: number }) {
-    this.#git = o.git; this.#homes = o.homes; this.#redactor = o.redactor; this.#github = o.github; this.#deviceName = o.deviceName; this.#deviceId = o.deviceId ?? o.deviceName;
+    this.#projectEnvironment = o.projectEnvironment; this.#git = o.git; this.#homes = o.homes; this.#redactor = o.redactor; this.#github = o.github; this.#deviceName = o.deviceName; this.#deviceId = o.deviceId ?? o.deviceName;
     this.#testTimeoutMs = o.testTimeoutMs ?? TEST_TIMEOUT_MS; this.#leaseRetryMs = o.leaseRetryMs ?? 20_000; this.#now = o.now ?? Date.now; this.leases = o.leases; this.ownership = o.ownership;
   }
   async #head(cwd: string): Promise<string> { return (await this.#git.run(cwd, ['rev-parse', 'HEAD'])).stdout.trim(); }
@@ -112,7 +113,7 @@ export class ThreadPublication {
     let verified: VerificationResult;
     if (!command) verified = { status: 'skipped', command: null, timedOut: false, tail: '', commit };
     else {
-      const result = await runThreadCommand(cwd, command, { homes: this.#homes, workId: thread.id, timeoutMs: this.#testTimeoutMs, redactor: this.#redactor, signal });
+      const result = await runThreadCommand(cwd, command, { homes: this.#homes, workId: thread.id, timeoutMs: this.#testTimeoutMs, redactor: this.#redactor, projectEnv: await this.#projectEnvironment?.(thread.projectId) ?? {}, signal });
       const moved = await this.#head(cwd) !== commit;
       const dirty = clean && !moved && !!(await this.#git.run(cwd, ['status', '--porcelain=v1', '-z'])).stdout;
       const notes = [...(result.timedOut ? [capitalized(commandTimedOut(this.#testTimeoutMs))] : []), ...(moved ? [VERIFICATION_HEAD_MOVED] : []), ...(dirty ? [VERIFICATION_TREE_CHANGED] : [])];
@@ -153,7 +154,17 @@ export class ThreadPublication {
     let pushedCommit: string | undefined; let verified: VerificationResult | undefined;
     const result = (outcome: PublicationOutcome): PublicationResult => ({ outcome, ...(pushedCommit ? { pushedCommit } : {}), ...(verified ? { verified } : {}) });
     try {
-      await this.#git.commitAll(cwd, leftoverCommitSubject(thread.title, thread.lastReport?.summary ?? thread.title), local.gitIdentity);
+      await this.#git.commitAll(cwd, leftoverCommitSubject(thread.title, thread.lastReport?.summary ?? thread.title), local.gitIdentity, local.copiedFiles);
+      const copied = local.copiedFiles ?? [];
+      if (copied.length) {
+        for (const commit of (await this.#git.run(cwd, ['rev-list', '--reverse', `${thread.baseCommit}..HEAD`])).stdout.trim().split('\n').filter(Boolean)) {
+          const paths = (await this.#git.run(cwd, ['--literal-pathspecs', 'diff-tree', '--root', '-m', '--no-commit-id', '--name-only', '--diff-filter=ACMRT', '-r', '-z', commit, '--', ...copied])).stdout.split('\0').filter(Boolean);
+          if (paths[0]) {
+            verified = { status: 'failed', command: null, timedOut: false, commit: await this.#head(cwd), tail: copiedFileCommitted(commit, paths[0]) };
+            return result({ kind: 'verification-failed', verification: verified });
+          }
+        }
+      }
       if (Number((await this.#git.run(cwd, ['rev-list', '--count', `${thread.baseCommit}..HEAD`])).stdout.trim()) === 0) return result({ kind: 'no-changes' });
       verified = await this.verify(project, thread, ledger, signal);
       if (verified.status === 'failed') return result({ kind: 'verification-failed', verification: verified });

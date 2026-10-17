@@ -1,3 +1,4 @@
+import { LIBRARY_UNAVAILABLE, LIBRARY_READ_ONLY } from './copy.js';
 import type { ProjectDailyWork } from './daily.js';
 import type { ProjectJobRunner } from './job-runner.js';
 import { z } from 'zod';
@@ -8,7 +9,7 @@ import {
 } from '@jevellan/core';
 import type { BridgeScopeTools } from '@jevellan/conversations';
 import {
-  PROJECT_SETTINGS_UNAVAILABLE, OWNER_SETTINGS_ONLY, OWNER_START_ONLY, STARTED_IN_CHAT, startedTask, REPORT_ALREADY_SENT, THREAD_NOT_FOUND, TOOL_NOT_IN_TURN, TURN_ENDED, coordinatorToolSummary, notebookConflict, toolInputError, transcriptStaysOn,
+  libraryAdded, PROJECT_SETTINGS_UNAVAILABLE, OWNER_SETTINGS_ONLY, OWNER_START_ONLY, STARTED_IN_CHAT, startedTask, REPORT_ALREADY_SENT, THREAD_NOT_FOUND, TOOL_NOT_IN_TURN, TURN_ENDED, coordinatorToolSummary, notebookConflict, toolInputError, transcriptStaysOn,
 } from './copy.js';
 import { derivedId, type DecisionItems } from './decision-items.js';
 import type { ProjectLedger, ProjectLedgers } from './ledger.js';
@@ -138,6 +139,7 @@ export type CoordinatorToolsOptions = {
   settingsUpdate?(projectId: string, input: unknown, requestId: string): Promise<{ schema: 'project-settings-change-result-v1'; change: ProjectSettingsChange; repeated: boolean }>;
   tasks?: ProjectTasks; goals?: ProjectGoals; daily?: ProjectDailyWork; jobs?: ProjectJobRunner;
   github?: ProjectGithub;
+  library?: import('@jevellan/core').ProjectLibrary | undefined;
   terminalRead?: ((scope: ProjectScope, input: unknown) => Promise<unknown>) | undefined;
   store: Pick<ThreadStore, 'get'>;
   decisions: Pick<DecisionItems, 'ask' | 'withdraw'> & Partial<Pick<DecisionItems, 'answerChat'>>;
@@ -334,6 +336,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
   }
   return {
     call: (scope, name, input, signal) => {
+      if (name === 'jevellan_library_list' || name === 'jevellan_library_get' || name === 'jevellan_library_add') return libraryTool(o.library, scope, name, input);
       if (name === 'jevellan_terminal_read') { if (!o.terminalRead) throw new Error('Owner terminals are unavailable.'); return o.terminalRead(scope, input); }
       if (name === 'jevellan_github') {
         if (!o.github) throw new Error('GitHub awareness is unavailable.');
@@ -359,4 +362,12 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
         ...(withdrawn ? { reason: (input as Input<'jevellan_withdraw_question'>).reason } : {}) };
     },
   };
+}
+
+export async function libraryTool(library: import('@jevellan/core').ProjectLibrary | undefined, scope: ProjectScope, name: string, raw: unknown, cwd?: string) {
+  if (!library) throw new Error(LIBRARY_UNAVAILABLE);
+  if (name === 'jevellan_library_list') { const input = BridgeToolSchemas.jevellan_library_list.parse(raw); const query = input.query?.toLowerCase(); return { schema: 'library-list-result-v1', items: (await library.list(scope.projectId)).filter(item => !query || `${item.name} ${item.note ?? ''}`.toLowerCase().includes(query)).slice(0, input.limit ?? 50) }; }
+  if (name === 'jevellan_library_get') return { schema: 'library-file-result-v1', ...await library.get(scope.projectId, BridgeToolSchemas.jevellan_library_get.parse(raw).itemId) };
+  if (name === 'jevellan_library_add' && scope.kind === 'thread' && cwd) { const item = await library.add(scope.projectId, scope.threadId, cwd, BridgeToolSchemas.jevellan_library_add.parse(raw)); return { schema: 'library-add-result-v1', item, message: libraryAdded(item.path) }; }
+  throw new Error(LIBRARY_READ_ONLY);
 }

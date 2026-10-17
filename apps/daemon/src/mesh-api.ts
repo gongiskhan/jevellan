@@ -1,3 +1,4 @@
+import { handleLibrary } from './library-api.js';
 import { NotificationOwnerRequestSchema } from '@jevellan/core';
 import { EkoaRequestSchema } from '@jevellan/core';
 import { ProjectMemoryRequestSchema, DeviceSettingsRequestSchema, DeviceSettingsInputSchema } from '@jevellan/core';
@@ -29,6 +30,12 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
   const authorization = request.headers.authorization;
   const device = app.devices.authenticate(authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined);
   const send = (value: unknown) => json(response, app.hub.redactor.document(value));
+  if (path.startsWith('/hub/mesh/library/')) {
+    const session = request.headers['x-jevellan-owner-session'];
+    if (session && (typeof session !== 'string' || !app.hubAuth.verify(session, device.id))) throw Object.assign(new Error('Sign in to Jevellan.'), { status: 401 });
+    if (typeof session === 'string') app.redactor.add(session);
+    return handleLibrary(app, request, response, url, typeof session === 'string' ? session : undefined, device.id);
+  }
   if (path === '/hub/mesh/journal' && method === 'POST') {
     if (!app.projectWork.journal) throw Object.assign(new Error('The project journal is unavailable.'), { status: 503 });
     const release = app.lifecycle.enter({ kind: 'request' });

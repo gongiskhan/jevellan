@@ -1,0 +1,124 @@
+{
+  "schema": "projects-parity-phase-evidence-v1",
+  "label": "simulated",
+  "phase": 7,
+  "backend": {
+    "distinctPassed": 121,
+    "runs": [
+      {
+        "cases": 116,
+        "files": 11,
+        "log": "/private/tmp/jevellan-parity-p7-gate-backend.log"
+      },
+      {
+        "cases": 9,
+        "files": 1,
+        "log": "/private/tmp/jevellan-parity-p7-final-library.log",
+        "overlap": 7
+      },
+      {
+        "cases": 1,
+        "files": 1,
+        "log": "/private/tmp/jevellan-parity-p7-verification-env.log"
+      },
+      {
+        "cases": 11,
+        "files": 1,
+        "log": "/private/tmp/jevellan-parity-p7-stream-after.log",
+        "overlap": 9
+      }
+    ]
+  },
+  "browser": {
+    "schema": "parity-browser-matrix-evidence-v1",
+    "label": "simulated",
+    "results": [
+      {
+        "layout": "desktop-light",
+        "exitCode": 0,
+        "seconds": 114,
+        "log": "/private/tmp/jevellan-parity-p7-browser-desktop-light-quiet.log"
+      },
+      {
+        "layout": "phone-light",
+        "exitCode": 0,
+        "seconds": 101,
+        "log": "/private/tmp/jevellan-parity-p7-browser-phone-light-quiet.log"
+      },
+      {
+        "layout": "desktop-dark",
+        "exitCode": 0,
+        "seconds": 109,
+        "log": "/private/tmp/jevellan-parity-p7-browser-desktop-dark-quiet.log"
+      },
+      {
+        "layout": "phone-dark",
+        "exitCode": 0,
+        "seconds": 121,
+        "log": "/private/tmp/jevellan-parity-p7-browser-phone-dark-quiet.log"
+      }
+    ]
+  },
+  "additionalImageJourney": {
+    "schema": "parity-browser-matrix-evidence-v1",
+    "label": "simulated",
+    "results": [
+      {
+        "layout": "desktop-light",
+        "exitCode": 0,
+        "fatalStreamError": false,
+        "seconds": 88,
+        "log": "/private/tmp/jevellan-parity-p7b-browser-desktop-light-final.log"
+      },
+      {
+        "layout": "phone-light",
+        "exitCode": 0,
+        "fatalStreamError": false,
+        "seconds": 79,
+        "log": "/private/tmp/jevellan-parity-p7b-browser-phone-light-final.log"
+      },
+      {
+        "layout": "desktop-dark",
+        "exitCode": 0,
+        "fatalStreamError": false,
+        "seconds": 76,
+        "log": "/private/tmp/jevellan-parity-p7b-browser-desktop-dark-final.log"
+      },
+      {
+        "layout": "phone-dark",
+        "exitCode": 0,
+        "fatalStreamError": false,
+        "seconds": 68,
+        "log": "/private/tmp/jevellan-parity-p7b-browser-phone-dark-final.log"
+      }
+    ]
+  },
+  "typecheck": "passed",
+  "lint": "passed",
+  "build": "passed",
+  "vision": {
+    "label": "not run",
+    "reason": "Dedicated test credential is absent.",
+    "receipts": 40
+  },
+  "live": {
+    "label": "not run",
+    "reason": "Release installation and LP6 follow in phase10."
+  },
+  "regressions": [
+    "Project environment missing from launches",
+    "Copied-file leftovers included staged paths",
+    "Mirror lookup restored write permission",
+    "Concurrent mirror promotions interfered",
+    "Absolute thread-output paths accepted",
+    "Private files committed and later deleted remained publishable",
+    "Library references created phantom worktree images",
+    "Deleted paths could be reused by later uploads; deletion retry failed",
+    "A cancelled download or missing file crashed the HTTP server after headers were sent"
+  ],
+  "knownClosingFinding": "One repeated Settings reload stalled; unchanged quiet repeat passed.",
+  "screenshots": 40,
+  "typecheckLog": "/private/tmp/jevellan-parity-p7-final-typecheck.log",
+  "lintLog": "/private/tmp/jevellan-parity-p7-final-lint.log",
+  "buildLog": "/private/tmp/jevellan-parity-p7-stream-build.log"
+}

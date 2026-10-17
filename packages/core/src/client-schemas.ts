@@ -38,18 +38,18 @@ export const LoginViewSchema = z.strictObject({
   url: z.url().optional(), userCode: z.string().optional(), acceptsCode: z.boolean(), error: z.string().optional(),
 });
 export const RiggingEntrySchema = z.strictObject({
-  schema: z.literal('rigging-entry-v1'), id: IdSchema, name: z.string().trim().min(1).max(128),
+  schema: z.literal('rigging-entry-v1'), projects: z.array(IdSchema).max(200).optional(), id: IdSchema, name: z.string().trim().min(1).max(128),
   kind: RiggingItemSchema.shape.kind, state: RiggingItemSchema.shape.state,
   runtimes: z.record(IdSchema, z.boolean()), builtIn: z.boolean(), content: z.string().max(1024 * 1024),
   packageRef: z.string().min(1).max(2048).optional(), bundle: RiggingBundleSchema.optional(), promotionId: IdSchema.optional(), updatedAt: TimestampSchema,
 });
 export const AddRiggingSchema = z.strictObject({
-  schema: z.literal('add-rigging-v1'), name: RiggingEntrySchema.shape.name, kind: RiggingItemSchema.shape.kind,
+  schema: z.literal('add-rigging-v1'), projects: RiggingEntrySchema.shape.projects, name: RiggingEntrySchema.shape.name, kind: RiggingItemSchema.shape.kind,
   runtimes: RiggingEntrySchema.shape.runtimes, content: RiggingEntrySchema.shape.content,
   packageRef: RiggingEntrySchema.shape.packageRef, clientRequestId: IdSchema.optional(),
 });
 export const UpdateRiggingSchema = z.strictObject({
-  schema: z.literal('update-rigging-v1'), revision: z.number().int().positive(), name: RiggingEntrySchema.shape.name,
+  schema: z.literal('update-rigging-v1'), projects: RiggingEntrySchema.shape.projects, revision: z.number().int().positive(), name: RiggingEntrySchema.shape.name,
   runtimes: RiggingEntrySchema.shape.runtimes, content: RiggingEntrySchema.shape.content, state: RiggingEntrySchema.shape.state, clientRequestId: IdSchema.optional(),
 });
 export const RiggingViewSchema = z.strictObject({ schema: z.literal('rigging-view-v1'), revision: z.number().int().positive(), item: RiggingEntrySchema.omit({ bundle: true, promotionId: true }).extend({ bundle: RiggingBundleSummarySchema.optional() }) });

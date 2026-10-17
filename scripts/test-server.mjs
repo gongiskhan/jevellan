@@ -1,6 +1,6 @@
 import { startEkoaFixture } from '../tests/fixtures/ekoa-server.mjs';
 import { DeviceSchema, DeviceFactsSchema, ProjectDecisionSchema, ProjectWorkTaskSchema, ThreadIndexSchema, defaultProjectWorkSettings } from '../packages/core/dist/index.js';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { chmodSync, lstatSync, readdirSync, existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { execFileSync, spawn } from 'node:child_process';
 import { rm } from 'node:fs/promises';
@@ -112,6 +112,11 @@ const EVENTS_HEADER = eventBlock([]);
 function coordinatorStep(input) {
   // Only delivered events count; the fresh-session recap repeats earlier messages.
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
+  if (events.includes('PAR7 files')) return async turn => {
+    const attached = events.split('\n').filter(line => line.startsWith('Attached file: library/')).join('\n');
+    await projectTool(turn, 'jevellan_task_create', { title: 'PAR7 inspect attached files', brief: `PAR7 inspect: read the attached files and report their names.\n${attached}`, type: 'analysis', source: 'owner-request', now: true });
+    turn.say('PAR7 inspect attached files: new task.'); return { status: 'completed' };
+  };
   if (events.includes('PAR2 propose two')) return async turn => {
     for (const title of ['PAR2 first small task', 'PAR2 second small task']) await projectTool(turn, 'jevellan_task_create', { title, brief: `PAR2 inspect: ${title}. Read README and report progress.`, type: 'analysis', source: 'owner-request', now: true });
     turn.say('PAR2 first small task: new task.\nPAR2 second small task: new task.'); return { status: 'completed' };
@@ -201,6 +206,14 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('PAR7 inspect:')) return async turn => {
+    const listed = await projectTool(turn, 'jevellan_library_list', {}); const names = [];
+    for (const item of listed.items) if (input.prompt.includes(`library/${item.path}`)) {
+      const fetched = await projectTool(turn, 'jevellan_library_get', { itemId: item.id });
+      assert.equal(readFileSync(fetched.localPath).length, item.size); names.push(item.name);
+    }
+    return report('progress', `Read attached files: ${names.join(', ')}.`)(turn);
+  };
   if (input.prompt.includes('PAR5 usage:')) return async turn => {
     turn.emit({ type: 'usage', inputTokens: 1200, outputTokens: 300, cacheReadTokens: 900, cacheWriteTokens: 100, costUsd: 0.12 });
     return report('progress', 'The narrow test is ready for the next step.')(turn);
@@ -588,7 +601,8 @@ async function close() {
   } catch (error) {
     failure = error; console.error('The fixture server did not close cleanly:', error);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    const writable = path => { if (lstatSync(path).isSymbolicLink() || !lstatSync(path).isDirectory()) return; chmodSync(path, 0o700); for (const child of readdirSync(path)) writable(join(path, child)); };
+    writable(root); await rm(root, { recursive: true, force: true });
   }
   process.exit(failure ? 1 : 0);
 }

@@ -2242,3 +2242,105 @@ test('PAR6 Notifications subscribe, receive a browser push, suppress the focused
   await page.goto('/settings/notifications'); await page.getByRole('button', { name: 'Turn off for this device', exact: true }).click(); await expect(page.getByText('Off for this device.', { exact: true })).toBeVisible();
   await expect(page.getByText('No devices have notifications turned on.', { exact: true })).toBeVisible(); await cdp.detach(); expect(errors).toEqual([]);
 });
+
+test('PAR7 library uploads, attachments in both composers, images and project rigging', async ({ page }, info) => {
+  const errors = await begin(page);
+  await page.goto('/projects/projects_fixture'); if (phone(info)) await tab(page, 'Overview').click();
+  await page.getByRole('tablist', { name: 'Overview', exact: true }).getByRole('tab', { name: 'Library', exact: true }).click();
+  const panel = page.locator('.pw-library');
+  await expect(panel).toContainText('Nothing in the library yet.');
+  const png = Buffer.from(await page.evaluate(() => { const canvas = document.createElement('canvas'); canvas.width = 600; canvas.height = 320; const context = canvas.getContext('2d')!; context.fillStyle = '#f4f7fb'; context.fillRect(0, 0, 600, 320); context.fillStyle = '#0d1b2a'; context.font = '28px sans-serif'; context.fillText('Invoices', 32, 58); context.font = '18px sans-serif'; context.fillText('Invoice 1001', 32, 114); context.fillText('Customer: Example office', 32, 152); context.fillStyle = '#ad237b'; context.fillText('Total: 120.00 EUR', 32, 220); return canvas.toDataURL('image/png').split(',')[1]!; }), 'base64');
+  await panel.locator('input[type=file]').setInputFiles({ name: 'PAR7 screen.png', mimeType: 'image/png', buffer: png });
+  await expect(panel.getByText('PAR7 screen.png', { exact: true })).toBeVisible(LONG);
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7-library-${layout(info)}.png` });
+  await panel.getByRole('button', { name: 'Open PAR7 screen.png', exact: true }).click();
+  await expect(page.getByRole('dialog').getByRole('img')).toBeVisible();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7-image-${layout(info)}.png` });
+  await page.getByRole('dialog').getByRole('button', { name: 'Close panel', exact: true }).click();
+  if (phone(info)) await tab(page, 'Chat').click();
+  const compose = page.locator('.pw-composer');
+  await compose.locator('input[type=file]').setInputFiles({ name: 'PAR7 attachment.txt', mimeType: 'text/plain', buffer: Buffer.from('Shared file on every device.') });
+  await composer(page).fill('PAR7 files: inspect these.');
+  await expect(compose).toContainText('PAR7 attachment.txt'); await composer(page).press('Enter');
+  const card = page.locator('.pw-timeline .pw-thread-card').filter({ hasText: 'PAR7 inspect attached files' });
+  await expect(card).toBeVisible(LONG); await expect(page.locator('.pw-owner .pw-library-chips')).toContainText('PAR7 attachment.txt', LONG);
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7-chat-attachment-${layout(info)}.png` });
+  await card.getByRole('link', { name: 'PAR7 inspect attached files', exact: true }).click();
+  await expect(page.locator('.pw-report').last()).toContainText('Read attached files: PAR7 attachment.txt.', LONG);
+  const threadComposer = page.locator('.pw-thread-composer');
+  await threadComposer.locator('input[type=file]').setInputFiles({ name: 'PAR7 follow up.txt', mimeType: 'text/plain', buffer: Buffer.from('A follow-up file.') });
+  await page.getByRole('textbox', { name: 'Message this thread', exact: true }).fill('PAR7 inspect: read this file too.');
+  await page.getByRole('textbox', { name: 'Message this thread', exact: true }).press('Enter');
+  await expect(page.locator('.pw-report').last()).toContainText('Read attached files: PAR7 follow up.txt.', LONG);
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7-thread-attachment-${layout(info)}.png` });
+  // Desktop paste uses the same attachment controller without replacing the typed message.
+  if (!phone(info)) {
+    await threadComposer.evaluate(element => { const transfer = new DataTransfer(); transfer.items.add(new File([new Uint8Array([137,80,78,71])], 'pasted.png', { type: 'image/png' })); element.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, clipboardData: transfer })); });
+    await expect(threadComposer).toContainText('pasted.png'); await threadComposer.getByRole('button', { name: 'Remove pasted.png' }).click();
+  }
+  await page.goto('/settings/rigging');
+  await page.getByRole('button', { name: 'Add local item', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Name', { exact: true }).fill('PAR7 scoped rule');
+  await dialog.getByLabel('Content', { exact: true }).fill('Keep fixture changes small.');
+  await dialog.getByRole('checkbox', { name: 'Projects fixture', exact: true }).check();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7-rigging-${layout(info)}.png` });
+  await dialog.getByRole('button', { name: 'Add item', exact: true }).click();
+  await expect(dialog).toHaveCount(0); await expect(page.getByText('PAR7 scoped rule', { exact: true })).toBeVisible();
+  await page.goto('/projects/projects_fixture/settings');
+  await page.getByRole('link', { name: 'Environment', exact: true }).click();
+  await expect(page.getByText(/Rigging for this project:.*PAR7 scoped rule/u)).toBeVisible();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7-environment-${layout(info)}.png` });
+  expect(errors).toEqual([]);
+});
+
+test('PAR7b images decode, gallery controls work and failed uploads keep the message without duplicates', async ({ page }, info) => {
+  const errors = await begin(page);
+  const previous = await (await page.request.get(`${PROJECT}/library`)).json() as { items: Array<{ id: string }> };
+  for (const item of previous.items) expect((await page.request.delete(`${PROJECT}/library/${item.id}`)).ok()).toBe(true);
+  await page.goto('/projects/projects_fixture');
+  if (phone(info)) await tab(page, 'Overview').click();
+  await page.getByRole('tablist', { name: 'Overview', exact: true }).getByRole('tab', { name: 'Library', exact: true }).click();
+  const panel = page.locator('.pw-library');
+  const png = Buffer.from(await page.evaluate(() => { const canvas = document.createElement('canvas'); canvas.width = 600; canvas.height = 320; const context = canvas.getContext('2d')!; context.fillStyle = '#e8eff6'; context.fillRect(0, 0, 600, 320); context.fillStyle = '#0d1b2a'; context.font = '28px sans-serif'; context.fillText('A shared image', 32, 58); context.font = '18px sans-serif'; context.fillText('Visible in the library and messages', 32, 118); return canvas.toDataURL('image/png').split(',')[1]!; }), 'base64');
+  await panel.locator('input[type=file]').setInputFiles([{ name: 'gallery one.png', mimeType: 'image/png', buffer: png }, { name: 'gallery two.png', mimeType: 'image/png', buffer: png }]);
+  await expect(panel.locator('.pw-library-row')).toHaveCount(2, LONG);
+  await expect.poll(() => panel.locator('.pw-library-thumb img').evaluateAll(images => images.every(image => (image as HTMLImageElement).naturalWidth === 600)), LONG).toBe(true);
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7b-decoded-${layout(info)}.png` });
+  await panel.getByRole('button', { name: 'Open gallery one.png', exact: true }).click();
+  const gallery = page.getByRole('dialog'); await expect.poll(() => gallery.locator('img').evaluate(image => (image as HTMLImageElement).naturalWidth), LONG).toBe(600);
+  await gallery.getByRole('button', { name: 'Next image', exact: true }).click(); await expect(gallery.getByRole('heading', { name: 'gallery two.png', exact: true })).toBeVisible();
+  await gallery.getByRole('button', { name: 'Previous image', exact: true }).click(); await expect(gallery.getByRole('heading', { name: 'gallery one.png', exact: true })).toBeVisible();
+  await gallery.getByRole('button', { name: 'Close panel', exact: true }).click();
+  await panel.getByRole('button', { name: 'From threads', exact: true }).click(); await expect(panel.locator('.pw-library-row')).toHaveCount(0);
+  await panel.getByRole('button', { name: 'Uploads', exact: true }).click(); await expect(panel.locator('.pw-library-row')).toHaveCount(2);
+  if (phone(info)) await tab(page, 'Chat').click();
+  const compose = page.locator('.pw-composer');
+  await compose.locator('input[type=file]').setInputFiles({ name: 'message image.png', mimeType: 'image/png', buffer: png }); await composer(page).fill('Keep this image in the project library.'); await composer(page).press('Enter');
+  const preview = page.locator('.pw-owner .pw-library-thumb img'); await expect.poll(() => preview.evaluate(image => (image as HTMLImageElement).naturalWidth), LONG).toBe(600);
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7b-message-image-${layout(info)}.png` });
+  await compose.locator('input[type=file]').setInputFiles([{ name: 'retry first.txt', mimeType: 'text/plain', buffer: Buffer.from('First file.') }, { name: 'retry second.txt', mimeType: 'text/plain', buffer: Buffer.from('Second file.') }]);
+  await page.route('**/library/uploads/retry%20second.txt', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ schema: 'error-v1', code: 'fixture-upload', message: 'Simulated upload interruption.' }) }), { times: 1 });
+  await composer(page).fill('Keep both files.');
+  const refused = page.waitForResponse(response => response.url().includes('retry%20second.txt') && response.status() === 503); await composer(page).press('Enter'); await refused;
+  await expect(composer(page)).toHaveValue('Keep both files.'); await expect(compose).toContainText('retry first.txt'); await expect(compose).toContainText('retry second.txt');
+  await expect(compose.getByRole('button', { name: 'Send', exact: true })).toBeEnabled();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7b-upload-retry-${layout(info)}.png` });
+  await composer(page).press('Enter'); await expect(composer(page)).toHaveValue('', LONG); await expect(compose.locator('.pw-attachment')).toHaveCount(0);
+  const listed = await (await page.request.get(`${PROJECT}/library`)).json() as { items: Array<{ name: string }> };
+  expect(listed.items.filter(item => item.name === 'retry first.txt')).toHaveLength(1); expect(listed.items.filter(item => item.name === 'retry second.txt')).toHaveLength(1);
+  await expect(page.locator('.toast[role=alert]')).toContainText('Simulated upload interruption.');
+  await page.getByRole('button', { name: 'Dismiss message', exact: true }).click();
+  if (!phone(info)) {
+    await compose.evaluate(element => { const transfer = new DataTransfer(); transfer.items.add(new File(['Dropped text'], 'dropped.txt', { type: 'text/plain' })); element.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: transfer })); });
+    await expect(compose).toContainText('dropped.txt'); await compose.getByRole('button', { name: 'Remove dropped.txt' }).click();
+  }
+  if (phone(info)) await tab(page, 'Overview').click();
+  await page.getByRole('tablist', { name: 'Overview', exact: true }).getByRole('tab', { name: 'Library', exact: true }).click();
+  await panel.getByRole('button', { name: 'Uploads', exact: true }).click();
+  const row = panel.locator('.pw-library-row').filter({ hasText: 'gallery one.png' }); await row.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Delete gallery one.png from the library?', exact: true })).toBeVisible();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7b-delete-${layout(info)}.png` });
+  await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click(); await expect(row).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

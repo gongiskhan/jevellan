@@ -48,3 +48,9 @@ test.each(['claude', 'codex'] as const)('the %s native worker retains explicit t
   expect(launched.GIT_CONFIG_VALUE_1).toBe('git@github.com:owner/private.git');
   expect(launched.HOME).toBe(home);
 });
+
+test.each(['claude', 'codex'] as const)('the %s worker retains validated project values and refuses internal overrides', runtime => {
+  const account = { home: '/tmp/isolated-account', account: AccountSchema.parse({ schema: 'account-v1', id: 'account_env', runtime, kind: 'subscription', label: 'Fixture', enabled: true, credential: 'per-device' }), env: {} };
+  expect(launchEnvironment(runtime, { account, launch: { env: {}, mcpServers: {}, projectEnv: { TZ: 'UTC', SANDBOX_DATA_DIR: '/data' } } })).toMatchObject({ TZ: 'UTC', SANDBOX_DATA_DIR: '/data', HOME: account.home });
+  expect(() => launchEnvironment(runtime, { account, launch: { env: {}, mcpServers: {}, projectEnv: { CODEX_HOME: '/outside' } } })).toThrow('reserved');
+});

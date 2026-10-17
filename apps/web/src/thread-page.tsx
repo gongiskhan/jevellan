@@ -1,3 +1,4 @@
+import { AttachmentControls, LibraryMessage, useProjectAttachments } from './project-library.js';
 import { ThreadActions } from './thread-actions.js';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
@@ -259,12 +260,12 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       <div className="cursor-transcript pw-transcript" aria-label={copy.TRANSCRIPT_LABEL}>
         {notice && <p className="pw-transcript-note">{notice}</p>}
         {transcriptItems.map((item) => item.kind === 'turn'
-          ? <Fragment key={item.turn.id}>{item.fix && <p className="pw-fix-label">{copy.fixTurnLabel(item.fix)}</p>}<TranscriptTurn turn={item.turn} onOpenImage={openImage} focus active={item.turn.id === activeTurnId} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} /><ThreadImageStrip base={base} files={turnImages(item.turn)} open={openImage} /></Fragment>
+          ? <Fragment key={item.turn.id}>{item.fix && <p className="pw-fix-label">{copy.fixTurnLabel(item.fix)}</p>}<TranscriptTurn projectId={view.thread.projectId} turn={item.turn} onOpenImage={openImage} focus active={item.turn.id === activeTurnId} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} /><ThreadImageStrip base={base} files={turnImages(item.turn)} open={openImage} /></Fragment>
           : <ReportCard key={`report-${item.report.turn}-${item.report.synthesized ? 'synthesized' : 'recorded'}`} report={item.report} base={base} openImage={openImage} />)}
         {view.queuedMessages.length > 0 && (
           <section className="pw-queued" aria-labelledby={queuedId}>
             <h3 id={queuedId}>{copy.QUEUED_MESSAGES}</h3>
-            {view.queuedMessages.map((queued) => <QueuedEntry key={queued.id} queued={queued} />)}
+            {view.queuedMessages.map((queued) => <QueuedEntry projectId={view.thread.projectId} key={queued.id} queued={queued} />)}
           </section>
         )}
       </div>
@@ -342,7 +343,7 @@ function ReportCard({ report, base, openImage }: { report: ThreadReport; base: s
         {!expanded && <span className="pw-report-preview">{report.summary.split('\n').find(line => line.trim())?.slice(0, 220)}</span>}
       </summary>
       {expanded && <>
-      <Markdown onOpenImage={openImage}>{report.summary}</Markdown>
+      <LibraryMessage projectId={base.split('/')[3]!} text={report.summary} onOpenImage={openImage} />
       <ThreadImageStrip base={base} files={imageReferences(report.summary)} open={openImage} />
       <OwnerCommands commands={report.ownerCommands} />
       {(report.question || options.length > 0) && (
@@ -371,7 +372,7 @@ function ReportCard({ report, base, openImage }: { report: ThreadReport; base: s
 }
 
 /** A message that waits for the thread's next turn (D81, D231). */
-function QueuedEntry({ queued }: { queued: QueuedMessage }) {
+function QueuedEntry({ queued, projectId }: { queued: QueuedMessage; projectId: string }) {
   return (
     <details className="pw-queued-message">
       <summary>
@@ -381,7 +382,7 @@ function QueuedEntry({ queued }: { queued: QueuedMessage }) {
       </span>
         <span className="pw-queued-preview">{queued.text.trim().split('\n')[0]?.slice(0, 160)}</span>
       </summary>
-      <Markdown>{queued.text}</Markdown>
+      <LibraryMessage projectId={projectId} text={queued.text} />
     </details>
   );
 }
@@ -396,6 +397,7 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
   base: string; view: ThreadView; behind: boolean; jump(): void; sent(): void; refused(): void; onError(error: unknown): void;
 }) {
   const [text, setText] = useState('');
+  const attachments = useProjectAttachments(view.thread.projectId, onError);
   const [interrupt, setInterrupt] = useState(false);
   const { error, setError, fail } = useLocalError(onError);
   const send = useTask((failure) => { fail(failure); refused(); });
@@ -409,17 +411,18 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
   const ended = !view.canMessage && view.thread.state !== 'attached';
   const completed = ['done', 'stopped', 'failed'].includes(view.thread.state);
   return (
-    <form className="composer card pw-composer pw-thread-composer" ref={composerClearance} onSubmit={(event) => {
+    <form onPaste={attachments.paste} onDragOver={attachments.dragOver} onDrop={attachments.drop} className="composer card pw-composer pw-thread-composer" ref={composerClearance} onSubmit={(event) => {
       event.preventDefault();
-      const value = text;
-      if (send.busy || block || !value.trim()) return;
-      const body = { text: value, interrupt: running && interrupt };
+      const typed = text;
+      if (send.busy || block || (!typed.trim() && !attachments.entries.length)) return;
       void send.run(async (signal) => {
         setError('');
+        const prepared = await attachments.prepare(typed, signal);
+        const body = { text: prepared.text, interrupt: running && interrupt };
         await api(`${base}/messages`, ThreadMessageReceiptSchema, 'POST',
           { schema: 'thread-message-request-v1', clientMessageId: ids.id(body), ...body }, { signal, waitForHub: true });
-        ids.done();
-        setText((typed) => typed === value ? '' : typed);
+        ids.done(); prepared.clear();
+        setText((current) => current === typed ? '' : current);
         setInterrupt(false);
         sent();
       });
@@ -444,10 +447,11 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
       {completed && view.canMessage && <p className="pw-composer-note">{copy.THREAD_CONTINUE}</p>}
       {!ended && (
         <fieldset className="pw-fields" disabled={!!block}>
+          <AttachmentControls attachments={attachments} disabled={send.busy || !!block} />
           <div className="message-input-row">
             <MessageInput value={text} change={setText} label={copy.THREAD_PLACEHOLDER} placeholder={copy.THREAD_PLACEHOLDER} />
             <div className="message-actions">
-              <button type="submit" className="send-icon" aria-label={copy.SEND} disabled={send.busy || !!block || !text.trim()}><Icon name="send" size={20} /></button>
+              <button type="submit" className="send-icon" aria-label={copy.SEND} disabled={send.busy || !!block || (!text.trim() && !attachments.entries.length)}><Icon name="send" size={20} /></button>
             </div>
           </div>
         </fieldset>

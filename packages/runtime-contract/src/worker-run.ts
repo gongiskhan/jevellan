@@ -18,7 +18,7 @@ export function launchEnvironment(runtime: 'claude' | 'codex', input: Pick<Stret
   if (runtime === 'claude') for (const key of ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY']) if (input.account.env[key]) auth[key] = input.account.env[key]!;
   const launch: Record<string, string> = {};
   for (const key of LAUNCH_KEYS) if (input.launch.env[key]) launch[key] = input.launch.env[key]!;
-  return minimalEnvironment(runtime, input.account.home, auth, launch, { ...process.env, ...input.launch.env });
+  return minimalEnvironment(runtime, input.account.home, auth, launch, { ...process.env, ...input.launch.env }, input.launch.projectEnv);
 }
 
 export class WorkerRun implements StretchRun {

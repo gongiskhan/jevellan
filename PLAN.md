@@ -2,7 +2,7 @@
 
 ## Projects parity, October 2026
 
-Authority: root untracked BRIEF.md,17October2026, supersedes conflicting older plans. Decisions846–879. Baseline da6a9bc9/0.4.1; current machine Pro, local hub0.3.6 verified by doctor. Other installations remain separate.
+Authority: root untracked BRIEF.md,17October2026, supersedes conflicting older plans. Decisions846–887. Baseline da6a9bc9/0.4.1; current machine Pro, local hub0.3.6 verified by doctor. Other installations remain separate.
 
 The build clock starts at this run's first commit, lasts14hours, and closes new feature phases at12hours. The separate3-hour live clock starts at0.5.0 installation. Exact times and all evidence are in docs/acceptance/projects-parity-2026-10/README.md. Orientation is limited to30minutes.
 
@@ -12,8 +12,8 @@ The build clock starts at this run's first commit, lasts14hours, and closes new 
 3. Overview groups, resolution/auto-resolution and applicable thread actions. Pushed6d15b8f9; source and affected verification complete; all four layouts pass, dedicated vision not run. See phase3 evidence and Decisions853–855.
 4. Code-driven pull request checks/conflict/comment fixes, bounded rounds and owner decisions. Source and affected checks complete:92 backend cases and8 browser journeys pass across four layouts; dedicated vision blocked. Decisions856–860 also cover transient PWA recovery and the harness allowance.
 5. Automatic account waits/continuation, Jev model moves/escalation, placement constraints and usage. Source complete:193 affected backend cases and all4 browser layouts pass; dedicated vision blocked. Decisions861–874; final full suites remain closing gates.
-6. PWA web push, subscription Settings, levels and event triggers. Source verified:142 affected backend cases and all4layouts pass, dedicated vision not run. Decisions875–879; actual web-push license is MPL-2.0.
-7. Hub Library, composer attachments, worktree environment/secrets/copied files and project-scoped rigging.
+6. PWA web push, subscription Settings, levels and event triggers. Pushed2375d77c; source verified:142 affected backend cases and all4layouts pass, dedicated vision not run. Decisions875–879; actual web-push license is MPL-2.0.
+7. Hub Library, composer attachments, worktree environment/secrets/copied files and project-scoped rigging. Source and affected checks complete:121 distinct backend cases and two browser journeys in all4layouts pass; dedicated vision is not run. Decisions880–887.
 8. Claude-compatible endpoint accounts/menu/probe and isolated launch; ask once for optional live credential at phase start.
 9. First-run exploration and editable suggested setup.
 10. Current-state docs/history, cleanup, LJ5 regression, complete suites/vision, one crucial-issues review,0.5.0 release/update with rollback and LP1–LP9 within the live clock.

@@ -17,7 +17,7 @@ export interface SharedRigging {
   update(id: string, input: unknown): Available<z.infer<typeof RiggingViewSchema>>;
   validateCaptured(input: unknown): Available<z.infer<typeof RiggingEntrySchema>>;
   addCaptured(input: unknown): Available<z.infer<typeof RiggingViewSchema>>;
-  items(runtime: string): Available<RiggingItem[]>;
+  items(runtime: string, projectId?: string): Available<RiggingItem[]>;
 }
 export interface SharedProjects {
   get(id: string): Available<z.infer<typeof ProjectViewSchema> | null>;
@@ -63,7 +63,7 @@ export const SharedStateRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...base, operation: z.literal('rigging-add'), input: AddRiggingSchema, runtimes }),
   z.strictObject({ ...base, operation: z.literal('rigging-update'), id: IdSchema, input: UpdateRiggingSchema, runtimes }),
   z.strictObject({ ...base, operation: z.enum(['rigging-validate-captured', 'rigging-add-captured']), input: RiggingEntrySchema, runtimes }),
-  z.strictObject({ ...base, operation: z.literal('rigging-items'), runtime: IdSchema, runtimes }),
+  z.strictObject({ ...base, operation: z.literal('rigging-items'), projectId: IdSchema.optional(), runtime: IdSchema, runtimes }),
 ]);
 export const SharedStateResultSchema = z.discriminatedUnion('schema', [
   z.strictObject({ schema: z.literal('shared-project-env-summary-v1'), summary: ProjectEnvSecretSummarySchema }),

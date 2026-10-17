@@ -131,3 +131,15 @@ test('a failed nightly suite cannot borrow a passing daytime receipt for deploy'
   const view = await work.daily.view('project'), runs = view.runs.filter(run => view.window!.taskIds.includes(run.taskId));
   expect(runs.find(run => run.jobId === full.id)).toMatchObject({ conclusion: 'failed' }); expect(runs.find(run => run.jobId === deploy.id)).toMatchObject({ conclusion: 'skipped' }); expect(view.window?.failed).toBe(true);
 });
+
+test('job setup and command fetch project environment and redact secret output', async () => {
+  const f = fixture = await projectFixture(), work = f.app.projectWork, settings = await work.admission.settings('project');
+  const secret = 'private job environment fixture';
+  await f.app.projectHub.putSettings({ ...settings, setupCommand: 'test "$TZ" = UTC && test -n "$PRIVATE_VALUE" && printf ready > prepared', environment: { variables: [{ name: 'TZ', value: 'UTC' }], secrets: ['PRIVATE_VALUE'], copyFiles: [] } }, settings.revision);
+  await f.app.state.environment.put('project', 'PRIVATE_VALUE', secret);
+  const definition = await job(f, 'Environment', 'test -f prepared && test "$TZ" = UTC && printf "%s" "$PRIVATE_VALUE"');
+  const receipt = await f.json(`/api/projects/project/jobs/${definition.id}/run`, TaskReceiptSchema, 'POST', runInput('project_environment'));
+  await f.waitFor(() => work.tasks.read('project', receipt.taskId), task => ['done', 'failed'].includes(task.state)); await work.idle();
+  const run = (await work.jobs.runs('project')).find(run => run.taskId === receipt.taskId)!;
+  expect(run.conclusion).toBe('passed'); expect(run.logTail).toContain('[redacted]'); expect(run.logTail).not.toContain(secret);
+});

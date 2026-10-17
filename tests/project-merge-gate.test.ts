@@ -336,3 +336,14 @@ test('verification retries one moved head and asks the owner after a second head
   expect(second.turnStarts.filter(input => input.owner.kind === 'verification')).toHaveLength(2);
   expect((await routes(f, thread.id)).some(row => row.state === 'asked' && row.failures === 0)).toBe(true); expect(f.thread(thread.id).pr?.state).toBe('open');
 });
+
+test('verification setup and the alternate provider receive fresh project environment', async () => {
+  const { f, second } = await setup('test-then-merge');
+  await settings(f, { autoMerge: false, setupCommand: 'test "$TZ" = UTC && test -n "$PRIVATE_VALUE"', environment: { variables: [{ name: 'TZ', value: 'UTC' }], secrets: ['PRIVATE_VALUE'], copyFiles: [] } });
+  await f.app.state.environment.put(f.project.id, 'PRIVATE_VALUE', 'verification environment fixture');
+  const thread = await published(f);
+  second.enqueueTurn(async turn => { expect(turn.input.launch.projectEnv).toEqual({ TZ: 'UTC', PRIVATE_VALUE: 'verification environment fixture' }); await turn.bridge('jevellan_verification_report', { result: 'passed', commands: ['test "$TZ" = UTC'], failures: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'verification');
+  await settings(f); await gate(f);
+  const view = await f.app.projectWork.mergeRoute(f.project.id, thread.id);
+  expect(view.records.find(row => row.schema === 'verification-run-v1')).toMatchObject({ state: 'passed', providerChoice: 'other-provider' });
+});

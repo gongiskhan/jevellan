@@ -19,8 +19,8 @@
 | 3 | Overview, resolution and thread actions | Pushed6d15b8f9; vision blocked | Affected backend/API/remote cases pass. Seven unique journeys pass in every layout across recorded runs; final settled Overview captures pass. Typecheck/lint/build/secret checks pass. See phase-3/. |
 | 4 | Automatic pull request fixes | Pushed28efaecf; vision blocked |92 affected backend cases and8 browser journeys pass across four layouts; see phase-4/. |
 | 5 | Account waits, placement bounds, escalation and usage | Pushed bfb9dc8a; vision blocked |193 affected backend cases and4 browser layouts pass; see phase-5/. |
-| 6 | Web push | Source verified; pushing |142 affected backend cases and all4layouts pass; vision not run. See phase-6/. |
-| 7 | Library, attachments, environment and scoped rigging | Not started | Not run |
+| 6 | Web push | Pushed 2375d77c; vision blocked |142 affected backend cases and all4layouts pass; vision not run. See phase-6/. |
+| 7 | Library, attachments, environment and scoped rigging | Source verified; push pending, vision blocked |121 distinct affected backend cases and PAR7/PAR7b in all4layouts pass; typecheck/lint/build pass. See phase-7/. |
 | 8 | Compatible endpoints | Not started | Live credential optional, not requested yet |
 | 9 | First-run setup | Not started | Not run |
 | 10 | Docs, cleanup, suites, review, release and LP1–LP9 | Not started | Not run |
@@ -180,3 +180,28 @@ Closing diagnostics: the two Git rewrite regressions also fail alone on Git2.56;
 ## Phase6 checkpoint
 
 Simulated: final142/142 affected backend cases pass across6files. Typecheck, lint, production build, whitespace and working-tree secret checks pass. PAR6 passes all4layouts, then repeats all4 with settled initial-control captures. The8 final screenshots and8 dedicated vision receipts are retained; all vision receipts are not run for the missing credential, and selected final captures from every layout are directly inspected. The existing fixture cleanup warning and large-chunk warning remain recorded. Worker click navigation is simulated handler evidence; a real desktop notification click, real provider push and physical iPhone acceptance remain live/owner checks. The mandatory history scan gates the push. No installed source, native home, Ekoa work or independent hub changed; live clock unstarted.
+
+
+880. Phase7 connects the phase1 environment fields to setup, writable thread turns, publication tests, pull-request verification and command jobs. It replaces phase1's stored-only execution status, not its v4 schema. Values are validated separately from internal runtime variables; secret values are fetched at launch from the existing authenticated vault path and registered with the redactor. The coordinator receives no environment values.
+
+881. The Library extends the existing hub database and authenticated mesh. Versioned metadata remains in the small JSON control plane; file bytes use separate streaming routes with the brief's50MB file and2GB active-project limits. Metadata listing is paged in100-item responses to retain the mesh's2MB guard. Device mirrors verify hashes and remove write bits. This adds the missing shared-file behavior; it replaces no existing journal or memory store.
+
+882. Worktree preparation snapshots the actual copied files in owner-local thread state. Publication excludes those files from leftover staging, including already-staged paths, and checks every commit since base before a push. A later deletion cannot erase an earlier private-file commit from that check. Existing worktrees and owner source files are preserved.
+
+883. Rigging gains optional project scope through its existing store, mesh, editor and delivery call. Absent or empty scope still means every project. Project settings describe only applicable owned items. Conversations and their background drafts use the same filter; their work semantics stay unchanged.
+
+884. Phase7 regression evidence includes a mirror lookup that restored write permission, concurrent downloads that made each other's temporary files inaccessible, and copied-file history detection. The mirror now downloads to private temporary storage and promotes each checked file synchronously before restoring read-only modes. Disposable fixture teardown restores directory permissions only after its daemons stop, so it can remove its own read-only mirrors. No native or owner folder is changed.
+
+
+885. Library image references use the library's authenticated content route and viewer; they do not enter the existing worktree image viewer. This narrows the earlier screenshot-path inference for the new library namespace only. Library metadata tools and attachment lines must not create phantom worktree image cards.
+
+
+886. Library deletion is retryable, and deleted metadata continues reserving its path. This replaces reusing an empty same-day filename: an older attachment must never silently point at a later upload's bytes. Deleted files remain excluded from listing and quota, and their content route remains unavailable.
+
+
+887. Two failing phase7 regressions expose a missing-file and client-cancelled download sending HTTP headers twice. The Library now opens and checks a pinned file before sending headers, and closes an interrupted stream without replacing it with a JSON response. This refines Decision881's streaming transport. The first PAR7b matrix's UI assertions passed but its server crashed at teardown; those runs are retained as failures, not clean passes.
+
+
+## Phase7 checkpoint
+
+Simulated:121 distinct affected backend cases, typecheck, lint and production build pass. PAR7 and PAR7b pass every desktop/phone light/dark layout; final PAR7b logs also check for server crashes. Forty final screenshots are retained with dedicated vision not run for its missing credential. The cancelled-download regressions fail before repair and pass afterwards. The isolated Settings startup stall remains a closing finding. Live: no installed service, Ekoa work, native home or independent Madrid hub changed. Release/live clock unstarted. The mandatory working-tree and history secret scans gate publication.

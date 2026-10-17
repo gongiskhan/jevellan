@@ -1,3 +1,4 @@
+import { ProjectLibraryService } from './library.js';
 import { HubNotifications, type PushSend } from './notifications.js';
 import { NotificationOwnerRequestSchema } from '@jevellan/core';
 import { EkoaMirrorService } from './ekoa-mirror.js';
@@ -61,6 +62,7 @@ export class Application {
   readonly vault: ProjectVault | undefined;
   /** Projects on this device (brief 8): threads, their turns and pull requests, beside the conversations. */
   readonly ekoa: EkoaMirrorService | undefined;
+  readonly library: ProjectLibraryService;
   readonly notifications: HubNotifications | undefined;
   readonly projectWork: ProjectWork; readonly projectHub: ProjectHub;
   readonly terminals: TerminalService;
@@ -156,15 +158,16 @@ export class Application {
       const leases = this.member ? new MemberPublicationLeases(this.member) : new HubPublicationLeases(this.hub, this.device.deviceId);
       this.conversations = new ConversationService({ homes: this.homes, contexts, projects: this.state.projects, deviceId: this.device.deviceId, accounts: this.accounts, runtimes: this.runtimes,
         coordination: this.member ? new MemberCheckoutStore(this.member) : new HubCheckoutStore(this.hub, this.device.deviceId), leases, indexes: this.member ? new MemberIndexes(this.member) : new HubIndexes(this.hub, this.device.deviceId),
-        bridges: this.bridges, memory: this.memory, redactor: this.redactor, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: (runtime) => this.rigging.items(runtime),
+        bridges: this.bridges, memory: this.memory, redactor: this.redactor, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: (runtime, projectId) => this.rigging.items(runtime, projectId),
         deviceLabel: this.device.name, jevAvailable: async () => (await this.state.jev.summary()).saved, externalSessions: (projects, deviceId) => this.sessions.read(projects, deviceId),
         decisionClient: this.decisionClient, accountRuns, enterOperation: (id, title) => this.lifecycle.enter({ kind: 'conversation', id, title }) });
       this.backgroundDrafts = new BackgroundDrafts({ homes: this.homes, deviceId: this.device.deviceId, accounts: this.accounts, runtimes: this.runtimes, bridges: this.bridges,
-        redactor: this.redactor, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: runtime => this.rigging.items(runtime),
+        redactor: this.redactor, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: (runtime, projectId) => this.rigging.items(runtime, projectId),
         accountRuns, enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }) });
       // Projects share the account serialization, checkout ownership, leases, bridge registry and memory with conversations.
       this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId, undefined, () => this.devices.list());
-      this.projectWork = new ProjectWork({ homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor, workRefusal: () => this.versionRefusal(),
+      this.library = new ProjectLibraryService(this);
+      this.projectWork = new ProjectWork({ library: this.library, homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor, workRefusal: () => this.versionRefusal(),
         journal: { isHub: !this.member, ...(this.member ? { request: input => this.member!.projectJournal(input) } : {}) },
         terminalRead: (scope, input) => this.terminals.read(scope.kind === 'thread' ? { kind: 'thread', projectId: scope.projectId, threadId: scope.threadId }
           : { kind: 'coordinator', projectId: scope.projectId }, input),
@@ -175,11 +178,11 @@ export class Application {
         ...(this.hubMemory ? { hubMemory: this.hubMemory } : {}),
         sendCapture: async request => { if (this.member) await this.member.projectMemory(request); else if (request.operation === 'capture') this.projectWork.captures.accept(request.capture, request.text); },
         ...(options.deviceFacts ? { facts: options.deviceFacts } : {}),
-        projects: this.state.projects, hub: this.projectHub,
+        projects: this.state.projects, hub: this.projectHub, environment: { credentials: async projectId => this.state.environment.credentials(projectId) },
         github: { credential: async (projectId) => this.state.github.credential(projectId), ...(options.githubFetch ? { fetch: options.githubFetch } : {}), ...(options.githubBaseUrl ? { baseUrl: options.githubBaseUrl } : {}) },
         accounts: this.accounts, runtimes: this.runtimes, accountRuns, ownership: this.conversations.ownership, leases: this.conversations.leases,
         outside: { assertIdle: async (project, path) => this.conversations.outside.assertIdle(project, path, (await this.configuration()).configuration['x-jevellan'].guards.externalActivityWindowMin) },
-        bridges: this.bridges, memory: this.memory, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: async (runtime) => this.rigging.items(runtime),
+        bridges: this.bridges, memory: this.memory, settings: async () => (await this.configuration()).configuration['x-jevellan'], riggingItems: async (runtime, projectId) => this.rigging.items(runtime, projectId),
         decisionClient: this.decisionClient, roster: () => this.roster(),
         enterOperation: (id, title) => this.lifecycle.enter({ kind: 'conversation', id, title }),
         timers: { periodic: options.timers !== false, ...options.projectTimers } });

@@ -475,3 +475,26 @@ export const NOTIFICATIONS_TEST_SENT = 'Test notification queued.';
 export const NOTIFICATIONS_EMPTY = 'No devices have notifications turned on.';
 export const notificationAdded = (date: string) => `Added ${date}`;
 export const notificationBrowserLabel = (agent: string) => `${agent.includes('Edg/') ? 'Edge' : agent.includes('Firefox/') ? 'Firefox' : agent.includes('Chrome/') ? 'Chrome' : agent.includes('Safari/') ? 'Safari' : 'Browser'} on ${/iPhone|iPad/u.test(agent) ? 'iPhone or iPad' : /Mac/u.test(agent) ? 'macOS' : /Windows/u.test(agent) ? 'Windows' : /Linux/u.test(agent) ? 'Linux' : 'this device'}`;
+
+export const LIBRARY = 'Library';
+export const ATTACH_FILES = 'Attach files';
+export const ATTACHMENT_LIMIT = 'Attach up to 10 files per message.';
+export const LIBRARY_TOO_LARGE = 'Files up to 50 MB.';
+export const LIBRARY_UPLOAD_FAILED = 'The file could not be uploaded.';
+export const removeAttachment = (name: string) => `Remove ${name}`;
+export const LIBRARY_UPLOAD = 'Upload';
+export const LIBRARY_FILTERS = { all: 'All', owner: 'Uploads', thread: 'From threads' };
+export const LIBRARY_OPEN = 'Open';
+export const LIBRARY_DOWNLOAD = 'Download';
+export const LIBRARY_DELETE = 'Delete';
+export const LIBRARY_PREVIOUS = 'Previous image';
+export const LIBRARY_NEXT = 'Next image';
+export const LIBRARY_FROM_YOU = 'From you';
+export const libraryFromThread = (title: string) => `From "${title}"`;
+export const openLibraryFile = (name: string) => `Open ${name}`;
+export const deleteLibraryFile = (name: string) => `Delete ${name} from the library?`;
+export const LIBRARY_EMPTY = 'Nothing in the library yet. Attach files to a message or upload them here.';
+export const RIGGING_PROJECTS = 'Projects';
+export const RIGGING_ALL_PROJECTS = 'All projects';
+
+export const libraryFileSize = (size: number) => size >= 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)} MB` : size >= 1024 ? `${(size / 1024).toFixed(1)} KB` : `${size} B`;

@@ -96,3 +96,9 @@ Projects parity phase5 decisions861–874 are recorded in [the run log](acceptan
 
 
 Projects parity phase6 Decisions875–879 cover the actual web-push license, durable notification delivery and the ledger/plain-text regressions. Source/evidence: acceptance/projects-parity-2026-10/phase-6/. The coordinator remains read-only and still has no merge tool.
+
+
+Projects parity Decisions880–884 extend the existing hub, mesh, launch path, publication and rigging store with the Library, attachments and project environment. The run log records transport paging, copied-file history guards and regression evidence. Phase7 verification is in progress.
+
+
+Phase7 source closure (Decisions880–887):121 distinct affected backend cases, PAR7/PAR7b in all4layouts, typecheck/lint/build pass. Library streaming cancellation no longer crashes the daemon. Dedicated vision and real-provider LP6 remain not run; source is not yet an installed release. See acceptance/projects-parity-2026-10/phase-7/.

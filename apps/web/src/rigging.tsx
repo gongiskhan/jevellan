@@ -1,10 +1,18 @@
+import * as copy from './project-work-copy.js';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
-import { RiggingApplicationSchema, RiggingSaveSchema, RiggingViewSchema } from '@jevellan/core/client';
+import { ProjectsListSchema, RiggingApplicationSchema, RiggingSaveSchema, RiggingViewSchema } from '@jevellan/core/client';
 import { api, empty, isCancelled } from './api.js';
 import { Markdown, Modal, SectionHeading, useSettingsSave, useTask, type PageProps } from './components.js';
 import { useRiggingDisk } from './rigging-disk.js';
 
+function ProjectScope({ value, change }: { value: string[]; change(value: string[]): void }) {
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
+  useEffect(() => { const abort = new AbortController(); void api('/hub/projects', ProjectsListSchema, 'GET', undefined, { signal: abort.signal }).then(view => setProjects(view.projects.map(row => row.project))).catch(() => undefined); return () => abort.abort(); }, []);
+  return <fieldset className="pw-rigging-projects"><legend>{copy.RIGGING_PROJECTS}</legend><label className="toggle"><input type="checkbox" checked={!value.length} onChange={event => change(event.target.checked ? [] : projects[0] ? [projects[0].id] : [])} />{copy.RIGGING_ALL_PROJECTS}</label>
+    {projects.map(project => <label className="toggle" key={project.id}><input type="checkbox" checked={value.includes(project.id)} onChange={event => change(event.target.checked ? [...value, project.id] : value.filter(id => id !== project.id))} />{project.name}</label>)}</fieldset>;
+}
+const scopeEqual = (a: string[] | undefined, b: string[] | undefined) => JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
 type View = z.infer<typeof RiggingViewSchema>;
 const sections = {
   skill: 'Skills',
@@ -15,7 +23,7 @@ const sections = {
   setting: 'Settings',
 };
 function ItemEditor({ view, props, close }: { view: View; props: PageProps; close(): void }) {
-  const [draft, setDraft] = useState({ name: view.item.name, content: view.item.content });
+  const [draft, setDraft] = useState({ name: view.item.name, content: view.item.content, projects: view.item.projects ?? [] });
   const [preview, setPreview] = useState(false);
   const [status, setStatus] = useState('Saved');
   const saved = useRef(view);
@@ -28,17 +36,16 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
   latest.current = draft;
   async function flush(): Promise<void> {
     if (
-      readOnly ||
       (!pending.current &&
         latest.current.name === saved.current.item.name &&
-        latest.current.content === saved.current.item.content)
+        latest.current.content === saved.current.item.content && scopeEqual(latest.current.projects, saved.current.item.projects))
     )
       return;
     if (pending.current) {
       await pending.current;
       if (
         latest.current.name !== saved.current.item.name ||
-        latest.current.content !== saved.current.item.content
+        latest.current.content !== saved.current.item.content || !scopeEqual(latest.current.projects, saved.current.item.projects)
       )
         await flush();
       return;
@@ -49,7 +56,7 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
       try {
         while (
           latest.current.name !== saved.current.item.name ||
-          latest.current.content !== saved.current.item.content
+          latest.current.content !== saved.current.item.content || !scopeEqual(latest.current.projects, saved.current.item.projects)
         ) {
           const current = saved.current;
           const value = { ...latest.current };
@@ -62,13 +69,13 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
               schema: 'update-rigging-v1',
               revision: current.revision,
               name: value.name,
-              content: value.content,
+              content: value.content, projects: value.projects,
               runtimes: current.item.runtimes,
               state: current.item.state,
             },
             abort.signal,
           );
-          if (result.item.item.name !== value.name || result.item.item.content !== value.content)
+          if (result.item.item.name !== value.name || result.item.item.content !== value.content || !scopeEqual(result.item.item.projects, value.projects))
             throw new Error('This item changed after your save. Reopen it before editing again.');
           saved.current = result.item;
           if (active.current)
@@ -104,7 +111,7 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
     };
   }, []);
   useEffect(() => {
-    if (readOnly || (draft.name === saved.current.item.name && draft.content === saved.current.item.content))
+    if (draft.name === saved.current.item.name && draft.content === saved.current.item.content && scopeEqual(draft.projects, saved.current.item.projects))
       return;
     setStatus('Unsaved changes');
     const timer = setTimeout(() => {
@@ -139,6 +146,7 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
           <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
         </label>
       )}
+      {view.item.id !== 'builtin_safety' && <ProjectScope value={draft.projects} change={projects => setDraft({ ...draft, projects })} />}
       <div className="subheading">
         <span className="muted save-status" role="status">
           {readOnly ? 'Read-only' : status}
@@ -181,6 +189,7 @@ function AddItem({ fromPackage, props, close }: { fromPackage: boolean; props: P
   const [kind, setKind] = useState<keyof typeof sections>('skill');
   const [content, setContent] = useState('');
   const [packageRef, setPackageRef] = useState('');
+  const [projects, setProjects] = useState<string[]>([]);
   const [runtimes, setRuntimes] = useState<Record<string, boolean>>(
     Object.fromEntries(props.data.runtimes.map((runtime) => [runtime.id, true])),
   );
@@ -200,7 +209,7 @@ function AddItem({ fromPackage, props, close }: { fromPackage: boolean; props: P
                 name,
                 kind,
                 content,
-                runtimes,
+                runtimes, projects,
                 ...(fromPackage ? { packageRef } : {}),
               },
               signal,
@@ -210,6 +219,7 @@ function AddItem({ fromPackage, props, close }: { fromPackage: boolean; props: P
           });
         }}
       >
+        <ProjectScope value={projects} change={setProjects} />
         <label>
           Name
           <input

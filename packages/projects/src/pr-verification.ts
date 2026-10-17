@@ -49,7 +49,7 @@ export class VerificationTools implements BridgeScopeTools {
 export class PullRequestVerification {
   readonly #active = new Map<string, { execution?: TurnExecution; controller: AbortController; promise: Promise<VerificationRun | null> }>();
   #closed = false;
-  constructor(readonly o: { sessionEnd?(evidence: SessionEvidence): void; hub: ProjectHub; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; deviceName?: string; facts?(): DeviceFacts; redactor: SecretRedactor; now(): number;
+  constructor(readonly o: { projectEnvironment?(projectId: string): Promise<Record<string, string>>; sessionEnd?(evidence: SessionEvidence): void; hub: ProjectHub; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; deviceName?: string; facts?(): DeviceFacts; redactor: SecretRedactor; now(): number;
     settings(): Promise<Configuration['x-jevellan']>; accounts: Pick<AccountService, 'list' | 'recordUsage' | 'recordError'>; runtimes: ReadonlyMap<string, RuntimeAdapter>; timeoutMs: number; memory?(project: Project): ProjectMemoryPort }) {}
   busy() { return this.#active.size > 0; }
   #path(run: VerificationRun) { return this.o.homes.at('worktrees', run.projectId, 'pr-verification', run.id); }
@@ -102,7 +102,7 @@ export class PullRequestVerification {
       mkdirSync(dirname(path), { recursive: true });
       await this.o.git.run(repo, ['-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', 'worktree', 'add', '--detach', path, run.commit]);
       if (setupCommand) {
-        const result = await runThreadCommand(path, setupCommand, { homes: this.o.homes, workId: run.id, timeoutMs: SETUP_TIMEOUT_MS, redactor: this.o.redactor, minimal: true, signal: active.controller.signal,
+        const result = await runThreadCommand(path, setupCommand, { homes: this.o.homes, workId: run.id, timeoutMs: SETUP_TIMEOUT_MS, redactor: this.o.redactor, projectEnv: await this.o.projectEnvironment?.(run.projectId) ?? {}, minimal: true, signal: active.controller.signal,
           onProcess: native => { writeDocument(processPath, ProcessSchema, { schema: 'verification-process-v1', turn: 1, startedAt: new Date(this.o.now()).toISOString(), ...native }); } });
         rmSync(processPath, { force: true });
         if (result.code !== 0 || result.timedOut) run = await this.#save({ ...run, state: 'failed', note: `Verification setup failed. ${outputTail(result, 1000)}`.slice(0, 1200), endedAt: new Date(this.o.now()).toISOString() });

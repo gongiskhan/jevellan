@@ -46,7 +46,7 @@ class StaleDecision extends Error { readonly status = 409; constructor() { super
 export type ConversationServiceOptions = {
   homes: Homes; contexts: ContextOperations; projects: SharedProjects; deviceId: string; accounts: AccountService; runtimes: ReadonlyMap<string, RuntimeAdapter>;
   bridges: StretchBridges; memory: BasicMemory; redactor: SecretRedactor; settings(): Settings | Promise<Settings>;
-  riggingItems(runtime: string): RiggingItem[] | Promise<RiggingItem[]>;
+  riggingItems(runtime: string, projectId?: string): RiggingItem[] | Promise<RiggingItem[]>;
   coordination: CoordinationStore; leases: PublicationLeaseService; indexes: SharedIndexes;
   decisionClient?(): DecisionClient | Promise<DecisionClient>; jevAvailable?(): boolean | Promise<boolean>; deviceLabel?: string;
   externalSessions?: ExternalActivityOptions['read'];
@@ -1345,7 +1345,7 @@ export class ConversationService {
     if (serial) this.#accountRuns.add(selected.account.id);
     try {
       const account = await this.options.accounts.resolve(selected.account.id); this.#current(work, generation, operation);
-      const rigging = await this.options.riggingItems(model.runtime); this.#current(work, generation, operation);
+      const rigging = await this.options.riggingItems(model.runtime, workspace.project.id); this.#current(work, generation, operation);
       const delivered = await adapter.materialiseRigging(account.home, rigging); this.#current(work, generation, operation);
       if (adapter.riggingKinds.includes('hook') && rigging.some((item) => item.id === PROJECT_MEMORY_ID && item.enabled && item.state !== 'parked') && !delivered.some((item) => item.itemId === PROJECT_MEMORY_ID && item.applied)) throw new Error('Project memory hooks could not be delivered to this account.');
       const memoryWrite = permissions === 'write' || (action === 'reply' && choice.remember);

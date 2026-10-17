@@ -36,7 +36,7 @@ const rejects = (promise: Promise<unknown>) => promise.then(() => { throw new Er
 
 test('thread tools accept exactly one report per turn, an identical retry repeats its receipt, and inputs fail with one field sentence (brief 7.2, D19)', async () => {
   const { tools: scope } = tools(thread);
-  expect(scope.list().tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
+  expect(scope.list().tools.map((tool) => tool.name)).toEqual(['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   const report = { status: 'done', summary: 'Added greeting.txt.', testsRun: { command: 'npm test', passed: true, summary: 'ok' } };
   expect(await scope.call('jevellan_thread_report', report)).toEqual({ schema: 'bridge-result-v1', result: { schema: 'thread-report-result-v1', turn: 2, status: 'done', accepted: true, repeated: false } });
   // The retry with the defaults spelled out is the same report.
@@ -380,4 +380,17 @@ test.each([
       previousContextTokens: tokens, digestChars: 'EXACT RESTART\nTASK\nMY QUESTION\nJOURNAL'.length, firstTurnCacheWriteTokens: 123 });
     expect(JSON.stringify(checkpoints)).not.toContain(previous);
   }
+});
+
+test('project environment reaches thread and verification launches, never the coordinator or memory', async () => {
+  const calls: string[] = []; fake.capabilities.readOnlyEnforced = true;
+  const { launcher: value } = launcher([status('acc_work')], undefined, { projectEnvironment: async id => { calls.push(id); return { TZ: 'UTC', TEST_SECRET: 'ephemeral fixture' }; } });
+  for (const kind of ['thread', 'verification', 'coordinator', 'memory'] as const) {
+    fake.enqueueTurn(done); const result = await value.launch(request({ owner: { kind, projectId: 'proj_a', id: kind === 'coordinator' ? 'proj_a' : `${kind}_a` }, permissions: ['coordinator', 'memory'].includes(kind) ? 'read-only' : 'write', safetyProfile: kind }));
+    if (result.kind !== 'started') throw new Error(result.reason);
+    expect(fake.turnStarts.at(-1)?.launch?.projectEnv).toEqual(['thread', 'verification'].includes(kind) ? { TZ: 'UTC', TEST_SECRET: 'ephemeral fixture' } : undefined);
+    expect(fake.turnStarts.at(-1)?.launch?.mcpServers?.jevellan?.env?.TEST_SECRET).toBeUndefined();
+    await result.run.done; await result.run.terminate(); await result.release();
+  }
+  expect(calls).toEqual(['proj_a', 'proj_a']);
 });

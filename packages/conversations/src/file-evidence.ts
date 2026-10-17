@@ -83,3 +83,12 @@ export async function readProjectFile(options: { root: string; ref: string; comm
   }
   return ConversationFileSchema.parse({ schema: 'conversation-file-v1', path, source, commit, line, kind: mime ? 'image' : /\.(md|markdown)$/i.test(path) ? 'markdown' : 'text', encoding: mime ? 'base64' : 'utf8', mime, content, bytes: bytes.length });
 }
+
+/** Library outputs use the viewer's confinement and sensitive-file guard, streamed from a pinned regular-file handle. */
+export async function openProjectOutput(root: string, ref: string, maxBytes: number, tooLargeMessage: string) {
+  const { path } = fileReference(root, ref); let current = root;
+  for (const segment of path.split('/')) { current = join(current, segment); if ((await lstat(current)).isSymbolicLink()) throw failure(403, 'Open the original project file instead of its symbolic link.'); }
+  const handle = await open(current, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  try { const stat = await handle.stat(); if (!stat.isFile()) throw failure(415, 'Only regular project files can be opened.'); if (stat.size > maxBytes) throw failure(413, tooLargeMessage); return { handle, size: stat.size, path }; }
+  catch (error) { await handle.close(); throw error; }
+}

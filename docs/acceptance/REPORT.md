@@ -2373,3 +2373,8 @@ Decisions861–874 implement BRIEF.md phase5: retained admission waits and messa
 ## Projects parity notifications,17October2026
 
 Decisions875–877 implement BRIEF.md phase6 with the existing hub database, encrypted vault, owner login, mesh and canonical ledgers. The requested web-push dependency is actually MPL-2.0; its license is retained.142 final affected backend cases pass, including real encrypted request construction against a fake push service, member offline recovery, lost-reply handling and shutdown/restart. Both browser matrices pass all4layouts with actual service-worker/CDP delivery and focused suppression; final initial-control captures are settled. Dedicated vision and physical-phone acceptance are not run. The existing fixture cleanup warning and two unchanged-package audit advisories remain recorded. No installed release, native home or Ekoa work changed. Detailed evidence: projects-parity-2026-10/phase-6/.
+
+
+## Projects parity Library and environment,17October2026
+
+Decisions880–887 add the hub Library, authenticated streaming and read-only mirrors, composer attachments and output tools, project launch environment, copied-file publication guards and scoped rigging.121 distinct affected backend cases and two browser journeys in all4layouts pass; typecheck/lint/build pass. Cancelled downloads first reproduced a daemon crash; the new regressions pass after repair. Forty screenshots are retained, with dedicated vision not run for the missing test credential. The intermittent Settings startup finding remains a closing concern. Installed services, native homes and Ekoa work are unchanged; LP6 and owner acceptance are not claimed. Evidence: projects-parity-2026-10/phase-7/.

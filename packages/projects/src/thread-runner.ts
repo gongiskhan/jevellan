@@ -1,3 +1,4 @@
+import { libraryTool } from './bridge-tools.js';
 import { threadJournalExcerpt } from './journal-digest.js';
 import { threadRestart } from './checkpoints.js';
 import { createHash } from 'node:crypto';
@@ -128,7 +129,7 @@ export type ThreadRunnerContext = {
   project(projectId: string): Promise<Project>;
   /** Work settings (the hub copy, or the last good one during an outage). */
   workSettings(projectId: string): Promise<ProjectWorkSettings>;
-  worktrees: Pick<ThreadWorktree, 'create' | 'setup' | 'exists' | 'remove' | 'repository'> & Partial<Pick<ThreadWorktree, 'hasCommits'>>;
+  worktrees: Pick<ThreadWorktree, 'create' | 'setup' | 'exists' | 'remove' | 'repository'> & Partial<Pick<ThreadWorktree, 'hasCommits' | 'copyFiles'>>;
   /** Main isolation (brief 8.2 step 4 main, D29): the claimed project checkout. */
   main: Pick<MainCheckout, 'prepare' | 'ready' | 'onMain' | 'workspace' | 'release' | 'stop' | 'settle'>;
   /** Ends a turn process recorded earlier whose end was not confirmed; rejects while it still cannot be (recovery's rule). */
@@ -157,6 +158,7 @@ export type ThreadRunnerContext = {
   mail: Pick<MailService, 'threadTool' | 'releaseThread'>;
   appTool?: ProjectToolHandlers['call'];
   githubTool?: ProjectToolHandlers['call'];
+  library?: import('@jevellan/core').ProjectLibrary | undefined;
   terminalRead?(scope: import('./bridge-tools.js').ProjectScope, input: unknown): Promise<unknown>;
   /** The runtime adapter's display name (D83). */
   runtimeName(runtime: string): string;
@@ -368,7 +370,13 @@ export class ThreadRunner {
       const made = await this.#c.worktrees.create(project, thread, signal);
       if (made.contextNote) this.#notice(thread, made.contextNote, 'info');
       const fields = { cwd: made.cwd, branch: made.branch, baseBranch: made.baseBranch, baseCommit: made.baseCommit };
-      const command = (await this.#c.workSettings(thread.projectId)).setupCommand;
+      const workSettings = await this.#c.workSettings(thread.projectId);
+      const local = this.#c.store.local(thread.id);
+      if (!local.copiedFiles) {
+        const copiedFiles = await this.#c.worktrees.copyFiles?.(project, { ...thread, ...fields }, workSettings.environment.copyFiles, ledger) ?? [];
+        this.#c.store.updateLocal(thread.id, value => ({ ...value, copiedFiles }));
+      }
+      const command = workSettings.setupCommand;
       if (command) {
         const setup = await this.#c.worktrees.setup({ ...thread, ...fields }, command, ledger, { timeoutMs: this.#c.timers.setupTimeoutMs, signal });
         if (this.#halted()) return false;
@@ -585,7 +593,7 @@ export class ThreadRunner {
         model: placement.model, modelLabel: labels.modelLabel, effort: placement.effortEffective, pinnedAccountId: placement.accountId,
         ...(placement.fixed.includes('account') ? { requiredAccountId: placement.accountId } : {}), permissions: 'write', cwd: thread.cwd,
         systemAppend: threadSystemAppend({ projectName: project.name, cwd: thread.cwd, isolation: thread.isolation, branch: thread.branch, baseBranch: thread.baseBranch,
-          deviceName: this.#c.deviceName, testCommand: project.testCommand, gitPolicy: thread.gitPolicy, instructions: thread.instructions }),
+          deviceName: this.#c.deviceName, testCommand: project.testCommand, gitPolicy: thread.gitPolicy, instructions: thread.instructions, copiedFiles: this.#c.store.local(thread.id).copiedFiles }),
         prompt: async (resumed) => {
           const continuing = resumed && !thread.sessionContext?.needsFreshContext;
           if (!continuing && this.#c.recall) {
@@ -682,6 +690,7 @@ export class ThreadRunner {
       isCurrent: (scope) => scope.kind === 'thread' && scope.threadId === this.threadId && this.isCurrent(scope.turn),
       call: async (scope, name, input, signal) => {
         if (scope.kind !== 'thread') throw refuse(TOOL_NOT_IN_TURN, 403);
+        if (name === 'jevellan_library_list' || name === 'jevellan_library_get' || name === 'jevellan_library_add') return libraryTool(this.#c.library, scope, name, input, this.#thread().cwd);
         if (name === 'jevellan_terminal_read') { if (!this.#c.terminalRead) throw new Error('Owner terminals are unavailable.'); return this.#c.terminalRead(scope, input); }
         if (name === 'jevellan_github') {
           if (!this.#c.githubTool) throw new Error('GitHub awareness is unavailable.');

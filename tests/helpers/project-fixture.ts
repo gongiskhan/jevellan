@@ -4,7 +4,7 @@
 import { expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -231,7 +231,8 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
       await shutdown().catch(() => undefined);
       for (const runtime of Object.values(runtimes)) await runtime.close();
       await github.close();
-      rmSync(root, { recursive: true, force: true });
+      const writable = (path: string) => { if (lstatSync(path).isSymbolicLink() || !lstatSync(path).isDirectory()) return; chmodSync(path, 0o700); for (const child of readdirSync(path)) writable(join(path, child)); };
+      writable(root); rmSync(root, { recursive: true, force: true });
     },
     closers: [],
   };

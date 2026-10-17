@@ -5,7 +5,7 @@ import { ACCOUNT_REASON_TEXT } from '@jevellan/decisions';
 import { PROJECT_MEMORY_ID, applicationRoot, deviceAllowsWork, type PlacementAccountChoice, type AccountStatus, type Effort, type Homes, type RiggingItem, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
 import type { BridgeScopeTools, StretchBridges } from '@jevellan/conversations';
 import { TurnInputSchema, type RuntimeAdapter, type StretchRun, type TurnInput } from '@jevellan/runtime-contract';
-import { ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, accountInTerminal, cannotRunHere, noTurnAccount, waitingForAccountReason } from './copy.js';
+import { ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, accountInTerminal, libraryInstructions, cannotRunHere, noTurnAccount, waitingForAccountReason } from './copy.js';
 import { ThreadGit } from './git.js';
 import { compactPercent, contextEvent, sessionContext } from './session-context.js';
 import type { ProjectLedger } from './ledger.js';
@@ -53,7 +53,7 @@ export type AccountWait = { reason: string; earliestEligibleAt: string | null };
 export type LaunchResult = LaunchStarted | { kind: 'unavailable'; reason: string; accountWait?: AccountWait | undefined };
 export type TurnLauncherOptions = {
   accounts: Pick<AccountService, 'list' | 'resolve' | 'markUsed'>; runtimes: ReadonlyMap<string, RuntimeAdapter>; accountRuns: Set<string>;
-  riggingItems(runtime: string): Promise<RiggingItem[]>; bridges: Pick<StretchBridges, 'issueTools'>; homes: Homes; deviceId: string;
+  riggingItems(runtime: string, projectId?: string): Promise<RiggingItem[]>; bridges: Pick<StretchBridges, 'issueTools'>; homes: Homes; deviceId: string;
   deviceName: string; daemonUrl(): string; redactor: SecretRedactor;
   /**
    * The accounts of threads attached in a terminal on this device (phase 8), read at every launch from the threads' own state, so a
@@ -63,6 +63,8 @@ export type TurnLauncherOptions = {
   useOwnSetup?(runtime: string): Promise<boolean>;
   cacheWindowMinutes?(runtime: string): Promise<number>;
   projectSettings?(projectId: string): Promise<ProjectWorkSettings>;
+  library?: import('@jevellan/core').ProjectLibrary | undefined;
+  projectEnvironment?(projectId: string): Promise<Record<string, string>>;
   sessionLedger?(projectId: string): ProjectLedger;
   cacheLedger?(owner: TurnInput['owner']): ProjectLedger;
   journalDirectory?(projectId: string): Promise<string>;
@@ -186,7 +188,7 @@ export class TurnLauncher {
         contextWindow = (await cached.values).get(request.model);
       }
       const compactionNotice = request.runtime === 'codex' && !contextWindow ? 'Codex did not expose this model’s context window; native default auto-compaction is active until model discovery supplies it.' : undefined;
-      const rigging = await this.#o.riggingItems(request.runtime);
+      const rigging = await this.#o.riggingItems(request.runtime, request.owner.projectId);
       const delivered = await adapter.materialiseRigging(resolved.home, rigging);
       if (adapter.riggingKinds.includes('hook') && rigging.some((item) => item.id === PROJECT_MEMORY_ID && item.enabled && item.state !== 'parked')
         && !delivered.some((item) => item.itemId === PROJECT_MEMORY_ID && item.applied)) { await release(); return { kind: 'unavailable', reason: MEMORY_HOOKS_UNDELIVERED }; }
@@ -206,11 +208,15 @@ export class TurnLauncher {
       const checkpoint = resumed && journal && request.checkpointPrompt ? coldCheckpoint(projectSettings?.sessionCheckpoints, previous, request.resume, cacheWindow, now(), request.contextTokensBefore) : undefined;
       const checkpointPrompt = checkpoint ? await request.checkpointPrompt!(journal!) : undefined;
       if (checkpoint) resumed = false;
+      const prompt = checkpointPrompt ? `${checkpointPrompt.digest}\n\n${checkpointPrompt.pending}` : await request.prompt(resumed);
+      const library = ['thread', 'coordinator'].includes(request.owner.kind) ? this.#o.library : undefined;
+      if (library) await library.prepare(request.owner.projectId, prompt);
+      const libraryDirectory = library?.directory(request.owner.projectId);
       const input = TurnInputSchema.parse({
         schema: 'turn-input-v1', owner: request.owner, turn: request.turn, cwd: request.cwd, permissions: request.permissions, model: request.model, effort: request.effort,
-        account: resolved, systemAppend: (journal ? `- The project journal at ${journal} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.\n\n` : '') + request.systemAppend, prompt: checkpointPrompt ? `${checkpointPrompt.digest}\n\n${checkpointPrompt.pending}` : await request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
-        ...(journal ? { readOnlyDirectories: [journal] } : {}),
-        launch: { useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env: { ...env, ...gitEnv }, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
+        account: resolved, systemAppend: (libraryDirectory ? `${libraryInstructions(libraryDirectory, request.owner.kind === 'thread')}\n\n` : '') + (journal ? `- The project journal at ${journal} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.\n\n` : '') + request.systemAppend, prompt, ...(resumed ? { resume: { sessionId: request.resume } } : {}),
+        ...((journal || libraryDirectory) ? { readOnlyDirectories: [...(journal ? [journal] : []), ...(libraryDirectory ? [libraryDirectory] : [])] } : {}),
+        launch: { ...(['thread', 'verification'].includes(request.owner.kind) ? { projectEnv: await this.#o.projectEnvironment?.(request.owner.projectId) ?? {} } : {}), useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env: { ...env, ...gitEnv }, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
         safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs, compaction: { thresholdPercent: percent, ...(contextWindow ? { contextWindow } : {}) },
         ...(request.owner.kind === 'thread' && request.isolation === 'worktree' ? { protectedPaths: await this.#o.protectedPaths?.() ?? [] } : {}),
       });

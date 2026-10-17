@@ -267,3 +267,21 @@ test('read-only diffs follow the current head and no coordinator review event is
   await expect(tracker.merge(thread.id, diff.commit)).rejects.toMatchObject({ status: 409 });
   const next = await tracker.diff(project.id, thread.id); expect(next.commit).not.toBe(diff.commit); expect(next.diff).toContain('+Second greeting'); await tracker.close();
 }, 60_000);
+
+test('publication refuses copied-file changes anywhere in history, including a later removal', async () => {
+  const thread = await prepared('copied_history', 'Keep environment private');
+  const commitSha = commit(thread.cwd, { '.env.local': 'fixture secret' }, 'Accidental environment commit');
+  run(thread.cwd, 'rm', '.env.local'); run(thread.cwd, 'commit', '-m', 'Remove environment');
+  threads.updateLocal(thread.id, local => ({ ...local, copiedFiles: ['.env.local'] }));
+  const result = await publish(thread);
+  expect(result).toMatchObject({ outcome: { kind: 'verification-failed', verification: { tail: `Commit ${commitSha.slice(0, 7)} adds .env.local, which was copied from the project folder and must not be committed. Remove it from this branch's history and report done again.` } } });
+  expect(pullPosts()).toHaveLength(0); expect(fails(origin, 'rev-parse', `refs/heads/${thread.branch}`)).toBe(true);
+});
+
+test('publication verification receives project variables and redacts fetched secrets', async () => {
+  const thread = await prepared('environment_test', 'Check environment'); commit(thread.cwd, { 'env-test': 'yes' });
+  const secret = 'test-only private environment'; redactor.add(secret);
+  publication = new ThreadPublication({ git, homes, redactor, github: access, deviceName: 'Mac mini', projectEnvironment: async () => ({ TZ: 'UTC', PRIVATE_VALUE: secret }) });
+  const verification = await publication.verify({ ...project, testCommand: 'test "$TZ" = UTC && printf "%s" "$PRIVATE_VALUE"' }, thread, ledgers.thread(project.id, thread.id));
+  expect(verification.status).toBe('passed'); expect(verification.tail).toBe('[redacted]');
+});

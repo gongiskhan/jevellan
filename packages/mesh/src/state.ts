@@ -133,7 +133,7 @@ export class HubState {
       case 'rigging-update': result = { schema: 'shared-rigging-view-v1', item: this.rigging.update(request.id, request.input) }; break;
       case 'rigging-validate-captured': result = { schema: 'shared-rigging-entry-v1', item: this.rigging.validateCaptured(request.input) }; break;
       case 'rigging-add-captured': result = { schema: 'shared-rigging-view-v1', item: this.rigging.addCaptured(request.input) }; break;
-      case 'rigging-items': result = { schema: 'shared-rigging-items-v1', items: this.rigging.items(request.runtime) }; break;
+      case 'rigging-items': result = { schema: 'shared-rigging-items-v1', items: this.rigging.items(request.runtime, request.projectId) }; break;
     }
     return SharedStateResultSchema.parse(result);
   }
@@ -195,7 +195,7 @@ export class MemberState {
       update: async (id, input) => { const item = (await request('rigging-update', 'shared-rigging-view-v1', { ...rigging, id, input })).item; if (item.item.id !== id) throw new HubProtocolError(); return item; },
       validateCaptured: async input => { const captured = RiggingEntrySchema.parse(input); const item = (await request('rigging-validate-captured', 'shared-rigging-entry-v1', { ...rigging, input: captured })).item; if (item.id !== captured.id || item.promotionId !== captured.promotionId) throw new HubProtocolError(); return item; },
       addCaptured: async input => { const captured = RiggingEntrySchema.parse(input); const item = (await request('rigging-add-captured', 'shared-rigging-view-v1', { ...rigging, input: captured })).item; if (item.item.id !== captured.id) throw new HubProtocolError(); return item; },
-      items: async runtime => (await request('rigging-items', 'shared-rigging-items-v1', { ...rigging, runtime })).items,
+      items: async (runtime, projectId) => (await request('rigging-items', 'shared-rigging-items-v1', { ...rigging, runtime, projectId })).items,
     };
   }
 }

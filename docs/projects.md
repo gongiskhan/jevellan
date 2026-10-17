@@ -605,3 +605,9 @@ Projects parity phase5 source: unavailable accounts now leave durable pending wo
 
 
 Projects parity phase6 source adds Settings → Notifications and hub-owned Web Push. Subscribe each browser or installed PWA, send a test, remove devices or turn this device off. Project levels are Everything, Standard (default), Only what needs me and Off. Questions, thread failures and two consecutive coordinator failures can notify; Standard also includes coordinator replies, and Everything includes reported thread turns. A focused visible page at the target path suppresses its notification. Delivery uses durable per-subscription retries and the existing hub vault/mesh; the Ekoa mirror stays separate. Safari on iPhone requires adding Jevellan to the Home Screen before subscribing. This is source behavior pending release/live acceptance; see projects-parity-2026-10/phase-6/.
+
+
+Projects parity phase7 source adds the Overview Library for owner uploads and thread outputs. Both message composers accept files, with image previews and a phone-friendly viewer. Files are stored on the hub and mirrored read-only when named in a session prompt. Project environment settings reach setup, threads, publication verification, pull-request verification and command jobs; the coordinator gets no variables or secrets. Selected untracked files are copied into new worktrees and excluded from publication history. Rigging can be limited to projects. These behaviors remain under verification and are not yet installed. See projects-parity-2026-10/.
+
+
+Phase7 source closure (Decisions880–887):121 distinct affected backend cases, PAR7/PAR7b in all4layouts, typecheck/lint/build pass. Library streaming cancellation no longer crashes the daemon. Dedicated vision and real-provider LP6 remain not run; source is not yet an installed release. See acceptance/projects-parity-2026-10/phase-7/.

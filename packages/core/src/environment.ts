@@ -1,11 +1,18 @@
+import { EnvNameSchema } from './project-parity-schemas.js';
+
+export function projectEnvironment(values: Record<string, string> = {}): Record<string, string> {
+  return Object.fromEntries(Object.entries(values).map(([name, value]) => [EnvNameSchema.parse(name), value]));
+}
+
 const BASE = ['PATH', 'HOME', 'USER', 'LANG', 'TERM', 'SHELL', 'TMPDIR'] as const;
 const AUTH: Record<string, readonly string[]> = { claude: ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY'], codex: [] };
 export const THREAD_GIT_ENV_KEYS = ['GIT_TERMINAL_PROMPT', 'GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0', 'GIT_CONFIG_KEY_1', 'GIT_CONFIG_VALUE_1'] as const;
 const LAUNCH = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL', ...THREAD_GIT_ENV_KEYS];
 
-export function minimalEnvironment(runtime: 'claude' | 'codex', home: string, auth: Record<string, string> = {}, launch: Record<string, string> = {}, base: NodeJS.ProcessEnv = process.env): Record<string, string> {
+export function minimalEnvironment(runtime: 'claude' | 'codex', home: string, auth: Record<string, string> = {}, launch: Record<string, string> = {}, base: NodeJS.ProcessEnv = process.env, project: Record<string, string> = {}): Record<string, string> {
   const result: Record<string, string> = {};
   for (const key of BASE) if (base[key] !== undefined) result[key] = base[key]!;
+  Object.assign(result, projectEnvironment(project));
   result.HOME = home;
   for (const [key, value] of Object.entries(auth)) {
     if (!AUTH[runtime]!.includes(key)) throw new Error(`Unsupported authentication variable for ${runtime}.`);
