@@ -1,3 +1,5 @@
+import { HubNotifications, type PushSend } from './notifications.js';
+import { NotificationOwnerRequestSchema } from '@jevellan/core';
 import { EkoaMirrorService } from './ekoa-mirror.js';
 import type { EkoaConnector } from './ekoa-client.js';
 import { collectDeviceFacts, EkoaRequestSchema, DeviceSettingsInputSchema, DeviceTagsInputSchema, type DeviceFacts } from '@jevellan/core';
@@ -28,7 +30,7 @@ import { AgentAccess, HubAgentAccess } from '@jevellan/mesh';
 import { assertHubNotMoved, deviceAllowsWork } from '@jevellan/core';
 import { TerminalService } from './terminal-service.js';
 
-export type ApplicationOptions = { homes?: Homes; port?: number; url?: string; runtimes?: (context: RuntimeContext) => ReadonlyMap<string, RuntimeAdapter>; timers?: boolean; repositoryVisibility?: VisibilityProbe; decisionFetch?: typeof fetch; hubFetch?: typeof fetch; nativeSessions?: Omit<SessionSensorOptions, 'homes'>; deviceFacts?(): DeviceFacts;
+export type ApplicationOptions = { pushSend?: PushSend; homes?: Homes; port?: number; url?: string; runtimes?: (context: RuntimeContext) => ReadonlyMap<string, RuntimeAdapter>; timers?: boolean; repositoryVisibility?: VisibilityProbe; decisionFetch?: typeof fetch; hubFetch?: typeof fetch; nativeSessions?: Omit<SessionSensorOptions, 'homes'>; deviceFacts?(): DeviceFacts;
   /** Test seam for the improver's memory index; production uses the isolated Basic Memory. */ projectMemory?: (project: Project) => MemoryPort;
   /** Projects test seams: the GitHub transport and API base (a fake server in tests), and Projects timers (periodic loops follow `timers`). */
   githubFetch?: typeof fetch; githubBaseUrl?: string; projectTimers?: Partial<ProjectTimers>; ekoaConnector?: EkoaConnector; forceHub?: boolean;
@@ -59,6 +61,7 @@ export class Application {
   readonly vault: ProjectVault | undefined;
   /** Projects on this device (brief 8): threads, their turns and pull requests, beside the conversations. */
   readonly ekoa: EkoaMirrorService | undefined;
+  readonly notifications: HubNotifications | undefined;
   readonly projectWork: ProjectWork; readonly projectHub: ProjectHub;
   readonly terminals: TerminalService;
   readonly projectVisibility: ProjectVisibility;
@@ -181,6 +184,7 @@ export class Application {
         enterOperation: (id, title) => this.lifecycle.enter({ kind: 'conversation', id, title }),
         timers: { periodic: options.timers !== false, ...options.projectTimers } });
       this.terminals = new TerminalService(this, { ...options.terminalOptions, timers: options.timers !== false });
+      this.notifications = this.#hub ? new HubNotifications(this.hub, () => this.device.url, options.pushSend) : undefined;
       this.ekoa = this.#hub ? new EkoaMirrorService(this.hub, () => this.device.url, options.ekoaConnector) : undefined;
       const improverReady = Promise.all([this.conversations.ready, this.backgroundDrafts.ready]).then(() => undefined);
       const hub = this.#hub; const mesh = this.#mesh;
@@ -263,10 +267,11 @@ export class Application {
   bindDaemonUrl(url: string): void {
     this.conversations.daemonUrl = url; this.backgroundDrafts.daemonUrl = url;
     // Thread turns need the bridge URL; queued work may start from here. Its periodic loops follow `timers` on their own.
-    if (this.#improverTimers) this.ekoa?.start();
+    if (this.#improverTimers) { this.ekoa?.start(); this.notifications?.start(); }
     this.projectWork.daemonUrl = url; this.projectWork.start();
     if (this.#improverTimers) { this.routingImprover?.start(); this.projectImprover.start(); }
   }
+  async notificationsRequest(raw: unknown, ownerSession: string) { const input = NotificationOwnerRequestSchema.parse({ ...(raw as object), ownerSession }); return this.member ? this.member.notifications(input) : this.notifications!.request(input); }
   async ekoaRequest(raw: unknown, ownerSession: string) {
     const request = EkoaRequestSchema.parse({ ...(raw as object), ownerSession });
     return this.member ? this.member.ekoa(request) : this.ekoa!.request(request, this.device.deviceId);
@@ -369,6 +374,7 @@ export class Application {
   close(): Promise<void> { return this.#closing ??= (async () => {
     const failures: unknown[] = [];
     try { await this.settingsSync.close(); await this.#riggingQueue.catch(() => undefined); } catch (error) { failures.push(error); }
+    try { await this.notifications?.close(); } catch (error) { failures.push(error); }
     try { await this.ekoa?.close(); } catch (error) { failures.push(error); }
     try { await this.presence.close(); } catch (error) { failures.push(error); }
     try { await this.projectImprover.close(); } catch (error) { failures.push(error); }

@@ -422,7 +422,7 @@ export const CoordinatorToolSchema = z.strictObject({ schema: z.literal('coordin
   input: z.string().max(32768).optional(), inputTruncated: z.boolean().optional(),
   taskIds: z.array(IdSchema).max(20).optional(), settingsChange: ProjectSettingsChangeSchema.optional(),
   summary: z.string().min(1).max(400), threadId: IdSchema.optional(), decisionId: IdSchema.optional(), reason: z.string().max(400).optional() });
-export const CoordinatorTurnEndSchema = z.strictObject({ schema: z.literal('coordinator-turn-end-v1'), turn: positive,
+export const CoordinatorTurnEndSchema = z.strictObject({ schema: z.literal('coordinator-turn-end-v1'), turn: positive, retrying: z.boolean().optional(),
   sessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional(), usage: UsageSchema.optional(),
   status: z.enum(['completed', 'failed', 'timed-out', 'interrupted', 'dropped']), error: z.string().max(1000).optional() });
 export const ThreadTurnStartSchema = z.strictObject({ schema: z.literal('thread-turn-v1'), turn: positive, resumed: z.boolean(),

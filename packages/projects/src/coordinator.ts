@@ -627,7 +627,7 @@ export class Coordinator {
       if (this.c.store.local(this.projectId).limitRetryBatch !== batch) {
         this.c.store.updateLocal(this.projectId, local => ({ ...local, limitRetryBatch: batch }));
         this.c.store.update(this.projectId, current => ({ ...withoutReason(current), state: 'idle' }));
-        this.#ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status: 'failed', error: this.c.redactor.text(outcome.error.message), usage: outcome.usage,
+        this.#ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status: 'failed', retrying: true, error: this.c.redactor.text(outcome.error.message), usage: outcome.usage,
           ...(outcome.sessionId ? { sessionKey: createHash('sha256').update(outcome.sessionId).digest('hex') } : {}) } });
         this.#publish(); return 'retry';
       }

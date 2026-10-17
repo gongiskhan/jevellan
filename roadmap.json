@@ -818,8 +818,8 @@
   {
     "id": "parity-push",
     "title": "PWA push notifications",
-    "why": "BRIEF.md phase 6. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
-    "status": "planned"
+    "why": "BRIEF.md phase 6: durable hub push, per-device retries, subscriptions, event triggers and the PWA worker are implemented.142 affected backend cases and two browser passes in every layout pass; typecheck, lint and build pass. Dedicated vision, real-provider push and physical-phone acceptance are not run. Existing fixture cleanup and unchanged-package advisories remain closing evidence. Decisions875–879; actual web-push license is MPL-2.0. See docs/acceptance/projects-parity-2026-10/phase-6/.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "parity-library-env",

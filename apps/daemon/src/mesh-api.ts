@@ -1,3 +1,4 @@
+import { NotificationOwnerRequestSchema } from '@jevellan/core';
 import { EkoaRequestSchema } from '@jevellan/core';
 import { ProjectMemoryRequestSchema, DeviceSettingsRequestSchema, DeviceSettingsInputSchema } from '@jevellan/core';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -52,6 +53,11 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
     const input = DeviceSettingsRequestSchema.parse(await requestBody(request)); app.redactor.add(input.ownerSession);
     if (!app.hubAuth.verify(input.ownerSession, device.id)) throw Object.assign(new Error('Sign in to Jevellan.'), { status: 401 });
     send(app.devices.updateSettings(input.input)); return true;
+  }
+  if (path === '/hub/mesh/notifications' && method === 'POST') {
+    const input = NotificationOwnerRequestSchema.parse(await requestBody(request)); app.redactor.add(input.ownerSession);
+    if (!app.hubAuth.verify(input.ownerSession, device.id)) throw Object.assign(new Error('Sign in to Jevellan.'), { status: 401 });
+    const result = app.notifications!.request(input); app.devices.authenticate(authorization!.slice(7)); send(result); return true;
   }
   if (path === '/hub/mesh/ekoa' && method === 'POST') {
     const input = EkoaRequestSchema.parse(await requestBody(request)); app.redactor.add(input.ownerSession);

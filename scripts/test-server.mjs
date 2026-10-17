@@ -416,7 +416,8 @@ const nativeSkill = join(root, 'user', '.claude', 'skills', 'say-hello'); mkdirS
 writeFileSync(join(nativeSkill, 'SKILL.md'), '---\nname: say-hello\ndescription: Say hello\n---\nHello from the fixture.\n');
 writeFileSync(join(root, 'user', '.claude', 'CLAUDE.md'), 'Use the project rules.\n');
 writeFileSync(join(root, 'user', '.claude.json'), JSON.stringify({ mcpServers: { fixture_hello: { command: process.execPath, args: ['fixture-hello.mjs'] } } }));
-const application = new Application({ homes: new Homes(join(root, 'user', '.jevellan'), join(root, 'user')), terminalOptions, port, decisionFetch, deviceFacts: () => hubFacts, ...projectOptions, repositoryVisibility: async (path) => path === join(root, 'memory-project') ? 'PUBLIC' : 'UNKNOWN', runtimes: (context) => {
+const pushedNotifications = [];
+const application = new Application({ pushSend: async (_subscription, payload) => { pushedNotifications.push(JSON.parse(String(payload))); return { statusCode: 201, body: '', headers: {} }; }, homes: new Homes(join(root, 'user', '.jevellan'), join(root, 'user')), terminalOptions, port, decisionFetch, deviceFacts: () => hubFacts, ...projectOptions, repositoryVisibility: async (path) => path === join(root, 'memory-project') ? 'PUBLIC' : 'UNKNOWN', runtimes: (context) => {
   const claude = createClaude(context); const codex = createCodex(context);
   for (const runtime of [claude, codex]) {
     const fake = new FakeRuntime(); fake.capabilities.readOnlyEnforced = true;
@@ -753,6 +754,7 @@ const dailyMarker = join(root, 'daily-result');
 const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-change-v1'), checks: z.enum(['none', 'pending', 'passing', 'passing-status', 'failing']).optional(),
   mergeable: z.enum(['clean', 'dirty', 'unknown', 'unstable']).optional(), merged: z.literal(true).optional(), closed: z.literal(true).optional() });
 const ControlAutomaticFixSchema = z.strictObject({ schema: z.literal('fixture-automatic-fix-v1'), action: z.enum(['prepare', 'fail']) });
+const ControlNotificationsSchema = z.strictObject({ schema: z.literal('fixture-notifications-v1'), action: z.enum(['sweep', 'question']) });
 const ControlUsageSchema = z.strictObject({ schema: z.literal('fixture-usage-v1'), action: z.literal('prepare') });
 const UsageReceiptSchema = z.strictObject({ schema: z.literal('fixture-usage-receipt-v1'), threadId: z.string().min(1) });
 const AutomaticFixReceiptSchema = z.strictObject({ schema: z.literal('fixture-automatic-fix-receipt-v1'), threadId: z.string().min(1), prNumber: z.number().int().positive() });
@@ -772,6 +774,10 @@ async function projectControl(request, response) {
   const parse = (schema) => { const parsed = schema.safeParse(body); if (!parsed.success) send(400, { message: parsed.error.issues.map((issue) => issue.message).join(' ') }); return parsed.success ? parsed.data : undefined; };
   const pull = /^\/projects\/github\/(\d+)$/.exec(request.url);
   let input;
+  if (request.url === '/projects/notifications' && (input = parse(ControlNotificationsSchema))) {
+    if (input.action === 'question') await application.projectWork.decisions.ask('projects_fixture', { question: 'Which screenshot should we keep?', options: [{ label: 'Desktop' }, { label: 'Phone' }] }, 'coordinator', 'par6_question');
+    await application.notifications.sweep(); send(200, { schema: 'fixture-notifications-receipt-v1', sent: pushedNotifications }); return;
+  }
   if (request.url === '/projects/usage' && (input = parse(ControlUsageSchema))) {
     const projectId = 'projects_usage';
     const made = await application.projectWork.createThread(projectId, { schema: 'thread-create-request-v1', clientRequestId: 'par5_usage', title: 'A narrow parsing test', task: 'PAR5 usage: inspect the narrow parsing test.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high', deviceId: application.device.deviceId });

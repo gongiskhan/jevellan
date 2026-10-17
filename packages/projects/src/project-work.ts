@@ -1,3 +1,4 @@
+import { ProjectNotifications } from './notifications.js';
 import { ProjectUsage } from './usage.js';
 import { SettingsChangePlanSchema, settingsChangePlan } from './settings-changes.js';
 import { projectSettingValue, withProjectSetting, ProjectSettingsUndoRequestSchema, type CoordinatorEvent, type ProjectSettingsChange } from '@jevellan/core';
@@ -141,6 +142,7 @@ export class ProjectWork {
   /** Mail and reservations between main threads (brief 5.11, 7.2). */
   readonly mail: MailService;
   readonly usage: ProjectUsage;
+  readonly notifications: ProjectNotifications;
   /** The hub relay (D40): durable sends to other devices, and this device's pending envelopes. */
   readonly outbox: Outbox; readonly inbox: Inbox;
   readonly #o: ProjectWorkOptions;
@@ -394,9 +396,10 @@ export class ProjectWork {
     this.views = new ProjectViews({ mergesHeld: async (id, tid) => await this.daily.mergesHeld(id) && !(await this.daily.allowedMergeThreads(id)).includes(tid), deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
       githubNotice: async projectId => { const budget = await (await github.open(projectId)).rateLimit(); return budget && budget.remaining / budget.limit < 0.2 && budget.resetAt > now() ? 'GitHub has less than 20% of its request budget remaining. Pull requests refresh every five minutes until it resets.' : undefined; },
       coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster, placement });
+    this.notifications = new ProjectNotifications({ deviceId: o.deviceId, ledgers: this.ledgers, store: this.store, hub: o.hub, projects: o.projects, redactor: o.redactor, now });
     this.usage = new ProjectUsage({ deviceId: o.deviceId, hub: o.hub, ledgers: this.ledgers, store: this.store, now, timezone: async projectId => (await this.admission.settings(projectId)).nightlyWindow.timezone });
     this.ready = Promise.all([this.apps.ready, recoverProjects({ paths: this.paths, ledgers: this.ledgers, store: this.store, coordinators: this.coordinators,
-      toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), redactor: o.redactor, now })]).then(() => this.usage.rebuild());
+      toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), redactor: o.redactor, now })]).then(async () => { await this.usage.rebuild(); await this.notifications.rebuild(); });
   }
   /**
    * A relayed envelope this device could not read was dropped (P8 review S-2): the project's chat here says what was lost. Without a
@@ -526,7 +529,7 @@ export class ProjectWork {
           this.#cachePublished.set(project.id, version);
         }
         if ((await this.admission.settings(project.id)).status === 'active') await this.memoryProgramme?.sweep(project);
-        await this.usage.refresh(project.id);
+        await this.usage.refresh(project.id); await this.notifications.flush();
         await this.#exportToVault(project).catch(() => undefined);
         if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.#withdrawSignIns(project.id); if ((await this.admission.settings(project.id)).status === 'active') await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
         if ((await this.admission.settings(project.id)).status === 'active') await this.memoryProgramme?.sweep(project);
@@ -580,7 +583,7 @@ export class ProjectWork {
   async idle(projectId?: string): Promise<void> {
     await this.ready;
     for (let quiet = 0; quiet < 2;) {
-      await delay(20); quiet = this.usage.busy() || this.reviews.busy(projectId) || this.mergeGate.busy() || this.jobs.busy(projectId) || this.threads.busy(projectId) || this.dispatcher.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
+      await delay(20); quiet = this.notifications.busy() || this.usage.busy() || this.reviews.busy(projectId) || this.mergeGate.busy() || this.jobs.busy(projectId) || this.threads.busy(projectId) || this.dispatcher.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
     }
   }
   /** Stops timers, terminates every running turn (shutdown intent) and drains; thread states are never rewritten (D24). */
@@ -603,6 +606,7 @@ export class ProjectWork {
       await this.journal?.close();
       await this.apps.close();
       await this.tracker.close();
+      await this.notifications.close();
       await this.usage.close();
       await this.#publisher.close();
       await this.outbox.close();

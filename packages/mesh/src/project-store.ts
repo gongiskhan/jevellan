@@ -1,3 +1,4 @@
+import { ProjectNotificationSchema, type ProjectNotification } from '@jevellan/core';
 import { MergeDocumentSchema, type MergeDocument } from '@jevellan/core';
 import { ProjectSessionCacheSchema, type ProjectSessionCache } from '@jevellan/core';
 import { ProjectUsageDaySchema, type ProjectUsageDay } from '@jevellan/core';
@@ -59,6 +60,13 @@ export class HubProjectStore {
       }
       if (rows.length < PROJECT_HUB_PAGE) return { records, next: null };
     }
+  }
+  putNotification(raw: ProjectNotification): void {
+    const document = ProjectNotificationSchema.parse(raw);
+    if (!document.projectId || document.kind === 'test') refuse('Project notifications need a project.', 400);
+    this.#project(document.projectId);
+    if (document.sentAt || document.dropped) refuse('New notifications cannot already be delivered.', 400);
+    if (!this.hub.get('project-notifications', document.id, ProjectNotificationSchema)) this.#put('project-notifications', document.id, ProjectNotificationSchema, document, 0);
   }
   putUsageDay(raw: ProjectUsageDay): void {
     const document = ProjectUsageDaySchema.parse(raw); this.#project(document.projectId);
@@ -649,6 +657,7 @@ export class HubProjectStore {
       case 'coordinator-status-get': result = { ...base, record: this.coordinatorStatus(request.projectId) }; break;
       case 'session-caches': result = { ...base, records: this.sessionCaches(request.projectId) }; break;
       case 'usage-days': result = { ...base, ...this.usagePage(request.projectId, request.after) }; break;
+      case 'notification-put': this.putNotification(request.document); result = { ...base }; break;
       case 'usage-day-put': this.putUsageDay(request.document); result = base; break;
       case 'session-cache-put': this.putSessionCache(request.snapshot); result = base; break;
       case 'coordinator-status-put': result = { ...base, record: this.putCoordinatorStatus(request.status) }; break;
@@ -690,6 +699,7 @@ export class HubProjectStore {
 export class HubProjectAccess implements ProjectHub {
   async sessionCaches(projectId: string) { return this.#store.sessionCaches(projectId); }
   async usageDays(projectId: string) { return this.#store.usageDays(projectId); }
+  async putNotification(document: ProjectNotification) { this.#store.putNotification(document); }
   async putUsageDay(document: ProjectUsageDay) { this.#store.putUsageDay(document); }
   async putSessionCache(snapshot: ProjectSessionCache) { this.#store.putSessionCache(snapshot); }
   async jobs(projectId: string, after?: string) { return this.#store.jobs(projectId, after); }
@@ -769,6 +779,7 @@ export class MemberProjectStore implements ProjectHub {
       if (page.next === null) return records; after = page.next;
     }
   }
+  async putNotification(document: ProjectNotification) { await this.#call('notification-put', { document }); }
   async putUsageDay(document: ProjectUsageDay) { await this.#call('usage-day-put', { document }); }
   async putSessionCache(snapshot: ProjectSessionCache) { await this.#call('session-cache-put', { snapshot }); }
   constructor(readonly client: MemberHubClient) {}

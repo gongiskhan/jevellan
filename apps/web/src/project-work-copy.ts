@@ -456,3 +456,22 @@ export const PROPOSED_TASKS = 'Proposed tasks';
 
 export const fixTurnLabel = (fix: import('@jevellan/core/client').ThreadFix) => fix.by === 'owner' ? 'Requested by you'
   : fix.kind === 'checks' ? 'Automatic fix: failing checks' : fix.kind === 'conflicts' ? 'Automatic fix: conflicts' : 'Automatic fix: review comments';
+
+export const NOTIFICATIONS_TITLE = 'Notifications';
+export const NOTIFICATIONS_ON = 'On for this device.';
+export const NOTIFICATIONS_OFF = 'Off for this device.';
+export const NOTIFICATIONS_ENABLE = 'Turn on for this device';
+export const NOTIFICATIONS_DISABLE = 'Turn off for this device';
+export const NOTIFICATIONS_TEST = 'Send a test notification';
+export const NOTIFICATIONS_DEVICES = 'Devices with notifications';
+export const NOTIFICATIONS_IPHONE = 'On iPhone, add Jevellan to the Home Screen from Safari first, then turn notifications on from the installed app.';
+export const NOTIFICATIONS_HTTPS_MISSING = 'Notifications need an HTTPS address. Reinstall with --https to use them.';
+export const notificationsHttps = (url: string) => `Notifications need Jevellan's HTTPS address. Open ${url} to turn them on.`;
+export const NOTIFICATIONS_UNSUPPORTED = 'This browser does not support push notifications.';
+export const NOTIFICATIONS_REFUSED = 'Notifications are blocked for this device. Allow them in the browser settings, then try again.';
+export const NOTIFICATIONS_WORKER_WAIT = 'The app is still starting. Reload and try again.';
+export const NOTIFICATIONS_KEYS_MISSING = 'This browser did not provide notification keys. Try turning notifications on again.';
+export const NOTIFICATIONS_TEST_SENT = 'Test notification queued.';
+export const NOTIFICATIONS_EMPTY = 'No devices have notifications turned on.';
+export const notificationAdded = (date: string) => `Added ${date}`;
+export const notificationBrowserLabel = (agent: string) => `${agent.includes('Edg/') ? 'Edge' : agent.includes('Firefox/') ? 'Firefox' : agent.includes('Chrome/') ? 'Chrome' : agent.includes('Safari/') ? 'Safari' : 'Browser'} on ${/iPhone|iPad/u.test(agent) ? 'iPhone or iPad' : /Mac/u.test(agent) ? 'macOS' : /Windows/u.test(agent) ? 'Windows' : /Linux/u.test(agent) ? 'Linux' : 'this device'}`;

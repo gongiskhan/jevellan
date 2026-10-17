@@ -55,3 +55,5 @@ export * from './vault-definition.js';
 export * from './settings-changes.js';
 
 export * from './usage.js';
+
+export * from './notifications.js';

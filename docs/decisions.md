@@ -93,3 +93,6 @@ Placement receipts retain the redacted corrections actually shown to Jev, includ
 
 
 Projects parity phase5 decisions861–874 are recorded in [the run log](acceptance/projects-parity-2026-10/README.md): placement bounds, explicit account waits and continuation, model recovery/escalation with session continuity, and bounded cross-device usage projection. Earlier conflicting behavior yields to BRIEF.md as described there. Affected phase5 validation passes as recorded there; final full suites, release and live acceptance remain pending.
+
+
+Projects parity phase6 Decisions875–879 cover the actual web-push license, durable notification delivery and the ledger/plain-text regressions. Source/evidence: acceptance/projects-parity-2026-10/phase-6/. The coordinator remains read-only and still has no merge tool.

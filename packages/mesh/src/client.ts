@@ -1,3 +1,4 @@
+import { NotificationOwnerRequestSchema, NotificationsViewSchema } from '@jevellan/core';
 import { EkoaRequestSchema, EkoaStateSchema } from '@jevellan/core';
 import { ProjectMemoryRequestSchema, ProjectMemoryResultSchema } from '@jevellan/core';
 import { DeviceTagsRequestSchema, DeviceSettingsRequestSchema } from '@jevellan/core';
@@ -104,6 +105,7 @@ export class MemberHubClient {
     const token = DeviceTokenSchema.parse(this.options.token()); this.options.redactor.add(token);
     return this.#transport.request(path, schema, body, token, timeoutMs);
   }
+  async notifications(input: unknown) { const request = NotificationOwnerRequestSchema.parse(input); this.options.redactor.add(request.ownerSession); return this.#request('notifications', NotificationsViewSchema, request); }
   async ekoa(input: unknown) {
     const request = EkoaRequestSchema.parse(input); this.options.redactor.add(request.ownerSession);
     if (request.operation === 'save' && request.input.token) this.options.redactor.add(request.input.token);

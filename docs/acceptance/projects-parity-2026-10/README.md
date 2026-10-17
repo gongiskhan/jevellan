@@ -18,8 +18,8 @@
 | 2 | Coordinator instructions, answers, cards, proposals and settings | Pushed a03f98af; vision blocked | Affected backend cases, eight unique four-layout browser journeys, final PAR2 repetitions, typecheck/lint/build pass. See phase-2/. |
 | 3 | Overview, resolution and thread actions | Pushed6d15b8f9; vision blocked | Affected backend/API/remote cases pass. Seven unique journeys pass in every layout across recorded runs; final settled Overview captures pass. Typecheck/lint/build/secret checks pass. See phase-3/. |
 | 4 | Automatic pull request fixes | Pushed28efaecf; vision blocked |92 affected backend cases and8 browser journeys pass across four layouts; see phase-4/. |
-| 5 | Account waits, placement bounds, escalation and usage | In progress | Source-grounded placement and launch regressions first |
-| 6 | Web push | Not started | Not run |
+| 5 | Account waits, placement bounds, escalation and usage | Pushed bfb9dc8a; vision blocked |193 affected backend cases and4 browser layouts pass; see phase-5/. |
+| 6 | Web push | Source verified; pushing |142 affected backend cases and all4layouts pass; vision not run. See phase-6/. |
 | 7 | Library, attachments, environment and scoped rigging | Not started | Not run |
 | 8 | Compatible endpoints | Not started | Live credential optional, not requested yet |
 | 9 | First-run setup | Not started | Not run |
@@ -155,3 +155,28 @@ Phase5 browser correction: with the correct PATH, usage, its token/cost badge an
 ## Phase5 checkpoint
 
 Simulated:193/193 affected backend cases in8files, typecheck, lint and build pass. PAR5 passes4/4 layouts with16 final captures; all16 dedicated vision receipts say not run for the missing credential, and selected captures from every layout are directly inspected. The existing fixture cleanup warning and bundle-size warning remain recorded. Additional provider-reset and verification-escalation checks pass. The diagnostic full backend run is interrupted after changing source, with five failures retained; three pass unchanged alone and two Git rewrite cases are still checked. Full-suite success is not claimed. See phase-5/README.md and failed-before.md. No source installation or live-clock start occurred.
+
+
+## Phase5 push and phase6 start
+
+Live: bfb9dc8a is pushed on main after the normal full-history secret scan. No installed release changed; the live clock is unstarted. Phase6 begins with source-grounded hub/mesh/ledger/PWA integration. Its dependency check finds web-push3.6.7 is MPL-2.0, not MIT as the brief states; the unmodified dependency's license is retained. Primary sources: https://github.com/web-push-libs/web-push/tree/v3.6.7 and its package.json/LICENSE.
+
+875. Phase6 uses the requested web-push package with its actual MPL-2.0 license, replacing only the brief's mistaken MIT description. Keys remain encrypted in the existing hub vault; the existing hub document store, owner authentication, mesh and canonical Projects ledgers own subscription and notification delivery. Optional versioned per-subscription delivery receipts retain retries independently when another subscription already succeeded.
+
+Closing diagnostics: the two Git rewrite regressions also fail alone on Git2.56; raw disposable Git output confirms a dropped middle commit is omitted from post-rewrite. Apple Git is not a supported workaround: it lacks merge-tree --merge-base. The first all-four-layout LJ5 attempt did not reach a journey because a fixture missed its60000ms startup deadline; it is not run. No guard or timeout changed.
+
+
+876. Notification production extends the existing canonical ledger projection. A 7-day replay provides crash/offline retry with stable event-derived ids; private keys are lazy-created in the encrypted hub vault and never returned. An optional retrying field on coordinator-turn-end marks the existing uncounted usage-limit retry, so it cannot count toward the two-failure notification. Hub-created question records provide the durable needs-you trigger. The standard secure-context localhost exception remains available for disposable browser fixtures; nonsecure HTTP shows the brief's HTTPS guidance. This extends Decisions863 and875 without changing routing, merge authority or account selection.
+
+877. Two failing phase6 regressions refine Decision876: an explicit flush could return before the ledger's queued subscribers were delivered, and Markdown stripping damaged code identifiers/comparisons. Flush now fences that delivery before draining; notification text preserves code and ordinary punctuation while removing formatting. Temporary status-only diagnostics were removed. The browser suppression assertion waits for the actual service-worker waitUntil promise, preventing an early empty notification list from falsely passing.
+
+
+878. A failing lost-reply regression showed the new test-notification POST inherited a retryable flag despite creating a new send each time. Its errors now decline automatic replay. Subscription save/remove remain retryable through their stable endpoint/id. This refines Decision875's owner API without changing ordinary request handling.
+
+
+879. A failing shutdown regression showed the sender drained its entire queued batch after close was requested. It now finishes only the in-flight request and retains later deliveries for the next hub start. This refines Decision875 so update/shutdown is not held by every queued send; delivery receipts and replay are preserved.
+
+
+## Phase6 checkpoint
+
+Simulated: final142/142 affected backend cases pass across6files. Typecheck, lint, production build, whitespace and working-tree secret checks pass. PAR6 passes all4layouts, then repeats all4 with settled initial-control captures. The8 final screenshots and8 dedicated vision receipts are retained; all vision receipts are not run for the missing credential, and selected final captures from every layout are directly inspected. The existing fixture cleanup warning and large-chunk warning remain recorded. Worker click navigation is simulated handler evidence; a real desktop notification click, real provider push and physical iPhone acceptance remain live/owner checks. The mandatory history scan gates the push. No installed source, native home, Ekoa work or independent hub changed; live clock unstarted.

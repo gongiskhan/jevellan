@@ -3,6 +3,7 @@ import { ProjectSessionCacheSchema } from './session-cache-schemas.js';
 import { ProjectUsageDaySchema } from './project-usage-schemas.js';
 import { ProjectJobSchema, ProjectDailySchema, ProjectJobRunSchema, ProjectWindowSchema } from './project-daily-schemas.js';
 import { z } from 'zod';
+import { ProjectNotificationSchema } from './notification-schemas.js';
 import {
   DecisionAnswerSchema, FileReservationSchema, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectMailSchema,
   ProjectNotebookSchema, ProjectWorkSettingsSchema, ThreadIndexSchema,
@@ -54,6 +55,7 @@ const project = { projectId: IdSchema };
 const page = { projectId: IdSchema, after: IdSchema.optional() };
 const expectedRevision = z.number().int().nonnegative();
 export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ ...request, operation: z.literal('notification-put'), document: ProjectNotificationSchema }),
   z.strictObject({ ...request, operation: z.literal('usage-days'), ...project, after: IdSchema.optional() }),
   z.strictObject({ ...request, operation: z.literal('usage-day-put'), document: ProjectUsageDaySchema }),
   z.strictObject({ ...request, operation: z.literal('session-caches'), ...project }),
@@ -120,7 +122,7 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
 export type ProjectHubRequest = z.infer<typeof ProjectHubRequestSchema>;
 export type ProjectHubOperation = ProjectHubRequest['operation'];
 const collections = {
-  'session-caches': 'work', 'session-cache-put': 'work', 'usage-days': 'work', 'usage-day-put': 'work',
+  'notification-put': 'work', 'session-caches': 'work', 'session-cache-put': 'work', 'usage-days': 'work', 'usage-day-put': 'work',
   'merge-documents': 'threads', 'merge-document-get': 'threads', 'merge-document-put': 'threads',
   'jobs-list': 'jobs', 'job-get': 'jobs', 'job-put': 'jobs',
   'dailies-list': 'dailies', 'daily-get': 'dailies', 'daily-put': 'dailies',
@@ -144,7 +146,7 @@ const collections = {
 export function collectionOf(operation: ProjectHubOperation): ProjectHubCollection { return collections[operation]; }
 // Every operation is classified, so an operation added by a later phase cannot skip the lifecycle gate unnoticed.
 const access = {
-  'session-caches': 'read', 'session-cache-put': 'write', 'usage-days': 'read', 'usage-day-put': 'write',
+  'notification-put': 'write', 'session-caches': 'read', 'session-cache-put': 'write', 'usage-days': 'read', 'usage-day-put': 'write',
   'merge-documents': 'read', 'merge-document-get': 'read', 'merge-document-put': 'write',
   'jobs-list': 'read', 'job-get': 'read', 'job-put': 'write',
   'dailies-list': 'read', 'daily-get': 'read', 'daily-put': 'write',
@@ -175,6 +177,7 @@ function stored<T extends z.ZodType<{ revision: number }>>(document: T) {
 const result = { schema: z.literal('project-hub-result-v1') };
 const records = <T extends z.ZodType>(document: T) => ({ records: z.array(document).max(PROJECT_HUB_PAGE), next: IdSchema.nullable() });
 export const ProjectHubResultSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ ...result, operation: z.literal('notification-put') }),
   z.strictObject({ ...result, operation: z.literal('session-caches'), records: z.array(ProjectSessionCacheSchema).max(PROJECT_HUB_PAGE) }),
   z.strictObject({ ...result, operation: z.literal('usage-days'), records: z.array(ProjectUsageDaySchema).max(PROJECT_HUB_PAGE), next: IdSchema.nullable() }),
   z.strictObject({ ...result, operation: z.literal('usage-day-put') }),

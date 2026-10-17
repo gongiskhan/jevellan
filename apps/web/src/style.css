@@ -1874,3 +1874,8 @@ html:has(.reading-conversation) { scroll-padding-top: 115px; scroll-padding-bott
 .branch-change-notice { border: 2px solid var(--warn); border-left-width: 5px; padding: 12px 14px; }
 .branch-change-notice > strong { color: var(--warn); font-size: 15px; }
 .branch-change-notice p { margin: 5px 0 0; font-size: 12px; }
+
+.notification-devices { list-style: none; padding: 0; margin: 0; }
+.notification-devices li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+.notification-devices li:last-child { border-bottom: 0; }
+.notification-devices li > div { min-width: 0; overflow-wrap: anywhere; }

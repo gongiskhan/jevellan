@@ -1,3 +1,5 @@
+import { NotificationsPage } from './notifications.js';
+import { NOTIFICATIONS_TITLE } from './project-work-copy.js';
 import { EkoaPage } from './ekoa.js';
 import { clientId } from './client-id.js';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
@@ -46,6 +48,7 @@ import { InstallAppButton, PwaStatus, startPwa } from './pwa.js';
 type Auth = z.infer<typeof AuthStateSchema>;
 const settingsPages = [
   ['runtimes', 'Runtimes', 'runtimes'],
+  ['notifications', NOTIFICATIONS_TITLE, 'message'],
   ['rigging', 'Rigging', 'rigging'],
   ['decisions', 'Decisions', 'decisions'],
   ['improver', 'Improver', 'improver'],
@@ -380,7 +383,9 @@ function App() {
     </SettingsTabs>
   );
   const settingsPage =
-    currentPage === 'agents' ? (
+    currentPage === 'notifications' ? (
+      <NotificationsPage {...props} />
+    ) : currentPage === 'agents' ? (
       <AgentsPage {...props} />
     ) : currentPage === 'ekoa' ? (
       <EkoaPage {...props} />

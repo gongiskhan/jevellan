@@ -2194,3 +2194,51 @@ test('PAR5 usage, account waiting notice and placement constraints', async ({ pa
   await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-5/screenshots/PAR5-why-${layout(info)}.png`, fullPage: false });
   expect(errors).toEqual([]);
 });
+
+test('PAR6 Notifications subscribe, receive a browser push, suppress the focused path and turn off', async ({ page, context }, info) => {
+  await context.grantPermissions(['notifications']);
+  // The network subscription is simulated; the service worker and CDP push delivery are the real browser implementation.
+  await page.addInitScript(() => {
+    const stored = () => { try { return localStorage.getItem('par6-push') === 'on'; } catch { return false; } };
+    const subscription = () => ({ endpoint: 'https://push.example/par6-browser', toJSON: () => ({ endpoint: 'https://push.example/par6-browser', keys: { p256dh: 'simulated_browser_public_key', auth: 'simulated_browser_auth' } }), unsubscribe: async () => { try { localStorage.removeItem('par6-push'); } catch { /* Disposable browser storage can be refused. */ } return true; } });
+    Object.defineProperty(PushManager.prototype, 'getSubscription', { configurable: true, value: async () => stored() ? subscription() : null });
+    Object.defineProperty(PushManager.prototype, 'subscribe', { configurable: true, value: async () => { try { localStorage.setItem('par6-push', 'on'); } catch { /* Refused storage is tested separately. */ } return subscription(); } });
+  });
+  const errors = await begin(page); await page.goto('/settings/notifications');
+  await expect(page.getByText('Off for this device.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Turn on for this device', exact: true })).toBeEnabled();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-6/screenshots/PAR6-off-${layout(info)}.png` });
+  await page.getByRole('button', { name: 'Turn on for this device', exact: true }).click();
+  await expect(page.getByText('On for this device.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Devices with notifications' })).toBeVisible();
+  await page.getByRole('button', { name: 'Send a test notification', exact: true }).click();
+  const receipt = await control('/projects/notifications', { schema: 'fixture-notifications-v1', action: 'sweep' }) as { sent: Array<{ body: string }> };
+  expect(receipt.sent.some(item => item.body === 'Notifications work on this device.')).toBe(true);
+  const cdp = await context.newCDPSession(page); let registrationId: string | undefined;
+  cdp.on('ServiceWorker.workerRegistrationUpdated', event => { registrationId ??= event.registrations.find((registration: { scopeURL: string }) => registration.scopeURL === `${info.project.use.baseURL}/`)?.registrationId; });
+  await cdp.send('ServiceWorker.enable'); await expect.poll(() => registrationId, LONG).toBeTruthy();
+  await expect.poll(() => context.serviceWorkers().length, LONG).toBeGreaterThan(0);
+  const serviceWorker = context.serviceWorkers().find(worker => worker.url().endsWith('/sw.js'))!;
+  await serviceWorker.evaluate(() => {
+    const scope = globalThis as unknown as { ExtendableEvent: { prototype: { waitUntil(work: Promise<unknown>): void } }; par6Settled?: number };
+    const original = scope.ExtendableEvent.prototype.waitUntil;
+    scope.ExtendableEvent.prototype.waitUntil = function (this: { type: string }, work: Promise<unknown>) {
+      return original.call(this, this.type === 'push' ? work.finally(() => { scope.par6Settled = (scope.par6Settled ?? 0) + 1; }) : work);
+    };
+  });
+  const push = { schema: 'project-push-v1', title: 'Projects fixture: question', body: 'Which screenshot should we keep?', url: '/projects/projects_fixture?view=overview', tag: 'par6-question' };
+  await control('/projects/notifications', { schema: 'fixture-notifications-v1', action: 'question' });
+  await cdp.send('ServiceWorker.deliverPushMessage', { origin: info.project.use.baseURL!, registrationId: registrationId!, data: JSON.stringify(push) });
+  await expect.poll(() => serviceWorker.evaluate(() => (globalThis as unknown as { par6Settled?: number }).par6Settled ?? 0), LONG).toBe(1);
+  await expect.poll(() => page.evaluate(async () => (await (await navigator.serviceWorker.ready).getNotifications()).map(notification => notification.body)), LONG).toContain(push.body);
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-6/screenshots/PAR6-on-${layout(info)}.png` });
+  await page.goto('/projects/projects_fixture'); await page.bringToFront(); await expect.poll(() => page.evaluate(() => document.hasFocus()), LONG).toBe(true);
+  await page.evaluate(async () => { for (const notification of await (await navigator.serviceWorker.ready).getNotifications()) notification.close(); });
+  await cdp.send('ServiceWorker.deliverPushMessage', { origin: info.project.use.baseURL!, registrationId: registrationId!, data: JSON.stringify({ ...push, tag: 'par6-focused' }) });
+  // Wait for the real handler's waitUntil promise, so an early empty list cannot falsely pass.
+  await expect.poll(() => serviceWorker.evaluate(() => (globalThis as unknown as { par6Settled?: number }).par6Settled ?? 0), LONG).toBe(2);
+  await expect.poll(() => page.evaluate(async () => (await (await navigator.serviceWorker.ready).getNotifications()).filter(notification => notification.tag === 'par6-focused').length), LONG).toBe(0);
+  await page.goto('/projects/projects_fixture/settings'); await expect(page.getByText('Turn on notifications for this device in Settings → Notifications.', { exact: true })).toHaveCount(0);
+  await page.goto('/settings/notifications'); await page.getByRole('button', { name: 'Turn off for this device', exact: true }).click(); await expect(page.getByText('Off for this device.', { exact: true })).toBeVisible();
+  await expect(page.getByText('No devices have notifications turned on.', { exact: true })).toBeVisible(); await cdp.detach(); expect(errors).toEqual([]);
+});

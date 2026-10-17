@@ -1,3 +1,4 @@
+import { handleNotificationsApi } from './notifications-api.js';
 import { EnvNameSchema, ProjectEnvSecretSummarySchema } from '@jevellan/core';
 import { EkoaSettingsInputSchema, EmptySchema as EkoaEmptySchema } from '@jevellan/core';
 import { handleSessionListApi } from './session-list-api.js';
@@ -83,6 +84,10 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     }
     retryable = true; // No UI operation has been admitted before authentication succeeds.
     if (!await app.auth.verify(token)) throw failure('Sign in to Jevellan.', 401);
+    if (path.startsWith('/api/notifications/')) {
+      retryable = method === 'GET' || method === 'DELETE' || path === '/api/notifications/subscriptions';
+      if (await handleNotificationsApi(app, request, response, url, token!)) return;
+    }
     if (await handleTerminalApi(app, request, response, url, token!)) return;
     if (await handleDeviceWorktrees(app, request, response, url, token)) return;
     retryable = method === 'GET' && !path.startsWith('/api/logins/');

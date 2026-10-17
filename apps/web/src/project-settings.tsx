@@ -1,3 +1,5 @@
+import { browserPushId } from './notifications.js';
+import { NotificationsViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { EkoaCodeSetupReceiptSchema, EffortSchema, EmptySchema, ProjectEnvSecretSummarySchema, ProjectWorkSettingsSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema,
   type ProjectEnvSecretSummary, type ProjectWorkSettings, type ProjectWorkView } from '@jevellan/core/client';
@@ -25,6 +27,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const [work, setWork] = useState<ProjectWorkView>();
   const [stale, setStale] = useState(false);
   const [settingsNotice, setSettingsNotice] = useState<string>();
+  const [pushEnabled, setPushEnabled] = useState(false);
   const [isolationChanged, setIsolationChanged] = useState(false);
   const [secretValues, setSecretValues] = useState<Record<string, string>>({});
   const [secretStates, setSecretStates] = useState<Record<string, ProjectEnvSecretSummary>>({});
@@ -40,6 +43,13 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
     const controller = new AbortController(); void read(controller.signal).catch(error => { if (!controller.signal.aborted) local.fail(error); });
     return () => controller.abort();
   }, [read, local.fail]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void Promise.all([browserPushId(), api('/api/notifications/subscriptions', NotificationsViewSchema, 'GET', undefined, { signal: controller.signal })]).then(([id, view]) => {
+      if (!controller.signal.aborted) setPushEnabled(Boolean(id && view.subscriptions.some(sub => sub.id === id)));
+    }).catch(() => undefined);
+    return () => controller.abort();
+  }, []);
   const change = (patch: Partial<ProjectWorkSettings>) => setDraft(value => value && { ...value, ...patch });
   const write = async (value: ProjectWorkSettings, signal: AbortSignal, statusOnly = false) => {
     const parsed = ProjectWorkSettingsSchema.safeParse(value);
@@ -141,7 +151,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
             <label className="checkbox"><input type="checkbox" checked={draft.refill.enabled} onChange={event => change({ refill: { ...draft.refill, enabled: event.target.checked } })} />{copy.REFILL_ENABLED}</label>
             {number(copy.REFILL_INTERVAL, draft.refill.minIntervalMinutes, 10, 1440, minIntervalMinutes => change({ refill: { ...draft.refill, minIntervalMinutes } }))}<p className="pw-field-note">{copy.ROUTINES_EDIT_HELP}</p>
           </>)}
-          {section('notifications', <fieldset><legend>{copy.PROJECT_NOTIFICATIONS}</legend>{(Object.entries(copy.NOTIFICATION_LEVELS) as Array<[ProjectWorkSettings['notifications'], readonly [string, string]]>).map(([level, [label, help]]) => <label className="pw-notification-level" key={level}><span className="checkbox"><input type="radio" name="notification-level" checked={draft.notifications === level} onChange={() => change({ notifications: level })} />{label}</span>{help && <span className="pw-field-note">{help}</span>}</label>)}<p className="pw-field-note">{copy.NOTIFICATION_DEVICE_HELP}</p></fieldset>)}
+          {section('notifications', <fieldset><legend>{copy.PROJECT_NOTIFICATIONS}</legend>{(Object.entries(copy.NOTIFICATION_LEVELS) as Array<[ProjectWorkSettings['notifications'], readonly [string, string]]>).map(([level, [label, help]]) => <label className="pw-notification-level" key={level}><span className="checkbox"><input type="radio" name="notification-level" checked={draft.notifications === level} onChange={() => change({ notifications: level })} />{label}</span>{help && <span className="pw-field-note">{help}</span>}</label>)}<>{!pushEnabled && <p className="pw-field-note">{copy.NOTIFICATION_DEVICE_HELP}</p>}</></fieldset>)}
           {section('usage', <ProjectUsageSection projectId={id} />)}
         </fieldset>
         {local.error && <p role="alert" className="error">{local.error}{stale && <button type="button" className="text-button" disabled={task.busy} onClick={() => void task.run(read)}>{copy.RELOAD}</button>}</p>}

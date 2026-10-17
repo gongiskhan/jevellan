@@ -7,6 +7,7 @@ import type { HeldCheckout, ProjectWorkSummary, ReservationConflict, Reservation
 import type { Stored } from './store.js';
 import type { ProjectWorkTask, TaskHistoryEvent } from './project-loop-schemas.js';
 import type { ProjectSessionCache } from './session-cache-schemas.js';
+import type { ProjectNotification } from './notification-schemas.js';
 import type { ProjectUsageDay } from './project-usage-schemas.js';
 
 import type { ProjectGoal, ProjectRefillState } from './project-goal-schemas.js';
@@ -25,6 +26,7 @@ export type ReserveOutcome = { granted: true; reservation: Stored<FileReservatio
  * Phase 6 adds mail, reservations and held checkouts.
  */
 export interface ProjectHub {
+  putNotification?(document: ProjectNotification): Promise<void>;
   usageDays?(projectId: string): Promise<ProjectUsageDay[]>;
   putUsageDay?(document: ProjectUsageDay): Promise<void>;
   sessionCaches?(projectId: string): Promise<ProjectSessionCache[]>;

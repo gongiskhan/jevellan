@@ -614,3 +614,8 @@ Source implementation now has explicit account waits and automatic usage-limit c
 
 
 Phase5 source checkpoint:193 affected backend cases and4 browser layouts pass for account recovery, placement bounds and usage. Decisions861–874 include resource-wait preservation, provider reset times and incremental/time-zone usage rebuilding. Dedicated vision is not run and the interrupted diagnostic full suite is not a pass. Release and live acceptance remain pending.
+
+
+### Projects parity phase6: notifications
+
+Source implementation adds hub-owned encrypted Web Push delivery, owner subscriptions in Settings and a schema-validated PWA worker. Existing ledgers, hub questions and the mesh provide durable triggers and retries. Levels and per-device delivery receipts prevent duplicate finished sends and preserve failed-device retries. 142 affected backend cases and all4layouts pass; dedicated vision is not run. This is not an installed or physical-phone result. Decisions875–879 and phase6 evidence are in acceptance/projects-parity-2026-10/.

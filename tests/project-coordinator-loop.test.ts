@@ -67,6 +67,7 @@ test('a coordinator usage-limit retry preserves the batch without counting the f
   fake.enqueueTurn(turn => { observed.push(work.coordinators.get('proj_a').state().failedTurnsInARow); turn.say('Continued.'); return { status: 'completed' }; }, forCoordinator);
   await message(work, 'Keep working.'); await work.idle('proj_a');
   expect(observed).toEqual([0]); expect(turns()).toHaveLength(2);
+  expect(payloads(work, 'coordinator-turn-end')[0]).toMatchObject({ status: 'failed', retrying: true });
   expect(work.coordinators.get('proj_a').state()).toMatchObject({ queue: [], failedTurnsInARow: 0 });
 });
 function deferred() { let resolve!: () => void; const promise = new Promise<void>((done) => { resolve = done; }); return { promise, resolve }; }

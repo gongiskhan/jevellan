@@ -604,3 +604,10 @@ export const automaticFixQuestion = (n: number, kind: import('@jevellan/core').P
   `Pull request #${n} still ${kind === 'checks' ? 'has failing checks' : kind === 'conflicts' ? 'has conflicts' : 'has review comments'} after ${max} automatic fixes.`;
 
 export const AUTOMATIC_FIX_CANCELLED = 'Automatic fix cancelled because its project setting changed before it started.';
+
+export const notificationQuestionTitle = (project: string) => `${project}: question`;
+export const notificationThreadTitle = (project: string, title: string) => `${project}: ${title}`;
+export const notificationFailedBody = (reason: string) => `Failed: ${reason}`;
+export const notificationCoordinatorStopped = (error: string) => `The coordinator stopped: ${error}`;
+export const NOTIFICATION_TEST_TITLE = 'Jevellan';
+export const NOTIFICATION_TEST_BODY = 'Notifications work on this device.';
