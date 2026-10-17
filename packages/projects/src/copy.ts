@@ -185,7 +185,7 @@ export function messagesPrompt(messages: ReadonlyArray<{ from: 'coordinator' | '
   if (messages.length === 1) return messages[0]!.text;
   return messages.map((message) => `From the ${message.from}:\n${message.text}`).join(MESSAGE_SEPARATOR);
 }
-export type ThreadTurnReason = 'task' | 'messages' | 'verification' | 'conflict' | 'steer';
+export type ThreadTurnReason = 'task' | 'messages' | 'verification' | 'conflict' | 'checks' | 'comments' | 'continue' | 'publish' | 'steer';
 /** A turn that starts a fresh session (no stored or usable session) gets the task block first (D94). */
 export function threadPrompt(thread: { title: string; task: string }, body: string, resumed: boolean, reason: ThreadTurnReason): string {
   return reason !== 'task' && !resumed ? `${taskPrompt(thread.title, thread.task)}${MESSAGE_SEPARATOR}${body}` : body;
@@ -565,3 +565,27 @@ function autoFixEventLine(event: Extract<CoordinatorEvent, { kind: 'thread-auto-
 export const SETTING_CHANGED_AGAIN = 'Changed again since.';
 
 export const PROJECT_SETTINGS_UNAVAILABLE = 'Project settings are unavailable.';
+
+export const RESOLVED_BY_OWNER = 'Resolved by you.';
+export const RESOLVED_BY_INACTIVITY = 'Resolved after a week without activity.';
+export const ACTION_NO_CHECKS = 'This pull request has no failing checks.';
+export const ACTION_NO_CONFLICTS = 'This pull request has no conflicts.';
+export const ACTION_NO_COMMENTS = 'There are no new review comments.';
+export const ACTION_NO_COMMITS = 'This thread has no commits to publish.';
+export const ACTION_OPEN_PR = 'This thread already has an open pull request.';
+export const ACTION_WORKING = 'The thread is working. Wait for the turn to end or stop it.';
+export const ACTION_ID_REUSED = 'This action id was already used for a different action.';
+export const ACTION_RESOLVE_OPEN_PR = 'Merge or close the open pull request before resolving this thread.';
+export const ACTION_NOT_RESOLVABLE = 'Only an idle, waiting or failed thread can be resolved.';
+export const ACTION_NOT_REOPENABLE = 'Only a resolved idle or failed thread can be reopened.';
+export const PUBLISH_REQUESTED = 'Publish the saved work through managed verification and publication.';
+export function checksFixPrompt(n: number, sha: string, names: string[]): string {
+  return `Checks failed on pull request #${n} at ${sha.slice(0, 7)}: ${names.slice(0, 10).join(', ')}.\nRead the failing jobs and their logs with jevellan_github, find the cause, fix it in this worktree, run the relevant tests and report done.\nIf the failure is not caused by this pull request (for example an outage, or a flaky test you can show is unrelated), report blocked and say why.`;
+}
+export function conflictFixPrompt(n: number, base: string): string {
+  return `Pull request #${n} conflicts with ${base}. Fetch origin, merge origin/${base} into this branch (do not rebase), resolve the conflicts keeping the intent of both sides, run the relevant tests and report done.`;
+}
+
+export function commentsFixPrompt(n: number, comments: import('@jevellan/core').PullComment[]): string {
+  return `New review comments on pull request #${n}:\n${comments.map(row => `- ${row.author}${row.path ? ` on ${row.path}:${row.line ?? '?'}` : ''}: ${row.body}`).join('\n')}\nAddress each one: change the code where the comment is right, run the relevant tests and report done. In your report, list any comment you did not act on and why.`;
+}

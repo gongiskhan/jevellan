@@ -102,6 +102,9 @@ export class DecisionItems {
     const stored = (await this.#o.hub.withdrawDecision(decisionId, this.#at())).document;
     return !!stored.withdrawnAt && !stored.answer;
   }
+  async withdrawThread(projectId: string, threadId: string): Promise<void> {
+    for (const decision of await this.#o.hub.decisions(projectId)) if (decision.threadId === threadId && open(decision)) await this.#o.hub.withdrawDecision(decision.id, this.#at());
+  }
   /** Creates the turn-limit item once per thread: an open one is kept (brief 8.2, D31, D142). */
   async turnLimit(projectId: string, thread: Pick<Thread, 'id' | 'title' | 'turnAllowance'>): Promise<void> {
     if ((await this.#o.hub.decisions(projectId)).some((decision) => decision.threadId === thread.id && open(decision) && isTurnLimitItem(decision))) return;

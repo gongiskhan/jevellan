@@ -204,3 +204,15 @@ test('coordinator store and start receipts persist owner-local documents', () =>
   expect(new StartReceipts(paths).get('proj_a', 'req_1', { task: 'Loops.', fixed: {}, title: 'Fix login' })).toEqual({ threadId: 'thread_1' });
   expect(() => receipts.get('proj_a', 'req_1', { ...request, task: 'Other' })).toThrow(expect.objectContaining({ message: 'This request id was already used for a different thread.', status: 409 }));
 });
+
+
+test('landing projection changes get new immutable event ids and survive a store restart', async () => {
+  const { threads, publisher, ledgers } = stores(); const t = threads.create(thread({ state: 'in-review' }), labels); await publisher.flush();
+  const initial = threads.current(t.id)!; threads.setIndexFields(t.id, { landing: 'verifying' }); const verifying = threads.current(t.id)!;
+  expect(verifying.eventId).toBeGreaterThan(initial.eventId); expect(verifying.index.landing).toBe('verifying');
+  threads.setIndexFields(t.id, { landing: 'verifying' }); expect(threads.current(t.id)!.eventId).toBe(verifying.eventId);
+  await publisher.flush(); const restarted = new ThreadStore(paths, ledgers, publisher); expect(restarted.current(t.id)!.index.landing).toBe('verifying');
+  restarted.setIndexFields(t.id, { landing: undefined }); await publisher.flush();
+  expect((await new HubProjectAccess(db, 'dev_a').thread(t.id))!.document.landing).toBeUndefined();
+  expect(initial.index.landing).toBeUndefined(); expect(verifying.index.landing).toBe('verifying'); publisher.close();
+});

@@ -1,3 +1,4 @@
+import { ThreadActions } from './thread-actions.js';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ProjectWorkViewSchema, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema, type PlacementField, type ProjectWorkView,
@@ -146,7 +147,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       <div className="conversation-page pw-page pw-thread-page" ref={page}>
         <div className="section-heading conversation-heading pw-heading">
           <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title" title={known?.title}>{known?.title}</span></h1>
-          <div className="conversation-meta pw-thread-meta">
+        <div className="conversation-meta pw-thread-meta">
             {back}
             {known && (
               <span className={`chip pw-state-chip pw-state-${known.state}`}>
@@ -202,10 +203,11 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
             </button>
           )}
         </div>
+        <div className="pw-thread-owner-actions"><ThreadActions projectId={projectId} thread={thread} hold={view.mergesHeld} changed={() => kick.current()} onError={onError} /></div>
         <div className="conversation-meta pw-thread-meta">
           {back}
           <span className={`chip pw-state-chip pw-state-${thread.state}`}>
-            <i className={dotClass(thread.state)} aria-hidden="true" />{copy.STATE_LABELS[thread.state]}
+            <i className={dotClass(thread.state)} aria-hidden="true" />{thread.resolution ? copy.BOARD_LABELS.resolved : copy.STATE_LABELS[thread.state]}
           </span>
           {thread.pr && (
             <>
@@ -323,17 +325,19 @@ function ConfirmAction({ title, action, body, run, close, onError }: {
 /** A report card (12.3): the turn and status, the summary, a question with its options, and the tests the turn ran. */
 function ReportCard({ report, base, openImage }: { report: ThreadReport; base: string; openImage(ref: string): void }) {
   const headingId = useId();
+  const [expanded, setExpanded] = useState(false);
   const badge = reportBadge(report.status);
   const tests = report.testsRun; const options = report.options ?? [];
   return (
     <section className={`pw-report pw-report-${report.status}`} aria-labelledby={headingId}>
-      <details className="pw-report-disclosure">
+      <details className="pw-report-disclosure" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="pw-report-head">
         <h3 id={headingId}>{copy.reportHeading(report.turn)}</h3>
         {report.synthesized && <span className="pw-report-note">{copy.SYNTHESIZED_REPORT}</span>}
         <span className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>
-        <span className="pw-report-preview">{report.summary.split('\n').find(line => line.trim())?.slice(0, 220)}</span>
+        {!expanded && <span className="pw-report-preview">{report.summary.split('\n').find(line => line.trim())?.slice(0, 220)}</span>}
       </summary>
+      {expanded && <>
       <Markdown onOpenImage={openImage}>{report.summary}</Markdown>
       <ThreadImageStrip base={base} files={imageReferences(report.summary)} open={openImage} />
       <OwnerCommands commands={report.ownerCommands} />
@@ -356,6 +360,7 @@ function ReportCard({ report, base, openImage }: { report: ThreadReport; base: s
           {tests.summary && <p>{tests.summary}</p>}
         </div>
       )}
+      </>}
       </details>
     </section>
   );

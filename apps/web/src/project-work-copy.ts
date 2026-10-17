@@ -421,3 +421,22 @@ export function settingChangeLine(change: { field: string; before: unknown; afte
   if (change.append !== undefined) return change.field === 'instructions' ? `Added to project instructions: "${change.append}"` : `Added to guidance for Jev: "${change.append}"`;
   return `Changed ${settingFieldLabel(change.field)} from ${settingValueText(change.before)} to ${settingValueText(change.after)}.`;
 }
+
+export const OVERVIEW = 'Overview';
+export const ROUTINES = 'Routines';
+export const BOARD_LABELS = { waiting: 'Waiting for you', review: 'Ready for review', working: 'Working', landing: 'Landing', idle: 'Idle', resolved: 'Resolved' } as const;
+export const BOARD_EMPTY = { waiting: 'Nothing needs you.', review: 'No pull requests waiting for review.', working: 'Nothing running.', landing: 'Nothing landing.', idle: 'No idle threads.', resolved: 'Nothing resolved in the last 14 days.' } as const;
+export const LANDING_LABELS = { verifying: 'Verifying', merging: 'Merging', held: 'Held for the nightly window' } as const;
+export const IN_TERMINAL = 'In a terminal';
+export const FIX_CHECKS = 'Fix checks';
+export const RESOLVE_CONFLICTS = 'Resolve conflicts';
+export const addressComments = (n: number) => `Address comments (${n})`;
+export const PUBLISH = 'Publish';
+export const PUBLISH_HELP = 'Run the tests, push the branch and open a pull request.';
+export const RESOLVE = 'Resolve';
+export const REOPEN = 'Reopen';
+export const RESOLVE_COMMITS_CONFIRM = 'This thread has commits that are not in a pull request. Resolve it anyway? The branch and worktree stay.';
+export const SHOW_OLDER = 'Show older';
+export const BASE_BRANCH = 'the base branch';
+export const MERGE_HELD = 'Merges are held while the nightly window runs.';
+export const PROPOSED_TASKS = 'Proposed tasks';

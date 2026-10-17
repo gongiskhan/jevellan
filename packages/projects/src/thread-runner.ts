@@ -110,7 +110,7 @@ export function restartRefusal(thread: Pick<Thread, 'id' | 'state' | 'pr' | 'iso
   return thread.state === 'attached' ? attachedRefusal(thread.id) : undefined;
 }
 /** The turns a thread keeps when it waits for its account; message turns keep their messages in the queue instead (phase 8). */
-const KEPT_TURNS: readonly ThreadTurnReason[] = ['task', 'verification', 'conflict'];
+const KEPT_TURNS: readonly ThreadTurnReason[] = ['task', 'verification', 'conflict', 'checks', 'comments', 'continue', 'publish'];
 const PENDING_TURN_LIMIT = 40_000;
 const digest = (text: string) => createHash('sha256').update(text).digest('hex');
 const SEEN_MESSAGES = 200;
@@ -121,7 +121,7 @@ export type ThreadRunnerContext = {
   project(projectId: string): Promise<Project>;
   /** Work settings (the hub copy, or the last good one during an outage). */
   workSettings(projectId: string): Promise<ProjectWorkSettings>;
-  worktrees: Pick<ThreadWorktree, 'create' | 'setup' | 'exists' | 'remove' | 'repository'>;
+  worktrees: Pick<ThreadWorktree, 'create' | 'setup' | 'exists' | 'remove' | 'repository'> & Partial<Pick<ThreadWorktree, 'hasCommits'>>;
   /** Main isolation (brief 8.2 step 4 main, D29): the claimed project checkout. */
   main: Pick<MainCheckout, 'prepare' | 'ready' | 'onMain' | 'workspace' | 'release' | 'stop' | 'settle'>;
   /** Ends a turn process recorded earlier whose end was not confirmed; rejects while it still cannot be (recovery's rule). */
@@ -411,6 +411,10 @@ export class ThreadRunner {
       }
       next = { ...next, body: `${next.body}\n\nRequested result (Jev): ${projectOutcomeInstruction(route.outcome)}\nPrevious report: ${thread.lastReport?.summary ?? '(none)'}` };
     }
+    if (next.reason === 'publish') {
+      if (next.pending) this.#c.store.updateLocal(thread.id, local => { const kept = { ...local }; delete kept.pendingTurn; return kept; });
+      return this.#publish();
+    }
     // Before every turn, also verification turns and messages that arrive at rest (D73).
     // A thread attached in a terminal holds its account (phase 8): with no other eligible account the turn waits, before it takes anything.
     const wait = await this.#c.accountWait(thread);
@@ -475,7 +479,7 @@ export class ThreadRunner {
    */
   #rest(next: NextTurn, reason: string): void {
     if (KEPT_TURNS.includes(next.reason) && !next.pending) {
-      const pending = { reason: next.reason as 'task' | 'verification' | 'conflict', body: next.body.slice(0, PENDING_TURN_LIMIT) };
+      const pending = { reason: next.reason as NonNullable<ThreadLocal['pendingTurn']>['reason'], body: next.body.slice(0, PENDING_TURN_LIMIT) };
       this.#c.store.updateLocal(this.threadId, (local) => ({ ...local, pendingTurn: pending }));
     }
     const thread = this.#thread();
@@ -747,7 +751,7 @@ export class ThreadRunner {
     if (missing) this.#freshSession();
     this.#abort = new AbortController(); this.#stopping = undefined;
     this.#set(current => {
-      const next = { ...withState(current, 'idle'), verificationAttempts: 0 }; delete next.endedAt;
+      const next = { ...withState(current, 'idle'), verificationAttempts: 0 }; delete next.endedAt; delete next.resolution;
       delete next.publishedCommit;
       if (next.pr?.state !== 'open') delete next.pr;
       if (missing) {
@@ -850,7 +854,7 @@ export class ThreadRunner {
       thread = this.#thread();
     }
     if (isTerminal(thread.state)) {
-      if (raw.from !== 'owner') throw refuse(THREAD_ENDED, 409);
+      if (raw.from !== 'owner' && !thread.resolution) throw refuse(THREAD_ENDED, 409);
       await this.#serial(async () => { if (isTerminal(this.#thread().state)) await this.#reopen(); });
       thread = this.#thread();
       const repeated = this.#c.store.local(thread.id).seenMessages?.find(entry => entry.id === message.id);
@@ -858,6 +862,7 @@ export class ThreadRunner {
     }
     this.#c.store.update(thread.id, (current) => ({ ...current, queuedMessages: [...current.queuedMessages, message] }), { type: 'journal-message', data: { schema: 'journal-message-v1', ...message } });
     this.#c.store.updateLocal(thread.id, (local) => ({ ...local, seenMessages: [...(local.seenMessages ?? []), { id: message.id, digest: hash }].slice(-SEEN_MESSAGES) }));
+    if (thread.resolution) this.#set(current => { const next = { ...current }; delete next.resolution; return next; });
     const route = deliveryRoute(thread.state);
     if (route === 'running') {
       if (!message.interrupt) return { delivery: 'queued', repeated: false };
@@ -866,6 +871,11 @@ export class ThreadRunner {
     }
     if (route !== 'rest') return { delivery: 'queued', repeated: false };
     return { delivery: await this.#fromRest(), repeated: false };
+  }
+  async requestTurn(reason: NonNullable<ThreadLocal['pendingTurn']>['reason'], body: string, commentIds: string[] = [], accepted?: { id: string; digest: string }): Promise<void> {
+    if (isTerminal(this.#thread().state)) await this.#serial(() => this.#reopen());
+    this.#c.store.updateLocal(this.threadId, local => ({ ...local, pendingTurn: { reason, body }, ...(accepted ? { acceptedActions: [...(local.acceptedActions ?? []), accepted].slice(-200) } : {}), ...(local.prComments && commentIds.length ? { prComments: { ...local.prComments, since: local.prComments.items.filter(row => commentIds.includes(row.id)).reduce((at, row) => row.at > at ? row.at : at, local.prComments.since), items: local.prComments.items.filter(row => !commentIds.includes(row.id)), deliveredIds: [...local.prComments.deliveredIds, ...commentIds].slice(-500) } } : {}) }));
+    await this.#fromRest();
   }
   /** The sweep (D9): a thread at rest whose next turn waited for a slot tries again. */
   resume(): Promise<'started' | 'queued'> { return this.#fromRest(); }
@@ -883,7 +893,7 @@ export class ThreadRunner {
   }
   async #admit(): Promise<(() => void) | undefined> {
     const thread = this.#thread();
-    if (this.#halted() || !atRest(thread.state) || (!thread.queuedMessages.length && !this.#pendingTurn())) return undefined;
+    if (this.#halted() || thread.resolution || !atRest(thread.state) || (!thread.queuedMessages.length && !this.#pendingTurn())) return undefined;
     // A thread whose preparation waits for its retry has not had its task turn yet: the retry runs it, and the messages follow it (B1).
     if (thread.turns === 0 && this.#c.store.local(thread.id).preparationRetry) return undefined;
     if (atTurnLimit(thread)) { await this.#work(() => this.#atLimit()); return undefined; }

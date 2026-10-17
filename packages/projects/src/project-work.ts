@@ -298,6 +298,7 @@ export class ProjectWork {
     this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, ...(o.workRefusal ? { workRefusal: o.workRefusal } : {}), store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
       projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, settings: o.settings, now,
       roster: o.roster, decisions: this.decisions, fallbackCheckMs: timers.fallbackCheckMs, managedQueue: true,
+      refreshLanding: (projectId, threadId) => this.daily.assertMerge(projectId, threadId),
       queueChanged: projectId => { void this.dispatcher.sweep(projectId).catch(() => undefined); },
       runner: {
         routeMessages: (thread, body, ids, signal) => followups.route(thread, body, ids, signal),
@@ -340,7 +341,7 @@ export class ProjectWork {
     this.jobs = new ProjectJobRunner({ homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
       project: id => this.#project(id), settings: id => this.admission.settings(id), baseBranch: repo => worktrees.baseBranch(repo), event: (id, event) => delivery.toCoordinator(id, event),
       windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
-    this.daily = new ProjectDailyWork({ fixCutoffMinutes: nightlyFixMinutes(o.homes), hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
+    this.daily = new ProjectDailyWork({ landing: (threadId, held) => { if (!this.store.get(threadId)) return; if (held) this.store.setIndexFields(threadId, { landing: 'held' }); else if (this.store.local(threadId).landing === 'held') this.store.setIndexFields(threadId, { landing: undefined }); }, fixCutoffMinutes: nightlyFixMinutes(o.homes), hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
       memoryDream: async (id, requestId) => { if (!this.memoryProgramme) throw new Error('The memory dream runs on the hub.'); return this.memoryProgramme.runNow(await this.#project(id), requestId); },
       memoryDreamLine: id => this.memoryProgramme?.line(id),
       validateGoal: async (id, goalId) => { if (goalId) await this.goals.read(id, goalId); }, event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
@@ -357,7 +358,7 @@ export class ProjectWork {
         const brief = `${task.brief}${goal ? `\n\nGoal: ${goal.name}. Why it matters: ${goal.motivation}` : ''}\n\nTask type: ${task.type}.`;
         return { brief, taskContext: { type: task.type, needs: task.needs, goal: goal ? { name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: brief };
       }, review: task => this.reviews.start(task), job: task => this.jobs.start(task), eligible: async (task, tasks) => await this.daily.eligible(task, tasks) && await this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
-    this.tracker = new PullRequestTracker({ threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
+    this.tracker = new PullRequestTracker({ comments: (thread, since) => this.#github.reviewComments(thread, since), threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
       hub: o.hub, deviceId: o.deviceId, assertMerge: (id, tid) => this.daily.assertMerge(id, tid),
@@ -383,7 +384,7 @@ export class ProjectWork {
     }, dropped: (lost) => this.#lostEnvelope(lost) });
     this.#attach = new ThreadAttach({ deviceId: o.deviceId, deviceName: o.deviceName, store: this.store, coordinators: coordinatorStore, hub: o.hub, roster: o.roster,
       runner: (threadId) => this.threads.runner(threadId), project: (projectId) => this.#project(projectId), main, accounts: o.accounts, transcripts: this.transcripts });
-    this.views = new ProjectViews({ deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
+    this.views = new ProjectViews({ mergesHeld: async (id, tid) => await this.daily.mergesHeld(id) && !(await this.daily.allowedMergeThreads(id)).includes(tid), deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
       githubNotice: async projectId => { const budget = await (await github.open(projectId)).rateLimit(); return budget && budget.remaining / budget.limit < 0.2 && budget.resetAt > now() ? 'GitHub has less than 20% of its request budget remaining. Pull requests refresh every five minutes until it resets.' : undefined; },
       coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster, placement });
     this.ready = Promise.all([this.apps.ready, recoverProjects({ paths: this.paths, ledgers: this.ledgers, store: this.store, coordinators: this.coordinators,
@@ -821,6 +822,10 @@ export class ProjectWork {
   async threadMessage(projectId: string, threadId: string, input: z.infer<typeof ThreadMessageRequestSchema>): Promise<{ repeated: boolean }> {
     const result = await this.threads.message(projectId, threadId, 'owner', input.text, input.interrupt, input.clientMessageId);
     return { repeated: result.repeated };
+  }
+  async threadAction(projectId: string, threadId: string, input: import('@jevellan/core').ThreadActionRequest): Promise<ThreadView> {
+    await this.threads.action(projectId, threadId, input); await this.threads.refreshIndexes();
+    return this.views.thread(projectId, threadId);
   }
   /** Stop from the thread page: `Stopped by you.` unless a reason is given; the coordinator is told (D28). */
   stopThread(projectId: string, threadId: string, input?: z.infer<typeof ThreadStopRequestSchema>): Promise<void> {

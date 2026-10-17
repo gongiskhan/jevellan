@@ -1,3 +1,5 @@
+Projects parity phase3 source and affected checks are complete (Decisions853–855): the Overview, resolution and shared owner actions use the existing thread, index and publication paths. Review-comment reads are the Address comments prerequisite for phase4. All four layouts pass across recorded runs; dedicated vision is not run. Evidence and closing concerns are in acceptance/projects-parity-2026-10/phase-3/. Phase2 is pushed as a03f98af.
+
 17 October parity phase2 source is complete (Decisions850–852): shared instructions and snapshots, chat cards, enforced Propose, owner-message-only controls and field-only Undo. Affected backend checks, eight unique four-layout browser journeys, final PAR2 repetitions, typecheck, lint and build pass. Dedicated model vision is not run; the fixture cleanup warning is retained. Phase1 is pushed as15d0a138. Release and real-provider LP journeys remain phase10 work. See docs/acceptance/projects-parity-2026-10/phase-2/.
 
 <!-- The17October2026 Projects parity BRIEF.md supersedes conflicting historical brief/plan statements below. -->

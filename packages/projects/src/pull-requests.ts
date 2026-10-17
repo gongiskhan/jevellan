@@ -12,6 +12,7 @@ import type { ThreadWorktree } from './worktree.js';
 export type MergeResultView = z.infer<typeof MergeResultViewSchema>;
 type PrChange = Extract<CoordinatorEvent, { kind: 'pr-update' }>['change'];
 export type PullRequestTrackerOptions = {
+  comments?(thread: Thread, since: string): Promise<import('@jevellan/core').PullComment[]>;
   assertMerge?(projectId: string, threadId?: string): Promise<void>;
   threads: Pick<ThreadStore, 'all' | 'get' | 'update' | 'local' | 'updateLocal' | 'ledgers'>;
   github: GitHubAccess; git: ThreadGit; worktrees: Pick<ThreadWorktree, 'repository' | 'remove'>;
@@ -107,7 +108,7 @@ export class PullRequestTracker {
     const pull = await client.getPull(repository, pr.number);
     const open = !pull.merged && pull.state === 'open';
     const checked = open ? await client.checkState(repository, pull.headSha) : { checks: pr.checks, passedChecks: pr.passedChecks };
-    const next = { ...pullRequestState(pull, checked.checks, this.#at()), headFirstSeenAt: pull.headSha === pr.headSha ? pr.headFirstSeenAt ?? pr.updatedAt : this.#at(), ...(checked.passedChecks ? { passedChecks: checked.passedChecks } : {}) };
+    const next = { ...pullRequestState(pull, checked.checks, this.#at()), ...(pull.updatedAt ? { githubUpdatedAt: pull.updatedAt } : {}), ...('details' in checked ? { failedChecks: checked.details.filter(check => check.conclusion && !['success', 'neutral', 'skipped'].includes(check.conclusion) || check.status === 'failure' || check.status === 'error').map(check => check.name).slice(0, 2000) } : {}), headFirstSeenAt: pull.headSha === pr.headSha ? pr.headFirstSeenAt ?? pr.updatedAt : this.#at(), ...(checked.passedChecks ? { passedChecks: checked.passedChecks } : {}) };
     return next;
   }
   #notice(thread: Thread, text: string): void {
@@ -147,6 +148,14 @@ export class PullRequestTracker {
     if (comparable(thread.pr) !== comparable(next)) {
       this.#o.threads.update(thread.id, (current) => ({ ...current, pr: next }),
         { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'pr-state', prNumber: next.number, pr: next } });
+    }
+    const previous = this.#o.threads.local(thread.id).prComments;
+    if (this.#o.comments && (!previous || previous.prNumber !== next.number || previous.remoteUpdatedAt !== next.githubUpdatedAt && this.#o.now() - Date.parse(previous.fetchedAt) >= 60_000)) {
+      try {
+      const since = previous?.prNumber === next.number ? previous.since : thread.pr?.updatedAt ?? thread.createdAt;
+      const comments = await this.#o.comments({ ...thread, pr: next }, since), delivered = previous?.prNumber === next.number ? previous.deliveredIds : [];
+      this.#o.threads.updateLocal(thread.id, local => ({ ...local, prComments: { schema: 'pr-comment-batch-v1', prNumber: next.number, since, ...(next.githubUpdatedAt ? { remoteUpdatedAt: next.githubUpdatedAt } : {}), fetchedAt: this.#at(), items: comments.filter(row => !delivered.includes(row.id)), deliveredIds: delivered } }));
+      } catch (error) { this.#readFailure(thread, error); }
     }
     const local = this.#o.threads.local(thread.id);
     let notified: NonNullable<ThreadLocal['prNotified']> = local.prNotified?.headSha === next.headSha ? local.prNotified : { headSha: next.headSha };

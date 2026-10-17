@@ -116,7 +116,7 @@ export function coordinatorFreshContext(input: CoordinatorPromptInput): string {
   const batch = new Set(input.events.map((event) => event.id));
   return (input.instructions ? coordinatorOwnerInstructions(input.instructions) : '') + freshContext({
     notebook: input.notebook,
-    threads: input.threads.filter((thread) => !isTerminal(thread.state)).map((thread) => activeThreadLine({ title: thread.title, id: thread.id, state: thread.state,
+    threads: input.threads.filter((thread) => !isTerminal(thread.state) && !thread.resolution).map((thread) => activeThreadLine({ title: thread.title, id: thread.id, state: thread.state,
       isolation: thread.isolation, runtime: input.runtimeName(thread.runtime), modelLabel: thread.modelLabel, effort: thread.effort, deviceName: input.deviceName(thread.ownerDeviceId),
       pr: thread.pr ? { number: thread.pr.number, checks: thread.pr.checks } : undefined, lastSummary: thread.lastSummary })),
     questions: coordinatorQuestions(input),

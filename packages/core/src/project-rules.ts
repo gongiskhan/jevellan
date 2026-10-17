@@ -44,9 +44,9 @@ export function workCounts(threads: readonly Pick<ThreadIndex, 'state'>[], decis
 }
 /** Concluded threads stay listed for 14 days after they end (brief 7.1 `include: 'all'`, 12.2 Concluded). */
 export const CONCLUDED_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
-/** A concluded thread that ended (by `endedAt`, else its last update) within the last 14 days. */
-export function concludedRecently(thread: { state: ThreadState; endedAt?: string | undefined; updatedAt: string }, now: number): boolean {
-  return isTerminal(thread.state) && now - Date.parse(thread.endedAt ?? thread.updatedAt) <= CONCLUDED_WINDOW_MS;
+/** A concluded or resolved thread within the last 14 days. */
+export function concludedRecently(thread: { state: ThreadState; endedAt?: string | undefined; updatedAt: string; resolution?: { at: string } | undefined }, now: number): boolean {
+  return (!!thread.resolution || isTerminal(thread.state)) && now - Date.parse(thread.resolution?.at ?? thread.endedAt ?? thread.updatedAt) <= CONCLUDED_WINDOW_MS;
 }
 
 // Texts both the owner device writes and the browser reads back (D214): one source, re-exported by the projects copy module.
@@ -125,3 +125,13 @@ export function coordinatorMovable(deviceId: string, row: Pick<DeviceView, 'stat
 }
 /** The refusal of a move while the coordinator runs a turn on a device that is online (3.5.3); the Projects copy module re-exports it. */
 export const coordinatorWorking = (deviceName: string): string => `The coordinator is working on ${deviceName}. Try again when it is idle.`;
+
+export type BoardGroup = 'waiting' | 'review' | 'working' | 'landing' | 'idle' | 'resolved';
+/** Overview grouping is ordered: a resolution wins over the stored resting state. */
+export function boardGroup(thread: Pick<ThreadIndex, 'state' | 'resolution' | 'landing'>): BoardGroup {
+  if (thread.resolution || thread.state === 'done' || thread.state === 'stopped') return 'resolved';
+  if (thread.state === 'failed' || thread.state === 'waiting-for-you') return 'waiting';
+  if (['queued', 'preparing', 'running', 'publishing', 'attached'].includes(thread.state)) return 'working';
+  if (thread.state === 'in-review') return thread.landing ? 'landing' : 'review';
+  return 'idle';
+}

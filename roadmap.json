@@ -800,8 +800,8 @@
   {
     "id": "parity-overview",
     "title": "Overview groups and thread actions",
-    "why": "BRIEF.md phase 3. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
-    "status": "planned"
+    "why": "BRIEF.md phase 3: six Overview groups, resolution and inactivity sweep, landing facts and managed owner actions are implemented. Affected backend/API/remote checks and seven unique journeys per layout pass across recorded runs; final settled Overview repetitions pass. Typecheck, lint, build and working-tree secret checks pass. Dedicated model vision is not run; process-group cleanup warnings, full suites, release and live journeys remain closing gates. See docs/acceptance/projects-parity-2026-10/phase-3/.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "parity-pr-autofix",

@@ -24,7 +24,7 @@ export function ChatWorkCards({ item, projectId, tasks, threads, startAll, devic
   return <div className="pw-chat-work-cards">
     {item.message && <p className="muted">{copy.SENT_MESSAGE_CARD}</p>}
     {rows.map(row => <ThreadCard key={row.id} projectId={projectId} task={row.task} thread={row.thread} position={row.task ? tasks.filter(task => task.state === 'queued').findIndex(task => task.id === row.task!.id) + 1 : undefined}
-      deviceName={deviceName} navigate={navigate} busy={operation.busy} start={task => run(task)} dismiss={task => run(task, true)} />)}
+      deviceName={deviceName} navigate={navigate} changed={changed} onError={onError} busy={operation.busy} start={task => run(task)} dismiss={task => run(task, true)} />)}
     {startAll.length > 0 && <button className="secondary" disabled={operation.busy} onClick={() => void operation.run(async signal => {
       try { for (const id of startAll) { const task = tasks.find(task => task.id === id); if (task?.state === 'draft') await act(task, false, signal); } } finally { changed(); }
     })}>{copy.startAllCards(startAll.length)}</button>}

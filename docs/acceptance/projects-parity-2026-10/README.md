@@ -15,8 +15,8 @@
 | --- | --- | --- | --- |
 | 0 | Reference, inventory, plan, roadmap and clocks | Pushed | Live checkout and local doctor; no product code changed |
 | 1 | Settings v4, page, pause/archive and daily cap | Pushed 15d0a138; vision blocked | Simulated: 429 distinct backend cases, 8 browser journeys across 4 layouts, typecheck/lint/build and working-tree secret scan pass. See phase-1/. Full suites remain phase 10 gates. |
-| 2 | Coordinator instructions, answers, cards, proposals and settings | Source complete; vision blocked | Affected backend cases, eight unique four-layout browser journeys, final PAR2 repetitions, typecheck/lint/build pass. See phase-2/. |
-| 3 | Overview, resolution and thread actions | Not started | Not run |
+| 2 | Coordinator instructions, answers, cards, proposals and settings | Pushed a03f98af; vision blocked | Affected backend cases, eight unique four-layout browser journeys, final PAR2 repetitions, typecheck/lint/build pass. See phase-2/. |
+| 3 | Overview, resolution and thread actions | Source complete; vision blocked | Affected backend/API/remote cases pass. Seven unique journeys pass in every layout across recorded runs; final settled Overview captures pass. Typecheck/lint/build/secret checks pass. See phase-3/. |
 | 4 | Automatic pull request fixes | Not started | Not run |
 | 5 | Account waits, placement bounds, escalation and usage | Not started | Not run |
 | 6 | Web push | Not started | Not run |
@@ -66,3 +66,22 @@ Live: the installed Pro UI refreshed both Claude accounts and the Pro Codex acco
 ## Phase 2 checkpoint
 
 Simulated: instructions/snapshots, answer routing, live cards, Propose, owner-turn fences, retry-safe settings and field-only Undo are implemented. The broader154-case run passes153 with one new-record expectation failure; that unchanged PJ2 case passes after its explicit task-id expectation is updated. Final settings/tools/prompts/UI run:62 pass; further UI run:43 pass (overlap). Eight unique browser journeys pass in four layouts, with another final PAR2 pass in each. Typecheck, lint, build and whitespace checks pass. Model vision is not run for the missing dedicated credential;24 receipts say so. The fixture process-cleanup warning remains a closing-check concern. Source is not installed and the live clock has not started.
+
+
+## Phase 2 push
+
+Live: phase 2 is pushed as a03f98af10615ead5b85062167b027534b4b4aa3. The normal pre-push history secret scan passed. No source installation or live clock start occurred.
+
+## Phase 3 decisions and work in progress
+
+853. The six Overview groups replace the Running/Concluded presentation in Decision52. Resolution preserves thread identity, branch and worktree, withdraws open thread questions and records the owner or inactivity reason. Reopen and accepted messages clear the resolution. Decision834's existing continuation remains. Landing and fixable facts use the existing owner-local thread sidecar and a new ledger event for each changed index, preserving immutable event-id publication.
+
+854. Owner pull request actions need review-comment reads before automatic fixes can be implemented. The three read-only GitHub reads and the versioned comment batch therefore land as phase3 prerequisites. They share GitHub's request budget and the awareness cache. A changed PR is re-read after the cache window, so a cache hit cannot permanently hide a new comment. Read failures preserve the check/conflict event path. Automatic rounds, quiet-window triggers and give-up decisions remain phase4 work.
+
+855. Publish uses the existing admission, pending-turn, verification and managed publication paths. A versioned owner action receipt binds its client id to the request. Accepted work actions atomically retain their request digest with the pending turn, so a restart between acceptance and the HTTP receipt cannot publish twice. No agent merge tool or direct agent push path is added.
+
+Simulated checks are in progress. The first valid regressions demonstrate missing grouping/projection/actions, the cache-window comment loss, the accepted-Publish retry gap, and comment-read errors suppressing check events. One initial decision fixture had only one option and was corrected to the supported two choices. One initial error-injection fixture used a string instead of the required regular expression; the corrected regression also fails before the repair. An initial PAR3 setup waited for unrelated global activity and was stopped; it now waits, with a deadline, for its own preparation thread. These stopped or invalid attempts are not passes.
+
+## Phase 3 checkpoint
+
+Simulated: affected backend, schema/API, GitHub budget and two-daemon owner-action checks pass as recorded in phase-3/README.md. Seven unique browser journeys pass in each of the four layouts across affected runs, with final settled Overview repetitions. All88 vision receipts say not run for the missing dedicated test credential. Typecheck, lint, build, whitespace and working-tree secret checks pass. Harness output-folder, interception and initialization failures remain recorded, along with the existing process-group cleanup warning. No installed release, live-provider acceptance or owner acceptance is claimed. Phase4 has not started.

@@ -11,7 +11,7 @@ import { BRANCH_PUSHED_NO_TOKEN, LEAVE_GIT_SETTING, MAIN_NOT_AVAILABLE, NOT_GITH
 import { coordinatorMovable, coordinatorPlan, type CoordinatorService } from './coordinator.js';
 import type { ProjectLedgers } from './ledger.js';
 import { PHASE_GATES, type DeviceRoster, type Placement } from './placement.js';
-import { threadIndex, type ThreadStore } from './stores.js';
+import { type ThreadStore } from './stores.js';
 import { atTurnLimit, canContinueThread, isDiscarded, restartRefusal } from './thread-runner.js';
 import type { ThreadTranscripts } from './transcript.js';
 import type { ThreadWorktree } from './worktree.js';
@@ -63,9 +63,10 @@ export type ProjectViewsOptions = {
   deviceId: string; deviceName: string;
   hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook' | 'workSummaries' | 'sessionCaches'>;
   projects: Pick<SharedProjects, 'get' | 'list'>;
-  store: Pick<ThreadStore, 'get' | 'labels' | 'local'>; ledgers: ProjectLedgers; coordinators: Pick<CoordinatorService, 'get'>;
+  store: Pick<ThreadStore, 'get' | 'labels' | 'local' | 'index'>; ledgers: ProjectLedgers; coordinators: Pick<CoordinatorService, 'get'>;
   transcripts: Pick<ThreadTranscripts, 'read'>; worktrees: Pick<ThreadWorktree, 'repository' | 'baseBranch'>;
   accounts: Pick<AccountService, 'list'>; runtimes: ReadonlyMap<string, RuntimeAdapter>;
+  mergesHeld?(projectId: string, threadId: string): Promise<boolean>;
   githubNotice?(projectId: string): Promise<string | undefined>; settings(): Promise<Configuration['x-jevellan']>; roster(): Promise<DeviceRoster>;
   /** The per-device setup of New thread and Override (D281). */
   placement: Pick<Placement, 'deviceSetup'>;
@@ -197,12 +198,14 @@ export class ProjectViews {
     // An ended main thread whose claim the sweeps are still settling says why the checkout stays held (phase 8, D291).
     const kept = isTerminal(thread.state) ? this.#o.store.local(threadId).unsettledCheckout?.message : undefined;
     const routed = events.findLast(event => event.type === 'thread-message-route');
-    return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: { ...threadIndex(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt),
+    const mergesHeld = await this.#o.mergesHeld?.(projectId, threadId).catch(() => undefined);
+    return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: { ...this.#o.store.index(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt),
       sessionCache: sessionCacheSummaries(cacheRecords(ledger)).slice(-500) },
       ...(this.#o.store.local(threadId).memoryRecall ? { memoryRecall: this.#o.store.local(threadId).memoryRecall } : {}),
       sessionHistory: (this.#o.store.local(threadId).sessionHistory ?? []).map(({ nativeSessionId: _native, ...entry }) => { void _native; return entry; }),
       placement: thread.placement, reports, transcript, queuedMessages: thread.queuedMessages,
       ...(routed ? { messageRoute: ledger.payload(routed as typeof routed & { type: 'thread-message-route' }) } : {}),
+      ...(mergesHeld === undefined ? {} : { mergesHeld }),
       canMessage: thread.state !== 'attached' && canContinueThread(thread), turnAllowance: thread.turnAllowance, deviceName: this.#o.deviceName,
       baseBranch: thread.baseBranch, ...(thread.attach ? { attach: thread.attach } : {}), attachCommand: attachCommand(threadId),
       canOverride: { nextTurn: !isTerminal(thread.state), restart: !restartReason, ...(restartReason ? { restartReason } : {}) }, atTurnLimit: atTurnLimit(thread),

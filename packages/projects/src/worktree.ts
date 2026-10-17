@@ -121,6 +121,10 @@ export class ThreadWorktree {
     const line = result.timedOut ? commandTimedOut(timeoutMs) : firstLine(result.stderr) || firstLine(result.stdout) || exitCodeLine(result.code);
     return { ok: false, reason: worktreeSetupFailed(line), outputRef, timedOut: result.timedOut };
   }
+  async hasCommits(thread: Thread): Promise<boolean> {
+    if (!thread.cwd || !thread.baseCommit || !existsSync(thread.cwd)) return false;
+    return Number((await this.#git.run(thread.cwd, ['rev-list', '--count', `${thread.baseCommit}..HEAD`])).stdout.trim()) > 0;
+  }
   async exists(project: Project, thread: Thread): Promise<boolean> {
     const path = this.#paths.worktree(thread.projectId, thread.id); const entry = await this.#entry(this.repository(project), path);
     return !!entry && !entry.prunable && existsSync(path) && entry.branch === `refs/heads/${thread.branch ?? threadBranch(thread.title, thread.id)}`;

@@ -18,7 +18,7 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
     try { return execFileSync('git', ['--git-dir', origin(repo), 'rev-parse', '--verify', '--quiet', `refs/heads/${ref}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null; } catch { return null; }
   };
   // Force pushes move the head: re-read it from the bare origin on every call.
-  const refresh = (pull) => { const sha = headOf(pull.repo, pull.head); if (sha) { pull.headSha = sha; execFileSync('git', ['--git-dir', origin(pull.repo), 'update-ref', `refs/pull/${pull.number}/head`, sha]); } return pull; };
+  const refresh = (pull) => { const sha = headOf(pull.repo, pull.head); if (sha) { if (pull.headSha !== sha) pull.updatedAt = new Date().toISOString(); pull.headSha = sha; execFileSync('git', ['--git-dir', origin(pull.repo), 'update-ref', `refs/pull/${pull.number}/head`, sha]); } return pull; };
   const find = (number, repo = Object.keys(repositories)[0]) => {
     const pull = pulls.find((entry) => entry.repo === repo && entry.number === Number(number));
     if (!pull) throw new Error(`No fixture pull request ${repo}#${number}.`);
@@ -27,7 +27,7 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
   const view = (pull, list = false) => {
     const [owner] = pull.repo.split('/');
     return { number: pull.number, html_url: `https://github.com/${pull.repo}/pull/${pull.number}`, state: pull.state, title: pull.title, body: pull.body,
-      user: { login: pull.author ?? owner }, draft: pull.draft ?? false, updated_at: pull.updatedAt ?? new Date().toISOString(),
+      user: { login: pull.author ?? owner }, draft: pull.draft ?? false, updated_at: pull.updatedAt ??= new Date().toISOString(),
       merged_at: pull.merged ? pull.mergedAt : null, head: { sha: pull.headSha, ref: pull.head, label: `${owner}:${pull.head}` }, base: { ref: pull.base },
       // List items carry no merge fields on GitHub.
       ...(list ? {} : { merged: pull.merged, mergeable: MERGEABLE[pull.mergeable] ?? null, mergeable_state: pull.mergeable }) };
@@ -41,6 +41,7 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
     return { runs: RUNS[checks], status: checks === 'passing-status' ? { state: 'success', total_count: 1, statuses: [{ state: 'success', context: 'fixture' }] } : EMPTY_STATUS };
   };
   const apply = (pull, change) => {
+    pull.updatedAt = new Date().toISOString();
     if (change.checks !== undefined) pull.checks = change.checks;
     if (change.mergeable !== undefined) pull.mergeable = change.mergeable;
     if (change.merged) Object.assign(pull, { merged: true, state: 'closed', mergedAt: new Date().toISOString(), mergeSha: createHash('sha1').update(`${pull.repo}#${pull.number}:${refresh(pull).headSha}`).digest('hex') });
@@ -171,6 +172,13 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
         const [name, date, ...message] = execFileSync('git', ['--git-dir', origin(repo), 'show', '-s', '--format=%an%n%aI%n%B', sha], { encoding: 'utf8' }).split('\n');
         return { sha, commit: { message: message.join('\n'), author: { name, date: new Date(date).toISOString() } } };
       }));
+    }
+    const comments = /^\/repos\/([^/]+)\/([^/]+)\/(pulls|issues)\/(\d+)\/(reviews|comments)$/.exec(path);
+    if (method === 'GET' && comments) {
+      const pull = find(Number(comments[4]), `${comments[1]}/${comments[2]}`), kind = comments[5] === 'reviews' ? 'reviews' : comments[3] === 'issues' ? 'issueComments' : 'inlineComments';
+      const eligible = (pull[kind] ?? []).filter(row => !url.searchParams.has('since') || (row.created_at ?? row.submitted_at) >= url.searchParams.get('since'));
+      const page = Number(url.searchParams.get('page') ?? '1'), size = Number(url.searchParams.get('per_page') ?? '100');
+      return send(response, 200, eligible.slice((page - 1) * size, page * size));
     }
     return send(response, 404, { message: 'Not Found' });
   }

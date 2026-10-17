@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import {
   CoordinatorMessageReceiptSchema, CoordinatorMessageRequestSchema, DecisionAnswerRequestSchema, DecisionAnsweredViewSchema, DeviceOriginSchema, EmptySchema, ErrorDocumentSchema, IdSchema,
   MergeResultViewSchema, MergeCorrectionInputSchema, NotebookRequestSchema, PeerLoginSessionInputSchema, ProjectEventFrameSchema, ProjectWorkSettingsRequestSchema, ThreadCreateRequestSchema, ThreadCreatedViewSchema,
-  ThreadMessageReceiptSchema, ThreadMessageRequestSchema, ThreadOverrideRequestSchema, ThreadStopRequestSchema, UiSessionTokenSchema, boundedRedaction, type ProjectLedgerEvent,
+  ThreadActionRequestSchema, ThreadMessageReceiptSchema, ThreadMessageRequestSchema, ThreadOverrideRequestSchema, ThreadStopRequestSchema, UiSessionTokenSchema, boundedRedaction, type ProjectLedgerEvent,
   GoalCreateRequestSchema, GoalUpdateRequestSchema, TaskCreateRequestSchema, TaskUpdateRequestSchema, TaskActionRequestSchema,
 } from '@jevellan/core';
 import {
@@ -17,7 +17,7 @@ import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 import { readProjectImage } from '@jevellan/conversations';
 
 export type ProjectWorkRouteName = 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
-  | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
+  | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string;
   target: 'local' | 'coordinator' | 'owner' | 'any'; stream?: boolean };
@@ -61,6 +61,7 @@ const rows: readonly Row[] = [
   { name: 'thread', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)$/, methods: ['GET'], target: 'owner' },
   { name: 'thread-image', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/image$/, methods: ['GET'], target: 'owner' },
   { name: 'thread-events', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/events$/, methods: ['GET'], target: 'owner', stream: true },
+  { name: 'thread-action', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/actions$/, methods: ['POST'], target: 'owner' },
   { name: 'thread-message', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/messages$/, methods: ['POST'], target: 'owner' },
   { name: 'thread-stop', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/stop$/, methods: ['POST'], target: 'owner' },
   { name: 'thread-discard', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/discard$/, methods: ['POST'], target: 'owner' },
@@ -76,7 +77,7 @@ const rows: readonly Row[] = [
  * Requests carrying a client id repeat safely, so a hub outage during them is reported as retryable (settings only when the body has
  * one); so does Move coordinator here, whose repeat completes the first one (D269).
  */
-const withClientId = new Set<ProjectWorkRouteName>(['message', 'move', 'thread-create', 'thread-message', 'thread-override', 'answer', 'pr-correction', 'task-create', 'goal-create', 'job-create', 'daily-create', 'job-run', 'daily-run']);
+const withClientId = new Set<ProjectWorkRouteName>(['thread-action', 'message', 'move', 'thread-create', 'thread-message', 'thread-override', 'answer', 'pr-correction', 'task-create', 'goal-create', 'job-create', 'daily-create', 'job-run', 'daily-run']);
 const failure = (message: string, status: number) => Object.assign(new Error(message), { status });
 const API_PREFIX = '/api/projects/';
 /** UI-proxied requests from another device (phase 5, D41, D266): the owner and coordinator routes of the table. */
@@ -283,6 +284,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
       if (!ref || ref.length > 4096) throw failure('Choose an image from this thread.', 400);
       send(await readProjectImage(thread.cwd, ref)); return true;
     }
+    case 'thread-action': send(await work.threadAction(projectId, threadId, ThreadActionRequestSchema.parse(await requestBody(request)))); return true;
     case 'thread-message': {
       const { repeated } = await work.threadMessage(projectId, threadId, ThreadMessageRequestSchema.parse(await requestBody(request)));
       send(ThreadMessageReceiptSchema.parse({ schema: 'thread-message-receipt-v1', repeated }), 202); return true;

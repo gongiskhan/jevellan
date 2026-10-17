@@ -178,7 +178,7 @@ export const PullRequestReviewSchema = z.strictObject({ schema: z.literal('pull-
 export type PullRequestReview = z.infer<typeof PullRequestReviewSchema>;
 export const PullRequestStateSchema = z.strictObject({ number: positive, url: z.url(),
   state: z.enum(['open', 'merged', 'closed']), headSha: z.string(), checks: z.enum(['pending', 'passing', 'failing', 'none']),
-  headFirstSeenAt: TimestampSchema.optional(), passedChecks: z.array(z.string().max(200)).max(2000).optional(), mergeable: z.enum(['clean', 'conflict', 'unknown']), updatedAt: TimestampSchema, review: PullRequestReviewSchema.optional() });
+  githubUpdatedAt: TimestampSchema.optional(), failedChecks: z.array(z.string().max(200)).max(2000).optional(), headFirstSeenAt: TimestampSchema.optional(), passedChecks: z.array(z.string().max(200)).max(2000).optional(), mergeable: z.enum(['clean', 'conflict', 'unknown']), updatedAt: TimestampSchema, review: PullRequestReviewSchema.optional() });
 export type PullRequestState = z.infer<typeof PullRequestStateSchema>;
 // 5.8
 export const PlacementAccountChoiceSchema = z.strictObject({ schema: z.literal('placement-account-choice-v1'), questionSet: z.literal('a-v1'),
@@ -214,6 +214,7 @@ export const ThreadSchema = z.strictObject({
   title: z.string().min(1).max(120), task: z.string().min(1).max(32768), brief: z.string().min(1).max(32768).optional(),
   taskContext: TaskPlacementContextSchema.optional(),
   instructions: z.string().max(16000).optional(),
+  resolution: z.strictObject({ at: TimestampSchema, by: z.enum(['owner', 'inactivity']) }).optional(),
   createdAt: TimestampSchema, createdBy: z.enum(['coordinator', 'owner']), restartedAs: IdSchema.optional(),
   state: ThreadStateSchema, stateReason: z.string().max(400).optional(),
   isolation: IsolationSchema, placement: PlacementRecordSchema, gitPolicy: z.enum(['main', 'external']).optional(),
@@ -235,6 +236,9 @@ export const ThreadIndexSchema = z.strictObject({ schema: z.literal('project-thr
   id: IdSchema, projectId: IdSchema, title: z.string().min(1).max(120), state: ThreadStateSchema, stateReason: z.string().max(400).optional(),
   isolation: IsolationSchema, gitPolicy: z.enum(['main', 'external']).optional(), ownerDeviceId: IdSchema, runtime: IdSchema, modelLabel: text, effort: EffortSchema,
   accountLabel: text, branch: z.string().optional(), pr: PullRequestStateSchema.optional(),
+  resolution: ThreadSchema.shape.resolution,
+  landing: z.enum(['verifying', 'merging', 'held']).optional(),
+  fixable: z.strictObject({ checks: z.boolean(), conflicts: z.boolean(), comments: count, publish: z.boolean() }).optional(),
   lastSummary: z.string().max(400).optional(), changedPaths: z.array(z.string().max(1024)).max(8).optional(), turns: count, restartedAs: IdSchema.optional(),
   createdAt: TimestampSchema, updatedAt: TimestampSchema, endedAt: TimestampSchema.optional() });
 export type ThreadIndex = z.infer<typeof ThreadIndexSchema>;
@@ -276,7 +280,13 @@ export const TurnProcessSchema = z.strictObject({ turn: positive, pid: z.number(
   startIdentity: z.string().min(1).max(64).optional(), startedAt: TimestampSchema });
 export type TurnProcess = z.infer<typeof TurnProcessSchema>;
 // <home>/projects/<pid>/threads/<tid>/thread-local.json
+export const PullCommentSchema = z.strictObject({ id: z.string().min(1).max(64), author: z.string().max(120), body: z.string().min(1).max(1000), at: TimestampSchema, path: z.string().max(1024).optional(), line: positive.optional() });
+export type PullComment = z.infer<typeof PullCommentSchema>;
+export const PullCommentsSchema = z.strictObject({ schema: z.literal('pr-comment-batch-v1'), prNumber: positive, since: TimestampSchema, remoteUpdatedAt: TimestampSchema.optional(), fetchedAt: TimestampSchema, items: z.array(PullCommentSchema).max(3000), deliveredIds: z.array(z.string().max(64)).max(500) });
 export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-local-v1'),
+  acceptedActions: z.array(z.strictObject({ id: IdSchema, digest: z.string().regex(/^[a-f0-9]{64}$/u) })).max(200).optional(),
+  prComments: PullCommentsSchema.optional(),
+  landing: ThreadIndexSchema.shape.landing, fixable: ThreadIndexSchema.shape.fixable,
   sessionHistory: z.array(SessionHistorySchema).optional(),
   memoryRecall: MemoryRecallSchema.optional(),
   process: TurnProcessSchema.optional(),
@@ -298,7 +308,7 @@ export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-loca
   unsettledCheckout: z.strictObject({ settle: z.enum(['published', 'unchanged', 'stop']), message: z.string().max(400).optional(),
     seen: z.strictObject({ main: z.string().regex(/^[0-9a-f]{40,64}$/), tree: z.string().regex(/^[0-9a-f]{64}$/).optional() }).optional() }).optional(),
   // phase 8: a turn that waited because a terminal holds its account; it runs first when the thread takes its next turn
-  pendingTurn: z.strictObject({ reason: z.enum(['task', 'verification', 'conflict']), body: z.string().min(1).max(40_000) }).optional(),
+  pendingTurn: z.strictObject({ reason: z.enum(['task', 'verification', 'conflict', 'checks', 'comments', 'continue', 'publish']), body: z.string().min(1).max(40_000) }).optional(),
   // A step before the first turn failed for a transient reason: the next preparation attempt and how many retries were scheduled (B1).
   preparationRetry: z.strictObject({ attempts: z.number().int().min(1).max(10), retryAt: TimestampSchema }).optional(),
   // A message already restarted this thread's failed preparation; a later failure stays failed (B1).
@@ -467,7 +477,7 @@ export const ThreadViewSchema = z.strictObject({ sessionHistory: z.array(Session
   memoryRecall: MemoryRecallSchema.optional(),
   thread: ThreadIndexSchema, placement: PlacementRecordSchema, reports: z.array(ThreadReportSchema),
   transcript: CursorTranscriptSchema.nullable(), queuedMessages: z.array(QueuedMessageSchema),
-  canMessage: z.boolean(), turnAllowance: count,
+  mergesHeld: z.boolean().optional(), canMessage: z.boolean(), turnAllowance: count,
   deviceName: z.string(), baseBranch: z.string(), attach: z.strictObject({ startedAt: TimestampSchema }).optional(),
   attachCommand: z.string(), canOverride: z.strictObject({ nextTurn: z.boolean(), restart: z.boolean(), restartReason: z.string().optional() }),
   canDiscard: z.boolean(), atTurnLimit: z.boolean(),
@@ -484,6 +494,10 @@ export const ThreadCreateRequestSchema = z.strictObject({ schema: z.literal('thr
   isolation: IsolationSchema.optional(), runtimeId: IdSchema.optional(), accountId: IdSchema.optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional(), deviceId: IdSchema.optional(),
   // A restart's owner note for placement, sent by the thread's device to the coordinator device (D266); the New thread form sends none.
   note: z.string().max(400).optional() });
+export const ThreadActionRequestSchema = z.strictObject({ schema: z.literal('thread-action-request-v1'), clientRequestId: IdSchema,
+  action: z.enum(['fix-checks', 'resolve-conflicts', 'address-comments', 'publish', 'resolve', 'reopen']) });
+export type ThreadActionRequest = z.infer<typeof ThreadActionRequestSchema>;
+export const ThreadActionReceiptSchema = z.strictObject({ schema: z.literal('thread-action-receipt-v1'), request: ThreadActionRequestSchema, at: TimestampSchema, applied: z.boolean() });
 export const ThreadMessageRequestSchema = z.strictObject({ schema: z.literal('thread-message-request-v1'),
   clientMessageId: IdSchema, text: z.string().min(1).max(20000), interrupt: z.boolean() });
 export const ThreadStopRequestSchema = z.strictObject({ schema: z.literal('thread-stop-request-v1'), reason: z.string().max(400).optional() });

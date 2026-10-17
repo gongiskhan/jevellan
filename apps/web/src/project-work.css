@@ -103,7 +103,7 @@
 .pw-sidebar-empty .text-button { font-size: 12.5px; }
 
 /* ---------- page primitives (12.2, D53) ----------
-   The project page is a size container: two columns from 840 px of page width (1180 px viewport without a panel),
+   The project page is a size container: two columns from 840 px of page width,
    tabs below. --pw-sticky-top is the sticky page heading's height, set by the page. */
 .pw-page { container: pw-page / inline-size; }
 .pw-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 24px; align-items: start; flex: 1; }
@@ -157,15 +157,19 @@
     scrollbar-width: thin;
   }
 }
-/* Below 840 px one tab shows: Chat, or the side sections marked with that tab (Threads holds Running and Concluded). */
+/* Below 840 px Chat and Overview share the page. Overview has its own scrolling tabs. */
 @container pw-page (width < 840px) {
   .pw-layout:not([data-tab="chat"]) > .pw-chat,
-  .pw-layout[data-tab="chat"] > .pw-side,
-  .pw-layout[data-tab="waiting"] .pw-side > :not([data-tab="waiting"]),
-  .pw-layout[data-tab="queue"] .pw-side > :not([data-tab="queue"]),
-  .pw-layout[data-tab="threads"] .pw-side > :not([data-tab="threads"]),
-  .pw-layout[data-tab="pull-requests"] .pw-side > :not([data-tab="pull-requests"]) { display: none; }
+  .pw-layout[data-tab="chat"] > .pw-side { display: none; }
+  .pw-overview-title { display: none; }
 }
+.pw-section[hidden] { display: none; }
+.pw-overview-tabs { display: flex; gap: 4px; overflow-x: auto; padding: 4px 0 8px; scrollbar-width: none; }
+.pw-overview-title { margin: 0; font-size: 17px; }
+.pw-thread-actions { flex-wrap: wrap; }
+.pw-thread-card-heading .chip { white-space: nowrap; }
+.pw-thread-card { min-width: 0; }
+.pw-thread-card-heading a { overflow-wrap: anywhere; }
 
 /* ---------- project page (12.2) ---------- */
 /* Header: the project name, New thread, Notebook and the menu; the coordinator chip and its session underneath. */
@@ -736,3 +740,12 @@ button.pw-session-badge { display: inline-flex; gap: 6px; min-height: 30px; padd
 .pw-chat-setting { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
 .pw-chat-setting p { flex: 1; overflow-wrap: anywhere; margin: 0; }
 .pw-chat-setting button { flex: none; }
+
+.pw-thread-page .conversation-heading.pw-thread-heading > .pw-thread-owner-actions { grid-column: 1 / -1; grid-row: 5; min-width: 0; }
+.pw-thread-owner-actions:has(> .pw-thread-actions:empty) { display: none; }
+.pw-group-waiting .pw-card-dot { background: var(--danger); }
+.pw-group-review .pw-card-dot { background: var(--sea); }
+.pw-group-working .pw-card-dot { background: var(--jev); }
+.pw-group-landing .pw-card-dot { background: var(--warn); }
+.pw-group-idle .pw-card-dot { background: var(--ink-3); }
+.pw-group-resolved .pw-card-dot { background: var(--ok); }

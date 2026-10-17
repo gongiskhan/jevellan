@@ -14,6 +14,7 @@ export class ProjectDailyWork {
     settings(projectId: string): Promise<ProjectWorkSettings>; validateGoal(projectId: string, goalId: string | null): Promise<void>;
     event(projectId: string, event: CoordinatorEvent): Promise<void>; changed(): void;
     memoryDream?(projectId: string, requestId: string): Promise<{ schema: 'memory-dream-run-receipt-v1'; id: string; accepted: true }>;
+    landing?(threadId: string, held: boolean): void;
     memoryDreamLine?(projectId: string): string | undefined }) {}
   async jobs(projectId: string): Promise<ProjectJob[]> {
     const rows: ProjectJob[] = []; let after: string | undefined;
@@ -56,7 +57,9 @@ export class ProjectDailyWork {
     return fix?.threadId && await this.#next(window, rows) === fix.id ? [fix.threadId] : [];
   }
   async assertMerge(projectId: string, threadId?: string): Promise<void> {
-    if (await this.mergesHeld(projectId) && (!threadId || !(await this.allowedMergeThreads(projectId)).includes(threadId))) refuse(NIGHTLY_MERGE_HOLD);
+    const held = await this.mergesHeld(projectId) && (!threadId || !(await this.allowedMergeThreads(projectId)).includes(threadId));
+    if (threadId) this.o.landing?.(threadId, held);
+    if (held) refuse(NIGHTLY_MERGE_HOLD);
   }
   async #next(window: ProjectWindow, tasks: readonly ProjectWorkTask[]): Promise<string | undefined> {
     for (const plan of window.plans) {

@@ -33,7 +33,7 @@ export function parseGitHubPullUrl(url: string): GitHubRepository | null {
 // Responses of API version 2022-11-28 (D38). Loose: unknown fields are dropped, only the fields Jevellan reads are checked.
 // List items omit `merged`, `mergeable` and `mergeable_state`; only single pull requests carry them.
 export const GitHubPullResponseSchema = z.object({
-  number: z.number().int().positive(), html_url: z.url(), state: z.enum(['open', 'closed']),
+  updated_at: z.iso.datetime().optional(), number: z.number().int().positive(), html_url: z.url(), state: z.enum(['open', 'closed']),
   merged: z.boolean().optional(), merged_at: z.string().nullable().optional(), mergeable_state: z.string().nullable().optional(),
   head: z.object({ sha: z.string().regex(sha), ref: z.string().min(1) }), base: z.object({ ref: z.string().min(1) }),
 });
@@ -48,7 +48,7 @@ export const GitHubStatusResponseSchema = z.object({ total_count: z.number().int
 export const GitHubMergeResponseSchema = z.object({ merged: z.boolean(), sha: z.string().optional(), message: z.string() });
 const GitHubErrorBodySchema = z.object({ message: z.string() });
 
-export type GitHubPull = { number: number; url: string; state: 'open' | 'closed'; merged: boolean; mergeableState: string | null; headSha: string; headRef: string; baseRef: string };
+export type GitHubPull = { number: number; url: string; state: 'open' | 'closed'; merged: boolean; mergeableState: string | null; headSha: string; headRef: string; baseRef: string; updatedAt?: string | undefined };
 export type GitHubChecks = PullRequestState['checks'];
 export type GitHubMergeResult = { merged: boolean; sha?: string; message: string };
 export type GitHubErrorKind = 'no-token' | 'auth' | 'not-found' | 'conflict' | 'unprocessable' | 'not-mergeable' | 'redirect' | 'timeout' | 'network' | 'invalid-response' | 'http';
@@ -118,6 +118,17 @@ export class GitHubClient {
     return { checks: mapChecks(runs, statuses), passedChecks: [...runs.filter(run => run.status === 'completed' && run.conclusion === 'success').flatMap(run => run.name ? [run.name] : []), ...statuses.filter(status => status.state === 'success').flatMap(status => status.context ? [status.context] : [])],
       details: [...runs.map(run => ({ name: run.name ?? '(unnamed check)', status: run.status, conclusion: run.conclusion ?? null })),
         ...statuses.map(status => ({ name: status.context ?? '(unnamed status)', status: status.state, conclusion: status.state === 'pending' ? null : status.state }))] };
+  }
+  async pullReviews(repository: GitHubRepository, number: number) {
+    return this.#arrayPages(page => this.#request('GET', `${repo(repository)}/pulls/${pullNumber(number)}/reviews?per_page=100&page=${page}`, z.array(z.object({ id: z.number().int(), user: z.object({ login: z.string() }).nullable(), body: z.string().nullable(), state: z.string(), submitted_at: z.iso.datetime().nullable() }))));
+  }
+  async pullComments(repository: GitHubRepository, number: number, since: string) {
+    const shape = z.array(z.object({ id: z.number().int(), user: z.object({ login: z.string() }).nullable(), body: z.string(), created_at: z.iso.datetime(), path: z.string(), line: z.number().int().positive().nullable().optional(), original_line: z.number().int().positive().nullable().optional() }));
+    return this.#arrayPages(page => this.#request('GET', `${repo(repository)}/pulls/${pullNumber(number)}/comments?since=${encodeURIComponent(since)}&per_page=100&page=${page}`, shape));
+  }
+  async issueComments(repository: GitHubRepository, number: number, since: string) {
+    const shape = z.array(z.object({ id: z.number().int(), user: z.object({ login: z.string() }).nullable(), body: z.string(), created_at: z.iso.datetime() }));
+    return this.#arrayPages(page => this.#request('GET', `${repo(repository)}/issues/${pullNumber(number)}/comments?since=${encodeURIComponent(since)}&per_page=100&page=${page}`, shape));
   }
   /** Read-only coordinator awareness. These use the same request path and per-token rate budget as publication and polling. */
   async recentWorkflowRuns(repository: GitHubRepository, input: Extract<GithubInput, { action: 'runs' }>) {
@@ -221,6 +232,11 @@ export class GitHubClient {
     }
   }
 
+  async #arrayPages<T>(load: (page: number) => Promise<T[]>): Promise<T[]> {
+    const all: T[] = [];
+    for (let page = 1; page <= PAGE_LIMIT; page++) { const rows = await load(page); all.push(...rows); if (rows.length < 100) return all; }
+    throw new GitHubError('invalid-response', 'This pull request has too many review comments to read at once.');
+  }
   async #pages<T extends { total_count: number }, E>(load: (page: number) => Promise<T>, entries: (result: T) => E[]): Promise<E[]> {
     const all: E[] = [];
     for (let page = 1; page <= PAGE_LIMIT; page++) {
@@ -280,7 +296,7 @@ const repo = (repository: GitHubRepository) => {
   return `/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.repo)}`;
 };
 const pullNumber = (number: number) => { if (!Number.isSafeInteger(number) || number < 1) throw new Error('Invalid pull request number.'); return number; };
-const pull = (value: z.infer<typeof GitHubPullResponseSchema>): GitHubPull => ({ number: value.number, url: value.html_url, state: value.state,
+const pull = (value: z.infer<typeof GitHubPullResponseSchema>): GitHubPull => ({ ...(value.updated_at ? { updatedAt: value.updated_at } : {}), number: value.number, url: value.html_url, state: value.state,
   merged: value.merged ?? Boolean(value.merged_at), mergeableState: value.mergeable_state ?? null, headSha: value.head.sha, headRef: value.head.ref, baseRef: value.base.ref });
 const timedOut = () => new GitHubError('timeout', 'GitHub did not answer in time.');
 const invalid = () => new GitHubError('invalid-response', 'GitHub returned an unexpected response.');

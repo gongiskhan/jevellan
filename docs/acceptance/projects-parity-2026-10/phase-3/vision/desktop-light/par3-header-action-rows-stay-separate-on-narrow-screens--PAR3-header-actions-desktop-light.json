@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "PAR3 header action rows stay separate on narrow screens",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-3/screenshots/PAR3-header-actions-desktop-light.png",
+  "expected": "the Jevellan web app \"PAR3 header actions\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PAR3 header action rows stay separate on narrow screens\"; the other steps are judged in their own screenshots)"
+}

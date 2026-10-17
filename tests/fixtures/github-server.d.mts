@@ -12,6 +12,9 @@ export type GitHubFixtureRequest = {
 export type GitHubFixturePull = {
   repo: string; number: number; title: string; body: string; head: string; base: string; state: 'open' | 'closed'; merged: boolean; mergedAt: string | null;
   mergeable: GitHubFixtureMergeable; checks: GitHubFixtureChecks; headSha: string; mergeSha: string | null;
+  reviews?: { id: number; user: { login: string }; body: string; state: string; submitted_at: string }[];
+  inlineComments?: { id: number; user: { login: string }; body: string; created_at: string; path: string; line: number | null }[];
+  issueComments?: { id: number; user: { login: string }; body: string; created_at: string }[];
   author?: string; draft?: boolean; updatedAt?: string;
 };
 export type GitHubFixture = {

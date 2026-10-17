@@ -10,7 +10,7 @@ import {
   PlacementFieldSchema,
   ProjectLedgerDataSchemas,
   RESTARTED_PREFIX,
-  concludedRecently,
+  boardGroup, concludedRecently,
   idTime,
   isTerminal,
   liveWork,
@@ -56,10 +56,10 @@ export function projectRoute(path: string): ProjectRoute | null {
   return parts.length === 3 ? { projectId: parts[2] } : null;
 }
 
-export type ProjectTab = 'chat' | 'queue' | 'waiting' | 'threads' | 'pull-requests' | 'terminal';
-/** The tab below 1180 px: Waiting when a question is open, else Chat. Computed once, after the first view load. */
-export function defaultTab(view: Pick<ProjectWorkView, 'decisions'>): ProjectTab {
-  return view.decisions.open.length ? 'waiting' : 'chat';
+export type ProjectTab = 'chat' | 'queue' | 'waiting' | 'threads' | 'pull-requests' | 'terminal' | 'overview' | 'routines';
+/** The tab below 840 px: Overview when something needs the owner, else Chat. Computed once, after the first view load. */
+export function defaultTab(view: Pick<ProjectWorkView, 'decisions'> & Partial<Pick<ProjectWorkView, 'threads'>>, drafts = 0): ProjectTab {
+  return view.decisions.open.length + drafts + (view.threads?.filter(thread => boardGroup(thread) === 'waiting').length ?? 0) ? 'overview' : 'chat';
 }
 
 /**

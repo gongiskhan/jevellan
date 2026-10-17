@@ -4,15 +4,16 @@ import type { AccountService } from '@jevellan/accounts';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { IdSchema, ThreadStartPlanSchema, readDocument, writeDocument } from '@jevellan/core';
+import { IdSchema, ThreadActionReceiptSchema, ThreadStartPlanSchema, readDocument, writeDocument } from '@jevellan/core';
 import {
   EffortSchema, HubUnavailable, PlacementOverrideSchema, ThreadReadResultSchema, ThreadSchema, concludedRecently, deviceAway, isTerminal, liveWork, mapEffort, newId, stableJson, type Configuration, type PlacementRecord,
   type CoordinatorEvent, type PlacementOverride, type ProjectHub, type ProjectLedgerEvent, type QueuedMessage, type SecretRedactor, type SharedProjects, type Thread, type ThreadCommand,
-  type ThreadCreateRequestSchema, type ThreadCreatedViewSchema, type ThreadIndex, type ThreadOverrideRequestSchema, type ThreadReport, type ThreadState,
+  type ThreadActionRequest, type ThreadCreateRequestSchema, type ThreadCreatedViewSchema, type ThreadIndex, type ThreadOverrideRequestSchema, type ThreadReport, type ThreadState,
 } from '@jevellan/core';
 import type { PlacementFixed } from '@jevellan/decisions';
 import { DISPATCH_HOLD_MS, type Admission } from './admission.js';
 import {
+  ACTION_ID_REUSED, ACTION_NO_CHECKS, ACTION_NO_CONFLICTS, ACTION_NO_COMMENTS, ACTION_NO_COMMITS, ACTION_OPEN_PR, ACTION_WORKING, ACTION_RESOLVE_OPEN_PR, ACTION_NOT_RESOLVABLE, ACTION_NOT_REOPENABLE, RESOLVED_BY_OWNER, RESOLVED_BY_INACTIVITY, PUBLISH_REQUESTED, checksFixPrompt, conflictFixPrompt, commentsFixPrompt,
   PROJECT_PAUSED, COORDINATOR_ELSEWHERE, MODEL_SAME_RUNTIME, NEXT_TURN_FIELDS, NO_RELAY, PROJECT_NOT_FOUND, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, UNKNOWN_PLACEMENT_MODEL, WAITING_FOR_HUB, WAITING_FOR_MAIN,
   attachedRefusal, isWaitingForAccount, isWaitingForSlot, overrideSummary, ownerStartedLine, placementSummary, queuedReason, restartedReason,
 } from './copy.js';
@@ -112,12 +113,13 @@ export type ThreadServiceOptions = {
   /** Everything a runner needs except `rested` and `askDirectly`, which the service provides. */
   runner: Omit<ThreadRunnerContext, 'rested' | 'askDirectly'>;
   /** Decision 7 on the owner device (D280): the roster says whether the coordinator's device is away; the fallback creates the question. */
-  roster(): Promise<DeviceRoster>; decisions: Pick<DecisionItems, 'fallbackFromReports'>;
+  roster(): Promise<DeviceRoster>; decisions: Pick<DecisionItems, 'fallbackFromReports' | 'withdrawThread'>;
   /** The sweeps check a project's waiting questions at most this often (a new needs-decision report checks at once). */
   fallbackCheckMs: number;
   now(): number;
   managedQueue?: boolean;
   queueChanged?(projectId: string): void;
+  refreshLanding?(projectId: string, threadId: string): Promise<void>;
 };
 const oldestMessage = (thread: Thread) => thread.queuedMessages.reduce((oldest, message) => message.at < oldest ? message.at : oldest, thread.queuedMessages[0]?.at ?? '');
 type Queued = { id: string; ownerDeviceId: string; createdAt: string; local: boolean };
@@ -137,6 +139,7 @@ export class ThreadService {
    */
   readonly #remoteQueue = new Map<string, Set<string>>();
   #starting = 0;
+  #resolvedAt = -Infinity;
   #sweep: Set<string> | undefined;
   /** When each project's waiting questions were last checked against the coordinator device's presence (D280). */
   readonly #checked = new Map<string, number>();
@@ -529,7 +532,76 @@ export class ThreadService {
       await this.askDirectly(projectId).catch(() => undefined);
     }
     // Last, so a slow settlement (a process to end, an unreachable hub, the activity scan) never delays dispatch (phase 8).
+    if (this.#o.now() - this.#resolvedAt >= 3_600_000) { await this.autoResolve(); this.#resolvedAt = this.#o.now(); }
+    await this.refreshIndexes();
+    for (const thread of this.#o.store.all()) if (this.#o.store.local(thread.id).landing === 'held') await this.#o.refreshLanding?.(thread.projectId, thread.id).catch(() => undefined);
     await this.settleCheckouts();
+  }
+  /** Refresh only computed facts that changed. Pure PR facts also update on every state write in the store. */
+  async refreshIndexes(): Promise<void> {
+    for (const thread of this.#o.store.all()) {
+      if (this.#closed) return;
+      const open = thread.pr?.state === 'open';
+      const publish = thread.isolation === 'worktree' && thread.state === 'idle' && !open && !!await this.#o.runner.worktrees.hasCommits?.(thread).catch(() => false);
+      const before = this.#o.store.local(thread.id).fixable;
+      this.#o.store.setIndexFields(thread.id, { fixable: { checks: !!open && thread.pr?.checks === 'failing', conflicts: !!open && thread.pr?.mergeable === 'conflict', comments: this.#o.store.local(thread.id).prComments?.items.length ?? before?.comments ?? 0, publish } });
+    }
+  }
+  async autoResolve(now = this.#o.now()): Promise<void> {
+    for (const thread of this.#o.store.all()) {
+      if (thread.resolution || !['idle', 'failed', 'waiting-for-you'].includes(thread.state) || thread.pr?.state === 'open' || this.runner(thread.id)?.busy) continue;
+      const updated = this.#o.store.current(thread.id)?.index.updatedAt ?? thread.createdAt;
+      if (now - Date.parse(updated) < 7 * 86_400_000) continue;
+      await this.#resolve(thread, 'inactivity', new Date(now).toISOString(), derivedId('resolve', thread.id, updated));
+    }
+  }
+  async #resolve(thread: Thread, by: 'owner' | 'inactivity', at: string, id: string): Promise<void> {
+    this.#o.store.update(thread.id, current => ({ ...current, resolution: current.resolution ?? { by, at },
+      ...(by === 'inactivity' ? { stateReason: RESOLVED_BY_INACTIVITY } : {}),
+      ...(current.state === 'waiting-for-you' ? { state: 'idle' as const, stateReason: by === 'owner' ? RESOLVED_BY_OWNER : RESOLVED_BY_INACTIVITY } : {}) }));
+    await this.#o.decisions.withdrawThread(thread.projectId, thread.id);
+    await this.#o.delivery.toCoordinator(thread.projectId, { schema: 'coordinator-event-v1', kind: 'thread-resolved', id: derivedId('cev', 'resolved', id), at, threadId: thread.id, by });
+  }
+  /** Owner HTTP actions are routed to this device and serialized with other actions for the project. */
+  action(projectId: string, threadId: string, input: ThreadActionRequest): Promise<void> {
+    return this.#exclusive(projectId, async () => {
+      const thread = this.#local(projectId, threadId);
+      const path = join(this.#o.store.paths.thread(projectId, threadId), 'actions', `${input.clientRequestId}.json`);
+      let receipt = existsSync(path) ? readDocument(path, ThreadActionReceiptSchema) : undefined;
+      if (receipt && stableJson(receipt.request) !== stableJson(input)) throw refuse(ACTION_ID_REUSED, 409);
+      if (receipt?.applied) return;
+      const digest = createHash('sha256').update(stableJson(input)).digest('hex');
+      const accepted = this.#o.store.local(threadId).acceptedActions?.find(row => row.id === input.clientRequestId);
+      if (accepted) { if (accepted.digest !== digest) throw refuse(ACTION_ID_REUSED, 409); if (receipt) writeDocument(path, ThreadActionReceiptSchema, { ...receipt, applied: true }); return; }
+      const runner = this.runner(threadId)!;
+      if (thread.state === 'attached') throw refuse(attachedRefusal(threadId), 409);
+      if (runner.busy || liveWork(thread.state)) throw refuse(ACTION_WORKING, 409);
+      const open = thread.pr?.state === 'open';
+      if (input.action === 'resolve') {
+        if (open) throw refuse(ACTION_RESOLVE_OPEN_PR, 409);
+        if (!['idle', 'waiting-for-you', 'failed'].includes(thread.state)) throw refuse(ACTION_NOT_RESOLVABLE, 409);
+      } else if (input.action === 'reopen') {
+        if (!thread.resolution || !['idle', 'failed'].includes(thread.state)) throw refuse(ACTION_NOT_REOPENABLE, 409);
+      } else if (input.action === 'publish') {
+        if (open) throw refuse(ACTION_OPEN_PR, 409);
+        if (thread.isolation !== 'worktree' || thread.state !== 'idle' || !await this.#o.runner.worktrees.hasCommits?.(thread)) throw refuse(ACTION_NO_COMMITS, 409);
+      } else if (input.action === 'fix-checks' && (!open || thread.pr?.checks !== 'failing')) throw refuse(ACTION_NO_CHECKS, 409);
+      else if (input.action === 'resolve-conflicts' && (!open || thread.pr?.mergeable !== 'conflict')) throw refuse(ACTION_NO_CONFLICTS, 409);
+      else if (input.action === 'address-comments' && (!open || !this.#o.store.local(threadId).fixable?.comments)) throw refuse(ACTION_NO_COMMENTS, 409);
+      const latest = this.#local(projectId, threadId);
+      if (latest.state === 'attached') throw refuse(attachedRefusal(threadId), 409);
+      if (runner.busy || liveWork(latest.state) || !['resolve', 'reopen'].includes(input.action) && this.#o.store.local(threadId).pendingTurn) throw refuse(ACTION_WORKING, 409);
+      receipt ??= writeDocument(path, ThreadActionReceiptSchema, { schema: 'thread-action-receipt-v1', request: input, at: new Date(this.#o.now()).toISOString(), applied: false });
+      if (input.action === 'resolve') await this.#resolve(thread, 'owner', receipt.at, input.clientRequestId);
+      else if (input.action === 'reopen') this.#o.store.update(threadId, current => { const next = { ...current }; delete next.resolution; return next; });
+      else {
+        const reason = input.action === 'publish' ? 'publish' : input.action === 'fix-checks' ? 'checks' : input.action === 'resolve-conflicts' ? 'conflict' : 'comments';
+        const comments = reason === 'comments' ? this.#o.store.local(thread.id).prComments?.items.slice(0, 15) ?? [] : [];
+        const body = reason === 'comments' ? commentsFixPrompt(thread.pr!.number, comments) : reason === 'publish' ? PUBLISH_REQUESTED : reason === 'checks' ? checksFixPrompt(thread.pr!.number, thread.pr!.headSha, thread.pr!.failedChecks ?? []) : conflictFixPrompt(thread.pr!.number, thread.baseBranch);
+        await runner.requestTurn(reason, body, comments.map(row => row.id), { id: input.clientRequestId, digest });
+      }
+      writeDocument(path, ThreadActionReceiptSchema, { ...receipt, applied: true });
+    });
   }
   /**
    * Ended main threads here whose checkout claim was kept (D291) settle it again, at every sweep until it is released (phase 8). Each
@@ -613,7 +685,7 @@ export class ThreadService {
   async #remoteMessage(projectId: string, threadId: string, from: 'coordinator' | 'owner', text: string, interrupt: boolean, clientMessageId?: string): Promise<{ delivery: 'queued' | 'interrupting'; state: ThreadState; repeated: boolean }> {
     const index = await this.#remote(projectId, threadId);
     if (from === 'coordinator' && index.state === 'attached') throw refuse(THREAD_ATTACHED, 409);
-    if (isTerminal(index.state) && (from !== 'owner' || !canContinueThread(index))) throw refuse(THREAD_ENDED, 409);
+    if (isTerminal(index.state) && (from !== 'owner' && !index.resolution || !canContinueThread(index))) throw refuse(THREAD_ENDED, 409);
     const at = this.#o.now();
     const message: QueuedMessage = { id: clientMessageId ?? newId('tmsg', at), from, text: this.#o.redactor.text(text), at: new Date(at).toISOString(), interrupt };
     await this.#o.delivery.toThreadOwner(projectId, threadId, index.ownerDeviceId, { type: 'message', message }, derivedId('tcmd', 'message', projectId, threadId, message.id));
@@ -676,7 +748,7 @@ export class ThreadService {
     const threads: ThreadIndex[] = []; let after: string | undefined; const now = this.#o.now();
     do {
       const page = await this.#o.hub.threads(projectId, after);
-      threads.push(...page.records.filter((index) => index.projectId === projectId && (!isTerminal(index.state) || (include === 'all' && concludedRecently(index, now)))));
+      threads.push(...page.records.filter((index) => index.projectId === projectId && (!isTerminal(index.state) && !index.resolution || (include === 'all' && concludedRecently(index, now)))));
       after = page.next ?? undefined;
     } while (after !== undefined);
     return threads;

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { GithubInputSchema, GithubResultSchema, mapMergeable, parseGitHubRemote, stableJson,
+import { PullCommentSchema, parseGitHubPullUrl, type Thread, type PullComment, GithubInputSchema, GithubResultSchema, mapMergeable, parseGitHubRemote, stableJson,
   type GitHubAwarenessPullResponseSchema, type GitHubClient, type GitHubRepository, type GitHubWorkflowRun, type GithubInput,
   type GithubResult, type Project, type SecretRedactor, type ThreadIndex } from '@jevellan/core';
 import type { z } from 'zod';
@@ -16,6 +16,20 @@ export type ProjectGithubOptions = { github: GitHubAccess; redactor: SecretRedac
 export class ProjectGithub {
   readonly #cache = new Map<string, CacheEntry>();
   constructor(private readonly o: ProjectGithubOptions) {}
+  async reviewComments(thread: Thread, since: string): Promise<PullComment[]> {
+    const repository = thread.pr && parseGitHubPullUrl(thread.pr.url); if (!repository) return [];
+    const token = await this.o.github.token(thread.projectId), client = this.o.github.client(token ?? '');
+    if (token) this.o.redactor.add(token);
+    const root = `${thread.projectId}:${repository.owner}/${repository.repo}:${createHash('sha256').update(token ?? '').digest('hex')}:`;
+    const cached = <T>(key: string, load: () => Promise<T>) => this.#cached(root + key, load);
+    const n = thread.pr!.number, [reviews, inline, issues] = await Promise.all([
+      cached(`reviews:${n}`, () => client.pullReviews(repository, n)), cached(`comments:${n}:${since}`, () => client.pullComments(repository, n, since)), cached(`issues:${n}:${since}`, () => client.issueComments(repository, n, since))]);
+    const rows = [
+      ...reviews.filter(row => ['COMMENTED', 'CHANGES_REQUESTED'].includes(row.state) && row.submitted_at && row.body?.trim()).map(row => ({ id: `review_${row.id}`, author: row.user?.login ?? '(unknown)', body: row.body!, at: row.submitted_at! })),
+      ...inline.filter(row => row.body.trim()).map(row => ({ id: `inline_${row.id}`, author: row.user?.login ?? '(unknown)', body: row.body, at: row.created_at, path: row.path, ...((row.line ?? row.original_line) ? { line: row.line ?? row.original_line! } : {}) })),
+      ...issues.filter(row => row.body.trim()).map(row => ({ id: `issue_${row.id}`, author: row.user?.login ?? '(unknown)', body: row.body, at: row.created_at }))];
+    return rows.filter(row => row.at >= since).sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id)).slice(0, 3000).map(row => PullCommentSchema.parse({ ...row, author: this.o.redactor.text(row.author).slice(0, 120), body: this.o.redactor.text(row.body).slice(0, 1000), ...('path' in row && typeof row.path === 'string' ? { path: this.o.redactor.text(row.path).slice(0, 1024) } : {}) }));
+  }
   async #cached<T>(key: string, load: () => Promise<T>): Promise<T> {
     const current = this.#cache.get(key);
     if (current && current.until > this.o.now()) return current.value as Promise<T>;

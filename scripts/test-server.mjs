@@ -733,6 +733,7 @@ const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-con
 const dailyMarker = join(root, 'daily-result');
 const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-change-v1'), checks: z.enum(['none', 'pending', 'passing', 'passing-status', 'failing']).optional(),
   mergeable: z.enum(['clean', 'dirty', 'unknown', 'unstable']).optional(), merged: z.literal(true).optional(), closed: z.literal(true).optional() });
+const ControlOverviewSchema = z.strictObject({ schema: z.literal('fixture-overview-v1'), action: z.literal('prepare') });
 const ControlReleaseSchema = z.strictObject({ schema: z.literal('fixture-release-v1'), marker: z.string().min(1).max(200) });
 const ControlNotebookSchema = z.strictObject({ schema: z.literal('fixture-notebook-v1'), content: z.string().max(65536) });
 const ControlTokenSchema = z.strictObject({ schema: z.literal('fixture-github-token-v1'), saved: z.boolean() });
@@ -747,7 +748,30 @@ async function projectControl(request, response) {
   const parse = (schema) => { const parsed = schema.safeParse(body); if (!parsed.success) send(400, { message: parsed.error.issues.map((issue) => issue.message).join(' ') }); return parsed.success ? parsed.data : undefined; };
   const pull = /^\/projects\/github\/(\d+)$/.exec(request.url);
   let input;
-  if (request.url === '/projects/memory' && (input = parse(ControlMemorySchema))) {
+  if (request.url === '/projects/overview' && (input = parse(ControlOverviewSchema))) {
+    const projectId = 'projects_fixture', rows = [];
+    for (const title of ['PAR3 saved work', 'PAR3 publish work']) {
+      const made = await application.projectWork.createThread(projectId, { schema: 'thread-create-request-v1', clientRequestId: `overview_${title.replaceAll(' ', '_')}`, title, task: 'PAR2 inspect: read the README and report progress.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' });
+      const deadline = Date.now() + 60_000;
+      while (application.projectWork.store.get(made.threadId)?.state !== 'idle') {
+        if (Date.now() > deadline) throw new Error('The Overview fixture thread did not finish its preparation turn.');
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+      const thread = application.projectWork.store.get(made.threadId);
+      writeFileSync(join(thread.cwd, 'greeting.txt'), `${title}\n`); git(thread.cwd, 'add', 'greeting.txt'); git(thread.cwd, 'commit', '-m', title); rows.push(thread);
+    }
+    await application.projectWork.threads.refreshIndexes();
+    const now = Date.now(), at = new Date(now).toISOString();
+    for (const [key, state, extra] of [
+      ['review', 'in-review', { fixable: { checks: true, conflicts: true, comments: 2, publish: false }, pr: { number: 99, url: `https://github.com/${PROJECTS_REPOSITORY}/pull/99`, state: 'open', headSha: '9'.repeat(40), checks: 'failing', mergeable: 'conflict', updatedAt: at } }],
+      ['working', 'running', {}], ['attached', 'attached', {}], ['landing', 'in-review', { landing: 'verifying' }], ['merging', 'in-review', { landing: 'merging' }], ['held', 'in-review', { landing: 'held' }],
+      ['waiting', 'failed', {}], ['idle', 'idle', {}], ['resolved', 'done', { endedAt: at }],
+      ['older', 'idle', { resolution: { by: 'owner', at: new Date(now - 20 * 86_400_000).toISOString() } }],
+    ]) await new HubProjectAccess(application.hub, member.device.deviceId).publishThread({ schema: 'project-thread-index-v1', revision: 0, id: `overview_${key}`, projectId, title: `PAR3 ${key}`, state, isolation: 'worktree', ownerDeviceId: member.device.deviceId, runtime: 'claude', modelLabel: 'Fable', effort: 'high', accountLabel: 'Projects Claude', turns: 1, createdAt: at, updatedAt: at, ...extra }, 1);
+    await application.projectWork.decisions.ask(projectId, { question: 'PAR3 choose the next step?', options: [{ label: 'Continue' }, { label: 'Wait' }] }, 'coordinator', 'pdec_overview');
+    await application.projectWork.pulse();
+    send(200, { schema: 'fixture-overview-receipt-v1', threadId: rows[0].id, publishThreadId: rows[1].id });
+  } else if (request.url === '/projects/memory'  && (input = parse(ControlMemorySchema))) {
     const id = 'shared_memory_fixture', current = await application.state.projects.get(id), project = { ...current.project, memory: { ...current.project.memory, mode: 'hub' } };
     if (current.project.memory.mode !== 'hub') await application.conversations.saveProject({ schema: 'project-write-v1', revision: current.revision, project });
     const settings = await application.projectWork.admission.settings(id);

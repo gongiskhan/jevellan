@@ -328,3 +328,22 @@ test('the coordinator acts on member threads through commands, reads them with t
   await f.waitFor(() => reports(f), (seen) => seen.includes(`${second.threadId} Member job done.`));
   await expectNoMemberLeaks(f, m);
 });
+
+test('Overview owner actions reach the member once and preserve managed publication and private state', { timeout: 120_000 }, async () => {
+  const { f, m } = await setup();
+  m.fake.enqueueTurn(commitStep({ 'saved.txt': 'ready\n' }, { status: 'progress', summary: 'Saved for the owner.' }), forThread());
+  const created = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', createBody('Remote Overview', { deviceId: m.deviceId }));
+  await turns(f, m, created.threadId, 1); await round(f, m);
+  const base = `/api/projects/project/threads/${created.threadId}/actions`;
+  const act = (action: string, clientRequestId = `req_${randomUUID()}`) => f.request(base, 'POST', { schema: 'thread-action-request-v1', clientRequestId, action });
+  const requestId = `req_${randomUUID()}`;
+  let response = await act('resolve', requestId); expect(response.status).toBe(200); expect(ThreadViewSchema.parse(await response.json()).thread.resolution?.by).toBe('owner');
+  expect((await act('resolve', requestId)).status).toBe(200); expect(m.thread(created.threadId).resolution?.by).toBe('owner');
+  expect(f.app.projectWork.store.get(created.threadId)).toBeUndefined();
+  response = await act('reopen'); expect(response.status).toBe(200); expect(m.thread(created.threadId).resolution).toBeUndefined();
+  expect((await act('publish')).status).toBe(200);
+  await f.waitFor(() => m.thread(created.threadId), thread => thread.state === 'in-review'); await round(f, m);
+  expect(m.fake.turnStarts).toHaveLength(1); expect((await f.index(created.threadId))?.pr?.state).toBe('open');
+  expect(f.github.requests.filter(row => row.method === 'POST' && row.path.endsWith('/pulls'))).toHaveLength(1);
+  await expectNoMemberLeaks(f, m);
+});

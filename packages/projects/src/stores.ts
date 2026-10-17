@@ -28,6 +28,7 @@ export function threadIndex(thread: Thread, labels: ThreadLabels, updatedAt: str
     schema: 'project-thread-index-v1', revision: 0, id: thread.id, projectId: thread.projectId, title: thread.title, state: thread.state,
     ...(thread.stateReason === undefined ? {} : { stateReason: thread.stateReason }), isolation: thread.isolation, ...(thread.gitPolicy ? { gitPolicy: thread.gitPolicy } : {}), ownerDeviceId: thread.ownerDeviceId,
     runtime: thread.placement.runtime, modelLabel: labels.modelLabel, effort: thread.placement.effortEffective, accountLabel: labels.accountLabel,
+    ...(thread.resolution ? { resolution: thread.resolution } : {}),
     ...(thread.branch === undefined ? {} : { branch: thread.branch }), ...(thread.pr ? { pr: thread.pr } : {}),
     // Redacted, then cut where no later redaction rewrites it, so the summary keeps within 400 characters on every hop (P8 review S-1)
     // and a token-like word never cuts the rest of the sentence away (P8 review N-1).
@@ -55,7 +56,8 @@ export class ThreadStore {
   /** The cache projection is bound to the same thread-ledger id as the index. */
   index(thread: Thread, labels: ThreadLabels, at: string): ThreadIndex {
     const sessionCache = sessionCacheSnapshot(cacheRecords(this.ledgers.thread(thread.projectId, thread.id)));
-    return { ...threadIndex(thread, labels, at), ...(sessionCache.length ? { sessionCache } : {}) };
+    const { landing, fixable } = this.local(thread.id);
+    return { ...threadIndex(thread, labels, at), ...(landing ? { landing } : {}), ...(fixable ? { fixable: { ...fixable, checks: thread.pr?.state === 'open' && thread.pr.checks === 'failing', conflicts: thread.pr?.state === 'open' && thread.pr.mergeable === 'conflict', publish: fixable.publish && thread.state === 'idle' && thread.pr?.state !== 'open' } } : {}), ...(sessionCache.length ? { sessionCache } : {}) };
   }
   #all(): Map<string, Thread> {
     if (this.#threads) return this.#threads;
@@ -136,6 +138,18 @@ export class ThreadStore {
     const local = writeDocument(this.paths.threadLocal(thread.projectId, threadId), ThreadLocalSchema, mutate(this.local(threadId)));
     this.#locals.set(threadId, local);
     return structuredClone(local);
+  }
+  /** Local projection changes get a new ledger id; an old published id never changes its contents. */
+  setIndexFields(threadId: string, fields: Pick<ThreadLocal, 'landing' | 'fixable'>): void {
+    const local = this.local(threadId), next = { ...local };
+    for (const key of ['landing', 'fixable'] as const) if (key in fields) {
+      if (fields[key] === undefined) delete next[key];
+      else Object.assign(next, { [key]: fields[key] });
+    }
+    if (stableJson(local) === stableJson(next)) return;
+    this.updateLocal(threadId, () => next);
+    const thread = this.#require(threadId), event = this.ledgers.thread(thread.projectId, threadId).append({ type: 'thread-state', data: this.#stateChange(thread.state, thread, Object.keys(fields)) });
+    this.publisher.enqueue(this.index(thread, this.labels(threadId), event.t), event.id);
   }
   /** The labels the index shows: the placement-time menu label and the latest turn's account label (D138). */
   labels(threadId: string): ThreadLabels {

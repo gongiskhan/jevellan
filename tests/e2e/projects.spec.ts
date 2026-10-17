@@ -257,7 +257,12 @@ async function openProject(page: Page, name: string) {
 const composer = (page: Page) => page.getByRole('textbox', { name: 'Message the coordinator', exact: true });
 
 
-const tab = (page: Page, name: string) => page.getByRole('tablist', { name: 'Project sections', exact: true }).getByRole('tab', { name: new RegExp(`^${name}`) });
+const tab = (page: Page, name: string) => page.getByRole('tablist', { name: 'Project sections', exact: true }).getByRole('tab', { name: new RegExp(`^${name === 'Waiting' ? 'Overview' : name}`) });
+async function sectionTab(page: Page, info: TestInfo, name: string) {
+  if (name === 'Chat') { if (phone(info)) await tap(page, tab(page, 'Chat')); return; }
+  if (phone(info)) await tap(page, tab(page, 'Overview'));
+  await tap(page, page.getByRole('tablist', { name: 'Overview', exact: true }).getByRole('tab', { name: name === 'Waiting' ? 'Threads' : name, exact: true }));
+}
 const region = (page: Page, name: string) => page.getByRole('region', { name, exact: true });
 async function openSettings(page: Page) {
   await tap(page, page.locator('summary[aria-label="Project menu"]'));
@@ -322,22 +327,24 @@ test('PJ3 project page opens from the sidebar and the coordinator chat streams',
   await expect(composer(page)).toHaveAttribute('placeholder', 'Tell the coordinator what you need');
   const tabs = page.getByRole('tablist', { name: 'Project sections', exact: true });
   if (phone(info)) {
-    await expect(tabs.getByRole('tab')).toHaveText(['Chat', 'Waiting', 'Queue', 'Threads', 'Pull requests', 'Terminal']);
+    await expect(tabs.getByRole('tab')).toHaveText(['Chat', 'Overview']);
     await expect(tab(page, 'Chat')).toHaveAttribute('aria-selected', 'true');
-    await tap(page, tab(page, 'Threads'));
-    await expect(region(page, 'Running')).toContainText('No threads running.');
-    await expect(region(page, 'Concluded').getByRole('link', { name: /^Write the welcome copy/ }).locator('.pw-outcome')).toHaveText('Merged #7');
-    await tap(page, tab(page, 'Pull requests')); await expect(region(page, 'Pull requests')).toContainText('No open pull requests.');
-    await tap(page, tab(page, 'Waiting')); await expect(region(page, 'Waiting for you')).toContainText('Nothing waiting.');
+    await sectionTab(page, info, 'Threads');
+    await expect(region(page, 'Working')).toContainText('Nothing running.');
+    await expect(region(page, 'Resolved').locator('.pw-thread-card').filter({ has: page.getByRole('link', { name: /^Write the welcome copy/ }) }).locator('.pw-outcome')).toHaveText('Merged #7');
+    await sectionTab(page, info, 'Pull requests'); await expect(region(page, 'Pull requests')).toContainText('No open pull requests.');
+    await sectionTab(page, info, 'Waiting'); await expect(region(page, 'Waiting for you')).toContainText('Nothing needs you.');
     await tap(page, tab(page, 'Chat')); await expect(composer(page)).toBeVisible();
   } else {
     // Two columns: the chat and the sections in the brief's order, each with its count and its empty line.
     await expect(tabs).toBeHidden();
-    await expect(page.locator('.pw-side .pw-section-heading')).toHaveText(['Waiting for you 0', 'Queue 0', 'Running 0', 'Pull requests 0', 'Concluded 1', 'Nightly 0', 'Goals 0']);
-    await expect(region(page, 'Waiting for you')).toContainText('Nothing waiting.');
-    await expect(region(page, 'Running')).toContainText('No threads running.');
+    await expect(page.locator('.pw-side .pw-section:not([hidden]) .pw-section-heading')).toHaveText(['Waiting for you 0', 'Ready for review 0', 'Working 0', 'Landing 0', 'Idle 0', 'Resolved 1']);
+    await expect(region(page, 'Waiting for you')).toContainText('Nothing needs you.');
+    await expect(region(page, 'Working')).toContainText('Nothing running.');
+    await sectionTab(page, info, 'Pull requests');
     await expect(region(page, 'Pull requests')).toContainText('No open pull requests.');
-    await expect(region(page, 'Concluded').getByRole('link', { name: /^Write the welcome copy/ }).locator('.pw-outcome')).toHaveText('Merged #7');
+    await sectionTab(page, info, 'Threads');
+    await expect(region(page, 'Resolved').locator('.pw-thread-card').filter({ has: page.getByRole('link', { name: /^Write the welcome copy/ }) }).locator('.pw-outcome')).toHaveText('Merged #7');
   }
   await expectReadableMutedText(page);
   await shot(page, 'empty-chat');
@@ -400,7 +407,7 @@ test('PJ3 a decision is answered from the Waiting tab', async ({ page }, info) =
     await closeDrawer(page, info);
     // Named for what it shows: the chat still selected, with the badge on the Waiting tab (the vision judge reads the name).
     await shot(page, 'chat-with-waiting-badge');
-    await tap(page, tab(page, 'Waiting'));
+    await sectionTab(page, info, 'Waiting');
     await expect(card).toBeVisible();
   } else {
     await expect(region(page, 'Waiting for you').locator('.pw-section-heading')).toHaveText('Waiting for you 1', LONG);
@@ -424,7 +431,7 @@ test('PJ3 a decision is answered from the Waiting tab', async ({ page }, info) =
   const waiting = region(page, 'Waiting for you');
   await expect(waiting.getByRole('status')).toHaveText('Sent to the coordinator.');
   await expect(card).toHaveCount(0);
-  await expect(waiting.getByText('Nothing waiting.', { exact: true })).toBeVisible();
+  await expect(waiting.getByText('Nothing needs you.', { exact: true })).toBeVisible();
   const answered = waiting.locator('details.pw-answered');
   await expect(answered.locator('summary')).toHaveText('Answered 1');
   await expect(answered).not.toHaveAttribute('open');
@@ -496,12 +503,12 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   // Back on the project page the thread is a Running row with its meta; the sidebar counts it while its turn runs.
   await page.getByRole('link', { name: 'Back to the project', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Projects fixture', exact: true })).toBeVisible();
-  if (phone(info)) await tap(page, tab(page, 'Threads'));
-  const row = region(page, 'Running').getByRole('link', { name: new RegExp(`^${LONG_TITLE}`) });
-  await expect(row.locator('.pw-row-meta')).toHaveText(`${runtime} · ${view.thread.modelLabel} · ${view.thread.effort} · Worktree · ${view.deviceName}`);
+  await sectionTab(page, info, 'Threads');
+  const row = region(page, 'Working').locator('.pw-thread-card').filter({ has: page.getByRole('link', { name: LONG_TITLE, exact: true }) });
+  await expect(row.locator('.pw-card-meta')).toHaveText(`${view.thread.modelLabel} · ${view.thread.effort} · ${view.thread.accountLabel} · ${view.deviceName}`);
   await expect(projectRow(await projectsSection(page), 'Projects fixture').locator('.pw-sidebar-running')).toHaveText('1 running', LONG);
   await closeDrawer(page, info);
-  await row.click();
+  await row.getByRole('link', { name: LONG_TITLE, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/projects/projects_fixture/threads/${id}$`));
 
   // An interrupting message ends the running turn; the next turn reads it and reports.
@@ -517,6 +524,13 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   // The turn's closing words are its report's summary: the transcript shows them once, in the card.
   await expect(transcript.getByText('Please also note the README title.', { exact: true })).toHaveCount(1, LONG);
   await expect(transcript.getByText('Read your message and adjusted the plan.', { exact: true })).toHaveCount(1);
+  await report.locator('.pw-report-disclosure > summary').click();
+  await expect(report.locator('.markdown')).toBeVisible();
+  await expect(transcript.getByText('Read your message and adjusted the plan.', { exact: true })).toHaveCount(1);
+  await report.locator('.pw-report-disclosure > summary').click();
+  await expect(report.locator('.pw-report-preview')).toBeVisible();
+  await expect(transcript.getByText('Read your message and adjusted the plan.', { exact: true })).toHaveCount(1);
+
   await expect(page.getByRole('checkbox', { name: 'Interrupt current turn', exact: true })).toHaveCount(0);
   await expect(message).toHaveValue('');
   await expectAlignedCards(transcript);
@@ -550,7 +564,7 @@ test('PJ3 a pull request merges through the modal and moves to Concluded', async
   await openProject(page, 'Projects fixture');
   // A chat entry's control brought into view lands above the coordinator's composer (see expectClearOfComposer).
   await expectClearOfComposer(page, page.locator('.pw-timeline').locator('a[href], button, summary'));
-  if (phone(info)) await tap(page, tab(page, 'Pull requests'));
+  await sectionTab(page, info, 'Pull requests');
   const pulls = region(page, 'Pull requests');
   const pr = pulls.locator('article.pw-pr').filter({ hasText: '#1 Add a greeting' });
   await expect(pulls.locator('.pw-section-heading')).toHaveText('Pull requests 1');
@@ -586,10 +600,10 @@ test('PJ3 a pull request merges through the modal and moves to Concluded', async
   await dialog.getByRole('button', { name: 'Merge', exact: true }).click();
   await expect(dialog).toHaveCount(0, LONG);
   await expect(pulls).toContainText('No open pull requests.', LONG);
-  if (phone(info)) await tap(page, tab(page, 'Threads'));
-  const concluded = region(page, 'Concluded');
-  await expect(concluded.getByRole('link', { name: /^Add a greeting/ }).locator('.pw-outcome')).toHaveText('Merged #1', LONG);
-  await expect(concluded.locator('.pw-section-heading')).toHaveText('Concluded 2');
+  await sectionTab(page, info, 'Threads');
+  const concluded = region(page, 'Resolved');
+  await expect(concluded.locator('.pw-thread-card').filter({ has: page.getByRole('link', { name: /^Add a greeting/ }) }).locator('.pw-outcome')).toHaveText('Merged #1', LONG);
+  await expect(concluded.locator('.pw-section-heading')).toHaveText('Resolved 2');
   // The merge reaches the coordinator as an event; the capture waits until it has answered.
   await coordinatorSettled(page, turnsBefore);
   await shot(page, 'concluded');
@@ -742,8 +756,8 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   const fallbackId = (await idle()).find((thread) => thread.title === 'Check the README links')!.id;
   const claude = await runtimeName(page, 'claude'); const codex = await runtimeName(page, 'codex');
   const openThread = async (title: string) => {
-    if (phone(info)) await tap(page, tab(page, 'Threads'));
-    await region(page, 'Running').getByRole('link', { name: new RegExp(`^${title}`) }).click();
+    await sectionTab(page, info, 'Threads');
+    await region(page, 'Idle').getByRole('link', { name: new RegExp(`^${title}`) }).click();
     await expect(page.getByRole('heading', { level: 1, name: title, exact: true })).toBeVisible();
   };
   const button = (name: string) => page.getByRole('button', { name, exact: true });
@@ -1237,7 +1251,7 @@ test('LJ2 native setup remains visible and merge routing explains its ask-owner 
   await control(`/projects/github/${number}`, { schema: 'fixture-pull-change-v1', checks: 'passing', mergeable: 'clean' });
   await expect.poll(async () => MergeDocumentsViewSchema.parse(await read(page, `${PROJECT}/threads/${started.threadId}/pr/route`)).records.some(row => row.schema === 'merge-route-v1' && row.route === 'ask-owner'), LONG).toBe(true);
   expect((await work(page)).decisions.open.some(item => item.merge?.prNumber === number)).toBe(false); await page.reload();
-  if (phone(info)) await tap(page, tab(page, 'Pull requests'));
+  await sectionTab(page, info, 'Pull requests');
   const row = page.locator('.pw-pr').filter({ hasText: 'Review loop' }); await expect(row).toBeVisible(LONG);
   await expect(row).toContainText('Jev would: ask you'); await shot(page, 'merge-shadow-route');
   await row.getByRole('button', { name: 'Why', exact: true }).click();
@@ -1267,14 +1281,14 @@ test('LJ3 one queue preserves dependency order, owner ordering and recovery with
   const queue = async () => await read(page, `${PROJECT}/tasks`) as { tasks: Array<{ id: string; title: string; threadId: string | null; state: string; ownerRanked: boolean }> };
   await add(first); let parentId = '', thread = '';
   await expect.poll(async () => { const task = (await queue()).tasks.find(task => task.title === first); parentId = task?.id ?? ''; thread = task?.threadId ?? ''; return task?.state; }, LONG).toBe('active');
-  await add(second, parentId); if (phone(info)) await tap(page, tab(page, 'Queue'));
+  await add(second, parentId); await sectionTab(page, info, 'Queue');
   const row = page.locator('.pw-task').filter({ hasText: second }); await row.locator('summary').click();
   await expect(row).toContainText(`Waiting on: ${first}`); await expect(row).toContainText('Now');
   await row.getByRole('button', { name: 'Move to top', exact: true }).click();
   await expect.poll(async () => (await queue()).tasks.find(task => task.title === second)?.ownerRanked).toBe(true);
   const pending = (await queue()).tasks.find(task => task.title === second)!; expect(pending.threadId).toBeNull();
   await shot(page, 'queue-dependency');
-  await page.reload(); if (phone(info)) await tap(page, tab(page, 'Queue'));
+  await page.reload(); await sectionTab(page, info, 'Queue');
   expect((await queue()).tasks.filter(task => task.title === first)).toHaveLength(1);
   const stopped = await page.request.post(`${PROJECT}/threads/${thread}/stop`, { data: { schema: 'thread-stop-request-v1' } }); expect(stopped.ok()).toBe(true);
   await expect.poll(async () => (await queue()).tasks.find(task => task.id === pending.id)?.state, LONG).toBe('active');
@@ -1297,7 +1311,7 @@ test('LJ3 five tasks obey phone drag, Now, the two-thread cap and after links', 
   type Row = { id: string; title: string; state: string; threadId: string | null; ownerRanked: boolean; revision: number };
   const queue = async () => (await read(page, `${route}/tasks`) as { tasks: Row[] }).tasks;
   await expect.poll(async () => (await queue()).length, LONG).toBe(5);
-  if (phone(info)) await tap(page, tab(page, 'Queue'));
+  await sectionTab(page, info, 'Queue');
   const rows = await queue(), fourth = rows.find(row => row.title === 'Loop task 4')!, first = rows.find(row => row.title === 'Loop task 1')!;
   // Use the same touch events as a held finger, including the actual 450 ms long-press timer, in every layout.
   await page.evaluate(({ from, to }) => {
@@ -1341,7 +1355,7 @@ test('LJ3 five tasks obey phone drag, Now, the two-thread cap and after links', 
 
 test('LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work', async ({ page }, info) => {
   const errors = await begin(page), route = '/api/projects/projects_goals';
-  await openProject(page, 'Projects goals'); if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));
+  await openProject(page, 'Projects goals'); await sectionTab(page, info, 'Routines');
   await tap(page, page.getByRole('button', { name: 'New goal', exact: true }));
   const dialog = page.getByRole('dialog', { name: 'New goal', exact: true });
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Hardening through automated tests');
@@ -1351,7 +1365,7 @@ test('LJ4 owner goals refill into a draft, approve on phone, obey daily caps and
   await dialog.getByRole('button', { name: 'Save', exact: true }).click(); await expect(dialog).toHaveCount(0);
   const queue = async () => (await read(page, `${route}/tasks`) as { tasks: Array<{ id: string; revision: number; title: string; state: string; threadId: string | null; goalId: string | null; source: string }> }).tasks;
   await expect.poll(async () => (await queue()).filter(task => task.source === 'refill').length, LONG).toBe(1);
-  if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Waiting/ }));
+  await sectionTab(page, info, 'Threads');
   const proposal = page.locator('.pw-proposed .pw-task').filter({ hasText: 'Exercise an important path' });
   await proposal.locator('summary').click(); await expect(proposal).toContainText('Draft'); await shot(page, 'goal-proposal');
   await proposal.getByRole('button', { name: 'Approve', exact: true }).click();
@@ -1360,7 +1374,7 @@ test('LJ4 owner goals refill into a draft, approve on phone, obey daily caps and
   await expect.poll(async () => (await queue()).find(task => task.source === 'refill')?.state, LONG).toBe('done');
   await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 31 });
   expect((await queue()).filter(task => task.source === 'refill')).toHaveLength(1);
-  if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));
+  await sectionTab(page, info, 'Routines');
   const card = page.locator('.pw-goal').filter({ hasText: 'Hardening through automated tests' });
   await expect(card).toContainText('1 refilled today');
   // Goal actions scroll with the side column; normal click brings the lower card into view on desktop.
@@ -1371,12 +1385,13 @@ test('LJ4 owner goals refill into a draft, approve on phone, obey daily caps and
   await taskDialog.getByRole('textbox', { name: 'Brief', exact: true }).fill('LJ4: wait until the owner reactivates this goal.');
   await taskDialog.getByRole('combobox', { name: 'Goal', exact: true }).selectOption({ label: 'Hardening through automated tests' });
   await taskDialog.getByRole('button', { name: 'Add to queue', exact: true }).click(); await expect(taskDialog).toHaveCount(0);
+  await sectionTab(page, info, 'Queue');
   const paused = page.locator('.pw-section[data-tab="queue"] .pw-task').filter({ hasText: 'Paused goal task' });
   await paused.locator('summary').click(); await expect(paused).toContainText('Goal paused');
   await control('/projects/pulse'); expect((await queue()).find(task => task.title === 'Paused goal task')).toMatchObject({ state: 'queued', threadId: null });
   await page.getByRole('group', { name: 'Queue grouping' }).getByRole('button', { name: 'Goals', exact: true }).click();
   await shot(page, 'goal-paused'); await page.reload();
-  if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));
+  await sectionTab(page, info, 'Queue');
   await expect(page.getByRole('group', { name: 'Queue grouping' }).getByRole('button', { name: 'Goals', exact: true })).toHaveAttribute('aria-pressed', 'true');
   expect((await queue()).find(task => task.title === 'Paused goal task')).toMatchObject({ state: 'queued', threadId: null });
   expect(errors).toEqual([]);
@@ -1392,7 +1407,7 @@ test('LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and ga
   const mirror = await control('/projects/ekoa', { schema: 'fixture-ekoa-loop-v1', action: 'prepare' }) as { url: string; token: string };
   await page.goto('/settings/ekoa'); await page.getByRole('textbox', { name: 'MCP URL', exact: true }).fill(mirror.url); await page.getByLabel('Ekoa token', { exact: true }).fill(mirror.token);
   await page.getByRole('checkbox', { name: 'Mirror tasks to Ekoa', exact: true }).check(); await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await openProject(page, 'Projects daily'); if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));
+  await openProject(page, 'Projects daily'); await sectionTab(page, info, 'Routines');
   await tap(page, page.getByRole('button', { name: 'New job', exact: true }));
   const dialog = page.getByRole('dialog', { name: 'New job', exact: true });
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Full suite'); await dialog.getByRole('textbox', { name: 'Command', exact: true }).fill(prepared.command);
@@ -1423,7 +1438,7 @@ test('LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and ga
   expect(first.window!.taskIds).not.toContain(dayRun.taskId);
   const fix = first.tasks.find(task => task.nightlyFixFor === first.window!.taskIds[0])!;
   expect(fix.state).toBe('done'); expect(first.tasks.filter(task => task.nightlyFixFor === first.window!.taskIds[0])).toHaveLength(1);
-  if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Pull requests/ }));
+  await sectionTab(page, info, 'Pull requests');
   const merge = page.locator('.pw-pr').filter({ hasText: 'Daily merge candidate' }).getByRole('button', { name: 'Merge', exact: true });
   await expect(merge).toBeDisabled(); const denied = await page.request.post(`${route}/threads/${thread}/pr/merge`, { data: { schema: 'empty-request-v1' } }); expect(denied.status()).toBe(409);
   await shot(page, 'nightly-merges-held');
@@ -1431,7 +1446,7 @@ test('LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and ga
   const passed = await view(), runs = passed.runs.filter(run => passed.window!.taskIds.includes(run.taskId));
   expect(runs.map(run => run.conclusion)).toEqual(['passed', 'passed']); expect(runs[0]!.commit).toBe(runs[1]!.commit);
   expect(runs[0]!.commit).not.toBe(passed.runs.find(run => run.taskId === dayRun.taskId)!.commit);
-  if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ })); await expect(page.getByText(/Last night's review/)).toBeVisible(); await shot(page, 'nightly-reviewed-and-passed');
+  await sectionTab(page, info, 'Routines'); await expect(page.getByText(/Last night's review/)).toBeVisible(); await shot(page, 'nightly-reviewed-and-passed');
   await step('prepare-late'); await step('open');
   await expect.poll(async () => (await tasks()).filter(task => task.nightlyFixFor && task.state === 'active').length, LONG).toBe(1);
   await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 150 });
@@ -1469,7 +1484,7 @@ test('PJ3b project GitHub tokens remain separate from the default connection', a
 
 test('LJ6 workflow daily records its actual run and a missing run times out explicitly', async ({ page }, info) => {
   const errors = await begin(page), route = '/api/projects/projects_workflows'; await openProject(page, 'Projects workflows');
-  if (phone(info)) await tap(page, page.getByRole('tab', { name: /^Queue/ }));
+  await sectionTab(page, info, 'Queue');
   await tap(page, page.getByRole('button', { name: 'New job', exact: true })); const dialog = page.getByRole('dialog', { name: 'New job', exact: true });
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Nightly workflow'); await dialog.getByRole('combobox', { name: 'Run', exact: true }).selectOption('github-workflow');
   await dialog.getByRole('textbox', { name: 'Workflow', exact: true }).fill('nightly.yml'); await dialog.getByRole('spinbutton', { name: 'Timeout in minutes', exact: true }).fill('5');
@@ -1670,7 +1685,7 @@ test('CM2 questions share oldest-first numbering and show the owner chat answer 
   await expect.poll(async () => (await work(page)).decisions.open.length, LONG).toBe(3);
   const before = await work(page), questions = before.decisions.open;
   expect(questions.map(question => question.question)).toEqual(['Archive or remove customers?', 'Red or amber for overdue invoices?', 'How many customers per page?']);
-  if (phone(test.info())) await tap(page, tab(page, 'Waiting'));
+  await sectionTab(page, test.info(), 'Waiting');
   const cards = page.locator('.pw-decision'); await expect(cards).toHaveCount(3);
   for (let index = 0; index < 3; index++) {
     await expect(cards.nth(index).getByLabel(`Question ${index + 1}`, { exact: true })).toHaveText(String(index + 1));
@@ -1683,7 +1698,7 @@ test('CM2 questions share oldest-first numbering and show the owner chat answer 
   const after = await work(page);
   expect(after.decisions.answered.filter(question => questions.some(before => before.id === question.id)).map(question => question.answer))
     .toEqual(expect.arrayContaining(['Archive', 'Amber', '25'].map(optionLabel => ({ optionLabel, source: 'owner-chat', ownerMessage: answer }))));
-  if (phone(test.info())) await tap(page, tab(page, 'Waiting'));
+  await sectionTab(page, test.info(), 'Waiting');
   await page.locator('.pw-answered summary').click();
   await expect(page.locator('.pw-answered-answer').filter({ hasText: `Answered in chat: ${answer}` })).toHaveCount(3);
   await shot(page, 'answered-in-chat'); expect(errors).toEqual([]);
@@ -1718,7 +1733,7 @@ test('CM4 owner commands and shell blocks show exact copy controls, with editabl
   await composer(page).fill('CM4 owner commands'); await composer(page).press('Enter');
   await expect.poll(async () => (await work(page)).decisions.open.some(question => !!question.ownerCommands?.length), LONG).toBe(true);
   await expect(page.locator('.shell-command').filter({ hasText: 'codex login' }).getByRole('button', { name: 'Run in Terminal', exact: true })).toBeVisible(LONG);
-  if (phone(test.info())) await tap(page, tab(page, 'Waiting'));
+  await sectionTab(page, test.info(), 'Waiting');
   const card = page.locator('.owner-command').first(); const command = (await work(page)).decisions.open.find(question => question.ownerCommands?.length)?.ownerCommands?.[0]?.command;
   expect(command).toBeTruthy(); await expect(card.locator('pre')).toHaveText(command!); await expect(card).toContainText('checkout');
   expect(await card.locator('pre').evaluate(pre => pre.scrollWidth > pre.clientWidth && pre.getBoundingClientRect().right <= innerWidth)).toBe(true);
@@ -2001,7 +2016,7 @@ test('PAR2 live cards, proposed starts, follow-ups and settings Undo', async ({ 
     await expect(page.locator('.pw-timeline').getByRole('button', { name: 'Start all (2)', exact: true })).toBeVisible();
     let tasks = TaskListViewSchema.parse(await read(page, `${PROJECT}/tasks`)).tasks.filter(task => task.title.startsWith('PAR2 '));
     expect(tasks).toHaveLength(2); expect(tasks.every(task => task.state === 'draft' && task.threadId === null)).toBe(true);
-    await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-2/screenshots/PAR2-proposals-${layout(info)}.png`, fullPage: false });
+    await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/${process.env.JEVELLAN_PARITY_PHASE ?? 'phase-2'}/screenshots/PAR2-proposals-${layout(info)}.png`, fullPage: false });
     await first.getByRole('button', { name: 'Start', exact: true }).click();
     await expect(first.locator('.pw-card-meta')).toBeVisible(LONG);
     await expect(page.locator('.pw-timeline').getByRole('button', { name: 'Start all (1)', exact: true })).toBeVisible();
@@ -2013,11 +2028,11 @@ test('PAR2 live cards, proposed starts, follow-ups and settings Undo', async ({ 
     await send('PAR2 follow up with the first small task');
     const sent = page.locator('.pw-chat-work-cards').filter({ hasText: 'Sent a message' });
     await expect(sent).toContainText('PAR2 first small task', LONG);
-    await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-2/screenshots/PAR2-live-cards-${layout(info)}.png`, fullPage: false });
+    await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/${process.env.JEVELLAN_PARITY_PHASE ?? 'phase-2'}/screenshots/PAR2-live-cards-${layout(info)}.png`, fullPage: false });
     await send('PAR2 two at a time');
     const setting = page.locator('.pw-chat-setting').filter({ hasText: 'Changed max running threads from 20 to 2.' });
     await expect(setting).toBeVisible(LONG); expect((await work(page)).settings.maxRunningThreads).toBe(2);
-    await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-2/screenshots/PAR2-settings-undo-${layout(info)}.png`, fullPage: false });
+    await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/${process.env.JEVELLAN_PARITY_PHASE ?? 'phase-2'}/screenshots/PAR2-settings-undo-${layout(info)}.png`, fullPage: false });
     await setting.getByRole('button', { name: 'Undo', exact: true }).click();
     await expect.poll(async () => (await work(page)).settings.maxRunningThreads, LONG).toBe(20);
     await expect(setting.getByRole('button', { name: 'Undo', exact: true })).toBeDisabled();
@@ -2025,10 +2040,78 @@ test('PAR2 live cards, proposed starts, follow-ups and settings Undo', async ({ 
   } finally {
     const tasks = TaskListViewSchema.parse(await read(page, `${PROJECT}/tasks`)).tasks.filter(task => task.title.startsWith('PAR2 '));
     for (const task of tasks) {
-      if (task.threadId) await page.request.post(`${PROJECT}/threads/${task.threadId}/stop`, { data: { schema: 'thread-stop-request-v1', reason: 'Browser journey complete.' } });
+      if (task.threadId) {
+        const stopped = await page.request.post(`${PROJECT}/threads/${task.threadId}/stop`, { data: { schema: 'thread-stop-request-v1', reason: 'Browser journey complete.' }, timeout: LONG.timeout });
+        expect(stopped.ok(), await stopped.text()).toBe(true);
+      }
       else if (['draft', 'queued'].includes(task.state)) await page.request.post(`${PROJECT}/tasks/${task.id}/action`, { data: { schema: 'task-action-request-v1', expectedRevision: task.revision, action: 'cancel' } });
     }
     const { schema: _schema, projectId: _id, revision: _revision, ...restore } = original; void _schema; void _id; void _revision;
     await save(restore);
   }
+});
+
+
+test('PAR3 Overview groups, owner actions and saved-work publication', async ({ page }, info) => {
+  const errors = await begin(page);
+  await page.goto('about:blank');
+  const prepared = await control('/projects/overview', { schema: 'fixture-overview-v1', action: 'prepare' }) as { threadId: string; publishThreadId: string };
+  await page.goto('/projects/projects_fixture'); await expect(page.getByRole('heading', { name: 'Projects fixture', exact: true })).toBeVisible(LONG); await sectionTab(page, info, 'Threads');
+  await expect(page.getByText('Loading chat…', { exact: true })).toHaveCount(0, LONG);
+  const overview = page.getByRole('tablist', { name: 'Overview', exact: true });
+  await expect(overview.getByRole('tab')).toHaveText(['Threads', 'Pull requests', 'Queue', 'Routines']);
+  for (const group of ['Waiting for you', 'Ready for review', 'Working', 'Landing', 'Idle', 'Resolved']) await expect(region(page, group)).toBeVisible();
+  await expect(region(page, 'Working')).toContainText('In a terminal');
+  const dotColor = (group: string) => region(page, group).locator('.pw-card-dot').first().evaluate(element => getComputedStyle(element).backgroundColor);
+  expect(await dotColor('Ready for review')).not.toBe(await dotColor('Working'));
+  expect(await dotColor('Waiting for you')).not.toBe(await dotColor('Working'));
+  for (const label of ['Verifying', 'Merging', 'Held for the nightly window']) await expect(region(page, 'Landing')).toContainText(label);
+  const review = region(page, 'Ready for review');
+  for (const label of ['Fix checks', 'Resolve conflicts', 'Address comments (2)', 'Open on GitHub']) await expect(review.getByRole('button', { name: label, exact: true }).or(review.getByRole('link', { name: label, exact: true }))).toBeVisible();
+  await expect(review.getByRole('button', { name: 'Resolve', exact: true })).toHaveCount(0);
+  await expect(review.getByRole('button', { name: 'Merge', exact: true })).toBeDisabled();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-3/screenshots/PAR3-overview-${layout(info)}.png`, fullPage: false });
+  await expect(region(page, 'Resolved')).not.toContainText('PAR3 older'); await region(page, 'Resolved').getByRole('button', { name: 'Show older', exact: true }).click();
+  await expect(region(page, 'Resolved')).toContainText('PAR3 older');
+  const card = page.locator(`.pw-side [data-thread-id="${prepared.threadId}"]`);
+  await card.getByRole('button', { name: 'Resolve', exact: true }).click();
+  const dialog = page.getByRole('dialog'); await expect(dialog).toContainText('This thread has commits that are not in a pull request. Resolve it anyway? The branch and worktree stay.');
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-3/screenshots/PAR3-resolve-confirmation-${layout(info)}.png`, fullPage: false });
+  await dialog.getByRole('button', { name: 'Resolve', exact: true }).click(); await expect(region(page, 'Resolved')).toContainText('PAR3 saved work');
+  await card.getByRole('button', { name: 'Reopen', exact: true }).click(); await expect(region(page, 'Idle')).toContainText('PAR3 saved work');
+  await page.locator(`.pw-side [data-thread-id="${prepared.publishThreadId}"]`).getByRole('button', { name: 'Publish', exact: true }).click();
+  await expect.poll(async () => (await work(page)).threads.find(thread => thread.id === prepared.publishThreadId)?.pr?.state, LONG).toBe('open');
+  await expect(region(page, 'Ready for review')).toContainText('PAR3 publish work');
+  const heldDaily = '**/api/projects/projects_fixture/dailies';
+  const dailySnapshot = ProjectDailyListViewSchema.parse(await read(page, `${PROJECT}/dailies`));
+  await page.goto('about:blank');
+  await page.route(heldDaily, route => route.fulfill({ json: { ...dailySnapshot, mergesHeld: true, mergeAllowedThreads: [] } }));
+  await page.goto('/projects/projects_fixture'); await expect(page.getByRole('heading', { name: 'Projects fixture', exact: true })).toBeVisible(LONG); await sectionTab(page, info, 'Threads');
+  const heldMerge = page.locator(`.pw-side [data-thread-id="${prepared.publishThreadId}"]`).getByRole('button', { name: 'Merge', exact: true });
+  await expect(heldMerge).toBeDisabled(); await expect(heldMerge).toHaveAttribute('title', 'Merges are held while the nightly window runs.');
+  await page.unrouteAll({ behavior: 'wait' }); await page.reload(); await expect(page.getByRole('heading', { name: 'Projects fixture', exact: true })).toBeVisible(LONG); await sectionTab(page, info, 'Threads'); await expect(heldMerge).toBeEnabled();
+
+  await sectionTab(page, info, 'Routines'); await expect(region(page, 'Nightly')).toBeVisible(); await expect(region(page, 'Goals')).toBeVisible();
+  await sectionTab(page, info, 'Queue'); await expect(region(page, 'Queue')).toBeVisible();
+  await sectionTab(page, info, 'Threads');
+  await expect(page.getByText('Loading chat…', { exact: true })).toHaveCount(0, LONG);
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-3/screenshots/PAR3-published-${layout(info)}.png`, fullPage: false });
+  await card.getByRole('link', { name: 'PAR3 saved work', exact: true }).click(); await expect(page.getByRole('button', { name: 'Publish', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Resolve', exact: true })).toBeVisible();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-3/screenshots/PAR3-thread-actions-${layout(info)}.png`, fullPage: false });
+  expect(errors).toEqual([]);
+});
+
+
+test('PAR3 header action rows stay separate on narrow screens', async ({ page }, info) => {
+  const errors = await begin(page); await openProject(page, 'Projects placement'); await sectionTab(page, info, 'Threads');
+  await region(page, 'Idle').getByRole('link', { name: 'Tidy the README wording', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Resolve', exact: true })).toBeVisible();
+  const overlaps = await page.locator('.pw-thread-heading button').evaluateAll(buttons => {
+    const boxes = buttons.filter(button => button.getBoundingClientRect().width > 0).map(button => ({ name: button.getAttribute('aria-label') ?? button.textContent?.trim(), box: button.getBoundingClientRect() }));
+    return boxes.flatMap((a, index) => boxes.slice(index + 1).filter(b => Math.min(a.box.right, b.box.right) - Math.max(a.box.left, b.box.left) > 1 && Math.min(a.box.bottom, b.box.bottom) - Math.max(a.box.top, b.box.top) > 1).map(b => [a.name, b.name]));
+  });
+  expect(overlaps).toEqual([]);
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-3/screenshots/PAR3-header-actions-${layout(info)}.png`, fullPage: false });
+  expect(errors).toEqual([]);
 });

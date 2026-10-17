@@ -1,5 +1,7 @@
 # Projects
 
+Projects parity phase3 source adds the six-group Overview, shared thread cards, owner pull request actions, Resolve/Reopen and seven-day inactivity resolution. Work stays in its branch/worktree; Publish runs the existing managed verification and publication path. Backend and affected browser evidence, installation status and credential limits are recorded separately in [the phase3 checkpoint](acceptance/projects-parity-2026-10/phase-3/README.md).
+
 Projects is the area of Jevellan where one coordinator per project plans the work and threads carry it out. The owner talks with the coordinator; the coordinator splits requests into threads, routes follow-ups to the thread already doing that work, keeps a project notebook and brings back only the questions that need the owner. Each thread is a full Claude Code or Codex session that carries one task end to end, on any device and eligible account, in its own worktree or directly on main.
 
 Projects sits next to the existing conversations, which keep working exactly as before. It reuses their pieces: the runtime adapters, isolated account homes and account ranking, Jev, the scoped bridge, project memory, the device mesh and the native transcript readers. The specification is `BRIEF-projects.md` (local and untracked, like `BRIEF.md`); where the build chose differently, the choice is a numbered decision in the [acceptance report](acceptance/REPORT.md).

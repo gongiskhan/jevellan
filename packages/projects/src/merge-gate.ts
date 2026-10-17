@@ -16,7 +16,7 @@ export class ProjectMergeGate {
   readonly #concluded = new Set<string>();
   readonly #abort = new AbortController();
   #closed = false;
-  constructor(readonly o: { hub: ProjectHub; store: Pick<ThreadStore, 'all' | 'get'>; tracker: PullRequestTracker; github: GitHubAccess; verification: PullRequestVerification; deviceId: string; redactor: SecretRedactor; now(): number;
+  constructor(readonly o: { hub: ProjectHub; store: Pick<ThreadStore, 'all' | 'get'> & Partial<Pick<ThreadStore, 'setIndexFields' | 'local'>>; tracker: PullRequestTracker; github: GitHubAccess; verification: PullRequestVerification; deviceId: string; redactor: SecretRedactor; now(): number;
     settings(projectId: string): Promise<ProjectWorkSettings>; configuration(): Promise<Configuration['x-jevellan']>; decisionClient?(): Promise<DecisionClient>;
     project(projectId: string): Promise<Project>; repository(project: Project): string; event(projectId: string, event: CoordinatorEvent): Promise<void>;
     message(projectId: string, threadId: string, text: string, messageId: string): Promise<unknown>; assertMerge(projectId: string, threadId: string): Promise<void> }) {}
@@ -70,6 +70,10 @@ export class ProjectMergeGate {
       await this.o.message(route.projectId, thread.id, `Basic verification failed for #${route.prNumber} at ${route.commit}.\n\n${run.report?.failures.map(failure => `${failure.what}\n${failure.output}`).join('\n\n') ?? ''}`.slice(0, 20000), derivedId('tmsg', 'verification', run.id));
       await this.#save({ ...route, failureDeliveredAt: new Date(this.o.now()).toISOString() });
     } catch (error) { await this.#ask(await this.#save({ ...route, route: 'ask-owner', source: 'guard', reason: this.o.redactor.text(error instanceof Error ? error.message : 'The thread cannot receive the failures.').slice(0, 1200) }), thread); }
+  }
+  #landing(threadId: string, value: 'verifying' | 'merging' | undefined, expected?: 'verifying' | 'merging'): void {
+    if (expected && this.o.store.local?.(threadId).landing !== expected) return;
+    this.o.store.setIndexFields?.(threadId, { landing: value });
   }
   async #advance(threadId: string) {
     const thread = this.o.store.get(threadId); if (!thread?.pr) return;
@@ -125,7 +129,11 @@ export class ProjectMergeGate {
       if (!run || run.schema !== 'verification-run-v1') run = await this.o.verification.reserve(thread, commit, route.failures * 2 + route.verificationRetries + 1);
       if (!run || run.schema !== 'verification-run-v1') { await this.#ask(await this.#save({ ...route, route: 'ask-owner', source: 'guard', reason: 'No other provider or different model is eligible for verification.' }), thread); return; }
       if (route.verificationId !== run.id || route.state === 'waiting') route = await this.#save({ ...route, state: 'verifying', verificationId: run.id });
-      const project = await this.o.project(thread.projectId), completed = await this.o.verification.execute(run, thread, project, this.o.repository(project), settings.setupCommand ?? '');
+      const project = await this.o.project(thread.projectId);
+      this.#landing(threadId, 'verifying');
+      let completed: Awaited<ReturnType<PullRequestVerification['execute']>>;
+      try { completed = await this.o.verification.execute(run, thread, project, this.o.repository(project), settings.setupCommand ?? ''); }
+      finally { this.#landing(threadId, undefined, 'verifying'); }
       if (!completed) return;
       if (completed.state === 'failed') {
         if (completed.note || completed.report?.result !== 'failed') {
@@ -150,6 +158,7 @@ export class ProjectMergeGate {
     }
     await this.o.assertMerge(route.projectId, threadId);
     if (route.state !== 'merging') route = await this.#save({ ...route, state: 'merging' });
+    this.#landing(threadId, 'merging');
     try { await this.o.tracker.merge(threadId, route.commit); }
     catch (error) {
       if (error instanceof Error && 'headMoved' in error && error.headMoved === true && route.verificationId) {
@@ -159,7 +168,7 @@ export class ProjectMergeGate {
         await this.#event(route, 'verification-failed', route.reason!);
       }
       throw error;
-    }
+    } finally { this.#landing(threadId, undefined, 'merging'); }
     route = await this.#save({ ...route, state: 'merged' });
     await this.#event(route, 'automatically-merged', `Squash-merged checked commit ${route.commit}.`);
   }

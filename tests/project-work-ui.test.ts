@@ -89,10 +89,12 @@ test('project routes accept only valid project and thread ids and drive the head
   }
 });
 
-test('the default tab is Waiting only while a question is open', () => {
+test('the phone defaults to Overview when questions or proposals need the owner', () => {
   const question = { id: 'q1' } as ProjectWorkView['decisions']['open'][number];
-  expect(defaultTab({ decisions: { open: [question], answered: [] } })).toBe('waiting');
+  expect(defaultTab({ decisions: { open: [question], answered: [] } })).toBe('overview');
   expect(defaultTab({ decisions: { open: [], answered: [question] } })).toBe('chat');
+  expect(defaultTab({ decisions: { open: [], answered: [] } }, 2)).toBe('overview');
+  expect(defaultTab({ decisions: { open: [], answered: [] }, threads: [thread({ state: 'failed' })] })).toBe('overview');
 });
 
 test('sections: Running holds every live, resting or waiting thread newest first; Concluded the last 14 days by end', () => {
