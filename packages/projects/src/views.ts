@@ -1,6 +1,6 @@
 import type { AccountService } from '@jevellan/accounts';
 import {
-  ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, defaultProjectWorkSettings, deviceAway, isTerminal, openQuestions, projectPathProblem, type AccountView, type Configuration, type CoordinatorState,
+  ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, clipRedacted, defaultProjectWorkSettings, deviceAway, isTerminal, openQuestions, projectPathProblem, type AccountView, type Configuration, type CoordinatorState,
   type CoordinatorView, type Project,
   type ProjectDecision, type ProjectHub, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkSummary, type ProjectWorkView,
   type PullRequestEntry, type SharedProjects, type ThreadIndex, type ThreadReport, type ThreadView, type SessionCacheSummary,
@@ -203,6 +203,8 @@ export class ProjectViews {
     return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: { ...this.#o.store.index(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt),
       sessionCache: sessionCacheSummaries(cacheRecords(ledger)).slice(-500) },
       ...(this.#o.store.local(threadId).memoryRecall ? { memoryRecall: this.#o.store.local(threadId).memoryRecall } : {}),
+      ...(this.#o.store.local(threadId).escalations ? { escalations: this.#o.store.local(threadId).escalations } : {}),
+      notices: events.filter(event => event.type === 'notice').slice(-20).map(event => { const notice = ledger.payload(event as ProjectLedgerEvent & { type: 'notice' }); return { at: event.t, text: clipRedacted(notice.text, 4000), kind: notice.kind }; }),
       sessionHistory: (this.#o.store.local(threadId).sessionHistory ?? []).map(({ nativeSessionId: _native, ...entry }) => { void _native; return entry; }),
       placement: thread.placement, reports, ...(fixTurns.length ? { fixTurns } : {}), transcript, queuedMessages: thread.queuedMessages,
       ...(routed ? { messageRoute: ledger.payload(routed as typeof routed & { type: 'thread-message-route' }) } : {}),

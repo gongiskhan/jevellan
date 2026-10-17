@@ -1,5 +1,6 @@
 import { MergeDocumentSchema, type MergeDocument } from '@jevellan/core';
 import { ProjectSessionCacheSchema, type ProjectSessionCache } from '@jevellan/core';
+import { ProjectUsageDaySchema, type ProjectUsageDay } from '@jevellan/core';
 import { PlacementOverrideFilterSchema, type PlacementOverrideFilter } from '@jevellan/core';
 import { ProjectJobSchema, ProjectDailySchema, ProjectJobRunSchema, ProjectWindowSchema, type ProjectJob, type ProjectDaily, type ProjectJobRun, type ProjectWindow } from '@jevellan/core';
 import { ProjectGoalSchema, ProjectRefillStateSchema, type ProjectGoal, type ProjectRefillState } from '@jevellan/core';
@@ -44,6 +45,30 @@ type Page<T> = { records: T[]; next: string | null };
  * build one per request. Reads assert the D3 revision rule; read-then-write operations run in one hub transaction.
  */
 export class HubProjectStore {
+  usageDays(projectId: string): ProjectUsageDay[] { return this.#documents('project-usage', ProjectUsageDaySchema, projectId).filter(row => Date.parse(`${row.day}T12:00:00Z`) >= this.now() - 32 * 86400000); }
+  usagePage(projectId: string, after?: string): Page<ProjectUsageDay> {
+    const records: ProjectUsageDay[] = []; let cursor = after, bytes = 0;
+    for (;;) {
+      const rows = this.hub.listByField('project-usage', 'projectId', projectId, ProjectUsageDaySchema, { limit: PROJECT_HUB_PAGE, ...(cursor ? { after: cursor } : {}) });
+      for (const stored of rows) {
+        const document = checkHubRevision(stored).document, id = createHash('sha256').update(document.id).digest('hex');
+        if (Date.parse(`${document.day}T12:00:00Z`) < this.now() - 32 * 86400000) { cursor = id; continue; }
+        const size = Buffer.byteLength(JSON.stringify(document));
+        if (records.length && (bytes + size > ENVELOPE_PAGE_BYTES || records.length === PROJECT_HUB_PAGE)) return { records, next: cursor ?? null };
+        records.push(document); bytes += size; cursor = id;
+      }
+      if (rows.length < PROJECT_HUB_PAGE) return { records, next: null };
+    }
+  }
+  putUsageDay(raw: ProjectUsageDay): void {
+    const document = ProjectUsageDaySchema.parse(raw); this.#project(document.projectId);
+    if (document.deviceId !== this.deviceId || document.id !== `${document.projectId}:${document.deviceId}:${document.day}`) refuse('Only the usage device can publish its own project day.', 403);
+    const id = createHash('sha256').update(document.id).digest('hex');
+    const previous = this.#get('project-usage', id, ProjectUsageDaySchema);
+    if (previous && (previous.document.lastEventId ?? 0) > (document.lastEventId ?? 0)) return;
+    if (previous && stableJson({ ...previous.document, revision: 0 }) === stableJson({ ...document, revision: 0 })) return;
+    this.#put('project-usage', id, ProjectUsageDaySchema, document, previous?.revision ?? 0);
+  }
   sessionCaches(projectId: string): ProjectSessionCache[] { return this.#documents('project-session-cache', ProjectSessionCacheSchema, projectId); }
   putSessionCache(raw: ProjectSessionCache): void {
     const document = ProjectSessionCacheSchema.parse(raw); this.#project(document.projectId);
@@ -623,6 +648,8 @@ export class HubProjectStore {
       case 'coordinator-assign': result = { ...base, record: this.assignCoordinator(request.projectId, request.deviceId, request.expectedRevision) }; break;
       case 'coordinator-status-get': result = { ...base, record: this.coordinatorStatus(request.projectId) }; break;
       case 'session-caches': result = { ...base, records: this.sessionCaches(request.projectId) }; break;
+      case 'usage-days': result = { ...base, ...this.usagePage(request.projectId, request.after) }; break;
+      case 'usage-day-put': this.putUsageDay(request.document); result = base; break;
       case 'session-cache-put': this.putSessionCache(request.snapshot); result = base; break;
       case 'coordinator-status-put': result = { ...base, record: this.putCoordinatorStatus(request.status) }; break;
       case 'threads-list': result = { ...base, ...this.threads(request.projectId, request.after) }; break;
@@ -662,6 +689,8 @@ export class HubProjectStore {
 /** The hub's own `ProjectHub`: the same store and authority rules, bound to the hub device. */
 export class HubProjectAccess implements ProjectHub {
   async sessionCaches(projectId: string) { return this.#store.sessionCaches(projectId); }
+  async usageDays(projectId: string) { return this.#store.usageDays(projectId); }
+  async putUsageDay(document: ProjectUsageDay) { this.#store.putUsageDay(document); }
   async putSessionCache(snapshot: ProjectSessionCache) { this.#store.putSessionCache(snapshot); }
   async jobs(projectId: string, after?: string) { return this.#store.jobs(projectId, after); }
   async job(jobId: string) { return this.#store.job(jobId); }
@@ -732,6 +761,15 @@ export class HubProjectAccess implements ProjectHub {
 /** A member's `ProjectHub` over the device-token HTTP API; every reply must match the requested identity and revision. */
 export class MemberProjectStore implements ProjectHub {
   async sessionCaches(projectId: string) { return this.#check((await this.#call('session-caches', { projectId })).records, rows => rows.every(row => row.projectId === projectId)); }
+  async usageDays(projectId: string) {
+    const records: ProjectUsageDay[] = []; let after: string | undefined;
+    for (;;) {
+      const page = await this.#call('usage-days', { projectId, ...(after ? { after } : {}) });
+      records.push(...this.#check(page.records, rows => rows.every(row => row.projectId === projectId)));
+      if (page.next === null) return records; after = page.next;
+    }
+  }
+  async putUsageDay(document: ProjectUsageDay) { await this.#call('usage-day-put', { document }); }
   async putSessionCache(snapshot: ProjectSessionCache) { await this.#call('session-cache-put', { snapshot }); }
   constructor(readonly client: MemberHubClient) {}
   async #call<O extends ProjectHubOperation>(operation: O, fields: object): Promise<ProjectHubResultOf<O>> {

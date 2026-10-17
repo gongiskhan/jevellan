@@ -98,7 +98,7 @@ export class TurnExecution {
     if (failure) {
       const error = failure;
       // A limit on one model cools only that model on this account; any other limit cools the account (as stretches do).
-      const limit = error.scope === 'model' ? { model: this.#o.model, ...(error.resetsAt ? { resetsAt: error.resetsAt } : {}) } : {};
+      const limit = { ...(error.scope === 'model' ? { model: this.#o.model } : {}), ...(error.resetsAt ? { resetsAt: error.resetsAt } : {}) };
       this.#account(() => this.#o.accounts.recordError(this.#o.accountId, error.kind, this.#o.secretRef, limit));
     }
     await this.#accounting;

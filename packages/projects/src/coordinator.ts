@@ -568,7 +568,11 @@ export class Coordinator {
         contextTokensBefore: session?.context?.tokens,
         safetyProfile: 'coordinator', timeoutMs: this.c.timers.turnTimeoutMs, tools, memoryMode: project.memory.mode });
     } catch (error) { this.#scope = undefined; await tools.close(); return this.#failed(turn, messageOf(error), 'failed'); }
-    if (launched.kind === 'unavailable') { this.#scope = undefined; await tools.close(); return this.#failed(turn, launched.reason, 'failed'); }
+    if (launched.kind === 'unavailable') {
+      this.#scope = undefined; await tools.close();
+      if (launched.accountWait) { await this.#unavailable(launched.reason, events); return 'wait'; }
+      return this.#failed(turn, launched.reason, 'failed');
+    }
     const started = launched; const release = this.c.enterOperation(projectId, `Coordinator: ${project.name}`);
     try {
       // Without a resumed session this is a new one, also when the account changed and the old session stayed in its home (D16).
@@ -618,6 +622,16 @@ export class Coordinator {
   #outcome(turn: number, events: CoordinatorEvent[], outcome: TurnOutcome, ours: (state: CoordinatorState) => boolean): TurnEnd {
     // Shutdown: the state stays `running`, and recovery records the dropped turn with its events still queued (2.6.13).
     if (outcome.status === 'shutdown') return 'wait';
+    if (outcome.error?.kind === 'rate-limit') {
+      const batch = createHash('sha256').update(JSON.stringify(events.map(event => event.id))).digest('hex');
+      if (this.c.store.local(this.projectId).limitRetryBatch !== batch) {
+        this.c.store.updateLocal(this.projectId, local => ({ ...local, limitRetryBatch: batch }));
+        this.c.store.update(this.projectId, current => ({ ...withoutReason(current), state: 'idle' }));
+        this.#ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status: 'failed', error: this.c.redactor.text(outcome.error.message), usage: outcome.usage,
+          ...(outcome.sessionId ? { sessionKey: createHash('sha256').update(outcome.sessionId).digest('hex') } : {}) } });
+        this.#publish(); return 'retry';
+      }
+    }
     if (outcome.status === 'failed' || outcome.status === 'timed-out') {
       // The runtime no longer has the session (the CLI's transcript retention, P8 review R-T1): the retry starts a fresh one with the fresh context.
       if (outcome.error?.message === SESSION_NOT_FOUND) this.c.store.update(this.projectId, (state) => ours(state) ? { ...state, session: null } : state);
@@ -628,7 +642,7 @@ export class Coordinator {
     this.c.store.update(this.projectId, (state) => ({ ...withoutReason(state), state: 'idle', queue: state.queue.filter((event) => !delivered.has(event.id)), lastTurnAt: this.#at(),
       ...(completed ? { failedTurnsInARow: 0 } : {}),
       session: ours(state) && state.session ? { ...state.session, turns: state.session.turns + 1, ...(outcome.sessionId ? { nativeSessionId: outcome.sessionId } : {}) } : state.session }));
-    this.c.store.updateLocal(this.projectId, (local) => ({ ...local, fallbackEventIds: local.fallbackEventIds.filter((id) => !delivered.has(id)) }));
+    this.c.store.updateLocal(this.projectId, (local) => { const next = { ...local, fallbackEventIds: local.fallbackEventIds.filter((id) => !delivered.has(id)) }; delete next.limitRetryBatch; return next; });
     if (completed && outcome.finalText) this.#ledger.append({ type: 'coordinator-text', turn, data: { schema: 'coordinator-text-v1', text: outcome.finalText } });
     this.#ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status: completed ? 'completed' : 'interrupted', usage: outcome.usage,
       ...(outcome.sessionId ? { sessionKey: createHash('sha256').update(outcome.sessionId).digest('hex') } : {}) } });

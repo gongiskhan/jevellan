@@ -7,7 +7,7 @@ import {
 import { JsonlLedger, type LedgerAppend, type LedgerOptions, type LedgerSpec } from '@jevellan/conversations';
 import type { ProjectPaths } from './paths.js';
 import type { TurnOutcome } from './turn-execution.js';
-export type SessionEvidence = { projectId: string; owner: { kind: 'review' | 'verification' | 'memory'; id: string }; runtime: string; model: string; startedAt: string; endedAt: string; outcome: TurnOutcome };
+export type SessionEvidence = { projectId: string; owner: { kind: 'review' | 'verification' | 'memory'; id: string }; runtime: string; model: string; accountId?: string; accountLabel?: string; modelLabel?: string; startedAt: string; endedAt: string; outcome: TurnOutcome };
 
 const projectLedger: LedgerSpec<ProjectLedgerEvent> = { schema: ProjectLedgerEventSchema, literal: 'project-ledger-event-v1', label: 'Project', folders: ['', 'ledger', 'blobs'] };
 
@@ -74,6 +74,8 @@ export class ProjectLedger extends JsonlLedger<ProjectLedgerEvent> {
 /** One ledger object per directory: subscribers live on the instance, so the SSE stream and every writer must share it. */
 export class ProjectLedgers {
   readonly #ledgers = new Map<string, ProjectLedger>();
+  readonly #listeners = new Set<(ledger: ProjectLedger, event: ProjectLedgerEvent) => void>();
+  subscribe(listener: (ledger: ProjectLedger, event: ProjectLedgerEvent) => void): () => void { this.#listeners.add(listener); return () => { this.#listeners.delete(listener); }; }
   constructor(readonly paths: ProjectPaths, private readonly options: LedgerOptions = {}) {}
   coordinator(projectId: string): ProjectLedger { return this.#get(projectId); }
   thread(projectId: string, threadId: string): ProjectLedger { return this.#get(projectId, threadId); }
@@ -85,7 +87,7 @@ export class ProjectLedgers {
   #get(projectId: string, threadId?: string): ProjectLedger {
     const key = threadId === undefined ? projectId : `${projectId}/${threadId}`;
     let ledger = this.#ledgers.get(key);
-    if (!ledger) { ledger = new ProjectLedger(this.paths, projectId, threadId, this.options); this.#ledgers.set(key, ledger); }
+    if (!ledger) { ledger = new ProjectLedger(this.paths, projectId, threadId, this.options); const source = ledger; ledger.subscribe(event => { for (const listener of this.#listeners) listener(source, event); }); this.#ledgers.set(key, ledger); }
     return ledger;
   }
   /** Startup only (brief 8.6): clears locks of a crashed writer on every coordinator and thread ledger. */

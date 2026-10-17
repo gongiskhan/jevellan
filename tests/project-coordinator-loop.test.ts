@@ -60,6 +60,15 @@ const question = (id: string, threadId: string) => event({ kind: 'thread-report'
   summary: 'Need a database choice.', question: 'Which database?', options: [{ label: 'SQLite' }, { label: 'Postgres' }], changedFiles: [], synthesized: false } });
 const say = (text: string): FakeTurnStep => (turn) => { turn.say(text); return { status: 'completed' }; };
 const fail = (text: string): FakeTurnStep => () => ({ status: 'failed', error: { kind: 'other', message: text } });
+
+test('a coordinator usage-limit retry preserves the batch without counting the first attempt as a failure', async () => {
+  const work = await started(); const observed: number[] = [];
+  fake.enqueueTurn(() => ({ status: 'failed', error: { kind: 'rate-limit', message: 'Usage limit.' } }), forCoordinator);
+  fake.enqueueTurn(turn => { observed.push(work.coordinators.get('proj_a').state().failedTurnsInARow); turn.say('Continued.'); return { status: 'completed' }; }, forCoordinator);
+  await message(work, 'Keep working.'); await work.idle('proj_a');
+  expect(observed).toEqual([0]); expect(turns()).toHaveLength(2);
+  expect(work.coordinators.get('proj_a').state()).toMatchObject({ queue: [], failedTurnsInARow: 0 });
+});
 function deferred() { let resolve!: () => void; const promise = new Promise<void>((done) => { resolve = done; }); return { promise, resolve }; }
 const aborted = (signal: AbortSignal) => new Promise<void>((resolve) => { if (signal.aborted) resolve(); else signal.addEventListener('abort', () => resolve(), { once: true }); });
 const turns = (): TurnInput[] => fake.turnStarts.filter((input) => input.owner.kind === 'coordinator');

@@ -90,3 +90,6 @@ Placement receipts retain the redacted corrections actually shown to Jev, includ
 
 
 2026-10-11 Projects loop amendment A4: Ekoa workflow authority and project credential scope are recorded as acceptance decision 654. Handoff PR #208 stays for the owner to merge; exact-SHA dispatch uses pinned refs and actual returned run identities. Windows freeze handoff state once and cannot mix old watch order with new dispatch order. Live installation remains blocked on the grouped owner inputs.
+
+
+Projects parity phase5 decisions861–874 are recorded in [the run log](acceptance/projects-parity-2026-10/README.md): placement bounds, explicit account waits and continuation, model recovery/escalation with session continuity, and bounded cross-device usage projection. Earlier conflicting behavior yields to BRIEF.md as described there. Affected phase5 validation passes as recorded there; final full suites, release and live acceptance remain pending.

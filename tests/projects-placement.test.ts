@@ -402,7 +402,7 @@ test('Jev answers resolve to the highest probability, the mapped effort and the 
   const [first, second] = decide.mock.calls.map(([request]) => request);
   expect(Object.keys(first!.questions)).toEqual(['isolation', 'pick_model', 'effort']); expect(Object.keys(second!.questions)).toEqual(['device']);
   expect(first!.model).toBe('jev-1.13.0'); expect(second!.state).toBe(first!.state);
-  expect(PlacementStateSchema.parse(JSON.parse(first!.state))).toMatchObject({ schema: 'placement-state-v2', thread: { title: 'Add A', task: 'Add the A endpoint with tests.' } });
+  expect(PlacementStateSchema.parse(JSON.parse(first!.state))).toMatchObject({ schema: 'placement-state-v3', thread: { title: 'Add A', task: 'Add the A endpoint with tests.' } });
   // Effort maps to the chosen model; an exact tie goes to Jev's choice, else to the first tied option.
   const local = input({ gates: closed });
   expect(await placed(local, jev({ pick_model: 'deep', effort: 'low' }))).toMatchObject({ modelId: 'deep', effortRequested: 'low', effortEffective: 'high', probabilities: { pick_model: { swift: 0, deep: 1 } } });
@@ -477,8 +477,8 @@ test('the placement packet is redacted before the task is shortened and carries 
   const build = (over: Partial<PlacementPacketInput> = {}, value = input()) => buildPlacementState({ ...value, packet: { ...packet, ...over }, redactor });
   const { state, approximateTokens: tokens } = build({ title: `Add A ${secret}`, task: `${'x'.repeat(5975)}${secret}${'y'.repeat(100)}`, note: `  Use the ${secret} with Bearer abc123 now.  `, activeThreads: [active], overrides });
   expect(state).not.toContain(secret.slice(0, 7)); expect(state).not.toContain('abc123');
-  expect(JSON.parse(state)).toEqual({ schema: 'placement-state-v2', task: { type: 'feature', needs: [], goal: null },
-    rules: { routingProfile: settings.routingProfile, effortGuide: settings.effortGuide,
+  expect(JSON.parse(state)).toEqual({ schema: 'placement-state-v3', task: { type: 'feature', needs: [], goal: null },
+    rules: { projectGuidance: '', routingProfile: settings.routingProfile, effortGuide: settings.effortGuide,
       recentOverrides: ["model changed from deep to swift for a feature task 'Add B' (restart)", "device changed from dev_mini to dev_studio for a feature task 'Add B' (restart)", "effort changed from high to low for a feature task 'Add A' (next-turn)"] },
     project: { name: 'App', defaultIsolation: 'worktree', gitPolicy: 'main' },
     thread: { title: 'Add A [redacted]', task: `${'x'.repeat(5975)}[redact${TASK_SHORTENED}`, coordinatorNote: 'Use the [redacted] with Bearer [redacted] now.' }, activeThreads: [active] });
@@ -534,4 +534,43 @@ test('typed placement prefers eight older same-type corrections before four rece
   expect(state.task).toMatchObject({ type: 'fix', needs: ['mac'], goal: { name: 'Reliability [redacted]' } });
   expect(state.task.goal!.motivation).toHaveLength(600); expect(JSON.stringify(state)).not.toContain(secret.slice(0, 5));
   expect(state.rules.recentOverrides).toEqual([...overrides.slice(2, 10).reverse(), ...overrides.slice(-4).reverse()].map(entry => overrideSentence(entry.changes[0]!, entry.title, entry.mode, entry.taskType)));
+});
+
+test('PAR5 project model and mapped effort bounds constrain Jev while owner-fixed fields win', () => {
+  const bounded = { ...input(), constraints: { allowedModelIds: ['deep'], minEffort: 'high' as const }, projectGuidance: 'Use Deep for UI work.' };
+  const allowed = candidates(bounded);
+  expect(allowed.models.map(row => row.model.id)).toEqual(['deep']);
+  expect(allowed.excludedModels).toContainEqual({ modelId: 'swift', reason: "Not allowed in this project's settings." });
+  const q = preparePlacementA(bounded, allowed).effort;
+  expect(q?.type === 'choice' && Object.keys(q.criteria)).toEqual(['high', 'max']);
+  const owner = { ...bounded, fixed: { modelId: 'swift', effort: 'low' as const } };
+  expect(fallback(owner)).toMatchObject({ modelId: 'swift', effortEffective: 'low', constraints: bounded.constraints });
+});
+test('PAR5 no allowed model refuses without asking Jev or falling back outside the bounds', () => {
+  const value = { ...input(), constraints: { allowedModelIds: [], minEffort: null } };
+  expect(refusal(value)).toMatch(/^No model allowed in this project can run: /u);
+});
+test('PAR5 a single mapped effort skips its question and records placement constraints and reason', async () => {
+  const only = { ...deep, efforts: ['max'] as ModelOption['efforts'] };
+  const value = { ...input({ settings: { ...settings, menu: [only] }, fixed: { isolation: 'worktree', modelId: 'deep', deviceId: mini.id } }),
+    constraints: { allowedModelIds: null, minEffort: 'max' as const }, reason: 'escalation' as const };
+  expect(preparePlacementA(value, candidates(value)).effort).toBeUndefined();
+  const client = { decide: vi.fn() } as unknown as DecisionClient;
+  const result = await decidePlacement(client, { ...value, jevModel: 'jev-fixture', packet: { title: 'Small fix', task: 'Fix the failing test.', activeThreads: [], overrides: [] }, redactor: new SecretRedactor() }, new AbortController().signal);
+  expect(result).toMatchObject({ kind: 'placed', record: { source: 'fixed', effortEffective: 'max', reason: 'escalation', constraints: value.constraints } });
+  expect(client.decide).not.toHaveBeenCalled();
+});
+test('PAR5 placement-state-v3 carries project guidance and bounded escalation trouble', () => {
+  const value = { ...input(), projectGuidance: 'UI work uses Deep at high effort.' };
+  const packet = { title: 'Repair', task: 'Fix the failed test.', trouble: 'The narrow regression failed twice.', activeThreads: [], overrides: [] };
+  const built = buildPlacementState({ ...value, packet, redactor: new SecretRedactor() });
+  expect(JSON.parse(built.state)).toMatchObject({ schema: 'placement-state-v3', rules: { projectGuidance: value.projectGuidance }, thread: { trouble: packet.trouble } });
+});
+test('PAR5 oversized placement packets drop trouble after reserved paths and before active threads', () => {
+  const activeThreads = Array.from({ length: 50 }, (_, n) => ({ title: `${n}: ${'title '.repeat(150)}`, isolation: 'worktree' as const, device: 'Pro', model: 'Deep', effort: 'high' as const, reservedPaths: ['path/'.repeat(600)] }));
+  const packet = { title: 'Repair', task: 'task '.repeat(1200), trouble: 'failure '.repeat(250), activeThreads, overrides: [] };
+  const built = buildPlacementState({ ...input(), projectGuidance: 'g'.repeat(2000), packet, redactor: new SecretRedactor() });
+  const state = JSON.parse(built.state); expect(state.thread.trouble).toBeUndefined();
+  expect(state.activeThreads.length).toBeGreaterThan(0); expect(state.activeThreads.length).toBeLessThan(50);
+  expect(built.approximateTokens).toBeLessThanOrEqual(12_000);
 });

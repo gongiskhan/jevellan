@@ -267,6 +267,8 @@ test('PJ1b verification failure prompts are exact and the three-attempt limit ho
   expect(thread).toMatchObject({ state: 'in-review', verificationAttempts: 0, turns: 3, pr: { number: 1 } });
   const session = f.fake.runs[0]!.native.sessionId;
   expect(f.fake.turnStarts.slice(1).map((input) => input.resume?.sessionId)).toEqual([session, session]);
+  expect(f.local(threadId).escalations).toMatchObject([{ reason: 'verification', from: { modelId: 'fixture', effort: 'high' }, to: { modelId: 'fixture', effort: 'high' } }]);
+  expect(f.thread(threadId).placement.reason).toBe('escalation');
   expect(payloads(f, threadId, 'thread-verification').map((entry) => [entry.attempt, entry.status, entry.tail])).toEqual([[1, 'failed', '1\n'], [2, 'failed', '2\n'], [3, 'passed', '3\n']]);
   expect(kinds(queue(f))).toEqual(['thread-user-message', 'thread-published']);
 });

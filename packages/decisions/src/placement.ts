@@ -12,6 +12,9 @@ export const PLACEMENT_QUESTION_SET = 'p-v1';
 // Placement copy. The Projects copy module re-exports these constants and never retypes them.
 export const NO_PLACEMENT = 'No device can run any enabled model';
 export const NO_THREAD_MODEL = 'No enabled model can run threads.';
+export const PROJECT_MODEL_NOT_ALLOWED = "Not allowed in this project's settings.";
+export const PROJECT_MODEL_EFFORT = "No supported effort meets this project's minimum.";
+export const NO_PROJECT_MODEL = 'No model allowed in this project can run';
 export const LEAVE_GIT_MAIN = 'This project is set to Leave git to me, so threads cannot work on main.';
 export const MAIN_NOT_AVAILABLE = 'Main isolation is not available yet.';
 export const REMOTE_NOT_AVAILABLE = 'Threads run only on this device for now.';
@@ -55,6 +58,9 @@ export type PlacementRuntime = RuntimeSupport & { turns: boolean; displayName: s
 export type PlacementGates = { mainIsolation: boolean; remoteDevices: boolean };
 export type PlacementInput = {
   settings: Configuration['x-jevellan']; project: Project; defaultIsolation: Isolation;
+  constraints?: NonNullable<PlacementRecord['constraints']> | undefined; projectGuidance?: string | undefined;
+  reason?: PlacementRecord['reason']; minimumEffort?: Effort | undefined; excludedModels?: Record<string, string> | undefined;
+  continuity?: { modelId: string; effort: Effort; accountId: string } | undefined;
   runtimes: ReadonlyMap<string, PlacementRuntime>; accounts: Account[]; statuses: AccountStatus[]; devices: PlacementDevice[];
   maxRunningPerDevice: number;
   perDeviceLimits?: Record<string, number> | undefined; needs?: string[] | undefined;
@@ -77,10 +83,30 @@ export type PlacementOptions = {
  */
 export type PlacementCandidates = PlacementOptions & { isolations: Isolation[]; atLimit: boolean; main?: PlacementOptions };
 
+function effortFloor(input: PlacementInput): Effort | undefined {
+  if (input.fixed.effort !== undefined) return undefined;
+  const floors = [input.constraints?.minEffort, input.minimumEffort].filter((value): value is Effort => !!value);
+  return floors.sort((a, b) => EffortSchema.options.indexOf(b) - EffortSchema.options.indexOf(a))[0];
+}
+/** Actual menu efforts after mapping and the owner's floor; fixed effort remains the owner's choice. */
+export function placementEfforts(input: PlacementInput, models: readonly PlacementModel[]): Effort[] {
+  const floor = effortFloor(input); if (!floor) return [...EffortSchema.options];
+  const offered = new Set(models.flatMap(entry => entry.model.efforts));
+  return EffortSchema.options.filter(effort => offered.has(effort) && models.every(entry => EffortSchema.options.indexOf(mapEffort(effort, entry.model.efforts)) >= EffortSchema.options.indexOf(floor)));
+}
+function effectiveEffort(input: PlacementInput, model: ModelOption, requested: Effort): Effort {
+  const mapped = mapEffort(requested, model.efforts), floor = effortFloor(input);
+  return floor && EffortSchema.options.indexOf(mapped) < EffortSchema.options.indexOf(floor) ? mapEffort(floor, model.efforts) : mapped;
+}
+
 function modelReason(input: PlacementInput, model: ModelOption): string | undefined {
   const accountRuntime = input.fixed.accountId && input.accounts.find((account) => account.id === input.fixed.accountId)?.runtime;
   if (input.fixed.runtimeId !== undefined && model.runtime !== input.fixed.runtimeId || accountRuntime && model.runtime !== accountRuntime) return NOT_CHOSEN_REASON;
   if (input.fixed.modelId !== undefined && model.id !== input.fixed.modelId) return NOT_CHOSEN_REASON;
+  if (input.constraints?.allowedModelIds && !input.constraints.allowedModelIds.includes(model.id) && input.fixed.modelId === undefined) return PROJECT_MODEL_NOT_ALLOWED;
+  if (input.excludedModels?.[model.id]) return input.excludedModels[model.id];
+  const floor = effortFloor(input);
+  if (floor && !model.efforts.some(effort => EffortSchema.options.indexOf(effort) >= EffortSchema.options.indexOf(floor))) return PROJECT_MODEL_EFFORT;
   if (!model.enabled) return model.unavailableReason?.trim().replace(/\.$/, '') || 'disabled in Settings';
   if (!input.settings.runtimes[model.runtime]?.enabled) return 'runtime disabled';
   const runtime = input.runtimes.get(model.runtime);
@@ -162,6 +188,10 @@ export function placementCandidates(input: PlacementInput): PlacementCandidates 
   if (fixed.deviceId !== undefined && !input.devices.some((device) => device.id === fixed.deviceId)) return { refused: UNKNOWN_PLACEMENT_DEVICE };
   if (fixed.isolation === 'main' && !input.gates.mainIsolation) return { refused: MAIN_NOT_AVAILABLE };
   if (fixed.deviceId !== undefined && !input.gates.remoteDevices && fixed.deviceId !== input.deviceId) return { refused: REMOTE_NOT_AVAILABLE };
+  if ((input.constraints?.allowedModelIds !== undefined && input.constraints.allowedModelIds !== null || effortFloor(input)) && !input.settings.menu.some(model => !modelReason(input, model))) {
+    const reasons = input.settings.menu.map(model => `${model.label}: ${modelReason(input, model)}`).join('; ') || NO_THREAD_MODEL;
+    return { refused: `${NO_PROJECT_MODEL}: ${reasons}`, retryable: false };
+  }
   const mainAllowed = input.gates.mainIsolation && fixed.isolation !== 'worktree';
   const assess = (limits: boolean) => {
     const main = mainAllowed ? evaluate(input, true, limits) : undefined;
@@ -218,16 +248,23 @@ export function fixedPlacementFields(fixed: PlacementFixed): PlacementField[] {
 
 type PlacementChoice = { isolation: Isolation; options: PlacementOptions; entry: PlacementModel; device: PlacementDevice | undefined; effortRequested: Effort; accountChoice?: PlacementAccountChoice };
 type PlacementOutcome = { source: PlacementRecord['source']; calls: JevCall[]; probabilities?: PlacementRecord['probabilities']; error?: { kind: string; message: string } };
+function continuityAccount(input: PlacementInput, model: ModelOption, effort: Effort, ranked: RankedAccount[]): PlacementAccountChoice | undefined {
+  const old = input.continuity;
+  return old && old.modelId === model.id && old.effort === effectiveEffort(input, model, effort) && ranked.some(row => row.eligible && row.account.id === old.accountId)
+    ? accountChoice(ranked, old.accountId, 'session', input.now) : undefined;
+}
 /** One record for every source: the lists are the chosen isolation's options and the chosen model's devices (D136). */
 function placementRecord(input: PlacementInput, { isolation, options, entry, device, effortRequested, accountChoice: chosenAccount }: PlacementChoice, outcome: PlacementOutcome): PlacementRecord {
   const rankedAccounts = device ? ranking(input, entry.model, device.id) : [];
+  chosenAccount ??= continuityAccount(input, entry.model, effortRequested, rankedAccounts);
   const account = rankedAccounts.find(ranked => ranked.eligible && (!chosenAccount || ranked.account.id === chosenAccount.accountId));
   if (!device || !account) throw new Error('Placement candidates have no device for the model.');
   const choice = placementDevices(input, options, entry);
   return PlacementRecordSchema.parse({
     schema: 'placement-v1', questionSet: PLACEMENT_QUESTION_SET, source: outcome.source, fixed: fixedPlacementFields(input.fixed),
     isolation, runtime: entry.model.runtime, modelId: entry.model.id, model: entry.model.model,
-    effortRequested, effortEffective: mapEffort(effortRequested, entry.model.efforts), deviceId: device.id, accountId: account.account.id,
+    effortRequested, effortEffective: effectiveEffort(input, entry.model, effortRequested),
+    ...(input.reason ? { reason: input.reason } : {}), ...(input.constraints ? { constraints: input.constraints } : {}), deviceId: device.id, accountId: account.account.id,
     accountChoice: chosenAccount ?? accountChoice(rankedAccounts, account.account.id, input.fixed.accountId ? 'fixed' : outcome.source === 'fallback' ? 'fallback' : 'only-option', input.now),
     ...(outcome.probabilities ? { probabilities: outcome.probabilities } : {}),
     eligibleModels: options.models.map((model) => model.model.id), excludedModels: options.excludedModels,
@@ -261,11 +298,11 @@ const TASK_CHARS = 6000;
 const text = z.string();
 /** The redacted packet both placement calls send (brief 10). Rules hold configuration; thread and project text stays outside them. */
 export const PlacementStateSchema = z.strictObject({
-  schema: z.literal('placement-state-v2'), task: TaskPlacementContextSchema,
+  schema: z.literal('placement-state-v3'), task: TaskPlacementContextSchema,
   // The newest eight same-type corrections, then four from other types; one sentence per changed field.
-  rules: z.strictObject({ routingProfile: text, effortGuide: z.record(EffortSchema, text), recentOverrides: z.array(text).max(72) }),
+  rules: z.strictObject({ projectGuidance: z.string().max(2000), routingProfile: text, effortGuide: z.record(EffortSchema, text), recentOverrides: z.array(text).max(72) }),
   project: z.strictObject({ name: text, defaultIsolation: IsolationSchema, gitPolicy: z.enum(['main', 'external']).optional() }),
-  thread: z.strictObject({ title: text, task: text.max(TASK_CHARS), coordinatorNote: text.max(600).optional() }),
+  thread: z.strictObject({ title: text, task: text.max(TASK_CHARS), coordinatorNote: text.max(600).optional(), trouble: z.string().max(2000).optional() }),
   activeThreads: z.array(z.strictObject({ title: text, isolation: IsolationSchema, device: text, model: text, effort: EffortSchema, reservedPaths: z.array(text) })).max(50),
   devices: z.array(z.strictObject({ name: text, running: z.number().int().nonnegative(), tags: DeviceTagsSchema, facts: DeviceFactsSchema.optional() })).max(200).optional(),
 });
@@ -274,7 +311,7 @@ export type PlacementState = z.infer<typeof PlacementStateSchema>;
 export type PlacementActiveThread = PlacementState['activeThreads'][number];
 export type PlacementOverrideEntry = Pick<PlacementOverride, 'mode' | 'changes' | 'at' | 'taskType'> & { title: string };
 /** Active threads are oldest first. Corrections prefer the newest eight of this type, then four of other types. */
-export type PlacementPacketInput = { title: string; task: string; taskContext?: TaskPlacementContext | undefined; note?: string | undefined; activeThreads: PlacementActiveThread[]; overrides: PlacementOverrideEntry[] };
+export type PlacementPacketInput = { title: string; task: string; taskContext?: TaskPlacementContext | undefined; note?: string | undefined; trouble?: string | undefined; activeThreads: PlacementActiveThread[]; overrides: PlacementOverrideEntry[] };
 type PlacementStateInput = PlacementInput & { packet: PlacementPacketInput; redactor: Pick<SecretRedactor, 'document'> };
 
 /** `{field} changed from {from} to {to} for '{title}' ({mode})` (brief 10), with the stored values (model ids, D249). */
@@ -283,8 +320,8 @@ export function overrideSentence(change: { field: PlacementField; from: string; 
 }
 
 /**
- * The `placement-state-v2` packet: redacted first, then the task is cut to 6,000 characters with the marker and the note to 600, so a
- * cut never splits a secret before the redactor saw it. Over 12,000 estimated tokens it drops reserved paths, then active threads,
+ * The `placement-state-v3` packet: redacted first, then the task is cut to 6,000 characters with the marker and the note to 600, so a
+ * cut never splits a secret before the redactor saw it. Over 12,000 estimated tokens it drops reserved paths, then trouble, then active threads,
  * then override sentences, oldest first each; still too large is `state-too-large` (D249).
  */
 export function buildPlacementState(input: PlacementStateInput): { state: string; approximateTokens: number } {
@@ -296,21 +333,22 @@ export function buildPlacementState(input: PlacementStateInput): { state: string
   const mainAllowed = input.gates.mainIsolation;
   const note = packet.note?.trim();
   const redacted = input.redactor.document({
-    schema: 'placement-state-v2', task: taskContext,
-    rules: { routingProfile: input.settings.routingProfile, effortGuide: { ...input.settings.effortGuide },
+    schema: 'placement-state-v3', task: taskContext,
+    rules: { projectGuidance: input.projectGuidance ?? '', routingProfile: input.settings.routingProfile, effortGuide: { ...input.settings.effortGuide },
       recentOverrides: overrides.flatMap((entry) => entry.changes.map((change) => overrideSentence(change, entry.title, entry.mode, entry.taskType))).slice(0, 72) },
     project: { name: input.project.name, defaultIsolation: input.defaultIsolation === 'main' && !mainAllowed ? 'worktree' : input.defaultIsolation, gitPolicy: input.project.branchPolicy },
-    thread: { title: packet.title, task: packet.task, ...(note ? { coordinatorNote: note } : {}) },
+    thread: { title: packet.title, task: packet.task, ...(note ? { coordinatorNote: note } : {}), ...(packet.trouble ? { trouble: packet.trouble } : {}) },
     activeThreads: packet.activeThreads.slice(-50).map((thread) => ({ title: thread.title, isolation: thread.isolation, device: thread.device, model: thread.model, effort: thread.effort, reservedPaths: [...thread.reservedPaths] })),
     ...(input.devices.some(device => device.facts) ? { devices: input.devices.map(device => ({ name: device.name, running: device.running, tags: device.tags ?? [], ...(device.facts ? { facts: device.facts } : {}) })) } : {}),
   } satisfies PlacementState);
-  const { task, coordinatorNote } = redacted.thread;
-  const packed = PlacementStateSchema.parse({ ...redacted, task: { ...redacted.task, goal: redacted.task.goal ? { ...redacted.task.goal, motivation: redacted.task.goal.motivation.slice(0, 600) } : null }, thread: { ...redacted.thread,
+  const { task, coordinatorNote, trouble } = redacted.thread;
+  const packed = PlacementStateSchema.parse({ ...redacted, rules: { ...redacted.rules, projectGuidance: redacted.rules.projectGuidance.slice(0, 2000) }, task: { ...redacted.task, goal: redacted.task.goal ? { ...redacted.task.goal, motivation: redacted.task.goal.motivation.slice(0, 600) } : null }, thread: { ...redacted.thread,
     task: task.length > TASK_CHARS ? `${task.slice(0, TASK_CHARS - TASK_SHORTENED.length)}${TASK_SHORTENED}` : task,
-    ...(coordinatorNote ? { coordinatorNote: coordinatorNote.slice(0, 600) } : {}) } });
+    ...(coordinatorNote ? { coordinatorNote: coordinatorNote.slice(0, 600) } : {}), ...(trouble ? { trouble: trouble.slice(0, 2000) } : {}) } });
   let state = '';
   const over = () => approximateTokens(state = JSON.stringify(packed)) > STATE_TOKENS;
   for (const thread of packed.activeThreads) { if (!over()) break; thread.reservedPaths = []; }
+  if (over()) delete packed.thread.trouble;
   while (over() && packed.activeThreads.length) packed.activeThreads.shift();
   while (over() && packed.rules.recentOverrides.length) packed.rules.recentOverrides.pop();
   if (over()) throw new JevError('state-too-large');
@@ -328,7 +366,8 @@ export function preparePlacementA(input: PlacementInput, candidates: PlacementCa
   if (input.fixed.modelId === undefined && candidates.models.length > 1) {
     questions.pick_model = { type: 'choice', instructions: PLACEMENT_INSTRUCTIONS.pick_model, criteria: Object.fromEntries(candidates.models.map(({ model }) => [model.id, model.description])) };
   }
-  if (input.fixed.effort === undefined) questions.effort = { type: 'choice', instructions: PLACEMENT_INSTRUCTIONS.effort, criteria: { ...input.settings.effortGuide } };
+  const efforts = placementEfforts(input, candidates.models);
+  if (input.fixed.effort === undefined && efforts.length > 1) questions.effort = { type: 'choice', instructions: PLACEMENT_INSTRUCTIONS.effort, criteria: Object.fromEntries(efforts.map(effort => [effort, input.settings.effortGuide[effort]])) };
   return questions;
 }
 
@@ -383,7 +422,7 @@ export async function decidePlacement(client: DecisionClient, input: PlacementSt
     const a = preparePlacementA(input, candidates); const answerA = await ask(a);
     const isolation = IsolationSchema.safeParse(choose(a, answerA, 'isolation') ?? candidates.isolations[0]);
     const modelId = choose(a, answerA, 'pick_model') ?? candidates.models[0]!.model.id;
-    const effort = EffortSchema.safeParse(input.fixed.effort ?? choose(a, answerA, 'effort'));
+    const effort = EffortSchema.safeParse(input.fixed.effort ?? choose(a, answerA, 'effort') ?? placementEfforts(input, candidates.models)[0]);
     if (!isolation.success || !candidates.isolations.includes(isolation.data) || !effort.success) throw new JevError('invalid-response');
     const options = placementOptions(candidates, isolation.data);
     const entry = options.models.find((model) => model.model.id === modelId);
@@ -394,7 +433,8 @@ export async function decidePlacement(client: DecisionClient, input: PlacementSt
     const deviceId = choose(b, answerB, 'device') ?? devices[0]?.id;
     const device = devices.find((candidate) => candidate.id === deviceId);
     if (!device) throw new JevError('invalid-response');
-    const chosenAccount = await decideAccount(client, { ranking: ranking(input, entry.model, device.id), state: () => state ?? buildPlacementState(input).state,
+    const ranked = ranking(input, entry.model, device.id);
+    const chosenAccount = continuityAccount(input, entry.model, effort.data, ranked) ?? await decideAccount(client, { ranking: ranked, state: () => state ?? buildPlacementState(input).state,
       model: input.jevModel, now: input.now, redactor: { text: value => input.redactor.document(value) }, ...(input.fixed.accountId ? { fixed: input.fixed.accountId } : {}) }, signal);
     calls.push(...chosenAccount.jevCalls);
     if (chosenAccount.probabilities) probabilities.account = chosenAccount.probabilities;

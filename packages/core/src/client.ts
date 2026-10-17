@@ -54,5 +54,6 @@ export * from './account-status.js';
 export * from './vault-schemas.js';
 
 export * from './project-parity-schemas.js';
+export * from './project-usage-schemas.js';
 
 export * from './project-setting-values.js';

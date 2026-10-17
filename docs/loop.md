@@ -606,3 +606,11 @@ Decision844 closure:40 focused project UI checks and the final four-layout brows
 ## Projects parity,17October2026
 
 Decisions846–847 start the ordered parity run. Target0.5.0 extends existing Projects with settings v4, shared instructions and live chat cards, Overview groups/actions, automatic pull request repairs, account waits/placement bounds/usage, push, Library/environment/scoped rigging, Claude-compatible endpoints and suggested setup. One repository per project, existing publication/merge safety and Conversations stay. The current-machine doctor identifies the Pro hub0.3.6; Madrid's independent0.4.1 hub is a separate installation. New features require0.5.0 on participating devices. The14-hour build and separate3-hour post-install live clocks are recorded in acceptance/projects-parity-2026-10/README.md. No feature is delivered by this documentation checkpoint. The reference is reference/claude-code-projects.md.
+
+
+### Projects parity phase5: accounts, placement and usage
+
+Source implementation now has explicit account waits and automatic usage-limit continuations, bounded p-v1 model moves/escalation, and ledger-derived usage by thread, model, account and session kind. Why exposes placement constraints, reason and escalation history. Settings Usage and the thread token/cost badge use reported data with unknown-cost counts. Validation is in progress; this does not describe an installed release or live provider acceptance. Decisions861–868 and detailed evidence live in docs/acceptance/projects-parity-2026-10/.
+
+
+Phase5 source checkpoint:193 affected backend cases and4 browser layouts pass for account recovery, placement bounds and usage. Decisions861–874 include resource-wait preservation, provider reset times and incremental/time-zone usage rebuilding. Dedicated vision is not run and the interrupted diagnostic full suite is not a pass. Release and live acceptance remain pending.

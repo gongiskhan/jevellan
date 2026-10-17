@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import type { AccountService } from '@jevellan/accounts';
 import {
   HubUnavailable, MANUAL_CHECKOUT_COMPLETED, SecretRedactor, ThreadReportSchema, clipRedacted, isTerminal, liveWork, newId, redactWithin, stableJson, threadBranch, type CoordinatorEvent, type Project, type ProjectWorkSettings,
-  type MemoryRecall, type QueuedMessage, type Thread, type ThreadLocal, type ThreadFix, type ThreadReport, type ThreadState, type TurnProcess, type ThreadMessageRoute,
+  type MemoryRecall, type QueuedMessage, type Thread, type ThreadLocal, type ThreadFix, type ThreadReport, type ThreadState, type TurnProcess, type ThreadMessageRoute, type Effort,
 } from '@jevellan/core';
 import { projectOutcomeInstruction } from '@jevellan/decisions';
 import { SESSION_NOT_FOUND } from '@jevellan/runtime-contract';
@@ -17,15 +17,16 @@ import {
   RESTART_PUBLISHED_TO_MAIN, SESSION_REPLACED, TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, THREAD_WORKING, TOOL_NOT_IN_TURN, TURN_FAILED,
   TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WAITING_FOR_MAIN, WORKTREE_DISCARDED, accountMovedNotice, alreadyAttached,
   attachedRefusal, cleanupFailed, commitsSavedReason, isRestarted, mainCheckoutKept, mainConflictPrompt, messagesNotDelivered, messagesPrompt, ownerWorkedLine, savedCommitsRef,
-  AUTOMATIC_FIX_CANCELLED, preparationRetrying, preparationTaskFailed, sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
+  AUTOMATIC_FIX_CANCELLED, recoveryContext, accountEligibilityWait, movedModelNotice, escalatedModelNotice, unavailableModelAccount, USAGE_LIMIT_CONTINUE, usageLimitWait, usageLimitContinue, preparationRetrying, preparationTaskFailed, sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
 } from './copy.js';
 import type { DecisionItems } from './decision-items.js';
 import { firstLine } from './git.js';
-import type { LaunchResult, TurnLauncher } from './launch.js';
+import type { AccountWait, LaunchResult, TurnLauncher } from './launch.js';
 import type { ProjectLedgers } from './ledger.js';
 import type { MailService } from './mail.js';
 import type { CheckoutSeen, CheckoutSettlement, ClaimKeptError, MainCheckout, StopRefusal } from './main-checkout.js';
 import type { PublicationResult, ThreadPublication } from './publication.js';
+import type { PlacementResult } from './placement.js';
 import type { ThreadEvent, ThreadStore } from './stores.js';
 import { contextEvent, sessionContext } from './session-context.js';
 import { TurnExecution, type TurnOutcome } from './turn-execution.js';
@@ -137,6 +138,8 @@ export type ThreadRunnerContext = {
    * a terminal. Undefined when an account is free, or when none is eligible at all (the launch then says why).
    */
   accountWait(thread: Thread): Promise<string | undefined>;
+  unavailableAccount?(thread: Thread): Promise<AccountWait | undefined>;
+  reconsider?(thread: Thread, reason: 'model-unavailable' | 'escalation', trouble: string, signal: AbortSignal, minimumEffort?: Effort): Promise<PlacementResult>;
   publication: Pick<ThreadPublication, 'publishWorktree' | 'publishMain'>;
   launcher: Pick<TurnLauncher, 'launch'>;
   accounts: Pick<AccountService, 'recordUsage' | 'recordError'>;
@@ -168,7 +171,7 @@ export type ThreadRunnerContext = {
   timers: { threadTurnTimeoutMs: number; setupTimeoutMs: number };
   now(): number;
 };
-type Ran = { status: TurnOutcome['status'] | 'unavailable' | 'unconfirmed'; error?: string | undefined; finalText?: string; report?: ThreadReport | undefined; usage?: TurnOutcome['usage']; sessionKey?: string };
+type Ran = { status: TurnOutcome['status'] | 'unavailable' | 'unconfirmed'; error?: string | undefined; runtimeError?: TurnOutcome['error']; accountWait?: AccountWait | undefined; finalText?: string; report?: ThreadReport | undefined; usage?: TurnOutcome['usage']; sessionKey?: string };
 
 /**
  * One local thread on its owner device (brief 8.2-8.4): preparation, turns, acting on reports, publication with the
@@ -184,6 +187,7 @@ export class ThreadRunner {
   #turn: number | undefined;
   #steer = false;
   #accountMoved = false;
+  #limitedAccount: string | undefined;
   #abort = new AbortController();
   #stopping: string | undefined;
   #concluding = 0;
@@ -394,7 +398,7 @@ export class ThreadRunner {
     let next = first;
     while (next && !this.#halted()) {
       const previous = next, following = await this.#turnOnce(next);
-      next = following && !following.fix && previous.fix && ['verification', 'conflict'].includes(following.reason)
+      next = following && !following.fix && previous.fix && ['verification', 'conflict', 'continue'].includes(following.reason)
         ? { ...following, fix: previous.fix } : following;
     }
   }
@@ -405,23 +409,32 @@ export class ThreadRunner {
     if (workSettings.status !== 'active') { this.#rest(next, PROJECT_PAUSED); return null; }
     if (next.pending && this.#cancelDisabledFix(next, workSettings)) return thread.queuedMessages.length ? messagesTurn(thread, 'messages') : null;
     if (atTurnLimit(thread)) { await this.#atLimit(); return null; }
+    if (next.reason !== 'publish' && await this.#waitForAccount(next)) return null;
+    thread = this.#thread();
+    const blocked = thread.lastReport, previousEffort = thread.placement.effortEffective;
     if (this.#c.routeMessages && next.messages.some(id => thread.queuedMessages.some(message => message.id === id && message.from === 'owner'))) {
       const release = this.#c.enterOperation(thread.id, 'Classifying a thread follow-up');
       let route: ThreadMessageRoute;
       try { route = await this.#c.routeMessages(thread, next.body, next.messages, this.#abort.signal); }
       finally { release(); }
       if (this.#halted()) return null;
+      const ledger = this.#c.ledgers.thread(thread.projectId, thread.id);
+      const applied = ledger.events().some(event => event.type === 'thread-message-route' && ledger.payload(event as typeof event & { type: 'thread-message-route' }).digest === route.digest);
       const old = thread.placement;
+      if (!applied) {
       if (old.runtime !== route.placement.runtime || old.model !== route.placement.model || old.accountId !== route.placement.accountId) this.#freshSession();
       // The owner hears when a follow-up moved the thread to another account, as when its account stopped being eligible.
       if (old.accountId !== route.placement.accountId) this.#accountMoved = true;
       thread = this.#set(current => ({ ...current, placement: route.placement }), { type: 'thread-placement', data: route.placement });
       this.#c.store.setLabels(thread.id, { modelLabel: route.modelLabel });
-      const ledger = this.#c.ledgers.thread(thread.projectId, thread.id);
-      if (!ledger.events().some(event => event.type === 'thread-message-route' && ledger.payload(event as typeof event & { type: 'thread-message-route' }).digest === route.digest)) {
         ledger.append({ type: 'thread-message-route', data: route });
       }
       next = { ...next, body: `${next.body}\n\nRequested result (Jev): ${projectOutcomeInstruction(route.outcome)}\nPrevious report: ${thread.lastReport?.summary ?? '(none)'}` };
+    }
+    if (blocked?.status === 'blocked' && !blocked.synthesized && !blocked.ownerCommands?.length && this.#c.store.local(thread.id).escalatedBlockedTurn !== blocked.turn) {
+      await this.#escalate('blocked', blocked.summary, previousEffort);
+      this.#c.store.updateLocal(thread.id, local => ({ ...local, escalatedBlockedTurn: blocked.turn }));
+      thread = this.#thread();
     }
     if (next.reason === 'publish') {
       if (next.pending) this.#c.store.updateLocal(thread.id, local => { const kept = { ...local }; delete kept.pendingTurn; return kept; });
@@ -447,8 +460,7 @@ export class ThreadRunner {
     let ran: Ran;
     try {
       this.#steer = false;
-      thread = this.#set((current) => ({ ...withState(current, 'running'), queuedMessages: current.queuedMessages.filter((message) => !next.messages.includes(message.id)) }));
-      if (next.pending && next.fix?.by !== 'automatic') this.#c.store.updateLocal(thread.id, (local) => { const taken = { ...local }; delete taken.pendingTurn; return taken; });
+      thread = this.#set((current) => withState(current, 'running'));
       this.#turn = turn;
       if (next.fix?.by !== 'automatic' && this.#c.store.local(thread.id).prAutoFix?.pendingResults?.length) {
         this.#c.store.updateLocal(thread.id, local => ({ ...local, prAutoFix: { ...local.prAutoFix!, pendingResults: [] } }));
@@ -456,6 +468,7 @@ export class ThreadRunner {
       ran = await this.#run(project, thread, turn, next);
     } finally { this.#turn = undefined; this.#steer = false; release(); }
     if (ran.status === 'shutdown') return null;
+    if (ran.status === 'unavailable' && ran.accountWait) { this.#recordAccountWait(next, ran.accountWait); return null; }
     if (ran.status === 'unconfirmed') {
       // The process may still work in the checkout: a main thread's claim stays until a sweep confirms the process ended (phase 8).
       if (thread.isolation === 'main') this.#kept(thread, 'stop', PROCESS_UNCONFIRMED);
@@ -463,7 +476,14 @@ export class ThreadRunner {
     }
     const ended = ran.status === 'unavailable' ? 'failed' : ran.status;
     ledger.append({ type: 'thread-turn-end', turn, data: { schema: 'thread-turn-end-v1', turn, status: ended, ...(ran.error ? { error: ran.error } : {}),
+      ...(ran.runtimeError?.kind === 'rate-limit' && ran.finalText ? { partialText: clipRedacted(this.#c.redactor.text(ran.finalText), 8000, 'end') } : {}),
       ...(ran.usage ? { usage: ran.usage } : {}), ...(ran.sessionKey ? { sessionKey: ran.sessionKey } : {}) } });
+    if (ran.runtimeError?.kind === 'rate-limit') {
+      this.#limitedAccount = this.#c.store.labels(thread.id).accountLabel;
+      this.#c.store.updateLocal(thread.id, local => ({ ...local, pendingTurn: { reason: 'continue', body: USAGE_LIMIT_CONTINUE, ...(next.fix ? { fix: next.fix } : {}) } }));
+      this.#set(current => ({ ...withState(current, 'idle'), turns: current.turns + 1 }));
+      return { reason: 'continue', body: USAGE_LIMIT_CONTINUE, messages: [], pending: true, ...(next.fix ? { fix: next.fix } : {}) };
+    }
     if (ran.status === 'failed' && ran.error === SESSION_NOT_FOUND && thread.nativeSessionId) {
       // The runtime no longer has the session it resumed (the CLI's transcript retention, P8 review R-T1); the model never ran. The same
       // turn runs again at once in a new session, which starts with the task block; it can happen once, since the new turn resumes nothing.
@@ -501,6 +521,51 @@ export class ThreadRunner {
     if (atRest(thread.state) && thread.stateReason === reason) return;
     this.#set((current) => withState(current, atRest(current.state) ? current.state : 'idle', reason));
   }
+  #recordAccountWait(next: NextTurn, wait: AccountWait): void {
+    const thread = this.#thread(), old = this.#c.store.local(thread.id).waitingForAccount;
+    const waiting = { since: old?.since ?? this.#at(), runtime: thread.placement.runtime, modelId: thread.placement.modelId, earliestEligibleAt: wait.earliestEligibleAt, moved: old?.moved ?? false };
+    if (stableJson(old ?? null) !== stableJson(waiting)) this.#c.store.updateLocal(thread.id, local => ({ ...local, waitingForAccount: waiting }));
+    if (this.#limitedAccount) { this.#notice(thread, usageLimitWait(this.#limitedAccount), 'info'); this.#limitedAccount = undefined; }
+    this.#rest(next, accountEligibilityWait(this.#c.store.labels(thread.id).modelLabel, wait.reason, wait.earliestEligibleAt));
+  }
+  async #waitForAccount(next: NextTurn): Promise<boolean> {
+    let wait;
+    try { wait = await this.#c.unavailableAccount?.(this.#thread()); }
+    catch (error) {
+      if (!(error instanceof HubUnavailable)) throw error;
+      this.#rest(next, WAITING_FOR_HUB); return true;
+    }
+    if (!wait) return false;
+    this.#recordAccountWait(next, wait);
+    const thread = this.#thread(), local = this.#c.store.local(thread.id);
+    if (!local.waitingForAccount?.moved && !thread.placement.fixed.includes('model') && (!wait.earliestEligibleAt || Date.parse(wait.earliestEligibleAt) - this.#c.now() > 30 * 60_000)) {
+      const result = await this.#c.reconsider?.(thread, 'model-unavailable', unavailableModelAccount(wait.earliestEligibleAt), this.#abort.signal);
+      if (result?.kind === 'placed') {
+        this.#c.store.updateLocal(thread.id, current => ({ ...current, waitingForAccount: { ...current.waitingForAccount!, moved: true } }));
+        await this.#applyPlacement(result, 'model-unavailable', movedModelNotice(this.#c.store.labels(thread.id).modelLabel, result.labels.modelLabel, wait.earliestEligibleAt));
+        return false;
+      }
+    }
+    return true;
+  }
+  async #applyPlacement(result: Extract<PlacementResult, { kind: 'placed' }>, reason: 'model-unavailable' | 'escalation', summary: string): Promise<void> {
+    const thread = this.#thread(), next = result.record, old = thread.placement;
+    if (old.runtime !== next.runtime || old.modelId !== next.modelId || old.effortEffective !== next.effortEffective || old.accountId !== next.accountId) this.#freshSession();
+    this.#set(current => ({ ...current, placement: next }), { type: 'thread-placement', data: next });
+    this.#c.store.setLabels(thread.id, { modelLabel: result.labels.modelLabel });
+    if (old.modelId !== next.modelId || old.effortEffective !== next.effortEffective || old.accountId !== next.accountId) {
+      this.#notice(thread, summary, 'info'); await this.#tell(thread.projectId, { kind: 'thread-placement-changed', threadId: thread.id, reason, summary: summary.slice(0, 400) });
+    }
+  }
+  async #escalate(reason: 'blocked' | 'verification', trouble: string, minimumEffort?: Effort): Promise<void> {
+    const thread = this.#thread(), old = thread.placement;
+    if (old.fixed.includes('model') && old.fixed.includes('effort')) return;
+    const result = await this.#c.reconsider?.(thread, 'escalation', trouble.slice(-2000), this.#abort.signal, minimumEffort);
+    if (result?.kind !== 'placed') return;
+    const to = result.record;
+    this.#c.store.updateLocal(thread.id, local => ({ ...local, escalations: [...(local.escalations ?? []), { at: this.#at(), reason, from: { modelId: old.modelId, effort: old.effortEffective }, to: { modelId: to.modelId, effort: to.effortEffective } }].slice(-20) }));
+    await this.#applyPlacement(result, 'escalation', escalatedModelNotice(this.#c.store.labels(thread.id).modelLabel, old.effortEffective, result.labels.modelLabel, to.effortEffective, reason));
+  }
   /** The turn that waited for its account, if any (phase 8). */
   #pendingTurn(): NextTurn | undefined {
     const pending = this.#c.store.local(this.threadId).pendingTurn;
@@ -527,8 +592,15 @@ export class ThreadRunner {
             recall ??= await this.#c.recall(project, thread);
             this.#c.store.updateLocal(thread.id, local => ({ ...local, memoryRecall: recall! }));
           }
-          if (!now && !recall) return threadPrompt(thread, next.body, continuing, next.reason);
-          const context = [recall?.section, now].filter(Boolean).join('\n\n');
+          let recovery = '';
+          if (!continuing && thread.turns > 0 && (next.reason === 'continue' && next.body === USAGE_LIMIT_CONTINUE || ['model-unavailable', 'escalation'].includes(placement.reason ?? ''))) {
+            const ended = ledger.events().findLast(event => event.type === 'thread-turn-end');
+            const partial = ended && ledger.payload(ended as typeof ended & { type: 'thread-turn-end' }).partialText;
+            const journal = await this.#c.journalContents?.(project.id, thread.id).catch(() => undefined);
+            recovery = recoveryContext(thread.lastReport?.summary, partial, journal ? threadJournalExcerpt(journal.text, journal.path) : undefined);
+          }
+          if (!now && !recall && !recovery) return threadPrompt(thread, next.body, continuing, next.reason);
+          const context = [recall?.section, now, recovery].filter(Boolean).join('\n\n');
           return continuing ? `${now ?? ''}\n\n${next.body}` : `${taskPrompt(thread.title, thread.task)}\n\n${context}${next.reason === 'task' ? '' : `\n\n${next.body}`}`;
         },
         ...(this.#c.journalContents ? { checkpointPrompt: async () => {
@@ -540,8 +612,13 @@ export class ThreadRunner {
         safetyProfile: 'thread', timeoutMs: this.#c.timers.threadTurnTimeoutMs, tools, gitIdentityFrom: this.#c.worktrees.repository(project), memoryMode: project.memory.mode, isolation: thread.isolation,
         contextTokensBefore: thread.sessionContext?.tokens });
     } catch (error) { await tools.close(); return { status: 'unavailable', error: this.#message(error) }; }
-    if (launched.kind === 'unavailable') { await tools.close(); return { status: 'unavailable', error: launched.reason }; }
+    if (launched.kind === 'unavailable') { await tools.close(); return { status: 'unavailable', error: launched.reason, accountWait: launched.accountWait }; }
     const started = launched;
+    const recoveryFrom = this.#limitedAccount ?? (next.reason === 'continue' && next.body === USAGE_LIMIT_CONTINUE ? labels.accountLabel : undefined);
+    this.#set(current => ({ ...current, queuedMessages: current.queuedMessages.filter(message => !next.messages.includes(message.id)) }));
+    this.#c.store.updateLocal(thread.id, local => { const taken = { ...local }; delete taken.waitingForAccount; if (next.fix?.by !== 'automatic' && (next.pending || taken.pendingTurn?.reason === next.reason && taken.pendingTurn.body === next.body)) delete taken.pendingTurn; return taken; });
+    if (recoveryFrom) { this.#notice(thread, usageLimitContinue(recoveryFrom, started.accountLabel), 'info'); this.#limitedAccount = undefined; }
+    if (started.accountChanged) this.#freshSession();
     const context = sessionContext(started.resumed ? thread.sessionContext : undefined, started.compactionPercent, started.compactionNotice);
     context.needsFreshContext = false;
     this.#c.store.update(thread.id, current => ({ ...current, sessionContext: context }));
@@ -549,6 +626,7 @@ export class ThreadRunner {
       if (started.accountChanged) {
         // The session lives in the old account's home (D16): drop it so no later turn tries to resume it here.
         this.#set((current) => { const moved: Thread = { ...current, placement: { ...current.placement, accountId: started.accountId,
+          ...(recoveryFrom ? { reason: 'account-limit' } : {}),
           ...(started.accountChoice ? { accountChoice: started.accountChoice, probabilities: { ...current.placement.probabilities, account: started.accountChoice.probabilities ?? {} } } : {}) } }; delete moved.nativeSessionId; return moved; });
         if (started.accountChoice) ledger.append({ type: 'thread-placement', data: this.#thread().placement });
         this.#notice(thread, accountMovedNotice(started.accountLabel), 'info');
@@ -561,7 +639,7 @@ export class ThreadRunner {
       this.#consumeAutomaticFix(next);
       ledger.append({ type: 'thread-turn-start', turn, data: { schema: 'thread-turn-v1', turn, resumed: started.resumed, ...(next.fix ? { fix: next.fix } : {}), runtime: placement.runtime, modelId: placement.modelId,
         ...(started.prompt ? { prompt: this.#c.redactor.text(started.prompt).slice(0, 200000), promptTruncated: this.#c.redactor.text(started.prompt).length > 200000 } : {}),
-        model: placement.model, effort: placement.effortEffective, accountId: started.accountId } });
+        model: placement.model, modelLabel: labels.modelLabel, accountLabel: started.accountLabel, effort: placement.effortEffective, accountId: started.accountId } });
       const execution = new TurnExecution({ run: started.run, accountId: started.accountId, secretRef: started.secretRef, model: placement.model, deviceId: this.#c.deviceId,
         accounts: this.#c.accounts, initialUsage: started.usage, redactor: this.#c.redactor,
         onEvent: event => {
@@ -584,10 +662,11 @@ export class ThreadRunner {
       let outcome: TurnOutcome;
       // A rejected outcome means the process cleanup was not confirmed: its identity stays recorded for recovery.
       try { outcome = await execution.done; } catch { return { status: 'unconfirmed' }; }
+      if (recoveryFrom && started.accountChanged) await this.#tell(thread.projectId, { kind: 'thread-placement-changed', threadId: thread.id, reason: 'account-limit', summary: usageLimitContinue(recoveryFrom, started.accountLabel).slice(0, 400) }).catch(error => this.#notice(thread, this.#message(error), 'error'));
       await this.#c.captureTurn?.(project, this.#thread()).catch(error => this.#notice(thread, `Project memory capture will retry: ${this.#message(error)}`, 'error'));
       this.#c.store.updateLocal(thread.id, (local) => { const cleared = { ...local }; delete cleared.process; return cleared; });
       return { status: outcome.status, finalText: outcome.finalText, report: tools.report, usage: outcome.usage,
-        ...(outcome.sessionId ? { sessionKey: createHash('sha256').update(outcome.sessionId).digest('hex') } : {}), ...(outcome.error ? { error: outcome.error.message } : {}) };
+        ...(outcome.sessionId ? { sessionKey: createHash('sha256').update(outcome.sessionId).digest('hex') } : {}), ...(outcome.error ? { error: outcome.error.message, runtimeError: outcome.error } : {}) };
     } finally {
       this.#execution = undefined;
       await started.release();
@@ -692,6 +771,7 @@ export class ThreadRunner {
           const count = thread.verificationAttempts + 1; const verification = outcome.verification;
           if (count < VERIFICATION_ATTEMPTS) {
             this.#set((current) => ({ ...current, verificationAttempts: count }));
+            if (count === 2) await this.#escalate('verification', verification.tail);
             return { reason: 'verification', body: verificationFailurePrompt(verification.command ?? '', count, verification.tail), messages: [] };
           }
           // The next done report gets three attempts again (D158).

@@ -9,6 +9,7 @@ export const EnvNameSchema = z.string().regex(/^[A-Z_][A-Z0-9_]{0,63}$/u, 'Use c
 export const ProjectRelativePathSchema = z.string().min(1).max(300)
   .refine(path => !path.startsWith('/') && !path.split('/').includes('..'), 'Use a path inside the project, without ..');
 export const ProjectPlacementSettingsSchema = z.strictObject({ allowedModelIds: z.array(IdSchema).max(19).nullable(), minEffort: EffortSchema.nullable(), guidance: z.string().max(2000) });
+export const PlacementConstraintsSchema = ProjectPlacementSettingsSchema.pick({ allowedModelIds: true, minEffort: true });
 export const ProjectPrAutoFixSettingsSchema = z.strictObject({ checks: z.boolean(), conflicts: z.boolean(), comments: z.boolean(), maxRounds: z.number().int().min(1).max(10) });
 export const ProjectEnvironmentSchema = z.strictObject({
   variables: z.array(z.strictObject({ name: EnvNameSchema, value: z.string().max(4000) })).max(50),

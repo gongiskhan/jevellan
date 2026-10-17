@@ -4,7 +4,7 @@ import { firstLine, tail } from './git.js';
 // Every brief-verbatim Projects string (brief 9) and the server copy of phase 1. Pure functions only.
 // Placement copy lives in @jevellan/decisions (D135) and is re-exported here, never retyped.
 export {
-  ACCOUNT_REASON_TEXT, LEAVE_GIT_MAIN, MAIN_NOT_AVAILABLE, NOT_CHOSEN_REASON, NO_PLACEMENT, NO_THREAD_MODEL, PLACEMENT_INCOMPATIBLE, PLACEMENT_INSTRUCTIONS,
+  ACCOUNT_REASON_TEXT, PROJECT_MODEL_NOT_ALLOWED, PROJECT_MODEL_EFFORT, NO_PROJECT_MODEL, LEAVE_GIT_MAIN, MAIN_NOT_AVAILABLE, NOT_CHOSEN_REASON, NO_PLACEMENT, NO_THREAD_MODEL, PLACEMENT_INCOMPATIBLE, PLACEMENT_INSTRUCTIONS,
   PLACEMENT_ISOLATION_CRITERIA, REMOTE_GATE_REASON, REMOTE_NOT_AVAILABLE, TASK_SHORTENED, UNKNOWN_PLACEMENT_DEVICE, UNKNOWN_PLACEMENT_MODEL,
 } from '@jevellan/decisions';
 export { ASK_USER_OPTIONS, NEEDS_DECISION_QUESTION, NO_CHANGES, OWNER_STOPPED_THREAD, coordinatorWorking } from '@jevellan/core';
@@ -289,7 +289,15 @@ export const ACCOUNT_BUSY = 'This account is already running a turn, and its run
 const WAITING_FOR_ACCOUNT = 'Waiting for account ';
 export const waitingForAccountReason = (accountLabel: string): string =>
   `${WAITING_FOR_ACCOUNT}${accountLabel}, which is in use in a terminal. This thread continues when the terminal session ends.`.slice(0, 400);
-export const isWaitingForAccount = (reason: string | undefined): boolean => !!reason?.startsWith(WAITING_FOR_ACCOUNT);
+export const isWaitingForAccount = (reason: string | undefined): boolean => !!reason && (reason.startsWith(WAITING_FOR_ACCOUNT) || reason.startsWith('Waiting for an account for '));
+export const accountEligibilityWait = (model: string, reason: string, at: string | null): string => `Waiting for an account for ${model}: ${reason} It continues by itself when one is available${at ? `, expected at ${at}` : ''}.`;
+export const USAGE_LIMIT_CONTINUE = 'Your previous turn stopped at a usage limit. Continue the task from where it stopped.';
+export const recoveryContext = (summary?: string, partial?: string, journal?: string) => [summary ? `Previous thread report:\n${summary}` : '', partial ? `Last output before the usage limit:\n${partial}` : '', journal ? `This thread's project journal:\n${journal}` : ''].filter(Boolean).join('\n\n');
+export const usageLimitWait = (account: string): string => `The turn stopped at a usage limit on ${account}. Waiting for an account.`;
+export const usageLimitContinue = (from: string, to: string): string => `The turn stopped at a usage limit on ${from}. Continuing on ${to}.`;
+export const unavailableModelAccount = (at: string | null) => `No eligible account until ${at ?? 'an unknown time'}`;
+export const movedModelNotice = (from: string, to: string, at: string | null) => `Moved from ${from} to ${to} because ${from} has no account available ${at ? `until ${at}` : 'for now'}.`;
+export const escalatedModelNotice = (from: string, effort: string, to: string, nextEffort: string, reason: 'blocked' | 'verification') => `Jev moved this thread from ${from} ${effort} to ${to} ${nextEffort} after ${reason === 'blocked' ? 'a blocked report' : 'two failed test runs'}.`;
 /** The launch refusal when an attach took the account between the turn's check and its launch. */
 export const accountInTerminal = (accountLabel: string): string => `Account ${accountLabel} is in use in a terminal.`;
 /** The coordinator's Unavailable reason while every eligible account of its model is held by an attached thread (phase 8). */

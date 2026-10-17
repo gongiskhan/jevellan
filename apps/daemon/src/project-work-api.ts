@@ -16,7 +16,7 @@ import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 import { readProjectImage } from '@jevellan/conversations';
 
-export type ProjectWorkRouteName = 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string;
@@ -27,6 +27,7 @@ type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GE
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'usage', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/usage$/, methods: ['GET'], target: 'any' },
   { name: 'settings-undo', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/work-settings\/undo$/, methods: ['POST'], target: 'any' },
   { name: 'session-history', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/session-transcript$/, methods: ['GET'], target: 'coordinator' },
   { name: 'ekoa-code-setup', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/ekoa-code-setup$/, methods: ['POST'], target: 'coordinator' },
@@ -221,6 +222,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
   }
   if (route.target === 'coordinator' && /^(job|daily)-(create|run)$/u.test(route.name)) await work.prepareDailyWork(projectId);
   switch (route.name) {
+    case 'usage': send(await work.usage.view(projectId, url.searchParams.get('range') ?? 'today')); return true;
     case 'session-history': send(await work.sessionTranscript(projectId, url.searchParams.get('session') ?? '')); return true;
     case 'ekoa-code-setup': send(await work.setupEkoaCode(projectId, EkoaCodeSetupRequestSchema.parse(await requestBody(request)))); return true;
     case 'job-list': send({ schema: 'project-job-list-view-v1', projectId, jobs: await work.daily.jobs(projectId) }); return true;

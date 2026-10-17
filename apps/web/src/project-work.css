@@ -751,3 +751,12 @@ button.pw-session-badge { display: inline-flex; gap: 6px; min-height: 30px; padd
 .pw-group-resolved .pw-card-dot { background: var(--ok); }
 
 .pw-fix-label { color: var(--ink-2); font-size: .78rem; font-weight: 600; margin: .6rem .75rem; }
+.pw-usage { min-width: 0; }
+.pw-usage-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin: 18px 0; }
+.pw-usage-totals dt { color: var(--ink-3); font-size: .8rem; }
+.pw-usage-totals dd { margin: 5px 0 0; font-weight: 650; }
+.pw-usage-table { max-width: 100%; overflow-x: auto; }
+.pw-usage table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.pw-usage th, .pw-usage td { text-align: left; border-bottom: 1px solid var(--line); padding: 8px 10px; overflow-wrap: anywhere; }
+.pw-usage tbody th { font-weight: 500; }
+.pw-usage h3 { margin-top: 24px; }

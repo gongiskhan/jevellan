@@ -113,7 +113,7 @@ export class NightlyReview {
         active.execution = new TurnExecution({ run: launched.run, accountId: launched.accountId, secretRef: launched.secretRef, model: run.model, deviceId: this.o.deviceId, accounts: this.o.accounts, initialUsage: launched.usage, onSession: () => {},
           onProcess: native => writeDocument(processPath, ProcessSchema, { schema: 'project-review-process-v1', turn: 1, startedAt: new Date(this.o.now()).toISOString(), ...native }), redactor: this.o.redactor });
         const outcome = await active.execution.done; terminated = true;
-        this.o.sessionEnd?.({ projectId: task.projectId, owner: { kind: 'review', id: task.id }, runtime: run.runtime, model: run.model, startedAt: run.startedAt, endedAt: new Date(this.o.now()).toISOString(), outcome });
+        this.o.sessionEnd?.({ projectId: task.projectId, owner: { kind: 'review', id: task.id }, runtime: run.runtime, model: run.model, startedAt: run.startedAt, endedAt: new Date(this.o.now()).toISOString(), accountId: launched.accountId, accountLabel: launched.accountLabel, modelLabel: run.modelLabel, outcome });
         rmSync(processPath, { force: true });
         if (outcome.status !== 'completed' || !tools.report) throw new Error(outcome.error?.message ?? 'The review ended without its required report.');
         if (await this.o.git.resolve(path, 'HEAD') !== run.commit || (await this.o.git.run(path, ['status', '--porcelain=v1', '-z', '--untracked-files=all'])).stdout) throw new Error('The read-only review changed its worktree or created a commit.');

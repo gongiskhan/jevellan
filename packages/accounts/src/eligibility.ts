@@ -46,6 +46,8 @@ export function applyAccountError(status: AccountStatus, kind: 'rate-limit' | 'a
   const windows = [{ pct: status.usage?.fiveHourPct, reset: status.usage?.fiveHourResetsAt }, { pct: status.usage?.weeklyPct, reset: status.usage?.weeklyResetsAt }];
   const exhausted = windows.filter((window) => window.pct !== undefined && window.pct >= 100);
   const resets = (exhausted.length ? exhausted : windows).flatMap((window) => window.reset && Date.parse(window.reset) > now ? [Date.parse(window.reset)] : []);
-  const until = resets.length ? (exhausted.length ? Math.max(...resets) : Math.min(...resets)) : now + 30 * 60_000;
+  const providerReset = limit.resetsAt && Date.parse(limit.resetsAt) > now ? Date.parse(limit.resetsAt) : undefined;
+  const until = providerReset !== undefined ? Math.max(providerReset, ...(exhausted.length ? resets : []))
+    : resets.length ? (exhausted.length ? Math.max(...resets) : Math.min(...resets)) : now + 30 * 60_000;
   return AccountStatusSchema.parse({ ...status, coolingUntil: new Date(until).toISOString(), observedAt: new Date(now).toISOString() });
 }

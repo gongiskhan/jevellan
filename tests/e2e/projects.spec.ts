@@ -1596,7 +1596,7 @@ test('LJ10 hard device needs, resource refusals, facts in Why and confirmed orph
   const any = await start('LJ10 choose from facts'); expect(any.response.ok()).toBe(true);
   const selected = await threadView(page, any.body.threadId); expect(selected.placement.deviceFacts?.find(row => row.deviceId === devices.hubId)?.facts?.cores).toBe(8);
   const packets = await step('healthy') as { packets: Array<{ schema: string; devices: Array<{ facts?: { cores: number } }> }> };
-  expect(packets.packets.some(packet => packet.schema === 'placement-state-v2' && packet.devices.some(device => device.facts?.cores === 8))).toBe(true);
+  expect(packets.packets.some(packet => packet.schema === 'placement-state-v3' && packet.devices.some(device => device.facts?.cores === 8))).toBe(true);
   await expect.poll(async () => (await threadView(page, any.body.threadId)).thread.state, LONG).toBe('done');
   const mini = await start('LJ10 mini exclusion', ['residential'], devices.miniId); expect(mini.response.status()).toBe(409);
   await step('low-disk'); const low = await start('LJ10 low disk', [], devices.hubId); expect(low.response.status()).toBe(409); expect(low.body.message).toContain('has 19 GB free; Jevellan needs at least 20 GB');
@@ -2167,5 +2167,30 @@ test('PAR4 reconnect page recovers after a transient hub navigation failure', as
     await expect(page.getByText('Loading chat…', { exact: true })).toHaveCount(0, LONG);
     await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-recovered-${layout(info)}.png`, fullPage: false });
   } finally { release(); await context.unrouteAll({ behavior: 'wait' }); }
+  expect(errors).toEqual([]);
+});
+
+test('PAR5 usage, account waiting notice and placement constraints', async ({ page }, info) => {
+  const errors = await begin(page); await page.goto('about:blank');
+  const prepared = await control('/projects/usage', { schema: 'fixture-usage-v1', action: 'prepare' }) as { threadId: string };
+  const path = '/projects/projects_usage';
+  await page.goto(`${path}/settings`); await expect(page.getByRole('heading', { name: 'Project settings', exact: true })).toBeVisible(LONG);
+  const usage = page.locator('#project-settings-usage'); await usage.scrollIntoViewIfNeeded();
+  await expect(usage).toContainText('1,200', LONG); await expect(usage).toContainText('$0.12');
+  await expect(usage.getByRole('heading', { name: 'By account', exact: true })).toBeVisible();
+  await usage.getByRole('button', { name: '7 days', exact: true }).click(); await expect(usage).toContainText('1,200', LONG);
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-5/screenshots/PAR5-usage-${layout(info)}.png`, fullPage: false });
+  await page.goto(`${path}/threads/${prepared.threadId}`); await expect(page.getByRole('heading', { name: 'A narrow parsing test', exact: true })).toBeVisible(LONG);
+  await expect(page.getByText(/Waiting for an account for Fable:/u)).toBeVisible(LONG);
+  await expect(page.getByText(/1.5k tokens · \$0.12/iu)).toBeVisible();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-5/screenshots/PAR5-wait-${layout(info)}.png`, fullPage: false });
+  await sessionDetails(page); await page.locator('summary').filter({ hasText: 'Session notices' }).click();
+  await expect(page.getByText('The turn stopped at a usage limit on Projects Claude. Waiting for an account.', { exact: false })).toBeVisible();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-5/screenshots/PAR5-recovery-${layout(info)}.png`, fullPage: false });
+  await page.getByRole('button', { name: 'Why', exact: true }).click();
+  const panel = page.getByRole('dialog', { name: 'Why this placement' });
+  await expect(panel).toContainText('Project placement constraints: Claude Code Fable · Lowest effort: high'); await expect(panel).toContainText('Placement reason: escalation');
+  await expect(panel.getByRole('heading', { name: 'Escalation history', exact: true })).toBeVisible();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-5/screenshots/PAR5-why-${layout(info)}.png`, fullPage: false });
   expect(errors).toEqual([]);
 });

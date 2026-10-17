@@ -28,7 +28,7 @@ export class ThreadFollowups {
     const chosen = await this.o.placement.place({ project: await this.o.project(thread.projectId), workSettings: await this.o.workSettings(thread.projectId),
       title: thread.title, task: `${body}\n\nPrevious work:\n${history}`.slice(0, 32768), taskContext: thread.taskContext,
       note: `Continue this thread in its existing workspace. Choose automatic provider, model, effort and saved account for the new request. Current session: ${current.runtime}, ${current.model}, ${current.effortEffective}, account ${current.accountId}. Prefer its continuity when suitable; changing provider, model or account starts a fresh session with the thread history.`,
-      fixed, coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true, exclude: thread.id, signal });
+      fixed, reason: 'follow-up', coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true, exclude: thread.id, signal });
     if (chosen.kind === 'refused') throw new Error(chosen.message);
     // With every field fixed Jev is asked nothing: when that lands on the same placement, the recorded one (with Jev's original
     // probabilities and the owner's changes) stays, so the Why panel keeps explaining it.

@@ -201,6 +201,10 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('PAR5 usage:')) return async turn => {
+    turn.emit({ type: 'usage', inputTokens: 1200, outputTokens: 300, cacheReadTokens: 900, cacheWriteTokens: 100, costUsd: 0.12 });
+    return report('progress', 'The narrow test is ready for the next step.')(turn);
+  };
   if (input.owner.projectId === 'projects_autofix') return async turn => {
     writeFileSync(join(turn.input.cwd, 'greeting.txt'), `Greeting version ${input.turn}.\n`);
     git(turn.input.cwd, 'add', 'greeting.txt'); git(turn.input.cwd, 'commit', '-m', `Greeting version ${input.turn}`);
@@ -392,7 +396,7 @@ const decisionFetch = async (_url, init) => {
   // Placement packets carry no conversation, so they are answered before anything reads one.
   if (state.schema === 'merge-route-state-v1' && state.title === 'Fix the nightly review finding') return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: { merge_route: { type: 'choice', choice: 'merge', confidence: 1, probabilities: { merge: 1, 'test-then-merge': 0, 'ask-owner': 0 } } } });
   if (state.schema === 'merge-route-state-v1') return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: { merge_route: { type: 'choice', choice: 'ask-owner', confidence: 1, probabilities: { merge: 0, 'test-then-merge': 0, 'ask-owner': 1 } } } });
-  if (state.schema === 'placement-state-v2') return placementAnswers(body, state);
+  if (state.schema === 'placement-state-v3') return placementAnswers(body, state);
   const improver = improverAnswers(body, state);
   if (improver) return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: improver });
   const composer = state.conversation.request === 'Exercise composer choices: explain the value.';
@@ -667,6 +671,7 @@ if (projectsMode) {
   const automaticFixPath = clone(projectsOrigin, join(root, 'projects-autofix'));
   git(automaticFixPath, 'remote', 'set-url', 'origin', PROJECTS_REMOTE); git(automaticFixPath, 'config', `url.${projectsOrigin}.insteadOf`, PROJECTS_REMOTE);
   await save('projects_autofix', 'Projects automatic fixes', { [hubId]: automaticFixPath }, 'main', { testCommand: 'test -f greeting.txt' });
+  await save('projects_usage', 'Projects usage', { [hubId]: clone(projectsOrigin, join(root, 'projects-usage')) }, 'main');
   await save('projects_goals', 'Projects goals', { [hubId]: clone(projectsOrigin, join(root, 'projects-goals')) }, 'main');
   await save('projects_mirror', 'Projects mirror', { [hubId]: clone(projectsOrigin, join(root, 'projects-mirror')) }, 'main');
   await save('projects_typed', 'Projects typed', { [hubId]: clone(projectsOrigin, join(root, 'projects-typed')) }, 'main');
@@ -748,6 +753,8 @@ const dailyMarker = join(root, 'daily-result');
 const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-change-v1'), checks: z.enum(['none', 'pending', 'passing', 'passing-status', 'failing']).optional(),
   mergeable: z.enum(['clean', 'dirty', 'unknown', 'unstable']).optional(), merged: z.literal(true).optional(), closed: z.literal(true).optional() });
 const ControlAutomaticFixSchema = z.strictObject({ schema: z.literal('fixture-automatic-fix-v1'), action: z.enum(['prepare', 'fail']) });
+const ControlUsageSchema = z.strictObject({ schema: z.literal('fixture-usage-v1'), action: z.literal('prepare') });
+const UsageReceiptSchema = z.strictObject({ schema: z.literal('fixture-usage-receipt-v1'), threadId: z.string().min(1) });
 const AutomaticFixReceiptSchema = z.strictObject({ schema: z.literal('fixture-automatic-fix-receipt-v1'), threadId: z.string().min(1), prNumber: z.number().int().positive() });
 let automaticFixThread;
 const ControlOverviewSchema = z.strictObject({ schema: z.literal('fixture-overview-v1'), action: z.literal('prepare') });
@@ -765,7 +772,24 @@ async function projectControl(request, response) {
   const parse = (schema) => { const parsed = schema.safeParse(body); if (!parsed.success) send(400, { message: parsed.error.issues.map((issue) => issue.message).join(' ') }); return parsed.success ? parsed.data : undefined; };
   const pull = /^\/projects\/github\/(\d+)$/.exec(request.url);
   let input;
-  if (request.url === '/projects/automatic-fix' && (input = parse(ControlAutomaticFixSchema))) {
+  if (request.url === '/projects/usage' && (input = parse(ControlUsageSchema))) {
+    const projectId = 'projects_usage';
+    const made = await application.projectWork.createThread(projectId, { schema: 'thread-create-request-v1', clientRequestId: 'par5_usage', title: 'A narrow parsing test', task: 'PAR5 usage: inspect the narrow parsing test.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high', deviceId: application.device.deviceId });
+    const deadline = Date.now() + 60_000;
+    while (application.projectWork.store.get(made.threadId)?.state !== 'idle' || application.projectWork.store.get(made.threadId)?.turns !== 1) {
+      if (Date.now() > deadline) throw new Error('The usage fixture did not finish its own turn.');
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+    await application.projectWork.usage.refresh(projectId);
+    const store = application.projectWork.store, thread = store.get(made.threadId), at = new Date().toISOString();
+    assert.equal(thread.lastReport?.summary, 'The narrow test is ready for the next step.');
+    assert.equal(thread.lastReport?.synthesized, false);
+    const placement = { ...thread.placement, reason: 'escalation', constraints: { allowedModelIds: ['claude-fable'], minEffort: 'high' } };
+    store.updateLocal(thread.id, local => ({ ...local, escalations: [{ at, reason: 'blocked', from: { modelId: 'claude-fable', effort: 'high' }, to: { modelId: 'claude-fable', effort: 'high' } }] }));
+    store.update(thread.id, current => ({ ...current, placement, stateReason: 'Waiting for an account for Fable: the saved account reached its usage ceiling. It continues by itself when one is available.' }), { type: 'thread-placement', data: placement });
+    application.projectWork.ledgers.thread(projectId, thread.id).append({ type: 'notice', data: { schema: 'project-notice-v1', kind: 'info', text: 'The turn stopped at a usage limit on Projects Claude. Waiting for an account.' } });
+    send(200, UsageReceiptSchema.parse({ schema: 'fixture-usage-receipt-v1', threadId: thread.id }));
+  } else if (request.url === '/projects/automatic-fix' && (input = parse(ControlAutomaticFixSchema))) {
     const projectId = 'projects_autofix';
     if (input.action === 'prepare') {
       const settings = await application.projectWork.admission.settings(projectId);

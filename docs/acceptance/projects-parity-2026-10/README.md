@@ -17,8 +17,8 @@
 | 1 | Settings v4, page, pause/archive and daily cap | Pushed 15d0a138; vision blocked | Simulated: 429 distinct backend cases, 8 browser journeys across 4 layouts, typecheck/lint/build and working-tree secret scan pass. See phase-1/. Full suites remain phase 10 gates. |
 | 2 | Coordinator instructions, answers, cards, proposals and settings | Pushed a03f98af; vision blocked | Affected backend cases, eight unique four-layout browser journeys, final PAR2 repetitions, typecheck/lint/build pass. See phase-2/. |
 | 3 | Overview, resolution and thread actions | Pushed6d15b8f9; vision blocked | Affected backend/API/remote cases pass. Seven unique journeys pass in every layout across recorded runs; final settled Overview captures pass. Typecheck/lint/build/secret checks pass. See phase-3/. |
-| 4 | Automatic pull request fixes | Source complete; push pending; vision blocked |92 affected backend cases and8 browser journeys pass across four layouts; see phase-4/. |
-| 5 | Account waits, placement bounds, escalation and usage | Not started | Not run |
+| 4 | Automatic pull request fixes | Pushed28efaecf; vision blocked |92 affected backend cases and8 browser journeys pass across four layouts; see phase-4/. |
+| 5 | Account waits, placement bounds, escalation and usage | In progress | Source-grounded placement and launch regressions first |
 | 6 | Web push | Not started | Not run |
 | 7 | Library, attachments, environment and scoped rigging | Not started | Not run |
 | 8 | Compatible endpoints | Not started | Live credential optional, not requested yet |
@@ -105,3 +105,53 @@ Live: phase3 is pushed as6d15b8f9. The normal history secret scan passed. Phase4
 ## Phase 4 checkpoint
 
 Simulated:92 affected backend cases pass across eight files. Both browser journeys pass in every layout (8/8), including settled chat/publication and automatic recovery from one503 navigation without an online event or owner click. All20 dedicated vision receipts are not run for the missing test credential; selected final captures are directly inspected. Typecheck, lint and build pass, with the existing bundle warning. Failed attempts and the recurring fixture cleanup warning remain recorded. The final working-tree secret scan passes; the mandatory history scan gates publication. No installed source, Ekoa work, native home or other installation was changed; the live clock is unstarted.
+
+## Phase 4 push and phase 5 start
+
+Live: phase4 is pushed as28efaecf after the normal history secret scan. The checkout is clean before phase5; no installed release changed. Phase5 starts with bounded placement and account-wait regressions. The existing coordinator already re-evaluates an unavailable plan on sweeps; that path will receive coverage rather than a claim of a new repair. Build and live clocks are unchanged.
+
+
+## Phase 5 decisions
+
+861. BRIEF.md P5 replaces unconstrained automatic placement with the owner's allowed models, a mapped minimum effort and project guidance. Owner-fixed fields win their matching constraints. The ephemeral packet is placement-state-v3; optional reason and constraints extend placement-v1. The 12,000-token bound still redacts first, then drops reserved paths, trouble and active threads in that order.
+
+862. The old failed/synthesized-blocked result for an account gap becomes a durable admission wait. No runtime acceptance means no turn consumed and no owner message removed. Existing pending turns and owner messages survive sweeps and restarts. A known expected reset is the earliest known account's latest applicable cooling/usage boundary; unknown or expired usage still requires a fresh account observation, never assumed quota. The existing coordinator unavailable-plan sweep remains and is covered rather than presented as new.
+
+863. A mid-turn usage limit cools the account and durably queues the brief's continuation, without a blocked report or coordinator alarm. Existing a-v1 account choice and session-home isolation choose another eligible saved account. The coordinator gets one uncounted retry per durable event batch before ordinary failure handling.
+
+864. A long/unknown wait may ask p-v1 again, excluding the current model and fixing device/isolation; an owner-fixed model stays. A successful move marks that wait so it cannot move repeatedly. Follow-up routes already applied are not re-applied on retries, preserving the new model.
+
+865. The third publication verification attempt and the next turn after a real blocked report ask for placement with bounded trouble and no lower effort. Model and effort both fixed prevent escalation. An unchanged model/effort retains its eligible current account and native session, recorded with the optional account-choice source session; a changed placement gets fresh context. This extends Decision16 continuity rather than recording a fabricated new account choice.
+
+866. Usage is a replayable projection of canonical coordinator, thread and auxiliary-session ledgers. New starts freeze model/account labels; legacy auxiliary records without labels honestly say Unknown account. Each device writes only its own project calendar days and lifetime thread totals. The prescribed colon-separated document id is retained; the hub's IdSchema requires a SHA-256 storage key. An optional aggregate ledger watermark rejects older delayed snapshots. The API sums devices and project-time-zone calendar dates, including DST. Costs remain reported/estimated/unknown, with unknown turns explicit.
+
+867. Phase5's wider schema check caught a stale Phase4 test derivation: ThreadReportFields now has daemon-only fix provenance. The derivation now explicitly omits fix, as the actual bridge input already does; the existing assertion refusing model-supplied fix metadata remains. No product guard was removed.
+
+868. Two valid before-fix regressions exposed startup/launch recovery edges: account exhaustion during a-v1 selection returned no wait metadata; offline publication of rebuilt usage could reject Projects readiness. Both now retain their state for retry. Browser initialization under the concurrent full backend run exceeded the unchanged 60-second server deadline; it is not counted as a pass.
+
+
+869. A failing three-day/2,000-rows-per-day member regression exceeded the mesh's existing2MiB reply guard. Usage reads now page under the existing1MiB page target, retaining all days and the2MiB guard; a single valid day is allowed as one page. Storage cursors use the hashed keys, while the document keeps its specified id. Large-payload regression passes after the change. This extends Decision866's projection without a new transport or a larger reply allowance.
+
+
+870. The phase5 account-change regression also requires a reason account-limit and a coordinator event when the actual account changes. Recovery notices were historically ledger-only; the thread view now exposes its latest20 redacted notices, shown in the expandable session information area. This extends Decision866's visible recovery evidence. Timestamp text is localized in the owner browser. A repeated browser assertion found empty usage and remains a failing check under diagnosis; it is not dismissed as infrastructure or counted as a pass.
+
+
+Phase5 environment correction: the initial broad commands supplied a shortened PATH that omitted /Users/ggomes/.local/bin. The installed basic-memory executable lives there. The focused failure explicitly reported spawn basic-memory ENOENT; browser usage was empty after its thread was blocked before producing usage. These are invalid-environment attempts, not a weakened assertion or a claimed product pass. The broad run is stopped and rerun with Node22 prepended to the existing PATH. The Basic Memory binary and the owner's home remain untouched; fixtures still use disposable homes.
+
+
+871. A failing usage-limit continuation regression showed that the fresh account got the task but lost the last partial output. The optional partialText field on thread-turn-end-v1 keeps its redacted8,000-character tail. Recovery starts use the previous report, that tail and the existing bounded project journal when available, after Task/Project memory/Project now. This extends Decision94's minimal fresh prompt and Decision16 account continuity; it creates no separate transcript or memory store. A separate failing owner-follow-up regression showed reclassification could overwrite a blocked escalation; escalation now follows classification and preserves the earlier effort floor.
+
+Phase5 browser correction: with the correct PATH, usage, its token/cost badge and waiting notice pass. The next assertion expected Fable, while the configured menu label is Claude Code Fable. The assertion now checks that exact menu label, as required by the brief. Existing process-group cleanup EPERM remains a separate recorded warning. No product value or timeout was weakened.
+
+
+872. Two failing provider-reset regressions showed account-scoped resets were dropped and unknown usage defaulted to30minutes even when the provider supplied an hour. Projects execution now forwards that boundary. Shared account eligibility honors it while never shortening a known exhausted usage window. This refines Decision862's known eligibility time; model-scoped cooling and unknown-reset fallback remain. It changes no Conversation interface or routing policy.
+
+
+873. Two failing usage regressions showed unchanged polls rereading ledgers and a time-zone change losing today's totals. The device now replays canonical ledgers once, consumes live events incrementally and writes only dirty days. Changing the project zone deliberately rebuilds the projection and clears obsolete own-device day rows. Pending dirty counters survive an offline hub. This refines Decision866 without another source of truth.
+
+874. Two failing resource regressions showed a pending verification stranded when account admission lost the hub, and an owner-command report triggering model escalation. Account admission now retains the existing hub-wait reason and pending turn; a structured owner command is an owner dependency, not evidence for escalation. This narrows Decision865 to agent-written work failures as BRIEF.md P5 requires.
+
+
+## Phase5 checkpoint
+
+Simulated:193/193 affected backend cases in8files, typecheck, lint and build pass. PAR5 passes4/4 layouts with16 final captures; all16 dedicated vision receipts say not run for the missing credential, and selected captures from every layout are directly inspected. The existing fixture cleanup warning and bundle-size warning remain recorded. Additional provider-reset and verification-escalation checks pass. The diagnostic full backend run is interrupted after changing source, with five failures retained; three pass unchanged alone and two Git rewrite cases are still checked. Full-suite success is not claimed. See phase-5/README.md and failed-before.md. No source installation or live-clock start occurred.

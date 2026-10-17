@@ -39,7 +39,7 @@ function jev() {
     if ((init?.method ?? 'GET') === 'GET') return Response.json({ models: [{ name: 'jev-latest', description: 'Fixture.', release_date: '2026-01-01' }] });
     const body = JSON.parse(String(init!.body)) as { model: string; state: string; questions: JevQuestions };
     const packet = JSON.parse(body.state) as { schema?: string };
-    if (packet.schema !== 'placement-state-v2') return new Response('Only placements are scripted here.', { status: 400 });
+    if (packet.schema !== 'placement-state-v3') return new Response('Only placements are scripted here.', { status: 400 });
     state.calls.push({ model: body.model, questions: body.questions, packet: PlacementStateSchema.parse(packet), authorization: new Headers(init!.headers).get('authorization') });
     if (state.mode === 'auth') return new Response('Private provider body is not evidence.', { status: 401 });
     const answers = Object.fromEntries(Object.entries(body.questions).map(([id, question]) => {

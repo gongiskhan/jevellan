@@ -6,6 +6,7 @@ import { dateTime, useSettingsSave, useTask, type PageProps } from './components
 import { mainIsolationBlock } from './project-work-model.js';
 import { updated, useLocalError } from './project-work.js';
 import * as copy from './project-work-copy.js';
+import { ProjectUsageSection } from './project-usage.js';
 
 const sections = [['general', copy.SETTINGS_GENERAL], ['instructions', copy.SETTINGS_INSTRUCTIONS], ['placement', copy.SETTINGS_PLACEMENT],
   ['limits', copy.SETTINGS_LIMITS], ['pull-requests', copy.PULL_REQUESTS], ['environment', copy.SETTINGS_ENVIRONMENT], ['routines', copy.SETTINGS_ROUTINES],
@@ -141,7 +142,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
             {number(copy.REFILL_INTERVAL, draft.refill.minIntervalMinutes, 10, 1440, minIntervalMinutes => change({ refill: { ...draft.refill, minIntervalMinutes } }))}<p className="pw-field-note">{copy.ROUTINES_EDIT_HELP}</p>
           </>)}
           {section('notifications', <fieldset><legend>{copy.PROJECT_NOTIFICATIONS}</legend>{(Object.entries(copy.NOTIFICATION_LEVELS) as Array<[ProjectWorkSettings['notifications'], readonly [string, string]]>).map(([level, [label, help]]) => <label className="pw-notification-level" key={level}><span className="checkbox"><input type="radio" name="notification-level" checked={draft.notifications === level} onChange={() => change({ notifications: level })} />{label}</span>{help && <span className="pw-field-note">{help}</span>}</label>)}<p className="pw-field-note">{copy.NOTIFICATION_DEVICE_HELP}</p></fieldset>)}
-          {section('usage', <p className="muted">{copy.USAGE_EMPTY}</p>)}
+          {section('usage', <ProjectUsageSection projectId={id} />)}
         </fieldset>
         {local.error && <p role="alert" className="error">{local.error}{stale && <button type="button" className="text-button" disabled={task.busy} onClick={() => void task.run(read)}>{copy.RELOAD}</button>}</p>}
         <div className="form-actions pw-settings-savebar">

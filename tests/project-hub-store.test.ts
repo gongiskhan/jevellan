@@ -84,6 +84,26 @@ test('member cache snapshots use the authenticated mesh, survive a lost reply an
   expect(await local.sessionCaches('project')).toEqual(await left.hub.sessionCaches('project'));
 });
 
+test('usage days cross the mesh once, reject another device and ignore an older delayed snapshot', async () => {
+  const left = await member('left'), right = await member('right'), day = at.slice(0, 10);
+  const snapshot = { schema: 'project-usage-day-v1' as const, revision: 0, id: `project:left:${day}`, projectId: 'project', deviceId: 'left', day, rows: [], updatedAt: at, lastEventId: 2 };
+  await left.hub.putUsageDay(snapshot); await left.hub.putUsageDay(snapshot);
+  expect(await right.hub.usageDays('project')).toEqual([{ ...snapshot, revision: 1 }]);
+  await expect(right.hub.putUsageDay(snapshot)).rejects.toMatchObject({ status: 403 });
+  await left.hub.putUsageDay({ ...snapshot, lastEventId: 1 }); expect((await right.hub.usageDays('project'))[0]?.lastEventId).toBe(2);
+  await expect(left.hub.putUsageDay({ ...snapshot, id: 'other:left:today' })).rejects.toMatchObject({ status: 403 });
+});
+
+test('large usage days cross the mesh within its response bound without dropping days', async () => {
+  const left = await member('left'), local = new HubProjectAccess(app.hub, 'left');
+  for (let n = 0; n < 3; n++) {
+    const day = new Date(Date.parse(at) - n * 86400000).toISOString().slice(0, 10);
+    await local.putUsageDay({ schema: 'project-usage-day-v1', revision: 0, id: `project:left:${day}`, projectId: 'project', deviceId: 'left', day, updatedAt: at,
+      rows: Array.from({ length: 2000 }, (_, index) => ({ kind: 'thread', ownerId: `thread_${'x'.repeat(130)}${index}`, title: 'T'.repeat(120), runtime: 'fake', modelLabel: 'M'.repeat(80), accountLabel: 'A'.repeat(80), turns: 1, inputTokens: 100, outputTokens: 10, cacheReadTokens: 10, cacheWriteTokens: 0, costUsd: 0.1, costUnknownTurns: 0 })) });
+  }
+  expect((await left.hub.usageDays('project')).map(day => day.rows.length)).toEqual([2000, 2000, 2000]);
+});
+
 test('a member reads hyphenated job-runs over the authenticated hub collection route', async () => {
   const left = await member('left');
   expect(await left.hub.jobRuns('project')).toEqual({ records: [], next: null });

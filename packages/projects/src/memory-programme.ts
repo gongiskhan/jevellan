@@ -166,7 +166,7 @@ export class ProjectMemoryProgramme {
           accounts: this.o.accounts, redactor: this.o.redactor, initialUsage: launched.usage, onSession: () => {}, onProcess: native => { session = this.save({ ...session, process: { turn: 1, startedAt: session.startedAt, ...native } }); } });
         if (this.#closed) await active.execution.shutdown();
         const outcome = await active.execution.done; clean = true;
-        this.o.sessionEnd?.({ projectId: project.id, owner: { kind: 'memory', id }, runtime: placement.record.runtime, model: placement.record.model, startedAt: session.startedAt, endedAt: new Date(this.o.now()).toISOString(), outcome });
+        this.o.sessionEnd?.({ projectId: project.id, owner: { kind: 'memory', id }, runtime: placement.record.runtime, model: placement.record.model, startedAt: session.startedAt, endedAt: new Date(this.o.now()).toISOString(), accountId: launched.accountId, accountLabel: launched.accountLabel, modelLabel: placement.labels.modelLabel, outcome });
         const { process: _process, ...ended } = session; void _process; session = this.save({ ...ended, usage: outcome.usage });
         if (outcome.status !== 'completed') throw new Error(outcome.error?.message ?? `The memory session ended ${outcome.status}.`);
         if (kind === 'dream') {

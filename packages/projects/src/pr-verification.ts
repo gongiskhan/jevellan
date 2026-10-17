@@ -120,7 +120,7 @@ export class PullRequestVerification {
             active.execution = new TurnExecution({ run: launched.run, accountId: launched.accountId, secretRef: launched.secretRef, model: run.model, deviceId: this.o.deviceId, accounts: this.o.accounts, initialUsage: launched.usage,
               onSession: () => {}, onProcess: native => writeDocument(processPath, ProcessSchema, { schema: 'verification-process-v1', turn: 1, startedAt: new Date(this.o.now()).toISOString(), ...native }), redactor: this.o.redactor });
             const outcome = await active.execution.done;
-            this.o.sessionEnd?.({ projectId: run.projectId, owner: { kind: 'verification', id: run.id }, runtime: run.runtime, model: run.model, startedAt: run.at, endedAt: new Date(this.o.now()).toISOString(), outcome });
+            this.o.sessionEnd?.({ projectId: run.projectId, owner: { kind: 'verification', id: run.id }, runtime: run.runtime, model: run.model, startedAt: run.at, endedAt: new Date(this.o.now()).toISOString(), accountId: launched.accountId, accountLabel: launched.accountLabel, modelLabel: run.modelLabel, outcome });
             // TurnExecution only resolves after the entire owned process group is gone.
             rmSync(processPath, { force: true });
             const report = tools.report;

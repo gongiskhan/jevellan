@@ -3,6 +3,12 @@ import { AccountSchema, AccountStatusSchema, type Account, type AccountStatus } 
 import { applyAccountError, rankAccounts } from '../packages/accounts/dist/index.js';
 
 const now = Date.parse('2026-09-24T12:00:00Z');
+test('a provider account reset is respected even when quota usage is unknown', () => {
+  const reset = new Date(now + 3600000).toISOString();
+  expect(applyAccountError(status('test'), 'rate-limit', now, { resetsAt: reset }).coolingUntil).toBe(reset);
+  const weekly = new Date(now + 86400000).toISOString();
+  expect(applyAccountError(status('test', { usage: { ...usage(0, 100), weeklyResetsAt: weekly } }), 'rate-limit', now, { resetsAt: reset }).coolingUntil).toBe(weekly);
+});
 function account(id: string, over: Partial<Account> = {}): Account {
   return AccountSchema.parse({ schema: 'account-v1', id, runtime: 'codex', label: id, kind: 'subscription', enabled: true, credential: 'per-device', ...over });
 }

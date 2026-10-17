@@ -189,7 +189,7 @@ test('a needs-decision report needs a question and options come in twos to fours
   expect(ThreadReportSchema.safeParse({ ...report, summary: 'x'.repeat(4001) }).success).toBe(false);
   expect(ThreadReportSchema.safeParse({ ...report, changedFiles: Array.from({ length: 201 }, (_, n) => `f${n}`) }).success).toBe(false);
   // The unrefined fields stay derivable for tool inputs, and the refined report still guards events and threads.
-  expect(Object.keys(ThreadReportFieldsSchema.omit({ schema: true, turn: true, synthesized: true }).shape).sort()).toEqual(['changedFiles', 'options', 'ownerCommands', 'question', 'status', 'summary', 'testsRun']);
+  expect(Object.keys(ThreadReportFieldsSchema.omit({ schema: true, turn: true, synthesized: true, fix: true }).shape).sort()).toEqual(['changedFiles', 'options', 'ownerCommands', 'question', 'status', 'summary', 'testsRun']);
   expect(CoordinatorEventSchema.safeParse({ schema: 'coordinator-event-v1', kind: 'thread-report', id: 'cev_2', at, threadId, report: needs }).success).toBe(false);
   expect(ThreadSchema.safeParse({ ...thread, lastReport: needs }).success).toBe(false);
 });
@@ -286,6 +286,7 @@ test('hub requests map to one collection each and results carry matching revisio
   const run = { schema: 'project-job-run-v1', id: 'jrun_1', projectId: 'project', revision: 0, jobId: 'pjob_1', taskId: 'task_1', commit: 'a'.repeat(40), deviceId: 'dev_a', projectDay: '2026-10-11', startedAt: at, conclusion: null, summary: '', logTail: '', spec: job.run, baseBranch: 'main', watchAfter: at, phase: 'reserved' };
   const window = { schema: 'project-window-v1', id: 'window_1', projectId: 'project', revision: 0, date: '2026-10-11', closingProjectDay: '2026-10-10', state: 'open', mergesHeld: true, openedAt: at, taskIds: [], plans: [] };
   const requests: Record<ProjectHubOperation, Record<string, unknown>> = {
+    'usage-days': { projectId: 'project' }, 'usage-day-put': { document: { schema: 'project-usage-day-v1', revision: 0, id: 'project:dev_a:2026-10-11', projectId: 'project', deviceId: 'dev_a', day: '2026-10-11', rows: [], updatedAt: at } },
     'session-caches': { projectId: 'project' }, 'session-cache-put': { snapshot: { schema: 'project-session-cache-v1', projectId: 'project', deviceId: 'dev_a', revision: 0, lastEventId: 1, updatedAt: at, records: [] } },
     'merge-documents': { projectId: 'project' }, 'merge-document-get': { id: 'merge_1' }, 'merge-document-put': { document: { schema: 'merge-correction-v1', id: 'merge_1', projectId: 'project', revision: 0, deviceId: 'dev_a', threadId, commit: 'a'.repeat(40), at, title: 'Fix', correction: 'should-have-asked' }, expectedRevision: 0 },
     'jobs-list': { projectId: 'project' }, 'job-get': { jobId: 'pjob_1' }, 'job-put': { job, expectedRevision: 0 },
@@ -315,7 +316,7 @@ test('hub requests map to one collection each and results carry matching revisio
   };
   const expected = { jobs: ['jobs-list', 'job-get', 'job-put'], dailies: ['dailies-list', 'daily-get', 'daily-put'], 'job-runs': ['job-runs-list', 'job-run-get', 'job-run-put'], windows: ['windows-list', 'window-get', 'window-put'], settings: ['settings-get', 'settings-put'], coordinators: ['coordinator-get', 'coordinator-assign', 'coordinator-status-get', 'coordinator-status-put'],
     goals: ['goals-list', 'goal-get', 'goal-put', 'refill-get', 'refill-put'], tasks: ['tasks-list', 'task-get', 'task-put', 'task-history'], threads: ['threads-list', 'thread-get', 'thread-publish', 'merge-documents', 'merge-document-get', 'merge-document-put'], decisions: ['decisions-list', 'decision-get', 'decision-create', 'decision-withdraw', 'decision-answer'], notebooks: ['notebook-get', 'notebook-put'],
-    overrides: ['override-add', 'overrides-recent'], envelopes: ['envelope-put', 'envelopes-pending', 'envelope-ack'], work: ['work-summaries', 'session-caches', 'session-cache-put'],
+    overrides: ['override-add', 'overrides-recent'], envelopes: ['envelope-put', 'envelopes-pending', 'envelope-ack'], work: ['work-summaries', 'session-caches', 'session-cache-put', 'usage-days', 'usage-day-put'],
     mail: ['mail-send', 'mail-inbox', 'mail-read'], reservations: ['reserve', 'release', 'reservations-list'], checkouts: ['checkouts-held'] };
   for (const [operation, fields] of Object.entries(requests) as Array<[ProjectHubOperation, Record<string, unknown>]>) {
     const request = { schema: 'project-hub-request-v1', operation, ...fields };

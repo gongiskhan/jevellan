@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { ProjectEnvironmentSchema, ProjectPlacementSettingsSchema, ProjectPrAutoFixSettingsSchema, ProjectSettingsChangeSchema } from './project-parity-schemas.js';
+import { ThreadUsageTotalSchema } from './project-usage-schemas.js';
+import { PlacementConstraintsSchema, ProjectEnvironmentSchema, ProjectPlacementSettingsSchema, ProjectPrAutoFixSettingsSchema, ProjectSettingsChangeSchema } from './project-parity-schemas.js';
 import { SessionCheckpointSettingsSchema, SessionCheckpointedSchema, SessionHistorySchema, SessionHistoryLinkSchema } from './checkpoint-schemas.js';
 import { SessionTurnCacheSchema, SessionCacheSummarySchema } from './session-cache-schemas.js';
 import { JournalConfigSchema, JournalDocumentSchema, JournalThreadSchema, ProjectJournalRecordSchema } from './project-journal-schemas.js';
@@ -190,7 +191,7 @@ export const PullRequestStateSchema = z.strictObject({ number: positive, url: z.
 export type PullRequestState = z.infer<typeof PullRequestStateSchema>;
 // 5.8
 export const PlacementAccountChoiceSchema = z.strictObject({ schema: z.literal('placement-account-choice-v1'), questionSet: z.literal('a-v1'),
-  source: z.enum(['jev', 'only-option', 'fixed', 'fallback']), accountId: IdSchema, at: TimestampSchema,
+  source: z.enum(['jev', 'only-option', 'fixed', 'fallback', 'session']), accountId: IdSchema, at: TimestampSchema,
   candidates: z.array(z.strictObject({ accountId: IdSchema, label: text, eligible: z.boolean(), reason: text, ceilingPct: z.number(),
     credential: z.enum(['shared', 'per-device', 'hub-refreshed']), auth: AuthSchema.optional(), statusDeviceId: IdSchema.optional(), usage: AccountUsageSchema.optional() })),
   probabilities: z.record(z.string(), z.number().min(0).max(1)).optional(),
@@ -201,6 +202,7 @@ export const PlacementRecordSchema = z.strictObject({ schema: z.literal('placeme
   runtime: IdSchema, modelId: IdSchema, model: text, effortRequested: EffortSchema, effortEffective: EffortSchema,
   deviceId: IdSchema, accountId: IdSchema,
   accountChoice: PlacementAccountChoiceSchema.optional(),
+  reason: z.enum(['start', 'follow-up', 'account-limit', 'model-unavailable', 'escalation']).optional(), constraints: PlacementConstraintsSchema.optional(),
   probabilities: z.record(z.string(), z.record(z.string(), z.number())).optional(),
   eligibleModels: z.array(IdSchema), excludedModels: z.array(z.strictObject({ modelId: IdSchema, reason: z.string() })),
   eligibleDevices: z.array(IdSchema), excludedDevices: z.array(z.strictObject({ deviceId: IdSchema, reason: z.string() })),
@@ -239,6 +241,7 @@ export const ThreadStartPlanSchema = z.strictObject({ schema: z.literal('thread-
   digest: z.string().regex(/^[0-9a-f]{64}$/u), thread: ThreadSchema, labels: z.strictObject({ modelLabel: z.string().min(1), accountLabel: z.string().min(1), deviceName: z.string().min(1) }) });
 // 5.6 hub namespace project-threads, key threadId
 export const ThreadIndexSchema = z.strictObject({ schema: z.literal('project-thread-index-v1'), revision,
+  usage: ThreadUsageTotalSchema.optional(),
   sessionCache: z.array(SessionCacheSummarySchema).max(500).optional(),
   cacheSessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional(),
   id: IdSchema, projectId: IdSchema, title: z.string().min(1).max(120), state: ThreadStateSchema, stateReason: z.string().max(400).optional(),
@@ -293,6 +296,9 @@ export const PullCommentSchema = z.strictObject({ id: z.string().min(1).max(64),
 export type PullComment = z.infer<typeof PullCommentSchema>;
 export const PullCommentsSchema = z.strictObject({ schema: z.literal('pr-comment-batch-v1'), prNumber: positive, since: TimestampSchema, remoteUpdatedAt: TimestampSchema.optional(), fetchedAt: TimestampSchema, items: z.array(PullCommentSchema).max(3000), deliveredIds: z.array(z.string().max(64)).max(500) });
 export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-local-v1'),
+  escalatedBlockedTurn: count.optional(),
+  waitingForAccount: z.strictObject({ since: TimestampSchema, runtime: IdSchema, modelId: IdSchema, earliestEligibleAt: TimestampSchema.nullable(), moved: z.boolean() }).optional(),
+  escalations: z.array(z.strictObject({ at: TimestampSchema, reason: z.enum(['verification', 'blocked']), from: z.strictObject({ modelId: IdSchema, effort: EffortSchema }), to: z.strictObject({ modelId: IdSchema, effort: EffortSchema }) })).max(20).optional(),
   prAutoFix: z.strictObject({ prNumber: positive, rounds: count, disabled: z.boolean(),
     handledHead: z.strictObject({ checks: z.string().optional(), conflict: z.string().optional() }),
     comments: z.strictObject({ since: TimestampSchema, deliveredIds: z.array(z.string().max(64)).max(500) }),
@@ -302,6 +308,7 @@ export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-loca
   acceptedActions: z.array(z.strictObject({ id: IdSchema, digest: z.string().regex(/^[a-f0-9]{64}$/u) })).max(200).optional(),
   prComments: PullCommentsSchema.optional(),
   landing: ThreadIndexSchema.shape.landing, fixable: ThreadIndexSchema.shape.fixable,
+  usage: ThreadUsageTotalSchema.optional(),
   sessionHistory: z.array(SessionHistorySchema).optional(),
   memoryRecall: MemoryRecallSchema.optional(),
   process: TurnProcessSchema.optional(),
@@ -331,6 +338,7 @@ export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-loca
 export type ThreadLocal = z.infer<typeof ThreadLocalSchema>;
 // <home>/projects/<pid>/coordinator-local.json
 export const CoordinatorLocalSchema = z.strictObject({ schema: z.literal('coordinator-local-v1'),
+  limitRetryBatch: z.string().max(64).optional(),
   sessionHistory: z.array(SessionHistorySchema).optional(),
   process: TurnProcessSchema.optional(), deliveredTurn: count.default(0),
   fallbackEventIds: z.array(IdSchema).max(500).default([]),
@@ -418,13 +426,16 @@ export const CoordinatorTurnEndSchema = z.strictObject({ schema: z.literal('coor
   sessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional(), usage: UsageSchema.optional(),
   status: z.enum(['completed', 'failed', 'timed-out', 'interrupted', 'dropped']), error: z.string().max(1000).optional() });
 export const ThreadTurnStartSchema = z.strictObject({ schema: z.literal('thread-turn-v1'), turn: positive, resumed: z.boolean(),
+  modelLabel: z.string().optional(), accountLabel: z.string().optional(),
   fix: ThreadFixSchema.optional(),
   prompt: z.string().max(200000).optional(), promptTruncated: z.boolean().optional(),
   runtime: IdSchema, modelId: IdSchema, model: text, effort: EffortSchema, accountId: IdSchema });
 export const ThreadTurnEndSchema = z.strictObject({ schema: z.literal('thread-turn-end-v1'), turn: positive,
+  partialText: z.string().max(8000).optional(),
   sessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional(), usage: UsageSchema.optional(),
   status: z.enum(['completed', 'failed', 'timed-out', 'interrupted', 'steered', 'stopped']), error: z.string().optional() });
 export const ProjectSessionEndSchema = z.strictObject({ schema: z.literal('project-session-end-v1'),
+  accountId: IdSchema.optional(), accountLabel: z.string().optional(), modelLabel: z.string().optional(),
   owner: z.strictObject({ kind: z.enum(['review', 'verification', 'memory']), id: IdSchema }), runtime: IdSchema, model: text,
   startedAt: TimestampSchema, endedAt: TimestampSchema, status: z.string().min(1).max(30), usage: UsageSchema,
   sessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional() });
@@ -490,6 +501,8 @@ export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project
   devices: z.array(ProjectDeviceSetupSchema).optional() });
 export type ProjectWorkView = z.infer<typeof ProjectWorkViewSchema>;
 export const ThreadViewSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-thread-view-v1'),
+  notices: z.array(z.strictObject({ at: TimestampSchema, text: z.string().max(4000), kind: z.enum(['info', 'error']) })).max(20).optional(),
+  escalations: ThreadLocalSchema.shape.escalations,
   fixTurns: z.array(z.strictObject({ turn: positive, fix: ThreadFixSchema })).optional(),
   messageRoute: ThreadMessageRouteSchema.optional(),
   memoryRecall: MemoryRecallSchema.optional(),

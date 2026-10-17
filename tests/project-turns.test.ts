@@ -117,6 +117,15 @@ function request(over: Partial<LaunchRequest> = {}): LaunchRequest {
 }
 const done: FakeTurnStep = () => ({ status: 'completed' });
 
+test('accounts exhausting while Jev chooses return a retryable account wait without starting a turn', async () => {
+  const reset = new Date(Date.now() + 3600000).toISOString(), statuses = [status('acc_work'), status('acc_home')];
+  const { launcher: value } = launcher(statuses, undefined, { chooseAccount: async (_request, ranking) => {
+    const choice = accountChoice(ranking, 'acc_work', 'jev', Date.now());
+    statuses.splice(0, statuses.length, status('acc_work', { usage: { weeklyPct: 99, weeklyResetsAt: reset, source: 'probe', observedAt: new Date().toISOString() } }), status('acc_home', { auth: 'needs-login' })); return choice;
+  } });
+  const result = await value.launch(request()); expect(result).toMatchObject({ kind: 'unavailable', accountWait: { earliestEligibleAt: reset } }); expect(fake.turnStarts).toHaveLength(0);
+});
+
 test('automatic account changes use Jev choice, while an eligible session account stays pinned', async () => {
   const choices: string[] = [];
   const { launcher: value } = launcher([status('acc_work'), status('acc_home')], undefined, {
@@ -275,7 +284,7 @@ test('the launcher refuses with a reason before any process: capability, account
   const { launcher: value, accountRuns } = launcher([status('acc_work', { auth: 'needs-login' }), status('acc_home', { auth: 'needs-login' })]);
   expect(await value.launch(request({ owner: { kind: 'coordinator', projectId: 'proj_a', id: 'proj_a' }, permissions: 'read-only', safetyProfile: 'coordinator' })))
     .toEqual({ kind: 'unavailable', reason: cannotRunHere('Scripted test runtime') });
-  expect(await value.launch(request())).toEqual({ kind: 'unavailable', reason: noTurnAccount('Fixture', 'Mac mini', 'Scripted test runtime needs login') });
+  expect(await value.launch(request())).toEqual({ kind: 'unavailable', reason: noTurnAccount('Fixture', 'Mac mini', 'Scripted test runtime needs login'), accountWait: { reason: 'Scripted test runtime needs login', earliestEligibleAt: null } });
   expect(noTurnAccount('Fixture', 'Mac mini', 'Scripted test runtime needs login')).toBe('No account can run Fixture on Mac mini right now: Scripted test runtime needs login.');
   const serial = launcher([status('acc_work')]);
   fake.capabilities.perLaunchConfig = false; fake.enqueueTurn(done, forThread());
@@ -325,6 +334,8 @@ test('failures record the account error with the model scope, timeouts read time
   const failed = execution(() => ({ status: 'failed', error: { kind: 'rate-limit', scope: 'model', resetsAt: '2026-10-03T12:00:00.000Z', message: 'Limit for fixture-secret-value-0002.' } }));
   expect(await failed.turn.done).toMatchObject({ status: 'failed', error: { kind: 'rate-limit', message: 'Limit for [redacted].' } });
   expect(failed.recorded).toEqual([['error', 'acc_work', 'rate-limit', 'sec_work', { model: 'scripted-model', resetsAt: '2026-10-03T12:00:00.000Z' }]]);
+  const accountLimited = execution(() => ({ status: 'failed', error: { kind: 'rate-limit', scope: 'account', resetsAt: '2026-10-03T12:00:00.000Z', message: 'Account limit.' } }));
+  await accountLimited.turn.done; expect(accountLimited.recorded).toEqual([['error', 'acc_work', 'rate-limit', 'sec_work', { resetsAt: '2026-10-03T12:00:00.000Z' }]]);
   const auth = execution(() => ({ status: 'failed', error: { kind: 'auth', message: 'Not logged in.' } }));
   await auth.turn.done; expect(auth.recorded).toEqual([['error', 'acc_work', 'auth', 'sec_work', {}]]);
   const wait: FakeTurnStep = ({ signal }) => new Promise((resolve) => { signal.addEventListener('abort', () => resolve({ status: 'interrupted' })); });

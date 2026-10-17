@@ -1,3 +1,4 @@
+import { ProjectUsage } from './usage.js';
 import { SettingsChangePlanSchema, settingsChangePlan } from './settings-changes.js';
 import { projectSettingValue, withProjectSetting, ProjectSettingsUndoRequestSchema, type CoordinatorEvent, type ProjectSettingsChange } from '@jevellan/core';
 import { settingText, SETTING_CHANGED_AGAIN } from './copy.js';
@@ -139,6 +140,7 @@ export class ProjectWork {
   readonly disk: WorktreeDiskService;
   /** Mail and reservations between main threads (brief 5.11, 7.2). */
   readonly mail: MailService;
+  readonly usage: ProjectUsage;
   /** The hub relay (D40): durable sends to other devices, and this device's pending envelopes. */
   readonly outbox: Outbox; readonly inbox: Inbox;
   readonly #o: ProjectWorkOptions;
@@ -304,11 +306,14 @@ export class ProjectWork {
       queueChanged: projectId => { void this.dispatcher.sweep(projectId).catch(() => undefined); },
       runner: {
         routeMessages: (thread, body, ids, signal) => followups.route(thread, body, ids, signal),
+        reconsider: async (thread, reason, trouble, signal, minimumEffort) => placement.reconsider(await this.#project(thread.projectId), await this.admission.settings(thread.projectId), thread, reason, trouble, signal, minimumEffort),
       ...(this.journal ? { journalContents: (projectId: string, threadId: string) => this.journal!.contents(projectId, threadId) } : {}),
         deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, project: (projectId) => this.#project(projectId),
         workSettings: (projectId) => this.admission.settings(projectId), worktrees, main, publication, launcher, accounts: o.accounts, admission: this.admission,
         endProcess: (process) => endTurnProcess(process),
         accountWait: (thread) => launcher.accountWait({ runtime: thread.placement.runtime, model: thread.placement.model,
+          ...(thread.placement.fixed.includes('account') ? { requiredAccountId: thread.placement.accountId } : {}) }),
+        unavailableAccount: thread => launcher.unavailableAccount({ runtime: thread.placement.runtime, model: thread.placement.model, modelLabel: this.store.labels(thread.id).modelLabel,
           ...(thread.placement.fixed.includes('account') ? { requiredAccountId: thread.placement.accountId } : {}) }),
         decisions: this.decisions, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
         memory: async (project, scope) => {
@@ -389,8 +394,9 @@ export class ProjectWork {
     this.views = new ProjectViews({ mergesHeld: async (id, tid) => await this.daily.mergesHeld(id) && !(await this.daily.allowedMergeThreads(id)).includes(tid), deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
       githubNotice: async projectId => { const budget = await (await github.open(projectId)).rateLimit(); return budget && budget.remaining / budget.limit < 0.2 && budget.resetAt > now() ? 'GitHub has less than 20% of its request budget remaining. Pull requests refresh every five minutes until it resets.' : undefined; },
       coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster, placement });
+    this.usage = new ProjectUsage({ deviceId: o.deviceId, hub: o.hub, ledgers: this.ledgers, store: this.store, now, timezone: async projectId => (await this.admission.settings(projectId)).nightlyWindow.timezone });
     this.ready = Promise.all([this.apps.ready, recoverProjects({ paths: this.paths, ledgers: this.ledgers, store: this.store, coordinators: this.coordinators,
-      toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), redactor: o.redactor, now })]).then(() => undefined);
+      toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), redactor: o.redactor, now })]).then(() => this.usage.rebuild());
   }
   /**
    * A relayed envelope this device could not read was dropped (P8 review S-2): the project's chat here says what was lost. Without a
@@ -520,6 +526,7 @@ export class ProjectWork {
           this.#cachePublished.set(project.id, version);
         }
         if ((await this.admission.settings(project.id)).status === 'active') await this.memoryProgramme?.sweep(project);
+        await this.usage.refresh(project.id);
         await this.#exportToVault(project).catch(() => undefined);
         if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.#withdrawSignIns(project.id); if ((await this.admission.settings(project.id)).status === 'active') await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
         if ((await this.admission.settings(project.id)).status === 'active') await this.memoryProgramme?.sweep(project);
@@ -573,7 +580,7 @@ export class ProjectWork {
   async idle(projectId?: string): Promise<void> {
     await this.ready;
     for (let quiet = 0; quiet < 2;) {
-      await delay(20); quiet = this.reviews.busy(projectId) || this.mergeGate.busy() || this.jobs.busy(projectId) || this.threads.busy(projectId) || this.dispatcher.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
+      await delay(20); quiet = this.usage.busy() || this.reviews.busy(projectId) || this.mergeGate.busy() || this.jobs.busy(projectId) || this.threads.busy(projectId) || this.dispatcher.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
     }
   }
   /** Stops timers, terminates every running turn (shutdown intent) and drains; thread states are never rewritten (D24). */
@@ -596,6 +603,7 @@ export class ProjectWork {
       await this.journal?.close();
       await this.apps.close();
       await this.tracker.close();
+      await this.usage.close();
       await this.#publisher.close();
       await this.outbox.close();
     })();

@@ -56,8 +56,8 @@ export class ThreadStore {
   /** The cache projection is bound to the same thread-ledger id as the index. */
   index(thread: Thread, labels: ThreadLabels, at: string): ThreadIndex {
     const sessionCache = sessionCacheSnapshot(cacheRecords(this.ledgers.thread(thread.projectId, thread.id)));
-    const { landing, fixable } = this.local(thread.id);
-    return { ...threadIndex(thread, labels, at), ...(landing ? { landing } : {}), ...(fixable ? { fixable: { ...fixable, checks: thread.pr?.state === 'open' && thread.pr.checks === 'failing', conflicts: thread.pr?.state === 'open' && thread.pr.mergeable === 'conflict', publish: fixable.publish && thread.state === 'idle' && thread.pr?.state !== 'open' } } : {}), ...(sessionCache.length ? { sessionCache } : {}) };
+    const { landing, fixable, usage } = this.local(thread.id);
+    return { ...threadIndex(thread, labels, at), ...(usage ? { usage } : {}), ...(landing ? { landing } : {}), ...(fixable ? { fixable: { ...fixable, checks: thread.pr?.state === 'open' && thread.pr.checks === 'failing', conflicts: thread.pr?.state === 'open' && thread.pr.mergeable === 'conflict', publish: fixable.publish && thread.state === 'idle' && thread.pr?.state !== 'open' } } : {}), ...(sessionCache.length ? { sessionCache } : {}) };
   }
   #all(): Map<string, Thread> {
     if (this.#threads) return this.#threads;
@@ -140,9 +140,9 @@ export class ThreadStore {
     return structuredClone(local);
   }
   /** Local projection changes get a new ledger id; an old published id never changes its contents. */
-  setIndexFields(threadId: string, fields: Pick<ThreadLocal, 'landing' | 'fixable'>): void {
+  setIndexFields(threadId: string, fields: Pick<ThreadLocal, 'landing' | 'fixable' | 'usage'>): void {
     const local = this.local(threadId), next = { ...local };
-    for (const key of ['landing', 'fixable'] as const) if (key in fields) {
+    for (const key of ['landing', 'fixable', 'usage'] as const) if (key in fields) {
       if (fields[key] === undefined) delete next[key];
       else Object.assign(next, { [key]: fields[key] });
     }

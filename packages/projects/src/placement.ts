@@ -2,8 +2,8 @@ import type { TaskPlacementContext } from '@jevellan/core';
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  HubUnavailable, ProjectDeviceSetupSchema, isTerminal, type AccountView, type Configuration, type DeviceRosterSchema, type PlacementRecord, type Project, type ProjectDeviceSetup, type ProjectHub,
-  type DeviceFacts, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex, type Effort,
+  HubUnavailable, EffortSchema, ProjectDeviceSetupSchema, isTerminal, type AccountView, type Configuration, type DeviceRosterSchema, type PlacementRecord, type Project, type ProjectDeviceSetup, type ProjectHub,
+  type DeviceFacts, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex, type Thread, type Effort,
 } from '@jevellan/core';
 import {
   JevError, decidePlacement, fixedPlacementFields, placementCandidates, placementDeviceSetup, type DecisionClient, type PlacementActiveThread, type PlacementDevice, type PlacementFixed,
@@ -24,7 +24,8 @@ export type PlacementResult =
 export type PlaceInput = {
   project: Project; workSettings: ProjectWorkSettings; title: string; task: string; taskContext?: TaskPlacementContext | undefined;
   /** The coordinator's one-line reason (`jevellan_thread_start`), or the owner's note of a restart (D252). */
-  note?: string | undefined;
+  note?: string | undefined; trouble?: string | undefined; reason?: PlacementRecord['reason']; minimumEffort?: Effort | undefined; excludedModels?: Record<string, string> | undefined;
+  continuity?: PlacementInput['continuity'];
   fixed: PlacementFixed; coordinatorDeviceId: string; ignoreRunningLimit: boolean; signal?: AbortSignal | undefined;
   requiredEffort?: Effort; readOnly?: boolean;
   /** A thread whose own checkout claim does not count against the main rule: a next-turn override checks the thread where it is (D292). */
@@ -74,7 +75,8 @@ export class Placement {
     input.signal?.throwIfAborted();
     return {
       settings: input.requiredEffort || input.readOnly ? { ...settings, menu: settings.menu.map(model => ({ ...model, enabled: model.enabled && (!input.requiredEffort || model.efforts.includes(input.requiredEffort)) && (!input.readOnly || this.#o.runtimes.get(model.runtime)?.capabilities.readOnlyEnforced === true) })) } : settings,
-      project, defaultIsolation: workSettings.defaultIsolation, runtimes: this.#runtimes(),
+      project, defaultIsolation: workSettings.defaultIsolation, constraints: { allowedModelIds: workSettings.placement.allowedModelIds, minEffort: workSettings.placement.minEffort },
+      projectGuidance: workSettings.placement.guidance, reason: input.reason ?? 'start', continuity: input.continuity, minimumEffort: input.minimumEffort, excludedModels: input.excludedModels, runtimes: this.#runtimes(),
       accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), devices: this.#devices(project, roster, input.coordinatorDeviceId, counts.devices, held),
       maxRunningPerDevice: workSettings.maxRunningPerDevice, ignoreRunningLimit: input.ignoreRunningLimit,
       perDeviceLimits: workSettings.perDeviceLimits, needs: input.taskContext?.needs,
@@ -119,7 +121,7 @@ export class Placement {
     read: { settings: Configuration['x-jevellan']; accounts: AccountView[] }): ProjectDeviceSetup[] {
     const { settings, accounts } = read;
     const devices = this.#devices(project, roster, placing);
-    const reasons = new Map(placementDeviceSetup({ settings, project, defaultIsolation: workSettings.defaultIsolation, runtimes: this.#runtimes(), accounts: accounts.map((view) => view.account),
+    const reasons = new Map(placementDeviceSetup({ settings, project, constraints: { allowedModelIds: workSettings.placement.allowedModelIds, minEffort: workSettings.placement.minEffort }, defaultIsolation: workSettings.defaultIsolation, runtimes: this.#runtimes(), accounts: accounts.map((view) => view.account),
       statuses: accounts.flatMap((view) => view.statuses), devices, maxRunningPerDevice: workSettings.maxRunningPerDevice, ignoreRunningLimit: true, deviceId: placing,
       coordinatorDeviceId: placing, gates: { ...this.#o.gates, mainIsolation: this.#o.gates.mainIsolation && workSettings.allowMainIsolation }, fixed: {}, now: this.#o.now() }).map((entry) => [entry.deviceId, entry.reason]));
     return devices.filter((device) => !device.revoked).map((device) => {
@@ -154,7 +156,7 @@ export class Placement {
     const activeThreads = [...indexes.values()].filter((index) => !isTerminal(index.state)).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
       .map((index): PlacementActiveThread => ({ title: index.title, isolation: index.isolation, device: device(index.ownerDeviceId), model: index.modelLabel, effort: index.effort,
         reservedPaths: reserved(index.id) }));
-    return { title: input.title, task: input.task, taskContext: input.taskContext, note: input.note, activeThreads,
+    return { title: input.title, task: input.task, taskContext: input.taskContext, note: input.note, trouble: input.trouble, activeThreads,
       overrides: overrides.map((entry) => ({ mode: entry.mode, taskType: entry.taskType, changes: entry.changes, at: entry.at, title: indexes.get(entry.threadId)?.title ?? UNKNOWN_THREAD })) };
   }
   async place(input: PlaceInput): Promise<PlacementResult> {
@@ -163,7 +165,7 @@ export class Placement {
     if ('refused' in candidates) return { kind: 'refused', message: candidates.refused, retryable: candidates.retryable ?? false };
     // All four fields fixed asks nothing, so the packet is not gathered.
     const fields = fixedPlacementFields(input.fixed);
-    const packet = ['isolation', 'model', 'effort', 'device'].every((field) => fields.includes(field as typeof fields[number])) ? { title: input.title, task: input.task, taskContext: input.taskContext, activeThreads: [], overrides: [] } : await this.#packet(input, decision.devices);
+    const packet = ['isolation', 'model', 'effort', 'device'].every((field) => fields.includes(field as typeof fields[number])) ? { title: input.title, task: input.task, taskContext: input.taskContext, trouble: input.trouble, activeThreads: [], overrides: [] } : await this.#packet(input, decision.devices);
     const client = this.#o.decisionClient ? await this.#o.decisionClient() : NO_KEY;
     const placed = await decidePlacement(client, { ...decision, jevModel: decision.settings.decisions.model, packet, redactor: this.#o.redactor },
       input.signal ?? new AbortController().signal);
@@ -175,5 +177,16 @@ export class Placement {
       deviceName: decision.devices.find((device) => device.id === record.deviceId)?.name ?? record.deviceId,
       runtimeName: this.#o.runtimes.get(record.runtime)?.displayName ?? record.runtime,
     } };
+  }
+  reconsider(project: Project, workSettings: ProjectWorkSettings, thread: Thread, reason: 'model-unavailable' | 'escalation', trouble: string, signal: AbortSignal, floor?: Effort): Promise<PlacementResult> {
+    const current = thread.placement;
+    return this.place({ project, workSettings, title: thread.title, task: thread.task, taskContext: thread.taskContext,
+      trouble: trouble.slice(0, 2000), reason, note: 'Continue the existing task in its existing workspace. Choose among the eligible models and efforts.',
+      ...(reason === 'escalation' ? { minimumEffort: [current.effortEffective, floor].filter((value): value is Effort => !!value).sort((a, b) => EffortSchema.options.indexOf(b) - EffortSchema.options.indexOf(a))[0], continuity: { modelId: current.modelId, effort: current.effortEffective, accountId: current.accountId } }
+        : { excludedModels: { [current.modelId]: trouble } }),
+      fixed: { deviceId: thread.ownerDeviceId, isolation: thread.isolation,
+        ...(current.fixed.includes('runtime') ? { runtimeId: current.runtime } : {}), ...(current.fixed.includes('model') ? { modelId: current.modelId } : {}),
+        ...(current.fixed.includes('effort') ? { effort: current.effortRequested } : {}), ...(current.fixed.includes('account') ? { accountId: current.accountId } : {}) },
+      coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true, exclude: thread.id, signal });
   }
 }

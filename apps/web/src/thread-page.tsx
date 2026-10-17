@@ -6,7 +6,7 @@ import {
 } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
 import { copyText, selectText } from './clipboard.js';
-import { Confirm, Markdown, Modal, Panel, composerClearance, followOnScroll, repinAtEnd, useTask, type PageProps } from './components.js';
+import { Confirm, Markdown, Modal, Panel, composerClearance, dateTime, followOnScroll, repinAtEnd, useTask, type PageProps } from './components.js';
 import { MergeWhy } from './merge-route.js';
 import { OwnerCommands, OwnerCommandScope } from './owner-commands.js';
 import { OpenTerminalButton } from './terminal.js';
@@ -25,6 +25,7 @@ import { SessionHistory } from './session-history.js';
 import { SessionCache } from './session-cache.js';
 import { imageReferences, sessionImages, turnImages } from './thread-image-refs.js';
 import { ThreadImageGallery, ThreadImageStrip } from './thread-images.js';
+const readableSessionText = (text: string) => text.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/gu, at => dateTime(at));
 
 /**
  * The thread page (12.3): the header with the state, its reason, the placement and the pull request; the native transcript
@@ -224,7 +225,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           {reason?.text && (
             <p className="pw-thread-reason" title={reason.text}>
               {reason.restartedAs
-                ? <>{RESTARTED_PREFIX}<RouteLink href={`${project}/threads/${reason.restartedAs}`} navigate={navigate}>{reason.restartedAs}</RouteLink>.</> : reason.text}
+                ? <>{RESTARTED_PREFIX}<RouteLink href={`${project}/threads/${reason.restartedAs}`} navigate={navigate}>{reason.restartedAs}</RouteLink>.</> : readableSessionText(reason.text)}
             </p>
           )}
           {reason?.savedRef && <p className="pw-saved-ref">{SAVED_COMMITS_SENTENCE}<code>{reason.savedRef}</code>.</p>}
@@ -232,6 +233,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           {actions.stopRefusal && <p className="pw-thread-note" id={stopNoteId}>{actions.stopRefusal}</p>}
           {view.checkoutHeld && <p className="pw-thread-note pw-tone-warn" role="status">{view.checkoutHeld}</p>}
           <div className="pw-session-badges">
+            {thread.usage && <span className="chip pw-session-badge">{copy.usageBadge(thread.usage.inputTokens + thread.usage.outputTokens, thread.usage.costUsd)}</span>}
             <button type="button" className="chip pw-session-badge" aria-label="Model and account details" aria-expanded={sessionOpen} onClick={() => { if (!sessionOpen) { following.current = false; setBehind(true); } setSessionOpen(!sessionOpen); }}>
               <Icon name="agents" size={13} />{thread.modelLabel}<span className="pw-session-account">{thread.accountLabel}</span><Icon name="chevron" size={12} />
             </button>
@@ -248,6 +250,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
             {!['done', 'stopped', 'failed'].includes(thread.state) && <TakeOver device={view.deviceName} command={view.attachCommand} message={message} />}
             <SessionCache rows={thread.sessionCache} sessionKey={thread.cacheSessionKey} timezone={thread.sessionCache?.at(-1)?.timezone ?? 'UTC'} />
             <SessionHistory entries={view.sessionHistory} path={`/api/projects/${projectId}/threads/${thread.id}`} />
+            {!!view.notices?.length && <details><summary>{copy.SESSION_NOTICES} ({view.notices.length})</summary><ol>{view.notices.map((notice, index) => <li key={index}><time dateTime={notice.at}>{dateTime(notice.at)}</time>: {readableSessionText(notice.text)}</li>)}</ol></details>}
           </section>
         </div>
       </div>
@@ -531,6 +534,8 @@ function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['da
         <section className="why-section">
           <h3>{copy.WHY_PLACEMENT} <span className="why-source">{copy.PLACEMENT_SOURCES[placement.source]}</span></h3>
           <p className="why-line">{fixed ? copy.fixedFields(fixed) : copy.FIXED_NONE}</p>
+          {placement.reason && <p>{copy.PLACEMENT_REASON}: {placement.reason}</p>}
+          {placement.constraints && <p>{copy.PLACEMENT_CONSTRAINTS}: {copy.placementConstraintText(placement.constraints.allowedModelIds?.map(modelName) ?? null, placement.constraints.minEffort)}</p>}
           {placement.source === 'fallback' && placement.error && <p className="notice pw-why-error">{copy.placedWithoutJev(placement.error.message)}</p>}
         </section>
         {whyFields(placement).map(({ field, value, source, bars }) => {
@@ -569,6 +574,7 @@ function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['da
           <p className="why-line"><b>{account}</b></p>
         </section>}
         {placement.accountChoice && <section className="why-section">
+          {placement.accountChoice.source === 'session' && <p>{copy.RETAINED_SESSION_ACCOUNT}</p>}
           <h3>Accounts when chosen</h3>
           {placement.accountChoice.error && <p className="notice">Account choice used the resource ranking: {placement.accountChoice.error.message}</p>}
           <ul>{placement.accountChoice.candidates.map(candidate => <li key={candidate.accountId}>
@@ -579,6 +585,7 @@ function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['da
             {' · '}Ceiling {candidate.ceilingPct}%
           </li>)}</ul>
         </section>}
+        {!!view.escalations?.length && <section className="why-section"><h3>{copy.ESCALATION_HISTORY}</h3><ol>{view.escalations.map((entry, index) => <li key={index}>{dateTime(entry.at)}: {modelName(entry.from.modelId)} {entry.from.effort} → {modelName(entry.to.modelId)} {entry.to.effort} ({entry.reason})</li>)}</ol></section>}
         {!!placement.deviceFacts?.length && <section className="why-section">
           <h3>Devices when placed</h3>
           {placement.deviceFacts.map(device => <p key={device.deviceId}><b>{device.name}</b>: {device.running} running

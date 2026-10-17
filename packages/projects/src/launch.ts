@@ -49,7 +49,8 @@ export type LaunchStarted = {
   /** Closes the bridge grant and the serial account guard; idempotent. */
   release(): Promise<void>;
 };
-export type LaunchResult = LaunchStarted | { kind: 'unavailable'; reason: string };
+export type AccountWait = { reason: string; earliestEligibleAt: string | null };
+export type LaunchResult = LaunchStarted | { kind: 'unavailable'; reason: string; accountWait?: AccountWait | undefined };
 export type TurnLauncherOptions = {
   accounts: Pick<AccountService, 'list' | 'resolve' | 'markUsed'>; runtimes: ReadonlyMap<string, RuntimeAdapter>; accountRuns: Set<string>;
   riggingItems(runtime: string): Promise<RiggingItem[]>; bridges: Pick<StretchBridges, 'issueTools'>; homes: Homes; deviceId: string;
@@ -97,7 +98,25 @@ export class TurnLauncher {
   }
   #ranking(accounts: Awaited<ReturnType<AccountService['list']>>, request: Pick<LaunchRequest, 'runtime' | 'model'>): Ranked[] {
     return rankAccounts({ accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), runtime: request.runtime,
-      model: request.model, deviceId: this.#o.deviceId }).filter((entry) => entry.account.runtime === request.runtime);
+      model: request.model, deviceId: this.#o.deviceId, now: this.#o.now?.() ?? Date.now() }).filter((entry) => entry.account.runtime === request.runtime);
+  }
+  async unavailableAccount(request: Pick<LaunchRequest, 'runtime' | 'model' | 'modelLabel' | 'requiredAccountId'>): Promise<AccountWait | undefined> {
+    const ranking = this.#ranking(await this.#o.accounts.list(), request).filter(row => !request.requiredAccountId || row.account.id === request.requiredAccountId);
+    if (ranking.some(row => row.eligible)) return undefined;
+    const now = this.#o.now?.() ?? Date.now();
+    const resets = ranking.filter(row => ['cooling', 'usage-ceiling'].includes(row.reason)).map(row => {
+      const status = row.status, usage = status?.usage;
+      const dates = [status?.coolingUntil, status?.modelCooling?.[request.model],
+        ...(usage?.fiveHourPct !== undefined && usage.fiveHourPct >= row.account.ceilingPct ? [usage.fiveHourResetsAt ?? null] : []),
+        ...(usage?.weeklyPct !== undefined && usage.weeklyPct >= row.account.ceilingPct ? [usage.weeklyResetsAt ?? null] : [])];
+      if (dates.includes(null)) return null;
+      const future = dates.flatMap(value => value && Date.parse(value) > now ? [Date.parse(value)] : []);
+      return future.length ? Math.max(...future) : null;
+    });
+    const known = resets.filter((value): value is number => value !== null);
+    const earliestEligibleAt = known.length ? new Date(Math.min(...known)).toISOString() : null;
+    const best = ranking[0]?.reason, adapter = this.#o.runtimes.get(request.runtime);
+    return { reason: `${adapter?.displayName ?? request.runtime} ${ACCOUNT_REASON_TEXT[best && best !== 'eligible' ? best : 'no-account']}`, earliestEligibleAt };
   }
   /**
    * Why a turn of `runtime` and `model` waits now (phase 8): no eligible account is free because threads attached in a terminal here hold
@@ -132,11 +151,14 @@ export class TurnLauncher {
     }
     const selected = pinned ?? (chosenAccount ? ranking.find(entry => free(entry) && entry.account.id === chosenAccount.accountId) : ranking.find(free));
     if (!selected) {
-      if (chosenAccount) return { kind: 'unavailable', reason: 'The saved account changed availability while Jev was choosing. Retry the turn to choose an available account.' };
+      if (chosenAccount) {
+        const reason = 'The saved account changed availability while Jev was choosing. Retry the turn to choose an available account.';
+        return { kind: 'unavailable', reason, accountWait: await this.unavailableAccount(request) ?? { reason, earliestEligibleAt: null } };
+      }
       const taken = ranking.find((entry) => entry.eligible);
       if (taken) return { kind: 'unavailable', reason: accountInTerminal(taken.account.label) };
       const best = ranking[0]?.reason;
-      return { kind: 'unavailable', reason: noTurnAccount(request.modelLabel, this.#o.deviceName, `${adapter.displayName} ${ACCOUNT_REASON_TEXT[best && best !== 'eligible' ? best : 'no-account']}`) };
+      return { kind: 'unavailable', reason: noTurnAccount(request.modelLabel, this.#o.deviceName, `${adapter.displayName} ${ACCOUNT_REASON_TEXT[best && best !== 'eligible' ? best : 'no-account']}`), accountWait: await this.unavailableAccount(request) };
     }
     const account = selected.account;
     const accountChanged = request.pinnedAccountId !== undefined && account.id !== request.pinnedAccountId;
