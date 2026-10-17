@@ -85,7 +85,46 @@ function toolLines(f: ProjectFixture): ToolLine[] {
     else expect(() => JSON.parse(line.input!)).not.toThrow(); return line;
   });
 }
-const line = (tool: string, ok: boolean, summary: string | RegExp, ids: Partial<Pick<ToolLine, 'threadId' | 'decisionId' | 'reason'>> = {}) =>
+
+test('owner-chat settings and proposed starts are fenced to that turn, repeat safely and carry live card receipts', { timeout: 120_000 }, async () => {
+  const f = fixture = await projectFixture({ coordinator: true });
+  const c = await hold(f, 'Propose my tasks first. Run at most two threads, then start the first proposal.');
+  const settings = await c.call('jevellan_settings_update', { maxRunningThreads: 2, startMode: 'propose', instructionsAppend: 'Keep changes small.', ownerWords: 'Propose my tasks first. Run at most two threads.' });
+  expect(settings.change.changes.map(change => change.field)).toEqual(['maxRunningThreads', 'startMode', 'instructions']);
+  expect((await c.call('jevellan_settings_update', { maxRunningThreads: 2, startMode: 'propose', instructionsAppend: 'Keep changes small.', ownerWords: 'Propose my tasks first. Run at most two threads.' })).repeated).toBe(true);
+  expect((await f.app.projectWork.settingsView(f.project.id)).settings.instructions).toBe('Keep changes small.');
+  const first = await c.call('jevellan_task_create', { title: 'First small task', brief: 'Read the README.', type: 'analysis', source: 'owner-request', now: true });
+  const second = await c.call('jevellan_task_create', { title: 'Second small task', brief: 'Read the package.', type: 'analysis', source: 'owner-request', held: true });
+  expect(first.state).toBe('draft'); expect(second.state).toBe('draft'); expect(f.fake.turnStarts.filter(turn => turn.owner.kind === 'thread')).toHaveLength(0);
+  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Read README.' }), forThread());
+  const started = await c.call('jevellan_tasks_start', { taskIds: [first.taskId] });
+  expect(started.tasks).toMatchObject([{ taskId: first.taskId, message: 'Started "First small task".' }]);
+  await c.call('jevellan_tasks_start', { taskIds: [first.taskId] });
+  const active = await f.waitFor(() => f.app.projectWork.tasks.read(f.project.id, first.taskId), task => task.threadId !== null);
+  expect(f.thread(active.threadId!).instructions).toBe('Keep changes small.');
+  expect((await f.app.projectWork.tasks.read(f.project.id, second.taskId)).state).toBe('draft');
+  const lines = toolLines(f);
+  expect(lines.find(line => line.tool === 'jevellan_task_create')?.taskIds).toEqual([first.taskId]);
+  expect(lines.find(line => line.tool === 'jevellan_settings_update')?.settingsChange?.id).toBe(settings.change.id);
+  const refusals: Refusal[] = [];
+  const session = f.coordinatorState().session?.nativeSessionId;
+  f.fake.enqueueTurn(async turn => {
+    expect(turn.input.resume?.sessionId).toBe(session);
+    expect(turn.input.prompt).toContain('[instructions changed by you] Project instructions are now:\nKeep changes small.');
+    for (const [name, arguments_] of [['jevellan_settings_update', { maxRunningThreads: 1, ownerWords: 'An event is not an owner message.' }], ['jevellan_tasks_start', { taskIds: [second.taskId] }]] as const) {
+      const response = await bridge(turn.input, { operation: 'call', name, arguments: arguments_ });
+      refusals.push({ status: response.status, message: (await response.json() as { message: string }).message });
+    }
+    turn.say('No owner authority in this event turn.'); return { status: 'completed' };
+  }, forCoordinator);
+  c.release();
+  await f.waitFor(() => refusals.length, count => count === 2);
+  expect(refusals).toEqual([{ status: 403, message: 'Only an owner message in this turn can change project settings.' }, { status: 403, message: 'Only an owner message in this turn can start proposed tasks.' }]);
+  expect((await f.app.projectWork.settingsView(f.project.id)).settings.maxRunningThreads).toBe(2);
+  const events = f.app.projectWork.coordinatorLedger(f.project.id).events().filter(event => event.type === 'coordinator-event').map(event => f.app.projectWork.coordinatorLedger(f.project.id).payload(event as ProjectLedgerEvent & { type: 'coordinator-event' }));
+  expect(events.filter(event => event.kind === 'task-reviewed' && event.taskId === first.taskId)).toMatchObject([{ outcome: 'approved', note: "Started on the owner's word in chat." }]);
+});
+const line = (tool: string, ok: boolean, summary: string | RegExp, ids: Partial<Pick<ToolLine, 'threadId' | 'decisionId' | 'reason' | 'taskIds'>> = {}) =>
   ({ schema: 'coordinator-tool-v1', tool, ok, input: expect.any(String), inputTruncated: expect.any(Boolean), summary: typeof summary === 'string' ? summary : expect.stringMatching(summary), ...ids });
 const fieldSentence = (field: string) => new RegExp(`^${field}: .+\\. Check the tool input\\.$`);
 async function index(f: ProjectFixture, threadId: string, accept: (value: ThreadIndex | undefined) => boolean): Promise<ThreadIndex> {
@@ -296,9 +335,9 @@ test('thread tools start, list, read, message and stop as brief 7.1 says, refuse
   expect(toolLines(f)).toEqual([
     line('jevellan_task_create', false, /^Could not create a task: brief: .+\.$/),
     line('jevellan_task_create', false, /^Could not create a task: brief: .+\.$/),
-    line('jevellan_task_create', true, 'Queued task "Fix login"'),
-    line('jevellan_task_create', true, 'Queued task "Fix login"'),
-    line('jevellan_task_create', true, 'Queued task "Add docs"'),
+    line('jevellan_task_create', true, 'Queued task "Fix login"', { taskIds: [login.taskId] }),
+    line('jevellan_task_create', true, 'Queued task "Fix login"', { taskIds: [login.taskId] }),
+    line('jevellan_task_create', true, 'Queued task "Add docs"', { taskIds: [docs.taskId] }),
     line('jevellan_threads_list', true, 'Listed threads'),
     line('jevellan_threads_list', true, 'Listed threads'),
     line('jevellan_thread_message', true, 'Sent a message to "Fix login"', { threadId: login.threadId }),
@@ -393,9 +432,9 @@ test('questions, the notebook with its revision conflict, pull request status, q
   expect(f.thread(tests.threadId).lastReport).toMatchObject({ summary: 'Cache covered.', synthesized: false });
 
   expect(toolLines(f)).toEqual([
-    line('jevellan_task_create', true, 'Queued task "Add cache"'),
-    line('jevellan_task_create', true, 'Queued task "Write tests"'),
-    line('jevellan_task_create', true, 'Queued task "Elsewhere"'),
+    line('jevellan_task_create', true, 'Queued task "Add cache"', { taskIds: [added.taskId] }),
+    line('jevellan_task_create', true, 'Queued task "Write tests"', { taskIds: [tests.taskId] }),
+    line('jevellan_task_create', true, 'Queued task "Elsewhere"', { taskIds: [elsewhere.taskId] }),
     line('jevellan_pr_status', true, 'Checked PR #1', { threadId: added.threadId }),
     line('jevellan_pr_status', true, 'Checked PR #1', { threadId: added.threadId }),
     line('jevellan_pr_status', true, 'Checked "Write tests": no pull request', { threadId: tests.threadId }),

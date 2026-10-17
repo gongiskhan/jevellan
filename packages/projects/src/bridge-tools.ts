@@ -4,11 +4,11 @@ import { z } from 'zod';
 import {
   BridgeResultSchema, BridgeToolSchemas, IdSchema, MemoryNoteSchema, MemorySearchSchema, ProjectNotebookSchema, ProjectToolResultSchemas, ThreadReportSchema, bridgeTools,
   openQuestions, projectToolNames, stableJson,
-  type BridgeTool, type BridgeToolsSchema, type MemoryNote, type MemoryProvenance, type ProjectHub, type ProjectLedgerEvent, type ProjectToolName, type SecretRedactor, type ThreadIndex, type ThreadReport,
+  type BridgeTool, type BridgeToolsSchema, type MemoryNote, type MemoryProvenance, type ProjectHub, type ProjectLedgerEvent, type ProjectToolName, type SecretRedactor, type ThreadIndex, type ThreadReport, type ProjectSettingsChange,
 } from '@jevellan/core';
 import type { BridgeScopeTools } from '@jevellan/conversations';
 import {
-  REPORT_ALREADY_SENT, THREAD_NOT_FOUND, TOOL_NOT_IN_TURN, TURN_ENDED, coordinatorToolSummary, notebookConflict, toolInputError, transcriptStaysOn,
+  PROJECT_SETTINGS_UNAVAILABLE, OWNER_SETTINGS_ONLY, OWNER_START_ONLY, STARTED_IN_CHAT, startedTask, REPORT_ALREADY_SENT, THREAD_NOT_FOUND, TOOL_NOT_IN_TURN, TURN_ENDED, coordinatorToolSummary, notebookConflict, toolInputError, transcriptStaysOn,
 } from './copy.js';
 import { derivedId, type DecisionItems } from './decision-items.js';
 import type { ProjectLedger, ProjectLedgers } from './ledger.js';
@@ -31,7 +31,7 @@ export type ProjectMemoryReader = {
   edit?(input: z.infer<typeof BridgeToolSchemas.memory_edit>, signal: AbortSignal): Promise<MemoryNote>;
 };
 /** One coordinator tool line in the coordinator ledger (brief 8.1, 2.6.5). */
-export type ToolLine = { summary: string; threadId?: string | undefined; decisionId?: string | undefined; reason?: string | undefined };
+export type ToolLine = { summary: string; threadId?: string | undefined; decisionId?: string | undefined; reason?: string | undefined; taskIds?: string[]; settingsChange?: ProjectSettingsChange };
 export type ToolOutcome = { ok: true; result: unknown } | { ok: false; error: string };
 export type ProjectToolHandlers = {
   capture?(scope: ProjectScope, payload?: { sessionId?: string; transcriptPath?: string }): Promise<void>;
@@ -135,6 +135,7 @@ export class ProjectTools implements BridgeScopeTools {
 export type CoordinatorToolsOptions = {
   deviceId: string; deviceName: string;
   threads: Pick<ThreadService, 'start' | 'message' | 'stop' | 'list' | 'read'>;
+  settingsUpdate?(projectId: string, input: unknown, requestId: string): Promise<{ schema: 'project-settings-change-result-v1'; change: ProjectSettingsChange; repeated: boolean }>;
   tasks?: ProjectTasks; goals?: ProjectGoals; daily?: ProjectDailyWork; jobs?: ProjectJobRunner;
   github?: ProjectGithub;
   terminalRead?: ((scope: ProjectScope, input: unknown) => Promise<unknown>) | undefined;
@@ -181,6 +182,12 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
     return { openQuestions: { schema: 'open-questions-v1', questions: await Promise.all(list.slice(0, 1000).map(async (decision, index) => ({ number: index + 1,
       questionId: decision.id, threadTitle: decision.threadId ? (await known(projectId, decision.threadId))?.title ?? '(unknown thread)' : 'Coordinator', question: decision.question, options: decision.options.map(option => option.label) }))) } };
   };
+  const hasOwnerMessage = (projectId: string, turn: number): boolean => {
+    const ledger = o.ledgers.coordinator(projectId), events = ledger.events();
+    const start = events.findLast(event => event.type === 'coordinator-turn-start' && event.turn === turn);
+    const ids = new Set(start ? ledger.payload(start as ProjectLedgerEvent & { type: 'coordinator-turn-start' }).eventIds : []);
+    return events.some(event => event.type === 'coordinator-event' && (() => { const item = ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-event' }); return item.kind === 'user-message' && ids.has(item.id); })());
+  };
   async function call(projectId: string, turn: number, name: ProjectToolName, raw: unknown, signal: AbortSignal): Promise<unknown> {
     signal.throwIfAborted();
     switch (name) {
@@ -208,6 +215,28 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
         const refill = events.filter(event => event.type === 'coordinator-event').map(event => ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-event' })).findLast(item => ids.has(item.id) && item.kind === 'goal-refill' && item.goals.some(goal => goal.goalId === input.goalId));
         const { source, ...fields } = input;
         return o.tasks.create(projectId, { ...fields, schema: 'task-create-request-v1', clientRequestId: turnId('treq', projectId, turn, input) }, source, { ownerRequested, ...(source === 'refill' && refill ? { refillEventId: refill.id } : {}) });
+      }
+      case 'jevellan_settings_update': {
+        if (!hasOwnerMessage(projectId, turn)) throw failure(OWNER_SETTINGS_ONLY, 403);
+        if (!o.settingsUpdate) throw new Error(PROJECT_SETTINGS_UNAVAILABLE);
+        return o.settingsUpdate(projectId, raw, turnId('setting', projectId, turn, raw));
+      }
+      case 'jevellan_tasks_start': {
+        if (!hasOwnerMessage(projectId, turn)) throw failure(OWNER_START_ONLY, 403);
+        if (!o.tasks) throw new Error('The task queue is unavailable.');
+        const input = raw as Input<typeof name>;
+        const tasks = await Promise.all([...new Set(input.taskIds)].map(id => o.tasks!.read(projectId, id)));
+        const started = [];
+        for (let task of tasks) {
+          const draft = task.state === 'draft';
+          if (draft) task = await o.tasks.action(projectId, task.id, { schema: 'task-action-request-v1', expectedRevision: task.revision, action: 'approve', reason: STARTED_IN_CHAT }, false);
+          if (task.state === 'queued' && task.held) {
+            task = await o.tasks.update(projectId, task.id, { schema: 'task-update-request-v1', expectedRevision: task.revision, held: false }, false);
+            if (!draft) await o.tasks.o.reviewed?.(task, 'approved', STARTED_IN_CHAT);
+          }
+          started.push({ taskId: task.id, title: task.title, state: task.state, message: startedTask(task.title) });
+        }
+        return { schema: 'tasks-start-result-v1', tasks: started };
       }
       case 'jevellan_tasks_list': {
         const input = raw as Input<typeof name>; if (!o.tasks) throw new Error('The task queue is unavailable.');
@@ -322,7 +351,11 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
       const decisionId = outcome.ok ? idField(input, 'decisionId') ?? idField(input, 'questionId') ?? idField(outcome.result, 'decisionId') : undefined;
       // The withdrawn-question toast reads `reason` (D84): only a question this call withdrew carries one.
       const withdrawn = outcome.ok && name === 'jevellan_withdraw_question' && field(outcome.result, 'withdrawn') === true;
-      return { summary: coordinatorToolSummary(name, input, outcome, thread?.title), ...(thread ? { threadId } : {}), ...(decisionId ? { decisionId } : {}),
+      const taskId = outcome.ok && name === 'jevellan_task_create' ? idField(outcome.result, 'taskId') : undefined;
+      const started = outcome.ok && name === 'jevellan_tasks_start' ? field(outcome.result, 'tasks') : undefined;
+      const taskIds = taskId ? [taskId] : Array.isArray(started) ? started.flatMap(task => { const id = idField(task, 'taskId'); return id ? [id] : []; }) : undefined;
+      const settingsChange = outcome.ok && name === 'jevellan_settings_update' ? field(outcome.result, 'change') as ProjectSettingsChange : undefined;
+      return { summary: coordinatorToolSummary(name, input, outcome, thread?.title), ...(taskIds ? { taskIds } : {}), ...(settingsChange ? { settingsChange } : {}), ...(thread ? { threadId } : {}), ...(decisionId ? { decisionId } : {}),
         ...(withdrawn ? { reason: (input as Input<'jevellan_withdraw_question'>).reason } : {}) };
     },
   };

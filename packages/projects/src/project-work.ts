@@ -1,3 +1,6 @@
+import { SettingsChangePlanSchema, settingsChangePlan } from './settings-changes.js';
+import { projectSettingValue, withProjectSetting, ProjectSettingsUndoRequestSchema, type CoordinatorEvent, type ProjectSettingsChange } from '@jevellan/core';
+import { settingText, SETTING_CHANGED_AGAIN } from './copy.js';
 import { restoreFromVault, vaultDefinition, vaultDefinitionText } from './vault-definition.js';
 import { nightlyFixMinutes } from './session-context.js';
 import { NightlyReview } from './nightly-review.js';
@@ -276,10 +279,11 @@ export class ProjectWork {
       command: (projectId, threadId, command) => this.threads.command(projectId, threadId, command) });
     this.mail = new MailService({ hub: o.hub, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), local: (threadId) => this.store.get(threadId), now });
     this.tasks = new ProjectTasks({ hub: o.hub, deviceId: o.deviceId, redactor: o.redactor, now,
+      settings: projectId => this.admission.settings(projectId),
       validateGoal: (projectId, goalId, source, refillEventId) => this.goals.validate(projectId, goalId, source, refillEventId), projectDay: projectId => this.goals.day(projectId),
       changed: () => { void this.#sweepTasks().catch(() => undefined); },
       cancelThread: (task, reason, owner) => this.threads.stop(task.projectId, task.threadId!, reason, owner),
-      reviewed: async (task, outcome) => delivery.toCoordinator(task.projectId, { schema: 'coordinator-event-v1', kind: 'task-reviewed', taskId: task.id, title: task.title, outcome,
+      reviewed: async (task, outcome, note) => delivery.toCoordinator(task.projectId, { schema: 'coordinator-event-v1', kind: 'task-reviewed', taskId: task.id, title: task.title, outcome, ...(note ? { note } : {}),
         id: `cev_${task.id}_${task.revision}`, at: task.updatedAt }) });
     this.goals = new ProjectGoals({ hub: o.hub, tasks: this.tasks, redactor: o.redactor, now, settings: projectId => this.admission.settings(projectId),
       event: (projectId, event) => delivery.toCoordinator(projectId, event), changed: () => { void this.#sweepTasks().catch(() => undefined); },
@@ -350,8 +354,8 @@ export class ProjectWork {
     this.dispatcher = new ProjectDispatcher({ settings: id => this.admission.settings(id), tasks: this.tasks, threads: this.threads, deviceId: o.deviceId,
       text: async task => {
         const goal = task.goalId ? await this.goals.read(task.projectId, task.goalId) : null;
-        const brief = `${task.brief}${goal ? `\n\nGoal: ${goal.name}. Why it matters: ${goal.motivation}` : ''}\n\nTask type: ${task.type}.`, settings = await this.admission.settings(task.projectId);
-        return { brief, taskContext: { type: task.type, needs: task.needs, goal: goal ? { name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: [brief, settings.instructions ? `Rules for every thread:\n${settings.instructions}` : ''].filter(Boolean).join('\n\n') };
+        const brief = `${task.brief}${goal ? `\n\nGoal: ${goal.name}. Why it matters: ${goal.motivation}` : ''}\n\nTask type: ${task.type}.`;
+        return { brief, taskContext: { type: task.type, needs: task.needs, goal: goal ? { name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: brief };
       }, review: task => this.reviews.start(task), job: task => this.jobs.start(task), eligible: async (task, tasks) => await this.daily.eligible(task, tasks) && await this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
     this.tracker = new PullRequestTracker({ threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
@@ -416,6 +420,7 @@ export class ProjectWork {
   /** Coordinator tool handlers (brief 7.1), built on first use because the thread service and the tracker come after the coordinators. Memory is read-only. */
   #coordinatorTools(): CoordinatorToolHandlers {
     return this.#tools ??= { ...coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, tasks: this.tasks, goals: this.goals, daily: this.daily, jobs: this.jobs, store: this.store, decisions: this.decisions,
+      settingsUpdate: (id, input, requestId) => this.coordinatorSettings(id, input, requestId),
       pullRequests: this.tracker, github: this.#github, terminalRead: this.#o.terminalRead, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
       memory: async (projectId, scope) => this.#o.memory.project(await this.#project(projectId), this.#o.deviceId, () => { throw new Error(COORDINATOR_MEMORY_READ_ONLY); },
         { kind: 'coordinator', ...(scope?.provenance ? { provenance: scope.provenance } : {}) }) }),
@@ -716,7 +721,7 @@ export class ProjectWork {
     return ProjectWorkSettingsViewSchema.parse({ schema: 'project-work-settings-view-v1', settings: shown.settings, ...(shown.notice ? { notice: shown.notice } : {}) });
   }
   /** Settings 5.1 with a revision check; a conflict is the owner's reload sentence. */
-  async putSettings(projectId: string, input: z.infer<typeof ProjectWorkSettingsRequestSchema>, clientRequestId?: string): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
+  async putSettings(projectId: string, input: z.infer<typeof ProjectWorkSettingsRequestSchema>, clientRequestId?: string, by: 'owner' | 'coordinator' = 'owner'): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
     let project = await this.#project(projectId);
     const current = (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId);
     const settings = ProjectWorkSettingsSchema.parse({ ...current, ...input.settings, schema: 'project-work-settings-v4', projectId, revision: input.revision });
@@ -727,6 +732,11 @@ export class ProjectWork {
     }
     try {
       const saved = (await this.#o.hub.putSettings(settings, input.revision, ...(requestId === undefined ? [] : [requestId]))).document;
+      const fields = ['maxRunningThreads', 'maxNewThreadsPerDay', 'startMode', 'prAutoFix.checks', 'prAutoFix.conflicts', 'prAutoFix.comments', 'instructions', 'placement.guidance'] as const;
+      const changes = fields.filter(field => projectSettingValue(current, field) !== projectSettingValue(saved, field)).map(field => ({ field,
+        from: settingText(projectSettingValue(current, field)), to: settingText(projectSettingValue(saved, field)) }));
+      if (changes.length) await this.#settingsEvent(projectId, { schema: 'coordinator-event-v1', kind: 'settings-changed', by, changes,
+        ...(current.instructions !== saved.instructions ? { instructions: saved.instructions } : {}), id: `cev_settings_${projectId}_${saved.revision}`, at: new Date(this.#timers.now()).toISOString() });
       if (saved.status === 'active' && current.status !== 'active') {
         this.coordinators.get(projectId).kick();
         void this.threads.sweep().then(() => this.#sweepTasks()).catch(() => undefined);
@@ -734,6 +744,41 @@ export class ProjectWork {
       return this.#settingsView(project, saved);
     }
     catch (error) { if (statusOf(error) === 409) throw refuse(SETTINGS_CHANGED, 409); throw error; }
+  }
+  async #settingsEvent(projectId: string, event: CoordinatorEvent): Promise<void> {
+    const device = await this.coordinators.deviceOf(projectId);
+    if (device !== null && device !== this.#o.deviceId) this.outbox.enqueue(projectId, 'coordinator', { kind: 'coordinator-event', event });
+    else if (device !== null) this.coordinators.get(projectId).enqueue(event);
+  }
+  async undoSetting(projectId: string, raw: unknown): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
+    const project = await this.#project(projectId), input = ProjectSettingsUndoRequestSchema.parse(raw);
+    const current = (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId);
+    const value = projectSettingValue(current, input.change.field);
+    if (value !== input.change.after && !(value === input.change.before && current.revision > input.expectedRevision)) throw refuse(SETTING_CHANGED_AGAIN, 409);
+    const next = withProjectSetting({ ...current, revision: input.expectedRevision }, input.change.field, input.change.before);
+    try {
+      const saved = (await this.#o.hub.putSettings(next, input.expectedRevision, input.clientRequestId)).document;
+      await this.#settingsEvent(projectId, { schema: 'coordinator-event-v1', kind: 'settings-changed', by: 'owner',
+        changes: [{ field: input.change.field, from: settingText(input.change.after), to: settingText(input.change.before) }],
+        ...(input.change.field === 'instructions' ? { instructions: saved.instructions } : {}),
+        id: `cev_settings_${projectId}_${saved.revision}`, at: new Date(this.#timers.now()).toISOString() });
+      return this.#settingsView(project, saved);
+    } catch (error) { if (statusOf(error) === 409) throw refuse(SETTING_CHANGED_AGAIN, 409); throw error; }
+  }
+  /** Persist the original request before applying it, so a lost reply retries the same revision without appending twice. */
+  async coordinatorSettings(projectId: string, input: unknown, requestId: string): Promise<{ schema: 'project-settings-change-result-v1'; change: ProjectSettingsChange; repeated: boolean }> {
+    await this.#project(projectId);
+    const file = join(this.paths.project(projectId), 'settings-changes', `${IdSchema.parse(requestId)}.json`), repeated = existsSync(file);
+    const plan = repeated ? readDocument(file, SettingsChangePlanSchema) : settingsChangePlan((await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId), input, requestId, new Date(this.#timers.now()).toISOString());
+    if (!repeated) writeDocument(file, SettingsChangePlanSchema, plan);
+    if (plan.change.changes.length) {
+      const saved = (await this.#o.hub.putSettings(plan.settings, plan.expectedRevision, requestId)).document;
+      await this.#settingsEvent(projectId, { schema: 'coordinator-event-v1', kind: 'settings-changed', by: 'coordinator',
+        changes: plan.change.changes.map(change => ({ field: change.field, from: settingText(change.before), to: settingText(change.after) })),
+        ...(plan.change.changes.some(change => change.field === 'instructions') ? { instructions: saved.instructions } : {}),
+        id: `cev_settings_${projectId}_${saved.revision}`, at: plan.change.at });
+    }
+    return { schema: 'project-settings-change-result-v1', change: plan.change, repeated };
   }
   async notebookView(projectId: string): Promise<z.infer<typeof ProjectNotebookViewSchema>> {
     await this.#project(projectId); const stored = await this.#o.hub.notebook(projectId);

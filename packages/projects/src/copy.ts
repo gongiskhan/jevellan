@@ -18,10 +18,12 @@ export function clockTime(at: string | Date): string {
 }
 
 // 9.1 Coordinator system append
-export function coordinatorSystemAppend(projectName: string, gitPolicy: 'main' | 'external' = 'main'): string {
+export function coordinatorSystemAppend(projectName: string, gitPolicy: 'main' | 'external' = 'main', startMode: 'start' | 'propose' = 'start'): string {
   return `You are the coordinator of the project "${projectName}" in Jevellan. You do not write code and you do not edit files. You plan, delegate to threads, keep track, and talk with the owner.
 
 How you work:
+- When you can answer from what you can read, answer in the chat yourself and create no task.
+- When you route work, end your reply with one line per item: its title and whether it is a new task or went to an existing thread. The chat shows a card for each; do not repeat their details.
 - Work arrives as tasks in the project queue. Create a task for every new piece of work with jevellan_task_create: a short title, a complete brief that a capable engineer could act on without this conversation, its type, and the goal it serves or no goal. Use source owner-request only for work the owner asked for in this turn, and mark it now only when the owner wants it done right away. When the work needs something from the machine it runs on, such as a residential network or a Mac, say so in needs. Follow-ups to work already under way go to that thread with jevellan_thread_message. Never duplicate an open task. Code controls dispatch, placement and limits.
 - Preserve the outcome the owner asked for, including Jev's requested-result guidance. Carry it into the thread task and check the report against it. To run an app for the owner, have the thread start a managed app with jevellan_app_start and return its verified browser link. Tests and opening a file on the server do not complete that request. Continue authorized work without asking the owner to repeat it.
 - Route each new request: if it continues work an active thread is doing, send it to that thread with jevellan_thread_message; otherwise create a new task. Queue independent pieces of work together. Set after only when a task needs another task's completed result. Worktree threads have separate copies and can work concurrently, including on shared files such as a changelog; handle any later conflict through the responsible thread. Main threads share a checkout, so sequence overlapping edits there.
@@ -31,7 +33,8 @@ How you work:
 - When a thread reports, decide the next step yourself whenever the answer follows from the owner's instructions, the notebook or the code. Ask the owner with jevellan_ask_user only when the decision is genuinely theirs. Keep questions short, offer 2 to 4 options when possible, and continue other work while waiting.
 - When checks fail or a pull request has conflicts, tell the responsible thread what to fix.
 - When a thread was interrupted by a restart or a failure, resume it with jevellan_thread_message if the work is still wanted.
-- Keep the notebook current with jevellan_notebook_write whenever the plan, a decision or an owner instruction changes: the owner's instructions to you, decisions in flight, the current plan and open questions. Keep it concise. When your session has been idle long enough for its cache to expire, Jevellan continues in a fresh session that starts from the notebook and the project journal, so anything in neither is lost.
+- When the owner states a standing preference that matches a field of jevellan_settings_update, change the setting with that tool in this turn and say so in one line. Put other standing preferences in the notebook. Never change a setting without the owner's words in this turn.
+${startMode === 'propose' ? '- This project proposes before starting. Tasks you create from the owner\'s requests wait as proposals until the owner starts them. When the owner tells you in this turn to start some or all of them, call jevellan_tasks_start.\n' : ''}- Keep the notebook current with jevellan_notebook_write whenever the plan, a decision or an owner instruction changes: the owner's instructions to you, decisions in flight, the current plan and open questions. Keep it concise. When your session has been idle long enough for its cache to expire, Jevellan continues in a fresh session that starts from the notebook and the project journal, so anything in neither is lost.
 - The project journal records everything that happened in this project, one file per thread, per day and per night, listed in INDEX.md. When you need detail on past work, read the relevant file instead of guessing.
 - Project memory is shared by every session in this project, on Claude and on Codex. Search it before planning work in an area. Write to it with memory_write what every future session should know: how to build, run and test things, gotchas and their fixes, conventions, decisions with their reasons, and owner preferences about the work. Plans and task status belong in the notebook, not in memory.
 - Questions for the owner: whenever you ask one, and whenever the owner asks for status, end your reply with every open question, oldest first, numbered exactly as in your context, each with its thread and options. The owner may answer on the cards or in chat, several at once, such as "1 B, 2 done". Match each answer to its question, record it with jevellan_answer_question, and send it to the thread that needs it with jevellan_thread_message. If one answer is unclear, ask about that one only.
@@ -114,6 +117,10 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
   const title = (id: string) => context.title(id) ?? UNKNOWN_THREAD;
   const thread = (id: string) => `thread "${title(id)}" (${id})`;
   switch (event.kind) {
+    case 'settings-changed': return event.instructions !== undefined ? `[instructions changed by ${event.by === 'owner' ? 'the owner' : 'you'}] Project instructions are now:\n${event.instructions}` : `[settings changed by ${event.by === 'owner' ? 'the owner' : 'you'}] ${event.changes.map(change => `${settingLabel(change.field)}: ${change.from} → ${change.to}`).join('; ')}`;
+    case 'thread-resolved': return `[thread "${title(event.threadId)}" resolved by ${event.by === 'owner' ? 'the owner' : 'inactivity'}]`;
+    case 'thread-placement-changed': return `[thread "${title(event.threadId)}" moved: ${event.summary}]`;
+    case 'thread-auto-fix': return autoFixEventLine(event, title(event.threadId));
     case 'memory-dreamed': return `[memory dream] ${event.summary}\nChanges: ${JSON.stringify(event.counts)}`;
     case 'user-message': return `[owner ${(context.clock ?? clockTime)(event.at)}] ${event.text}`;
     case 'thread-report': {
@@ -150,7 +157,7 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
 
 // 9.4 Thread system append and turn prompts
 export function threadSystemAppend(input: { projectName: string; cwd: string; isolation: Isolation; branch?: string | undefined; baseBranch: string;
-  deviceName: string; testCommand?: string | undefined; gitPolicy?: 'main' | 'external' | undefined }): string {
+  deviceName: string; testCommand?: string | undefined; gitPolicy?: 'main' | 'external' | undefined; instructions?: string | undefined }): string {
   const manual = input.isolation === 'main' && input.gitPolicy === 'external';
   const isolation = input.isolation === 'worktree'
     ? `Isolation: your own git worktree on branch ${input.branch ?? ''}, based on ${input.baseBranch}. Other threads work elsewhere. Commit your work on this branch.`
@@ -167,7 +174,7 @@ ${isolation}
 - Project memory is shared by every session in this project, on Claude and on Codex. Read the Project memory and Project now sections you receive. Search memory with memory_search before working in an unfamiliar area. When you learn something every future session should know, such as how to run or test something, a gotcha and its fix, or a convention, write it with memory_write in a few sentences.
 - If your pull request's checks fail, read them with jevellan_github.
 - If the owner must run something, because you are not allowed to or it needs their sign-in, put the exact command in ownerCommands of your jevellan_thread_report with why, and report blocked or needs-decision. Never ask the owner to run something you can run yourself. When the owner runs it, its output comes back to you as a message.
-- Don't review your own work beyond normal care. Tests run after you, and a nightly review covers everything that merges.`;
+- Don't review your own work beyond normal care. Tests run after you, and a nightly review covers everything that merges.${input.instructions ? `\n\nProject instructions from the owner:\n${input.instructions}` : ''}`;
 }
 
 export const taskPrompt = (title: string, task: string): string => `Task: ${title}\n\n${task}`;
@@ -406,6 +413,8 @@ export function coordinatorToolSummary(tool: string, input: unknown, outcome: To
     case 'jevellan_threads_list': return line('Listed threads', 'list threads');
     case 'jevellan_tasks_list': return line('Listed tasks', 'list tasks');
     case 'jevellan_task_create': return line(`${field(result, 'state') === 'draft' ? 'Proposed' : 'Queued'} task "${textField(input, 'title') ?? ''}"`, 'create a task');
+    case 'jevellan_tasks_start': return line('Started proposed tasks', 'start proposed tasks');
+    case 'jevellan_settings_update': return line('Changed project settings', 'change project settings');
     case 'jevellan_task_update': return line('Updated a queued task', 'update a task');
     case 'jevellan_task_cancel': return line('Cancelled a queued task', 'cancel a task');
     case 'jevellan_thread_start': {
@@ -530,3 +539,29 @@ export const sessionNotAdopted = (message: string): string => `The session from 
 
 export const PROJECT_PAUSED = 'The project is paused.';
 export const newThreadsPerDayReached = (count: number) => `New threads per day reached (${count}). The next one starts tomorrow, or after you raise the limit in Project settings.`;
+
+// Projects parity: owner settings and the coordinator's routing contract.
+export const COORDINATOR_ANSWER_IN_CHAT = 'Answer it in the chat if you can from the notebook, memory, the threads, GitHub or the repository. Create a task only if the answer needs a change, a run or a long investigation.';
+export const COORDINATOR_CARRY_RESULT = 'Carry this result into the thread task and check the report against it before concluding.';
+export const coordinatorOwnerInstructions = (instructions: string) => `Project instructions from the owner (every new thread receives them too):\n${instructions}\n\n`;
+export const OWNER_SETTINGS_ONLY = 'Only an owner message in this turn can change project settings.';
+export const OWNER_START_ONLY = 'Only an owner message in this turn can start proposed tasks.';
+export const INSTRUCTIONS_TOO_LONG = 'Project instructions would exceed 16,000 characters.';
+export const GUIDANCE_TOO_LONG = 'Guidance for Jev would exceed 2,000 characters.';
+export const STARTED_IN_CHAT = "Started on the owner's word in chat.";
+export const proposedTask = (title: string) => `Proposed "${title}". It starts when the owner starts it.`;
+export const startedTask = (title: string) => `Started "${title}".`;
+export const SETTING_LABELS: Record<string, string> = { maxRunningThreads: 'max running threads', maxNewThreadsPerDay: 'new threads per day', startMode: 'start mode',
+  'prAutoFix.checks': 'fixing failing checks', 'prAutoFix.conflicts': 'resolving conflicts', 'prAutoFix.comments': 'addressing review comments', instructions: 'project instructions', 'placement.guidance': 'guidance for Jev' };
+export const settingLabel = (field: string) => SETTING_LABELS[field] ?? field;
+export const settingText = (value: unknown) => (value === true ? 'on' : value === false ? 'off' : value === 'start' ? 'start right away' : value === 'propose' ? 'propose first' : typeof value === 'object' ? JSON.stringify(value) : String(value)).slice(0, 400);
+function autoFixEventLine(event: Extract<CoordinatorEvent, { kind: 'thread-auto-fix' }>, title: string): string {
+  const prefix = `pull request #${event.prNumber} of "${title}"`;
+  if (event.outcome === 'started') return `[${prefix}: Jevellan asked the thread to fix ${event.fixKind === 'checks' ? 'the failing checks' : event.fixKind === 'conflicts' ? 'the conflict' : `${event.comments ?? 0} review comments`} (round ${event.round} of ${event.maxRounds})]`;
+  if (event.outcome === 'fixed') return `[${prefix}: ${event.fixKind === 'checks' ? 'checks pass' : event.fixKind === 'conflicts' ? 'conflict resolved' : 'review comments addressed'} after automatic fixes]`;
+  return `[${prefix}: still ${event.fixKind === 'checks' ? 'failing checks' : event.fixKind === 'conflicts' ? 'conflicting' : 'has review comments'} after ${event.maxRounds} automatic fixes; the owner was asked]`;
+}
+
+export const SETTING_CHANGED_AGAIN = 'Changed again since.';
+
+export const PROJECT_SETTINGS_UNAVAILABLE = 'Project settings are unavailable.';

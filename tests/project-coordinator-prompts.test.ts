@@ -58,6 +58,26 @@ const input = (events: CoordinatorEvent[], over: Partial<CoordinatorPromptInput>
   askedDirectly: new Set(['cev_ask']), clock: (value) => value.slice(11, 16), ...over,
 });
 
+test('owner instructions lead fresh context and answer outcomes stay in chat', () => {
+  const request = input([], { instructions: 'Keep changes small.', outcomes: [{ schema: 'project-request-outcome-v1', projectId: 'proj_a', eventId: 'cev_msg', at: at('09:00'), calls: [], source: 'jev', goal: 'answer', probabilities: { answer: 1, change: 0, 'run-app': 0, verify: 0, other: 0 } }] });
+  expect(coordinatorFreshContext(request)).toMatch(/^Project instructions from the owner \(every new thread receives them too\):\nKeep changes small\.\n\nProject notebook:/u);
+  const resumed = coordinatorPrompt(request, true);
+  expect(resumed).toContain('Answer it in the chat if you can from the notebook, memory, the threads, GitHub or the repository. Create a task only if the answer needs a change, a run or a long investigation.');
+  expect(resumed).not.toContain('Carry this result into the thread task');
+  expect(coordinatorFreshContext(input([]))).not.toContain('Project instructions from the owner');
+});
+
+test('changed instructions and future resolution, movement and automatic-fix events have complete prompt lines', () => {
+  const common = { schema: 'coordinator-event-v1', at: at('09:00') };
+  const events = [
+    CoordinatorEventSchema.parse({ ...common, id: 'cev_settings', kind: 'settings-changed', by: 'owner', changes: [{ field: 'instructions', from: '', to: 'Keep it small.' }], instructions: 'Keep it small.' }),
+    CoordinatorEventSchema.parse({ ...common, id: 'cev_resolved', kind: 'thread-resolved', threadId: 'thread_c', by: 'inactivity' }),
+    CoordinatorEventSchema.parse({ ...common, id: 'cev_moved', kind: 'thread-placement-changed', threadId: 'thread_c', reason: 'model-unavailable', summary: 'Moved to an eligible model.' }),
+    CoordinatorEventSchema.parse({ ...common, id: 'cev_fix', kind: 'thread-auto-fix', threadId: 'thread_a', prNumber: 42, fixKind: 'checks', round: 1, maxRounds: 3, outcome: 'started' }),
+  ];
+  expect(coordinatorEventBlock(input(events, { decisions: [] }))).toBe('Events since your last turn:\n[instructions changed by the owner] Project instructions are now:\nKeep it small.\n[thread "Docs" resolved by inactivity]\n[thread "Docs" moved: Moved to an eligible model.]\n[pull request #42 of "Fix login": Jevellan asked the thread to fix the failing checks (round 1 of 3)]');
+});
+
 test('every event kind reads as brief 9.3, with titles from the indexes, the fallback suffix and the checkout base branch', () => {
   const events = [
     event({ kind: 'user-message', id: 'cev_msg', at: at('09:05'), text: 'Also write docs.', clientMessageId: 'msg_1' }),

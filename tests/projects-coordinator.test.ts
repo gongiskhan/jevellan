@@ -114,7 +114,7 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   const [first, second] = coordinatorTurns(f);
   expect(coordinatorTurns(f)).toHaveLength(2);
   expect(first).toMatchObject({ owner: { kind: 'coordinator', projectId: pid, id: pid }, turn: 1, permissions: 'read-only', safetyProfile: 'coordinator', cwd: f.checkout,
-    systemAppend: coordinatorSystemAppend('Shop') + `\n- The project journal at ${f.app.projectWork.journal!.path(pid)} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.`, readOnlyDirectories: [f.app.projectWork.journal!.path(pid)] });
+    systemAppend: `- The project journal at ${f.app.projectWork.journal!.path(pid)} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.\n\n` + coordinatorSystemAppend('Shop'), readOnlyDirectories: [f.app.projectWork.journal!.path(pid)] });
   expect(first!.resume).toBeUndefined();
   expect(withoutLiveAccounts(first!.prompt)).toMatch(clocked('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nProject memory:\nRecently updated notes:\nSearch memory with memory_search for more.\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B'));
   expect(second!.resume).toEqual({ sessionId: sessionOf(f, first!).sessionId });
@@ -142,8 +142,8 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   }
   const tools = payloads(f, 'coordinator-tool');
   expect(tools.map(({ input: _input, inputTruncated: _truncated, ...line }) => { void _input; void _truncated; return line; })).toEqual([
-    { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Queued task "Add A"' },
-    { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Queued task "Fix B"' }]);
+    { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Queued task "Add A"', taskIds: [(starts[0] as { taskId: string }).taskId] },
+    { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Queued task "Fix B"', taskIds: [(starts[1] as { taskId: string }).taskId] }]);
   expect(payloads(f, 'coordinator-text').map((data) => data.text)).toEqual(['Started two threads.', 'Both pull requests are open.']);
   const defaults = { type: 'feature', source: 'owner-request', after: [], fixed: {}, goalId: null, needs: [], now: false };
   expect(tools.map(line => JSON.parse(line.input!))).toEqual([{ title: 'Add A', brief: 'Create a.txt.', ...defaults }, { title: 'Fix B', brief: 'Create b.txt.', ...defaults }]);

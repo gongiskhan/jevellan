@@ -723,3 +723,16 @@ button.pw-session-badge { display: inline-flex; gap: 6px; min-height: 30px; padd
   .pw-env-row { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--edge); }
   .pw-env-row > button { justify-self: start; }
 }
+
+/* Live work stays legible in the conversation as state changes. */
+.pw-thread-card { border: 1px solid var(--edge); border-radius: 14px; padding: 14px; min-width: 0; background: var(--card); }
+.pw-thread-card-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.pw-thread-card-heading > a { font-weight: 650; overflow-wrap: anywhere; flex: 1 1 180px; }
+.pw-card-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; margin-right: 5px; }
+.pw-card-meta { font-size: .8rem; overflow-wrap: anywhere; }
+.pw-card-pr { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pw-chat-work-cards { display: grid; gap: 10px; margin: 12px 0; min-width: 0; }
+.pw-chat-work-cards > button { justify-self: start; }
+.pw-chat-setting { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.pw-chat-setting p { flex: 1; overflow-wrap: anywhere; margin: 0; }
+.pw-chat-setting button { flex: none; }

@@ -1,3 +1,5 @@
+Projects parity phase2 source is complete. Decisions850–852 deliver shared instructions/snapshots, answer-in-place guidance, live cards, enforced Propose and owner-turn controls with field-only Undo. Targeted backend checks and eight unique four-layout browser journeys pass; the final optimized PAR2 build also passes all four. Typecheck, lint and build pass. Dedicated model vision is not run and the fixture cleanup warning remains recorded. See projects-parity-2026-10/phase-2/. No new installation, live-provider journey or owner acceptance is claimed.
+
 # Jevellan build and acceptance report
 
 Last updated: 2026-10-15. On 2026-09-26 the user resumed the build on a second machine (dev-madrid): finish the outstanding brief work and overhaul the interface to match the project website. This report does not claim Gonçalo's acceptance.

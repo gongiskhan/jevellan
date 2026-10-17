@@ -63,7 +63,7 @@ test('a main thread claims the checkout, works on main, publishes to main and gi
   const input = f.fake.turnStarts[0]!;
   expect(input.cwd).toBe(f.checkout);
   expect(threadRequestText(input.prompt)).toBe('Task: Add greeting\n\nCreate greeting.txt.');
-  expect(input.systemAppend).toBe(threadSystemAppend({ projectName: 'Shop', cwd: f.checkout, isolation: 'main', baseBranch: 'main', deviceName: f.deviceName, testCommand: 'test -f greeting.txt' }) + `\n- The project journal at ${f.app.projectWork.journal!.path(f.project.id)} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.`);
+  expect(input.systemAppend).toBe(`- The project journal at ${f.app.projectWork.journal!.path(f.project.id)} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.\n\n` + threadSystemAppend({ projectName: 'Shop', cwd: f.checkout, isolation: 'main', baseBranch: 'main', deviceName: f.deviceName, testCommand: 'test -f greeting.txt' }));
   expect(input.readOnlyDirectories).toEqual([f.app.projectWork.journal!.path(f.project.id)]);
   expect(input.systemAppend).toContain(`Isolation: you work directly on main in the project checkout of ${f.deviceName}. Other main threads may work on other devices at the same time.`);
   expect(f.thread(threadId)).toMatchObject({ state: 'running', isolation: 'main', cwd: f.checkout, baseBranch: 'main', baseCommit: base });

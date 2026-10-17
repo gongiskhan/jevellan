@@ -14,8 +14,8 @@
 | Phase | Scope | Status | Evidence |
 | --- | --- | --- | --- |
 | 0 | Reference, inventory, plan, roadmap and clocks | Pushed | Live checkout and local doctor; no product code changed |
-| 1 | Settings v4, page, pause/archive and daily cap | Source complete; vision blocked | Simulated: 429 distinct backend cases, 8 browser journeys across 4 layouts, typecheck/lint/build and working-tree secret scan pass. See phase-1/. Full suites remain phase 10 gates. |
-| 2 | Coordinator instructions, answers, cards, proposals and settings | Not started | Not run |
+| 1 | Settings v4, page, pause/archive and daily cap | Pushed 15d0a138; vision blocked | Simulated: 429 distinct backend cases, 8 browser journeys across 4 layouts, typecheck/lint/build and working-tree secret scan pass. See phase-1/. Full suites remain phase 10 gates. |
+| 2 | Coordinator instructions, answers, cards, proposals and settings | Source complete; vision blocked | Affected backend cases, eight unique four-layout browser journeys, final PAR2 repetitions, typecheck/lint/build pass. See phase-2/. |
 | 3 | Overview, resolution and thread actions | Not started | Not run |
 | 4 | Automatic pull request fixes | Not started | Not run |
 | 5 | Account waits, placement bounds, escalation and usage | Not started | Not run |
@@ -50,3 +50,19 @@ Each feature phase requires backend regressions, typecheck, lint, affected four-
 ## Local run prerequisites
 
 Live: Homebrew Git 2.56.0 is installed for the missing compatible Git capability. No shell profile or login was edited. A temporary AC-only caffeinate process keeps this run awake; system power preferences are unchanged, and the process is stopped at closing. Source/test operations use Node 22.22.0. The installed Pro service remains on its existing version until phase 10.
+
+## Phase 1 push and readiness refresh
+
+Live: phase 1 is pushed as 15d0a138. Its normal pre-push history scan passed. The first attempt waited in Homebrew Git's macOS Keychain helper; the retry used the already signed-in GitHub CLI as a command-local credential helper, with no global Git or login changes. The required scan stayed enabled.
+
+Live: the installed Pro UI refreshed both Claude accounts and the Pro Codex account to Ready. Madrid's Codex status still says Needs login. This is account readiness metadata, not a provider-turn acceptance result. Ekoa work, pull requests and settings were not changed. The installed service is still the earlier version.
+
+850. The brief's thread-auto-fix event uses kind both for its event discriminator and for checks/conflicts/comments. Those cannot coexist in one discriminated document. The event keeps kind=thread-auto-fix and names the latter field fixKind. This replaces only that conflicting field name; the trigger rules and copy stay as specified.
+
+851. Project instructions now lead the coordinator's fresh context and are snapshotted on new threads in their system append, replacing the old task-text rules append. Existing task text is preserved. Quick-answer outcomes invite an answer in chat. The launcher puts its stable journal hint before the session append so the owner's instructions remain last.
+
+852. Propose mode is enforced when owner-request tasks are created. Owner-message-only bridge tools release proposals and change the listed settings. Settings changes retain a versioned original request before applying it, so retries do not append twice. Chat Undo compares and restores just its field through a field-only owner request and the existing hub revision check. This replaces notebook-only enforcement for the supported owner preferences.
+
+## Phase 2 checkpoint
+
+Simulated: instructions/snapshots, answer routing, live cards, Propose, owner-turn fences, retry-safe settings and field-only Undo are implemented. The broader154-case run passes153 with one new-record expectation failure; that unchanged PJ2 case passes after its explicit task-id expectation is updated. Final settings/tools/prompts/UI run:62 pass; further UI run:43 pass (overlap). Eight unique browser journeys pass in four layouts, with another final PAR2 pass in each. Typecheck, lint, build and whitespace checks pass. Model vision is not run for the missing dedicated credential;24 receipts say so. The fixture process-cleanup warning remains a closing-check concern. Source is not installed and the live clock has not started.

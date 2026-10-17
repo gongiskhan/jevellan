@@ -394,3 +394,30 @@ export const TOKEN_REMOVED = 'GitHub token removed.';
 export const coordinatorUnavailableNotice = (reason: string): string => `The coordinator cannot run: ${reason}`;
 export const coordinatorOfflineNotice = (device: string): string => `The coordinator lives on ${device}, which is offline.`;
 export const placedWithoutJev = (reason: string): string => `Placed without Jev: ${reason}`;
+
+// Live cards and owner-controlled settings changes.
+export const LOADING_TASK_CARD = 'Loading task…';
+export const PROPOSED_CARD = 'Proposed';
+export const QUEUED_CARD = 'Queued';
+export const HELD_CARD = 'Held';
+export const START_CARD = 'Start';
+export const DISMISS_CARD = 'Dismiss';
+export const SENT_MESSAGE_CARD = 'Sent a message';
+export const DISMISSED_CHAT = 'Dismissed from the chat.';
+export const startAllCards = (count: number) => `Start all (${count})`;
+export const cardPlacement = (model: string, effort: string, account: string, device: string) => `${model} · ${effort} · ${account} · ${device}`;
+export const queueCardPosition = (position: number) => `#${position} in queue`;
+export const CARD_CHECKS = { passing: 'Checks pass', failing: 'Checks fail', pending: 'Checks pending', none: 'No checks' } as const;
+export const UNDO_SETTING = 'Undo';
+export const CHANGED_AGAIN = 'Changed again since.';
+export const SETTINGS_CHANGED_EVENT = 'Project settings changed';
+export const threadResolved = (title: string) => `Resolved "${title}"`;
+export const automaticFixEvent = (number: number, outcome: string) => `Pull request #${number}: automatic fix ${outcome}`;
+export const SETTING_FIELD_LABELS: Record<string, string> = { maxRunningThreads: 'max running threads', maxNewThreadsPerDay: 'new threads per day', startMode: 'start mode',
+  'prAutoFix.checks': 'fixing failing checks', 'prAutoFix.conflicts': 'resolving conflicts', 'prAutoFix.comments': 'addressing review comments', instructions: 'project instructions', 'placement.guidance': 'guidance for Jev' };
+export const settingFieldLabel = (field: string) => SETTING_FIELD_LABELS[field] ?? field;
+const settingValueText = (value: unknown) => value === true ? 'on' : value === false ? 'off' : value === 'start' ? 'start right away' : value === 'propose' ? 'propose first' : String(value);
+export function settingChangeLine(change: { field: string; before: unknown; after: unknown; append?: string | undefined }): string {
+  if (change.append !== undefined) return change.field === 'instructions' ? `Added to project instructions: "${change.append}"` : `Added to guidance for Jev: "${change.append}"`;
+  return `Changed ${settingFieldLabel(change.field)} from ${settingValueText(change.before)} to ${settingValueText(change.after)}.`;
+}

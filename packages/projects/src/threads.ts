@@ -233,7 +233,7 @@ export class ThreadService {
       const settings = await this.#o.admission.settings(projectId);
       const dailyRefusal = settings.status !== 'active' ? PROJECT_PAUSED : request.exclude ? undefined : await this.#o.admission.newThreadRefusal(projectId);
       if (dailyRefusal) throw Object.assign(refuse(dailyRefusal, 409), { resourceRefusal: true });
-      const task = request.assembledTask ?? [request.task, settings.instructions ? `Rules for every thread:\n${settings.instructions}` : ''].filter(Boolean).join('\n\n');
+      const task = request.assembledTask ?? request.task;
       if (task.length > 32768) throw refuse('The assembled task exceeds 32768 characters. Shorten the brief or thread rules.', 400);
       const counts = await this.#o.admission.counts(projectId);
       const projectFull = counts.project >= counts.limits.project;
@@ -248,7 +248,7 @@ export class ThreadService {
         const admitted = await this.#o.admission.admit(projectId, record.deviceId, threadId);
         if (admitted.ok) hold = admitted.release; else queued = admitted.queued;
       }
-      const thread = ThreadSchema.parse({ schema: 'project-thread-v1', id: threadId, projectId, title: request.title, task, brief: request.task, ...(request.taskContext ? { taskContext: request.taskContext } : {}), createdAt: new Date(at).toISOString(),
+      const thread = ThreadSchema.parse({ schema: 'project-thread-v1', id: threadId, projectId, title: request.title, task, instructions: settings.instructions, brief: request.task, ...(request.taskContext ? { taskContext: request.taskContext } : {}), createdAt: new Date(at).toISOString(),
         createdBy: request.createdBy, state: queued === undefined ? 'preparing' : 'queued', ...(queued === undefined ? {} : { stateReason: queued }), isolation: record.isolation,
         placement: record, ownerDeviceId: record.deviceId, coordinatorDeviceId: request.coordinatorDeviceId, cwd: '', baseBranch: '', baseCommit: '', turns: 0,
         turnAllowance: settings.threadTurnCap, queuedMessages: [], verificationAttempts: 0 });

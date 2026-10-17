@@ -1,3 +1,5 @@
+17 October parity phase2 source is complete (Decisions850–852): shared instructions and snapshots, chat cards, enforced Propose, owner-message-only controls and field-only Undo. Affected backend checks, eight unique four-layout browser journeys, final PAR2 repetitions, typecheck, lint and build pass. Dedicated model vision is not run; the fixture cleanup warning is retained. Phase1 is pushed as15d0a138. Release and real-provider LP journeys remain phase10 work. See docs/acceptance/projects-parity-2026-10/phase-2/.
+
 <!-- The17October2026 Projects parity BRIEF.md supersedes conflicting historical brief/plan statements below. -->
 <!-- Owner cache/journal brief, 2026-10-13, has highest precedence; its prior-scenario start condition was met by the original ten-hour stop on 2026-10-14. Implementation evidence stays separate. -->
 # Goals, tasks and the daily loop

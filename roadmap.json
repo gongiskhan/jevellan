@@ -794,8 +794,8 @@
   {
     "id": "parity-coordinator-chat",
     "title": "Coordinator chat, cards and owner settings",
-    "why": "BRIEF.md phase 2. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
-    "status": "planned"
+    "why": "BRIEF.md phase 2: shared instructions and thread snapshots, answer-in-place guidance, live cards, enforced Propose and owner-message-only starts/settings with retry-safe field-only Undo are implemented. Affected backend checks, eight unique four-layout browser journeys and final PAR2 repetitions pass, as do typecheck, lint and build. Dedicated model vision is not run; fixture cleanup warnings and full suites remain closing gates. See docs/acceptance/projects-parity-2026-10/phase-2/.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "parity-overview",

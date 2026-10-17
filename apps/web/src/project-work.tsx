@@ -1,3 +1,4 @@
+import { ChatWorkCards, ChatSettingsChanges } from './chat-work-cards.js';
 import { NightlyBanner, ProjectDailyPanel, type DailyView } from './project-daily.js';
 import { MergeWhy } from './merge-route.js';
 import { OwnerCommands, OwnerCommandScope } from './owner-commands.js';
@@ -19,7 +20,7 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  PROJECT_WORK_UPDATED, chatItems, checksBadge, coordinatorChip, decisionSource, defaultTab, deviceBlock, deviceChoices, dotClass, mainIsolationBlock, mergeBlock,
+  PROJECT_WORK_UPDATED, chatItems, chatProposalGroups, checksBadge, coordinatorChip, decisionSource, defaultTab, deviceBlock, deviceChoices, dotClass, mainIsolationBlock, mergeBlock,
   nearestEffort, openPullRequests, outcomeText, projectDot, projectRoute, rowClockMs, sentText, showSent, sidebarProjects, threadCreateRequest, threadMeta,
   threadSections, toolIcon, withdrawals, working, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
 } from './project-work-model.js';
@@ -415,6 +416,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     return (threadId) => map.get(threadId);
   }, [threads]);
   const items = useMemo(() => chatItems(events, titles), [events, titles]);
+  const proposalGroups = useMemo(() => chatProposalGroups(items, tasks), [items, tasks]);
   const menu = useDismissible();
   const menuMoveNote = useId();
   const control = useTask(onError);
@@ -553,7 +555,9 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         <div className="pw-chat" id={chatId} ref={chat} {...chatPanel}>
           {!historyLoaded ? <p className="page-loading" role="status">{copy.LOADING_CHAT}</p> : items.length ? (
             <div className="timeline pw-timeline" aria-label={copy.CHAT_LABEL}>
-              {items.map((item) => <ChatEntry key={item.id} item={item} projectId={id} navigate={navigate} />)}
+              {items.map((item) => <ChatEntry key={item.id} item={item} projectId={id} navigate={navigate} tasks={tasks} threads={view.threads} settings={view.settings} changed={updated} onError={onError}
+                deviceName={deviceName}
+                startAll={proposalGroups.get(item.id) ?? []} />)}
             </div>
           ) : <p className="pw-chat-empty">{copy.EMPTY_CHAT}</p>}
           <Composer projectId={id} busy={busy} offline={offline} offlineText={offline ? copy.coordinatorOfflineNotice(coordinatorDevice) : ''}
@@ -642,9 +646,14 @@ function OfflineNotice({ device, canMove, refusal, moving, move }: { device: str
 }
 
 /** One chat entry (12.2): owner messages right-aligned, Markdown replies, muted tool one-liners, event cards and notices. */
-function ChatEntry({ item, projectId, navigate }: { item: ChatItem; projectId: string; navigate(path: string): void }) {
+function ChatEntry({ item, projectId, navigate, tasks, threads, settings, changed, onError, deviceName, startAll }: {
+  item: ChatItem; projectId: string; navigate(path: string): void; tasks: readonly ProjectWorkTask[]; threads: readonly ThreadIndex[];
+  settings: ProjectWorkView['settings']; changed(): void; onError(error: unknown): void; deviceName(id: string): string; startAll: string[];
+}) {
   const thread = (threadId: string) => `/projects/${projectId}/threads/${threadId}`;
   switch (item.kind) {
+    case 'routed': return <ChatWorkCards {...{ item, projectId, tasks, threads, startAll, deviceName, navigate, changed, onError }} />;
+    case 'settings': return <ChatSettingsChanges projectId={projectId} change={item.change} settings={settings} changed={changed} onError={onError} />;
     case 'owner':
       return (
         <article className="user-message pw-owner">

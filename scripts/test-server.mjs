@@ -112,6 +112,20 @@ const EVENTS_HEADER = eventBlock([]);
 function coordinatorStep(input) {
   // Only delivered events count; the fresh-session recap repeats earlier messages.
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
+  if (events.includes('PAR2 propose two')) return async turn => {
+    for (const title of ['PAR2 first small task', 'PAR2 second small task']) await projectTool(turn, 'jevellan_task_create', { title, brief: `PAR2 inspect: ${title}. Read README and report progress.`, type: 'analysis', source: 'owner-request', now: true });
+    turn.say('PAR2 first small task: new task.\nPAR2 second small task: new task.'); return { status: 'completed' };
+  };
+  if (events.includes('PAR2 follow up')) return async turn => {
+    const tasks = await projectTool(turn, 'jevellan_tasks_list', { include: 'all' });
+    const task = tasks.tasks.find(task => task.title === 'PAR2 first small task');
+    await projectTool(turn, 'jevellan_thread_message', { threadId: task.threadId, message: 'PAR2 inspect: continue the existing task.' });
+    turn.say('PAR2 first small task: went to the existing thread.'); return { status: 'completed' };
+  };
+  if (events.includes('PAR2 two at a time')) return async turn => {
+    await projectTool(turn, 'jevellan_settings_update', { maxRunningThreads: 2, ownerWords: 'PAR2 two at a time' });
+    turn.say('Changed max running threads to two.'); return { status: 'completed' };
+  };
   if (events.includes('CACHE2 continue')) return async turn => { turn.say('Continuing from the notebook and journal.'); return { status: 'completed' }; };
   if (events.includes('CACHE1 metrics')) return async turn => {
     turn.emit({ type: 'context', tokens: 48000, contextWindow: 200000 });
@@ -187,6 +201,7 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('PAR2 inspect:')) return report('progress', 'Read the README; ready for the next small step.');
   if (input.prompt.includes('CACHE1 metrics')) return async turn => {
     turn.emit({ type: 'context', tokens: 48000, contextWindow: 200000 });
     turn.emit({ type: 'usage', inputTokens: 10, outputTokens: 5, cacheReadTokens: 80, cacheWriteTokens: 10 });

@@ -7,6 +7,7 @@ import {
 } from '../packages/core/dist/index.js';
 import * as server from '../packages/projects/dist/copy.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
+import { chatProposalIds, chatProposalGroups } from '../apps/web/src/project-work-model.js';
 import {
   alignReports, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, defaultTab, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
   lineParts, mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, projectDot,
@@ -35,6 +36,48 @@ const turnStart = (turn: number, eventIds: string[], id: number) => event('coord
   runtime: 'claude', modelLabel: 'Opus', effort: 'high', accountLabel: 'Work', eventIds }, id);
 const turnEnd = (turn: number, id: number) => event('coordinator-turn-end', { schema: 'coordinator-turn-end-v1', turn, status: 'completed' }, id);
 const coordinator = (state: ProjectWorkView['coordinator']['state']) => ({ coordinator: { state } as ProjectWorkView['coordinator'] });
+
+test('task cards carry durable ids, follow their own reply and keep Start all for a remaining sibling', () => {
+  const tools = [event('coordinator-tool', { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Proposed first', taskIds: ['task_first'] }, 1),
+    event('coordinator-tool', { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Proposed second', taskIds: ['task_second'] }, 2)];
+  for (const entry of tools) entry.turn = 3;
+  const reply = event('coordinator-text', { schema: 'coordinator-text-v1', text: 'Two new tasks.' }, 3); reply.turn = 3;
+  const items = chatItems([...tools, reply]);
+  expect(items.map(item => item.kind)).toEqual(['reply', 'routed', 'routed']);
+  const tasks = [{ id: 'task_first', state: 'active' }, { id: 'task_second', state: 'draft' }] as import('../packages/core/dist/index.js').ProjectWorkTask[];
+  expect(chatProposalIds(items, items[1]!, tasks)).toEqual([]);
+  expect(chatProposalIds(items, items[2]!, tasks)).toEqual(['task_second']);
+  tasks[1]!.state = 'active'; expect(chatProposalIds(items, items[2]!, tasks)).toEqual([]);
+  const message = event('coordinator-tool', { schema: 'coordinator-tool-v1', tool: 'jevellan_thread_message', ok: true, summary: 'Sent', threadId: 'thread_a' }, 4);
+  expect(chatItems([message])).toMatchObject([{ kind: 'routed', message: true, threadId: 'thread_a' }]);
+});
+
+test('a retried tool call does not duplicate the same task card or settings Undo line', () => {
+  const task = event('coordinator-tool', { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Queued task', taskIds: ['task_first'] }, 1); task.turn = 2;
+  const retry = { ...task, id: 2 };
+  const setting = event('coordinator-tool', { schema: 'coordinator-tool-v1', tool: 'jevellan_settings_update', ok: true, summary: 'Changed project settings', settingsChange: {
+    schema: 'project-settings-change-v1', id: 'setting_first', projectId: 'shop', at: ago(0), ownerWords: 'Use two threads.', changes: [{ field: 'maxRunningThreads', before: 3, after: 2 }],
+  } }, 3); setting.turn = 2;
+  const items = chatItems([task, retry, setting, { ...setting, id: 4 }]);
+  expect(items.map(item => item.kind)).toEqual(['routed', 'settings']);
+});
+
+
+test('a long chat keeps each turn cards with its own reply and indexes only that turn proposals', () => {
+  const events: ProjectLedgerEvent[] = [], tasks: Array<{ id: string; state: 'draft' | 'active' }> = [];
+  for (let turn = 1; turn <= 500; turn++) {
+    for (let offset = 0; offset < 2; offset++) {
+      const id = `task_${turn}_${offset}`, entry = event('coordinator-tool', { schema: 'coordinator-tool-v1', tool: 'jevellan_task_create', ok: true, summary: 'Queued task', taskIds: [id] }, turn * 3 + offset);
+      entry.turn = turn; events.push(entry); tasks.push({ id, state: turn === 500 ? 'draft' : 'active' });
+    }
+    const reply = event('coordinator-text', { schema: 'coordinator-text-v1', text: `Reply ${turn}` }, turn * 3 + 2); reply.turn = turn; events.push(reply);
+  }
+  const items = chatItems(events), groups = chatProposalGroups(items, tasks);
+  expect(items).toHaveLength(1500);
+  for (let turn = 1; turn <= 500; turn++) expect(items.slice((turn - 1) * 3, turn * 3).map(item => item.kind)).toEqual(['reply', 'routed', 'routed']);
+  expect(groups.get(1501)).toEqual(['task_500_0', 'task_500_1']);
+  expect(groups.get(1498)).toEqual([]);
+});
 
 test('project routes accept only valid project and thread ids and drive the header flag', () => {
   expect(projectRoute('/projects/shop')).toEqual({ projectId: 'shop' });

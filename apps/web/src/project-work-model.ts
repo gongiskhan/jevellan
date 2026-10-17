@@ -230,7 +230,7 @@ export function showSent(sent: { known: readonly string[] } | undefined, open: r
 }
 
 const TOOL_ICONS: Record<string, IconName> = {
-  jevellan_review_followup: 'pull-request',
+  jevellan_settings_update: 'settings', jevellan_tasks_start: 'plus', jevellan_review_followup: 'pull-request',
   jevellan_jobs_list: 'search', jevellan_job_runs: 'search', jevellan_daily_list: 'search', jevellan_job_run: 'plus', jevellan_goals_list: 'search', jevellan_tasks_list: 'thread', jevellan_task_create: 'plus', jevellan_task_update: 'settings', jevellan_task_cancel: 'stop', jevellan_threads_list: 'thread', jevellan_thread_start: 'plus', jevellan_thread_message: 'message', jevellan_thread_read: 'search',
   jevellan_thread_stop: 'stop', jevellan_ask_user: 'why', jevellan_answer_question: 'check', jevellan_github: 'search', jevellan_terminal_read: 'file', jevellan_withdraw_question: 'close', jevellan_notebook_read: 'file',
   jevellan_notebook_write: 'file', jevellan_pr_status: 'pull-request', jevellan_pr_diff: 'file', jevellan_pr_review: 'pull-request', jevellan_mail_send: 'message', memory_search: 'search', memory_read: 'file',
@@ -451,6 +451,8 @@ function payload<T extends ProjectLedgerEventType>(event: ProjectLedgerEvent, ty
 export type ChatItem =
   | { kind: 'owner'; id: number; text: string; at: string; delivered: boolean }
   | { kind: 'reply'; id: number; text: string }
+  | { kind: 'routed'; id: number; turn?: number; taskIds?: string[]; threadId?: string; message: boolean }
+  | { kind: 'settings'; id: number; change: import('@jevellan/core/client').ProjectSettingsChange }
   | { kind: 'tool'; id: number; tool: string; summary: string; ok: boolean; threadId?: string }
   | { kind: 'event'; id: number; text: string; detail?: string; threadId?: string; delivered: boolean }
   | { kind: 'notice'; id: number; text: string; tone: 'info' | 'error' };
@@ -465,6 +467,10 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
   const name = (threadId: string) => { const title = titles(threadId); return title ? copy.quotedTitle(title) : copy.UNKNOWN_THREAD_NAME; };
   const text = copy.eventCopy;
   switch (event.kind) {
+    case 'settings-changed': return card(copy.SETTINGS_CHANGED_EVENT, undefined, event.changes.map(change => `${copy.settingFieldLabel(change.field)}: ${change.from} → ${change.to}`).join('; '));
+    case 'thread-resolved': return card(copy.threadResolved(titles(event.threadId) ?? copy.UNKNOWN_THREAD_NAME), event.threadId);
+    case 'thread-placement-changed': return card(event.summary, event.threadId);
+    case 'thread-auto-fix': return card(copy.automaticFixEvent(event.prNumber, event.outcome), event.threadId);
     case 'memory-dreamed': return card('Memory dream completed', undefined, event.summary);
     case 'job-finished': return card(`Job "${event.name}" ${event.conclusion}`, undefined, `${event.commit.slice(0, 7)} · ${event.summary}`);
     case 'project-reviewed': return card('Nightly review completed', undefined, event.report.summary);
@@ -518,12 +524,26 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
 export function chatItems(events: readonly ProjectLedgerEvent[], titles: ThreadTitles = () => undefined): ChatItem[] {
   const ordered = [...events].sort((a, b) => a.id - b.id);
   const delivered = new Set(ordered.flatMap((event) => payload(event, 'coordinator-turn-start')?.eventIds ?? []));
-  return ordered.flatMap((event): ChatItem[] => {
+  const taskCards = new Map<number, Set<string>>(), settingCards = new Set<string>();
+  const items = ordered.flatMap((event): ChatItem[] => {
     const id = event.id;
     switch (event.type) {
       case 'coordinator-text': { const data = payload(event, 'coordinator-text'); return data ? [{ kind: 'reply', id, text: data.text }] : []; }
       case 'coordinator-tool': {
         const data = payload(event, 'coordinator-tool');
+        if (data?.ok && data.settingsChange) {
+          if (settingCards.has(data.settingsChange.id)) return [];
+          settingCards.add(data.settingsChange.id); return [{ kind: 'settings', id, change: data.settingsChange }];
+        }
+        if (data?.ok && (data.taskIds?.length || data.tool === 'jevellan_thread_message' && data.threadId)) {
+          let taskIds = data.taskIds;
+          if (taskIds && event.turn) {
+            const seen = taskCards.get(event.turn) ?? new Set<string>(); taskCards.set(event.turn, seen);
+            taskIds = taskIds.filter(taskId => !seen.has(taskId)); taskIds.forEach(taskId => seen.add(taskId));
+            if (!taskIds.length) return [];
+          }
+          return [{ kind: 'routed', id, ...(event.turn ? { turn: event.turn } : {}), ...(taskIds ? { taskIds } : {}), ...(data.threadId ? { threadId: data.threadId } : {}), message: data.tool === 'jevellan_thread_message' }];
+        }
         return data ? [{ kind: 'tool', id, tool: data.tool, summary: data.summary, ok: data.ok, ...(data.threadId ? { threadId: data.threadId } : {}) }] : [];
       }
       case 'notice': { const data = payload(event, 'notice'); return data ? [{ kind: 'notice', id, text: data.text, tone: data.kind }] : []; }
@@ -536,6 +556,14 @@ export function chatItems(events: readonly ProjectLedgerEvent[], titles: ThreadT
       default: return [];
     }
   });
+  const turns = new Map(ordered.map(event => [event.id, event.turn]));
+  const reply = new Map<number, number>();
+  for (const item of items) { const turn = turns.get(item.id); if (item.kind === 'reply' && turn) reply.set(turn, item.id); }
+  const moved = new Set<number>(), cardsByReply = new Map<number, ChatItem[]>();
+  for (const item of items) if (item.kind === 'routed' && item.turn && reply.has(item.turn)) {
+    const replyId = reply.get(item.turn)!, cards = cardsByReply.get(replyId) ?? []; cards.push(item); cardsByReply.set(replyId, cards); moved.add(item.id);
+  }
+  return items.filter(item => !moved.has(item.id)).flatMap(item => [item, ...(cardsByReply.get(item.id) ?? [])]);
 }
 
 /**
@@ -661,4 +689,18 @@ export function withdrawals(events: readonly ProjectLedgerEvent[], seen: Readonl
     return data?.tool === 'jevellan_withdraw_question' && data.ok && data.decisionId && data.reason
       ? [{ id: event.id, decisionId: data.decisionId, reason: data.reason }] : [];
   });
+}
+
+/** Index proposal groups once for a live view, so a long chat never rescans its history for every card. */
+export function chatProposalGroups(items: readonly ChatItem[], tasks: readonly Pick<import('@jevellan/core/client').ProjectWorkTask, 'id' | 'state'>[]): Map<number, string[]> {
+  const groups = new Map<number, { last: number; ids: Set<string> }>(), drafts = new Set(tasks.filter(task => task.state === 'draft').map(task => task.id));
+  for (const item of items) if (item.kind === 'routed' && item.turn) {
+    const group = groups.get(item.turn) ?? { last: item.id, ids: new Set<string>() };
+    group.last = item.id; for (const id of item.taskIds ?? []) group.ids.add(id); groups.set(item.turn, group);
+  }
+  return new Map([...groups.values()].filter(group => group.ids.size >= 2).map(group => [group.last, [...group.ids].filter(id => drafts.has(id))]));
+}
+/** Keep Start all available for the remaining proposal after Start was used on its sibling. */
+export function chatProposalIds(items: readonly ChatItem[], item: ChatItem, tasks: readonly Pick<import('@jevellan/core/client').ProjectWorkTask, 'id' | 'state'>[]): string[] {
+  return chatProposalGroups(items, tasks).get(item.id) ?? [];
 }

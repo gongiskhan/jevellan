@@ -1,6 +1,7 @@
+import { proposedTask } from './copy.js';
 import { createHash } from 'node:crypto';
 import { ProjectWorkTaskSchema, TaskActionRequestSchema, TaskCreateRequestSchema, TaskUpdateRequestSchema, stableJson,
-  type ProjectHub, type ProjectWorkTask, type SecretRedactor, type TaskCreateRequest, type TaskUpdateRequest, type ThreadIndex } from '@jevellan/core';
+  type ProjectHub, type ProjectWorkSettings, type ProjectWorkTask, type SecretRedactor, type TaskCreateRequest, type TaskUpdateRequest, type ThreadIndex } from '@jevellan/core';
 import { derivedId } from './decision-items.js';
 
 const refuse = (message: string, status = 409): never => { throw Object.assign(new Error(message), { status }); };
@@ -28,7 +29,8 @@ type Hub = Pick<ProjectHub, 'tasks' | 'task' | 'putTask' | 'coordinator'>;
 export class ProjectTasks {
   readonly #chains = new Map<string, Promise<unknown>>();
   constructor(readonly o: { hub: Hub; deviceId: string; redactor: SecretRedactor; now(): number;
-    reviewed?(task: ProjectWorkTask, outcome: 'approved' | 'rejected'): Promise<void>;
+    settings?(projectId: string): Promise<ProjectWorkSettings>;
+    reviewed?(task: ProjectWorkTask, outcome: 'approved' | 'rejected', note?: string): Promise<void>;
     cancelThread?(task: ProjectWorkTask, reason: string, owner: boolean): Promise<void>;
     changed?(projectId: string): void;
     projectDay?(projectId: string): Promise<string>;
@@ -61,15 +63,17 @@ export class ProjectTasks {
       const id = authority.id ?? derivedId('task', projectId, input.clientRequestId), digest = createHash('sha256').update(stableJson({ ...input, source })).digest('hex');
       const previous = (await this.o.hub.task(id))?.document;
       if (previous) { if (previous.projectId !== projectId || previous.requestDigest !== digest) refuse('This request ID already created a different task.'); return { schema: 'task-receipt-v1' as const, taskId: id, state: previous.state, repeated: true }; }
-      const state = await this.o.validateGoal?.(projectId, input.goalId, source, authority.refillEventId) ?? 'queued';
+      const goalState = await this.o.validateGoal?.(projectId, input.goalId, source, authority.refillEventId) ?? 'queued';
+      const proposed = source === 'owner-request' && (await this.o.settings?.(projectId))?.startMode === 'propose';
+      const state = proposed ? 'draft' : goalState;
       if (input.goalId !== null && !this.o.validateGoal) refuse('Goals are not available yet.', 400);
       const ordered = (await this.list(projectId)).filter(taskOpen).sort((a, b) => a.rank.localeCompare(b.rank));
       const { clientRequestId: _requestId, held, ...fields } = input; void _requestId;
       const at = this.at(), task = await this.save(ProjectWorkTaskSchema.parse({ ...fields, schema: 'project-work-task-v1', id, projectId, revision: 0,
         kind: 'session', source, state, rank: this.#rank(ordered, ordered.length), ownerRanked: false, dailyId: null, jobId: null, threadId: null, jobRunId: null,
-        ...(held ? { held: true } : {}), createdAt: at, updatedAt: at, requestDigest: digest, ...(authority.refillEventId ? { refillEventId: authority.refillEventId } : {}), ...(this.o.projectDay ? { projectDay: await this.o.projectDay(projectId) } : {}) }));
+        ...(held && !proposed ? { held: true } : {}), createdAt: at, updatedAt: at, requestDigest: digest, ...(authority.refillEventId ? { refillEventId: authority.refillEventId } : {}), ...(this.o.projectDay ? { projectDay: await this.o.projectDay(projectId) } : {}) }));
       this.o.changed?.(projectId);
-      return { schema: 'task-receipt-v1' as const, taskId: task.id, state: task.state, repeated: false };
+      return { schema: 'task-receipt-v1' as const, taskId: task.id, state: task.state, repeated: false, ...(proposed ? { message: proposedTask(task.title) } : {}) };
     });
   }
   update(projectId: string, taskId: string, raw: TaskUpdateRequest, owner = true): Promise<ProjectWorkTask> {
@@ -108,7 +112,7 @@ export class ProjectTasks {
       const task = await this.save({ ...current, ...(input.action === 'approve' ? { state: 'queued' as const } : {}),
         ...(ended ? { state: 'cancelled' as const, endedAt: this.at(), endNote: input.reason ?? (input.action === 'reject' ? 'Rejected by you.' : 'Cancelled by you.') } : {}),
         ...(['now', 'later'].includes(input.action) ? { now: input.action === 'now' } : {}), ...(input.action === 'now' ? { held: undefined } : {}) });
-      if (['approve', 'reject'].includes(input.action)) await this.o.reviewed?.(task, input.action === 'approve' ? 'approved' : 'rejected');
+      if (['approve', 'reject'].includes(input.action)) await this.o.reviewed?.(task, input.action === 'approve' ? 'approved' : 'rejected', input.reason);
       this.o.changed?.(projectId); return task;
     });
   }

@@ -366,16 +366,18 @@ test('PJ3 project page opens from the sidebar and the coordinator chat streams',
   await expect(working).toBeVisible();
   expect(await control('/projects/release', { schema: 'fixture-release-v1', marker: 'PJ3: add a greeting' })).toEqual({ released: 1 });
 
-  // The thread start streams in as a muted tool row linking to the thread, then the reply as Markdown.
+  // The live thread card links to its thread and follows the reply from its own coordinator turn.
   const id = await threadId(page, 'Add a greeting');
-  const tool = page.locator('.pw-tool').filter({ hasText: 'Queued task "Add a greeting"' });
+  const tool = page.locator('.pw-timeline .pw-thread-card').filter({ hasText: 'Add a greeting' });
   await expect(tool).toBeVisible(LONG);
-  await expect(tool).toHaveText('Queued task "Add a greeting"');
+  await expect(tool.getByRole('link', { name: 'Add a greeting', exact: true })).toHaveAttribute('href', `/projects/projects_fixture/threads/${id}`);
+  const currentThread = await threadView(page, id);
+  await expect(tool.locator('.pw-card-meta')).toHaveText(`${currentThread.thread.modelLabel} · ${currentThread.thread.effort} · ${currentThread.thread.accountLabel} · ${currentThread.deviceName}`);
   expect((await threadView(page, id)).thread.title).toBe('Add a greeting');
   const reply = page.locator('.pw-reply').filter({ hasText: 'Started "Add a greeting".' });
   await expect(reply).toHaveText('Started "Add a greeting".', LONG);
   const entries = await page.locator('.pw-timeline > *').allTextContents();
-  expect(entries.findIndex((entry) => entry.startsWith('Queued task "Add a greeting"'))).toBeLessThan(entries.indexOf('Started "Add a greeting".'));
+  expect(entries.findIndex((entry) => entry.startsWith('Add a greeting'))).toBeGreaterThan(entries.indexOf('Started "Add a greeting".'));
   await shot(page, 'chat-reply');
   expect(errors).toEqual([]);
 });
@@ -1977,4 +1979,56 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     await expect.poll(async () => (await work(page)).settings.status).toBe('active');
     expect(errors).toEqual([]);
   } finally { await restore(); }
+});
+
+test('PAR2 live cards, proposed starts, follow-ups and settings Undo', async ({ page }, info) => {
+  const errors = await begin(page), original = (await work(page)).settings;
+  const save = async (patch: Partial<typeof original>) => {
+    const current = (await work(page)).settings;
+    const { schema: _schema, projectId: _id, revision, ...settings } = current; void _schema; void _id;
+    const response = await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision, settings: { ...settings, ...patch } } });
+    expect(response.ok(), await response.text()).toBe(true);
+  };
+  const send = async (text: string) => { await composer(page).fill(text); await composer(page).press('Enter'); };
+  try {
+    await save({ startMode: 'propose', maxRunningThreads: 20, maxRunningPerDevice: 10 });
+    await page.goto('/projects/projects_fixture');
+    if (phone(info)) await tab(page, 'Chat').click();
+    await send('PAR2 propose two small tasks');
+    const cards = page.locator('.pw-timeline .pw-thread-card');
+    const first = cards.filter({ hasText: 'PAR2 first small task' }), second = cards.filter({ hasText: 'PAR2 second small task' });
+    await expect(first).toContainText('Proposed', LONG); await expect(second).toContainText('Proposed');
+    await expect(page.locator('.pw-timeline').getByRole('button', { name: 'Start all (2)', exact: true })).toBeVisible();
+    let tasks = TaskListViewSchema.parse(await read(page, `${PROJECT}/tasks`)).tasks.filter(task => task.title.startsWith('PAR2 '));
+    expect(tasks).toHaveLength(2); expect(tasks.every(task => task.state === 'draft' && task.threadId === null)).toBe(true);
+    await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-2/screenshots/PAR2-proposals-${layout(info)}.png`, fullPage: false });
+    await first.getByRole('button', { name: 'Start', exact: true }).click();
+    await expect(first.locator('.pw-card-meta')).toBeVisible(LONG);
+    await expect(page.locator('.pw-timeline').getByRole('button', { name: 'Start all (1)', exact: true })).toBeVisible();
+    await page.locator('.pw-timeline').getByRole('button', { name: 'Start all (1)', exact: true }).click();
+    await expect(second.locator('.pw-card-meta')).toBeVisible(LONG);
+    await expect(page.locator('.pw-timeline').getByRole('button', { name: /^Start all/ })).toHaveCount(0);
+    tasks = TaskListViewSchema.parse(await read(page, `${PROJECT}/tasks`)).tasks.filter(task => task.title.startsWith('PAR2 '));
+    expect(tasks.every(task => task.threadId !== null)).toBe(true);
+    await send('PAR2 follow up with the first small task');
+    const sent = page.locator('.pw-chat-work-cards').filter({ hasText: 'Sent a message' });
+    await expect(sent).toContainText('PAR2 first small task', LONG);
+    await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-2/screenshots/PAR2-live-cards-${layout(info)}.png`, fullPage: false });
+    await send('PAR2 two at a time');
+    const setting = page.locator('.pw-chat-setting').filter({ hasText: 'Changed max running threads from 20 to 2.' });
+    await expect(setting).toBeVisible(LONG); expect((await work(page)).settings.maxRunningThreads).toBe(2);
+    await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-2/screenshots/PAR2-settings-undo-${layout(info)}.png`, fullPage: false });
+    await setting.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expect.poll(async () => (await work(page)).settings.maxRunningThreads, LONG).toBe(20);
+    await expect(setting.getByRole('button', { name: 'Undo', exact: true })).toBeDisabled();
+    expect(errors).toEqual([]);
+  } finally {
+    const tasks = TaskListViewSchema.parse(await read(page, `${PROJECT}/tasks`)).tasks.filter(task => task.title.startsWith('PAR2 '));
+    for (const task of tasks) {
+      if (task.threadId) await page.request.post(`${PROJECT}/threads/${task.threadId}/stop`, { data: { schema: 'thread-stop-request-v1', reason: 'Browser journey complete.' } });
+      else if (['draft', 'queued'].includes(task.state)) await page.request.post(`${PROJECT}/tasks/${task.id}/action`, { data: { schema: 'task-action-request-v1', expectedRevision: task.revision, action: 'cancel' } });
+    }
+    const { schema: _schema, projectId: _id, revision: _revision, ...restore } = original; void _schema; void _id; void _revision;
+    await save(restore);
+  }
 });

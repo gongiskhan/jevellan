@@ -501,7 +501,7 @@ export class ThreadRunner {
         model: placement.model, modelLabel: labels.modelLabel, effort: placement.effortEffective, pinnedAccountId: placement.accountId,
         ...(placement.fixed.includes('account') ? { requiredAccountId: placement.accountId } : {}), permissions: 'write', cwd: thread.cwd,
         systemAppend: threadSystemAppend({ projectName: project.name, cwd: thread.cwd, isolation: thread.isolation, branch: thread.branch, baseBranch: thread.baseBranch,
-          deviceName: this.#c.deviceName, testCommand: project.testCommand, gitPolicy: thread.gitPolicy }),
+          deviceName: this.#c.deviceName, testCommand: project.testCommand, gitPolicy: thread.gitPolicy, instructions: thread.instructions }),
         prompt: async (resumed) => {
           const continuing = resumed && !thread.sessionContext?.needsFreshContext;
           if (!continuing && this.#c.recall) {

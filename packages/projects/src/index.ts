@@ -51,3 +51,5 @@ export * from './memory-programme.js';
 
 export * from './checkpoints.js';
 export * from './vault-definition.js';
+
+export * from './settings-changes.js';

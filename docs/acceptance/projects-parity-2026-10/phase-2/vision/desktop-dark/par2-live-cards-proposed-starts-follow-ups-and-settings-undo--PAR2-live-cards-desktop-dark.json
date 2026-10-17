@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "PAR2 live cards, proposed starts, follow-ups and settings Undo",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-2/screenshots/PAR2-live-cards-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR2 live cards\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR2 live cards, proposed starts, follow-ups and settings Undo\"; the other steps are judged in their own screenshots)"
+}

@@ -186,7 +186,7 @@ export class TurnLauncher {
       if (checkpoint) resumed = false;
       const input = TurnInputSchema.parse({
         schema: 'turn-input-v1', owner: request.owner, turn: request.turn, cwd: request.cwd, permissions: request.permissions, model: request.model, effort: request.effort,
-        account: resolved, systemAppend: request.systemAppend + (journal ? `\n- The project journal at ${journal} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.` : ''), prompt: checkpointPrompt ? `${checkpointPrompt.digest}\n\n${checkpointPrompt.pending}` : await request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
+        account: resolved, systemAppend: (journal ? `- The project journal at ${journal} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.\n\n` : '') + request.systemAppend, prompt: checkpointPrompt ? `${checkpointPrompt.digest}\n\n${checkpointPrompt.pending}` : await request.prompt(resumed), ...(resumed ? { resume: { sessionId: request.resume } } : {}),
         ...(journal ? { readOnlyDirectories: [journal] } : {}),
         launch: { useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env: { ...env, ...gitEnv }, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
         safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs, compaction: { thresholdPercent: percent, ...(contextWindow ? { contextWindow } : {}) },

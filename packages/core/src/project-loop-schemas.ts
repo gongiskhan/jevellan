@@ -32,7 +32,7 @@ export const TaskUpdateRequestSchema = z.strictObject({ schema: z.literal('task-
   fixed: TaskFixedSchema.optional(), now: z.boolean().optional(), held: z.boolean().optional(), position: TaskPositionSchema.optional() });
 export const TaskActionRequestSchema = z.strictObject({ schema: z.literal('task-action-request-v1'), expectedRevision: z.number().int().positive(),
   action: z.enum(['approve', 'reject', 'cancel', 'now', 'later']), reason: z.string().max(400).optional() });
-export const TaskReceiptSchema = z.strictObject({ schema: z.literal('task-receipt-v1'), taskId: IdSchema, state: TaskStateSchema, repeated: z.boolean() });
+export const TaskReceiptSchema = z.strictObject({ schema: z.literal('task-receipt-v1'), taskId: IdSchema, state: TaskStateSchema, repeated: z.boolean(), message: z.string().max(200).optional() });
 export const TaskViewSchema = z.strictObject({ schema: z.literal('task-view-v1'), task: ProjectWorkTaskSchema });
 export const TaskHistoryEventSchema = z.strictObject({ schema: z.literal('task-history-event-v1'), taskId: IdSchema, projectId: IdSchema, sequence: z.number().int().positive(),
   state: TaskStateSchema, title, at: TimestampSchema, threadId: IdSchema.nullable(), note: z.string().max(400).optional() });

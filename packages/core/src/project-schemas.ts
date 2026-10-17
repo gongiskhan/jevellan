@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ProjectEnvironmentSchema, ProjectPlacementSettingsSchema, ProjectPrAutoFixSettingsSchema } from './project-parity-schemas.js';
+import { ProjectEnvironmentSchema, ProjectPlacementSettingsSchema, ProjectPrAutoFixSettingsSchema, ProjectSettingsChangeSchema } from './project-parity-schemas.js';
 import { SessionCheckpointSettingsSchema, SessionCheckpointedSchema, SessionHistorySchema, SessionHistoryLinkSchema } from './checkpoint-schemas.js';
 import { SessionTurnCacheSchema, SessionCacheSummarySchema } from './session-cache-schemas.js';
 import { JournalConfigSchema, JournalDocumentSchema, JournalThreadSchema, ProjectJournalRecordSchema } from './project-journal-schemas.js';
@@ -122,6 +122,10 @@ export type DecisionAnswer = z.infer<typeof DecisionAnswerSchema>;
 const ev = <K extends string, S extends z.ZodRawShape>(kind: K, fields: S) => z.strictObject({
   schema: z.literal('coordinator-event-v1'), kind: z.literal(kind), id: IdSchema, at: TimestampSchema, ...fields });
 export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
+  ev('settings-changed', { by: z.enum(['owner', 'coordinator']), changes: z.array(z.strictObject({ field: z.string().max(80), from: z.string().max(400), to: z.string().max(400) })).max(30), instructions: z.string().max(16000).optional() }),
+  ev('thread-resolved', { threadId: IdSchema, by: z.enum(['owner', 'inactivity']) }),
+  ev('thread-placement-changed', { threadId: IdSchema, reason: z.enum(['account-limit', 'model-unavailable', 'escalation']), summary: z.string().max(400) }),
+  ev('thread-auto-fix', { threadId: IdSchema, prNumber: positive, fixKind: z.enum(['checks', 'conflicts', 'comments']), round: positive, maxRounds: positive, outcome: z.enum(['started', 'fixed', 'gave-up']), comments: count.optional() }),
   ev('memory-dreamed', { summary: z.string().max(1500), counts: z.strictObject({ inboxPromoted: count, inboxDropped: count, merged: count, corrected: count, archived: count, created: count }) }),
   ev('user-message', { text: z.string().min(1).max(200000), clientMessageId: IdSchema }),
   ev('thread-report', { threadId: IdSchema, report: ThreadReportSchema }),
@@ -138,7 +142,7 @@ export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
   ev('project-reviewed', { report: ProjectReviewReportSchema }),
   ev('window-finished', { outcome: z.string().max(8000) }),
   ev('goal-refill', { goals: z.array(z.strictObject({ goalId: IdSchema, name: z.string().min(1).max(80), refillsToday: count, cap: z.number().int().min(0).max(20) })).max(100) }),
-  ev('task-reviewed', { taskId: IdSchema, title: text.max(120), outcome: z.enum(['approved', 'rejected']) }),
+  ev('task-reviewed', { taskId: IdSchema, title: text.max(120), outcome: z.enum(['approved', 'rejected']), note: z.string().max(400).optional() }),
   ev('task-not-started', { taskId: IdSchema, title: text.max(120), reason: z.string().max(400) }),
   ev('mail', { mailId: IdSchema, fromThreadId: IdSchema, fromTitle: z.string().max(160).optional(), subject: z.string().min(1).max(200), body: z.string().max(8000) }),
   ev('thread-user-message', { threadId: IdSchema, text: z.string().min(1).max(20000) }),
@@ -209,6 +213,7 @@ export const ThreadSchema = z.strictObject({
   schema: z.literal('project-thread-v1'), id: IdSchema, projectId: IdSchema,
   title: z.string().min(1).max(120), task: z.string().min(1).max(32768), brief: z.string().min(1).max(32768).optional(),
   taskContext: TaskPlacementContextSchema.optional(),
+  instructions: z.string().max(16000).optional(),
   createdAt: TimestampSchema, createdBy: z.enum(['coordinator', 'owner']), restartedAs: IdSchema.optional(),
   state: ThreadStateSchema, stateReason: z.string().max(400).optional(),
   isolation: IsolationSchema, placement: PlacementRecordSchema, gitPolicy: z.enum(['main', 'external']).optional(),
@@ -381,6 +386,7 @@ export const CoordinatorTextSchema = z.strictObject({ schema: z.literal('coordin
 // tool is any bridge tool name; the ledger writer checks it against the bridge registry (bridge-schemas imports this module).
 export const CoordinatorToolSchema = z.strictObject({ schema: z.literal('coordinator-tool-v1'), tool: IdSchema, ok: z.boolean(),
   input: z.string().max(32768).optional(), inputTruncated: z.boolean().optional(),
+  taskIds: z.array(IdSchema).max(20).optional(), settingsChange: ProjectSettingsChangeSchema.optional(),
   summary: z.string().min(1).max(400), threadId: IdSchema.optional(), decisionId: IdSchema.optional(), reason: z.string().max(400).optional() });
 export const CoordinatorTurnEndSchema = z.strictObject({ schema: z.literal('coordinator-turn-end-v1'), turn: positive,
   sessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional(), usage: UsageSchema.optional(),

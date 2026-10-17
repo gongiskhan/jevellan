@@ -1,3 +1,4 @@
+import { COORDINATOR_ANSWER_IN_CHAT, COORDINATOR_CARRY_RESULT, coordinatorOwnerInstructions } from './copy.js';
 import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import type { AccountService } from '@jevellan/accounts';
@@ -79,6 +80,7 @@ export type CoordinatorPromptInput = {
   events: readonly CoordinatorEvent[];
   outcomes?: readonly ProjectRequestOutcome[];
   notebook: string | null;
+  instructions?: string;
   memory?: string;
   /** The project's thread indexes; concluded ones are not listed as active. */
   threads: readonly ThreadIndex[];
@@ -112,7 +114,7 @@ function coordinatorQuestions(input: CoordinatorPromptInput): string[] {
 /** Brief 9.2 for a new session. The recap leaves out the batch being delivered, which follows as events (D36). */
 export function coordinatorFreshContext(input: CoordinatorPromptInput): string {
   const batch = new Set(input.events.map((event) => event.id));
-  return freshContext({
+  return (input.instructions ? coordinatorOwnerInstructions(input.instructions) : '') + freshContext({
     notebook: input.notebook,
     threads: input.threads.filter((thread) => !isTerminal(thread.state)).map((thread) => activeThreadLine({ title: thread.title, id: thread.id, state: thread.state,
       isolation: thread.isolation, runtime: input.runtimeName(thread.runtime), modelLabel: thread.modelLabel, effort: thread.effort, deviceName: input.deviceName(thread.ownerDeviceId),
@@ -123,8 +125,8 @@ export function coordinatorFreshContext(input: CoordinatorPromptInput): string {
 }
 /** The turn prompt (brief 8.1): a session that is not resumed gets the fresh context first, then the event block. */
 export function coordinatorPrompt(input: CoordinatorPromptInput, resumed: boolean): string {
-  const goals = input.outcomes?.filter(outcome => outcome.source === 'jev').map(outcome => `Requested result for ${outcome.eventId} (${outcome.source}): ${projectOutcomeInstruction(outcome)}`).join('\n');
-  const block = coordinatorEventBlock(input) + (goals ? `\n\n${goals}\nCarry this result into the thread task and check the report against it before concluding.` : '')
+  const goals = input.outcomes?.filter(outcome => outcome.source === 'jev').map(outcome => `Requested result for ${outcome.eventId} (${outcome.source}): ${projectOutcomeInstruction(outcome)}\n${outcome.goal === 'answer' ? COORDINATOR_ANSWER_IN_CHAT : COORDINATOR_CARRY_RESULT}`).join('\n');
+  const block = coordinatorEventBlock(input) + (goals ? `\n\n${goals}` : '')
     + (input.accounts?.length ? `\n\n${ACCOUNTS_NOW}\n${input.accounts.join('\n')}` : '');
   return resumed ? block : `${coordinatorFreshContext(input)}\n\n${block}`;
 }
@@ -505,7 +507,7 @@ export class Coordinator {
     const outcomes: ProjectRequestOutcome[] = [];
     const memory = await this.c.memoryContext?.(project);
     if (this.c.outcome) for (const event of events) if (event.kind === 'user-message') outcomes.push(await this.c.outcome(projectId, event, recentConversation(this.#conversation()), this.#outcomeAbort.signal));
-    return { kind: 'ready', project, cwd, ...chosen, ...(work.coordinator.accountId ? { requiredAccountId: work.coordinator.accountId } : {}), session, prompt: { events, outcomes, ...(memory ? { memory } : {}), notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(), accounts,
+    return { kind: 'ready', project, cwd, ...chosen, ...(work.coordinator.accountId ? { requiredAccountId: work.coordinator.accountId } : {}), session, prompt: { events, outcomes, instructions: work.instructions, ...(memory ? { memory } : {}), notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(), accounts,
       runtimeName: (runtime) => this.c.runtimes.get(runtime)?.displayName ?? runtime, deviceName: (id) => id === deviceId ? deviceName : names.get(id) ?? id, base,
       askedDirectly: this.#askedDirectly(events, decisions) } };
   }
@@ -557,7 +559,7 @@ export class Coordinator {
     let launched: LaunchResult;
     try {
       launched = await this.c.launcher.launch({ owner: { kind: 'coordinator', projectId, id: projectId }, turn, runtime: model.runtime, modelId: model.id, model: model.model,
-        modelLabel: model.label, effort, pinnedAccountId: prepared.accountId, ...(prepared.requiredAccountId ? { requiredAccountId: prepared.requiredAccountId } : {}), permissions: 'read-only', cwd: prepared.cwd, systemAppend: coordinatorSystemAppend(project.name, project.branchPolicy),
+        modelLabel: model.label, effort, pinnedAccountId: prepared.accountId, ...(prepared.requiredAccountId ? { requiredAccountId: prepared.requiredAccountId } : {}), permissions: 'read-only', cwd: prepared.cwd, systemAppend: coordinatorSystemAppend(project.name, project.branchPolicy, (await this.c.workSettings(projectId)).startMode),
         prompt: (resumed) => coordinatorPrompt(prepared.prompt, resumed && !session?.context?.needsFreshContext), ...(session?.nativeSessionId ? { resume: session.nativeSessionId } : {}),
         ...(this.c.journalContents ? { checkpointPrompt: async () => {
           const journal = await this.c.journalContents!(projectId);
