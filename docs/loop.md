@@ -1,3 +1,4 @@
+<!-- The17October2026 Projects parity BRIEF.md supersedes conflicting historical brief/plan statements below. -->
 <!-- Owner cache/journal brief, 2026-10-13, has highest precedence; its prior-scenario start condition was met by the original ten-hour stop on 2026-10-14. Implementation evidence stays separate. -->
 # Goals, tasks and the daily loop
 
@@ -592,3 +593,8 @@ Decision844 replaces the root New conversation landing with the first project in
 
 
 Decision844 closure:40 focused project UI checks and the final four-layout browser journey pass, including first-project selection, reload, New conversation, Back, fresh sign-in and the empty-list fallback. Typecheck/lint/build and compatible web build pass. Pro0.3.6 web-only activation is live with rollback retained and no session restart. Opening the real root selects ekoa-code; New conversation opens /new and the Jevellan Home button returns to Ekoa Code. The update prompt is cleared in the verification window. Four simulated screenshots directly inspected; dedicated model vision, full suites and physical-phone acceptance are not run. One closing crucial-issues inspection finds no serious issue. The existing Pro latency remains outside this navigation change. Evidence: docs/acceptance/first-project-home-2026-10-16/.
+
+
+## Projects parity,17October2026
+
+Decisions846–847 start the ordered parity run. Target0.5.0 extends existing Projects with settings v4, shared instructions and live chat cards, Overview groups/actions, automatic pull request repairs, account waits/placement bounds/usage, push, Library/environment/scoped rigging, Claude-compatible endpoints and suggested setup. One repository per project, existing publication/merge safety and Conversations stay. The current-machine doctor identifies the Pro hub0.3.6; Madrid's independent0.4.1 hub is a separate installation. New features require0.5.0 on participating devices. The14-hour build and separate3-hour post-install live clocks are recorded in acceptance/projects-parity-2026-10/README.md. No feature is delivered by this documentation checkpoint. The reference is reference/claude-code-projects.md.

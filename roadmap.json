@@ -784,5 +784,125 @@
     "title": "Explain failed GitHub jobs whose logs do not exist",
     "why": "Decision845: fall back from a log404 to the readable job's same-repository check annotations, preserving scope, cache, redaction and budgets. Live Ekoa billing/spending refusal is exposed; billing and Ekoa CI are unchanged. Compatible Pro0.3.6 activation retains rollback. See docs/acceptance/github-missing-log-2026-10-16/.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "parity-settings",
+    "title": "Project settings, pause, archive and daily cap",
+    "why": "BRIEF.md phase 1. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-coordinator-chat",
+    "title": "Coordinator chat, cards and owner settings",
+    "why": "BRIEF.md phase 2. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-overview",
+    "title": "Overview groups and thread actions",
+    "why": "BRIEF.md phase 3. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-pr-autofix",
+    "title": "Automatic pull request fixes",
+    "why": "BRIEF.md phase 4. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-limits-usage",
+    "title": "Account limits, placement and usage",
+    "why": "BRIEF.md phase 5. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-push",
+    "title": "PWA push notifications",
+    "why": "BRIEF.md phase 6. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-library-env",
+    "title": "Library, attachments and environment",
+    "why": "BRIEF.md phase 7. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-endpoints",
+    "title": "Claude-compatible endpoint accounts",
+    "why": "BRIEF.md phase 8. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-first-run",
+    "title": "Suggested project setup",
+    "why": "BRIEF.md phase 9. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-docs-release",
+    "title": "Projects documentation, release and live journeys",
+    "why": "BRIEF.md phase 10. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-multi-repo",
+    "title": "Several repositories per project",
+    "why": "BRIEF.md section4: out of this run. Vault, worktrees and pull requests are keyed by one origin.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-cloud-threads",
+    "title": "Claude cloud thread placement",
+    "why": "BRIEF.md section4: out of this run. The bridge cannot reach Anthropic cloud; mesh devices already run work.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-delete-project",
+    "title": "Delete projects",
+    "why": "BRIEF.md section4: out of this run. Archive covers hiding projects for this run.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-github-replies",
+    "title": "Post GitHub replies and reviews",
+    "why": "BRIEF.md section4: out of this run. Explicitly excluded from this run.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-conversation-conversion",
+    "title": "Convert a Conversation to a project",
+    "why": "BRIEF.md section4: out of this run. Explicitly excluded from this run.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-transcript-sse",
+    "title": "Live thread transcript SSE",
+    "why": "BRIEF.md section4: out of this run. Existing1.5-second polling remains.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-coordinator-placement",
+    "title": "Jev chooses coordinator model",
+    "why": "BRIEF.md section4: out of this run. Coordinator model and effort remain owner project settings.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-dollar-caps",
+    "title": "Dollar spend caps",
+    "why": "BRIEF.md section4: out of this run. This run measures usage but does not add spend caps.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-codex-endpoints",
+    "title": "Compatible endpoints on Codex",
+    "why": "BRIEF.md section4: out of this run. Compatible endpoints use the Claude runtime only.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-native-ios",
+    "title": "Native iOS application",
+    "why": "BRIEF.md section4: out of this run. Installed PWA web push covers phone notifications in this run.",
+    "status": "planned"
   }
 ]

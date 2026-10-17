@@ -1,5 +1,25 @@
 # Projects loop implementation plan
 
+## Projects parity, October 2026
+
+Authority: root untracked BRIEF.md,17October2026, supersedes conflicting older plans. Decisions846–847. Baseline da6a9bc9/0.4.1; current machine Pro, local hub0.3.6 verified by doctor. Other installations remain separate.
+
+The build clock starts at this run's first commit, lasts14hours, and closes new feature phases at12hours. The separate3-hour live clock starts at0.5.0 installation. Exact times and all evidence are in docs/acceptance/projects-parity-2026-10/README.md. Orientation is limited to30minutes.
+
+0. Orientation: save brief, read required context, freeze AppendixA reference, inventory, plan and roadmap.
+1. Settings v4/vault migration, dedicated settings page, pause/archive gates and daily admission cap.
+2. Shared project instructions, answer-in-place, live chat cards, enforced proposals, owner-authorized settings changes and Undo.
+3. Overview groups, resolution/auto-resolution and applicable thread actions.
+4. Code-driven pull request checks/conflict/comment fixes, bounded rounds and owner decisions.
+5. Automatic account waits/continuation, Jev model moves/escalation, placement constraints and usage.
+6. PWA web push, subscription Settings, levels and event triggers.
+7. Hub Library, composer attachments, worktree environment/secrets/copied files and project-scoped rigging.
+8. Claude-compatible endpoint accounts/menu/probe and isolated launch; ask once for optional live credential at phase start.
+9. First-run exploration and editable suggested setup.
+10. Current-state docs/history, cleanup, LJ5 regression, complete suites/vision, one crucial-issues review,0.5.0 release/update with rollback and LP1–LP9 within the live clock.
+
+Finish and test each phase before beginning the next. Commit/push main after every phase with roadmap/report evidence. Every behavior gets backend tests, every changed screen gets four layouts with vision, every bug fix starts with a failing regression. No interim review passes or heuristic routing. Unreached phases remain planned with their BRIEF.md phase number. Live journeys never touch ekoa-code and restore settings. Missing credentials are blocked checks, not passes.
+
 ## Missing GitHub job logs — 16 October 2026
 
 Decision845: for a log404 only, confirm the job is readable and return its status plus the check's summary/annotations through the existing bounded, cached job_log result. Use only its same-repository check link. Keep authentication errors, missing jobs, current-head thread confinement and the normal one-request log path. The live Ekoa result job was refused by GitHub's billing/spending gate; this Jevellan repair does not resolve billing or change Ekoa CI. Evidence: docs/acceptance/github-missing-log-2026-10-16/.
