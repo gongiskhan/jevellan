@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import type { AccountService } from '@jevellan/accounts';
 import {
   HubUnavailable, MANUAL_CHECKOUT_COMPLETED, SecretRedactor, ThreadReportSchema, clipRedacted, isTerminal, liveWork, newId, redactWithin, stableJson, threadBranch, type CoordinatorEvent, type Project, type ProjectWorkSettings,
-  type MemoryRecall, type QueuedMessage, type Thread, type ThreadLocal, type ThreadReport, type ThreadState, type TurnProcess, type ThreadMessageRoute,
+  type MemoryRecall, type QueuedMessage, type Thread, type ThreadLocal, type ThreadFix, type ThreadReport, type ThreadState, type TurnProcess, type ThreadMessageRoute,
 } from '@jevellan/core';
 import { projectOutcomeInstruction } from '@jevellan/decisions';
 import { SESSION_NOT_FOUND } from '@jevellan/runtime-contract';
@@ -17,7 +17,7 @@ import {
   RESTART_PUBLISHED_TO_MAIN, SESSION_REPLACED, TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, THREAD_WORKING, TOOL_NOT_IN_TURN, TURN_FAILED,
   TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WAITING_FOR_MAIN, WORKTREE_DISCARDED, accountMovedNotice, alreadyAttached,
   attachedRefusal, cleanupFailed, commitsSavedReason, isRestarted, mainCheckoutKept, mainConflictPrompt, messagesNotDelivered, messagesPrompt, ownerWorkedLine, savedCommitsRef,
-  preparationRetrying, preparationTaskFailed, sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
+  AUTOMATIC_FIX_CANCELLED, preparationRetrying, preparationTaskFailed, sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
 } from './copy.js';
 import type { DecisionItems } from './decision-items.js';
 import { firstLine } from './git.js';
@@ -52,7 +52,7 @@ export function withState(thread: Thread, state: ThreadState, reason?: string): 
   return next;
 }
 /** `pending`: the turn waited for its account before and comes from the thread's local file (phase 8). */
-export type NextTurn = { reason: ThreadTurnReason; body: string; messages: string[]; pending?: boolean };
+export type NextTurn = { reason: ThreadTurnReason; body: string; messages: string[]; pending?: boolean; fix?: ThreadFix; commentIds?: string[] };
 /** The queued messages as one turn (D22); the ids leave the queue when the turn starts. */
 export function messagesTurn(thread: Pick<Thread, 'queuedMessages'>, reason: 'messages' | 'steer'): NextTurn {
   return { reason, body: messagesPrompt(thread.queuedMessages), messages: thread.queuedMessages.map((message) => message.id) };
@@ -114,6 +114,12 @@ const KEPT_TURNS: readonly ThreadTurnReason[] = ['task', 'verification', 'confli
 const PENDING_TURN_LIMIT = 40_000;
 const digest = (text: string) => createHash('sha256').update(text).digest('hex');
 const SEEN_MESSAGES = 200;
+function deliveredComments(batch: ThreadLocal['prComments'], ids: string[]): ThreadLocal['prComments'] {
+  if (!batch || !ids.length) return batch;
+  return { ...batch, since: batch.items.filter(row => ids.includes(row.id)).reduce((at, row) => row.at > at ? row.at : at, batch.since),
+    items: batch.items.filter(row => !ids.includes(row.id)), deliveredIds: [...batch.deliveredIds, ...ids].slice(-500) };
+}
+
 
 export type ThreadRunnerContext = {
   deviceId: string; deviceName: string; redactor: SecretRedactor;
@@ -386,12 +392,18 @@ export class ThreadRunner {
   }
   async #loop(first: NextTurn | null): Promise<void> {
     let next = first;
-    while (next && !this.#halted()) next = await this.#turnOnce(next);
+    while (next && !this.#halted()) {
+      const previous = next, following = await this.#turnOnce(next);
+      next = following && !following.fix && previous.fix && ['verification', 'conflict'].includes(following.reason)
+        ? { ...following, fix: previous.fix } : following;
+    }
   }
   /** One turn (2.6.9 steps 1 and 3-9); returns the turn that continues the live step, if any. */
   async #turnOnce(next: NextTurn): Promise<NextTurn | null> {
     let thread = this.#thread();
-    if ((await this.#c.workSettings(thread.projectId)).status !== 'active') { this.#rest(next, PROJECT_PAUSED); return null; }
+    const workSettings = await this.#c.workSettings(thread.projectId);
+    if (workSettings.status !== 'active') { this.#rest(next, PROJECT_PAUSED); return null; }
+    if (next.pending && this.#cancelDisabledFix(next, workSettings)) return thread.queuedMessages.length ? messagesTurn(thread, 'messages') : null;
     if (atTurnLimit(thread)) { await this.#atLimit(); return null; }
     if (this.#c.routeMessages && next.messages.some(id => thread.queuedMessages.some(message => message.id === id && message.from === 'owner'))) {
       const release = this.#c.enterOperation(thread.id, 'Classifying a thread follow-up');
@@ -436,8 +448,11 @@ export class ThreadRunner {
     try {
       this.#steer = false;
       thread = this.#set((current) => ({ ...withState(current, 'running'), queuedMessages: current.queuedMessages.filter((message) => !next.messages.includes(message.id)) }));
-      if (next.pending) this.#c.store.updateLocal(thread.id, (local) => { const taken = { ...local }; delete taken.pendingTurn; return taken; });
+      if (next.pending && next.fix?.by !== 'automatic') this.#c.store.updateLocal(thread.id, (local) => { const taken = { ...local }; delete taken.pendingTurn; return taken; });
       this.#turn = turn;
+      if (next.fix?.by !== 'automatic' && this.#c.store.local(thread.id).prAutoFix?.pendingResults?.length) {
+        this.#c.store.updateLocal(thread.id, local => ({ ...local, prAutoFix: { ...local.prAutoFix!, pendingResults: [] } }));
+      }
       ran = await this.#run(project, thread, turn, next);
     } finally { this.#turn = undefined; this.#steer = false; release(); }
     if (ran.status === 'shutdown') return null;
@@ -468,7 +483,7 @@ export class ThreadRunner {
       this.#set((current) => withState(current, 'idle'));
       return null;
     }
-    const report = ran.report ?? synthesizedReport({ status: ran.status, error: ran.error, finalText: ran.finalText }, turn, this.#c.redactor);
+    const report = ThreadReportSchema.parse({ ...(ran.report ?? synthesizedReport({ status: ran.status, error: ran.error, finalText: ran.finalText }, turn, this.#c.redactor)), ...(next.fix ? { fix: next.fix } : {}) });
     thread = this.#set((current) => ({ ...current, turns: current.turns + 1, lastReport: report }), { type: 'thread-report', data: report, turn });
     return this.#act(thread, report);
   }
@@ -479,7 +494,7 @@ export class ThreadRunner {
    */
   #rest(next: NextTurn, reason: string): void {
     if (KEPT_TURNS.includes(next.reason) && !next.pending) {
-      const pending = { reason: next.reason as NonNullable<ThreadLocal['pendingTurn']>['reason'], body: next.body.slice(0, PENDING_TURN_LIMIT) };
+      const pending = { reason: next.reason as NonNullable<ThreadLocal['pendingTurn']>['reason'], body: next.body.slice(0, PENDING_TURN_LIMIT), ...(next.fix ? { fix: next.fix } : {}), ...(next.commentIds ? { commentIds: next.commentIds } : {}) };
       this.#c.store.updateLocal(this.threadId, (local) => ({ ...local, pendingTurn: pending }));
     }
     const thread = this.#thread();
@@ -489,7 +504,7 @@ export class ThreadRunner {
   /** The turn that waited for its account, if any (phase 8). */
   #pendingTurn(): NextTurn | undefined {
     const pending = this.#c.store.local(this.threadId).pendingTurn;
-    return pending && { reason: pending.reason, body: pending.body, messages: [], pending: true };
+    return pending && { reason: pending.reason, body: pending.body, messages: [], pending: true, ...(pending.fix ? { fix: pending.fix } : {}), ...(pending.commentIds ? { commentIds: pending.commentIds } : {}) };
   }
   /** Launch and drain one turn. The grant is closed and the process gone before this returns. */
   async #run(project: Project, thread: Thread, turn: number, next: NextTurn): Promise<Ran> {
@@ -543,7 +558,8 @@ export class ThreadRunner {
       if (started.gitIdentity && stableJson(this.#c.store.local(thread.id).gitIdentity ?? null) !== stableJson(started.gitIdentity)) {
         const identity = started.gitIdentity; this.#c.store.updateLocal(thread.id, (local) => ({ ...local, gitIdentity: identity }));
       }
-      ledger.append({ type: 'thread-turn-start', turn, data: { schema: 'thread-turn-v1', turn, resumed: started.resumed, runtime: placement.runtime, modelId: placement.modelId,
+      this.#consumeAutomaticFix(next);
+      ledger.append({ type: 'thread-turn-start', turn, data: { schema: 'thread-turn-v1', turn, resumed: started.resumed, ...(next.fix ? { fix: next.fix } : {}), runtime: placement.runtime, modelId: placement.modelId,
         ...(started.prompt ? { prompt: this.#c.redactor.text(started.prompt).slice(0, 200000), promptTruncated: this.#c.redactor.text(started.prompt).length > 200000 } : {}),
         model: placement.model, effort: placement.effortEffective, accountId: started.accountId } });
       const execution = new TurnExecution({ run: started.run, accountId: started.accountId, secretRef: started.secretRef, model: placement.model, deviceId: this.#c.deviceId,
@@ -872,10 +888,59 @@ export class ThreadRunner {
     if (route !== 'rest') return { delivery: 'queued', repeated: false };
     return { delivery: await this.#fromRest(), repeated: false };
   }
-  async requestTurn(reason: NonNullable<ThreadLocal['pendingTurn']>['reason'], body: string, commentIds: string[] = [], accepted?: { id: string; digest: string }): Promise<void> {
+  async requestTurn(reason: NonNullable<ThreadLocal['pendingTurn']>['reason'], body: string, commentIds: string[] = [], accepted?: { id: string; digest: string }, requestedFix?: ThreadFix): Promise<void> {
     if (isTerminal(this.#thread().state)) await this.#serial(() => this.#reopen());
-    this.#c.store.updateLocal(this.threadId, local => ({ ...local, pendingTurn: { reason, body }, ...(accepted ? { acceptedActions: [...(local.acceptedActions ?? []), accepted].slice(-200) } : {}), ...(local.prComments && commentIds.length ? { prComments: { ...local.prComments, since: local.prComments.items.filter(row => commentIds.includes(row.id)).reduce((at, row) => row.at > at ? row.at : at, local.prComments.since), items: local.prComments.items.filter(row => !commentIds.includes(row.id)), deliveredIds: [...local.prComments.deliveredIds, ...commentIds].slice(-500) } } : {}) }));
+    const kind = reason === 'conflict' ? 'conflicts' : reason === 'checks' || reason === 'comments' ? reason : undefined;
+    const fix = requestedFix ?? (kind ? { by: 'owner' as const, kind } : undefined);
+    this.#c.store.updateLocal(this.threadId, local => {
+      const comments = fix?.by === 'automatic' ? local.prComments : deliveredComments(local.prComments, commentIds);
+      let state = local.prAutoFix;
+      if (state && fix) {
+        state = { ...state, comments: comments ? { since: comments.since, deliveredIds: comments.deliveredIds } : state.comments };
+        if (fix.by === 'automatic') state = { ...state,
+          pendingResults: [...(state.pendingResults ?? []), { id: fix.id, kind: fix.kind, round: fix.round, maxRounds: fix.maxRounds, head: this.#thread().pr!.headSha, ...(fix.kind === 'comments' ? { comments: commentIds.length } : {}) }].slice(-10) };
+        else { state = { ...state, disabled: false, pendingResults: [] }; delete state.questionId; delete state.questionKind; }
+      }
+      return { ...local, pendingTurn: { reason, body, ...(fix ? { fix } : {}), ...(fix?.by === 'automatic' && commentIds.length ? { commentIds } : {}) },
+        ...(accepted ? { acceptedActions: [...(local.acceptedActions ?? []), accepted].slice(-200) } : {}),
+        ...(comments ? { prComments: comments } : {}), ...(state ? { prAutoFix: state } : {}) };
+    });
     await this.#fromRest();
+  }
+  #cancelDisabledFix(next: NextTurn, settings: ProjectWorkSettings): boolean {
+    const fix = next.fix;
+    if (fix?.by !== 'automatic') return false;
+    const state = this.#c.store.local(this.threadId).prAutoFix;
+    if (state?.pendingResults?.find(row => row.id === fix.id)?.turnStarted) return false;
+    if (settings.prAutoFix[fix.kind] && !state?.disabled && fix.round <= settings.prAutoFix.maxRounds) return false;
+    this.#c.store.updateLocal(this.threadId, local => {
+      if (local.pendingTurn?.fix?.by !== 'automatic' || local.pendingTurn.fix.id !== fix.id) return local;
+      const updated = { ...local }; delete updated.pendingTurn;
+      if (updated.prAutoFix) updated.prAutoFix = { ...updated.prAutoFix, pendingResults: (updated.prAutoFix.pendingResults ?? []).filter(row => row.id !== fix.id) };
+      return updated;
+    });
+    this.#set(current => withState(current, current.state, AUTOMATIC_FIX_CANCELLED));
+    return true;
+  }
+  /** Charge a round and mark comments delivered only when a runtime accepts the queued turn. */
+  #consumeAutomaticFix(next: NextTurn): void {
+    const fix = next.fix;
+    if (fix?.by !== 'automatic') return;
+    this.#c.store.updateLocal(this.threadId, local => {
+      const state = local.prAutoFix, attempt = state?.pendingResults?.find(row => row.id === fix.id);
+      if (!state || !attempt) return local;
+      if (attempt.turnStarted) {
+        if (local.pendingTurn?.fix?.by !== 'automatic' || local.pendingTurn.fix.id !== fix.id) return local;
+        const updated = { ...local }; delete updated.pendingTurn; return updated;
+      }
+      const comments = deliveredComments(local.prComments, next.commentIds ?? []);
+      const updated = { ...local, ...(comments ? { prComments: comments } : {}), prAutoFix: { ...state,
+        rounds: fix.round, comments: comments ? { since: comments.since, deliveredIds: comments.deliveredIds } : state.comments,
+        handledHead: { ...state.handledHead, ...(fix.kind === 'checks' ? { checks: attempt.head } : fix.kind === 'conflicts' ? { conflict: attempt.head } : {}) },
+        pendingResults: (state.pendingResults ?? []).map(row => row.id === fix.id ? { ...row, turnStarted: true } : row) } };
+      if (updated.pendingTurn?.fix?.by === 'automatic' && updated.pendingTurn.fix.id === fix.id) delete updated.pendingTurn;
+      return updated;
+    });
   }
   /** The sweep (D9): a thread at rest whose next turn waited for a slot tries again. */
   resume(): Promise<'started' | 'queued'> { return this.#fromRest(); }
@@ -894,6 +959,11 @@ export class ThreadRunner {
   async #admit(): Promise<(() => void) | undefined> {
     const thread = this.#thread();
     if (this.#halted() || thread.resolution || !atRest(thread.state) || (!thread.queuedMessages.length && !this.#pendingTurn())) return undefined;
+    const pending = this.#pendingTurn();
+    if (pending?.fix?.by === 'automatic') {
+      const settings = await this.#c.workSettings(thread.projectId);
+      if (settings.status === 'active' && this.#cancelDisabledFix(pending, settings) && !this.#thread().queuedMessages.length) return undefined;
+    }
     // A thread whose preparation waits for its retry has not had its task turn yet: the retry runs it, and the messages follow it (B1).
     if (thread.turns === 0 && this.#c.store.local(thread.id).preparationRetry) return undefined;
     if (atTurnLimit(thread)) { await this.#work(() => this.#atLimit()); return undefined; }

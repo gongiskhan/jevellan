@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import {
   DecisionAnswerSchema, ProjectDecisionSchema, newId, type CoordinatorEvent, type DecisionAnswer, type Option, type OwnerCommand, type ProjectDecision, type ProjectHub, type Thread, type ThreadReport,
 } from '@jevellan/core';
-import { ALLOW_MORE_TURNS, QUESTION_NOT_FOUND, STOPPED_AT_TURN_LIMIT, STOP_THE_THREAD, UNKNOWN_OPTION, turnLimitQuestion } from './copy.js';
+import { ALLOW_MORE_TURNS, QUESTION_NOT_FOUND, STOPPED_AT_TURN_LIMIT, STOP_THE_THREAD, UNKNOWN_OPTION, turnLimitQuestion, LEAVE_AUTOMATIC_FIXES, allowAutomaticFixes, automaticFixQuestion } from './copy.js';
 
 const refuse = (message: string, status: number) => Object.assign(new Error(message), { status });
 /** A stable id for a delivery that a retry must not repeat (the receiver dedupes by id). */
@@ -19,6 +19,7 @@ export function isTurnLimitItem(decision: Pick<ProjectDecision, 'from' | 'option
  * makes a retried answer apply once there (D265).
  */
 export type DecisionThreadActions = {
+  automaticFixAnswer?(projectId: string, threadId: string, prNumber: number, allow: boolean, commandId: string): Promise<void>;
   allowTurns(projectId: string, threadId: string, commandId: string): Promise<void>;
   stop(projectId: string, threadId: string, reason: string, commandId: string): Promise<void>;
   /** Why the thread cannot stop now (an attached thread, phase 8), checked before a Stop answer is recorded. */
@@ -49,18 +50,18 @@ export class DecisionItems {
     if (!decision || decision.projectId !== projectId) throw refuse(QUESTION_NOT_FOUND, 404);
     return decision;
   }
-  async #create(projectId: string, input: { question: string; options: Option[]; threadId?: string | undefined; ownerCommands?: OwnerCommand[] | undefined; accountId?: string | undefined }, from: ProjectDecision['from'],
+  async #create(projectId: string, input: { question: string; options: Option[]; threadId?: string | undefined; ownerCommands?: OwnerCommand[] | undefined; accountId?: string | undefined; automaticFix?: ProjectDecision['automaticFix'] }, from: ProjectDecision['from'],
     fixed?: { id: string; at: string }): Promise<string> {
     const id = fixed?.id ?? newId('pdec', this.#o.now());
     await this.#o.hub.createDecision(ProjectDecisionSchema.parse({ schema: 'project-decision-v1', revision: 0, id, projectId, from, question: input.question,
-      options: input.options, ...(input.ownerCommands ? { ownerCommands: input.ownerCommands } : {}), ...(input.accountId ? { accountId: input.accountId } : {}), createdAt: fixed?.at ?? this.#at(), ...(input.threadId === undefined ? {} : { threadId: input.threadId }) }));
+      options: input.options, ...(input.automaticFix ? { automaticFix: input.automaticFix } : {}), ...(input.ownerCommands ? { ownerCommands: input.ownerCommands } : {}), ...(input.accountId ? { accountId: input.accountId } : {}), createdAt: fixed?.at ?? this.#at(), ...(input.threadId === undefined ? {} : { threadId: input.threadId }) }));
     return id;
   }
   /**
    * `jevellan_ask_user` (phase 2): a coordinator question, optionally about one thread. With `id` (derived from the coordinator's turn and
    * the call, P8 review C-4) a call the transport repeats returns the question it created instead of asking the owner twice.
    */
-  async ask(projectId: string, input: { question: string; options?: Option[] | undefined; threadId?: string | undefined; ownerCommands?: OwnerCommand[] | undefined; accountId?: string | undefined }, from: ProjectDecision['from'], id?: string): Promise<string> {
+  async ask(projectId: string, input: { question: string; options?: Option[] | undefined; threadId?: string | undefined; ownerCommands?: OwnerCommand[] | undefined; accountId?: string | undefined; automaticFix?: ProjectDecision['automaticFix'] }, from: ProjectDecision['from'], id?: string): Promise<string> {
     const asked = { ...input, options: input.options ?? [] };
     if (id === undefined) return this.#create(projectId, asked, from);
     const stored = async () => (await this.#o.hub.decision(id))?.document.projectId === projectId;
@@ -110,6 +111,12 @@ export class DecisionItems {
     if ((await this.#o.hub.decisions(projectId)).some((decision) => decision.threadId === thread.id && open(decision) && isTurnLimitItem(decision))) return;
     await this.#create(projectId, { question: turnLimitQuestion(thread.title, thread.turnAllowance), options: [{ label: ALLOW_MORE_TURNS }, { label: STOP_THE_THREAD }], threadId: thread.id }, 'thread');
   }
+  automaticFixLimit(projectId: string, thread: Thread, kind: import('@jevellan/core').PrAutoFixKind, maxRounds: number, sequence = 0): Promise<string> {
+    const id = derivedId('pdec', 'automatic-fix', thread.id, String(thread.pr!.number), String(thread.turns), thread.pr!.headSha, String(maxRounds), kind, String(sequence));
+    return this.ask(projectId, { threadId: thread.id, question: automaticFixQuestion(thread.pr!.number, kind, maxRounds),
+      options: [{ label: allowAutomaticFixes(maxRounds) }, { label: LEAVE_AUTOMATIC_FIXES }],
+      automaticFix: { prNumber: thread.pr!.number, kind, maxRounds } }, 'thread', id);
+  }
   /** A thread that Jevellan itself unblocked or stopped withdraws its open turn-limit item silently (D85). */
   async withdrawTurnLimit(projectId: string, threadId: string): Promise<void> {
     for (const decision of await this.#o.hub.decisions(projectId)) {
@@ -133,6 +140,7 @@ export class DecisionItems {
     const answer: DecisionAnswer = DecisionAnswerSchema.parse({ ...(request.optionLabel ? { optionLabel: request.optionLabel } : {}), ...(request.text ? { text: request.text } : {}),
       source: ownerMessage === undefined ? 'panel' : 'owner-chat', ...(ownerMessage === undefined ? {} : { ownerMessage }) });
     if (answer.optionLabel !== undefined && !asked.options.some((option) => option.label === answer.optionLabel)) throw refuse(UNKNOWN_OPTION, 400);
+    if (asked.automaticFix && !answer.optionLabel) throw refuse('Choose an automatic fix option.', 400);
     if (asked.merge) await this.#o.mergeAnswer?.(asked, answer, true);
     // The hub keeps the first answer, so a Stop the thread cannot take now is refused before it is recorded: the question stays open (phase 8).
     if (asked.threadId !== undefined && isTurnLimitItem(asked) && answer.optionLabel === STOP_THE_THREAD) {
@@ -141,6 +149,11 @@ export class DecisionItems {
     }
     const { decision: stored, repeated } = await this.#o.hub.answerDecision(decisionId, answer, this.#at(), request.clientRequestId);
     const decision = stored.document; const given = decision.answer ?? answer;
+    if (decision.automaticFix && decision.threadId) {
+      await this.#o.threads().automaticFixAnswer?.(projectId, decision.threadId, decision.automaticFix.prNumber,
+        given.optionLabel === allowAutomaticFixes(decision.automaticFix.maxRounds), derivedId('tcmd', 'answer', decisionId));
+      return { repeated };
+    }
     if (decision.merge && await this.#o.mergeAnswer?.(decision, given, false)) return { repeated };
     if (decision.from === 'coordinator' && given.source !== 'owner-chat') {
       const at = this.#o.now();

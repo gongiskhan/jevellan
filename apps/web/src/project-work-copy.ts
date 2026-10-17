@@ -440,3 +440,6 @@ export const SHOW_OLDER = 'Show older';
 export const BASE_BRANCH = 'the base branch';
 export const MERGE_HELD = 'Merges are held while the nightly window runs.';
 export const PROPOSED_TASKS = 'Proposed tasks';
+
+export const fixTurnLabel = (fix: import('@jevellan/core/client').ThreadFix) => fix.by === 'owner' ? 'Requested by you'
+  : fix.kind === 'checks' ? 'Automatic fix: failing checks' : fix.kind === 'conflicts' ? 'Automatic fix: conflicts' : 'Automatic fix: review comments';

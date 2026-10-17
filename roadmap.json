@@ -806,8 +806,8 @@
   {
     "id": "parity-pr-autofix",
     "title": "Automatic pull request fixes",
-    "why": "BRIEF.md phase 4. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
-    "status": "planned"
+    "why": "BRIEF.md phase 4: automatic checks/conflict/comment fixes, durable rounds, cap decisions and owner labels are implemented.92 affected backend cases and8 browser journeys pass across four layouts. A discovered transient PWA navigation failure now recovers automatically. Dedicated vision is not run; fixture cleanup warnings, full suites, release and live journeys remain closing gates. See docs/acceptance/projects-parity-2026-10/phase-4/.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "parity-limits-usage",

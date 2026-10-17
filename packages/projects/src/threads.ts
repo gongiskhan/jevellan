@@ -8,7 +8,7 @@ import { IdSchema, ThreadActionReceiptSchema, ThreadStartPlanSchema, readDocumen
 import {
   EffortSchema, HubUnavailable, PlacementOverrideSchema, ThreadReadResultSchema, ThreadSchema, concludedRecently, deviceAway, isTerminal, liveWork, mapEffort, newId, stableJson, type Configuration, type PlacementRecord,
   type CoordinatorEvent, type PlacementOverride, type ProjectHub, type ProjectLedgerEvent, type QueuedMessage, type SecretRedactor, type SharedProjects, type Thread, type ThreadCommand,
-  type ThreadActionRequest, type ThreadCreateRequestSchema, type ThreadCreatedViewSchema, type ThreadIndex, type ThreadOverrideRequestSchema, type ThreadReport, type ThreadState,
+  type PrAutoFixKind, type ThreadActionRequest, type ThreadCreateRequestSchema, type ThreadCreatedViewSchema, type ThreadIndex, type ThreadOverrideRequestSchema, type ThreadReport, type ThreadState,
 } from '@jevellan/core';
 import type { PlacementFixed } from '@jevellan/decisions';
 import { DISPATCH_HOLD_MS, type Admission } from './admission.js';
@@ -113,12 +113,13 @@ export type ThreadServiceOptions = {
   /** Everything a runner needs except `rested` and `askDirectly`, which the service provides. */
   runner: Omit<ThreadRunnerContext, 'rested' | 'askDirectly'>;
   /** Decision 7 on the owner device (D280): the roster says whether the coordinator's device is away; the fallback creates the question. */
-  roster(): Promise<DeviceRoster>; decisions: Pick<DecisionItems, 'fallbackFromReports' | 'withdrawThread'>;
+  roster(): Promise<DeviceRoster>; decisions: Pick<DecisionItems, 'fallbackFromReports' | 'withdrawThread'> & Partial<Pick<DecisionItems, 'automaticFixLimit' | 'withdraw'>>;
   /** The sweeps check a project's waiting questions at most this often (a new needs-decision report checks at once). */
   fallbackCheckMs: number;
   now(): number;
   managedQueue?: boolean;
   queueChanged?(projectId: string): void;
+  pullRequestChanged?(): void;
   refreshLanding?(projectId: string, threadId: string): Promise<void>;
 };
 const oldestMessage = (thread: Thread) => thread.queuedMessages.reduce((oldest, message) => message.at < oldest ? message.at : oldest, thread.queuedMessages[0]?.at ?? '');
@@ -595,12 +596,58 @@ export class ThreadService {
       if (input.action === 'resolve') await this.#resolve(thread, 'owner', receipt.at, input.clientRequestId);
       else if (input.action === 'reopen') this.#o.store.update(threadId, current => { const next = { ...current }; delete next.resolution; return next; });
       else {
+        const questionId = this.#o.store.local(threadId).prAutoFix?.questionId;
+        if (questionId) await this.#o.decisions.withdraw?.(projectId, questionId);
         const reason = input.action === 'publish' ? 'publish' : input.action === 'fix-checks' ? 'checks' : input.action === 'resolve-conflicts' ? 'conflict' : 'comments';
         const comments = reason === 'comments' ? this.#o.store.local(thread.id).prComments?.items.slice(0, 15) ?? [] : [];
         const body = reason === 'comments' ? commentsFixPrompt(thread.pr!.number, comments) : reason === 'publish' ? PUBLISH_REQUESTED : reason === 'checks' ? checksFixPrompt(thread.pr!.number, thread.pr!.headSha, thread.pr!.failedChecks ?? []) : conflictFixPrompt(thread.pr!.number, thread.baseBranch);
         await runner.requestTurn(reason, body, comments.map(row => row.id), { id: input.clientRequestId, digest });
       }
       writeDocument(path, ThreadActionReceiptSchema, { ...receipt, applied: true });
+    });
+  }
+  async automaticFix(threadId: string, kind: PrAutoFixKind): Promise<boolean> {
+    const projectId = this.#o.store.get(threadId)!.projectId;
+    return this.#exclusive(projectId, async () => {
+      const settings = await this.#o.admission.settings(projectId), thread = this.#local(projectId, threadId);
+      const local = this.#o.store.local(threadId), state = local.prAutoFix, runner = this.runner(threadId)!;
+      if (settings.status !== 'active' || !settings.prAutoFix[kind] || thread.state !== 'in-review' || thread.resolution || runner.busy || local.pendingTurn || !state || state.disabled || state.rounds >= settings.prAutoFix.maxRounds || thread.pr?.state !== 'open') return false;
+      const comments = kind === 'comments' ? local.prComments?.items.slice(0, 15) ?? [] : [];
+      if (kind === 'checks' && (thread.pr.checks !== 'failing' || state.handledHead.checks === thread.pr.headSha) || kind === 'conflicts' && (thread.pr.mergeable !== 'conflict' || state.handledHead.conflict === thread.pr.headSha) || kind === 'comments' && (!comments.length || this.#o.now() - Math.max(...(local.prComments?.items ?? []).map(row => Date.parse(row.at))) < 120_000)) return false;
+      const reason = kind === 'conflicts' ? 'conflict' : kind;
+      const body = kind === 'comments' ? commentsFixPrompt(thread.pr.number, comments) : kind === 'checks' ? checksFixPrompt(thread.pr.number, thread.pr.headSha, thread.pr.failedChecks ?? []) : conflictFixPrompt(thread.pr.number, thread.baseBranch);
+      await runner.requestTurn(reason, body, comments.map(row => row.id), undefined,
+        { by: 'automatic', id: newId('pfix', this.#o.now()), kind, round: state.rounds + 1, maxRounds: settings.prAutoFix.maxRounds });
+      return true;
+    });
+  }
+  async automaticFixLimit(threadId: string, kind: PrAutoFixKind): Promise<void> {
+    const projectId = this.#o.store.get(threadId)!.projectId;
+    await this.#exclusive(projectId, async () => {
+      const settings = await this.#o.admission.settings(projectId), thread = this.#local(projectId, threadId), local = this.#o.store.local(threadId), state = local.prAutoFix;
+      if (!state || state.questionId || state.disabled || local.pendingTurn || this.runner(threadId)!.busy || thread.state !== 'in-review' || thread.pr?.state !== 'open' || settings.status !== 'active' || !settings.prAutoFix[kind] || state.rounds < settings.prAutoFix.maxRounds || !this.#o.decisions.automaticFixLimit) return;
+      const id = await this.#o.decisions.automaticFixLimit(projectId, thread, kind, settings.prAutoFix.maxRounds, state.questionSequence ?? 0);
+      await this.#o.delivery.toCoordinator(projectId, { schema: 'coordinator-event-v1', kind: 'thread-auto-fix', id: derivedId('cev', id, 'gave-up'), at: new Date(this.#o.now()).toISOString(), threadId, prNumber: thread.pr.number, fixKind: kind, round: state.rounds, maxRounds: settings.prAutoFix.maxRounds, outcome: 'gave-up' });
+      this.#o.store.updateLocal(threadId, current => ({ ...current, prAutoFix: { ...current.prAutoFix!, questionId: id, questionKind: kind } }));
+    });
+  }
+  async automaticFixAnswer(projectId: string, threadId: string, prNumber: number, allow: boolean, commandId: string): Promise<void> {
+    if (!this.#o.store.get(threadId)) {
+      const index = await this.#remote(projectId, threadId);
+      await this.#o.delivery.toThreadOwner(projectId, threadId, index.ownerDeviceId, { type: 'automatic-fix-answer', prNumber, allow, commandId }, commandId); return;
+    }
+    await this.#exclusive(projectId, async () => {
+      const thread = this.#local(projectId, threadId), local = this.#o.store.local(threadId);
+      if (local.seenCommands?.includes(commandId)) return;
+      this.#o.store.updateLocal(threadId, current => {
+        const next = { ...current, seenCommands: [...(current.seenCommands ?? []), commandId].slice(-200) };
+        if (current.prAutoFix?.prNumber === prNumber && thread.pr?.number === prNumber && thread.pr.state === 'open') {
+          next.prAutoFix = { ...current.prAutoFix, disabled: !allow, ...(allow ? { rounds: 0, handledHead: {}, pendingResults: [] } : {}) };
+          delete next.prAutoFix.questionId; delete next.prAutoFix.questionKind;
+        }
+        return next;
+      });
+      if (allow) this.#o.pullRequestChanged?.();
     });
   }
   /**
@@ -740,6 +787,7 @@ export class ThreadService {
       case 'stop': await runner.stop(command.reason, command.notify ?? false); return;
       case 'discard': await runner.discard(); return;
       case 'allow-turns': await runner.allowTurns(); return;
+      case 'automatic-fix-answer': await this.automaticFixAnswer(projectId, threadId, command.prNumber, command.allow, command.commandId); return;
       case 'override-next-turn': await this.#applyNextTurn(thread.id, command.override, command.placement); return;
     }
   }

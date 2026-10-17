@@ -749,3 +749,5 @@ button.pw-session-badge { display: inline-flex; gap: 6px; min-height: 30px; padd
 .pw-group-landing .pw-card-dot { background: var(--warn); }
 .pw-group-idle .pw-card-dot { background: var(--ink-3); }
 .pw-group-resolved .pw-card-dot { background: var(--ok); }
+
+.pw-fix-label { color: var(--ink-2); font-size: .78rem; font-weight: 600; margin: .6rem .75rem; }

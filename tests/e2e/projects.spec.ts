@@ -2115,3 +2115,57 @@ test('PAR3 header action rows stay separate on narrow screens', async ({ page },
   await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-3/screenshots/PAR3-header-actions-${layout(info)}.png`, fullPage: false });
   expect(errors).toEqual([]);
 });
+
+test('PAR4 automatic fix labels, round limit and an owner-requested fix', async ({ page }, info) => {
+  const errors = await begin(page); await page.goto('about:blank');
+  const prepared = await control('/projects/automatic-fix', { schema: 'fixture-automatic-fix-v1', action: 'prepare' }) as { threadId: string; prNumber: number };
+  const project = '/api/projects/projects_autofix', path = '/projects/projects_autofix';
+  await control('/projects/automatic-fix', { schema: 'fixture-automatic-fix-v1', action: 'fail' });
+  await page.goto(path); await expect(page.getByRole('heading', { name: 'Projects automatic fixes', exact: true })).toBeVisible(LONG);
+  await sectionTab(page, info, 'Threads');
+  await expect(page.getByText('Loading chat…', { exact: true })).toHaveCount(0, LONG);
+  const waiting = region(page, 'Waiting for you');
+  await expect(waiting).toContainText(`Pull request #${prepared.prNumber} still has failing checks after 1 automatic fixes.`, LONG);
+  await expect(waiting.getByRole('button', { name: 'Allow 1 more automatic fixes', exact: true })).toBeVisible();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-limit-${layout(info)}.png`, fullPage: false });
+  await waiting.getByRole('button', { name: 'Leave it to me', exact: true }).click();
+  await page.goto(`${path}/threads/${prepared.threadId}`);
+  await expect(page.getByText('Automatic fix: failing checks', { exact: true })).toHaveCount(2, LONG);
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-automatic-${layout(info)}.png`, fullPage: false });
+  const previousHead = ThreadViewSchema.parse(await read(page, `${project}/threads/${prepared.threadId}`)).thread.pr!.headSha;
+  await page.getByRole('button', { name: 'Fix checks', exact: true }).click();
+  await expect(page.getByText('Requested by you', { exact: true })).toHaveCount(2, LONG);
+  await expect.poll(async () => {
+    const thread = ThreadViewSchema.parse(await read(page, `${project}/threads/${prepared.threadId}`)).thread;
+    return thread.state === 'in-review' && thread.pr?.checks === 'passing' && thread.pr.headSha !== previousHead;
+  }, LONG).toBe(true);
+  await expect(page.getByText('In review', { exact: true })).toBeVisible(LONG);
+  const view = ThreadViewSchema.parse(await read(page, `${project}/threads/${prepared.threadId}`));
+  expect(view.thread.turns).toBe(3); expect(view.thread.pr?.number).toBe(prepared.prNumber);
+  expect(view.reports.at(-1)?.fix).toEqual({ by: 'owner', kind: 'checks' });
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-owner-request-${layout(info)}.png`, fullPage: false });
+  expect(errors).toEqual([]);
+});
+
+test('PAR4 reconnect page recovers after a transient hub navigation failure', async ({ page }, info) => {
+  const errors = await begin(page), context = page.context();
+  await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller), LONG).toBe(true);
+  let injected = false, healthSeen = false, release!: () => void;
+  const recovered = new Promise<void>(resolve => { release = resolve; });
+  await context.route('**/api/health', async route => { healthSeen = true; await recovered; await route.continue(); });
+  await context.route('**/projects/projects_fixture', async route => {
+    if (!injected && route.request().serviceWorker()) { injected = true; await route.fulfill({ status: 503, contentType: 'text/plain', body: 'Temporarily busy' }); }
+    else await route.continue();
+  });
+  try {
+    await page.goto('/projects/projects_fixture');
+    await expect(page.getByRole('heading', { name: 'Let’s reconnect.', exact: true })).toBeVisible(LONG);
+    await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-reconnect-${layout(info)}.png`, fullPage: false });
+    release();
+    await expect(page.getByRole('heading', { name: 'Projects fixture', exact: true })).toBeVisible(LONG);
+    expect(injected).toBe(true); expect(healthSeen).toBe(true);
+    await expect(page.getByText('Loading chat…', { exact: true })).toHaveCount(0, LONG);
+    await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-recovered-${layout(info)}.png`, fullPage: false });
+  } finally { release(); await context.unrouteAll({ behavior: 'wait' }); }
+  expect(errors).toEqual([]);
+});

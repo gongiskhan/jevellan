@@ -1,5 +1,7 @@
 # Decisions
 
+The current Projects parity decisions are846–860 in the [run log](acceptance/projects-parity-2026-10/README.md#decisions). In particular,856 and858 replace the coordinator's unconditional PR-fix messages with the code-driven automatic loop;857 records durable attempt accounting and comment batches;859 records the simulated test harness budget;860 adds recovery from transient PWA navigation failures. Historical checkpoints below retain their original scope.
+
 Jev decides what the work means and which action, model and effort fit it, and where each new project thread runs. Code enforces available resources, runtime permissions, user choices and work limits. The implementation is in `packages/decisions`; conversation guards are in `packages/conversations/src/guards.ts` and project limits in `packages/projects`.
 
 Two question sets exist. Conversations use **q-v2**, declared in `selection.ts` and recorded with automatic decisions. Project thread placement uses **p-v1**, declared in `placement.ts` and recorded in every placement record; see [Placement (p-v1)](#placement-p-v1). The seeded configuration requests `jev-1.13.0`, uses a 4,000 ms request timeout and keeps the current eligible model at a probability of at least 0.6. Settings → Decisions can change the configured model, routing profile, model descriptions and effort guidance; the Configuration editor exposes the timeout and threshold. These are application defaults, not claims about the provider's latest models.

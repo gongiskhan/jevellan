@@ -89,6 +89,13 @@ export type ProjectCoordinator = z.infer<typeof ProjectCoordinatorSchema>;
 
 // 5.7 The fields stay unrefined so tool inputs can derive from them; zod 4 refuses .omit/.extend on refined objects.
 export const ThreadReportStatusSchema = z.enum(['progress', 'done', 'needs-decision', 'blocked']);
+export const PrAutoFixKindSchema = z.enum(['checks', 'conflicts', 'comments']);
+export type PrAutoFixKind = z.infer<typeof PrAutoFixKindSchema>;
+export const ThreadFixSchema = z.discriminatedUnion('by', [
+  z.strictObject({ by: z.literal('owner'), kind: PrAutoFixKindSchema }),
+  z.strictObject({ by: z.literal('automatic'), id: IdSchema, kind: PrAutoFixKindSchema, round: positive, maxRounds: positive }),
+]);
+export type ThreadFix = z.infer<typeof ThreadFixSchema>;
 export const ThreadReportFieldsSchema = z.strictObject({
   schema: z.literal('thread-report-v1'), turn: positive,
   status: ThreadReportStatusSchema,
@@ -97,6 +104,7 @@ export const ThreadReportFieldsSchema = z.strictObject({
   testsRun: z.strictObject({ command: z.string(), passed: z.boolean(), summary: z.string().max(600) }).optional(),
   changedFiles: z.array(z.string()).max(200).default([]), synthesized: z.boolean(),
   ownerCommands: OwnerCommandsSchema.optional(),
+  fix: ThreadFixSchema.optional(),
 });
 export const NEEDS_DECISION_QUESTION = 'A needs-decision report needs a question.';
 export function reportHasQuestion(report: { status: string; question?: string | undefined }): boolean {
@@ -249,6 +257,7 @@ export const ProjectDecisionSchema = z.strictObject({ schema: z.literal('project
   ownerCommands: OwnerCommandsSchema.optional(),
   // B3: a question that asks the owner to sign in to this account; withdrawn once the account is Ready.
   accountId: IdSchema.optional(),
+  automaticFix: z.strictObject({ prNumber: positive, kind: PrAutoFixKindSchema, maxRounds: positive }).optional(),
   createdAt: TimestampSchema, answeredAt: TimestampSchema.optional(), answer: DecisionAnswerSchema.optional(),
   merge: z.strictObject({ commit: z.string().regex(/^[a-f0-9]{40,64}$/u), prNumber: positive, reason: z.string().max(1200).optional(), failures: z.array(z.strictObject({ what: z.string().max(500), output: z.string().max(2000) })).max(50).optional() }).optional(),
   withdrawnAt: TimestampSchema.optional() });
@@ -284,6 +293,12 @@ export const PullCommentSchema = z.strictObject({ id: z.string().min(1).max(64),
 export type PullComment = z.infer<typeof PullCommentSchema>;
 export const PullCommentsSchema = z.strictObject({ schema: z.literal('pr-comment-batch-v1'), prNumber: positive, since: TimestampSchema, remoteUpdatedAt: TimestampSchema.optional(), fetchedAt: TimestampSchema, items: z.array(PullCommentSchema).max(3000), deliveredIds: z.array(z.string().max(64)).max(500) });
 export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-local-v1'),
+  prAutoFix: z.strictObject({ prNumber: positive, rounds: count, disabled: z.boolean(),
+    handledHead: z.strictObject({ checks: z.string().optional(), conflict: z.string().optional() }),
+    comments: z.strictObject({ since: TimestampSchema, deliveredIds: z.array(z.string().max(64)).max(500) }),
+    pendingResults: z.array(z.strictObject({ id: IdSchema, kind: PrAutoFixKindSchema, round: positive, maxRounds: positive, head: z.string(), comments: count.optional(), startedNotified: z.boolean().optional(), turnStarted: z.boolean().optional() })).max(10).optional(),
+    questionId: IdSchema.optional(), questionKind: PrAutoFixKindSchema.optional(), questionSequence: count.optional(),
+  }).optional(),
   acceptedActions: z.array(z.strictObject({ id: IdSchema, digest: z.string().regex(/^[a-f0-9]{64}$/u) })).max(200).optional(),
   prComments: PullCommentsSchema.optional(),
   landing: ThreadIndexSchema.shape.landing, fixable: ThreadIndexSchema.shape.fixable,
@@ -308,7 +323,7 @@ export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-loca
   unsettledCheckout: z.strictObject({ settle: z.enum(['published', 'unchanged', 'stop']), message: z.string().max(400).optional(),
     seen: z.strictObject({ main: z.string().regex(/^[0-9a-f]{40,64}$/), tree: z.string().regex(/^[0-9a-f]{64}$/).optional() }).optional() }).optional(),
   // phase 8: a turn that waited because a terminal holds its account; it runs first when the thread takes its next turn
-  pendingTurn: z.strictObject({ reason: z.enum(['task', 'verification', 'conflict', 'checks', 'comments', 'continue', 'publish']), body: z.string().min(1).max(40_000) }).optional(),
+  pendingTurn: z.strictObject({ reason: z.enum(['task', 'verification', 'conflict', 'checks', 'comments', 'continue', 'publish']), body: z.string().min(1).max(40_000), fix: ThreadFixSchema.optional(), commentIds: z.array(z.string().max(64)).max(15).optional() }).optional(),
   // A step before the first turn failed for a transient reason: the next preparation attempt and how many retries were scheduled (B1).
   preparationRetry: z.strictObject({ attempts: z.number().int().min(1).max(10), retryAt: TimestampSchema }).optional(),
   // A message already restarted this thread's failed preparation; a later failure stays failed (B1).
@@ -352,6 +367,7 @@ export const ThreadCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('stop'), reason: z.string().max(400), notify: z.boolean().optional() }),
   z.strictObject({ type: z.literal('discard') }),
   z.strictObject({ type: z.literal('allow-turns') }),
+  z.strictObject({ type: z.literal('automatic-fix-answer'), prNumber: positive, allow: z.boolean(), commandId: IdSchema }),
   z.strictObject({ type: z.literal('override-next-turn'), override: PlacementOverrideSchema, placement: PlacementRecordSchema.optional() }),
 ]);
 export type ThreadCommand = z.infer<typeof ThreadCommandSchema>;
@@ -402,6 +418,7 @@ export const CoordinatorTurnEndSchema = z.strictObject({ schema: z.literal('coor
   sessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional(), usage: UsageSchema.optional(),
   status: z.enum(['completed', 'failed', 'timed-out', 'interrupted', 'dropped']), error: z.string().max(1000).optional() });
 export const ThreadTurnStartSchema = z.strictObject({ schema: z.literal('thread-turn-v1'), turn: positive, resumed: z.boolean(),
+  fix: ThreadFixSchema.optional(),
   prompt: z.string().max(200000).optional(), promptTruncated: z.boolean().optional(),
   runtime: IdSchema, modelId: IdSchema, model: text, effort: EffortSchema, accountId: IdSchema });
 export const ThreadTurnEndSchema = z.strictObject({ schema: z.literal('thread-turn-end-v1'), turn: positive,
@@ -473,6 +490,7 @@ export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project
   devices: z.array(ProjectDeviceSetupSchema).optional() });
 export type ProjectWorkView = z.infer<typeof ProjectWorkViewSchema>;
 export const ThreadViewSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-thread-view-v1'),
+  fixTurns: z.array(z.strictObject({ turn: positive, fix: ThreadFixSchema })).optional(),
   messageRoute: ThreadMessageRouteSchema.optional(),
   memoryRecall: MemoryRecallSchema.optional(),
   thread: ThreadIndexSchema, placement: PlacementRecordSchema, reports: z.array(ThreadReportSchema),

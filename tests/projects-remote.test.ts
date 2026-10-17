@@ -347,3 +347,21 @@ test('Overview owner actions reach the member once and preserve managed publicat
   expect(f.github.requests.filter(row => row.method === 'POST' && row.path.endsWith('/pulls'))).toHaveLength(1);
   await expectNoMemberLeaks(f, m);
 });
+
+test('automatic-fix limit answers reach the member once and resume its pending PR work', { timeout: 120_000 }, async () => {
+  const { f, m } = await setup(); await settings(f, { prAutoFix: { checks: true, conflicts: true, comments: true, maxRounds: 1 } });
+  m.fake.enqueueTurn(commitStep({ 'greeting.txt': 'Remote greeting.\n' }, { status: 'done', summary: 'Added the greeting.' }), forThread());
+  const created = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', createBody('Remote automatic fix', { deviceId: m.deviceId }));
+  await turns(f, m, created.threadId, 1); const n = m.thread(created.threadId).pr!.number;
+  m.fake.enqueueTurn(commitStep({ 'greeting.txt': 'First repair.\n' }, { status: 'done', summary: 'Fixed the greeting.' }), forThread());
+  f.github.setChecks(n, 'failing'); await m.app.projectWork.tracker.poll(); await m.app.projectWork.idle(); await m.app.projectWork.tracker.poll(); await round(f, m);
+  const question = (await f.app.projectHub.decisions(f.project.id)).find(q => q.automaticFix)!; expect(question).toBeDefined();
+  m.fake.enqueueTurn(commitStep({ 'greeting.txt': 'Second repair.\n' }, { status: 'done', summary: 'Fixed the remaining check.' }), forThread());
+  const answer = { clientRequestId: 'remote_allow_fix', optionLabel: 'Allow 1 more automatic fixes' };
+  await f.app.projectWork.decisions.answer(f.project.id, question.id, answer); await round(f, m);
+  await turns(f, m, created.threadId, 3);
+  expect(m.thread(created.threadId).state).toBe('in-review');
+  await f.app.projectWork.decisions.answer(f.project.id, question.id, answer); await round(f, m);
+  expect(m.app.projectWork.store.local(created.threadId).prAutoFix).toMatchObject({ rounds: 1, disabled: false });
+  expect(m.thread(created.threadId).turns).toBe(3); await expectNoMemberLeaks(f, m);
+});

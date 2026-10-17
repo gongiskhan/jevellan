@@ -59,7 +59,7 @@ export const ReservePathsSchema = z.array(text.max(300)).min(1).max(50);
 export const ReserveInputSchema = z.strictObject({ paths: ReservePathsSchema, reason: z.string().max(300).default(''), minutes: z.number().int().min(1).max(120).default(60) });
 export const ReleaseInputSchema = z.strictObject({ id: IdSchema.optional() });
 // The daemon fills schema, turn and synthesized: false.
-export const ThreadReportInputSchema = ThreadReportFieldsSchema.omit({ schema: true, turn: true, synthesized: true })
+export const ThreadReportInputSchema = ThreadReportFieldsSchema.omit({ schema: true, turn: true, synthesized: true, fix: true })
   .refine(reportHasQuestion, { message: NEEDS_DECISION_QUESTION, path: ['question'] });
 
 export const ThreadsListResultSchema = z.strictObject({ schema: z.literal('threads-list-result-v1'), threads: z.array(z.strictObject({

@@ -130,8 +130,8 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const allow = useTask((failure) => { fail(failure); kick.current(); });
   const turns = view?.transcript?.turns; const reports = view?.reports;
   const state = view?.thread.state; const finished = view?.thread.turns ?? 0;
-  const items = useMemo(() => withoutEchoedSummaries(withoutReportCalls(alignReports(turns ?? [], reports ?? [], state === 'running' ? finished + 1 : finished), reports ?? [])),
-    [turns, reports, state, finished]);
+  const items = useMemo(() => withoutEchoedSummaries(withoutReportCalls(alignReports(turns ?? [], reports ?? [], state === 'running' ? finished + 1 : finished, view?.fixTurns), reports ?? [])),
+    [turns, reports, state, finished, view?.fixTurns]);
 
   const images = useMemo(() => sessionImages(turns ?? [], reports ?? []), [turns, reports]);
   const openImage = useCallback((ref: string) => { if (imageReferences(ref).length) { following.current = false; setBehind(true); setSelectedImage(ref); } }, []);
@@ -256,7 +256,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       <div className="cursor-transcript pw-transcript" aria-label={copy.TRANSCRIPT_LABEL}>
         {notice && <p className="pw-transcript-note">{notice}</p>}
         {transcriptItems.map((item) => item.kind === 'turn'
-          ? <Fragment key={item.turn.id}><TranscriptTurn turn={item.turn} onOpenImage={openImage} focus active={item.turn.id === activeTurnId} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} /><ThreadImageStrip base={base} files={turnImages(item.turn)} open={openImage} /></Fragment>
+          ? <Fragment key={item.turn.id}>{item.fix && <p className="pw-fix-label">{copy.fixTurnLabel(item.fix)}</p>}<TranscriptTurn turn={item.turn} onOpenImage={openImage} focus active={item.turn.id === activeTurnId} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} /><ThreadImageStrip base={base} files={turnImages(item.turn)} open={openImage} /></Fragment>
           : <ReportCard key={`report-${item.report.turn}-${item.report.synthesized ? 'synthesized' : 'recorded'}`} report={item.report} base={base} openImage={openImage} />)}
         {view.queuedMessages.length > 0 && (
           <section className="pw-queued" aria-labelledby={queuedId}>
@@ -330,6 +330,7 @@ function ReportCard({ report, base, openImage }: { report: ThreadReport; base: s
   const tests = report.testsRun; const options = report.options ?? [];
   return (
     <section className={`pw-report pw-report-${report.status}`} aria-labelledby={headingId}>
+      {report.fix && <p className="pw-fix-label">{copy.fixTurnLabel(report.fix)}</p>}
       <details className="pw-report-disclosure" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="pw-report-head">
         <h3 id={headingId}>{copy.reportHeading(report.turn)}</h3>

@@ -16,8 +16,8 @@
 | 0 | Reference, inventory, plan, roadmap and clocks | Pushed | Live checkout and local doctor; no product code changed |
 | 1 | Settings v4, page, pause/archive and daily cap | Pushed 15d0a138; vision blocked | Simulated: 429 distinct backend cases, 8 browser journeys across 4 layouts, typecheck/lint/build and working-tree secret scan pass. See phase-1/. Full suites remain phase 10 gates. |
 | 2 | Coordinator instructions, answers, cards, proposals and settings | Pushed a03f98af; vision blocked | Affected backend cases, eight unique four-layout browser journeys, final PAR2 repetitions, typecheck/lint/build pass. See phase-2/. |
-| 3 | Overview, resolution and thread actions | Source complete; vision blocked | Affected backend/API/remote cases pass. Seven unique journeys pass in every layout across recorded runs; final settled Overview captures pass. Typecheck/lint/build/secret checks pass. See phase-3/. |
-| 4 | Automatic pull request fixes | Not started | Not run |
+| 3 | Overview, resolution and thread actions | Pushed6d15b8f9; vision blocked | Affected backend/API/remote cases pass. Seven unique journeys pass in every layout across recorded runs; final settled Overview captures pass. Typecheck/lint/build/secret checks pass. See phase-3/. |
+| 4 | Automatic pull request fixes | Source complete; push pending; vision blocked |92 affected backend cases and8 browser journeys pass across four layouts; see phase-4/. |
 | 5 | Account waits, placement bounds, escalation and usage | Not started | Not run |
 | 6 | Web push | Not started | Not run |
 | 7 | Library, attachments, environment and scoped rigging | Not started | Not run |
@@ -85,3 +85,23 @@ Simulated checks are in progress. The first valid regressions demonstrate missin
 ## Phase 3 checkpoint
 
 Simulated: affected backend, schema/API, GitHub budget and two-daemon owner-action checks pass as recorded in phase-3/README.md. Seven unique browser journeys pass in each of the four layouts across affected runs, with final settled Overview repetitions. All88 vision receipts say not run for the missing dedicated test credential. Typecheck, lint, build, whitespace and working-tree secret checks pass. Harness output-folder, interception and initialization failures remain recorded, along with the existing process-group cleanup warning. No installed release, live-provider acceptance or owner acceptance is claimed. Phase4 has not started.
+
+## Phase 3 push and phase 4 start
+
+Live: phase3 is pushed as6d15b8f9. The normal history secret scan passed. Phase4 starts with the same-thread checks-to-fix-to-publication regression, before implementation. No installed source changed and the live clock is unstarted.
+
+## Phase 4 decisions
+
+856. Decision68's coordinator-led checks/conflict response becomes the brief's code-driven automatic loop. Existing PR update events remain, while the coordinator is instructed to message about PRs only on the owner's request, when automatic fixes are off, or after the limit. One eligible fix is queued at a time in the same thread and uses existing admission, verification and publication. Owner actions do not spend automatic rounds.
+
+857. Attempts have durable ids, queued provenance and stable event ids. A round and its comment delivery are charged when a runtime accepts the turn, so disabling a queued, unstarted fix cancels it without spending a round. Internal verification keeps the same origin and round. The daemon supplies provenance; the model's report input cannot forge it. Comment turns take at most15 records to stay within the40,000-character pending text allowance. Existing cached reads and the500-id cursor remain; same-timestamp batch coverage confirms they retain the remaining comments. Recovered CI withdraws an obsolete cap question; a stored question sequence permits a later failure to ask again.
+
+858. The earlier coordinator-abilities brief's unconditional failed-check-log instruction also yields to BRIEF.md P4.4. Its older GitHub-awareness sentence is removed so it cannot contradict the new automatic-fix rule. A prompt regression fails before that removal.
+
+859. The simulated backend harness uses two workers and a60-second default test/cleanup allowance. This makes the phase1 command-line allowance explicit after the four-turn owner-action case also exceeds15seconds in isolation and then passes unchanged in35.91seconds. Explicit120/300-second integration bounds stay; no product timeout, safety guard, request-budget assertion or browser/live deadline changes.
+
+860. A phase4 navigation regression exposes the PWA's eight-second navigation fallback leaving a recovered hub on the manual-only reconnect page. The public offline page now probes transport health without reading or caching owner documents, retries at5–30seconds only while visible, and retries immediately when shown or the network returns. It reloads once when reachable and keeps Try again. Three regressions fail before the repair and pass afterwards. The clock is unchanged.
+
+## Phase 4 checkpoint
+
+Simulated:92 affected backend cases pass across eight files. Both browser journeys pass in every layout (8/8), including settled chat/publication and automatic recovery from one503 navigation without an online event or owner click. All20 dedicated vision receipts are not run for the missing test credential; selected final captures are directly inspected. Typecheck, lint and build pass, with the existing bundle warning. Failed attempts and the recurring fixture cleanup warning remain recorded. The final working-tree secret scan passes; the mandatory history scan gates publication. No installed source, Ekoa work, native home or other installation was changed; the live clock is unstarted.

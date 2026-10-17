@@ -177,3 +177,9 @@ test('Projects copy outside the brief texts never uses conversation vocabulary o
   // The coordinator append and the fresh context are brief-verbatim and do say "conversation".
   expect(copy.coordinatorSystemAppend('Shop')).toContain('without this conversation');
 });
+
+test('coordinator PR instructions do not request a duplicate reply while automatic fixes run', () => {
+  const text = copy.coordinatorSystemAppend('Shop');
+  expect(text).toContain('Message a thread about its pull request only when the owner asks, automatic fixes are off, or Jevellan gave up.');
+  expect(text).not.toContain("When a thread's checks fail, read the failed job's log and tell the thread exactly what failed.");
+});

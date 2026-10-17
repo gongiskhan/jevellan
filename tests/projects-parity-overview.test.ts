@@ -7,7 +7,11 @@ import { forThread } from '../packages/runtime-contract/dist/index.js';
 import { commitStep, projectFixture, reportStep, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
 let f: ProjectFixture | undefined;
 afterEach(async () => { await f?.close(); f = undefined; });
-async function setup(options: ProjectFixtureOptions = {}) { return f = await projectFixture(options); }
+async function setup(options: ProjectFixtureOptions = {}) {
+  const fixture = f = await projectFixture(options), settings = await fixture.app.projectWork.admission.settings(fixture.project.id);
+  await fixture.app.projectHub.putSettings({ ...settings, prAutoFix: { checks: false, conflicts: false, comments: false, maxRounds: 3 } }, settings.revision);
+  return fixture;
+}
 async function start(f: ProjectFixture, title = 'Overview task') {
   return f.json('/api/projects/project/threads', core.ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: `req_${randomUUID()}`, title, task: title });
 }
@@ -62,7 +66,7 @@ test('Automatic resolution uses seven days of index activity, keeps open PRs, an
   expect(f.coordinatorState().queue).toContainEqual(expect.objectContaining({ kind: 'thread-resolved', threadId, by: 'inactivity' }));
 });
 
-test('Owner check, conflict and comment actions run the right prompt once and update the existing PR', async () => {
+test('Owner check, conflict and comment actions run the right prompt once and update the existing PR', { timeout: 120_000 }, async () => {
   let now = Date.now(); const f = await setup({ projectTimers: { now: () => now } });
   f.fake.enqueueTurn(commitStep({ 'fix.txt': 'before\n' }, { status: 'done', summary: 'Initial change.' }), forThread());
   const { threadId } = await start(f); await f.waitFor(() => f.thread(threadId), t => t.state === 'in-review');

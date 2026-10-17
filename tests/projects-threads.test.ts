@@ -20,6 +20,11 @@ afterEach(async () => {
 });
 async function setup(options: ProjectFixtureOptions = {}): Promise<ProjectFixture> { fixture = await projectFixture(options); return fixture; }
 
+async function manualPullRequests(f: ProjectFixture): Promise<void> {
+  const settings = await f.app.projectWork.admission.settings(f.project.id);
+  await f.app.projectHub.putSettings({ ...settings, prAutoFix: { checks: false, conflicts: false, comments: false, maxRounds: 3 } }, settings.revision);
+}
+
 const createBody = (title: string, task: string, clientRequestId = `req_${randomUUID()}`, extra: object = {}) => ({ schema: 'thread-create-request-v1', clientRequestId, title, task, ...extra });
 const empty = { schema: 'empty-request-v1' };
 const queue = (f: ProjectFixture): CoordinatorEvent[] => f.coordinatorState().queue;
@@ -69,7 +74,7 @@ test('a thread compaction keeps its native session and restores the task block o
 });
 
 test('PJ1 owner thread runs in a worktree, opens a pull request, follows checks and cleans up after merge', { timeout: 120_000 }, async () => {
-  const f = await setup({ testCommand: 'test -f greeting.txt' });
+  const f = await setup({ testCommand: 'test -f greeting.txt' }); await manualPullRequests(f);
   const upstream = advanceOrigin(f);
   const before = checkoutState(f);
   expect(before.tracking).not.toBe(upstream);
@@ -172,7 +177,7 @@ test('PJ1 owner thread runs in a worktree, opens a pull request, follows checks 
 });
 
 test('PJ1 merge from the API squashes the checked head', { timeout: 120_000 }, async () => {
-  const f = await setup({ testCommand: 'test -f greeting.txt' });
+  const f = await setup({ testCommand: 'test -f greeting.txt' }); await manualPullRequests(f);
   f.fake.enqueueTurn(commitStep({ 'greeting.txt': 'hello\n' }, { status: 'done', summary: 'Added greeting.txt.' }), forThread());
   const { threadId } = ThreadCreatedViewSchema.parse(await (await f.request('/api/projects/project/threads', 'POST', createBody('Add greeting', 'Create greeting.txt.'))).json());
   await f.waitFor(() => f.thread(threadId).state, (state) => state === 'in-review');

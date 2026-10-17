@@ -2,15 +2,15 @@
 
 ## Projects parity, October 2026
 
-Authority: root untracked BRIEF.md,17October2026, supersedes conflicting older plans. Decisions846–855. Baseline da6a9bc9/0.4.1; current machine Pro, local hub0.3.6 verified by doctor. Other installations remain separate.
+Authority: root untracked BRIEF.md,17October2026, supersedes conflicting older plans. Decisions846–860. Baseline da6a9bc9/0.4.1; current machine Pro, local hub0.3.6 verified by doctor. Other installations remain separate.
 
 The build clock starts at this run's first commit, lasts14hours, and closes new feature phases at12hours. The separate3-hour live clock starts at0.5.0 installation. Exact times and all evidence are in docs/acceptance/projects-parity-2026-10/README.md. Orientation is limited to30minutes.
 
 0. Orientation: save brief, read required context, freeze AppendixA reference, inventory, plan and roadmap.
 1. Settings v4/vault migration, dedicated settings page, pause/archive gates and daily admission cap. Source complete;429 affected backend cases and8 four-layout browser journeys pass. Dedicated model vision is blocked; see the phase1 checkpoint.
 2. Shared project instructions, answer-in-place, live chat cards, enforced proposals, owner-authorized settings changes and Undo. Pushed as a03f98af; source checks and affected browser journeys pass, with dedicated vision blocked.
-3. Overview groups, resolution/auto-resolution and applicable thread actions. Source and affected verification complete; all four layouts pass, dedicated vision not run. See phase3 evidence and Decisions853–855.
-4. Code-driven pull request checks/conflict/comment fixes, bounded rounds and owner decisions.
+3. Overview groups, resolution/auto-resolution and applicable thread actions. Pushed6d15b8f9; source and affected verification complete; all four layouts pass, dedicated vision not run. See phase3 evidence and Decisions853–855.
+4. Code-driven pull request checks/conflict/comment fixes, bounded rounds and owner decisions. Source and affected checks complete:92 backend cases and8 browser journeys pass across four layouts; dedicated vision blocked. Decisions856–860 also cover transient PWA recovery and the harness allowance.
 5. Automatic account waits/continuation, Jev model moves/escalation, placement constraints and usage.
 6. PWA web push, subscription Settings, levels and event triggers.
 7. Hub Library, composer attachments, worktree environment/secrets/copied files and project-scoped rigging.

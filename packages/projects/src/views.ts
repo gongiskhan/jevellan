@@ -192,6 +192,7 @@ export class ProjectViews {
     if (!thread || thread.projectId !== projectId) throw refuse(THREAD_NOT_FOUND, 404);
     const project = await this.#project(projectId); const ledger = this.#o.ledgers.thread(projectId, threadId); const events = ledger.events();
     const reports = events.filter((event) => event.type === 'thread-report').map((event) => ledger.payload(event as ProjectLedgerEvent & { type: 'thread-report' }) as ThreadReport);
+    const fixTurns = events.filter(event => event.type === 'thread-turn-start').flatMap(event => { const start = ledger.payload(event as ProjectLedgerEvent & { type: 'thread-turn-start' }); return start.fix ? [{ turn: start.turn, fix: start.fix }] : []; });
     // The page keeps working when the native session cannot be read; the transcript is just absent.
     const transcript = await this.#o.transcripts.read(thread, project.name).catch(() => null);
     const restartReason = restartRefusal(thread);
@@ -203,7 +204,7 @@ export class ProjectViews {
       sessionCache: sessionCacheSummaries(cacheRecords(ledger)).slice(-500) },
       ...(this.#o.store.local(threadId).memoryRecall ? { memoryRecall: this.#o.store.local(threadId).memoryRecall } : {}),
       sessionHistory: (this.#o.store.local(threadId).sessionHistory ?? []).map(({ nativeSessionId: _native, ...entry }) => { void _native; return entry; }),
-      placement: thread.placement, reports, transcript, queuedMessages: thread.queuedMessages,
+      placement: thread.placement, reports, ...(fixTurns.length ? { fixTurns } : {}), transcript, queuedMessages: thread.queuedMessages,
       ...(routed ? { messageRoute: ledger.payload(routed as typeof routed & { type: 'thread-message-route' }) } : {}),
       ...(mergesHeld === undefined ? {} : { mergesHeld }),
       canMessage: thread.state !== 'attached' && canContinueThread(thread), turnAllowance: thread.turnAllowance, deviceName: this.#o.deviceName,

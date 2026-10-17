@@ -584,14 +584,14 @@ export function working(events: readonly ProjectLedgerEvent[], view: Pick<Projec
   return open !== undefined;
 }
 
-export type TranscriptItem = { kind: 'turn'; turn: CursorTurn } | { kind: 'report'; report: ThreadReport };
+export type TranscriptItem = { kind: 'turn'; turn: CursorTurn; fix?: import('@jevellan/core/client').ThreadFix } | { kind: 'report'; report: ThreadReport };
 
 export function mergeThreadToolTurns(items: readonly TranscriptItem[]): TranscriptItem[] {
   const result: TranscriptItem[] = [];
   for (const item of items) {
     const previous = result.at(-1);
     const joined = item.kind === 'turn' && previous?.kind === 'turn' ? joinToolTurns(previous.turn, item.turn) : undefined;
-    if (joined) result[result.length - 1] = { kind: 'turn', turn: joined }; else result.push(item);
+    if (joined) result[result.length - 1] = { ...previous, kind: 'turn', turn: joined }; else result.push(item);
   }
   return result;
 }
@@ -617,7 +617,7 @@ function reportedSummaries(segment: readonly CursorTurn[]): string[] {
  * (the caller passes `turns + 1` while a turn runs), else the last report's turn. Reports older than the transcript come
  * first, reports newer than it last; with no transcript they are simply in order.
  */
-export function alignReports(turns: readonly CursorTurn[], reports: readonly ThreadReport[], latest?: number): TranscriptItem[] {
+export function alignReports(turns: readonly CursorTurn[], reports: readonly ThreadReport[], latest?: number, fixes: readonly { turn: number; fix: import('@jevellan/core/client').ThreadFix }[] = []): TranscriptItem[] {
   const prefix: CursorTurn[] = []; const segments: CursorTurn[][] = [];
   for (const turn of turns) {
     if (isPrompt(turn)) segments.push([turn]);
@@ -637,7 +637,7 @@ export function alignReports(turns: readonly CursorTurn[], reports: readonly Thr
   reportsUpTo(first - 2);
   for (const turn of prefix) items.push({ kind: 'turn', turn });
   reportsUpTo(first - 1);
-  segments.forEach((segment, index) => { for (const turn of segment) items.push({ kind: 'turn', turn }); reportsUpTo(first + index); });
+  segments.forEach((segment, index) => { const fix = fixes.find(row => row.turn === first + index)?.fix; for (const turn of segment) items.push({ kind: 'turn', turn, ...(isPrompt(turn) && fix ? { fix } : {}) }); reportsUpTo(first + index); });
   reportsUpTo(Infinity);
   return items;
 }
@@ -657,7 +657,7 @@ export function withoutReportCalls(items: readonly TranscriptItem[], reports: re
     if (item.kind !== 'turn') return [item];
     const blocks = item.turn.blocks.filter(shown);
     if (blocks.length === item.turn.blocks.length) return [item];
-    return blocks.length ? [{ kind: 'turn', turn: { ...item.turn, blocks } }] : [];
+    return blocks.length ? [{ ...item, turn: { ...item.turn, blocks } }] : [];
   });
 }
 /**
@@ -673,7 +673,7 @@ export function withoutEchoedSummaries(items: readonly TranscriptItem[]): Transc
     const last = item.turn.blocks.at(-1);
     if (last?.type !== 'text' || last.text.trim() !== next.report.summary.trim()) return [item];
     const blocks = item.turn.blocks.slice(0, -1);
-    return blocks.length ? [{ kind: 'turn', turn: { ...item.turn, blocks } }] : [];
+    return blocks.length ? [{ ...item, turn: { ...item.turn, blocks } }] : [];
   });
 }
 

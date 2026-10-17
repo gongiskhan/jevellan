@@ -221,6 +221,7 @@ export class ProjectWork {
       local: (projectId) => this.store.list(projectId).map((thread) => threadIndex(thread, this.store.labels(thread.id), thread.createdAt)),
       pendingMain: (projectId) => this.threads.pendingMain(projectId) });
     this.decisions = new DecisionItems({ hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), mergeAnswer: (decision, answer, validateOnly) => this.mergeGate.answer(decision, answer, validateOnly), threads: () => ({
+      automaticFixAnswer: (projectId, threadId, prNumber, allow, commandId) => this.threads.automaticFixAnswer(projectId, threadId, prNumber, allow, commandId),
       allowTurns: (projectId, threadId, commandId) => this.threads.allowTurns(projectId, threadId, commandId),
       stop: (projectId, threadId, reason, commandId) => this.threads.stop(projectId, threadId, reason, true, commandId),
       stopRefusal: (projectId, threadId) => this.threads.stopRefusal(projectId, threadId),
@@ -298,6 +299,7 @@ export class ProjectWork {
     this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, ...(o.workRefusal ? { workRefusal: o.workRefusal } : {}), store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
       projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, settings: o.settings, now,
       roster: o.roster, decisions: this.decisions, fallbackCheckMs: timers.fallbackCheckMs, managedQueue: true,
+      pullRequestChanged: () => { void this.tracker.poll(); },
       refreshLanding: (projectId, threadId) => this.daily.assertMerge(projectId, threadId),
       queueChanged: projectId => { void this.dispatcher.sweep(projectId).catch(() => undefined); },
       runner: {
@@ -358,7 +360,7 @@ export class ProjectWork {
         const brief = `${task.brief}${goal ? `\n\nGoal: ${goal.name}. Why it matters: ${goal.motivation}` : ''}\n\nTask type: ${task.type}.`;
         return { brief, taskContext: { type: task.type, needs: task.needs, goal: goal ? { name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: brief };
       }, review: task => this.reviews.start(task), job: task => this.jobs.start(task), eligible: async (task, tasks) => await this.daily.eligible(task, tasks) && await this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
-    this.tracker = new PullRequestTracker({ comments: (thread, since) => this.#github.reviewComments(thread, since), threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
+    this.tracker = new PullRequestTracker({ withdrawDecision: (id, questionId) => this.decisions.withdraw(id, questionId), settings: id => this.admission.settings(id), automaticFix: (id, kind) => this.threads.automaticFix(id, kind), automaticFixLimit: (id, kind) => this.threads.automaticFixLimit(id, kind), comments: (thread, since) => this.#github.reviewComments(thread, since), threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
       hub: o.hub, deviceId: o.deviceId, assertMerge: (id, tid) => this.daily.assertMerge(id, tid),
@@ -483,7 +485,7 @@ export class ProjectWork {
       this.inbox.start();
       if (!this.#timers.periodic) return;
       this.tracker.start();
-      this.#sweepTimer = setInterval(() => { void this.threads.sweep().then(() => this.#sweepTasks()).catch(() => undefined); this.coordinators.sweep(); }, this.#timers.queueSweepMs); this.#sweepTimer.unref();
+      this.#sweepTimer = setInterval(() => { void this.threads.sweep().then(() => this.#sweepTasks()).then(() => this.tracker.poll()).catch(() => undefined); this.coordinators.sweep(); }, this.#timers.queueSweepMs); this.#sweepTimer.unref();
     }, () => undefined);
   }
   /**

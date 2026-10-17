@@ -1,6 +1,6 @@
 import {
   GitHubError, HubUnavailable, MergeResultViewSchema, PrDiffResultSchema, isTerminal, newId, parseGitHubPullUrl, parseGitHubRemote, stableJson,
-  type CoordinatorEvent, type GitHubRepository, type Project, type ProjectHub, type PullRequestState, type SecretRedactor, type Thread, type ThreadLocal,
+  type CoordinatorEvent, type GitHubRepository, type Project, type ProjectHub, type ProjectWorkSettings, type PrAutoFixKind, type PullRequestState, type SecretRedactor, type Thread, type ThreadLocal,
 } from '@jevellan/core';
 import type { z } from 'zod';
 import { MERGE_CHECKS_FAILING, MERGE_CONFLICTS, NOT_GITHUB, NO_PULL_REQUEST, PR_CLOSED, PR_NOT_OPEN, THREAD_NOT_FOUND, cleanupFailed, prStatusUnavailable } from './copy.js';
@@ -8,10 +8,15 @@ import type { ThreadGit } from './git.js';
 import { pullRequestState, type GitHubAccess } from './publication.js';
 import type { ThreadStore } from './stores.js';
 import type { ThreadWorktree } from './worktree.js';
+import { derivedId } from './decision-items.js';
 
 export type MergeResultView = z.infer<typeof MergeResultViewSchema>;
 type PrChange = Extract<CoordinatorEvent, { kind: 'pr-update' }>['change'];
 export type PullRequestTrackerOptions = {
+  settings?(projectId: string): Promise<ProjectWorkSettings>;
+  automaticFix?(threadId: string, kind: PrAutoFixKind): Promise<boolean>;
+  automaticFixLimit?(threadId: string, kind: PrAutoFixKind): Promise<void>;
+  withdrawDecision?(projectId: string, decisionId: string): Promise<unknown>;
   comments?(thread: Thread, since: string): Promise<import('@jevellan/core').PullComment[]>;
   assertMerge?(projectId: string, threadId?: string): Promise<void>;
   threads: Pick<ThreadStore, 'all' | 'get' | 'update' | 'local' | 'updateLocal' | 'ledgers'>;
@@ -152,7 +157,7 @@ export class PullRequestTracker {
     const previous = this.#o.threads.local(thread.id).prComments;
     if (this.#o.comments && (!previous || previous.prNumber !== next.number || previous.remoteUpdatedAt !== next.githubUpdatedAt && this.#o.now() - Date.parse(previous.fetchedAt) >= 60_000)) {
       try {
-      const since = previous?.prNumber === next.number ? previous.since : thread.pr?.updatedAt ?? thread.createdAt;
+      const since = previous?.prNumber === next.number ? previous.since : thread.createdAt;
       const comments = await this.#o.comments({ ...thread, pr: next }, since), delivered = previous?.prNumber === next.number ? previous.deliveredIds : [];
       this.#o.threads.updateLocal(thread.id, local => ({ ...local, prComments: { schema: 'pr-comment-batch-v1', prNumber: next.number, since, ...(next.githubUpdatedAt ? { remoteUpdatedAt: next.githubUpdatedAt } : {}), fetchedAt: this.#at(), items: comments.filter(row => !delivered.includes(row.id)), deliveredIds: delivered } }));
       } catch (error) { this.#readFailure(thread, error); }
@@ -166,7 +171,76 @@ export class PullRequestTracker {
     if (next.mergeable === 'conflict' && !notified.conflict) { changes.push('conflict'); notified = { ...notified, conflict: true }; }
     if (stableJson(notified) !== stableJson(local.prNotified ?? null)) this.#o.threads.updateLocal(thread.id, (current) => ({ ...current, prNotified: notified }));
     for (const change of changes) await this.#tell(thread, next.number, change);
-
+    await this.#automatic(thread.id, next);
+  }
+  async #fixEvent(thread: Thread, pending: NonNullable<NonNullable<ThreadLocal['prAutoFix']>['pendingResults']>[number], outcome: 'started' | 'fixed'): Promise<void> {
+    await this.#o.toCoordinator(thread.projectId, { schema: 'coordinator-event-v1', kind: 'thread-auto-fix',
+      id: derivedId('cev', pending.id, outcome), at: this.#at(), threadId: thread.id, prNumber: thread.pr!.number,
+      fixKind: pending.kind, round: pending.round, maxRounds: pending.maxRounds, outcome,
+      ...(pending.comments === undefined ? {} : { comments: pending.comments }) });
+  }
+  /** Durable attempts make notification retries safe without starting another turn or consuming another round. */
+  async #automatic(threadId: string, next: PullRequestState): Promise<void> {
+    if (!this.#o.settings || !this.#o.automaticFix) return;
+    let thread = this.#o.threads.get(threadId)!;
+    let local = this.#o.threads.local(threadId);
+    if (local.prAutoFix?.prNumber !== next.number) {
+      this.#o.threads.updateLocal(threadId, current => ({ ...current, prAutoFix: { prNumber: next.number, rounds: 0, disabled: false,
+        handledHead: {}, comments: { since: current.prComments?.since ?? thread.createdAt, deliveredIds: current.prComments?.deliveredIds ?? [] } } }));
+      local = this.#o.threads.local(threadId);
+    }
+    for (const pending of local.prAutoFix!.pendingResults ?? []) {
+      if (pending.startedNotified) continue;
+      await this.#fixEvent(thread, pending, 'started');
+      this.#o.threads.updateLocal(threadId, current => ({ ...current, prAutoFix: { ...current.prAutoFix!,
+        pendingResults: (current.prAutoFix!.pendingResults ?? []).map(row => row.id === pending.id ? { ...row, startedNotified: true } : row) } }));
+    }
+    const settings = await this.#o.settings(thread.projectId);
+    thread = this.#o.threads.get(threadId)!; local = this.#o.threads.local(threadId);
+    if (settings.status !== 'active' || thread.state !== 'in-review' || thread.resolution || local.pendingTurn) return;
+    const ledger = this.#o.threads.ledgers.thread(thread.projectId, threadId);
+    const pendingResults = local.prAutoFix!.pendingResults ?? [];
+    const reports = pendingResults.length ? ledger.events().filter(event => event.type === 'thread-report').map(event => ledger.payload(event as typeof event & { type: 'thread-report' })) : [];
+    for (const pending of pendingResults) {
+      const report = reports.findLast(row => row.fix?.by === 'automatic' && row.fix.id === pending.id);
+      if (!report) continue;
+      const passed = report.status === 'done' && (pending.kind === 'comments' || pending.kind === 'checks' && next.checks === 'passing' || pending.kind === 'conflicts' && next.mergeable === 'clean');
+      const failed = report.status === 'blocked' || report.status === 'needs-decision' || report.status === 'done' && next.headSha !== pending.head && (pending.kind === 'checks' && next.checks === 'failing' || pending.kind === 'conflicts' && next.mergeable === 'conflict');
+      if (!passed && !failed) continue;
+      if (passed) await this.#fixEvent(thread, pending, 'fixed');
+      this.#o.threads.updateLocal(threadId, current => ({ ...current, prAutoFix: { ...current.prAutoFix!, pendingResults: (current.prAutoFix!.pendingResults ?? []).filter(row => row.id !== pending.id) } }));
+    }
+    let state = this.#o.threads.local(threadId).prAutoFix!;
+    const comments = this.#o.threads.local(threadId).prComments?.items ?? [];
+    const quiet = comments.length > 0 && this.#o.now() - Math.max(...comments.map(row => Date.parse(row.at))) >= 120_000;
+    const problems: PrAutoFixKind[] = [];
+    if (settings.prAutoFix.checks && next.checks === 'failing') problems.push('checks');
+    if (settings.prAutoFix.conflicts && next.mergeable === 'conflict') problems.push('conflicts');
+    if (settings.prAutoFix.comments && comments.length) problems.push('comments');
+    if (state.questionId && this.#o.withdrawDecision && (!problems.length || state.questionKind && !problems.includes(state.questionKind) || state.rounds < settings.prAutoFix.maxRounds)) {
+      const id = state.questionId;
+      await this.#o.withdrawDecision(thread.projectId, id);
+      this.#o.threads.updateLocal(threadId, current => {
+        if (current.prAutoFix?.questionId !== id) return current;
+        const updated = { ...current.prAutoFix, questionSequence: (current.prAutoFix.questionSequence ?? 0) + 1,
+          ...(current.prAutoFix.rounds < settings.prAutoFix.maxRounds ? { handledHead: {} } : {}) };
+        delete updated.questionId; delete updated.questionKind;
+        return { ...current, prAutoFix: updated };
+      });
+      state = this.#o.threads.local(threadId).prAutoFix!;
+    }
+    if (state.disabled) return;
+    const kinds = problems.filter(kind => kind !== 'comments' || quiet);
+    if (state.rounds >= settings.prAutoFix.maxRounds) { if (kinds[0]) await this.#o.automaticFixLimit?.(threadId, kinds[0]); return; }
+    const kind = kinds.find(kind => kind === 'checks' ? state.handledHead.checks !== next.headSha : kind === 'conflicts' ? state.handledHead.conflict !== next.headSha : true);
+    if (!kind) return;
+    if (await this.#o.automaticFix(threadId, kind)) {
+      const queued = this.#o.threads.local(threadId).prAutoFix!.pendingResults?.at(-1);
+      if (queued) {
+        await this.#fixEvent(thread, queued, 'started');
+        this.#o.threads.updateLocal(threadId, current => ({ ...current, prAutoFix: { ...current.prAutoFix!, pendingResults: (current.prAutoFix!.pendingResults ?? []).map(row => row.id === queued.id ? { ...row, startedNotified: true } : row) } }));
+      }
+    }
   }
   async #tell(thread: Thread, prNumber: number, change: PrChange): Promise<void> {
     const at = this.#o.now();
@@ -191,7 +265,7 @@ export class PullRequestTracker {
         if (merged) { next.state = 'done'; delete next.stateReason; } else if (!ended) { next.state = 'stopped'; next.stateReason = PR_CLOSED; }
         return next;
       }, { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'pr-state', prNumber: pr.number, pr } });
-      try { await this.#tell(updated, pr.number, merged ? 'merged' : 'closed'); }
+      try { await this.#tell(updated, pr.number, merged ? 'merged' : 'closed'); const questionId = this.#o.threads.local(threadId).prAutoFix?.questionId; if (questionId) await this.#o.withdrawDecision?.(updated.projectId, questionId); }
       finally {
         // The thread has concluded either way: its worktree goes even when the coordinator could not be told.
         try {

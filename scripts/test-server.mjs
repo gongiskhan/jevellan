@@ -1,5 +1,5 @@
 import { startEkoaFixture } from '../tests/fixtures/ekoa-server.mjs';
-import { DeviceSchema, DeviceFactsSchema, ProjectDecisionSchema, ProjectWorkTaskSchema, ThreadIndexSchema } from '../packages/core/dist/index.js';
+import { DeviceSchema, DeviceFactsSchema, ProjectDecisionSchema, ProjectWorkTaskSchema, ThreadIndexSchema, defaultProjectWorkSettings } from '../packages/core/dist/index.js';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { execFileSync, spawn } from 'node:child_process';
@@ -201,6 +201,12 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.owner.projectId === 'projects_autofix') return async turn => {
+    writeFileSync(join(turn.input.cwd, 'greeting.txt'), `Greeting version ${input.turn}.\n`);
+    git(turn.input.cwd, 'add', 'greeting.txt'); git(turn.input.cwd, 'commit', '-m', `Greeting version ${input.turn}`);
+    if (input.turn >= 3) github.setChecks(application.projectWork.store.get(input.owner.id).pr.number, 'passing');
+    return report('done', `Greeting version ${input.turn} is ready.`, { changedFiles: ['greeting.txt'] })(turn);
+  };
   if (input.prompt.includes('PAR2 inspect:')) return report('progress', 'Read the README; ready for the next small step.');
   if (input.prompt.includes('CACHE1 metrics')) return async turn => {
     turn.emit({ type: 'context', tokens: 48000, contextWindow: 200000 });
@@ -650,9 +656,17 @@ if (projectsMode) {
   for (const path of [projectsPath, projectsMember]) { git(path, 'remote', 'set-url', 'origin', PROJECTS_REMOTE); git(path, 'config', `url.${projectsOrigin}.insteadOf`, PROJECTS_REMOTE); }
   const externalOrigin = join(root, 'projects-external-origin.git'); git(root, 'clone', '--bare', projectsOrigin, externalOrigin);
   const offlineOrigin = join(root, 'projects-offline-origin.git'); git(root, 'clone', '--bare', projectsOrigin, offlineOrigin);
-  const save = (id, name, paths, branchPolicy, extra = {}) => application.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project: ProjectSchema.parse({ schema: 'project-v1', id, name, paths, branchPolicy, ...extra,
-    memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
+  const save = async (id, name, paths, branchPolicy, extra = {}) => {
+    const saved = await application.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project: ProjectSchema.parse({ schema: 'project-v1', id, name, paths, branchPolicy, ...extra,
+      memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
+    // Legacy journeys exercise manual PR responses; PAR4 enables the automatic policy on its own project.
+    await application.projectHub.putSettings({ ...defaultProjectWorkSettings(id), memory: { mode: 'repo', capture: true, dreamMode: 'apply' }, prAutoFix: { checks: false, conflicts: false, comments: false, maxRounds: 3 } }, 0);
+    return saved;
+  };
   await save('projects_fixture', 'Projects fixture', { [hubId]: projectsPath, [memberId]: projectsMember }, 'main', { testCommand: 'test -f greeting.txt' });
+  const automaticFixPath = clone(projectsOrigin, join(root, 'projects-autofix'));
+  git(automaticFixPath, 'remote', 'set-url', 'origin', PROJECTS_REMOTE); git(automaticFixPath, 'config', `url.${projectsOrigin}.insteadOf`, PROJECTS_REMOTE);
+  await save('projects_autofix', 'Projects automatic fixes', { [hubId]: automaticFixPath }, 'main', { testCommand: 'test -f greeting.txt' });
   await save('projects_goals', 'Projects goals', { [hubId]: clone(projectsOrigin, join(root, 'projects-goals')) }, 'main');
   await save('projects_mirror', 'Projects mirror', { [hubId]: clone(projectsOrigin, join(root, 'projects-mirror')) }, 'main');
   await save('projects_typed', 'Projects typed', { [hubId]: clone(projectsOrigin, join(root, 'projects-typed')) }, 'main');
@@ -733,6 +747,9 @@ const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-con
 const dailyMarker = join(root, 'daily-result');
 const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-change-v1'), checks: z.enum(['none', 'pending', 'passing', 'passing-status', 'failing']).optional(),
   mergeable: z.enum(['clean', 'dirty', 'unknown', 'unstable']).optional(), merged: z.literal(true).optional(), closed: z.literal(true).optional() });
+const ControlAutomaticFixSchema = z.strictObject({ schema: z.literal('fixture-automatic-fix-v1'), action: z.enum(['prepare', 'fail']) });
+const AutomaticFixReceiptSchema = z.strictObject({ schema: z.literal('fixture-automatic-fix-receipt-v1'), threadId: z.string().min(1), prNumber: z.number().int().positive() });
+let automaticFixThread;
 const ControlOverviewSchema = z.strictObject({ schema: z.literal('fixture-overview-v1'), action: z.literal('prepare') });
 const ControlReleaseSchema = z.strictObject({ schema: z.literal('fixture-release-v1'), marker: z.string().min(1).max(200) });
 const ControlNotebookSchema = z.strictObject({ schema: z.literal('fixture-notebook-v1'), content: z.string().max(65536) });
@@ -748,7 +765,30 @@ async function projectControl(request, response) {
   const parse = (schema) => { const parsed = schema.safeParse(body); if (!parsed.success) send(400, { message: parsed.error.issues.map((issue) => issue.message).join(' ') }); return parsed.success ? parsed.data : undefined; };
   const pull = /^\/projects\/github\/(\d+)$/.exec(request.url);
   let input;
-  if (request.url === '/projects/overview' && (input = parse(ControlOverviewSchema))) {
+  if (request.url === '/projects/automatic-fix' && (input = parse(ControlAutomaticFixSchema))) {
+    const projectId = 'projects_autofix';
+    if (input.action === 'prepare') {
+      const settings = await application.projectWork.admission.settings(projectId);
+      await application.projectHub.putSettings({ ...settings, prAutoFix: { checks: true, conflicts: true, comments: true, maxRounds: 1 } }, settings.revision);
+      const made = await application.projectWork.createThread(projectId, { schema: 'thread-create-request-v1', clientRequestId: 'par4_automatic_fix', title: 'Keep the greeting clear', task: 'Keep greeting.txt clear.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high', deviceId: application.device.deviceId });
+      automaticFixThread = made.threadId;
+      const deadline = Date.now() + 60_000;
+      while (application.projectWork.store.get(automaticFixThread)?.state !== 'in-review') {
+        if (Date.now() > deadline) throw new Error(`The automatic-fix fixture did not publish its first pull request: ${application.projectWork.store.get(automaticFixThread)?.state}; ${application.projectWork.store.get(automaticFixThread)?.stateReason ?? ''}; ${application.projectWork.store.get(automaticFixThread)?.lastReport?.summary ?? ''}`);
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+    } else {
+      github.setChecks(application.projectWork.store.get(automaticFixThread).pr.number, 'failing'); await application.projectWork.tracker.poll();
+      const deadline = Date.now() + 60_000;
+      while (application.projectWork.store.get(automaticFixThread)?.state !== 'in-review' || application.projectWork.store.get(automaticFixThread)?.turns !== 2) {
+        if (Date.now() > deadline) throw new Error('The automatic-fix fixture did not finish its repair turn.');
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+      // Advance the existing tracker once after publication, rather than wait at the browser assertion's exact 60-second boundary.
+      await application.projectWork.tracker.poll();
+    }
+    send(200, AutomaticFixReceiptSchema.parse({ schema: 'fixture-automatic-fix-receipt-v1', threadId: automaticFixThread, prNumber: application.projectWork.store.get(automaticFixThread).pr.number }));
+  } else if (request.url === '/projects/overview' && (input = parse(ControlOverviewSchema))) {
     const projectId = 'projects_fixture', rows = [];
     for (const title of ['PAR3 saved work', 'PAR3 publish work']) {
       const made = await application.projectWork.createThread(projectId, { schema: 'thread-create-request-v1', clientRequestId: `overview_${title.replaceAll(' ', '_')}`, title, task: 'PAR2 inspect: read the README and report progress.', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' });

@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "JEVELLAN_TEST_CLAUDE_TOKEN is not set.",
+  "test": "PAR4 automatic fix labels, round limit and an owner-requested fix",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-limit-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR4 limit\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR4 automatic fix labels, round limit and an owner-requested fix\"; the other steps are judged in their own screenshots)"
+}
