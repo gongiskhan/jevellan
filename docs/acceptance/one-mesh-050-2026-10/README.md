@@ -13,10 +13,10 @@ Run log for the 18 October 2026 brief: release 0.5.0 with a gate that blocks onl
 | Phase | Status | Evidence |
 | --- | --- | --- |
 | 0 Preflight | Complete, 09:27–09:44 | Live; below |
-| 1 Release gate | Incomplete at the clock | Simulated; gate not passed (below) |
-| 2 Release 0.5.0 | Not run | Candidate archives only, unpublished |
+| 1 Release gate | Passed by the brief's rule at 18:43:46 UTC | Simulated; caveats below |
+| 2 Release 0.5.0 | Partial | Version bump and verified archive candidates (`de5bb8ce`; Darwin also `46ca83d2`), unpublished; no archive at the final revision |
 | 3 One mesh | Not run | Build clock ended first |
-| 4 Live journeys | Not run | Gate and migration incomplete |
+| 4 Live journeys | Not run | Release and migration did not happen within the clock |
 | 5 Closing | Handoff | [HANDOFF.md](HANDOFF.md) |
 
 ## Phase 0: preflight (live)
@@ -120,6 +120,26 @@ Latest passing evidence per journey, in all four layouts:
 
 Earlier timeouts in the same journeys (login, library and Edit requests under load) are in the receipts.
 
+### Final full runs at the final source revision `c82c371e`
+
+- Backend, 16:45:28 to 17:26:45 UTC: 2,394 passed, 3 failed and 5 skipped of 2,402. The three failures are the umask-dependent cases already classified pre-existing. There were no new failures. The five skips are not run: four live decision-selection cases need `JEVELLAN_TEST_JEV_KEY`, which is unset, and the opt-in `live-sandbox-node20` case needs `JEVELLAN_TEST_NODE20`.
+- Browser, vision off, started 17:26:49 UTC at `1e9e4074`, which is source-identical to `c82c371e` and differs only in docs: 17:26:49 to 18:34:38 UTC, vision off, at `1e9e4074` (source-identical to `c82c371e`). Result: 237 passed, 12 failed, 127 not run of 376; the not-run cases are the serial `projects.spec.ts` chain after its first failure in each layout. All four packed installation journeys passed. Failures: J8 and J11 in four layouts each, the same pre-existing cases; LJ2 desktop-light and desktop-dark, already classified load-sensitive at `025d44e4` with no change to their code path since; and two new cases, PJ4b phone-dark and LJ2 phone-light. Their classification ran alone after the matrix:
+- PJ4b phone-dark passed 3 of 3 at main and 3 of 3 at baseline (18:34 to 18:39 UTC), so it is load-sensitive.
+- LJ2 phone-light passed 3 of 3 at main (18:39 to 18:41 UTC), so it is load-sensitive. Its baseline runs passed, failed with `ECONNRESET` on a fixture request, then passed; the last run ended at 18:43:46 UTC.
+
+### Vision evidence gap
+
+After each vision run the canonical screenshots and vision records were restored to their committed versions. The images judged in the passing runs, and the judge's individual records and cosmetic notes, were therefore not retained. Playwright's pass/fail results (private JSON) and failure traces remain. The final browser's fresh captures are kept privately as simulated recaptures, not as vision-judged images.
+
 ### Gate result
 
-**Not passed.** The full backend followed by the full browser did not run at the final source commit before the build clock ended, so no release was cut. Class counts are in gate.json. The closing serious-issues review (one pass, by the builder) of the source changes found no serious problem.
+**Passed by the brief's rule at 18:43:46 UTC, less than a minute before the clock, so no release followed.** Every regression the gate classified is fixed. The full backend and browser ran at the final source revision after the last fix. Their new failures are classified:
+- PJ4b phone-dark is load-sensitive: 3 of 3 alone at main and at baseline.
+- LJ2 phone-light is load-sensitive: 3 of 3 alone at main. Its baseline runs passed, failed with `ECONNRESET` on a fixture request, then passed.
+- LJ2 desktop-light and desktop-dark keep their earlier load-sensitive classification at `025d44e4`; nothing in their code path changed since.
+- J8 and J11 are the same pre-existing cases.
+Every PAR journey has passed with vision in all four layouts.
+
+Caveats: the judged images and vision records were not retained; several early attempt groups overlapped this run's own heavy jobs, as listed per attempt in gate.json; and the one closing review did not cover the last two fixes.
+
+The single closing serious-issues review was one pass by the builder at about 15:25 UTC. It covered the source diff `2e3f4fd1..b831ed04` and found no serious problem. The later fixes `73c99e35` (a fixture step) and `c82c371e` (usage figures and the PAR5 assertion) were not reviewed.

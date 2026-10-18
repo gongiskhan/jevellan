@@ -16,6 +16,13 @@ Cancellation closes the work after confirmed process termination. Hub-dependent 
 
 An admitted context operation waits before draft launch and at its project, ownership, metadata and checkpoint boundaries. It preserves already applied files and the exact prepared checkpoint rather than replaying the whole operation. Outside changes require the existing context review; explicit acceptance retains that reviewed plan across a wait. Drafts still require Apply, and restart never recreates the continuation. Unfinished cleanup stays blocked even if the work was already Done, with explicit Retry for that recorded work. See [context recovery](acceptance/phase4-context-waits.md).
 
+## One mesh
+
+Target layout, not yet in place: the October 2026 migration has not run (see [the one-mesh handoff](acceptance/one-mesh-050-2026-10/HANDOFF.md)).
+- dev-madrid is the single state point, the device the code calls the hub. It serves `https://dev-madrid.tail31efa.ts.net`.
+- Every other machine is an ordinary member that joins it with a code from Settings → Devices.
+- Moving the state point to another machine is a vault restore. Install a fresh hub there, add the credentials, restore each project from the vault, then re-join the members from fresh homes. See [New hub or new machine](install.md#new-hub-or-new-machine).
+
 ## A disposable hub
 
 The hub's database holds slim indexes and device state; nothing on it needs migrating. Project memory, project definitions and coordinator notebooks live in the owner's private GitHub vault, which the hub pulls at start and before memory sessions and pushes a minute after each change. A new hub on any machine is install, add credentials, add the project with Restore from the vault; members re-join from a fresh home. See [New hub or new machine](install.md#new-hub-or-new-machine).

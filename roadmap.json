@@ -914,7 +914,7 @@
   {
     "id": "one-mesh-050",
     "title": "One mesh on dev-madrid, release 0.5.0 and live journeys",
-    "why": "BRIEF.md 18 October 2026. Preflight and cold backups complete. The release gate is incomplete at the nine-hour clock: the main suites were classified (regressions fixed), and vision passes every PAR journey in four layouts across the final fixes, but the full backend and browser did not run at the final source commit. 0.5.0 is not released, Madrid is not yet the only state point, the Pro is unchanged and no live journey ran. See docs/acceptance/one-mesh-050-2026-10/HANDOFF.md.",
+    "why": "BRIEF.md 18 October 2026. Preflight and cold backups complete. The release gate passed by the brief rule at 18:43:46 UTC, under a minute before the nine-hour clock ended: regressions fixed, final full backend and browser at c82c371e with new failures classified load-sensitive, and every PAR journey passing vision in four layouts; the judged images were not retained. Release 0.5.0 is not tagged or published (version bump and superseded candidate archives only); Madrid is not yet the only state point, the Pro is unchanged and no live journey ran. See docs/acceptance/one-mesh-050-2026-10/HANDOFF.md.",
     "status": "in-progress"
   }
 ]

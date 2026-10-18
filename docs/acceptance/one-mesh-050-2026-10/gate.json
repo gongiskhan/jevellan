@@ -1,0 +1,2655 @@
+{
+  "schema": "one-mesh-gate-v2",
+  "label": "simulated",
+  "baselineCommit": "da6a9bc96c9b963bb5b9bb2de609dbcddfa5dd06",
+  "jobs": [
+    {
+      "name": "full backend at 025d44e4",
+      "start": "2026-10-18T10:18:45.884Z",
+      "end": "2026-10-18T10:52:42.964Z"
+    },
+    {
+      "name": "full browser at 025d44e4",
+      "start": "2026-10-18T10:56:06.399Z",
+      "end": "2026-10-18T12:14:37.076Z"
+    },
+    {
+      "name": "full backend at de5bb8ce",
+      "start": "2026-10-18T12:47:50.044Z",
+      "end": "2026-10-18T13:32:34.130Z"
+    },
+    {
+      "name": "vision run vision-par-10-par8-9",
+      "start": "2026-10-18T15:52:08.068Z",
+      "end": "2026-10-18T15:57:18.678Z"
+    },
+    {
+      "name": "vision run vision-par-11-par8-9",
+      "start": "2026-10-18T15:58:24.417Z",
+      "end": "2026-10-18T16:03:21.171Z"
+    },
+    {
+      "name": "vision run vision-par-12-par8-9",
+      "start": "2026-10-18T16:04:30.472Z",
+      "end": "2026-10-18T16:09:19.031Z"
+    },
+    {
+      "name": "vision run vision-par-13-par1to5",
+      "start": "2026-10-18T16:17:44.395Z",
+      "end": "2026-10-18T16:31:41.737Z"
+    },
+    {
+      "name": "vision run vision-par-13-par6-chrome",
+      "start": "2026-10-18T16:31:42.996Z",
+      "end": "2026-10-18T16:35:04.106Z"
+    },
+    {
+      "name": "vision run vision-par-14-par5-fragment-measure",
+      "start": "2026-10-18T16:35:40.152Z",
+      "end": "2026-10-18T16:39:10.992Z"
+    },
+    {
+      "name": "vision run vision-par-15-par5",
+      "start": "2026-10-18T16:41:22.508Z",
+      "end": "2026-10-18T16:44:38.267Z"
+    },
+    {
+      "name": "vision run vision-par-2-par3-stale",
+      "start": "2026-10-18T13:17:33.120Z",
+      "end": "2026-10-18T13:26:30.762Z"
+    },
+    {
+      "name": "vision run vision-par-3-par1-par6",
+      "start": "2026-10-18T13:27:51.401Z",
+      "end": "2026-10-18T13:42:53.055Z"
+    },
+    {
+      "name": "vision run vision-par-4",
+      "start": "2026-10-18T13:46:37.277Z",
+      "end": "2026-10-18T13:56:21.158Z"
+    },
+    {
+      "name": "vision run vision-par-6",
+      "start": "2026-10-18T14:04:50.086Z",
+      "end": "2026-10-18T14:22:08.859Z"
+    },
+    {
+      "name": "vision run vision-par-7-dbfaf8a0",
+      "start": "2026-10-18T14:23:52.045Z",
+      "end": "2026-10-18T14:39:56.436Z"
+    },
+    {
+      "name": "vision run vision-par-8-par7to9",
+      "start": "2026-10-18T14:43:45.834Z",
+      "end": "2026-10-18T14:52:43.460Z"
+    },
+    {
+      "name": "vision run vision-par-9-b831ed04",
+      "start": "2026-10-18T15:42:55.595Z",
+      "end": "2026-10-18T15:49:42.605Z"
+    },
+    {
+      "name": "vision run vision-par-wrong-path",
+      "start": "2026-10-18T13:07:54.393Z",
+      "end": "2026-10-18T13:14:23.673Z"
+    },
+    {
+      "name": "vision run vision-par6-chrome-4",
+      "start": "2026-10-18T13:56:22.542Z",
+      "end": "2026-10-18T13:59:25.074Z"
+    },
+    {
+      "name": "vision run vision-par6-chrome-7-dbfaf8a0",
+      "start": "2026-10-18T14:39:57.469Z",
+      "end": "2026-10-18T14:43:17.041Z"
+    },
+    {
+      "name": "projects.spec phone layouts rerun after the PJ7 fix",
+      "start": "2026-10-18T12:47:53.317Z",
+      "end": "2026-10-18T12:51:27.193Z"
+    },
+    {
+      "name": "full backend at c82c371e",
+      "start": "2026-10-18T16:45:28.968Z",
+      "end": "2026-10-18T17:26:45.455Z"
+    },
+    {
+      "name": "full browser at c82c371e",
+      "start": "2026-10-18T17:26:50.154Z",
+      "end": "2026-10-18T18:34:38.532Z"
+    }
+  ],
+  "runs": {
+    "full backend 025d44e4": {
+      "totals": {
+        "passed": 2388,
+        "failed": 9,
+        "pending": 5,
+        "todo": 0,
+        "total": 2402,
+        "files": 228,
+        "success": false
+      },
+      "resultSha256": "6b4f0f3839011c097f3918d845a57dce925b12d089f90a665b9ae536372f88fe",
+      "logSha256": "8afcbfe955b411df2f837352d665fa913b93e5b923169032a5360f84301bd4a0"
+    },
+    "full browser 025d44e4": {
+      "totals": {
+        "expected": 233,
+        "unexpected": 13,
+        "flaky": 0,
+        "skipped": 0,
+        "interrupted": 0,
+        "stats": {
+          "startTime": "2026-10-18T10:56:06.399Z",
+          "duration": 4710677.249,
+          "expected": 233,
+          "skipped": 130,
+          "unexpected": 13,
+          "flaky": 0
+        }
+      },
+      "resultSha256": "209ab2e509a42ff12d89327e4a17baf5a2065cb1d890c97ae1090649426009b6",
+      "logSha256": "1613dd915b2c300b39f8dbb1f132cb9714ebdc075dd1a07106c5b4b652cc2d03"
+    },
+    "full backend c82c371e (final source)": {
+      "totals": {
+        "passed": 2394,
+        "failed": 3,
+        "pending": 5,
+        "todo": 0,
+        "total": 2402,
+        "files": 228,
+        "success": false
+      },
+      "start": "2026-10-18T16:45:28Z",
+      "end": "2026-10-18T17:26:45Z",
+      "resultSha256": "e0d01b890b0d830c32412e34e7bb59cf2f7902c463a6445fc4a288c479e66a0c",
+      "logSha256": "1e9cf91952dcb1d508b6e48ff0d57a895dd15a1e25787ede5ab038eb76e0f95f",
+      "failures": [
+        "tests/installation-files.test.ts | the executable command quotes paths, preserves arguments and binds its own installed home",
+        "tests/installation-files.test.ts | command creation recovers a lost receipt and removes only its listed file and empty created directories",
+        "tests/runtime-packaging.test.ts | keeps the compiled Linux terminal addon and helper in the packable prebuild directory"
+      ]
+    },
+    "full browser c82c371e (final source, run at docs-only 1e9e4074)": {
+      "totals": {
+        "expected": 237,
+        "unexpected": 12,
+        "flaky": 0,
+        "skipped": 0,
+        "interrupted": 0,
+        "stats": {
+          "startTime": "2026-10-18T17:26:50.154Z",
+          "duration": 4068378.6709999996,
+          "expected": 237,
+          "skipped": 127,
+          "unexpected": 12,
+          "flaky": 0
+        }
+      },
+      "start": "2026-10-18T17:26:49Z",
+      "end": "2026-10-18T18:34:38Z",
+      "status": "complete",
+      "resultSha256": "b82abe1f3c60e5e87e220608f0661eed6545fbc52cb85e7d468b5cbba3be61c6",
+      "logSha256": "bba363e21d6630e1b6623aa5ba73e46e39f683a7d7973a0b1cfc310d98a562b2",
+      "unclassified": [
+        "desktop-light | J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+        "desktop-light | J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+        "phone-light | J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+        "phone-light | J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+        "desktop-dark | J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+        "desktop-dark | J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+        "phone-dark | J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+        "phone-dark | J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+        "desktop-light-projects | LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+        "desktop-light-projects | LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
+        "desktop-light-projects | LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
+        "desktop-light-projects | LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
+        "desktop-light-projects | LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+        "desktop-light-projects | PJ3b project GitHub tokens remain separate from the default connection",
+        "desktop-light-projects | LJ6 workflow daily records its actual run and a missing run times out explicitly",
+        "desktop-light-projects | LJ7 two fix effort corrections appear first in the next fix Why panel",
+        "desktop-light-projects | LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates",
+        "desktop-light-projects | LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup",
+        "desktop-light-projects | hub readiness warns about AC sleep and clears when the setting is safe",
+        "desktop-light-projects | CACHE1 session metrics and runtime windows persist across reload in every layout",
+        "desktop-light-projects | CM1 compaction controls show context, persist the threshold and start a fresh session on request",
+        "desktop-light-projects | CM2 questions share oldest-first numbering and show the owner chat answer in every layout",
+        "desktop-light-projects | CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout",
+        "desktop-light-projects | CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout",
+        "desktop-light-projects | CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+        "desktop-light-projects | CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+        "desktop-light-projects | PJ replay loads history once without historical working states and keeps live events",
+        "desktop-light-projects | PAR1 project settings save, conflict, pause and archive",
+        "desktop-light-projects | PAR2 live cards, proposed starts, follow-ups and settings Undo",
+        "desktop-light-projects | PAR3 Overview groups, owner actions and saved-work publication",
+        "desktop-light-projects | PAR3 header action rows stay separate on narrow screens",
+        "desktop-light-projects | PAR4 automatic fix labels, round limit and an owner-requested fix",
+        "desktop-light-projects | PAR4 reconnect page recovers after a transient hub navigation failure",
+        "desktop-light-projects | PAR5 usage, account waiting notice and placement constraints",
+        "desktop-light-projects | PAR6 Notifications subscribe, receive a browser push, suppress the focused path and turn off",
+        "desktop-light-projects | PAR7 library uploads, attachments in both composers, images and project rigging",
+        "desktop-light-projects | PAR7b images decode, gallery controls work and failed uploads keep the message without duplicates",
+        "desktop-light-projects | PAR8 compatible endpoint form, menu, automatic account choice and Why",
+        "desktop-light-projects | PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings",
+        "phone-light-projects | LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+        "phone-light-projects | LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
+        "phone-light-projects | LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
+        "phone-light-projects | LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
+        "phone-light-projects | LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+        "phone-light-projects | PJ3b project GitHub tokens remain separate from the default connection",
+        "phone-light-projects | LJ6 workflow daily records its actual run and a missing run times out explicitly",
+        "phone-light-projects | LJ7 two fix effort corrections appear first in the next fix Why panel",
+        "phone-light-projects | LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates",
+        "phone-light-projects | LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup",
+        "phone-light-projects | hub readiness warns about AC sleep and clears when the setting is safe",
+        "phone-light-projects | CACHE1 session metrics and runtime windows persist across reload in every layout",
+        "phone-light-projects | CM1 compaction controls show context, persist the threshold and start a fresh session on request",
+        "phone-light-projects | CM2 questions share oldest-first numbering and show the owner chat answer in every layout",
+        "phone-light-projects | CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout",
+        "phone-light-projects | CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout",
+        "phone-light-projects | CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+        "phone-light-projects | CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+        "phone-light-projects | PJ replay loads history once without historical working states and keeps live events",
+        "phone-light-projects | PAR1 project settings save, conflict, pause and archive",
+        "phone-light-projects | PAR2 live cards, proposed starts, follow-ups and settings Undo",
+        "phone-light-projects | PAR3 Overview groups, owner actions and saved-work publication",
+        "phone-light-projects | PAR3 header action rows stay separate on narrow screens",
+        "phone-light-projects | PAR4 automatic fix labels, round limit and an owner-requested fix",
+        "phone-light-projects | PAR4 reconnect page recovers after a transient hub navigation failure",
+        "phone-light-projects | PAR5 usage, account waiting notice and placement constraints",
+        "phone-light-projects | PAR6 Notifications subscribe, receive a browser push, suppress the focused path and turn off",
+        "phone-light-projects | PAR7 library uploads, attachments in both composers, images and project rigging",
+        "phone-light-projects | PAR7b images decode, gallery controls work and failed uploads keep the message without duplicates",
+        "phone-light-projects | PAR8 compatible endpoint form, menu, automatic account choice and Why",
+        "phone-light-projects | PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings",
+        "desktop-dark-projects | LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+        "desktop-dark-projects | LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
+        "desktop-dark-projects | LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
+        "desktop-dark-projects | LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
+        "desktop-dark-projects | LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+        "desktop-dark-projects | PJ3b project GitHub tokens remain separate from the default connection",
+        "desktop-dark-projects | LJ6 workflow daily records its actual run and a missing run times out explicitly",
+        "desktop-dark-projects | LJ7 two fix effort corrections appear first in the next fix Why panel",
+        "desktop-dark-projects | LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates",
+        "desktop-dark-projects | LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup",
+        "desktop-dark-projects | hub readiness warns about AC sleep and clears when the setting is safe",
+        "desktop-dark-projects | CACHE1 session metrics and runtime windows persist across reload in every layout",
+        "desktop-dark-projects | CM1 compaction controls show context, persist the threshold and start a fresh session on request",
+        "desktop-dark-projects | CM2 questions share oldest-first numbering and show the owner chat answer in every layout",
+        "desktop-dark-projects | CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout",
+        "desktop-dark-projects | CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout",
+        "desktop-dark-projects | CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+        "desktop-dark-projects | CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+        "desktop-dark-projects | PJ replay loads history once without historical working states and keeps live events",
+        "desktop-dark-projects | PAR1 project settings save, conflict, pause and archive",
+        "desktop-dark-projects | PAR2 live cards, proposed starts, follow-ups and settings Undo",
+        "desktop-dark-projects | PAR3 Overview groups, owner actions and saved-work publication",
+        "desktop-dark-projects | PAR3 header action rows stay separate on narrow screens",
+        "desktop-dark-projects | PAR4 automatic fix labels, round limit and an owner-requested fix",
+        "desktop-dark-projects | PAR4 reconnect page recovers after a transient hub navigation failure",
+        "desktop-dark-projects | PAR5 usage, account waiting notice and placement constraints",
+        "desktop-dark-projects | PAR6 Notifications subscribe, receive a browser push, suppress the focused path and turn off",
+        "desktop-dark-projects | PAR7 library uploads, attachments in both composers, images and project rigging",
+        "desktop-dark-projects | PAR7b images decode, gallery controls work and failed uploads keep the message without duplicates",
+        "desktop-dark-projects | PAR8 compatible endpoint form, menu, automatic account choice and Why",
+        "desktop-dark-projects | PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings",
+        "phone-dark-projects | PJ4b the Why panel explains placement and overrides apply",
+        "phone-dark-projects | PJ5 a thread on the member device opens through the hub",
+        "phone-dark-projects | PJ5 an offline coordinator shows the notice and Move coordinator here",
+        "phone-dark-projects | PJ7 an attached thread disables its composer",
+        "phone-dark-projects | Coordinator overrides expose model and effort while preserving unrelated project settings",
+        "phone-dark-projects | Thread history folds while current work and thinking stay expanded",
+        "phone-dark-projects | Thread images open from folded history and reports, with mobile swiping and useful report previews",
+        "phone-dark-projects | LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+        "phone-dark-projects | LJ3 one queue preserves dependency order, owner ordering and recovery without duplicate threads",
+        "phone-dark-projects | LJ3 five tasks obey phone drag, Now, the two-thread cap and after links",
+        "phone-dark-projects | LJ4 owner goals refill into a draft, approve on phone, obey daily caps and pause queued work",
+        "phone-dark-projects | LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy",
+        "phone-dark-projects | PJ3b project GitHub tokens remain separate from the default connection",
+        "phone-dark-projects | LJ6 workflow daily records its actual run and a missing run times out explicitly",
+        "phone-dark-projects | LJ7 two fix effort corrections appear first in the next fix Why panel",
+        "phone-dark-projects | LJ8 Ekoa connection mirrors decisions, ask-owner pulls and aggregated drafts without duplicates",
+        "phone-dark-projects | LJ10 hard device needs, resource refusals, facts in Why and confirmed orphan cleanup",
+        "phone-dark-projects | hub readiness warns about AC sleep and clears when the setting is safe",
+        "phone-dark-projects | CACHE1 session metrics and runtime windows persist across reload in every layout",
+        "phone-dark-projects | CM1 compaction controls show context, persist the threshold and start a fresh session on request",
+        "phone-dark-projects | CM2 questions share oldest-first numbering and show the owner chat answer in every layout",
+        "phone-dark-projects | CM3 shared memory shows the inbox, dream diff, owner controls and Undo in every layout",
+        "phone-dark-projects | CM4 owner commands and shell blocks show exact copy controls, with editable protected paths in every layout",
+        "phone-dark-projects | CM5 owner terminal reconnects, relays, copies command records and returns owner actions in every layout",
+        "phone-dark-projects | CACHE2 cold checkpoints preserve earlier transcripts and the owner settings in every layout",
+        "phone-dark-projects | PJ replay loads history once without historical working states and keeps live events",
+        "phone-dark-projects | PAR1 project settings save, conflict, pause and archive",
+        "phone-dark-projects | PAR2 live cards, proposed starts, follow-ups and settings Undo",
+        "phone-dark-projects | PAR3 Overview groups, owner actions and saved-work publication",
+        "phone-dark-projects | PAR3 header action rows stay separate on narrow screens",
+        "phone-dark-projects | PAR4 automatic fix labels, round limit and an owner-requested fix",
+        "phone-dark-projects | PAR4 reconnect page recovers after a transient hub navigation failure",
+        "phone-dark-projects | PAR5 usage, account waiting notice and placement constraints",
+        "phone-dark-projects | PAR6 Notifications subscribe, receive a browser push, suppress the focused path and turn off",
+        "phone-dark-projects | PAR7 library uploads, attachments in both composers, images and project rigging",
+        "phone-dark-projects | PAR7b images decode, gallery controls work and failed uploads keep the message without duplicates",
+        "phone-dark-projects | PAR8 compatible endpoint form, menu, automatic account choice and Why",
+        "phone-dark-projects | PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings"
+      ]
+    },
+    "full backend de5bb8ce": {
+      "totals": {
+        "passed": 2387,
+        "failed": 10,
+        "pending": 5,
+        "todo": 0,
+        "total": 2402,
+        "files": 228,
+        "success": false
+      },
+      "resultSha256": "d03b68789587a004669574dba488a790fa5520be3736fab86327118d035b7226",
+      "logSha256": "1c3f05a717dd5f96d48a088f993b4cbe814764f64201b972c4668d692e96fdec",
+      "note": "Superseded: later source fixes followed; not a final-commit run."
+    }
+  },
+  "uniqueCases": 31,
+  "classCountsByUniqueCase": {
+    "pre-existing": 16,
+    "regression": 7,
+    "load-sensitive": 8
+  },
+  "rawAttempts": 180,
+  "cases": [
+    {
+      "stage": "main",
+      "kind": "vitest",
+      "file": "tests/installation-files.test.ts",
+      "case": "the executable command quotes paths, preserves arguments and binds its own installed home",
+      "project": null,
+      "firstFailure": "AssertionError: expected 64 to be 73 // Object.is equality",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T10:56:22.370Z",
+              "seconds": 2,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T10:56:24.810Z",
+              "seconds": 2,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T10:56:27.354Z",
+              "seconds": 2,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T10:56:30.066Z",
+              "seconds": 2,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T10:56:33.044Z",
+              "seconds": 2,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T10:56:35.535Z",
+              "seconds": 2,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ],
+      "note": "Pre-existing: expects group/other execute bits; the runner umask is 077; passes under umask 022 (26 of 26 for both files)."
+    },
+    {
+      "stage": "main",
+      "kind": "vitest",
+      "file": "tests/installation-files.test.ts",
+      "case": "command creation recovers a lost receipt and removes only its listed file and empty created directories",
+      "project": null,
+      "firstFailure": "AssertionError: expected 301616 to be 301684 // Object.is equality",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T10:56:38.246Z",
+              "seconds": 2,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T10:56:41.033Z",
+              "seconds": 2,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T10:56:43.812Z",
+              "seconds": 2,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T10:56:46.711Z",
+              "seconds": 2,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T10:56:49.763Z",
+              "seconds": 2,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T10:56:52.494Z",
+              "seconds": 2,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ],
+      "note": "Pre-existing: expects group/other execute bits; the runner umask is 077; passes under umask 022 (26 of 26 for both files)."
+    },
+    {
+      "stage": "main",
+      "kind": "vitest",
+      "file": "tests/project-notifications.test.ts",
+      "case": "VAPID keys are lazy, encrypted, stable across service restarts and absent from the owner view",
+      "project": null,
+      "firstFailure": "Error: ENOENT: no such file or directory, mkdtemp '/private/tmp/jevellan-push-XXXXXX'",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T10:56:55.995Z",
+              "seconds": 5,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T10:57:01.990Z",
+              "seconds": 6,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T10:57:08.414Z",
+              "seconds": 6,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            }
+          ],
+          "baseline": "case absent at baseline",
+          "class": "regression"
+        }
+      ],
+      "note": "Regression, fixed in f47b314f (platform temp folder); the file passes 13 of 13 after the fix."
+    },
+    {
+      "stage": "main",
+      "kind": "vitest",
+      "file": "tests/project-notifications.test.ts",
+      "case": "a real encrypted Web Push request reaches a fake push service with VAPID and TTL",
+      "project": null,
+      "firstFailure": "Error: ENOENT: no such file or directory, mkdtemp '/private/tmp/jevellan-push-XXXXXX'",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T10:57:15.073Z",
+              "seconds": 5,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T10:57:21.210Z",
+              "seconds": 5,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T10:57:27.245Z",
+              "seconds": 5,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            }
+          ],
+          "baseline": "case absent at baseline",
+          "class": "regression"
+        }
+      ],
+      "note": "Regression, fixed in f47b314f (platform temp folder); the file passes 13 of 13 after the fix."
+    },
+    {
+      "stage": "main",
+      "kind": "vitest",
+      "file": "tests/project-notifications.test.ts",
+      "case": "a410 removes a subscription, while transient failures retry after10,60 and300seconds across restart",
+      "project": null,
+      "firstFailure": "Error: ENOENT: no such file or directory, mkdtemp '/private/tmp/jevellan-push-XXXXXX'",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T10:57:33.670Z",
+              "seconds": 6,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T10:57:40.048Z",
+              "seconds": 6,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T10:57:46.854Z",
+              "seconds": 5,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            }
+          ],
+          "baseline": "case absent at baseline",
+          "class": "regression"
+        }
+      ],
+      "note": "Regression, fixed in f47b314f (platform temp folder); the file passes 13 of 13 after the fix."
+    },
+    {
+      "stage": "main",
+      "kind": "vitest",
+      "file": "tests/project-notifications.test.ts",
+      "case": "one successful browser does not suppress another browser retry, and a new browser receives no sent history",
+      "project": null,
+      "firstFailure": "Error: ENOENT: no such file or directory, mkdtemp '/private/tmp/jevellan-push-XXXXXX'",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T10:57:53.361Z",
+              "seconds": 5,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T10:57:59.724Z",
+              "seconds": 6,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T10:58:06.885Z",
+              "seconds": 7,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            }
+          ],
+          "baseline": "case absent at baseline",
+          "class": "regression"
+        }
+      ],
+      "note": "Regression, fixed in f47b314f (platform temp folder); the file passes 13 of 13 after the fix."
+    },
+    {
+      "stage": "main",
+      "kind": "vitest",
+      "file": "tests/project-notifications.test.ts",
+      "case": "coordinator replies coalesce, keep the newest at equal times and send at most once in30seconds",
+      "project": null,
+      "firstFailure": "Error: ENOENT: no such file or directory, mkdtemp '/private/tmp/jevellan-push-XXXXXX'",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T10:58:15.668Z",
+              "seconds": 11,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T10:58:28.431Z",
+              "seconds": 11,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T10:58:41.030Z",
+              "seconds": 10,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            }
+          ],
+          "baseline": "case absent at baseline",
+          "class": "regression"
+        }
+      ],
+      "note": "Regression, fixed in f47b314f (platform temp folder); the file passes 13 of 13 after the fix."
+    },
+    {
+      "stage": "main",
+      "kind": "vitest",
+      "file": "tests/project-notifications.test.ts",
+      "case": "shutdown finishes its in-flight send and leaves the rest durable for the next hub start",
+      "project": null,
+      "firstFailure": "Error: ENOENT: no such file or directory, mkdtemp '/private/tmp/jevellan-push-XXXXXX'",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T10:58:52.000Z",
+              "seconds": 8,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T10:59:01.735Z",
+              "seconds": 8,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T10:59:10.760Z",
+              "seconds": 8,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            }
+          ],
+          "baseline": "case absent at baseline",
+          "class": "regression"
+        }
+      ],
+      "note": "Regression, fixed in f47b314f (platform temp folder); the file passes 13 of 13 after the fix."
+    },
+    {
+      "stage": "main",
+      "kind": "vitest",
+      "file": "tests/runtime-packaging.test.ts",
+      "case": "keeps the compiled Linux terminal addon and helper in the packable prebuild directory",
+      "project": null,
+      "firstFailure": "AssertionError: expected 64 to be 73 // Object.is equality",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T10:59:19.942Z",
+              "seconds": 0,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T10:59:21.216Z",
+              "seconds": 0,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T10:59:22.398Z",
+              "seconds": 0,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T10:59:23.930Z",
+              "seconds": 0,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T10:59:25.387Z",
+              "seconds": 0,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T10:59:26.643Z",
+              "seconds": 0,
+              "verdict": "failed",
+              "overlaps": [
+                "full browser at 025d44e4"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ],
+      "note": "Pre-existing: expects group/other execute bits; the runner umask is 077; passes under umask 022 (26 of 26 for both files)."
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "projects.spec.ts",
+      "case": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "project": "desktop-light-projects",
+      "firstFailure": "Error: expect(received).toBeGreaterThan(expected)",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:31:15.888Z",
+              "seconds": 112,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T12:33:09.356Z",
+              "seconds": 91,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T12:34:41.874Z",
+              "seconds": 85,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T14:36:14.365Z",
+              "seconds": 62,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-7-dbfaf8a0"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T14:37:18.126Z",
+              "seconds": 59,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-7-dbfaf8a0"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T14:38:18.059Z",
+              "seconds": 58,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-7-dbfaf8a0"
+              ]
+            }
+          ],
+          "class": "load-sensitive"
+        },
+        {
+          "group": "final-run observation (final c82c371e): original",
+          "mainCommit": "c82c371e",
+          "main": [],
+          "baseline": [],
+          "class": "not rerun; the earlier load-sensitive groups at 025d44e4 apply (code path unchanged)"
+        }
+      ],
+      "note": "Failed again in the final browser run; keeps its 025d44e4 groups (main 3 of 3, baseline 3 of 3). Final-run reruns were queued last and not started before the clock; its code path is unchanged since.",
+      "observations": [
+        {
+          "stage": "final c82c371e",
+          "firstFailure": "final full browser at 1e9e4074 (c82c371e source)",
+          "note": "Failed again in the final browser run; keeps its 025d44e4 groups (main 3 of 3, baseline 3 of 3). Final-run reruns were queued last and not started before the clock; its code path is unchanged since."
+        }
+      ]
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "projects.spec.ts",
+      "case": "PJ5 a thread on the member device opens through the hub",
+      "project": "phone-light-projects",
+      "firstFailure": "Error: expect(locator).toBeVisible() failed",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:31:15.890Z",
+              "seconds": 108,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T12:33:05.476Z",
+              "seconds": 84,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T12:34:30.672Z",
+              "seconds": 84,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T14:39:19.254Z",
+              "seconds": 51,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-7-dbfaf8a0",
+                "vision run vision-par6-chrome-7-dbfaf8a0"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T14:40:11.765Z",
+              "seconds": 59,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par6-chrome-7-dbfaf8a0"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T14:41:11.878Z",
+              "seconds": 62,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par6-chrome-7-dbfaf8a0"
+              ]
+            }
+          ],
+          "class": "load-sensitive"
+        }
+      ]
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "projects.spec.ts",
+      "case": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "project": "desktop-dark-projects",
+      "firstFailure": "Error: expect(received).toBeGreaterThan(expected)",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:31:15.882Z",
+              "seconds": 113,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T12:33:09.898Z",
+              "seconds": 93,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T12:34:43.885Z",
+              "seconds": 86,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T14:42:19.701Z",
+              "seconds": 62,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par6-chrome-7-dbfaf8a0"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T14:43:22.459Z",
+              "seconds": 51,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-8-par7to9"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T14:44:14.949Z",
+              "seconds": 66,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-8-par7to9"
+              ]
+            }
+          ],
+          "class": "load-sensitive"
+        },
+        {
+          "group": "final-run observation (final c82c371e): original",
+          "mainCommit": "c82c371e",
+          "main": [],
+          "baseline": [],
+          "class": "not rerun; the earlier load-sensitive groups at 025d44e4 apply (code path unchanged)"
+        }
+      ],
+      "observations": [
+        {
+          "stage": "final c82c371e",
+          "firstFailure": "final full browser at 1e9e4074 (c82c371e source)",
+          "note": null
+        }
+      ]
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "projects.spec.ts",
+      "case": "PJ7 an attached thread disables its composer",
+      "project": "phone-dark-projects",
+      "firstFailure": "Error: expect(received).toBe(expected) // Object.is equality",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:31:15.881Z",
+              "seconds": 86,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T14:45:25.308Z",
+              "seconds": 88,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-8-par7to9"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T14:46:54.888Z",
+              "seconds": 81,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-8-par7to9"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:32:44.253Z",
+              "seconds": 76,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T12:34:02.378Z",
+              "seconds": 76,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T12:35:19.922Z",
+              "seconds": 71,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "class": "regression"
+        }
+      ],
+      "note": "Fixed in f47b314f (no Attach row on a blocked composer); passes 3 of 3 alone after the fix."
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "skeleton.spec.ts",
+      "case": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+      "project": "desktop-light",
+      "firstFailure": "TimeoutError: locator.selectOption: Timeout 15000ms exceeded.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:35:56.873Z",
+              "seconds": 52,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T14:48:20.958Z",
+              "seconds": 62,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-8-par7to9"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T14:49:24.521Z",
+              "seconds": 60,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-8-par7to9"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:36:50.443Z",
+              "seconds": 36,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T14:50:26.175Z",
+              "seconds": 56,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-8-par7to9"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T14:51:23.221Z",
+              "seconds": 54,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-8-par7to9"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ],
+      "note": "'/' opens the first project since 4af16084 (before the baseline), so the journey never reaches the conversation form."
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "skeleton.spec.ts",
+      "case": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+      "project": "desktop-light",
+      "firstFailure": "TimeoutError: locator.selectOption: Timeout 15000ms exceeded.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:36:11.425Z",
+              "seconds": 155,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T14:52:20.647Z",
+              "seconds": 141,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-8-par7to9"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T14:54:42.691Z",
+              "seconds": 143,
+              "verdict": "failed",
+              "overlaps": []
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:38:47.845Z",
+              "seconds": 157,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T14:57:06.469Z",
+              "seconds": 144,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T14:59:31.063Z",
+              "seconds": 147,
+              "verdict": "failed",
+              "overlaps": []
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ]
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "skeleton.spec.ts",
+      "case": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+      "project": "phone-light",
+      "firstFailure": "TimeoutError: locator.selectOption: Timeout 15000ms exceeded.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:36:11.385Z",
+              "seconds": 51,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T15:52:49.183Z",
+              "seconds": 57,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-10-par8-9"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T15:53:47.435Z",
+              "seconds": 62,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-10-par8-9"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:37:03.767Z",
+              "seconds": 52,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T15:54:51.323Z",
+              "seconds": 56,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-10-par8-9"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T15:55:49.023Z",
+              "seconds": 53,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-10-par8-9"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ]
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "skeleton.spec.ts",
+      "case": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+      "project": "phone-light",
+      "firstFailure": "TimeoutError: locator.selectOption: Timeout 15000ms exceeded.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:36:36.212Z",
+              "seconds": 157,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T15:56:44.524Z",
+              "seconds": 142,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-10-par8-9",
+                "vision run vision-par-11-par8-9"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T15:59:07.652Z",
+              "seconds": 181,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-11-par8-9"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:39:13.951Z",
+              "seconds": 158,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:02:09.857Z",
+              "seconds": 146,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-11-par8-9",
+                "vision run vision-par-12-par8-9"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:04:36.736Z",
+              "seconds": 180,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-12-par8-9"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ]
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "skeleton.spec.ts",
+      "case": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+      "project": "desktop-dark",
+      "firstFailure": "TimeoutError: locator.selectOption: Timeout 15000ms exceeded.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:37:31.375Z",
+              "seconds": 50,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:07:41.171Z",
+              "seconds": 55,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-12-par8-9"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:08:37.296Z",
+              "seconds": 52,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-12-par8-9"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:38:23.063Z",
+              "seconds": 50,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:09:30.716Z",
+              "seconds": 44,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:10:15.888Z",
+              "seconds": 48,
+              "verdict": "failed",
+              "overlaps": []
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ]
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "skeleton.spec.ts",
+      "case": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+      "project": "desktop-dark",
+      "firstFailure": "TimeoutError: locator.selectOption: Timeout 15000ms exceeded.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:38:01.476Z",
+              "seconds": 162,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:09:51.067Z",
+              "seconds": 139,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:12:11.230Z",
+              "seconds": 143,
+              "verdict": "failed",
+              "overlaps": []
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:40:44.415Z",
+              "seconds": 145,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:14:35.036Z",
+              "seconds": 142,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:16:57.606Z",
+              "seconds": 156,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ]
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "skeleton.spec.ts",
+      "case": "J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+      "project": "phone-dark",
+      "firstFailure": "TimeoutError: locator.selectOption: Timeout 15000ms exceeded.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:39:16.564Z",
+              "seconds": 55,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:11:06.207Z",
+              "seconds": 48,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:11:54.812Z",
+              "seconds": 48,
+              "verdict": "failed",
+              "overlaps": []
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:40:12.988Z",
+              "seconds": 36,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:12:44.282Z",
+              "seconds": 49,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:13:33.915Z",
+              "seconds": 48,
+              "verdict": "failed",
+              "overlaps": []
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ]
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "skeleton.spec.ts",
+      "case": "J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+      "project": "phone-dark",
+      "firstFailure": "TimeoutError: locator.selectOption: Timeout 15000ms exceeded.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:40:51.690Z",
+              "seconds": 145,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:14:26.350Z",
+              "seconds": 141,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:16:48.439Z",
+              "seconds": 156,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:43:18.102Z",
+              "seconds": 147,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:19:26.272Z",
+              "seconds": 183,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:22:30.570Z",
+              "seconds": 166,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ]
+    },
+    {
+      "stage": "main",
+      "kind": "playwright",
+      "file": "installation.spec.ts",
+      "case": "packed first run, active update, rollback and removal \u00b7 phone dark",
+      "project": "installation",
+      "firstFailure": "Error: Command failed: node scripts/spikes/installation-commands.mjs --conversation --phone --dark",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T12:45:31.626Z",
+              "seconds": 560,
+              "verdict": "passed",
+              "overlaps": [
+                "full backend at de5bb8ce",
+                "projects.spec phone layouts rerun after the PJ7 fix"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T12:54:52.681Z",
+              "seconds": 507,
+              "verdict": "passed",
+              "overlaps": [
+                "full backend at de5bb8ce"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T13:03:21.621Z",
+              "seconds": 708,
+              "verdict": "failed",
+              "overlaps": [
+                "full backend at de5bb8ce",
+                "vision run vision-par-wrong-path"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:15:11.827Z",
+              "seconds": 749,
+              "verdict": "passed",
+              "overlaps": [
+                "full backend at de5bb8ce",
+                "vision run vision-par-2-par3-stale"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T13:27:42.863Z",
+              "seconds": 652,
+              "verdict": "passed",
+              "overlaps": [
+                "full backend at de5bb8ce",
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T13:38:36.449Z",
+              "seconds": 407,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            }
+          ],
+          "class": "regression"
+        },
+        {
+          "group": "quiet conforming group",
+          "mainCommit": "025d44e4",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T15:07:29.069Z",
+              "seconds": 419,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T15:14:29.146Z",
+              "seconds": 343,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T15:20:12.942Z",
+              "seconds": 324,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T15:25:38.286Z",
+              "seconds": 310,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T15:30:49.555Z",
+              "seconds": 311,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T15:36:01.140Z",
+              "seconds": 307,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "class": "load-sensitive"
+        }
+      ],
+      "note": "Original main group overlapped this run's full backend at de5bb8ce and vision runs (procedural defect, kept). Quiet conforming groups 15:07-15:41Z: main 3 of 3, baseline 3 of 3, so the load-sensitive row applies. Timed direct runs: the update reached its running-work wait 71 s after the previous step at main and 82 s at baseline."
+    },
+    {
+      "stage": "final de5bb8ce",
+      "kind": "vitest",
+      "file": "tests/conversation-service.test.ts",
+      "case": "separately queued memory checkpoints belong to the selected step and disappear with its undo",
+      "project": null,
+      "firstFailure": "Error: Test timed out in 60000ms.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "de5bb8ce",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:34:49.929Z",
+              "seconds": 71,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:19:37.211Z",
+              "seconds": 71,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:20:49.169Z",
+              "seconds": 68,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:36:03.321Z",
+              "seconds": 78,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:21:58.420Z",
+              "seconds": 72,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:23:11.178Z",
+              "seconds": 71,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ]
+    },
+    {
+      "stage": "final de5bb8ce",
+      "kind": "vitest",
+      "file": "tests/conversation-service.test.ts",
+      "case": "memory captured by a read-only reply publishes without running a failing code test",
+      "project": null,
+      "firstFailure": "Error: Test timed out in 60000ms.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "de5bb8ce",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:34:49.832Z",
+              "seconds": 80,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:24:27.518Z",
+              "seconds": 68,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:25:36.424Z",
+              "seconds": 71,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:36:11.876Z",
+              "seconds": 74,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:26:48.408Z",
+              "seconds": 67,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:27:56.272Z",
+              "seconds": 71,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ]
+    },
+    {
+      "stage": "final de5bb8ce",
+      "kind": "vitest",
+      "file": "tests/conversation-service.test.ts",
+      "case": "conflict integration publishes verified code and memory, and undo from step 1 preserves upstream intent",
+      "project": null,
+      "firstFailure": "Error: Test timed out in 90000ms.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "de5bb8ce",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:34:49.846Z",
+              "seconds": 100,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:25:23.030Z",
+              "seconds": 99,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:27:03.371Z",
+              "seconds": 103,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:36:31.555Z",
+              "seconds": 104,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:28:49.161Z",
+              "seconds": 103,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:30:34.152Z",
+              "seconds": 100,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5",
+                "vision run vision-par-13-par6-chrome"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ]
+    },
+    {
+      "stage": "final de5bb8ce",
+      "kind": "vitest",
+      "file": "tests/conversation-service.test.ts",
+      "case": "conflict integration publishes verified code and memory, and undo from step 2 preserves upstream intent",
+      "project": null,
+      "firstFailure": "Error: Test timed out in 90000ms.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "de5bb8ce",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:37:25.630Z",
+              "seconds": 104,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:29:13.126Z",
+              "seconds": 105,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:31:00.255Z",
+              "seconds": 99,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par1to5",
+                "vision run vision-par-13-par6-chrome"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:39:10.791Z",
+              "seconds": 101,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:32:40.871Z",
+              "seconds": 110,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par6-chrome"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:34:32.278Z",
+              "seconds": 102,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par6-chrome",
+                "vision run vision-par-14-par5-fragment-measure"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ]
+    },
+    {
+      "stage": "final de5bb8ce",
+      "kind": "vitest",
+      "file": "tests/conversation-service.test.ts",
+      "case": "outside activity during queued memory preserves partial notes and requires review before their checkpoint",
+      "project": null,
+      "firstFailure": "Error: Test timed out in 90000ms.",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "de5bb8ce",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:37:29.768Z",
+              "seconds": 105,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:32:18.971Z",
+              "seconds": 108,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par6-chrome"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:34:08.407Z",
+              "seconds": 104,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-13-par6-chrome",
+                "vision run vision-par-14-par5-fragment-measure"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:39:15.768Z",
+              "seconds": 100,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:35:53.378Z",
+              "seconds": 107,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-14-par5-fragment-measure"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:37:41.909Z",
+              "seconds": 102,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-14-par5-fragment-measure"
+              ]
+            }
+          ],
+          "class": "pre-existing"
+        }
+      ]
+    },
+    {
+      "stage": "final de5bb8ce",
+      "kind": "vitest",
+      "file": "tests/member-application.test.ts",
+      "case": "an outage inside a conflicted memory rebase preserves its boundary: files",
+      "project": null,
+      "firstFailure": "AssertionError: expected 'id: 1\\nevent: conversation\\ndata: {\"s\u2026' to contain 'Can\\'t reach the hub'",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "de5bb8ce",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:38:20.245Z",
+              "seconds": 62,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T13:39:23.230Z",
+              "seconds": 61,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T13:40:26.457Z",
+              "seconds": 62,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T16:36:18.664Z",
+              "seconds": 70,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-14-par5-fragment-measure"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:37:29.525Z",
+              "seconds": 70,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-14-par5-fragment-measure"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:38:40.544Z",
+              "seconds": 55,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-14-par5-fragment-measure"
+              ]
+            }
+          ],
+          "class": "load-sensitive"
+        }
+      ]
+    },
+    {
+      "stage": "final de5bb8ce",
+      "kind": "vitest",
+      "file": "tests/runtime-contracts.test.ts",
+      "case": "codex runs all seven contract cases through the production adapter and simulated CLI",
+      "project": null,
+      "firstFailure": "AssertionError: expected [ { check: 'interrupt', \u2026(2) }, \u2026(6) ] to deeply equal [ { check: 'interrupt', \u2026(2) }, \u2026(6) ]",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "de5bb8ce",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:40:54.923Z",
+              "seconds": 19,
+              "verdict": "failed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T16:39:29.157Z",
+              "seconds": 18,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T16:39:47.733Z",
+              "seconds": 16,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T13:41:14.763Z",
+              "seconds": 18,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T13:41:33.656Z",
+              "seconds": 17,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T13:41:52.082Z",
+              "seconds": 18,
+              "verdict": "passed",
+              "overlaps": [
+                "vision run vision-par-3-par1-par6"
+              ]
+            }
+          ],
+          "class": "regression"
+        },
+        {
+          "group": "quiet group at 4379b1ae",
+          "mainCommit": "4379b1ae",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T14:00:40.335Z",
+              "seconds": 14,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T14:00:55.422Z",
+              "seconds": 14,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T14:01:10.639Z",
+              "seconds": 14,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T14:01:25.587Z",
+              "seconds": 14,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T14:01:40.609Z",
+              "seconds": 14,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T14:01:55.058Z",
+              "seconds": 14,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "class": "load-sensitive"
+        }
+      ],
+      "note": "Original group is nonconforming: main run 1 (13:40:54Z, failed: the safety case ended 'interrupted' instead of 'completed' within its 10 s stretch limit) and all three baseline runs overlapped this run's vision-par-3 run, and main runs 2-3 were completions at 16:39Z, a mixed group; all receipts kept. The conforming quiet group 14:00:40-14:02:08Z ran with no overlapping job of this run: main 3 of 3 (4379b1ae), baseline 3 of 3. Runtimes, packages and the contract test are identical at de5bb8ce, 4379b1ae and the final c82c371e, so the load-sensitive row applies."
+    },
+    {
+      "stage": "final c82c371e",
+      "kind": "playwright",
+      "file": "projects.spec.ts",
+      "case": "PJ4b the Why panel explains placement and overrides apply",
+      "project": "phone-dark-projects",
+      "firstFailure": "final full browser at 1e9e4074 (c82c371e source)",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "c82c371e",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T18:34:41.236Z",
+              "seconds": 48,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T18:35:29.975Z",
+              "seconds": 46,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T18:36:16.773Z",
+              "seconds": 46,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T18:37:03.361Z",
+              "seconds": 45,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T18:37:49.730Z",
+              "seconds": 44,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T18:38:35.117Z",
+              "seconds": 45,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "class": "load-sensitive"
+        }
+      ]
+    },
+    {
+      "stage": "final c82c371e",
+      "kind": "playwright",
+      "file": "projects.spec.ts",
+      "case": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+      "project": "phone-light-projects",
+      "firstFailure": "final full browser at 1e9e4074 (c82c371e source)",
+      "groups": [
+        {
+          "group": "original",
+          "mainCommit": "c82c371e",
+          "main": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T18:39:21.310Z",
+              "seconds": 47,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T18:40:08.835Z",
+              "seconds": 46,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T18:40:55.769Z",
+              "seconds": 46,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "baseline": [
+            {
+              "file": "run-1.json",
+              "start": "2026-10-18T18:41:42.394Z",
+              "seconds": 46,
+              "verdict": "passed",
+              "overlaps": []
+            },
+            {
+              "file": "run-2.json",
+              "start": "2026-10-18T18:42:29.066Z",
+              "seconds": 23,
+              "verdict": "failed",
+              "overlaps": []
+            },
+            {
+              "file": "run-3.json",
+              "start": "2026-10-18T18:43:01.458Z",
+              "seconds": 45,
+              "verdict": "passed",
+              "overlaps": []
+            }
+          ],
+          "class": "load-sensitive"
+        }
+      ],
+      "note": "Final-run failure. Main 3 of 3 alone at c82c371e source (18:39-18:41Z) so load-sensitive; baseline pass, fail (ECONNRESET on a fixture request, a real run), pass; last run 18:43:00-18:43:46Z started manually within the clock."
+    }
+  ],
+  "summary": {
+    "finalSourceCommit": "c82c371e185c7e2e982c89d33ca40209e3eff3bc",
+    "fullRunsAtFinalCommit": "backend 2026-10-18T16:45:28Z-17:26:45Z: 2394 passed, 3 failed (pre-existing umask cases), 5 skipped (4 need JEVELLAN_TEST_JEV_KEY, 1 opt-in JEVELLAN_TEST_NODE20). Browser 17:26:49Z-18:34:38Z at docs-only 1e9e4074: 237 passed, 12 failed, 127 not run (serial projects.spec chain after its first failure per layout).",
+    "gate": "passed by BRIEF.md phase 1 rule at 2026-10-18T18:43:46Z: every classified regression fixed; final full backend and browser at c82c371e after the last fix; their new failures classified (PJ4b phone-dark and LJ2 phone-light load-sensitive; LJ2 desktop-light/dark keep their 025d44e4 load-sensitive groups, code path unchanged); every PAR journey passed vision in four layouts",
+    "procedure": "Some early reruns overlapped other heavy runs of this session; each attempt lists the overlapping jobs. Early-stopped series were completed to three and three where time allowed; incomplete groups say so.",
+    "regressions": "all seven classified regressions are fixed (six push tests in f47b314f, PJ7 phone in f47b314f)",
+    "visionEvidence": "Per-journey PAR vision passes in all four layouts: PAR1-PAR4 and PAR6 (installed Chrome) at a7de6307, PAR5 at c82c371e, PAR7/PAR7b/PAR8 at b831ed04, PAR8/PAR9 at 73c99e35. Judged images and individual vision records were not retained (canonical files restored after each run).",
+    "caveats": "judged vision images and individual vision records not retained; several early groups overlapped this run's own heavy jobs (listed per attempt); the one closing review (about 15:25Z) covered 2e3f4fd1..b831ed04 only; LJ2 desktop final-run failures were not rerun",
+    "release": "not tagged or published; no installation, migration or live journey"
+  },
+  "vision": {
+    "judge": "live model judgments through the dedicated test credential; product fixtures simulated",
+    "retained": "Playwright pass/fail result reports only (private, hashed below). The judged PNGs, per-screenshot vision records and cosmetic notes were NOT retained: canonical files were restored after each run.",
+    "journeys": [
+      {
+        "journey": "PAR1",
+        "revision": "a7de6307",
+        "reportSha256": "236e50a4904f88cf08470662752b182e42a08f836b234369661fc90ba65129be",
+        "layouts": {
+          "desktop-light": "passed",
+          "phone-light": "passed",
+          "desktop-dark": "passed",
+          "phone-dark": "passed"
+        }
+      },
+      {
+        "journey": "PAR2",
+        "revision": "a7de6307",
+        "reportSha256": "236e50a4904f88cf08470662752b182e42a08f836b234369661fc90ba65129be",
+        "layouts": {
+          "desktop-light": "passed",
+          "phone-light": "passed",
+          "desktop-dark": "passed",
+          "phone-dark": "passed"
+        }
+      },
+      {
+        "journey": "PAR3 Overview",
+        "revision": "a7de6307",
+        "reportSha256": "236e50a4904f88cf08470662752b182e42a08f836b234369661fc90ba65129be",
+        "layouts": {
+          "desktop-light": "passed",
+          "phone-light": "passed",
+          "desktop-dark": "passed",
+          "phone-dark": "passed"
+        }
+      },
+      {
+        "journey": "PAR3 header",
+        "revision": "a7de6307",
+        "reportSha256": "236e50a4904f88cf08470662752b182e42a08f836b234369661fc90ba65129be",
+        "layouts": {
+          "desktop-light": "passed",
+          "phone-light": "passed",
+          "desktop-dark": "passed",
+          "phone-dark": "passed"
+        }
+      },
+      {
+        "journey": "PAR4 automatic",
+        "revision": "a7de6307",
+        "reportSha256": "236e50a4904f88cf08470662752b182e42a08f836b234369661fc90ba65129be",
+        "layouts": {
+          "desktop-light": "passed",
+          "phone-light": "passed",
+          "desktop-dark": "passed",
+          "phone-dark": "passed"
+        }
+      },
+      {
+        "journey": "PAR4 reconnect",
+        "revision": "a7de6307",
+        "reportSha256": "236e50a4904f88cf08470662752b182e42a08f836b234369661fc90ba65129be",
+        "layouts": {
+          "desktop-light": "passed",
+          "phone-light": "passed",
+          "desktop-dark": "passed",
+          "phone-dark": "passed"
+        }
+      },
+      {
+        "journey": "PAR5",
+        "revision": "c82c371e",
+        "reportSha256": "6aa2d00a1b41fcae69275600ad1bd883b287648e49f49b65cd2d96bc4b5ea7ff",
+        "layouts": {
+          "desktop-light": "passed",
+          "phone-light": "passed",
+          "desktop-dark": "passed",
+          "phone-dark": "passed"
+        }
+      },
+      {
+        "journey": "PAR6",
+        "revision": "a7de6307 (installed Chrome)",
+        "reportSha256": "91e0e2b78c8ff91a231505223e01866849a8e6cdb82de933dcd1e7f51ead0c52",
+        "layouts": {
+          "desktop-light": "passed",
+          "phone-light": "passed",
+          "desktop-dark": "passed",
+          "phone-dark": "passed"
+        }
+      },
+      {
+        "journey": "PAR7 ",
+        "revision": "b831ed04",
+        "reportSha256": "f5b7890c1c21f9de745f62a1ef0ce2041f0caaec3c5ca2e88b71fd51f367faee",
+        "layouts": {
+          "desktop-light": "passed",
+          "phone-light": "passed",
+          "desktop-dark": "passed",
+          "phone-dark": "passed"
+        }
+      },
+      {
+        "journey": "PAR7b",
+        "revision": "b831ed04",
+        "reportSha256": "f5b7890c1c21f9de745f62a1ef0ce2041f0caaec3c5ca2e88b71fd51f367faee",
+        "layouts": {
+          "desktop-light": "passed",
+          "phone-light": "passed",
+          "desktop-dark": "passed",
+          "phone-dark": "passed"
+        }
+      },
+      {
+        "journey": "PAR8",
+        "revision": "73c99e35",
+        "reportSha256": "3a6ad140cb4305cfd633c5e53bba2715aadc9e131e036ba7df8606dc37ee4c02",
+        "layouts": {
+          "desktop-light": "passed",
+          "phone-light": "passed",
+          "desktop-dark": "passed",
+          "phone-dark": "passed"
+        }
+      },
+      {
+        "journey": "PAR9",
+        "revision": "73c99e35",
+        "reportSha256": "3a6ad140cb4305cfd633c5e53bba2715aadc9e131e036ba7df8606dc37ee4c02",
+        "layouts": {
+          "desktop-light": "passed",
+          "phone-light": "passed",
+          "desktop-dark": "passed",
+          "phone-dark": "passed"
+        }
+      }
+    ],
+    "finalBrowserRecaptures": "simulated recaptures of the vision-off final browser run, kept privately with SHA-256 hashes; not vision-judged"
+  },
+  "counts": {
+    "pre-existing": 16,
+    "regression": 7,
+    "load-sensitive": 8
+  }
+}
