@@ -2059,7 +2059,7 @@ test('PAR3 Overview groups, owner actions and saved-work publication', async ({ 
   await page.goto('/projects/projects_fixture'); await expect(page.getByRole('heading', { name: 'Projects fixture', exact: true })).toBeVisible(LONG); await sectionTab(page, info, 'Threads');
   await expect(page.getByText('Loading chat…', { exact: true })).toHaveCount(0, LONG);
   const overview = page.getByRole('tablist', { name: 'Overview', exact: true });
-  await expect(overview.getByRole('tab')).toHaveText(['Threads', 'Pull requests', 'Queue', 'Routines']);
+  await expect(overview.getByRole('tab')).toHaveText(['Threads', 'Pull requests', 'Queue', 'Routines', 'Library']);
   for (const group of ['Waiting for you', 'Ready for review', 'Working', 'Landing', 'Idle', 'Resolved']) await expect(region(page, group)).toBeVisible();
   await expect(region(page, 'Working')).toContainText('In a terminal');
   const dotColor = (group: string) => region(page, group).locator('.pw-card-dot').first().evaluate(element => getComputedStyle(element).backgroundColor);
