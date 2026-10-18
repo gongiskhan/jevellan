@@ -1,0 +1,38 @@
+{
+  "schema": "endpoint-cli-capabilities-v1",
+  "label": "live",
+  "cliVersion": "2.1.281 (Claude Code)",
+  "cliSha256": "a922981f6f3b55a251ef9f9dbaa0621a5f99cbcb5ca67f8a797476ccfc83f626",
+  "isolatedHome": true,
+  "effortFlag": true,
+  "variables": [
+    {
+      "name": "ANTHROPIC_BASE_URL",
+      "presentInBinary": true
+    },
+    {
+      "name": "ANTHROPIC_AUTH_TOKEN",
+      "presentInBinary": true
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_OPUS_MODEL",
+      "presentInBinary": true
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_SONNET_MODEL",
+      "presentInBinary": true
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+      "presentInBinary": true
+    },
+    {
+      "name": "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+      "presentInBinary": true
+    }
+  ],
+  "documentation": [
+    "https://code.claude.com/docs/en/env-vars",
+    "https://code.claude.com/docs/en/model-config"
+  ]
+}

@@ -20,8 +20,8 @@
 | 4 | Automatic pull request fixes | Pushed28efaecf; vision blocked |92 affected backend cases and8 browser journeys pass across four layouts; see phase-4/. |
 | 5 | Account waits, placement bounds, escalation and usage | Pushed bfb9dc8a; vision blocked |193 affected backend cases and4 browser layouts pass; see phase-5/. |
 | 6 | Web push | Pushed 2375d77c; vision blocked |142 affected backend cases and all4layouts pass; vision not run. See phase-6/. |
-| 7 | Library, attachments, environment and scoped rigging | Source verified; push pending, vision blocked |121 distinct affected backend cases and PAR7/PAR7b in all4layouts pass; typecheck/lint/build pass. See phase-7/. |
-| 8 | Compatible endpoints | Not started | Live credential optional, not requested yet |
+| 7 | Library, attachments, environment and scoped rigging | Pushed92df3929; vision blocked |121 distinct affected backend cases and PAR7/PAR7b in all4layouts pass; typecheck/lint/build pass. See phase-7/. |
+| 8 | Compatible endpoints | Verified; push pending; vision/live blocked |191 affected backend cases and PAR8 all4layouts pass; see phase-8/. |
 | 9 | First-run setup | Not started | Not run |
 | 10 | Docs, cleanup, suites, review, release and LP1–LP9 | Not started | Not run |
 
@@ -205,3 +205,30 @@ Simulated: final142/142 affected backend cases pass across6files. Typecheck, lin
 ## Phase7 checkpoint
 
 Simulated:121 distinct affected backend cases, typecheck, lint and production build pass. PAR7 and PAR7b pass every desktop/phone light/dark layout; final PAR7b logs also check for server crashes. Forty final screenshots are retained with dedicated vision not run for its missing credential. The cancelled-download regressions fail before repair and pass afterwards. The isolated Settings startup stall remains a closing finding. Live: no installed service, Ekoa work, native home or independent Madrid hub changed. Release/live clock unstarted. The mandatory working-tree and history secret scans gate publication.
+
+
+## Phase7 push and phase8 start
+
+Live:92df3929 is pushed on main after the mandatory history secret scan. The Pro AC setting is already sleep0. No installed service changed. Simulated: another all-four-layout LJ5 diagnostic stops at a fixture startup60000ms deadline before any journey; it is not run, and no assertion or timeout changes. The quiet closing reproduction remains required.
+
+Phase8 starts2026-10-17T23:51:12Z. Its optional endpoint credential was requested once, for entry only in Settings after installation. Without it LP8 is blocked; source, isolated contract and browser work continue. The installed CLI help and exact-name read-only check plus the official environment/model docs support the requested endpoint variables: https://code.claude.com/docs/en/env-vars and https://code.claude.com/docs/en/model-config . A presence/documentation check is not a provider-turn acceptance result.
+
+
+888. Account-v2 adds compatible endpoints on the Claude runtime while migrating v1 accounts unchanged. Endpoint model ids are served only by their declared endpoint accounts; ordinary accounts never claim them. Metered endpoints use existing paid-use rules, and free/plan endpoints rank with subscriptions and unknown usage. Optional endpointAccountId on menu entries retains source identity, so native discovery cannot disable an endpoint and disabled/removed sources remain explainable. The existing19-entry menu bound stays enforced atomically. This extends the former subscription/API-key-only account/menu model, without changing ordinary saved logins or coordinator model selection.
+
+889. Endpoint credentials remain vault-only and are delivered as per-launch environment with the configured base URL, auth token, background aliases and nonessential-traffic switch. Normal launches retain their old auth allow-list; endpoint launches reject native API-key/OAuth variables. Native homes are untouched. The one-request Messages probe reports Ready, Key refused or Unreachable and no usage windows. Endpoint discovery uses the owner's declared models and preserves native offers. This replaces native-only discovery/probing for this account kind.
+
+The initial real-SDK contract selected global Claude2.1.19 and failed because that obsolete CLI lacks --effort. Production uses the SDK's bundled CLI, so the corrected contract uses that same engine. The first sandbox profile then failed parsing its numeric host; the supported localhost:port form is used instead. The corrected contract passes with a real SDK/CLI, a fake Messages server and an OS network guard permitting only the fixture port. No global CLI or native home was updated, and these fixture/setup failures are not product passes.
+
+
+890. A failing phase8 regression showed a remote Ready probe overriding a known endpoint outage on another member. Endpoint accounts now keep real local readiness observations; an unprobed or credential-rotation-checking member can still use the shared observation. The existing native shared-login rule is unchanged. The additive unreachable exclusion reason distinguishes an endpoint connection failure from needing a login. This narrows Decision888 and the prior cross-device shared-observation rule for endpoint resource availability only; no heuristic routing is added.
+
+
+891. The first selected PAR8 browser journey fails on the Background model control's accessible name: its help text was inside the label. The help is now separately linked with aria-describedby while the label stays exactly Background model. This refines Decision889's account form without changing the selector, assertion or deadline. A preceding anchored CLI grep selected no tests and is explicitly not run.
+
+
+892. The brief's instruction to disable a model to free capacity exposed the old menu's19-total-row bound. The failed-before regression still fails when strengthened to preserve the disabled definition. The cap now means19 enabled choices, with at most200 saved definitions so disabled owner settings stay visible and cannot be silently re-enabled or deleted. This replaces Decision888's retained19-total-entry interpretation and that older global bound; project allowed-model lists still cap at19. Active overflow remains refused atomically. The first new thread test had intentionally omitted the fixture Jev key and correctly recorded fallback; it now supplies a scripted Jev transport rather than waiving the no-fallback assertion.
+
+## Phase8 checkpoint
+
+Simulated:191 affected backend cases pass; four dedicated Jev-selection checks are skipped for the missing test key. PAR8 passes all4layouts with32 screenshots, exercising the real HTTP probe against a fixture and automatic endpoint account/model placement. The real Agent SDK CLI contract passes against a fake provider with a loopback network guard and unchanged fixture native homes. Typecheck, lint, production build, whitespace and working-tree secret checks pass. Dedicated vision is not run; optional real-provider LP8 is blocked without a credential. The workspace-loading failed attempt remains a closing finding. No installed service or native home changed, and no owner acceptance is claimed.

@@ -1,0 +1,11 @@
+{
+  "schema": "endpoint-cli-contract-v1",
+  "label": "simulated",
+  "passed": true,
+  "requests": [
+    "/v1/messages?beta=true"
+  ],
+  "connections": 1,
+  "nativeFixturesUnchanged": true,
+  "networkGuard": "macos-sandbox"
+}

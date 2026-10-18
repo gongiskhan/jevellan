@@ -41,7 +41,7 @@ export const PLACEMENT_ISOLATION_CRITERIA: Record<Isolation, string> = {
 export const TASK_SHORTENED = '\n[Task shortened.]';
 export const ACCOUNT_REASON_TEXT: Record<ExclusionReason, string> = {
   'needs-login': 'needs login', expired: 'login expired', 'usage-ceiling': 'usage ceiling reached', cooling: 'cooling down',
-  disabled: 'account disabled', 'no-account': 'no account', 'paid-not-allowed': 'paid use not allowed', unsupported: 'not supported',
+  disabled: 'account disabled', 'no-account': 'no account', 'paid-not-allowed': 'paid use not allowed', unsupported: 'not supported', unreachable: 'is unreachable', 'model-not-served': 'This account does not serve {model}.',
 };
 
 /** One roster device as placement sees it; the caller derives running counts (live work only, D9) and the main rule inputs. */
@@ -151,7 +151,7 @@ function evaluate(input: PlacementInput, main: boolean, limits: boolean): Evalua
     for (const device of devices) {
       const ranked = ranking(input, model, device.id); const best = ranked[0]?.reason;
       if (ranked.some((entry) => entry.eligible)) eligible.push(device.id);
-      else unavailable.push({ deviceId: device.id, reason: `${displayName} ${ACCOUNT_REASON_TEXT[best && best !== 'eligible' ? best : 'no-account']}` });
+      else unavailable.push({ deviceId: device.id, reason: `${displayName} ${ACCOUNT_REASON_TEXT[best && best !== 'eligible' ? best : 'no-account'].replace('{model}', model.label)}` });
     }
     gaps.push(...unavailable);
     if (eligible.length) models.push({ model, devices: eligible, unavailable });

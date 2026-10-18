@@ -1,12 +1,13 @@
 import { query, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
-import { CLAUDE_FLAG_SETTINGS, EffortSchema, minimalEnvironment, type AccountStatus, type OfferedModel } from '@jevellan/core';
+import { CLAUDE_ENDPOINT_AUTH_KEYS, CLAUDE_FLAG_SETTINGS, EffortSchema, minimalEnvironment, type AccountStatus, type OfferedModel } from '@jevellan/core';
 import { AsyncQueue, type ResolvedAccount } from '@jevellan/runtime-contract';
 import { z } from 'zod';
 
 const ModelsSchema = z.array(z.object({ value: z.string(), resolvedModel: z.string().optional(), displayName: z.string(), supportedEffortLevels: z.array(EffortSchema).optional() }));
-const authEnvironment = (account: ResolvedAccount) => Object.fromEntries(['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY'].flatMap((key) => account.env[key] ? [[key, account.env[key]!]] : []));
+const authEnvironment = (account: ResolvedAccount) => Object.fromEntries((account.account.kind === 'endpoint' ? CLAUDE_ENDPOINT_AUTH_KEYS : ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY']).flatMap((key) => account.env[key] ? [[key, account.env[key]!]] : []));
 
 export async function listClaudeModels(account: ResolvedAccount, executable?: string): Promise<OfferedModel[]> {
+  if (account.account.kind === 'endpoint') return account.account.endpoint!.models.map(({ id, label, efforts }) => ({ id, label, efforts }));
   const input = new AsyncQueue<SDKUserMessage>(); const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20_000);
   // An empty open input stream performs the SDK handshake without submitting a model turn.
@@ -31,7 +32,16 @@ export function claudeUsage(headers: Headers, now = new Date()): AccountStatus['
 }
 
 export async function probeClaude(account: ResolvedAccount, fetcher: typeof fetch = fetch): Promise<{ auth: AccountStatus['auth']; usage?: AccountStatus['usage']; error?: string }> {
-  const token = account.account.kind === 'subscription' ? account.env.CLAUDE_CODE_OAUTH_TOKEN : account.env.ANTHROPIC_API_KEY;
+  if (account.account.kind === 'endpoint') {
+    const token = account.env.ANTHROPIC_AUTH_TOKEN; if (!token) return { auth: 'needs-login', error: 'Key refused' };
+    try {
+      const response = await fetcher(`${account.account.endpoint!.baseUrl.replace(/\/$/u, '')}/v1/messages`, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(20_000), headers: { 'content-type': 'application/json', 'anthropic-version': '2023-06-01', authorization: `Bearer ${token}` }, body: JSON.stringify({ model: account.account.endpoint!.models[0]!.id, max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }) });
+      await response.body?.cancel();
+      if (response.ok) return { auth: 'ready' };
+      return response.status === 401 || response.status === 403 ? { auth: 'needs-login', error: 'Key refused' } : { auth: 'unknown', error: `Unreachable: HTTP ${response.status}` };
+    } catch (error) { return { auth: 'unknown', error: `Unreachable: ${error instanceof Error ? error.message : 'connection failed'}` }; }
+  }
+  const token = account.account.kind === 'subscription'  ? account.env.CLAUDE_CODE_OAUTH_TOKEN : account.env.ANTHROPIC_API_KEY;
   if (!token) return { auth: 'needs-login' };
   try {
     const subscription = account.account.kind === 'subscription';

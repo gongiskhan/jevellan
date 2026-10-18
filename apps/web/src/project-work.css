@@ -774,3 +774,8 @@ button.pw-session-badge { display: inline-flex; gap: 6px; min-height: 30px; padd
 .pw-library-viewer img { display: block; max-width: 100%; max-height: 70vh; margin: auto; object-fit: contain; }
 .pw-library-viewer .actions { justify-content: space-between; margin-top: 12px; }
 .pw-rigging-projects { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+
+.endpoint-models { min-width: 0; }
+.endpoint-model { display: grid; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.endpoint-model fieldset { min-width: 0; }
+.endpoint-model .check-label { display: inline-flex; align-items: center; gap: 6px; }

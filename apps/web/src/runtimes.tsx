@@ -1,3 +1,5 @@
+import { EndpointFields } from './endpoint-fields.js';
+import { ENDPOINT } from './project-work-copy.js';
 import { clientId } from './client-id.js';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
@@ -6,6 +8,7 @@ import {
   effectiveAccountStatus,
   LoginViewSchema,
   type AccountView,
+  type Account,
   type AccountStatus,
 } from '@jevellan/core/client';
 import { api, empty, isCancelled } from './api.js';
@@ -69,6 +72,9 @@ function AccountForm({
   const [ceiling, setCeiling] = useState(existing?.account.ceilingPct ?? 90);
   const [paid, setPaid] = useState<string>(existing?.account.paidUse ?? '');
   const [secret, setSecret] = useState('');
+  const [endpoint, setEndpoint] = useState<NonNullable<Account['endpoint']>>(existing?.account.endpoint ?? { baseUrl: '', billing: 'subscription', models: [{ id: '', label: '', efforts: ['medium'], description: '' }] });
+  const metered = kind === 'api-key' || kind === 'endpoint' && endpoint.billing === 'metered';
+  const endpointValue = () => { const { backgroundModel, ...rest } = endpoint; return { ...rest, ...(backgroundModel?.trim() ? { backgroundModel: backgroundModel.trim() } : {}) }; };
   const task = useTask(onError);
   const requestId = useRequestId();
   return (
@@ -85,7 +91,8 @@ function AccountForm({
                     label,
                     enabled: existing.account.enabled,
                     ceilingPct: ceiling,
-                    ...(kind === 'api-key' ? { paidUse: paid } : {}),
+                    ...(metered ? { paidUse: paid } : {}),
+                    ...(kind === 'endpoint' ? { endpoint: endpointValue() } : {}),
                   }
                 : {
                     schema: 'add-account-v1',
@@ -93,16 +100,18 @@ function AccountForm({
                     label,
                     kind,
                     ceilingPct: ceiling,
-                    ...(kind === 'api-key' ? { paidUse: paid } : {}),
+                    ...(metered ? { paidUse: paid } : {}),
+                    ...(kind === 'endpoint' ? { endpoint: endpointValue() } : {}),
                     ...(secret ? { secret } : {}),
                   };
-              const account = await api(
+              let account = await api(
                 existing ? `/hub/accounts/${existing.account.id}` : '/hub/accounts',
                 AccountViewSchema,
                 existing ? 'PATCH' : 'POST',
                 { ...value, clientRequestId: requestId({ accountId: existing?.account.id, value }) },
                 { signal, waitForHub: true },
               );
+              if (existing && kind === 'endpoint' && secret) account = await api(`/hub/accounts/${account.account.id}/credential`, AccountViewSchema, 'PUT', { schema: 'replace-credential-v1', revision: account.revision, secret, clientRequestId: requestId({ credential: true, accountId: account.account.id, secret }) }, { signal, waitForHub: true });
               await done(account, !existing && kind === 'subscription' && !secret, signal);
             } finally {
               setSecret('');
@@ -127,13 +136,14 @@ function AccountForm({
             <select
               value={kind}
               onChange={(event) => {
-                setKind(event.target.value as 'subscription' | 'api-key');
+                setKind(event.target.value as Account['kind']);
                 setPaid('');
                 setSecret('');
               }}
             >
               <option value="subscription">Subscription</option>
               <option value="api-key">API key</option>
+              {runtime === 'claude' && <option value="endpoint">{ENDPOINT.type}</option>}
             </select>
           </label>
         )}
@@ -169,9 +179,10 @@ function AccountForm({
             </label>
           </details>
         )}
-        {kind === 'api-key' && (
+        {kind === 'endpoint' && <><EndpointFields value={endpoint} change={setEndpoint} /><label>{ENDPOINT.token}<input type="password" autoComplete="off" required={!existing} value={secret} onChange={event => setSecret(event.target.value)} /></label></>}
+        {metered && (
           <label>
-            When may Jevellan use this key?
+            {kind === 'endpoint' ? ENDPOINT.paid : 'When may Jevellan use this key?'}
             <select required value={paid} onChange={(event) => setPaid(event.target.value)}>
               <option value="" disabled>
                 Choose when
@@ -540,8 +551,8 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
           </div>}
           <div className="model-chips">
             {data.offered
-              .find((offered) => offered.runtime === runtime.id)
-              ?.models.map((model) => (
+              .filter((offered) => offered.runtime === runtime.id)
+              .flatMap(offered => offered.models).filter((model, index, all) => all.findIndex(row => row.id === model.id) === index).map((model) => (
                 <span className="chip" key={model.id} title={`${model.id} · ${model.efforts.join(', ')}`}>
                   {model.label}
                 </span>
@@ -565,7 +576,7 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
                     <div>
                       <strong>{account.label}</strong>
                       <span className="muted">
-                        {account.kind === 'api-key' ? 'API key' : 'Subscription'}
+                        {account.kind === 'endpoint' ? ENDPOINT.type : account.kind === 'api-key' ? 'API key' : 'Subscription'}
                         {view.secret && ` · Saved · ••••${view.secret.lastFour}`}
                       </span>
                     </div>
@@ -574,7 +585,7 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
                       {availability.label}
                     </span>
                   </div>
-                  <Usage status={status} />
+                  {account.kind !== 'endpoint' && <Usage status={status} />}
                   {status?.usage && <p className="muted small-text">Usage checked {dateTime(status.usage.observedAt)}</p>}
                   {availability.label === 'Usage ceiling reached' && <p className="notice">Usage reached this account’s {account.ceilingPct}% ceiling. Jevellan will use another eligible account.</p>}
                   {account.paidUse && <p className="muted small-text">{paidLabels[account.paidUse]}</p>}
@@ -590,7 +601,7 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
                         reached its limit on this account. Cooling until {dateTime(until)}; other models can still use it.
                       </p>
                     ))}
-                  {status?.lastError && <p className="notice">{status.lastError}</p>}
+                  {status?.lastError && account.kind !== 'endpoint' && <p className="notice">{status.lastError}</p>}
                   <div className="actions">
                     {account.kind === 'subscription' && account.credential !== 'per-device' && (
                       <button

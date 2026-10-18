@@ -1,9 +1,11 @@
+import { ENDPOINT } from './project-work-copy.js';
 import type { Account, AccountStatus } from '@jevellan/core/client';
 
 /** Authentication and availability are separate: valid credentials may still be unable to run. */
 export function accountAvailability(account: Account, status: AccountStatus | undefined, runtimeEnabled: boolean, now = Date.now()): { label: string; tone: string } {
   if (!account.enabled) return { label: 'Disabled', tone: 'disabled' };
   if (!runtimeEnabled) return { label: 'Runtime disabled', tone: 'disabled' };
+  if (account.kind === 'endpoint' && status?.auth !== 'checking' && status?.lastError) return { label: status.auth === 'needs-login' ? ENDPOINT.keyRefused : status.lastError, tone: status.auth === 'needs-login' ? 'needs-login' : 'unknown' };
   if (status?.auth !== 'ready') {
     const labels = { 'needs-login': 'Needs login', missing: 'Needs login', expired: 'Expired', revoked: 'Revoked', checking: 'Checking', unknown: 'Unknown' };
     return { label: status ? labels[status.auth] : 'Needs login', tone: status?.auth ?? 'missing' };

@@ -76,3 +76,10 @@ test('removed and disabled native Codex prompts are withdrawn without changing a
   mkdirSync(join(native, 'prompts')); writeFileSync(join(native, 'prompts', 'hello.md'), 'Hello'); nativeSetup(f.homes, 'codex', account);
   nativeSetup(f.homes, 'codex', account, false); expect(readdirSync(join(account, 'prompts'))).toEqual(['owned.md']);
 });
+
+test('native provider routing and model alias variables cannot replace endpoint launch controls', () => {
+  const f = fixture();
+  writeFileSync(join(f.native, 'settings.json'), JSON.stringify({ language: 'Portuguese', env: { ANTHROPIC_BASE_URL: 'https://native.invalid', ANTHROPIC_DEFAULT_OPUS_MODEL: 'native-opus', ANTHROPIC_DEFAULT_SONNET_MODEL: 'native-sonnet', ANTHROPIC_DEFAULT_HAIKU_MODEL: 'native-haiku', ANTHROPIC_AUTH_TOKEN: 'native fixture credential' } }));
+  const before = files(f.homes.userHome), setup = nativeSetup(f.homes, 'claude', f.account);
+  expect(setup.launch.settings).toEqual({ language: 'Portuguese' }); expect(files(f.homes.userHome)).toEqual(before);
+});

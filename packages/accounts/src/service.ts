@@ -111,9 +111,15 @@ export class AccountService {
     const home = this.options.homes.account(account.runtime, id); const env: Record<string, string> = {};
     if (account.credential === 'shared') {
       if (!account.secretRef) throw new Error('This account needs login.');
-      const key = account.runtime === 'claude' ? account.kind === 'subscription' ? 'CLAUDE_CODE_OAUTH_TOKEN' : 'ANTHROPIC_API_KEY' : account.runtime === 'codex' ? 'OPENAI_API_KEY' : undefined;
-      if (!key) throw new Error('Credential delivery is unavailable for this runtime.');
-      env[key] = await this.options.store.credential(id, account.secretRef);
+      const secret = await this.options.store.credential(id, account.secretRef); this.options.redactor.add(secret);
+      if (account.kind === 'endpoint') {
+        const endpoint = account.endpoint!, background = endpoint.backgroundModel ?? endpoint.models[0]!.id;
+        Object.assign(env, { ANTHROPIC_BASE_URL: endpoint.baseUrl, ANTHROPIC_AUTH_TOKEN: secret, ANTHROPIC_DEFAULT_OPUS_MODEL: background, ANTHROPIC_DEFAULT_SONNET_MODEL: background, ANTHROPIC_DEFAULT_HAIKU_MODEL: background, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1' });
+      } else {
+        const key = account.runtime === 'claude' ? account.kind === 'subscription' ? 'CLAUDE_CODE_OAUTH_TOKEN' : 'ANTHROPIC_API_KEY' : account.runtime === 'codex' ? 'OPENAI_API_KEY' : undefined;
+        if (!key) throw new Error('Credential delivery is unavailable for this runtime.');
+        env[key] = secret;
+      }
     }
     const resolved = { account, home, env };
     if (this.#closed) throw new Error('Account service is closed.');
@@ -151,7 +157,7 @@ export class AccountService {
     const now = new Date().toISOString();
     const value = AccountStatusSchema.parse({
       schema: 'account-status-v2', accountId: id, deviceId: this.options.deviceId,
-      auth: probe.auth === 'unknown' && before.auth === 'ready' ? 'ready' : probe.auth,
+      auth: account.kind !== 'endpoint' && probe.auth === 'unknown' && before.auth === 'ready' ? 'ready' : probe.auth,
       usage: probe.usage ?? { source: 'unknown', observedAt: now }, observedAt: now,
       ...(before.coolingUntil && Date.parse(before.coolingUntil) > Date.now() ? { coolingUntil: before.coolingUntil } : {}),
       ...(Object.entries(before.modelCooling ?? {}).some(([, until]) => Date.parse(until) > Date.now()) ? { modelCooling: Object.fromEntries(Object.entries(before.modelCooling!).filter(([, until]) => Date.parse(until) > Date.now())) } : {}),
@@ -163,7 +169,7 @@ export class AccountService {
   discover(id: string) { return this.#run(() => this.#discover(id)); }
   async #discover(id: string) {
     const account = (await this.#account(id)).account;
-    const models = await this.#runtime(account.runtime).listModels(await this.resolve(id));
+    const models = account.kind === 'endpoint' ? account.endpoint!.models.map(({ id, label, efforts }) => ({ id, label, efforts })) : await this.#runtime(account.runtime).listModels(await this.resolve(id));
     if (this.#closed) throw new Error('Account service is closed.');
     const result = await this.options.store.recordModels(id, models);
     if (this.#closed) throw new Error('Account service is closed.');

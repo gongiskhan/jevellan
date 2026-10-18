@@ -15,9 +15,12 @@ const probabilities = z.record(z.string(), z.number().min(0).max(1));
 
 export const ModelOptionSchema = z.strictObject({
   id: IdSchema, runtime: IdSchema, model: text, efforts: z.array(EffortSchema).min(1),
-  label: text, description: text, enabled: z.boolean(), unavailableReason: z.string().optional(),
+  label: text, description: text, enabled: z.boolean(), unavailableReason: z.string().optional(), endpointAccountId: IdSchema.optional(),
 });
 export type ModelOption = z.infer<typeof ModelOptionSchema>;
+export const MODEL_MENU_LIMIT = 19;
+export const SAVED_MODEL_MENU_LIMIT = 200;
+export const ModelMenuSchema = z.array(ModelOptionSchema).max(SAVED_MODEL_MENU_LIMIT).refine(menu => menu.filter(model => model.enabled).length <= MODEL_MENU_LIMIT, 'The model menu holds 19 models. Disable or remove one first.');
 export const GuardsSchema = z.strictObject({
   maxStretchesPerWork: z.number().int().positive().default(24), stretchTimeoutMin: z.number().positive().default(30),
   reviewCap: count.default(2), noProgressLimit: z.number().int().positive().default(2),
@@ -45,7 +48,7 @@ const ConfigurationFields = {
 const SettingsFields = {
   runtimes: z.record(IdSchema, z.strictObject({ enabled: z.boolean(), useOwnSetup: z.boolean().optional(), cacheWindowMinutes: z.number().int().min(1).max(1440).optional() })),
   decisions: z.strictObject({ provider: z.literal('jev'), model: text, timeoutMs: z.number().int().positive(), keepCurrentThreshold: z.number().min(0).max(1) }),
-  menu: z.array(ModelOptionSchema).max(19), effortGuide: z.record(EffortSchema, text), routingProfile: text, guards: GuardsSchema,
+  menu: ModelMenuSchema, effortGuide: z.record(EffortSchema, text), routingProfile: text, guards: GuardsSchema,
 };
 export const LegacyConfigurationSchema = z.strictObject({ ...ConfigurationFields, 'x-jevellan': z.strictObject({ schema: z.literal(1), ...SettingsFields }) });
 const CurrentConfigurationSchema = z.strictObject({
@@ -65,17 +68,26 @@ export const ConfigRevisionSchema = z.strictObject({
 });
 export type ConfigRevision = z.infer<typeof ConfigRevisionSchema>;
 
-export const AccountSchema = z.strictObject({
-  schema: z.literal('account-v1'), id: IdSchema, runtime: IdSchema, label: text,
-  kind: z.enum(['subscription', 'api-key']), enabled: z.boolean(), ceilingPct: percentage.default(90),
+export const AccountEndpointSchema = z.strictObject({
+  baseUrl: z.url(), billing: z.enum(['subscription', 'metered', 'free']),
+  models: z.array(z.strictObject({ id: z.string().min(1).max(200), label: z.string().min(1).max(80), efforts: z.array(EffortSchema).min(1), description: z.string().min(1).max(600) })).min(1).max(10),
+  backgroundModel: z.string().min(1).max(200).optional(),
+}).refine(value => new Set(value.models.map(model => model.id)).size === value.models.length, 'Each model id can appear once.');
+export const AccountSchemaV2 = z.strictObject({
+  schema: z.literal('account-v2'), id: IdSchema, runtime: IdSchema, label: text,
+  kind: z.enum(['subscription', 'api-key', 'endpoint']), enabled: z.boolean(), ceilingPct: percentage.default(90),
   credential: z.enum(['shared', 'per-device', 'hub-refreshed']), secretRef: IdSchema.optional(),
   identity: z.strictObject({ email: z.email().optional(), plan: z.string().optional() }).optional(),
-  paidUse: z.enum(['always', 'when-subscriptions-run-out', 'never']).optional(),
+  paidUse: z.enum(['always', 'when-subscriptions-run-out', 'never']).optional(), endpoint: AccountEndpointSchema.optional(),
 }).superRefine((value, ctx) => {
-  if (value.kind === 'api-key' && !value.paidUse) ctx.addIssue({ code: 'custom', path: ['paidUse'], message: 'Choose when Jevellan may use this key.' });
-  if (value.kind === 'subscription' && value.paidUse) ctx.addIssue({ code: 'custom', path: ['paidUse'], message: 'Paid-use policy applies only to API keys.' });
+  const metered = value.kind === 'api-key' || value.kind === 'endpoint' && value.endpoint?.billing === 'metered';
+  if (metered && !value.paidUse) ctx.addIssue({ code: 'custom', path: ['paidUse'], message: 'Choose when Jevellan may use this key.' });
+  if (!metered && value.paidUse) ctx.addIssue({ code: 'custom', path: ['paidUse'], message: value.kind === 'subscription' ? 'Paid-use policy applies only to API keys.' : 'Paid-use policy applies only to metered accounts.' });
+  if ((value.kind === 'endpoint') !== Boolean(value.endpoint)) ctx.addIssue({ code: 'custom', path: ['endpoint'], message: 'Endpoint settings belong to compatible-endpoint accounts.' });
+  if (value.kind === 'endpoint' && (value.runtime !== 'claude' || value.credential !== 'shared')) ctx.addIssue({ code: 'custom', path: ['credential'], message: 'Compatible endpoints use shared Claude runtime credentials.' });
   if (value.runtime === 'codex' && value.kind === 'subscription' && value.credential === 'shared') ctx.addIssue({ code: 'custom', path: ['credential'], message: 'Codex subscription logins are per device.' });
 });
+export const AccountSchema = z.preprocess(value => value && typeof value === 'object' && (value as { schema?: unknown }).schema === 'account-v1' ? { ...value, schema: 'account-v2' } : value, AccountSchemaV2);
 export type Account = z.infer<typeof AccountSchema>;
 export const AuthSchema = z.enum(['ready', 'needs-login', 'expired', 'revoked', 'missing', 'checking', 'unknown']);
 export const AccountUsageSchema = z.strictObject({
@@ -297,7 +309,7 @@ export const GitConflictResolutionSchema = z.strictObject({ schema: z.literal('g
 export type GitConflictResolution = z.infer<typeof GitConflictResolutionSchema>;
 export const MemoryConflictMergeSchema = z.strictObject({ schema: z.literal('memory-conflict-merge-v1'), workId: IdSchema, deviceId: IdSchema, at: TimestampSchema,
   upstream: GitObjectSchema, commit: GitObjectSchema, files: z.array(z.strictObject({ path: RelativePathSchema, upstream: GitObjectSchema.nullable(), local: GitObjectSchema.nullable() })).min(1) });
-export const ExclusionReasonSchema = z.enum(['needs-login', 'expired', 'usage-ceiling', 'cooling', 'disabled', 'no-account', 'paid-not-allowed', 'unsupported']);
+export const ExclusionReasonSchema = z.enum(['needs-login', 'expired', 'usage-ceiling', 'cooling', 'disabled', 'no-account', 'paid-not-allowed', 'unsupported', 'model-not-served', 'unreachable']);
 export type ExclusionReason = z.infer<typeof ExclusionReasonSchema>;
 export const JevCallSchema = z.strictObject({ schema: z.literal('jev-call-v1'), kind: z.enum(['action', 'model', 'memory', 'placement', 'merge']), requestedModel: text, returnedModel: text,
   usage: z.strictObject({ input_tokens: count, output_tokens: count }), latencyMs: z.number().nonnegative() });

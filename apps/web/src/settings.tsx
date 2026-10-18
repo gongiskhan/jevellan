@@ -1,4 +1,4 @@
-import { SUGGESTED_EFFORT_GUIDE, suggestedEffortCriteria } from '@jevellan/core/client';
+import { MODEL_MENU_LIMIT, SAVED_MODEL_MENU_LIMIT, SUGGESTED_EFFORT_GUIDE, suggestedEffortCriteria } from '@jevellan/core/client';
 import { clientId } from './client-id.js';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
@@ -263,7 +263,7 @@ export function DecisionsPage(props: PageProps) {
               </label>
             </div>
           ))}
-          {available.length > 0 && config.menu.length < 19 && (
+          {available.length > 0 && config.menu.filter(model => model.enabled).length < MODEL_MENU_LIMIT && config.menu.length < SAVED_MODEL_MENU_LIMIT && (
             <label>
               Add an offered model
               <select

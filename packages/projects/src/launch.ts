@@ -118,7 +118,7 @@ export class TurnLauncher {
     const known = resets.filter((value): value is number => value !== null);
     const earliestEligibleAt = known.length ? new Date(Math.min(...known)).toISOString() : null;
     const best = ranking[0]?.reason, adapter = this.#o.runtimes.get(request.runtime);
-    return { reason: `${adapter?.displayName ?? request.runtime} ${ACCOUNT_REASON_TEXT[best && best !== 'eligible' ? best : 'no-account']}`, earliestEligibleAt };
+    return { reason: `${adapter?.displayName ?? request.runtime} ${ACCOUNT_REASON_TEXT[best && best !== 'eligible' ? best : 'no-account'].replace('{model}', request.modelLabel)}`, earliestEligibleAt };
   }
   /**
    * Why a turn of `runtime` and `model` waits now (phase 8): no eligible account is free because threads attached in a terminal here hold
@@ -160,7 +160,7 @@ export class TurnLauncher {
       const taken = ranking.find((entry) => entry.eligible);
       if (taken) return { kind: 'unavailable', reason: accountInTerminal(taken.account.label) };
       const best = ranking[0]?.reason;
-      return { kind: 'unavailable', reason: noTurnAccount(request.modelLabel, this.#o.deviceName, `${adapter.displayName} ${ACCOUNT_REASON_TEXT[best && best !== 'eligible' ? best : 'no-account']}`), accountWait: await this.unavailableAccount(request) };
+      return { kind: 'unavailable', reason: noTurnAccount(request.modelLabel, this.#o.deviceName, `${adapter.displayName} ${ACCOUNT_REASON_TEXT[best && best !== 'eligible' ? best : 'no-account'].replace('{model}', request.modelLabel)}`), accountWait: await this.unavailableAccount(request) };
     }
     const account = selected.account;
     const accountChanged = request.pinnedAccountId !== undefined && account.id !== request.pinnedAccountId;

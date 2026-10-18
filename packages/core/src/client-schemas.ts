@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { NativeSetupInventorySchema } from './native-setup-schemas.js';
 import { RiggingBundleSchema, RiggingBundleSummarySchema } from './rigging-bundle-schemas.js';
-import { AccountSchema, AccountStatusSchema, AccountUsageSchema, AuthSchema, EffortSchema, IdSchema, TimestampSchema, RiggingItemSchema, ConfigurationSchema, ConfigRevisionSchema, DeviceSchema } from './schemas.js';
+import { AccountSchema, AccountSchemaV2, AccountEndpointSchema, AccountStatusSchema, AccountUsageSchema, AuthSchema, EffortSchema, IdSchema, TimestampSchema, RiggingItemSchema, ConfigurationSchema, ConfigRevisionSchema, DeviceSchema } from './schemas.js';
 
 export const SecretSummarySchema = z.strictObject({ schema: z.literal('secret-summary-v1'), id: IdSchema, saved: z.literal(true), lastFour: z.string().max(4) });
 export type SecretSummary = z.infer<typeof SecretSummarySchema>;
@@ -10,16 +10,18 @@ const PaidUseSchema = z.enum(['always', 'when-subscriptions-run-out', 'never']);
 export const CredentialInputSchema = z.string().min(1).max(65_536);
 export const AddAccountSchema = z.strictObject({
   schema: z.literal('add-account-v1'), runtime: IdSchema, label: z.string().trim().min(1).max(128),
-  kind: z.enum(['subscription', 'api-key']), ceilingPct: z.number().min(0).max(100).default(90),
-  paidUse: PaidUseSchema.optional(), secret: CredentialInputSchema.optional(), clientRequestId: IdSchema.optional(),
+  kind: z.enum(['subscription', 'api-key', 'endpoint']), ceilingPct: z.number().min(0).max(100).default(90),
+  endpoint: AccountEndpointSchema.optional(), paidUse: PaidUseSchema.optional(), secret: CredentialInputSchema.optional(), clientRequestId: IdSchema.optional(),
 }).superRefine((value, ctx) => {
   if (value.kind === 'api-key' && (!value.paidUse || !value.secret)) ctx.addIssue({ code: 'custom', message: 'Enter the key and choose when Jevellan may use it.' });
-  if (value.kind === 'subscription' && value.paidUse) ctx.addIssue({ code: 'custom', message: 'Paid-use policy applies only to API keys.' });
+  if ((value.kind === 'subscription' || value.kind === 'endpoint' && value.endpoint?.billing !== 'metered') && value.paidUse) ctx.addIssue({ code: 'custom', message: 'Paid-use policy applies only to API keys.' });
+  if (value.kind === 'endpoint' && (!value.endpoint || !value.secret || value.runtime !== 'claude' || value.endpoint.billing === 'metered' && !value.paidUse)) ctx.addIssue({ code: 'custom', message: 'Enter the endpoint, auth token and billing policy.' });
+  if (value.kind !== 'endpoint' && value.endpoint) ctx.addIssue({ code: 'custom', message: 'Endpoint settings belong to compatible-endpoint accounts.' });
   if (value.runtime === 'codex' && value.kind === 'subscription' && value.secret) ctx.addIssue({ code: 'custom', message: 'Codex subscription sign-in belongs to this device.' });
 });
 export const UpdateAccountSchema = z.strictObject({
   schema: z.literal('update-account-v1'), revision: z.number().int().positive(), label: z.string().trim().min(1).max(128),
-  enabled: z.boolean(), ceilingPct: z.number().min(0).max(100), paidUse: PaidUseSchema.optional(), clientRequestId: IdSchema.optional(),
+  enabled: z.boolean(), ceilingPct: z.number().min(0).max(100), paidUse: PaidUseSchema.optional(), endpoint: AccountEndpointSchema.optional(), clientRequestId: IdSchema.optional(),
 });
 export const ReplaceCredentialSchema = z.strictObject({ schema: z.literal('replace-credential-v1'), revision: z.number().int().positive(), secret: CredentialInputSchema, clientRequestId: IdSchema.optional() });
 export const AccountViewSchema = z.strictObject({
@@ -31,7 +33,7 @@ export const OfferedModelsSchema = z.strictObject({
   schema: z.literal('offered-models-v1'), runtime: IdSchema, accountId: IdSchema, observedAt: TimestampSchema,
   models: z.array(z.strictObject({ id: z.string().min(1), label: z.string().min(1), efforts: z.array(EffortSchema).min(1), contextWindow: z.number().int().positive().optional() })),
 });
-export const AccountProbeSchema = z.strictObject({ auth: AuthSchema, usage: AccountUsageSchema.optional(), identity: AccountSchema.shape.identity, error: z.string().optional() });
+export const AccountProbeSchema = z.strictObject({ auth: AuthSchema, usage: AccountUsageSchema.optional(), identity: AccountSchemaV2.shape.identity, error: z.string().optional() });
 export const LoginViewSchema = z.strictObject({
   schema: z.literal('login-view-v1'), id: IdSchema, accountId: IdSchema, deviceId: IdSchema,
   state: z.enum(['pending', 'checking', 'done', 'failed', 'cancelled']), instructions: z.string(),
@@ -70,7 +72,7 @@ export const SecretInputSchema = z.strictObject({ schema: z.literal('save-secret
 export const AccountListSchema = z.strictObject({ schema: z.literal('accounts-list-v1'), accounts: z.array(AccountViewSchema) });
 export const RiggingListSchema = z.strictObject({ schema: z.literal('rigging-list-v1'), items: z.array(RiggingViewSchema), application: RiggingApplicationSchema.nullable() });
 export const CapabilitiesSchema = z.strictObject({ edit: z.boolean(), shell: z.boolean(), mcp: z.boolean(), images: z.boolean(), interrupt: z.boolean(), usage: z.boolean(), continueSession: z.boolean(), perLaunchConfig: z.boolean(), readOnlyEnforced: z.boolean(), turns: z.boolean() });
-export const RuntimeListSchema = z.strictObject({ schema: z.literal('runtimes-list-v1'), runtimes: z.array(z.strictObject({ id: IdSchema, displayName: z.string(), enabled: z.boolean(), accountKinds: z.array(z.enum(['subscription', 'api-key'])), riggingKinds: z.array(z.enum(['skill', 'mcp', 'hook', 'rule', 'setting', 'command'])), capabilities: CapabilitiesSchema, nativeSetup: NativeSetupInventorySchema.optional() })), offered: z.array(OfferedModelsSchema) });
+export const RuntimeListSchema = z.strictObject({ schema: z.literal('runtimes-list-v1'), runtimes: z.array(z.strictObject({ id: IdSchema, displayName: z.string(), enabled: z.boolean(), accountKinds: z.array(z.enum(['subscription', 'api-key', 'endpoint'])), riggingKinds: z.array(z.enum(['skill', 'mcp', 'hook', 'rule', 'setting', 'command'])), capabilities: CapabilitiesSchema, nativeSetup: NativeSetupInventorySchema.optional() })), offered: z.array(OfferedModelsSchema) });
 
 
 export const ConfigHistorySchema = z.strictObject({ schema: z.literal('config-history-v1'), revisions: z.array(ConfigRevisionSchema) });

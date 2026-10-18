@@ -1,0 +1,61 @@
+{
+  "schema": "projects-parity-phase-evidence-v1",
+  "label": "simulated",
+  "phase": 8,
+  "backend": {
+    "passed": 191,
+    "files": 14,
+    "skipped": 4,
+    "skipReason": "Dedicated Jev decision-selection test key absent.",
+    "log": "/private/tmp/jevellan-parity-p8-complete-backend.log"
+  },
+  "browser": {
+    "schema": "parity-browser-matrix-evidence-v1",
+    "label": "simulated",
+    "results": [
+      {
+        "layout": "desktop-light",
+        "exitCode": 0,
+        "fatalStreamError": false,
+        "seconds": 135,
+        "log": "/private/tmp/jevellan-parity-p8-browser-desktop-light-final.log"
+      },
+      {
+        "layout": "phone-light",
+        "exitCode": 0,
+        "fatalStreamError": false,
+        "seconds": 100,
+        "log": "/private/tmp/jevellan-parity-p8-browser-phone-light-final.log"
+      },
+      {
+        "layout": "desktop-dark",
+        "exitCode": 0,
+        "fatalStreamError": false,
+        "seconds": 125,
+        "log": "/private/tmp/jevellan-parity-p8-browser-desktop-dark-final.log"
+      },
+      {
+        "layout": "phone-dark",
+        "exitCode": 0,
+        "fatalStreamError": false,
+        "seconds": 116,
+        "log": "/private/tmp/jevellan-parity-p8-browser-phone-dark-final.log"
+      }
+    ]
+  },
+  "screenshots": 32,
+  "vision": {
+    "label": "not run",
+    "reason": "Dedicated vision test credential absent.",
+    "receipts": 32
+  },
+  "typecheck": "passed",
+  "lint": "passed",
+  "build": "passed",
+  "nativeFixturesUnchanged": true,
+  "live": {
+    "label": "blocked",
+    "reason": "Optional real compatible-endpoint credential absent; asked once. LP8 follows installation."
+  },
+  "knownClosingFinding": "One workspace bootstrap stalled before reaching the form; quiet unchanged run reached the journey. Full suite remains a closing gate."
+}

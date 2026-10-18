@@ -76,7 +76,7 @@ export interface LoginSession {
 export type RuntimeContext = { homes: Homes; daemonPid?: number; executable?: string; redactor?: SecretRedactor; saveSecret?: (accountId: string, value: string, requestId?: string) => Promise<void> };
 export interface RuntimeAdapter {
   id: string; displayName: string;
-  accountKinds: Array<'subscription' | 'api-key'>;
+  accountKinds: Array<'subscription' | 'api-key' | 'endpoint'>;
   riggingKinds: Array<'skill' | 'mcp' | 'hook' | 'rule' | 'setting' | 'command'>;
   capabilities: { edit: boolean; shell: boolean; mcp: boolean; images: boolean; interrupt: boolean; usage: boolean; continueSession: boolean; perLaunchConfig: boolean; readOnlyEnforced: boolean; turns: boolean };
   listModels(account: ResolvedAccount): Promise<Array<{ id: string; label: string; efforts: Effort[]; contextWindow?: number | undefined }>>;

@@ -222,3 +222,13 @@ test('key replacement resumes its original save after a lost reply and refuses t
   const replacement = `fixture-${randomUUID()}`; const latest = await repository.capture(created.account.id, result.revision, replacement);
   await expect(service.replaceCredential(created.account.id, input)).rejects.toMatchObject({ status: 409 }); expect((await service.get(created.account.id)).account.secretRef).toBe(latest.account.secretRef);
 });
+
+test('member endpoint resolution and discovery use hub credentials without a native model handshake', async () => {
+  const endpoint = { baseUrl: 'http://127.0.0.1:8888/anthropic', billing: 'free', models: [{ id: 'mesh-glm', label: 'Mesh GLM', efforts: ['medium'], description: 'Small work.' }] };
+  const created = await service.add({ schema: 'add-account-v1', runtime: 'claude', label: 'Member endpoint', kind: 'endpoint', endpoint, secret: 'fixture endpoint member token' });
+  expect((await service.resolve(created.account.id)).env).toMatchObject({ ANTHROPIC_AUTH_TOKEN: 'fixture endpoint member token', ANTHROPIC_BASE_URL: endpoint.baseUrl });
+  expect(redactor.text('fixture endpoint member token')).toBe('[redacted]');
+  expect((await service.discover(created.account.id)).models).toEqual([{ id: 'mesh-glm', label: 'Mesh GLM', efforts: ['medium'] }]);
+  expect(runtime.listModels).not.toHaveBeenCalled();
+  expect(JSON.stringify(await repository.list())).not.toContain('fixture endpoint member token');
+});

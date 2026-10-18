@@ -23,7 +23,7 @@ export async function decideAccount(client: DecisionClient, input: { ranking: re
     const questions = { account: { type: 'choice' as const,
       instructions: 'Choose the saved account for this session. Respect the owner routing instructions. Prefer subscriptions and known usage with headroom below both usage ceilings; consider the five-hour and weekly reset times. Earlier options have better resource rank. Never choose a machine login or an unavailable account.',
       criteria: Object.fromEntries(eligible.map((entry, index) => [entry.account.id, input.redactor.text(JSON.stringify({ label: entry.account.label, resourceRank: index + 1,
-        kind: entry.account.kind, ceilingPct: entry.account.ceilingPct, usage: entry.status?.usage ?? 'unknown', credential: entry.account.credential }))])) } };
+        kind: entry.account.kind, ...(entry.account.endpoint ? { billing: entry.account.endpoint.billing } : {}), ceilingPct: entry.account.ceilingPct, usage: entry.status?.usage ?? 'unknown', credential: entry.account.credential }))])) } };
     const response = await askJev(client, { model: input.model, state: typeof input.state === 'function' ? input.state() : input.state, questions, kind: 'placement', calls }, signal);
     const answer = response?.answers.account;
     if (answer?.type !== 'choice') throw new JevError('invalid-response');

@@ -830,8 +830,8 @@
   {
     "id": "parity-endpoints",
     "title": "Claude-compatible endpoint accounts",
-    "why": "BRIEF.md phase 8. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
-    "status": "planned"
+    "why": "BRIEF.md phase8: account-v2 migration, explicit endpoint model service, billing, source-tagged menu, isolated launch and probes are implemented.191 affected backend cases and PAR8 all4layouts pass;32 screenshots. Real SDK/CLI against a fake server passes with native fixture homes unchanged. Dedicated vision not run; optional LP8 credential blocked. Decisions888–892. See docs/acceptance/projects-parity-2026-10/phase-8/.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "parity-first-run",

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { AccountHubRequestSchema, AccountHubResultSchema, AccountModelsResultSchema, AccountSchema, AccountStatusSchema, AccountUseSchema, AccountViewSchema, AddAccountSchema, CredentialInputSchema, IdSchema, OfferedModelsSchema, UpdateAccountSchema, newId, reconcileMenu, type Account, type AccountStatus, type AccountStore } from '@jevellan/core';
+import { AccountHubRequestSchema, AccountHubResultSchema, AccountModelsResultSchema, AccountSchema, AccountStatusSchema, AccountUseSchema, AccountViewSchema, AddAccountSchema, CredentialInputSchema, IdSchema, OfferedModelsSchema, UpdateAccountSchema, newId, reconcileMenu, reconcileEndpointMenu, type Account, type AccountStatus, type AccountStore } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
 import { AccountCredentialSchema, AccountListSchema, AccountWriteResultSchema, CredentialCaptureReceiptSchema, OfferedModelsListSchema, RecentAccountsSchema, stableJson, type AccountHubRequest, type DocumentSchema } from '@jevellan/core';
 import { HubProtocolError, type MemberHubClient } from './client.js';
@@ -27,8 +27,8 @@ export class HubAccounts implements AccountStore {
   add(input: unknown) {
     const value = AddAccountSchema.parse(input);
     const result = settingsMutation(this.hub, this.deviceId, 'account-add', value, value.clientRequestId, AccountViewSchema, () => {
-      const account = AccountSchema.parse({ schema: 'account-v1', id: newId('acc'), runtime: value.runtime, label: value.label, kind: value.kind, enabled: true, ceilingPct: value.ceilingPct, credential: value.runtime === 'codex' && value.kind === 'subscription' ? 'per-device' : 'shared', ...(value.paidUse ? { paidUse: value.paidUse } : {}) });
-      this.hub.put('accounts', account.id, AccountSchema, account, 0);
+      const account = AccountSchema.parse({ schema: 'account-v2', id: newId('acc'), runtime: value.runtime, label: value.label, kind: value.kind, enabled: true, ceilingPct: value.ceilingPct, credential: value.runtime === 'codex' && value.kind === 'subscription' ? 'per-device' : 'shared', ...(value.paidUse ? { paidUse: value.paidUse } : {}), ...(value.endpoint ? { endpoint: value.endpoint } : {}) });
+      this.hub.put('accounts', account.id, AccountSchema, account, 0); this.#endpointMenu();
       return value.secret ? this.capture(account.id, 1, value.secret) : this.get(account.id);
     });
     return this.get(result.account.id);
@@ -37,10 +37,17 @@ export class HubAccounts implements AccountStore {
     const patch = UpdateAccountSchema.parse(input);
     settingsMutation(this.hub, this.deviceId, 'account-update', { id, ...patch }, patch.clientRequestId, AccountViewSchema, () => {
       const { document: account } = this.#account(id); delete account.paidUse;
-      this.hub.put('accounts', id, AccountSchema, { ...account, label: patch.label, enabled: patch.enabled, ceilingPct: patch.ceilingPct, ...(patch.paidUse ? { paidUse: patch.paidUse } : {}) }, patch.revision);
+      this.hub.put('accounts', id, AccountSchema, { ...account, label: patch.label, enabled: patch.enabled, ceilingPct: patch.ceilingPct, ...(patch.paidUse ? { paidUse: patch.paidUse } : {}), ...(patch.endpoint ? { endpoint: patch.endpoint } : {}) }, patch.revision);
+      this.#endpointMenu();
       return this.get(id);
     });
     return this.get(id);
+  }
+  #endpointMenu() {
+    const revision = this.hub.configuration.current(); if (!revision) return;
+    const configuration = structuredClone(revision.configuration);
+    configuration['x-jevellan'].menu = reconcileEndpointMenu(configuration['x-jevellan'].menu, this.hub.list('accounts', AccountSchema).map(row => row.document));
+    if (JSON.stringify(configuration) !== JSON.stringify(revision.configuration)) this.hub.configuration.put(configuration, revision.revision, { deviceId: this.deviceId, source: 'ui' });
   }
   capture(id: string, revision: number, raw: string, requestId?: string) {
     const secret = CredentialInputSchema.parse(raw);
@@ -91,12 +98,12 @@ export class HubAccounts implements AccountStore {
   recordModels(id: string, models: ReturnType<typeof OfferedModelsSchema.parse>['models']) {
     const account = this.#account(id).document;
     const offered = OfferedModelsSchema.parse({ schema: 'offered-models-v1', accountId: id, runtime: account.runtime, models, observedAt: new Date(this.now()).toISOString() });
-    const previous = this.hub.get('offered-models', account.runtime, OfferedModelsSchema);
-    this.hub.put('offered-models', account.runtime, OfferedModelsSchema, offered, previous?.revision ?? 0);
+    const previous = this.hub.get('offered-models', account.kind === 'endpoint' ? account.id : account.runtime, OfferedModelsSchema);
+    this.hub.put('offered-models', account.kind === 'endpoint' ? account.id : account.runtime, OfferedModelsSchema, offered, previous?.revision ?? 0);
     let revision = this.hub.configuration.current();
     if (revision) {
       const configuration = globalThis.structuredClone(revision.configuration);
-      configuration['x-jevellan'].menu = reconcileMenu(configuration['x-jevellan'].menu, account.runtime, offered.models);
+      configuration['x-jevellan'].menu = account.kind === 'endpoint' ? reconcileEndpointMenu(configuration['x-jevellan'].menu, this.hub.list('accounts', AccountSchema).map(row => row.document)) : reconcileMenu(configuration['x-jevellan'].menu, account.runtime, offered.models, this.hub.list('accounts', AccountSchema).map(row => row.document));
       if (JSON.stringify(configuration) !== JSON.stringify(revision.configuration)) revision = this.hub.configuration.put(configuration, revision.revision, { deviceId: this.deviceId, source: 'ui' });
     }
     return AccountModelsResultSchema.parse({ schema: 'account-models-result-v1', offered, configuration: revision });

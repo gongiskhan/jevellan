@@ -12,7 +12,7 @@ export function createRuntime(context: RuntimeContext): RuntimeAdapter {
     return account;
   };
   return {
-    id: 'claude', displayName: 'Claude Code', accountKinds: ['subscription', 'api-key'], riggingKinds: supportedRigging('claude'),
+    id: 'claude', displayName: 'Claude Code', accountKinds: ['subscription', 'api-key', 'endpoint'], riggingKinds: supportedRigging('claude'),
     capabilities: { edit: true, shell: true, mcp: true, images: true, interrupt: true, usage: true, continueSession: true, perLaunchConfig: true, readOnlyEnforced: true, turns: true },
     listModels: (account) => listClaudeModels(checked(account), context.executable),
     beginLogin: (account, home) => beginTerminalLogin('claude', account, home, context),

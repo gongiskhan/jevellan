@@ -2378,3 +2378,7 @@ Decisions875–877 implement BRIEF.md phase6 with the existing hub database, enc
 ## Projects parity Library and environment,17October2026
 
 Decisions880–887 add the hub Library, authenticated streaming and read-only mirrors, composer attachments and output tools, project launch environment, copied-file publication guards and scoped rigging.121 distinct affected backend cases and two browser journeys in all4layouts pass; typecheck/lint/build pass. Cancelled downloads first reproduced a daemon crash; the new regressions pass after repair. Forty screenshots are retained, with dedicated vision not run for the missing test credential. The intermittent Settings startup finding remains a closing concern. Installed services, native homes and Ekoa work are unchanged; LP6 and owner acceptance are not claimed. Evidence: projects-parity-2026-10/phase-7/.
+
+## Projects parity phase8
+
+Compatible endpoints extend the Claude account path with explicit served models, billing, isolated environment and one-request probes. Simulated:191 affected backend cases and all4 PAR8 layouts pass; the real SDK/CLI fake-provider contract preserves fixture native homes.32 screenshots retained. Dedicated vision not run; optional real-provider LP8 blocked. Decisions888–892 and phase evidence are in projects-parity-2026-10/phase-8/. Installation and full suites remain phase10 gates.

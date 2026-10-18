@@ -1,3 +1,4 @@
+import { modelNotServed } from './project-work-copy.js';
 import { PlanReview, type PlanReviewActions } from './plan-review.js';
 import { BranchChangeNotice, branchChangeText } from './branch-change-notice.js';
 import { useShellVisibility } from './shell-visibility.js';
@@ -2156,7 +2157,7 @@ function Why({
             <ul className="why-rank">
               {decision.model.excluded.map((model) => (
                 <li className="excluded" key={model.modelId}>
-                  {modelLabel(model.modelId)}: {model.reason.replaceAll('-', ' ')}
+                  {modelLabel(model.modelId)}: {model.reason === 'model-not-served' ? modelNotServed(modelLabel(model.modelId)) : model.reason.replaceAll('-', ' ')}
                 </li>
               ))}
             </ul>

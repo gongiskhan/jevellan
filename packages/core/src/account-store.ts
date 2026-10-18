@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AccountSchema, AccountStatusSchema, ConfigRevisionSchema, IdSchema, TimestampSchema, type Account, type AccountStatus } from './schemas.js';
+import { AccountSchemaV2, AccountStatusSchema, ConfigRevisionSchema, IdSchema, TimestampSchema, type Account, type AccountStatus } from './schemas.js';
 import { AccountListSchema, AccountViewSchema, AddAccountSchema, CredentialInputSchema, OfferedModelsSchema, UpdateAccountSchema, type AccountView } from './client-schemas.js';
 
 export const AccountUseSchema = z.strictObject({ schema: z.literal('account-use-v1'), accountId: IdSchema, deviceId: IdSchema, at: TimestampSchema });
@@ -19,7 +19,7 @@ export const AccountHubRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...base, operation: z.literal('add'), input: AddAccountSchema }),
   z.strictObject({ ...base, operation: z.literal('update'), id: IdSchema, input: UpdateAccountSchema }),
   z.strictObject({ ...base, operation: z.literal('status'), id: IdSchema }),
-  z.strictObject({ ...base, operation: z.literal('write-status'), status: AccountStatusSchema, credential: IdSchema.nullable(), identity: AccountSchema.shape.identity }),
+  z.strictObject({ ...base, operation: z.literal('write-status'), status: AccountStatusSchema, credential: IdSchema.nullable(), identity: AccountSchemaV2.shape.identity }),
   z.strictObject({ ...base, operation: z.literal('capture'), id: IdSchema, revision: z.number().int().positive(), secret: CredentialInputSchema, requestId: IdSchema.optional() }),
   z.strictObject({ ...base, operation: z.literal('credential'), id: IdSchema, secretRef: IdSchema }),
   z.strictObject({ ...base, operation: z.literal('models') }),

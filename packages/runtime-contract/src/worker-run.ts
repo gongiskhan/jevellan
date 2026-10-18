@@ -4,7 +4,7 @@ import { createInterface } from 'node:readline';
 import { realpathSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { minimalEnvironment, nativeSetup, removeNativeGeneration, SecretRedactor, THREAD_GIT_ENV_KEYS } from '@jevellan/core';
+import { CLAUDE_ENDPOINT_AUTH_KEYS, minimalEnvironment, nativeSetup, removeNativeGeneration, SecretRedactor, THREAD_GIT_ENV_KEYS } from '@jevellan/core';
 import { AsyncQueue } from './queue.js';
 import { groupAlive, terminateGroup, terminateDescendants, rememberProcessTree, identifySpawnedGroup, type NativeProcess } from './process-group.js';
 import { StretchInputSchema, TurnInputSchema, WorkerCommandSchema, WorkerMessageSchema, type RuntimeContext, type RuntimeEvent, type RunResult, type StretchInput, type StretchRun, type TurnInput, type WorkerCommand } from './contract.js';
@@ -15,10 +15,10 @@ const TURN = Symbol('turn');
 
 export function launchEnvironment(runtime: 'claude' | 'codex', input: Pick<StretchInput, 'account' | 'launch'>): Record<string, string> {
   const auth: Record<string, string> = {};
-  if (runtime === 'claude') for (const key of ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY']) if (input.account.env[key]) auth[key] = input.account.env[key]!;
+  if (runtime === 'claude') for (const key of input.account.account.kind === 'endpoint' ? CLAUDE_ENDPOINT_AUTH_KEYS : ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY']) if (input.account.env[key]) auth[key] = input.account.env[key]!;
   const launch: Record<string, string> = {};
   for (const key of LAUNCH_KEYS) if (input.launch.env[key]) launch[key] = input.launch.env[key]!;
-  return minimalEnvironment(runtime, input.account.home, auth, launch, { ...process.env, ...input.launch.env }, input.launch.projectEnv);
+  return minimalEnvironment(runtime, input.account.home, auth, launch, { ...process.env, ...input.launch.env }, input.launch.projectEnv, input.account.account.kind === 'endpoint');
 }
 
 export class WorkerRun implements StretchRun {

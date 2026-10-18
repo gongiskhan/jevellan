@@ -611,3 +611,8 @@ Projects parity phase7 source adds the Overview Library for owner uploads and th
 
 
 Phase7 source closure (Decisions880–887):121 distinct affected backend cases, PAR7/PAR7b in all4layouts, typecheck/lint/build pass. Library streaming cancellation no longer crashes the daemon. Dedicated vision and real-provider LP6 remain not run; source is not yet an installed release. See acceptance/projects-parity-2026-10/phase-7/.
+
+
+Projects parity phase8 (Decisions888–889) is in progress: account-v2 endpoint definitions, explicit model service, paid-use rules, source-tagged menu choices and vault-only per-launch auth extend the existing account path. Native and endpoint discovery remain separate. The real SDK contract now uses the same bundled CLI as production against a fake server under a loopback network guard; this is simulated provider evidence. Source/browser checks and optional real-provider acceptance remain separate.
+
+Projects parity phase8 checkpoint (Decisions888–892): compatible endpoints, source-bound model choices, billing, per-launch vault auth and bounded probes are implemented. Endpoint local outages are no longer hidden by another device's Ready observation; native saved-login behavior stays. The menu supports19 enabled choices and up to200 saved definitions, preserving disabled owner settings.191 affected backend cases and PAR8 in all4layouts pass. Dedicated vision is not run, and optional real-provider LP8 is blocked without its credential. See acceptance/projects-parity-2026-10/phase-8/; no installed release or owner acceptance is claimed.

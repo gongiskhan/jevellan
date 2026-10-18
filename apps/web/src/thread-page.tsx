@@ -582,7 +582,7 @@ function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['da
           <h3>Accounts when chosen</h3>
           {placement.accountChoice.error && <p className="notice">Account choice used the resource ranking: {placement.accountChoice.error.message}</p>}
           <ul>{placement.accountChoice.candidates.map(candidate => <li key={candidate.accountId}>
-            <b>{candidate.label}</b>{candidate.accountId === placement.accountId ? ' · chosen' : ''}: {candidate.eligible ? 'eligible' : candidate.reason}
+            <b>{candidate.label}</b>{candidate.accountId === placement.accountId ? ' · chosen' : ''}: {candidate.eligible ? 'eligible' : candidate.reason === 'model-not-served' ? copy.modelNotServed(thread.modelLabel) : candidate.reason}
             {' · '}{candidate.credential === 'shared' ? 'Shared saved login' : 'Device-local login'}
             {' · '}Five hours {candidate.usage?.fiveHourPct === undefined ? 'unknown' : `${candidate.usage.fiveHourPct}%`}
             {' · '}Week {candidate.usage?.weeklyPct === undefined ? 'unknown' : `${candidate.usage.weeklyPct}%`}

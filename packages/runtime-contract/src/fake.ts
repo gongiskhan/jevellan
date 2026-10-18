@@ -83,7 +83,7 @@ async function bridgeRequest(input: TurnInput, body: object): Promise<unknown> {
 /** Scripted integration adapter. Its process is real; model behavior is simulated. */
 export class FakeRuntime implements RuntimeAdapter {
   readonly id = 'fake'; readonly displayName = 'Scripted test runtime';
-  readonly accountKinds = ['subscription', 'api-key'] as RuntimeAdapter['accountKinds'];
+  readonly accountKinds = ['subscription', 'api-key', 'endpoint'] as RuntimeAdapter['accountKinds'];
   readonly riggingKinds: RiggingItem['kind'][] = [];
   readonly capabilities = { edit: true, shell: true, mcp: true, images: false, interrupt: true, usage: true, continueSession: true, perLaunchConfig: true, readOnlyEnforced: false, turns: true };
   readonly starts: StretchInput[] = [];

@@ -225,3 +225,19 @@ test('shutdown drains provider discovery without applying its late result', asyn
   expect(hub.configuration.current()!.revision).toBe(revision);
   expect(hub.db.prepare("SELECT count(*) AS count FROM documents WHERE namespace = 'offered-models'").get()).toMatchObject({ count: 0 });
 });
+
+
+test('endpoint resolve is ephemeral and discovery preserves native menu models', async () => {
+  const native = await add(); await service.discover(native.account.id);
+  const before = hub.configuration.current()!.configuration['x-jevellan'].menu.filter(model => model.enabled).map(model => model.id);
+  const endpoint = { baseUrl: 'http://127.0.0.1:8888/anthropic', billing: 'free', models: [{ id: 'fixture-glm', label: 'GLM fixture', efforts: ['medium'], description: 'Small work.' }], backgroundModel: 'fixture-background' };
+  const saved = await service.add({ schema: 'add-account-v1', runtime: 'claude', label: 'Endpoint', kind: 'endpoint', endpoint, secret: 'endpoint private fixture token' });
+  const resolved = await service.resolve(saved.account.id);
+  expect(resolved.env).toEqual({ ANTHROPIC_BASE_URL: endpoint.baseUrl, ANTHROPIC_AUTH_TOKEN: 'endpoint private fixture token', ANTHROPIC_DEFAULT_OPUS_MODEL: 'fixture-background', ANTHROPIC_DEFAULT_SONNET_MODEL: 'fixture-background', ANTHROPIC_DEFAULT_HAIKU_MODEL: 'fixture-background', CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1' });
+  expect(hub.redactor.text('endpoint private fixture token')).toBe('[redacted]');
+  await service.discover(saved.account.id); expect(claude.listModels).toHaveBeenCalledTimes(1);
+  expect(hub.configuration.current()!.configuration['x-jevellan'].menu.filter(model => model.enabled).map(model => model.id)).toEqual(expect.arrayContaining(before));
+  await service.check(saved.account.id); expect((await service.status(saved.account.id)).auth).toBe('ready');
+  claude.probe = vi.fn<RuntimeAdapter['probe']>(async () => ({ auth: 'unknown', error: 'Unreachable: connection failed' }));
+  await service.check(saved.account.id); expect((await service.status(saved.account.id)).auth).toBe('unknown');
+});

@@ -16,6 +16,7 @@ import { FakeRuntime, nativeFormat, writeFakeNativeSession } from '../packages/r
 import { eventBlock } from '../packages/projects/dist/index.js';
 import { Application, closeListeners, createDaemon } from '../apps/daemon/dist/index.js';
 import { LocalDiagnostics } from '../apps/daemon/dist/diagnostics.js';
+import { probeClaude } from '../runtimes/claude/dist/control.js';
 import { createRuntime as createClaude } from '../runtimes/claude/dist/index.js';
 import { createRuntime as createCodex } from '../runtimes/codex/dist/index.js';
 import { startGitHubFixture } from '../tests/fixtures/github-server.mjs';
@@ -112,6 +113,10 @@ const EVENTS_HEADER = eventBlock([]);
 function coordinatorStep(input) {
   // Only delivered events count; the fresh-session recap repeats earlier messages.
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
+  if (events.includes('PAR8 endpoint')) return async turn => {
+    await projectTool(turn, 'jevellan_task_create', { title: 'PAR8 endpoint task', brief: 'PAR8 inspect: read README and report progress.', type: 'analysis', source: 'owner-request', now: true });
+    turn.say('PAR8 endpoint task: new task.'); return { status: 'completed' };
+  };
   if (events.includes('PAR7 files')) return async turn => {
     const attached = events.split('\n').filter(line => line.startsWith('Attached file: library/')).join('\n');
     await projectTool(turn, 'jevellan_task_create', { title: 'PAR7 inspect attached files', brief: `PAR7 inspect: read the attached files and report their names.\n${attached}`, type: 'analysis', source: 'owner-request', now: true });
@@ -206,6 +211,7 @@ const LONG_TOOLS = [['Read', { file_path: 'README.md' }, '# Projects app\n\nA sm
 const longThreads = new Set();
 function threadStep(input) {
   const report = (status, summary, extra = {}) => async (turn) => { await projectPause(350, turn.signal); turn.say(summary); await projectTool(turn, 'jevellan_thread_report', { status, summary, ...extra }); return { status: 'completed' }; };
+  if (input.prompt.includes('PAR8 inspect:')) return report('progress', 'The endpoint task inspected README.');
   if (input.prompt.includes('PAR7 inspect:')) return async turn => {
     const listed = await projectTool(turn, 'jevellan_library_list', {}); const names = [];
     for (const item of listed.items) if (input.prompt.includes(`library/${item.path}`)) {
@@ -440,7 +446,7 @@ const application = new Application({ pushSend: async (_subscription, payload) =
     const turns = new FakeRuntime(); runtime.startTurn = projectsMode ? scriptedTurns(turns) : (input) => turns.startTurn(input);
     // Simulated providers need no native sandbox; the host's own Codex sandbox check does not apply to them.
     runtime.capabilities = { ...runtime.capabilities, shell: true, readOnlyEnforced: true };
-    runtime.probe = async () => ({ auth: 'ready', identity: { email: 'fixture@example.test' } });
+    runtime.probe = async account => account.account.kind === 'endpoint' ? probeClaude(account) : ({ auth: 'ready', identity: { email: 'fixture@example.test' } });
     // Projects journeys also get Opus, a second Claude entry for the PJ4b next-turn override (same runtime); Fable stays first.
     runtime.listModels = async () => runtime.id === 'claude'
       ? [{ id: 'claude-fable-5-1', label: 'Fable', efforts: ['low', 'high'] }, ...(projectsMode ? [{ id: 'claude-opus-5-5', label: 'Opus', efforts: ['low', 'high'] }] : [])]
@@ -979,6 +985,14 @@ async function projectControl(request, response) {
 }
 // Fixture control for J10's later "seed a third group" step. It listens on this server's own offset only.
 improverControl = createServer((request, response) => {
+  if (projectsMode && request.method === 'POST' && request.url === '/anthropic/v1/messages') {
+    const operation = (async () => {
+      const chunks = []; for await (const chunk of request) chunks.push(Buffer.from(chunk));
+      z.strictObject({ model: z.string().min(1), max_tokens: z.literal(1), messages: z.array(z.strictObject({ role: z.literal('user'), content: z.string() })) }).parse(JSON.parse(Buffer.concat(chunks).toString()));
+      const auth = request.headers.authorization, status = auth === 'Bearer fixture_endpoint_ready' ? 200 : auth === 'Bearer fixture_endpoint_unreachable' ? 503 : 401;
+      response.writeHead(status, { 'content-type': 'application/json' }).end('{}');
+    })(); controlWork.add(operation); operation.catch(() => { if (!response.headersSent) response.writeHead(400).end(); }).finally(() => controlWork.delete(operation)); return;
+  }
   if (request.method === 'POST' && request.url === '/improver/third-group') {
     for (const n of [1, 2, 3]) if (!application.hub.get('overrides', `improver_plan_${n}`, OverrideRecordSchema)) correction('plan', n, 'plan', 'claude-fable', 'claude-sonnet');
     response.writeHead(204).end(); return;

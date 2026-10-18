@@ -5,17 +5,19 @@ export function projectEnvironment(values: Record<string, string> = {}): Record<
 }
 
 const BASE = ['PATH', 'HOME', 'USER', 'LANG', 'TERM', 'SHELL', 'TMPDIR'] as const;
+export const CLAUDE_ENDPOINT_AUTH_KEYS = ['ANTHROPIC_BASE_URL', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL', 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC'] as const;
 const AUTH: Record<string, readonly string[]> = { claude: ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY'], codex: [] };
 export const THREAD_GIT_ENV_KEYS = ['GIT_TERMINAL_PROMPT', 'GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0', 'GIT_CONFIG_KEY_1', 'GIT_CONFIG_VALUE_1'] as const;
 const LAUNCH = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL', ...THREAD_GIT_ENV_KEYS];
 
-export function minimalEnvironment(runtime: 'claude' | 'codex', home: string, auth: Record<string, string> = {}, launch: Record<string, string> = {}, base: NodeJS.ProcessEnv = process.env, project: Record<string, string> = {}): Record<string, string> {
+export function minimalEnvironment(runtime: 'claude' | 'codex', home: string, auth: Record<string, string> = {}, launch: Record<string, string> = {}, base: NodeJS.ProcessEnv = process.env, project: Record<string, string> = {}, endpoint = false): Record<string, string> {
   const result: Record<string, string> = {};
   for (const key of BASE) if (base[key] !== undefined) result[key] = base[key]!;
   Object.assign(result, projectEnvironment(project));
   result.HOME = home;
+  const allowed: readonly string[] = runtime === 'claude' && endpoint ? CLAUDE_ENDPOINT_AUTH_KEYS : AUTH[runtime]!;
   for (const [key, value] of Object.entries(auth)) {
-    if (!AUTH[runtime]!.includes(key)) throw new Error(`Unsupported authentication variable for ${runtime}.`);
+    if (!allowed.includes(key)) throw new Error(`Unsupported authentication variable for ${runtime}.`);
     result[key] = value;
   }
   for (const [key, value] of Object.entries(launch)) {
