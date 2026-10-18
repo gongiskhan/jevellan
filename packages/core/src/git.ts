@@ -434,7 +434,24 @@ export class GitWorkspace {
     if (await this.#operationInProgress() || !await this.clean()) throw new Error('Integration has not finished cleanly.');
     const plan = capture.plan; const after = await this.head();
     const recorded = capture.pairs();
-    const pairs = recorded ?? (plan.base === plan.upstream && after === plan.before ? plan.commits.map((commit) => ({ before: commit, after: commit })) : !plan.commits.length && after === plan.upstream ? [] : undefined);
+    let pairs = recorded ?? (plan.base === plan.upstream && after === plan.before ? plan.commits.map((commit) => ({ before: commit, after: commit })) : !plan.commits.length && after === plan.upstream ? [] : undefined);
+    // Recent Git versions omit empty drops from post-rewrite. Fill only omissions whose original
+    // change is provably empty on the preceding boundary; a missing nonempty mapping still fails.
+    if (!pairs || pairs.length !== plan.commits.length) {
+      const complete: Array<{ before: string; after: string }> = [];
+      let position = 0, preceding = plan.upstream;
+      for (const commit of plan.commits) {
+        const known = recorded?.[position];
+        if (known?.before === commit) { complete.push(known); preceding = known.after; position++; continue; }
+        const parents = (await this.#git(['show', '-s', '--format=%P', commit])).stdout.trim().split(' ');
+        if (parents.length !== 1 || !parents[0]) break;
+        const merged = await this.#git(['merge-tree', '--write-tree', `--merge-base=${parents[0]}`, preceding, commit], [1]);
+        const tree = (await this.#git(['rev-parse', `${preceding}^{tree}`])).stdout.trim();
+        if (merged.code !== 0 || merged.stdout.trim() !== tree) break;
+        complete.push({ before: commit, after: preceding });
+      }
+      if (complete.length === plan.commits.length && position === (recorded?.length ?? 0)) pairs = complete;
+    }
     if (!pairs || pairs.length !== plan.commits.length || pairs.some((pair, index) => pair.before !== plan.commits[index])) throw new Error('Git did not record a complete ordered mapping of the rebased checkpoints.');
     let boundary = plan.upstream;
     for (const pair of pairs) {

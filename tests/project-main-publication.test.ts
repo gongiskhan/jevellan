@@ -14,7 +14,7 @@ import {
 import { HubProjectAccess, HubProjectStore, HubProtocolError, HubPublicationLeases, MemberProjectStore } from '../packages/mesh/dist/index.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
 import {
-  MAIN_LEASE_BUSY, MAIN_LEASE_RETRIES, commitsSavedReason, leftoverCommitSubject, mainCheckoutMessage, mainConflictPrompt, savedCommitsRef, threadSystemAppend,
+  MAIN_LEASE_BUSY, MAIN_LEASE_RETRIES, libraryInstructions, commitsSavedReason, leftoverCommitSubject, mainCheckoutMessage, mainConflictPrompt, savedCommitsRef, threadSystemAppend,
 } from '../packages/projects/dist/index.js';
 import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, threadRequestText, type ProjectFixture, type ProjectFixtureOptions } from './helpers/project-fixture.js';
 
@@ -63,8 +63,8 @@ test('a main thread claims the checkout, works on main, publishes to main and gi
   const input = f.fake.turnStarts[0]!;
   expect(input.cwd).toBe(f.checkout);
   expect(threadRequestText(input.prompt)).toBe('Task: Add greeting\n\nCreate greeting.txt.');
-  expect(input.systemAppend).toBe(`- The project journal at ${f.app.projectWork.journal!.path(f.project.id)} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.\n\n` + threadSystemAppend({ projectName: 'Shop', cwd: f.checkout, isolation: 'main', baseBranch: 'main', deviceName: f.deviceName, testCommand: 'test -f greeting.txt' }));
-  expect(input.readOnlyDirectories).toEqual([f.app.projectWork.journal!.path(f.project.id)]);
+  expect(input.systemAppend).toBe(libraryInstructions(f.homes.at('library', f.project.id), true) + '\n\n' + `- The project journal at ${f.app.projectWork.journal!.path(f.project.id)} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.\n\n` + threadSystemAppend({ projectName: 'Shop', cwd: f.checkout, isolation: 'main', baseBranch: 'main', deviceName: f.deviceName, testCommand: 'test -f greeting.txt' }));
+  expect(input.readOnlyDirectories).toEqual([f.app.projectWork.journal!.path(f.project.id), f.homes.at('library', f.project.id)]);
   expect(input.systemAppend).toContain(`Isolation: you work directly on main in the project checkout of ${f.deviceName}. Other main threads may work on other devices at the same time.`);
   expect(f.thread(threadId)).toMatchObject({ state: 'running', isolation: 'main', cwd: f.checkout, baseBranch: 'main', baseCommit: base });
   expect(f.thread(threadId).branch).toBeUndefined();

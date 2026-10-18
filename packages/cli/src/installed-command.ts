@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { accessSync, constants, existsSync, linkSync, lstatSync, mkdirSync, readFileSync, renameSync, rmdirSync, statSync, unlinkSync } from 'node:fs';
-import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path';
+import { basename, delimiter, dirname, isAbsolute, join, resolve } from 'node:path';
 import { atomicWrite, resolvedPath, type Homes } from '@jevellan/core';
 import { z } from 'zod';
 import type { InstallationFiles, InstallationManifest } from './installation-files.js';
@@ -19,7 +19,7 @@ export const PendingCommandSchema = z.strictObject({
 export type CommandDefinition = z.infer<typeof CommandDefinitionSchema>;
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 const quote = (value: string) => `'${value.replace(/'/gu, `'"'"'`)}'`;
-const paths = (homes: Homes) => [join(homes.userHome, '.local', 'bin', 'jevellan'), join(homes.userHome, 'bin', 'jevellan')];
+const paths = (homes: Homes, name?: string) => [join(homes.userHome, '.local', 'bin', name ? `jevellan-${name}` : 'jevellan'), join(homes.userHome, 'bin', name ? `jevellan-${name}` : 'jevellan')];
 
 export function commandContents(input: CommandDefinition): string {
   const spec = CommandDefinitionSchema.parse(input);
@@ -28,7 +28,7 @@ export function commandContents(input: CommandDefinition): string {
 
 export function commandOnPath(path: string, search = process.env.PATH ?? ''): boolean {
   for (const entry of search.split(delimiter)) {
-    const candidate = resolve(entry, 'jevellan');
+    const candidate = resolve(entry, basename(path));
     try { if (!statSync(candidate).isFile()) continue; accessSync(candidate, constants.X_OK); }
     catch { continue; }
     return resolvedPath(candidate) === path;
@@ -39,11 +39,11 @@ export function commandOnPath(path: string, search = process.env.PATH ?? ''): bo
 export function commandPath(files: InstallationFiles, search?: string): string {
   const manifest = files.load();
   const entries = (search ?? process.env.PATH ?? '').split(delimiter);
-  return manifest.command?.definition.path ?? manifest.pendingCommand?.definition.path ?? paths(files.homes).find(path => entries.some(entry => entry && isAbsolute(entry) && resolve(entry) === dirname(path))) ?? paths(files.homes)[0]!;
+  return manifest.command?.definition.path ?? manifest.pendingCommand?.definition.path ?? paths(files.homes, manifest.name).find(path => entries.some(entry => entry && isAbsolute(entry) && resolve(entry) === dirname(path))) ?? paths(files.homes, manifest.name)[0]!;
 }
 
 export function validateCommands(homes: Homes, manifest: InstallationManifest): void {
-  const allowed = paths(homes);
+  const allowed = paths(homes, manifest.name);
   for (const definition of [manifest.command?.definition, manifest.pendingCommand?.definition]) {
     if (definition && (!allowed.includes(definition.path) || definition.home !== homes.root || !manifest.applications.some(app => definition.entry === join(app.path, 'bin', 'jevellan.mjs')))) throw new Error('The command must run a recorded application from this installation.');
   }

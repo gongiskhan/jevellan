@@ -374,6 +374,8 @@ test('a dropped checkpoint in the middle maps to the preceding boundary and is n
   expect(await workspace.rebase({ tracking: capture })).toBe('clean'); const receipt = await workspace.finishRebaseTracking(capture);
   expect(receipt.pairs.map((entry) => entry.before)).toEqual([first.head, dropped.head, last.head]);
   expect(receipt.pairs[1]!.after).toBe(receipt.pairs[0]!.after);
+  writeFileSync(join(capture.directory, 'rewrites.json'), JSON.stringify({ schema: 'git-rewrite-event-v1', id: capture.plan.id, kind: 'rebase', pairs: receipt.pairs.filter(pair => pair.before !== dropped.head) }));
+  expect(await workspace.finishRebaseTracking(capture)).toEqual(receipt);
   git(workspace.path, 'push');
   const undo = await workspace.planUndo({ target: capture.plan.upstream, sourceTip: receipt.after, step: 1, published: true }); expect(undo.commits).toHaveLength(2);
   await workspace.applyUndo(undo, () => undefined, () => undefined);

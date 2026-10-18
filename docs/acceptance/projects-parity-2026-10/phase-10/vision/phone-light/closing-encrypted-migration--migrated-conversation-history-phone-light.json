@@ -1,0 +1,9 @@
+{
+  "schema": "vision-check-v1",
+  "label": "not run",
+  "reason": "The dedicated JEVELLAN_TEST_CLAUDE_TOKEN is not configured.",
+  "test": "Closing encrypted migration",
+  "layout": "phone-light",
+  "screenshot": "phase-10/migration/migrated-conversation-history-phone-light.png",
+  "expected": "Imported project settings and retained conversation history remain usable."
+}

@@ -19,8 +19,10 @@ test('a reserved job is not started by recovery while its project is paused', { 
     commit: f.git(f.checkout, 'rev-parse', 'HEAD'), deviceId: f.app.device.deviceId, projectDay: new Date().toISOString().slice(0, 10), startedAt: new Date().toISOString(), conclusion: null,
     summary: '', logTail: '', spec: job.run, baseBranch: 'main', phase: 'reserved', setupCommand: null, watchAfter: new Date().toISOString() }), 0);
   await f.app.projectWork.jobs.sweep(id);
+  await f.app.projectWork.idle(id);
   expect(f.app.projectWork.jobs.busy(id)).toBe(false);
   expect((await f.app.projectHub.jobRun(runId))?.document).toMatchObject({ phase: 'reserved', conclusion: null });
+  expect(f.git(f.checkout, 'worktree', 'list', '--porcelain')).not.toContain(f.homes.at('worktrees', id, 'jobs', runId));
   const paused = await f.app.projectWork.admission.settings(id);
   await f.app.projectHub.putSettings({ ...paused, status: 'active' }, paused.revision);
   await f.app.projectWork.jobs.sweep(id);

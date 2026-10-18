@@ -3,6 +3,7 @@
 // git on a bare origin behind a GitHub-shaped remote, and the fake GitHub server. Assertions run after the scripted turns,
 // never inside them: a throwing step would read as a failed turn.
 import { afterEach, expect, test } from 'vitest';
+import { libraryInstructions, SETUP_PROMPT } from '../packages/projects/dist/copy.js';
 import {
   CoordinatorMessageReceiptSchema, CoordinatorStateSchema, DecisionAnsweredViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema,
   ThreadCreatedViewSchema, writeDocument, type CoordinatorEvent, type ProjectEventFrame, type ProjectLedgerData, type ProjectLedgerEvent, type ProjectLedgerEventType,
@@ -114,9 +115,10 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   const [first, second] = coordinatorTurns(f);
   expect(coordinatorTurns(f)).toHaveLength(2);
   expect(first).toMatchObject({ owner: { kind: 'coordinator', projectId: pid, id: pid }, turn: 1, permissions: 'read-only', safetyProfile: 'coordinator', cwd: f.checkout,
-    systemAppend: `- The project journal at ${f.app.projectWork.journal!.path(pid)} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.\n\n` + coordinatorSystemAppend('Shop'), readOnlyDirectories: [f.app.projectWork.journal!.path(pid)] });
+    systemAppend: libraryInstructions(f.homes.at('library', pid), false) + '\n\n' + `- The project journal at ${f.app.projectWork.journal!.path(pid)} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.\n\n` + coordinatorSystemAppend('Shop'), readOnlyDirectories: [f.app.projectWork.journal!.path(pid), f.homes.at('library', pid)] });
   expect(first!.resume).toBeUndefined();
-  expect(withoutLiveAccounts(first!.prompt)).toMatch(clocked('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nProject memory:\nRecently updated notes:\nSearch memory with memory_search for more.\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B'));
+  expect(first!.prompt).toContain(`${SETUP_PROMPT}\n\nEvents since your last turn:`);
+  expect(withoutLiveAccounts(first!.prompt).replace(`${SETUP_PROMPT}\n\n`, '')).toMatch(clocked('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nProject memory:\nRecently updated notes:\nSearch memory with memory_search for more.\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B'));
   expect(second!.resume).toEqual({ sessionId: sessionOf(f, first!).sessionId });
   const pr = async (id: string) => (await f.index(id))!.pr!.number;
   const [lineA, lineB] = [`[thread "Add A" (${idA})] Pull request #${await pr(idA)} opened.`, `[thread "Fix B" (${idB})] Pull request #${await pr(idB)} opened.`];

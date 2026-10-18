@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import {
   AccountSchema, AccountStatusSchema, DeviceRosterSchema, Homes, HubUnavailable, PlacementRecordSchema, ProjectSchema, ProjectWorkSettingsSchema, SecretRedactor, ThreadSchema,
   defaultProjectWorkSettings, seedConfiguration, type CoordinatorEvent, type OutboxEntry, type ProjectEnvelope, type Project, type ProjectDecision, type ProjectWorkSettings, type Thread,
-  type ThreadIndex,
+  type ThreadIndex, type ProjectLedgerEvent,
 } from '../packages/core/dist/index.js';
 import { StretchBridges } from '../packages/conversations/dist/index.js';
 import { HubDatabase, HubProjectAccess } from '../packages/mesh/dist/index.js';
@@ -168,6 +168,7 @@ const account = AccountSchema.parse({ schema: 'account-v1', id: 'acc_fixture', r
 function app(timers: Record<string, unknown> = {}, extra: Partial<ConstructorParameters<typeof ProjectWork>[0]> = {}): ProjectWork {
   const access = new HubProjectAccess(hub, 'dev_a');
   const work = new ProjectWork({ homes, deviceId: 'dev_a', deviceName: 'Mac mini', redactor, hub: access,
+    facts: () => ({ schema: 'device-facts-v1', cores: 8, load1: 1, load5: 2, totalMemoryBytes: 32e9, freeMemoryBytes: 12e9, freeDiskBytes: 80e9, os: 'darwin', runningThreads: [], runningJobRuns: [] }),
     projects: { get: async (id: string) => id === project.id ? { schema: 'project-view-v1', revision: 1, project } : null, list: async () => [{ schema: 'project-view-v1', revision: 1, project }] } as never,
     github: { credential: async () => token, baseUrl: github.url },
     accounts: { list: async () => [{ schema: 'account-view-v1', revision: 1, account, statuses: [AccountStatusSchema.parse({ schema: 'account-status-v2', accountId: 'acc_fixture', deviceId: 'dev_a', auth: 'ready', observedAt: new Date().toISOString() })] }],
@@ -302,7 +303,13 @@ test('an owner thread prepares a worktree, runs its turn, opens the pull request
   expect(threadRequestText(fake.turnStarts[0]!.prompt)).toBe('Task: Add greeting\n\nDo Add greeting.');
   expect(fake.turnStarts[0]!.resume).toBeUndefined();
   expect(fake.turnStarts[0]!.systemAppend).toContain(`Isolation: your own git worktree on branch ${thread.branch}, based on main.`);
-  expect(work.ledgers.thread('proj_a', created.threadId).events().map((event) => event.type)).toEqual(['thread-placement', 'thread-state', 'thread-state', 'thread-state',
+  const lifecycle = work.ledgers.thread('proj_a', created.threadId), events = lifecycle.events();
+  const projections = events.filter(event => event.type === 'thread-state' && lifecycle.payload(event as ProjectLedgerEvent & { type: 'thread-state' }).changed.includes('usage'));
+  expect(projections).toHaveLength(1);
+  const usageEvent = lifecycle.payload(projections[0] as ProjectLedgerEvent & { type: 'thread-state' });
+  expect(usageEvent.from).toBe(usageEvent.to); expect(usageEvent.changed).toEqual(['usage']);
+  expect(work.store.local(created.threadId).usage?.turns).toBe(1);
+  expect(events.filter(event => !projections.includes(event)).map((event) => event.type)).toEqual(['thread-placement', 'thread-state', 'thread-state', 'thread-state',
     'thread-turn-start', 'thread-state', 'session-turn-cache', 'thread-turn-end', 'thread-report', 'thread-state', 'thread-verification', 'thread-publication', 'thread-state']);
   expect(kinds(queue(work))).toEqual(['thread-user-message', 'thread-published']);
   expect(queue(work)[0]).toMatchObject({ text: ownerStartedLine('Add greeting', created.threadId, 'Do Add greeting.') });

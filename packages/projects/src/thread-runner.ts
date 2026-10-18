@@ -541,6 +541,8 @@ export class ThreadRunner {
     try { wait = await this.#c.unavailableAccount?.(this.#thread()); }
     catch (error) {
       if (!(error instanceof HubUnavailable)) throw error;
+      const thread = this.#thread();
+      if (thread.stateReason !== WAITING_FOR_HUB || !atRest(thread.state)) this.#notice(thread, this.#message(error), 'error');
       this.#rest(next, WAITING_FOR_HUB); return true;
     }
     if (!wait) return false;

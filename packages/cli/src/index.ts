@@ -53,8 +53,8 @@ export async function main(args: string[], options: { installer?: () => Installe
   if (args[0] === 'mcp-server') { if (args.length !== 1) throw new Error('Usage: jevellan mcp-server (connection details come from the environment).'); await (options.mcpServer ?? serveAgentMcp)(); return; }
   if (args[0] === 'memory-hook') { await serveMemoryHook(); return; }
   if (['install', 'join', 'update', 'rollback', 'uninstall'].includes(args[0] ?? '')) {
-    const command = args[0]!, { from, target, purge, https } = installationArguments(command, args.slice(1));
-    const installer = options.installer?.() ?? new Installer({ progress: message => console.log(message) });
+    const command = args[0]!, { from, target, purge, https, name } = installationArguments(command, args.slice(1));
+    const installer = options.installer?.() ?? new Installer({ ...(name ? { name } : {}), progress: message => console.log(message) });
     try {
       if (command === 'uninstall') {
         if (purge) { const confirmation = await (options.confirmPurge ?? confirmPurge)(installer.homes.root); await installer.purge(confirmation); console.log('Jevellan and its data were removed.'); }

@@ -1401,7 +1401,7 @@ test('LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and ga
   const errors = await begin(page), route = '/api/projects/projects_daily';
   const step = (action: string) => control('/projects/daily', { schema: 'fixture-daily-control-v1', action });
   const prepared = await step('prepare') as { command: string };
-  const post = async (path: string, data: object) => { const response = await page.request.post(`${route}${path}`, { data }); expect(response.ok(), await response.text()).toBe(true); return response.json(); };
+  const post = async (path: string, data: object) => { const response = await page.request.post(`${route}${path}`, { data, maxRetries: 1 }); expect(response.ok(), await response.text()).toBe(true); return response.json(); };
   const testsGoal = (await post('/goals', { schema: 'goal-create-request-v1', clientRequestId: 'daily_goal', name: 'Hardening through automated tests', motivation: 'Catch regressions before people meet them.', health: 'Findings are resolved and the suite stays green.' })).goal;
   const reviewGoal = (await post('/goals', { schema: 'goal-create-request-v1', clientRequestId: 'review_goal', name: 'Hardening through code review', motivation: 'Keep the structure clear.', health: 'Review findings are resolved.' })).goal;
   const mirror = await control('/projects/ekoa', { schema: 'fixture-ekoa-loop-v1', action: 'prepare' }) as { url: string; token: string };
@@ -1484,7 +1484,7 @@ test('PJ3b project GitHub tokens remain separate from the default connection', a
 
 test('LJ6 workflow daily records its actual run and a missing run times out explicitly', async ({ page }, info) => {
   const errors = await begin(page), route = '/api/projects/projects_workflows'; await openProject(page, 'Projects workflows');
-  await sectionTab(page, info, 'Queue');
+  await sectionTab(page, info, 'Routines');
   await tap(page, page.getByRole('button', { name: 'New job', exact: true })); const dialog = page.getByRole('dialog', { name: 'New job', exact: true });
   await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Nightly workflow'); await dialog.getByRole('combobox', { name: 'Run', exact: true }).selectOption('github-workflow');
   await dialog.getByRole('textbox', { name: 'Workflow', exact: true }).fill('nightly.yml'); await dialog.getByRole('spinbutton', { name: 'Timeout in minutes', exact: true }).fill('5');

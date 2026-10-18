@@ -55,7 +55,7 @@ const bestEffort = <T>(read: Promise<T>, fallback: T): Promise<T> => read.catch(
 /**
  * Where a new thread runs (brief 10). Gathers the configuration, this daemon's runtime capabilities (applied to every device,
  * D37), accounts, the roster and live work per device (D9), then asks Jev through `@jevellan/decisions` with the redacted
- * `placement-state-v1` packet: active threads, the project's last 8 overrides and the coordinator's note. Any Jev failure places
+ * `placement-state-v3` packet: active threads, the project's last 8 overrides and the coordinator's note. Any Jev failure places
  * with the deterministic fallback and records why; no question at all records `source: 'fixed'` (D30b). Every online device with
  * the project path and an eligible account is a candidate, and Call B asks for the device when more than one qualifies.
  * Main isolation (brief 10, D64, D65, D288) also needs the device's checkout on main by its latest heartbeat and no claim or main thread

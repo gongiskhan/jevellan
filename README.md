@@ -2,7 +2,7 @@
 
 **Autonomous development, coordinated.**
 
-Jevellan runs coding agents in conversations across your runtimes, accounts and machines. Work proceeds in bounded stretches, with structured handoffs. Jev chooses the next action, model and effort; you can correct a decision afterwards, with or without undoing the work. In Projects, one coordinator per project splits your requests into threads, runs them on your devices and accounts, and brings back what needs you; Jevellan verifies their work and opens pull requests for worktree threads, and you merge them.
+Jevellan runs coding agents in conversations across your runtimes, accounts and machines. Work proceeds in bounded stretches, with structured handoffs. Jev chooses the next action, model and effort; you can correct a decision afterwards, with or without undoing the work. In Projects, talk to one coordinator per repository and follow live thread cards in the Overview. Jev chooses models, effort, accounts and devices, verifies publication and opens pull requests. Threads can repair failing checks, conflicts and review comments automatically; settings control proposals, limits and merging. A shared library, project memory, owner terminals and web push support work across desktop and phone.
 
 This repository is under active development. See [the acceptance report](docs/acceptance/REPORT.md) for what is built, tested and still blocked. The complete product is not ready to install yet.
 

@@ -1,0 +1,181 @@
+{
+  "schema": "nightly-four-layout-result-v1",
+  "label": "simulated",
+  "result": "failed",
+  "source": "b5b2dd43 plus closing changes through Decision908",
+  "unchangedWaitMs": 60000,
+  "layouts": [
+    {
+      "layout": "desktop-light-projects",
+      "result": "failed",
+      "window": {
+        "state": "finished",
+        "date": "2026-10-13",
+        "mergesHeld": false,
+        "failed": false
+      },
+      "recentRuns": [
+        {
+          "phase": "finished",
+          "conclusion": "passed",
+          "summary": "Command passed.",
+          "cleanedAt": "2026-10-13T03:30:00.000Z"
+        },
+        {
+          "phase": "finished",
+          "conclusion": "passed",
+          "summary": "Command passed.",
+          "cleanedAt": "2026-10-13T03:30:00.000Z"
+        }
+      ],
+      "recentTasks": [
+        {
+          "title": "Fix the nightly review finding",
+          "state": "in-review"
+        },
+        {
+          "title": "Fix the nightly review finding",
+          "state": "done"
+        },
+        {
+          "title": "Review since last",
+          "state": "done"
+        },
+        {
+          "title": "Full suite",
+          "state": "done"
+        }
+      ],
+      "privateTrace": "/home/ggomes/.jevellan-build/projects-parity-050-verify-2026-10-18/lj5-alone-output/projects-LJ5-Nightly-revie-16a0a--the-suite-and-gates-deploy-desktop-light-projects/trace.zip"
+    },
+    {
+      "layout": "phone-dark-projects",
+      "result": "failed",
+      "window": {
+        "state": "open",
+        "date": "2026-10-14",
+        "mergesHeld": true,
+        "failed": null
+      },
+      "recentRuns": [
+        {
+          "phase": "finished",
+          "conclusion": "passed",
+          "summary": "Command passed.",
+          "cleanedAt": "2026-10-13T03:30:00.000Z"
+        },
+        {
+          "phase": "finished",
+          "conclusion": "passed",
+          "summary": "Command passed.",
+          "cleanedAt": "2026-10-13T03:30:00.000Z"
+        }
+      ],
+      "recentTasks": [
+        {
+          "title": "Fix the nightly review finding",
+          "state": "active"
+        },
+        {
+          "title": "Fix the nightly review finding",
+          "state": "done"
+        },
+        {
+          "title": "Fix the nightly review finding",
+          "state": "done"
+        },
+        {
+          "title": "Review since last",
+          "state": "done"
+        }
+      ],
+      "privateTrace": "/home/ggomes/.jevellan-build/projects-parity-050-verify-2026-10-18/lj5-alone-output/projects-LJ5-Nightly-revie-16a0a--the-suite-and-gates-deploy-phone-dark-projects/trace.zip"
+    },
+    {
+      "layout": "desktop-dark-projects",
+      "result": "failed",
+      "window": {
+        "state": "open",
+        "date": "2026-10-14",
+        "mergesHeld": true,
+        "failed": null
+      },
+      "recentRuns": [
+        {
+          "phase": "finished",
+          "conclusion": "passed",
+          "summary": "Command passed.",
+          "cleanedAt": "2026-10-13T03:30:00.000Z"
+        },
+        {
+          "phase": "finished",
+          "conclusion": "passed",
+          "summary": "Command passed.",
+          "cleanedAt": "2026-10-13T03:30:00.000Z"
+        }
+      ],
+      "recentTasks": [
+        {
+          "title": "Fix the nightly review finding",
+          "state": "active"
+        },
+        {
+          "title": "Fix the nightly review finding",
+          "state": "done"
+        },
+        {
+          "title": "Fix the nightly review finding",
+          "state": "done"
+        },
+        {
+          "title": "Review since last",
+          "state": "done"
+        }
+      ],
+      "privateTrace": "/home/ggomes/.jevellan-build/projects-parity-050-verify-2026-10-18/lj5-alone-output/projects-LJ5-Nightly-revie-16a0a--the-suite-and-gates-deploy-desktop-dark-projects/trace.zip"
+    },
+    {
+      "layout": "phone-light-projects",
+      "result": "failed",
+      "window": {
+        "state": "open",
+        "date": "2026-10-12",
+        "mergesHeld": true,
+        "failed": null
+      },
+      "recentRuns": [
+        {
+          "phase": "finished",
+          "conclusion": "passed",
+          "summary": "Command passed.",
+          "cleanedAt": null
+        },
+        {
+          "phase": "finished",
+          "conclusion": "passed",
+          "summary": "Command passed.",
+          "cleanedAt": "2026-10-12T01:00:00.000Z"
+        }
+      ],
+      "recentTasks": [
+        {
+          "title": "Fix the nightly review finding",
+          "state": "done"
+        },
+        {
+          "title": "Review since last",
+          "state": "done"
+        },
+        {
+          "title": "Full suite",
+          "state": "done"
+        },
+        {
+          "title": "Deploy",
+          "state": "done"
+        }
+      ],
+      "privateTrace": "/home/ggomes/.jevellan-build/projects-parity-050-verify-2026-10-18/lj5-alone-output/projects-LJ5-Nightly-revie-16a0a--the-suite-and-gates-deploy-phone-light-projects/trace.zip"
+    }
+  ]
+}

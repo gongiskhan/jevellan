@@ -1,0 +1,18 @@
+{
+  "schema": "parity-original-hub-restart-v1",
+  "label": "live",
+  "at": "2026-10-18T03:42:55.177Z",
+  "activeVersion": "0.3.6",
+  "result": "health-ok-after-restart",
+  "managedActivityBefore": 0,
+  "childrenBefore": 0,
+  "service": "Original macOS user service, unchanged.",
+  "dataReplaced": false,
+  "release050Installed": false,
+  "liveClockStarted": false,
+  "laterHttpsProbe": {
+    "result": "timed-out",
+    "timeoutMs": 8000,
+    "note": "The healthy restart observation was transient under ongoing verification load. Final readiness is not confirmed."
+  }
+}

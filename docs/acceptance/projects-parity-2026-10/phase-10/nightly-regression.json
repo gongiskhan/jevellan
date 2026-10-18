@@ -1,0 +1,28 @@
+{
+  "schema": "nightly-closing-regression-v1",
+  "label": "simulated",
+  "before": {
+    "layoutsFailed": 4,
+    "assertion": "Third-night window remained open beyond the unchanged 60-second wait.",
+    "eventualWindow": "finished",
+    "runs": [
+      {
+        "name": "Deploy",
+        "conclusion": "skipped",
+        "summary": "Skipped: Full suite has not passed today."
+      },
+      {
+        "name": "Full suite",
+        "conclusion": "failed",
+        "summary": "Command exited with 1."
+      }
+    ]
+  },
+  "after": {
+    "result": "failed",
+    "layoutsFailed": 4,
+    "unchangedWaitMs": 60000,
+    "evidence": "nightly-four-layout-result.json",
+    "note": "Backend regressions pass, but the final four-layout journey still times out. It is not accepted."
+  }
+}

@@ -842,8 +842,8 @@
   {
     "id": "parity-docs-release",
     "title": "Projects documentation, release and live journeys",
-    "why": "BRIEF.md phase 10. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
-    "status": "planned"
+    "why": "BRIEF.md phase10: current references/history, closing cleanup and tested regression repairs are implemented. Full backend/browser runs contain failures; the concurrent LJ5 journey and focused Codex safety contract remain red. One closing serious-issues review is recorded. Source stays0.4.1;0.5.0 release, installation and LP1–LP9 are held. Dedicated vision is not run. See docs/acceptance/projects-parity-2026-10/phase-10/ and HANDOFF.md.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "parity-multi-repo",
@@ -903,6 +903,12 @@
     "id": "parity-native-ios",
     "title": "Native iOS application",
     "why": "BRIEF.md section4: out of this run. Installed PWA web push covers phone notifications in this run.",
+    "status": "planned"
+  },
+  {
+    "id": "parity-release-live",
+    "title": "Complete parity release gates and sandbox acceptance",
+    "why": "BRIEF.md phase10: planned remaining work after the bounded run. Resolve recorded full-suite/LJ5/Codex-contract and hub-readiness blockers, obtain dedicated vision evidence, repeat full gates, then cut/install0.5.0 with cold rollback and run LP1–LP9 within its unstarted three-hour live clock. Optional endpoint credential remains blocked.",
     "status": "planned"
   }
 ]

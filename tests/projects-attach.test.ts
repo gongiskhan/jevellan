@@ -6,7 +6,7 @@
 import { afterEach, expect, test } from 'vitest';
 import { createHash, randomUUID } from 'node:crypto';
 import { realpathSync } from 'node:fs';
-import { ProjectWorkViewSchema, ThreadMessageReceiptSchema, ThreadViewSchema, type ProjectLedgerData, type ProjectLedgerEvent } from '../packages/core/dist/index.js';
+import { ProjectWorkViewSchema, ThreadMessageReceiptSchema, ThreadViewSchema, type ProjectLedgerEvent } from '../packages/core/dist/index.js';
 import { FakeRuntime, fakeNativeSessionFile, forThread } from '../packages/runtime-contract/dist/index.js';
 import { THREAD_ATTACHED, THREAD_WORKING, attachCommand, ownerWorkedLine } from '../packages/projects/dist/index.js';
 import { composerBlock } from '../apps/web/src/project-work-model.js';
@@ -20,7 +20,8 @@ afterEach(async () => { stopCommands(); await fixture?.close(); fixture = undefi
 /** The thread's state changes in its ledger, oldest first. */
 function states(f: ProjectFixture, threadId: string): string[] {
   const ledger = f.app.projectWork.ledgers.thread('project', threadId);
-  return ledger.events().filter((event) => event.type === 'thread-state').map((event) => (ledger.payload(event as ProjectLedgerEvent & { type: 'thread-state' }) as ProjectLedgerData<'thread-state'>).to);
+  return ledger.events().filter((event) => event.type === 'thread-state').map((event) => ledger.payload(event as ProjectLedgerEvent & { type: 'thread-state' }))
+    .filter(event => !(event.from === event.to && event.changed.length === 1 && event.changed[0] === 'usage')).map(event => event.to);
 }
 
 test('PJ7 terminal takeover adopts the new session and delivers waiting messages', { timeout: 120_000 }, async () => {
@@ -91,6 +92,7 @@ test('PJ7 terminal takeover adopts the new session and delivers waiting messages
   const transcript = JSON.stringify(after.transcript);
   expect(transcript).toContain('Done in the terminal.'); expect(transcript.indexOf('Done in the terminal.')).toBeLessThan(transcript.indexOf('Also rename the cancel button.'));
   expect(after.reports.map((report) => report.summary)).toContain('Renamed the cancel button.');
+  await f.waitFor(async () => (await f.index(threadId))?.usage?.turns, turns => turns === 2);
   expect(states(f, threadId).slice(-4)).toEqual(['attached', 'idle', 'running', 'idle']);
   expect(`${result.output}${result.errors}`).not.toContain(secret); expect(`${result.output}${result.errors}`).not.toContain(CANARY);
   await expectNoLeaks(f);

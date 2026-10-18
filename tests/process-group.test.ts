@@ -3,6 +3,48 @@ import { once } from 'node:events';
 import { spawnGroup, terminateGroup, groupAlive } from '../packages/runtime-contract/dist/index.js';
 import { rememberProcessTree } from '../packages/core/dist/index.js';
 
+test('a transient signal permission refusal still requires fresh confirmation that the owned process exited', async () => {
+  const { child, native } = await spawnGroup(process.execPath, ['-e', 'console.log("ready"); process.stdin.once("data", () => setTimeout(() => process.exit(0), 50)); process.stdin.resume()'], { cwd: process.cwd(), env: {} });
+  const kill = process.kill.bind(process); let denied = 0;
+  const spy = vi.spyOn(process, 'kill').mockImplementation((pid: number, signal?: string | number) => {
+    if ((pid === native.pid || pid === -native.pgid) && signal !== 0) { if (denied++ === 0) child.stdin.end('exit'); throw Object.assign(new Error('Signal refused.'), { code: 'EPERM' }); }
+    return kill(pid, signal);
+  });
+  try {
+    await once(child.stdout, 'data');
+    await terminateGroup(native, 2_000);
+    expect(denied).toBeGreaterThan(0); expect(groupAlive(native.pgid)).toBe(false);
+  } finally { spy.mockRestore(); await terminateGroup(native, 100); }
+});
+
+test('a persistent signal permission refusal cannot claim termination of a live owned process', async () => {
+  const { child, native } = await spawnGroup(process.execPath, ['-e', 'console.log("ready"); setInterval(() => {}, 1000)'], { cwd: process.cwd(), env: {} });
+  const kill = process.kill.bind(process);
+  const spy = vi.spyOn(process, 'kill').mockImplementation((pid: number, signal?: string | number) => {
+    if ((pid === native.pid || pid === -native.pgid) && signal !== 0) throw Object.assign(new Error('Signal refused.'), { code: 'EPERM' });
+    return kill(pid, signal);
+  });
+  try {
+    await once(child.stdout, 'data');
+    await expect(terminateGroup(native, 10)).rejects.toThrow('Runtime descendant termination could not be confirmed.');
+    expect(groupAlive(native.pgid)).toBe(true);
+  } finally { spy.mockRestore(); await terminateGroup(native, 100); }
+});
+
+test('a recovered signal permission allows graceful termination before escalation', async () => {
+  const { child, native } = await spawnGroup(process.execPath, ['-e', 'process.on("SIGTERM", () => { console.log("graceful"); process.exit(0) }); console.log("ready"); setInterval(() => {}, 1000)'], { cwd: process.cwd(), env: {} });
+  const kill = process.kill.bind(process); let denied = 0, output = '';
+  child.stdout.on('data', data => { output += String(data); });
+  const spy = vi.spyOn(process, 'kill').mockImplementation((pid: number, signal?: string | number) => {
+    if ((pid === native.pid || pid === -native.pgid) && signal === 'SIGTERM' && denied < 2) { denied++; throw Object.assign(new Error('Signal refused.'), { code: 'EPERM' }); }
+    return kill(pid, signal);
+  });
+  try {
+    await once(child.stdout, 'data'); await terminateGroup(native, 1_000);
+    expect(denied).toBe(2); expect(output).toContain('graceful'); expect(groupAlive(native.pgid)).toBe(false);
+  } finally { spy.mockRestore(); await terminateGroup(native, 100); }
+});
+
 test('termination waits for the group, including a descendant that ignores SIGTERM', async () => {
   const program = `
     const { spawn } = require('node:child_process');

@@ -307,8 +307,14 @@ test('PJ1c turns without a report or with a failure synthesize the report', { ti
   };
   expect((await run('After tools', tools)).lastReport).toMatchObject({ status: 'progress', synthesized: true, summary: 'Final words.' });
   expect((await run('Throws', () => { throw new Error('Scripted crash.'); })).lastReport).toMatchObject({ status: 'blocked', synthesized: true, summary: 'The scripted runtime failed.' });
-  const limited = await run('Rate limited', () => ({ status: 'failed', error: { kind: 'rate-limit', message: 'You have hit your limit.' } }));
-  expect(limited).toMatchObject({ state: 'idle', lastReport: { status: 'blocked', synthesized: true, summary: 'You have hit your limit.' } });
+  const reportsBeforeLimit = queue(f).filter(entry => entry.kind === 'thread-report');
+  f.fake.enqueueTurn(() => ({ status: 'failed', error: { kind: 'rate-limit', message: 'You have hit your limit.' } }), forThread(input => input.prompt.startsWith('Task: Rate limited\n')));
+  const { threadId: limitedId } = await start(f, 'Rate limited', 'Work on Rate limited.');
+  await f.waitFor(() => f.thread(limitedId).state, state => state === 'idle'); await f.app.projectWork.idle('project');
+  expect(f.thread(limitedId)).toMatchObject({ state: 'idle', stateReason: expect.stringContaining('Waiting for an account') });
+  expect(f.thread(limitedId).lastReport).toBeUndefined();
+  expect(f.app.projectWork.store.local(limitedId)).toMatchObject({ pendingTurn: { reason: 'continue', body: 'Your previous turn stopped at a usage limit. Continue the task from where it stopped.' }, waitingForAccount: { runtime: 'fake' } });
+  expect(queue(f).filter(entry => entry.kind === 'thread-report')).toEqual(reportsBeforeLimit);
   expect(Date.parse((await f.app.accounts.status('acc_fixture')).coolingUntil ?? '')).toBeGreaterThan(Date.now());
   // The coordinator reads a synthesized report with the brief's suffix.
   const event = queue(f).find((entry) => entry.kind === 'thread-report')!;

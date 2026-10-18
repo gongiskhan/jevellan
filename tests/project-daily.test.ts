@@ -1,5 +1,5 @@
-import { afterEach, expect, test } from 'vitest';
-import { existsSync, writeFileSync } from 'node:fs';
+import { afterEach, expect, test, vi } from 'vitest';
+import { existsSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
@@ -14,6 +14,47 @@ const jobInput = (id: string, command = 'true', gate: string | null = null) => (
 const runInput = (id: string) => ({ schema: 'project-run-request-v1', clientRequestId: id });
 const checkoutState = (f: ProjectFixture) => ({ head: f.git(f.checkout, 'rev-parse', 'HEAD'), branch: f.git(f.checkout, 'symbolic-ref', 'HEAD'), status: f.git(f.checkout, 'status', '--porcelain=v1'), tracking: f.git(f.checkout, 'rev-parse', 'origin/main'), index: createHash('sha256').update(f.git(f.checkout, 'ls-files', '--stage', '-z')).digest('hex') });
 async function job(f: ProjectFixture, id: string, command = 'true', gate: string | null = null) { return f.json('/api/projects/project/jobs', ProjectJobSchema, 'POST', jobInput(id, command, gate)); }
+
+test('finished job cleanup is durable and later sweeps do not repeat Git operations', async () => {
+  const f = fixture = await projectFixture(), work = f.app.projectWork;
+  const definition = await job(f, 'One completed job');
+  const receipt = await work.daily.runJob('project', definition.id, runInput('cleanup_once'));
+  await f.waitFor(() => work.tasks.read('project', receipt.taskId), task => task.state === 'done'); await work.idle();
+  await work.jobs.cleanup('project');
+  const calls = vi.spyOn(work.jobs.o.git, 'run');
+  await work.jobs.cleanup('project'); await work.jobs.sweep('project');
+  expect(calls.mock.calls).toEqual([]); calls.mockRestore();
+  await f.restart(); await f.app.projectWork.idle();
+  const restarted = vi.spyOn(f.app.projectWork.jobs.o.git, 'run');
+  await f.app.projectWork.jobs.cleanup('project');
+  expect(restarted.mock.calls).toEqual([]); restarted.mockRestore();
+  const run = (await f.app.projectWork.jobs.runs('project'))[0]!;
+  await expect(Promise.resolve().then(() => f.app.projectHub.putJobRun({ ...run, summary: 'Changed execution result' }, run.revision))).rejects.toThrow('A finished job receipt cannot change.');
+  await expect(Promise.resolve().then(() => f.app.projectHub.putJobRun({ ...run, cleanedAt: undefined }, run.revision))).rejects.toThrow('The ref cleanup receipt cannot change.');
+  const processFile = f.homes.at('project-work', 'project', 'job-processes', `${run.id}.json`);
+  writeFileSync(processFile, '{}');
+  try { await expect(f.app.projectWork.jobs.cleanup('project')).rejects.toThrow(); }
+  finally { rmSync(processFile, { force: true }); }
+});
+
+test('a failed cleanup stays retryable and a legacy completed receipt is cleaned before it is marked', async () => {
+  const f = fixture = await projectFixture(), work = f.app.projectWork;
+  const definition = await job(f, 'Cleanup retry');
+  const receipt = await work.daily.runJob('project', definition.id, runInput('cleanup_retry'));
+  await f.waitFor(() => work.tasks.read('project', receipt.taskId), task => task.state === 'done'); await work.idle();
+  const run = (await work.jobs.runs('project'))[0]!, legacy: Record<string, unknown> = { ...run, revision: run.revision + 1 }; delete legacy.cleanedAt;
+  // Seed an older persisted receipt, before cleanup metadata existed.
+  f.app.hub.put('project-job-runs', run.id, ProjectJobRunSchema, ProjectJobRunSchema.parse(legacy), run.revision);
+  const native = work.jobs.o.git.run.bind(work.jobs.o.git), calls = vi.spyOn(work.jobs.o.git, 'run');
+  calls.mockImplementation(async (repo, args, ...rest) => {
+    if (args[0] === 'update-ref') throw new Error('Simulated interrupted ref cleanup.');
+    return native(repo, args, ...rest);
+  });
+  await expect(work.jobs.cleanup('project')).rejects.toThrow('Simulated interrupted ref cleanup.'); calls.mockRestore();
+  expect((await f.app.projectHub.jobRun(run.id))?.document).not.toHaveProperty('cleanedAt');
+  await work.jobs.cleanup('project');
+  expect((await f.app.projectHub.jobRun(run.id))?.document).toMatchObject({ cleanedAt: expect.any(String) });
+});
 
 test('commands use fresh worktrees, setup and redacted receipts without touching a dirty registered checkout', async () => {
   const f = fixture = await projectFixture(), work = f.app.projectWork;

@@ -24,14 +24,14 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   use: { trace: 'retain-on-failure', actionTimeout: 15_000, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) },
   projects: [...projects, { name: 'installation', workers: 1, testMatch: 'installation.spec.ts' }],
-  // A --projects server is ready once its control listener answers, which binds after the accounts and projects are seeded.
+  // Every server is ready only after its control listener binds, after member, account and project seeding.
   // SIGTERM lets each fixture server close its daemons and remove its temporary root (a SIGKILL leaves about 25 MB behind).
   webServer: projects.flatMap((project, index) => {
     // Packed installation journeys start their own installed daemons and need no ordinary fixture servers.
     if (process.env.JEVELLAN_E2E_FIXTURE_GROUP === 'installation') return [];
     if (process.env.JEVELLAN_E2E_FIXTURE_GROUP === 'projects' && !project.name.endsWith('-projects')) return [];
     const seeded = project.name.endsWith('-projects');
-    return [{ command: `node scripts/test-server.mjs --port ${base + index}${seeded ? ' --projects' : ''}`, url: seeded ? `http://127.0.0.1:${base + index + 200}/projects/ready` : `${project.use.baseURL}/api/health`,
+    return [{ command: `node scripts/test-server.mjs --port ${base + index}${seeded ? ' --projects' : ''}`, url: `http://127.0.0.1:${base + index + 200}/ready`,
       reuseExistingServer: false, gracefulShutdown: { signal: 'SIGTERM' as const, timeout: 15_000 } }];
   }),
 });

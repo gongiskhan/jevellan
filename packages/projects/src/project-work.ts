@@ -156,6 +156,8 @@ export class ProjectWork {
   readonly #attach: ThreadAttach;
   readonly #attachedGrants = new Map<string, { token: string; close(): Promise<void> }>();
   #sweepTimer: ReturnType<typeof setInterval> | undefined;
+  #taskSweep: Promise<void> | undefined;
+  #taskSweepAgain = false;
   readonly #cachePublished = new Map<string, number>();
   #tools: CoordinatorToolHandlers | undefined;
   readonly #github: ProjectGithub;
@@ -296,12 +298,12 @@ export class ProjectWork {
     this.tasks = new ProjectTasks({ hub: o.hub, deviceId: o.deviceId, redactor: o.redactor, now,
       settings: projectId => this.admission.settings(projectId),
       validateGoal: (projectId, goalId, source, refillEventId) => this.goals.validate(projectId, goalId, source, refillEventId), projectDay: projectId => this.goals.day(projectId),
-      changed: () => { void this.#sweepTasks().catch(() => undefined); },
+      changed: () => { void this.#sweepTasks(true).catch(() => undefined); },
       cancelThread: (task, reason, owner) => this.threads.stop(task.projectId, task.threadId!, reason, owner),
       reviewed: async (task, outcome, note) => delivery.toCoordinator(task.projectId, { schema: 'coordinator-event-v1', kind: 'task-reviewed', taskId: task.id, title: task.title, outcome, ...(note ? { note } : {}),
         id: `cev_${task.id}_${task.revision}`, at: task.updatedAt }) });
     this.goals = new ProjectGoals({ hub: o.hub, tasks: this.tasks, redactor: o.redactor, now, settings: projectId => this.admission.settings(projectId),
-      event: (projectId, event) => delivery.toCoordinator(projectId, event), changed: () => { void this.#sweepTasks().catch(() => undefined); },
+      event: (projectId, event) => delivery.toCoordinator(projectId, event), changed: () => { void this.#sweepTasks(true).catch(() => undefined); },
       windowOpen: projectId => this.daily.mergesHeld(projectId),
       available: async projectId => {
         const coordinator = this.coordinators.get(projectId), state = coordinator.state();
@@ -360,18 +362,18 @@ export class ProjectWork {
         timers: { threadTurnTimeoutMs: timers.threadTurnTimeoutMs, setupTimeoutMs: timers.setupTimeoutMs }, now } });
     this.jobs = new ProjectJobRunner({ projectEnvironment, homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
       project: id => this.#project(id), settings: id => this.admission.settings(id), baseBranch: repo => worktrees.baseBranch(repo), event: (id, event) => delivery.toCoordinator(id, event),
-      windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
+      windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
     this.daily = new ProjectDailyWork({ landing: (threadId, held) => { if (!this.store.get(threadId)) return; if (held) this.store.setIndexFields(threadId, { landing: 'held' }); else if (this.store.local(threadId).landing === 'held') this.store.setIndexFields(threadId, { landing: undefined }); }, fixCutoffMinutes: nightlyFixMinutes(o.homes), hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
       memoryDream: async (id, requestId) => { if (!this.memoryProgramme) throw new Error('The memory dream runs on the hub.'); return this.memoryProgramme.runNow(await this.#project(id), requestId); },
       memoryDreamLine: id => this.memoryProgramme?.line(id),
-      validateGoal: async (id, goalId) => { if (goalId) await this.goals.read(id, goalId); }, event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
+      validateGoal: async (id, goalId) => { if (goalId) await this.goals.read(id, goalId); }, event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
     this.memoryProgramme = o.hubMemory ? new ProjectMemoryProgramme({ sessionEnd: evidence => this.ledgers.sessionEnd(evidence), store: o.hubMemory, captures: this.captures, hub: o.hub, launcher, placement, git, daily: this.daily,
       deviceId: o.deviceId, redactor: o.redactor, accounts: o.accounts, settings: id => this.admission.settings(id), repository: project => worktrees.repository(project), baseBranch: repo => worktrees.baseBranch(repo),
       event: (id, event) => delivery.toCoordinator(id, event), enterOperation: o.enterOperation, now }) : undefined;
     this.reviews = new NightlyReview({ sessionEnd: evidence => this.ledgers.sessionEnd(evidence), hub: o.hub, tasks: this.tasks, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
       memory: async id => o.memory.project(await this.#project(id), o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'review' }),
       settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, project: id => this.#project(id), repository: project => worktrees.repository(project), baseBranch: repo => worktrees.baseBranch(repo), timeoutMs: timers.threadTurnTimeoutMs,
-      event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks().catch(() => undefined); } });
+      event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
     this.dispatcher = new ProjectDispatcher({ settings: id => this.admission.settings(id), tasks: this.tasks, threads: this.threads, deviceId: o.deviceId,
       text: async task => {
         const goal = task.goalId ? await this.goals.read(task.projectId, task.goalId) : null;
@@ -529,10 +531,20 @@ export class ProjectWork {
     if (!this.#started || this.#closing) return;
     void this.ready.then(() => { if (!this.#closing) this.inbox.kick(); }, () => undefined);
   }
-  async #sweepTasks(): Promise<void> {
+  #sweepTasks(changed = false): Promise<void> {
+    if (this.#taskSweep) { if (changed) this.#taskSweepAgain = true; return this.#taskSweep; }
+    this.#taskSweep = (async () => {
+      try {
+        do { this.#taskSweepAgain = false; await this.#runTaskSweep(); } while (this.#taskSweepAgain && !this.#closing);
+      } finally { this.#taskSweep = undefined; }
+    })();
+    return this.#taskSweep;
+  }
+  async #runTaskSweep(): Promise<void> {
     if (!this.#started || this.#closing || !deviceAllowsWork(this.#o.homes) || this.#o.workRefusal?.()) return;
     try {
       for (const { project } of await this.#o.projects.list()) {
+        if (this.#closing) break;
         const ledger = this.ledgers.coordinator(project.id);
         if (this.#o.hub.putSessionCache && this.#cachePublished.get(project.id) !== ledger.lastId()) {
           const version = ledger.lastId();
@@ -595,7 +607,7 @@ export class ProjectWork {
   async idle(projectId?: string): Promise<void> {
     await this.ready;
     for (let quiet = 0; quiet < 2;) {
-      await delay(20); quiet = this.notifications.busy() || this.usage.busy() || this.reviews.busy(projectId) || this.mergeGate.busy() || this.jobs.busy(projectId) || this.threads.busy(projectId) || this.dispatcher.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
+      await delay(20); quiet = this.#taskSweep || this.notifications.busy() || this.usage.busy() || this.reviews.busy(projectId) || this.mergeGate.busy() || this.jobs.busy(projectId) || this.threads.busy(projectId) || this.dispatcher.busy(projectId) || this.coordinators.busy(projectId) || this.outbox.busy || this.inbox.busy ? 0 : quiet + 1;
     }
   }
   /** Stops timers, terminates every running turn (shutdown intent) and drains; thread states are never rewritten (D24). */
@@ -615,6 +627,8 @@ export class ProjectWork {
       await this.threads.close();
       await this.dispatcher.close();
       await this.jobs.close();
+      // A sweep may await a running job/session. Cancel those owners first, then drain before state publishers close.
+      await this.#taskSweep?.catch(() => undefined);
       await this.journal?.close();
       await this.apps.close();
       await this.tracker.close();
@@ -645,11 +659,11 @@ export class ProjectWork {
   async taskView(projectId: string, taskId: string) { return TaskViewSchema.parse({ schema: 'task-view-v1', task: await this.tasks.read(projectId, taskId) }); }
   async createTask(projectId: string, raw: unknown) {
     await this.#coordinatorHere(projectId); const receipt = await this.tasks.create(projectId, TaskCreateRequestSchema.parse(raw));
-    void this.#sweepTasks().catch(() => undefined); return receipt;
+    void this.#sweepTasks(true).catch(() => undefined); return receipt;
   }
   async updateTask(projectId: string, taskId: string, raw: TaskUpdateRequest) { return TaskViewSchema.parse({ schema: 'task-view-v1', task: await this.tasks.update(projectId, taskId, raw) }); }
   async taskAction(projectId: string, taskId: string, raw: unknown) {
-    const task = await this.tasks.action(projectId, taskId, raw); void this.#sweepTasks().catch(() => undefined); return TaskViewSchema.parse({ schema: 'task-view-v1', task });
+    const task = await this.tasks.action(projectId, taskId, raw); void this.#sweepTasks(true).catch(() => undefined); return TaskViewSchema.parse({ schema: 'task-view-v1', task });
   }
   view(projectId: string): Promise<ProjectWorkView> { return this.views.project(projectId); }
   coordinatorLedger(projectId: string): ProjectLedger { return this.ledgers.coordinator(projectId); }

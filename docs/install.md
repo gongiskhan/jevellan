@@ -96,3 +96,6 @@ PLAYWRIGHT_CHANNEL=chrome npm run test:e2e -- --project installation
 ```
 
 The packed test covers the guided browser setup, optional key path, all-green diagnostics with simulated providers, real conversation completion and Git publication, update waiting, rollback, uninstall, purge, and exact preservation of native fixture trees. Dedicated live-provider and actual second-machine checks remain separate; see [J9](acceptance/J9.md) and the [acceptance report](acceptance/REPORT.md).
+
+
+A second independent installation can use an explicit name, for example `JEVELLAN_HOME=/separate/home jevellan install --name member --from archive.tgz`. It owns `jevellan-member.service` on Linux (or `dev.jevellan.member.daemon` on macOS) and the `jevellan-member` CLI, preserving the default hub service and command. The name is bound to that installation and reused by update, rollback and uninstall. An existing managed installation cannot be renamed. An old unmanaged member requires a cold data/unit backup and verified removal of only its old unit before named installation; never claim a different installation's service.

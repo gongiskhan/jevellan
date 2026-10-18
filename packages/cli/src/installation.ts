@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { DEFAULT_PORT, DeviceConfigSchema, DeviceOriginSchema, HealthSchema, Homes, JoinCodeSchema, LifecycleGate, MemberJoinPlanSchema, SecretRedactor, daemonRunning, lifecycleActivity, newId, readDocument, resolvedPath, writeDocument } from '@jevellan/core';
 import { closeListeners, detectTailscaleIpv4, listenOnInterfaces } from '@jevellan/daemon';
 import { joinMember } from '@jevellan/mesh';
-import { InstallationFiles, applicationDigest, type InstalledApplication } from './installation-files.js';
+import { InstallationFiles, InstallationManifestSchema, applicationDigest, type InstalledApplication } from './installation-files.js';
 import { installToolchain, type Toolchain } from './toolchain.js';
 import { nativeServiceManager, type ServiceDefinition, type ServiceManager } from './service-manager.js';
 import { completeHomePurge, recoverHomePurges, stageHomePurge } from './purge.js';
@@ -18,7 +18,7 @@ export const InstallationResultSchema = z.strictObject({ schema: z.literal('inst
 export const InstallationJoinInputSchema = z.strictObject({ schema: z.literal('installation-join-input-v1'), hubUrl: DeviceOriginSchema, code: JoinCodeSchema });
 export type InstallationJoinInput = z.infer<typeof InstallationJoinInputSchema>;
 type Options = {
-  homes?: Homes; manager?: ServiceManager; signal?: AbortSignal; progress?: (message: string) => void;
+  homes?: Homes; name?: string; manager?: ServiceManager; signal?: AbortSignal; progress?: (message: string) => void;
   installTools?: (files: InstallationFiles) => Promise<Toolchain>; tailscale?: () => Promise<string | null>;
   alive?: (homes: Homes) => boolean; ready?: (definition: ServiceDefinition, app: InstalledApplication) => Promise<void>;
   intervalMs?: number; joinFetch?: typeof fetch; commandSearchPath?: string; httpsService?: HttpsService;
@@ -43,9 +43,12 @@ export class Installer {
   readonly #gate: LifecycleGate;
   readonly #alive: (homes: Homes) => boolean;
   constructor(readonly options: Options = {}) {
-    this.homes = options.homes ?? new Homes(); this.manager = options.manager ?? nativeServiceManager(); this.#alive = options.alive ?? daemonRunning; this.https = options.httpsService ?? new HttpsService();
+    this.homes = options.homes ?? new Homes();
+    const recorded = existsSync(this.homes.at('install.json')) ? readDocument(this.homes.at('install.json'), InstallationManifestSchema).name : undefined;
+    const name = options.name ?? recorded;
+    this.manager = options.manager ?? nativeServiceManager(name); this.#alive = options.alive ?? daemonRunning; this.https = options.httpsService ?? new HttpsService();
     const definition = this.manager.definition({ schema: 'service-spec-v1', node: resolvedPath(process.execPath), entry: join(this.homes.root, 'app', 'pending', 'bin', 'jevellan.mjs'), home: this.homes.root, path: '/usr/bin:/bin', port: DEFAULT_PORT });
-    this.files = new InstallationFiles(this.homes, definition.path);
+    this.files = new InstallationFiles(this.homes, definition.path, name);
     try { this.#gate = new LifecycleGate(this.homes); } catch (error) { this.files.close(); throw error; }
   }
   async #pause() { await delay(this.options.intervalMs ?? 500, undefined, this.options.signal ? { signal: this.options.signal } : {}); }

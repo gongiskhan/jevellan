@@ -15,8 +15,8 @@ The build clock starts at this run's first commit, lasts14hours, and closes new 
 6. PWA web push, subscription Settings, levels and event triggers. Pushed2375d77c; source verified:142 affected backend cases and all4layouts pass, dedicated vision not run. Decisions875–879; actual web-push license is MPL-2.0.
 7. Hub Library, composer attachments, worktree environment/secrets/copied files and project-scoped rigging. Source and affected checks complete:121 distinct backend cases and two browser journeys in all4layouts pass; dedicated vision is not run. Decisions880–887.
 8. Claude-compatible endpoint accounts/menu/probe and isolated launch. Verified:191 backend cases and PAR8 all4layouts pass. Dedicated vision not run; optional LP8 credential blocked. Pushed5e11ad0e; full closing suites remain.
-9. First-run exploration and editable suggested setup. Verified:153 backend cases and PAR9 all4layouts pass; dedicated vision and LP9 not run. Publication pending.
-10. Current-state docs/history, cleanup, LJ5 regression, complete suites/vision, one crucial-issues review,0.5.0 release/update with rollback and LP1–LP9 within the live clock.
+9. First-run exploration and editable suggested setup. Verified:153 backend cases and PAR9 all4layouts pass; dedicated vision and LP9 not run. Pushed b5b2dd43.
+10. Current-state docs/history, cleanup, LJ5 regression, complete suites/vision, one crucial-issues review,0.5.0 release/update with rollback and LP1–LP9 within the live clock. Closing source is saved with blockers: full checks and LJ5 remain red; one serious-issues review is recorded. Release/update and LP1–LP9 stay planned, with source still0.4.1. See the parity handoff.
 
 Finish and test each phase before beginning the next. Commit/push main after every phase with roadmap/report evidence. Every behavior gets backend tests, every changed screen gets four layouts with vision, every bug fix starts with a failing regression. No interim review passes or heuristic routing. Unreached phases remain planned with their BRIEF.md phase number. Live journeys never touch ekoa-code and restore settings. Missing credentials are blocked checks, not passes.
 
@@ -472,3 +472,10 @@ Decision844 closure:40 focused project UI checks and the final four-layout brows
 Phase9 starts00:52:50Z after endpoint commit5e11ad0e is pushed. Decision893: one code-owned trigger per setup proposal; editable owner application with atomic revision checks, selected fields only and paused Propose goals.
 
 Phase9 verified:153 backend cases and PAR9 all4layouts pass,16 screenshots. Dedicated vision and live LP9 remain unrun. Publication follows the mandatory secret scan; phase10 is next.
+
+
+Projects parity closing starts2026-10-18T01:25:00Z after P9 push b5b2dd43. P0–P9 are tested and pushed. Phase10 retains the original04:59:21Z build deadline, performs the full suites, fixes reproduced closing blockers, preserves all historical reference paragraphs, runs one serious-issues review and prepares0.5.0 with rollback. The3-hour installed live clock has not started.
+
+Closing regressions: dropped Git2.56 mappings now require an exact zero-change tree proof; named member install/update/rollback paths preserve the independent hub; refresh sweeps coalesce and drain before shutdown. Their failed-before evidence is retained. The full backend run and clean four-layout Nightly reproduction are running; full browser, closing review, release activation and LP journeys remain gates.
+
+Closing regression: Decision906 makes completed-job cleanup durable; backend and the reached four-layout LJ5 failure are being rerun. Build and live deadlines are unchanged.

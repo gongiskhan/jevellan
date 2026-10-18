@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { ProjectEnvSecretSummarySchema, ProjectWorkSettingsSchema, TaskReceiptSchema, type ProjectWorkSettings } from '../packages/core/dist/index.js';
 import { forCoordinator, forThread } from '../packages/runtime-contract/dist/index.js';
 import { projectFixture, projectMember, reportStep, type ProjectFixture } from './helpers/project-fixture.js';
@@ -10,6 +10,61 @@ async function settings(f: ProjectFixture, patch: Partial<ProjectWorkSettings>) 
   const { schema: _schema, projectId: _project, revision, ...fields } = { ...base, ...patch }; void _schema; void _project;
   return f.app.projectWork.putSettings(f.project.id, { schema: 'project-work-settings-request-v1', revision, settings: fields });
 }
+
+test('overlapping project pulses join one task sweep instead of multiplying background work', async () => {
+  const f = fixture = await projectFixture({ coordinator: true });
+  await f.app.projectHub.assignCoordinator(f.project.id, f.app.device.deviceId, 0);
+  await f.app.projectWork.pulse();
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const sweep = vi.spyOn(f.app.projectWork.daily, 'sweep').mockImplementation(async () => { await gate; });
+  const pulses = Array.from({ length: 4 }, () => f.app.projectWork.pulse());
+  let closing: Promise<void> | undefined;
+  try {
+    await f.waitFor(() => sweep.mock.calls.length, count => count > 0);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    expect(sweep).toHaveBeenCalledTimes(1);
+    let closed = false;
+    closing = f.app.projectWork.close().then(() => { closed = true; });
+    await new Promise(resolve => setTimeout(resolve, 100));
+    expect(closed, 'shutdown must drain the in-flight sweep before closing its services').toBe(false);
+  } finally { release(); await Promise.all(pulses); await closing; sweep.mockRestore(); }
+});
+
+test('shutdown cancels owned jobs before waiting for a sweep that needs their cancellation', async () => {
+  const f = fixture = await projectFixture({ coordinator: true });
+  await f.app.projectHub.assignCoordinator(f.project.id, f.app.device.deviceId, 0);
+  await f.app.projectWork.pulse();
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const sweep = vi.spyOn(f.app.projectWork.daily, 'sweep').mockImplementation(async () => { await gate; });
+  const closeJobs = f.app.projectWork.jobs.close.bind(f.app.projectWork.jobs);
+  const cancel = vi.spyOn(f.app.projectWork.jobs, 'close').mockImplementation(async () => { release(); await closeJobs(); });
+  const pulse = f.app.projectWork.pulse(); let closing: Promise<void> | undefined;
+  try {
+    await f.waitFor(() => sweep.mock.calls.length, count => count > 0);
+    closing = f.app.projectWork.close();
+    await f.waitFor(() => cancel.mock.calls.length, count => count > 0, 1_000);
+  } finally { release(); await pulse; await closing; sweep.mockRestore(); cancel.mockRestore(); }
+});
+
+test('a job completion during a task sweep requests one follow-up without overlapping sweeps', async () => {
+  const f = fixture = await projectFixture({ coordinator: true });
+  const work = f.app.projectWork;
+  await f.app.projectHub.assignCoordinator(f.project.id, f.app.device.deviceId, 0); await work.pulse(); await work.idle();
+  let release!: () => void, entered!: () => void, active = 0, maximum = 0;
+  const gate = new Promise<void>(resolve => { release = resolve; }), inside = new Promise<void>(resolve => { entered = resolve; });
+  const sweep = vi.spyOn(work.daily, 'sweep').mockImplementation(async () => {
+    active += 1; maximum = Math.max(maximum, active);
+    if (sweep.mock.calls.length === 1) { entered(); await gate; }
+    active -= 1;
+  });
+  const pulse = work.pulse();
+  try {
+    await inside; work.jobs.o.changed(); work.jobs.o.changed(); release(); await pulse; await work.idle();
+    expect(sweep).toHaveBeenCalledTimes(2); expect(maximum).toBe(1);
+  } finally { release(); await pulse; sweep.mockRestore(); }
+});
 
 test.each(['paused', 'archived'] as const)('%s keeps coordinator events, tasks, goals and nightly work queued; resume starts them', { timeout: 120_000 }, async status => {
   let clock = Date.parse('2026-10-17T23:59:00Z');

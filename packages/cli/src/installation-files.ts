@@ -4,7 +4,7 @@ import { chmodSync, closeSync, cpSync, existsSync, linkSync, lstatSync, mkdirSyn
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { DeviceConfigSchema, DeviceOriginSchema, Homes, atomicWrite, inside, readDocument, resolvedPath, writeDocument } from '@jevellan/core';
 import { z } from 'zod';
-import { ServiceDefinitionSchema, serviceContents, serviceContentsVariants, type ServiceDefinition } from './service-manager.js';
+import { InstallationNameSchema, ServiceDefinitionSchema, serviceContents, serviceContentsVariants, type ServiceDefinition } from './service-manager.js';
 import { ToolchainPlanSchema, ToolchainSchema, toolchainDirectoryName, validateToolchain } from './toolchain.js';
 import { InstalledCommandSchema, PendingCommandSchema, validateCommands } from './installed-command.js';
 import { InstalledHttpsSchema } from './https-service.js';
@@ -28,7 +28,7 @@ export function purgePaths(home: string, id: string) {
   z.uuid().parse(id); const path = join(dirname(home), `${basename(home)}.purge-${id}`); return { path, marker: `${path}.json` };
 }
 export const InstallationManifestSchema = z.strictObject({
-  schema: z.literal('installation-v1'), id: z.uuid(), home: AbsolutePath, createdAt: z.iso.datetime(),
+  schema: z.literal('installation-v1'), name: InstallationNameSchema.optional(), id: z.uuid(), home: AbsolutePath, createdAt: z.iso.datetime(),
   dataRoot: z.strictObject({ schema: z.literal('installed-data-root-v1'), path: AbsolutePath, retainedOnUninstall: z.literal(true) }),
   applications: z.array(InstalledApplicationSchema),
   distributions: z.array(DistributionSchema).default([]),
@@ -75,9 +75,14 @@ export function applicationDigest(root: string): string {
 export class InstallationFiles {
   readonly #db: DatabaseSync;
   #closed = false;
-  constructor(readonly homes: Homes, readonly servicePath: string) {
+  readonly name: string | undefined;
+  constructor(readonly homes: Homes, readonly servicePath: string, name?: string) {
+    const prior = existsSync(homes.at('install.json')) ? readDocument(homes.at('install.json'), InstallationManifestSchema) : undefined;
+    this.name = name ?? prior?.name;
+    if (this.name !== undefined) InstallationNameSchema.parse(this.name);
+    if (prior && prior.name !== this.name && (prior.activeVersion || prior.service || prior.command || prior.pendingSwitch || prior.pendingService || prior.pendingCommand)) throw new Error('Keep this installation’s recorded name.');
     AbsolutePath.parse(servicePath);
-    if (![join(homes.userHome, 'Library', 'LaunchAgents', 'dev.jevellan.daemon.plist'), join(homes.userHome, '.config', 'systemd', 'user', 'jevellan.service')].includes(servicePath)) throw new Error('Unexpected Jevellan service path.');
+    if (![join(homes.userHome, 'Library', 'LaunchAgents', this.name ? `dev.jevellan.${this.name}.daemon.plist` : 'dev.jevellan.daemon.plist'), join(homes.userHome, '.config', 'systemd', 'user', this.name ? `jevellan-${this.name}.service` : 'jevellan.service')].includes(servicePath)) throw new Error('Unexpected Jevellan service path.');
     if (existsSync(homes.root) && !existsSync(homes.at('install.json'))) {
       const entries = readdirSync(homes.root).filter(name => !['install-lock.db', 'install-lock.db-journal'].includes(name));
       if (entries.length) {
@@ -91,7 +96,12 @@ export class InstallationFiles {
     chmodSync(lock, 0o600); this.#db = new DatabaseSync(lock);
     try {
       this.#db.exec('PRAGMA busy_timeout=0; BEGIN IMMEDIATE;');
-      if (!existsSync(this.path('install.json'))) this.save({ schema: 'installation-v1', id: randomUUID(), home: homes.root, createdAt: new Date().toISOString(), dataRoot: { schema: 'installed-data-root-v1', path: homes.root, retainedOnUninstall: true }, applications: [], serviceDirectories: [], commandDirectories: [], toolchains: [], distributions: [] });
+      if (!existsSync(this.path('install.json'))) this.save({ schema: 'installation-v1', ...(this.name ? { name: this.name } : {}), id: randomUUID(), home: homes.root, createdAt: new Date().toISOString(), dataRoot: { schema: 'installed-data-root-v1', path: homes.root, retainedOnUninstall: true }, applications: [], serviceDirectories: [], commandDirectories: [], toolchains: [], distributions: [] });
+      const current = readDocument(this.path('install.json'), InstallationManifestSchema);
+      if (current.name !== this.name) {
+        if (current.activeVersion || current.service || current.command || current.pendingSwitch || current.pendingService || current.pendingCommand) throw new Error('Keep this installation’s recorded name.');
+        this.save({ ...current, ...(this.name ? { name: this.name } : {}) });
+      }
       this.load();
     } catch (error) { this.#db.close(); throw error; }
   }
@@ -103,6 +113,7 @@ export class InstallationFiles {
   private check(input: InstallationManifest): InstallationManifest {
     if (this.#closed) throw new Error('The installer is closed.');
     const value = InstallationManifestSchema.parse(input);
+    if (value.name !== this.name) throw new Error('Keep this installation’s recorded name.');
     if (value.home !== this.homes.root || value.dataRoot.path !== value.home) throw new Error('This installation manifest belongs to another home.');
     validateCommands(this.homes, value);
     if (value.pendingPurge) {
@@ -120,7 +131,7 @@ export class InstallationFiles {
     if (value.pendingSwitch && !value.applications.some(app => app.version === value.pendingSwitch!.targetVersion && join(app.path, 'bin', 'jevellan.mjs') === value.pendingSwitch!.definition.spec.entry)) throw new Error('The pending service version is not installed.');
     if (value.pendingCopy && (value.pendingCopy.target !== this.path('app', value.pendingCopy.version) || value.pendingCopy.staging !== this.path('staging', value.pendingCopy.id))) throw new Error('The pending application copy has an unexpected path.');
     if (value.service && (value.service.definition.path !== this.servicePath || !serviceContentsVariants(value.service.definition).some(content => value.service!.digest === digestText(content)))) throw new Error('The recorded service does not match this installation.');
-    for (const definition of [value.service?.definition, value.pendingService?.definition, value.pendingSwitch?.definition]) if (definition && (definition.path !== this.servicePath || definition.spec.home !== this.homes.root || !value.applications.some(app => definition.spec.entry === join(app.path, 'bin', 'jevellan.mjs')))) throw new Error('The service must run a recorded installed application.');
+    for (const definition of [value.service?.definition, value.pendingService?.definition, value.pendingSwitch?.definition]) if (definition && (definition.path !== this.servicePath || definition.name !== this.name || definition.spec.home !== this.homes.root || !value.applications.some(app => definition.spec.entry === join(app.path, 'bin', 'jevellan.mjs')))) throw new Error('The service must run a recorded installed application.');
     if (value.pendingService && value.pendingService.temporary !== join(dirname(this.servicePath), `.jevellan-service-${value.id}.tmp`)) throw new Error('The service staging file has an unexpected path.');
     for (const directory of value.serviceDirectories) if (directory === this.homes.userHome || !inside(this.homes.userHome, directory) || !inside(directory, this.servicePath) || directory === this.servicePath) throw new Error('A service directory does not belong to this installation.');
     return value;

@@ -17,7 +17,7 @@ export const ProjectJobSchema = z.strictObject({ schema: z.literal('project-job-
 export type ProjectJob = z.infer<typeof ProjectJobSchema>;
 export const ProjectJobRunSchema = z.strictObject({ schema: z.literal('project-job-run-v1'), id: IdSchema, projectId: IdSchema, revision,
   jobId: IdSchema, taskId: IdSchema, commit: z.string().regex(/^[0-9a-f]{40}$/u), deviceId: IdSchema, projectDay: date,
-  startedAt: TimestampSchema, endedAt: TimestampSchema.optional(), conclusion: z.enum(['passed', 'failed', 'timed-out', 'cancelled', 'skipped']).nullable(),
+  startedAt: TimestampSchema, endedAt: TimestampSchema.optional(), cleanedAt: TimestampSchema.optional(), conclusion: z.enum(['passed', 'failed', 'timed-out', 'cancelled', 'skipped']).nullable(),
   summary: z.string().max(1200), logTail: z.string().max(8000), url: z.url().optional(), workflowRunId: z.number().int().positive().optional(), workflowHeadBound: z.boolean().optional(),
   dispatchRef: z.string().max(200).optional(), gateRunId: IdSchema.optional(), phase: z.enum(['reserved', 'executing', 'watching', 'finished']), pollAfter: TimestampSchema.optional(),
   workflowHandoff: WorkflowHandoffStateSchema.optional(), workflowScheduler: WorkflowSchedulerStateSchema.optional(), nightlyWindowId: IdSchema.optional(), workflowCompletedAt: TimestampSchema.optional(), dispatchRefDeletedAt: TimestampSchema.optional(),

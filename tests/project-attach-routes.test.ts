@@ -5,7 +5,7 @@ import { existsSync, utimesSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import {
   AccountSchema, DeviceSchema, DoctorControlSchema, ThreadAttachViewSchema, ThreadCreatedViewSchema, ThreadDetachViewSchema, ThreadIndexSchema, ThreadMessageReceiptSchema, ThreadViewSchema,
-  doctorControlPath, readDocument, type CoordinatorEvent, type ModelOption, type ProjectLedgerEvent, type ProjectLedgerData,
+  doctorControlPath, readDocument, type CoordinatorEvent, type ModelOption, type ProjectLedgerEvent,
 } from '../packages/core/dist/index.js';
 import { HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, forThread, writeFakeNativeSession } from '../packages/runtime-contract/dist/index.js';
@@ -55,7 +55,8 @@ const queue = (f: ProjectFixture): CoordinatorEvent[] => f.coordinatorState().qu
 const worked = (f: ProjectFixture, threadId: string) => queue(f).filter((event) => event.kind === 'thread-user-message' && event.threadId === threadId && event.text.startsWith('[owner worked'));
 function states(f: ProjectFixture, threadId: string): string[] {
   const ledger = f.app.projectWork.ledgers.thread('project', threadId);
-  return ledger.events().filter((event) => event.type === 'thread-state').map((event) => (ledger.payload(event as ProjectLedgerEvent & { type: 'thread-state' }) as ProjectLedgerData<'thread-state'>).to);
+  return ledger.events().filter((event) => event.type === 'thread-state').map((event) => ledger.payload(event as ProjectLedgerEvent & { type: 'thread-state' }))
+    .filter(event => !(event.from === event.to && event.changed.length === 1 && event.changed[0] === 'usage')).map(event => event.to);
 }
 /** Writes a native journal into an account home, optionally dated `at` (ms). */
 function journal(format: 'claude' | 'codex', home: string, cwd: string, at?: number): string {
@@ -208,6 +209,7 @@ test('a Claude thread attaches at rest with its session and account, queues owne
   await f.waitFor(() => claude.turnStarts.length, (count) => count === 3); await rest(f, threadId);
   expect(claude.turnStarts[2]!.resume).toEqual({ sessionId: adopted });
   expect(claude.turnStarts[2]!.prompt).toMatch(/^Project now \([\d:]+\):/u); expect(withoutFollowupRoute(claude.turnStarts[2]!.prompt).endsWith('Also rename the cancel button.')).toBe(true);
+  await f.waitFor(async () => (await f.index(threadId))?.usage?.turns, turns => turns === 3);
   expect(states(f, threadId).slice(-4)).toEqual(['attached', 'idle', 'running', 'idle']);
   expect(f.thread(threadId).queuedMessages).toEqual([]);
 

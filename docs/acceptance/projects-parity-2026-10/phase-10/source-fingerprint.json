@@ -1,0 +1,20 @@
+{
+  "schema": "parity-source-fingerprint-v1",
+  "label": "live",
+  "baseCommit": "b5b2dd431aa3bc91b431f255d13ff8786cbcb60d",
+  "version": "0.4.1",
+  "sha256": "47270b21ac63d1c73e9c23b2d760ace4e0201d043c3e0bfafce072d1215cb551",
+  "files": 502,
+  "algorithm": "Sorted tracked apps, packages, runtimes and scripts plus root package/lock/Playwright/Vitest configuration: path, NUL, SHA256(file bytes). Documentation and tests are excluded.",
+  "productionFrozenThroughDecision": 907,
+  "testFixtureChangesAfterRunStarted": [
+    909,
+    910,
+    911,
+    912,
+    913,
+    914,
+    915
+  ],
+  "installed": false
+}

@@ -7,7 +7,7 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import {
   BridgeToolSchemas, COORDINATOR_TOOLS, CoordinatorEventSchema, DeviceSchema, FileReservationSchema, Homes, MAIL_PAGE_BYTES, PlacementRecordSchema, ProjectMailSchema, ProjectSchema, SecretRedactor, ThreadIndexSchema,
-  ThreadSchema, mailReaches, pathsOverlap, projectToolNames, reservationActive,
+  ThreadSchema, defaultProjectWorkSettings, mailReaches, pathsOverlap, projectToolNames, reservationActive,
   type CoordinatorEvent, type ProjectHub, type ProjectMail, type ReservationRequest, type Thread, type ThreadIndex,
 } from '../packages/core/dist/index.js';
 import {
@@ -80,15 +80,15 @@ test('the overlap rule is equal paths or a directory prefix ending in /, in eith
 
 test('scope lists: main threads get mail and reservations, worktree threads do not, and the coordinator mails without an inbox (brief 7.1, 7.2)', async () => {
   const mainTools = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'];
-  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
-  expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
+  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
+  expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).toEqual(['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   expect(projectToolNames({ kind: 'coordinator' })).toEqual([...COORDINATOR_TOOLS]);
   expect(projectToolNames({ kind: 'coordinator' })).toContain('jevellan_mail_send');
   for (const name of ['jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release', 'jevellan_thread_report']) expect(projectToolNames({ kind: 'coordinator' })).not.toContain(name);
   // Through a turn's tools: the list guard refuses before any handler runs.
   threads(); const service = mailService('dev_a');
   const worktree = tools({ kind: 'thread', projectId: 'project', threadId: W, turn: 1, isolation: 'worktree' }, service);
-  expect(worktree.list().tools.map((tool) => tool.name)).toEqual(['jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
+  expect(worktree.list().tools.map((tool) => tool.name)).toEqual(['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   for (const name of mainTools) expect(await rejects(worktree.call(name as never, name === 'jevellan_reserve' ? { paths: ['src/'] } : {}))).toEqual({ status: 403, message: TOOL_NOT_IN_TURN });
   const main = tools({ kind: 'thread', projectId: 'project', threadId: T1, turn: 1, isolation: 'main' }, service);
   expect(main.list().tools.map((tool) => tool.name)).toEqual(projectToolNames({ kind: 'thread', isolation: 'main' }));
@@ -355,6 +355,7 @@ test('the coordinator mails main threads by id or all, its chat line names the t
   const handlers = coordinatorToolHandlers({ deviceId: 'dev_a', deviceName: 'Mac mini', threads: {} as never, store: { get: () => undefined }, decisions: {} as never, pullRequests: {} as never,
     hub, ledgers: {} as never, mail: service, roster: async () => { throw new Error('No roster in this test.'); }, memory: async () => { throw new Error('No memory in this test.'); }, now: () => now });
   const scope = { kind: 'coordinator', projectId: 'project', turn: 3 } as const;
+  await expect(Promise.resolve().then(() => Reflect.apply(handlers.call, handlers, [scope, 'jevellan_thread_start', {}, new AbortController().signal]))).rejects.toMatchObject({ message: TOOL_NOT_IN_TURN, status: 403 });
   const call = (input: unknown) => handlers.call(scope, 'jevellan_mail_send', BridgeToolSchemas.jevellan_mail_send.parse(input), new AbortController().signal) as Promise<Record<string, unknown>>;
   const direct = await call({ to: T2, subject: 'Plan', body: 'Wait for T1.' });
   expect(direct).toEqual({ schema: 'mail-send-result-v1', mailId: expect.stringMatching(/^mail_/) });
@@ -387,6 +388,7 @@ test('a main thread gives its reservations back when it stops or fails; a worktr
     turns: 1, turnAllowance: 30, queuedMessages: [], verificationAttempts: 0, ...fields });
   const real = mailService('dev_a'); const released: string[] = [];
   const context = { deviceId: 'dev_a', deviceName: 'Mac mini', redactor: new SecretRedactor(), store: threadStore, ledgers, now: () => now, rested: () => undefined,
+    workSettings: async () => defaultProjectWorkSettings('project'),
     admission: { admit: async () => ({ ok: true, release: () => undefined }) },
     decisions: { withdrawTurnLimit: async () => undefined }, toCoordinator: async () => undefined, enterOperation: () => () => undefined,
     project: async () => { throw new Error('The checkout is gone.'); },

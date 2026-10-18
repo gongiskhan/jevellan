@@ -15,6 +15,19 @@ function fixture(platform: 'darwin' | 'linux', run: ServiceCommand) {
   return { root, manager, spec, definition };
 }
 
+test.each(['darwin', 'linux'] as const)('%s named member services never touch the independent default hub', async platform => {
+  const { root, spec, definition: hub } = fixture(platform, async () => 0);
+  const before = readFileSync(hub.path, 'utf8');
+  const recorded: string[][] = [];
+  const manager = new UserServiceManager({ platform, userHome: root, uid: 502, name: 'member', run: async (_command, args) => { recorded.push([...args]); return 0; } });
+  const member = manager.definition({ ...spec, home: join(root, '.jevellan-member') });
+  expect(member.path).toBe(platform === 'darwin' ? join(root, 'Library/LaunchAgents/dev.jevellan.member.daemon.plist') : join(root, '.config/systemd/user/jevellan-member.service'));
+  mkdirSync(dirname(member.path), { recursive: true }); writeFileSync(member.path, serviceContents(member));
+  await manager.start(member); await manager.stop(member);
+  expect(readFileSync(hub.path, 'utf8')).toBe(before);
+  expect(recorded.flat().join(' ')).not.toContain(platform === 'darwin' ? 'gui/502/dev.jevellan.daemon' : ' jevellan.service');
+});
+
 test.each(['darwin', 'linux'] as const)('%s service lifecycle uses only the owned service and propagates failures', async platform => {
   const calls: { command: string; args: readonly string[] }[] = []; let fail = false; let loaded = false;
   const { manager, definition } = fixture(platform, async (command, args) => {

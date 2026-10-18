@@ -190,8 +190,9 @@ test('after a reply to a no-progress stop, Jev answers it with a reply step and 
 
 test('a stale in-flight classification is discarded after a new user message', async () => {
   let release!: () => void;
-  transport.mockImplementationOnce(async (_url, init) => { const body = JSON.parse(String(init!.body)) as Wire; calls.push({ state: JSON.parse(body.state), questions: body.questions }); return new Promise<Response>((resolve) => { release = () => resolve(answer(body, 'implement')); }); });
-  actions = ['reply', 'done']; enqueue(); await create(); await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+  let requested!: () => void; const requestStarted = new Promise<void>(resolve => { requested = resolve; });
+  transport.mockImplementationOnce(async (_url, init) => { const body = JSON.parse(String(init!.body)) as Wire; calls.push({ state: JSON.parse(body.state), questions: body.questions }); return new Promise<Response>((resolve) => { release = () => resolve(answer(body, 'implement')); requested(); }); });
+  actions = ['reply', 'done']; enqueue(); await create(); await requestStarted; expect(release).toBeTypeOf('function');
   const response = await request('/api/conversations/automatic/messages', { schema: 'conversation-message-v1', clientMessageId: 'changed', text: 'Only explain it. Do not edit.', kind: 'message' }); expect(response.status).toBe(200);
   release(); const result = await finished();
   expect(result.conversation.state, result.pause?.reason).toBe('done'); expect(fake.starts.map((step) => step.action)).toEqual(['reply']); expect(result.decisions.map((decision) => decision.action.chosen)).toEqual(['reply', 'done']);
@@ -242,9 +243,11 @@ test('decision retry cannot bypass a guard that stopped the work', async () => {
 
 test('cancelling an in-flight Jev request never launches or records its late classification', async () => {
   let release!: () => void; let signal: AbortSignal | undefined;
-  transport.mockImplementationOnce(async (_url, init) => { signal = init!.signal ?? undefined; const body = JSON.parse(String(init!.body)) as Wire; return new Promise<Response>((resolve) => { release = () => resolve(answer(body, 'implement')); }); });
-  await create(); await vi.waitFor(() => expect(release).toBeTypeOf('function'));
-  const cancelled = app.conversations.cancel('automatic'); await vi.waitFor(() => expect(signal?.aborted).toBe(true)); release(); await cancelled;
+  let requested!: () => void; const requestStarted = new Promise<void>(resolve => { requested = resolve; });
+  transport.mockImplementationOnce(async (_url, init) => { signal = init!.signal ?? undefined; const body = JSON.parse(String(init!.body)) as Wire; return new Promise<Response>((resolve) => { release = () => resolve(answer(body, 'implement')); requested(); }); });
+  await create(); await requestStarted; expect(release).toBeTypeOf('function');
+  const aborted = new Promise<void>(resolve => { if (signal?.aborted) resolve(); else signal?.addEventListener('abort', () => resolve(), { once: true }); });
+  const cancelled = app.conversations.cancel('automatic'); await aborted; expect(signal?.aborted).toBe(true); release(); await cancelled;
   expect((await view()).conversation.state).toBe('cancelled'); expect((await view()).decisions).toEqual([]); expect(fake.starts).toEqual([]); expect(git(path, 'rev-parse', 'HEAD')).toBe(initial);
 });
 

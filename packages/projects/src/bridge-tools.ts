@@ -344,6 +344,8 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
   }
   return {
     call: (scope, name, input, signal) => {
+      // Refuse legacy callers explicitly: external thread_start is a queued-task API.
+      if ((name as string) === 'jevellan_thread_start') throw failure(TOOL_NOT_IN_TURN, 403);
       if (name === 'jevellan_library_list' || name === 'jevellan_library_get' || name === 'jevellan_library_add') return libraryTool(o.library, scope, name, input);
       if (name === 'jevellan_terminal_read') { if (!o.terminalRead) throw new Error('Owner terminals are unavailable.'); return o.terminalRead(scope, input); }
       if (name === 'jevellan_github') {

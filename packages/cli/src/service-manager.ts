@@ -5,6 +5,7 @@ import { dirname, isAbsolute, join } from 'node:path';
 import { resolvedPath } from '@jevellan/core';
 import { z } from 'zod';
 
+export const InstallationNameSchema = z.string().regex(/^[a-z][a-z0-9-]{0,30}$/u);
 const line = z.string().min(1).refine(value => [...value].every(char => char.charCodeAt(0) >= 32 && char.charCodeAt(0) !== 127), 'Expected a single line.');
 const absolute = line.refine(isAbsolute, 'Expected an absolute path.');
 export const ServiceSpecSchema = z.strictObject({
@@ -18,7 +19,7 @@ export const ServiceSpecSchema = z.strictObject({
 export type ServiceSpec = z.infer<typeof ServiceSpecSchema>;
 export const ServiceDefinitionSchema = z.strictObject({
   schema: z.literal('service-definition-v1'),
-  platform: z.enum(['darwin', 'linux']),
+  platform: z.enum(['darwin', 'linux']), name: InstallationNameSchema.optional(),
   path: absolute,
   spec: ServiceSpecSchema,
 });
@@ -38,13 +39,13 @@ function unitValue(value: string): string {
 }
 
 export function serviceContents(input: ServiceDefinition): string {
-  const { platform, spec } = ServiceDefinitionSchema.parse(input);
+  const { platform, spec, name } = ServiceDefinitionSchema.parse(input);
   const args = [spec.node, spec.entry, 'start', '--port', String(spec.port)];
   const cwd = dirname(dirname(spec.entry));
   if (platform === 'darwin') return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-<key>Label</key><string>dev.jevellan.daemon</string>
+<key>Label</key><string>${name ? `dev.jevellan.${name}.daemon` : 'dev.jevellan.daemon'}</string>
 <key>ProgramArguments</key><array>${args.map(value => `<string>${xml(value)}</string>`).join('')}</array>
 <key>WorkingDirectory</key><string>${xml(cwd)}</string>
 <key>EnvironmentVariables</key><dict><key>JEVELLAN_HOME</key><string>${xml(spec.home)}</string><key>PATH</key><string>${xml(spec.path)}</string></dict>
@@ -91,19 +92,20 @@ export const runServiceCommand: ServiceCommand = (command, args) => new Promise(
 export class UserServiceManager implements ServiceManager {
   private readonly path: string;
   private readonly domain: string;
-  constructor(private readonly options: { platform: 'darwin' | 'linux'; userHome: string; uid: number; run: ServiceCommand }) {
+  constructor(private readonly options: { platform: 'darwin' | 'linux'; userHome: string; uid: number; run: ServiceCommand; name?: string }) {
+    if (options.name !== undefined) InstallationNameSchema.parse(options.name);
     absolute.parse(options.userHome); z.number().int().nonnegative().parse(options.uid);
     this.path = options.platform === 'darwin'
-      ? join(options.userHome, 'Library', 'LaunchAgents', 'dev.jevellan.daemon.plist')
-      : join(options.userHome, '.config', 'systemd', 'user', 'jevellan.service');
+      ? join(options.userHome, 'Library', 'LaunchAgents', options.name ? `dev.jevellan.${options.name}.daemon.plist` : 'dev.jevellan.daemon.plist')
+      : join(options.userHome, '.config', 'systemd', 'user', options.name ? `jevellan-${options.name}.service` : 'jevellan.service');
     this.domain = `gui/${options.uid}`;
   }
   definition(spec: ServiceSpec): ServiceDefinition {
-    return ServiceDefinitionSchema.parse({ schema: 'service-definition-v1', platform: this.options.platform, path: this.path, spec });
+    return ServiceDefinitionSchema.parse({ schema: 'service-definition-v1', platform: this.options.platform, ...(this.options.name ? { name: this.options.name } : {}), path: this.path, spec });
   }
   private verify(input: ServiceDefinition): ServiceDefinition {
     const definition = ServiceDefinitionSchema.parse(input);
-    if (definition.platform !== this.options.platform || definition.path !== this.path || resolvedPath(this.path) !== this.path) throw new Error('The service path does not belong to this installation.');
+    if (definition.platform !== this.options.platform || definition.name !== this.options.name || definition.path !== this.path || resolvedPath(this.path) !== this.path) throw new Error('The service path does not belong to this installation.');
     if (!serviceContentsVariants(definition).includes(readFileSync(this.path, 'utf8'))) throw new Error('The service definition has changed outside Jevellan.');
     return definition;
   }
@@ -115,18 +117,18 @@ export class UserServiceManager implements ServiceManager {
   async start(input: ServiceDefinition): Promise<void> {
     const definition = this.verify(input);
     if (this.options.platform === 'darwin') {
-      const target = `${this.domain}/dev.jevellan.daemon`;
+      const target = `${this.domain}/${this.options.name ? `dev.jevellan.${this.options.name}.daemon` : 'dev.jevellan.daemon'}`;
       if (await this.options.run('/bin/launchctl', ['print', target]) !== 0) await this.command(['bootstrap', this.domain, definition.path]);
       await this.command(['kickstart', target]);
     } else {
       await this.command(['--user', 'daemon-reload']);
-      await this.command(['--user', 'enable', '--now', 'jevellan.service']);
+      await this.command(['--user', 'enable', '--now', this.options.name ? `jevellan-${this.options.name}.service` : 'jevellan.service']);
     }
   }
   async stop(input: ServiceDefinition): Promise<void> {
     const definition = this.verify(input);
     if (this.options.platform === 'darwin') {
-      const target = `${this.domain}/dev.jevellan.daemon`;
+      const target = `${this.domain}/${this.options.name ? `dev.jevellan.${this.options.name}.daemon` : 'dev.jevellan.daemon'}`;
       const code = await this.options.run('/bin/launchctl', ['bootout', target]);
       if (code !== 0) {
         // Confirm an accessible GUI domain and an absent service, rather than ignoring every failure.
@@ -135,10 +137,10 @@ export class UserServiceManager implements ServiceManager {
       }
     } else {
       const legacy = readFileSync(this.path, 'utf8') !== serviceContents(definition);
-      const code = await this.options.run('systemctl', ['--user', 'disable', '--now', 'jevellan.service']);
+      const code = await this.options.run('systemctl', ['--user', 'disable', '--now', this.options.name ? `jevellan-${this.options.name}.service` : 'jevellan.service']);
       if (code !== 0) {
         // A known invalid legacy unit was never loaded. A live manager and an inactive unit are required before replacement.
-        const inactive = legacy ? await this.options.run('systemctl', ['--user', 'is-active', '--quiet', 'jevellan.service']) : 0;
+        const inactive = legacy ? await this.options.run('systemctl', ['--user', 'is-active', '--quiet', this.options.name ? `jevellan-${this.options.name}.service` : 'jevellan.service']) : 0;
         if (!legacy || ![3, 4].includes(inactive) || await this.options.run('systemctl', ['--user', 'show-environment']) !== 0)
           throw new Error(`Jevellan's service manager failed (systemctl, exit ${code}).`);
       }
@@ -149,8 +151,8 @@ export class UserServiceManager implements ServiceManager {
   }
 }
 
-export function nativeServiceManager(): ServiceManager {
+export function nativeServiceManager(name?: string): ServiceManager {
   if (process.platform !== 'darwin' && process.platform !== 'linux') throw new Error('Jevellan services require macOS or Linux.');
   if (!process.getuid) throw new Error('A user service identity is unavailable.');
-  return new UserServiceManager({ platform: process.platform, userHome: resolvedPath(homedir()), uid: process.getuid(), run: runServiceCommand });
+  return new UserServiceManager({ platform: process.platform, userHome: resolvedPath(homedir()), uid: process.getuid(), run: runServiceCommand, ...(name ? { name } : {}) });
 }

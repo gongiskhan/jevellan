@@ -680,8 +680,8 @@ test('interface copy: brief-verbatim texts, shared server texts and no conversat
   expect(copy.takeOverLine('Mac mini', server.attachCommand('thread_a'))).toBe('Take over in a terminal on Mac mini: jevellan thread attach thread_a');
   expect(`${copy.takeOverLead('Mac mini')} ${server.attachCommand('thread_a')}`).toBe(copy.takeOverLine('Mac mini', server.attachCommand('thread_a')));
   expect(copy.savedUpdated('Oct 4, 2026')).toBe('Saved · updated Oct 4, 2026');
-  expect([copy.NOTEBOOK_CHANGED, copy.LEAVE_GIT_SETTING, copy.ALLOW_MORE_TURNS, copy.MERGE_BLOCKED_CONFLICTS, copy.MERGE_BLOCKED_CHECKS, copy.THREAD_ENDED,
-    copy.WORKTREE_DISCARDED]).toEqual([server.NOTEBOOK_CHANGED, server.LEAVE_GIT_SETTING, server.ALLOW_MORE_TURNS, server.MERGE_CONFLICTS,
+  expect([copy.NOTEBOOK_CHANGED, copy.ALLOW_MORE_TURNS, copy.MERGE_BLOCKED_CONFLICTS, copy.MERGE_BLOCKED_CHECKS, copy.THREAD_ENDED,
+    copy.WORKTREE_DISCARDED]).toEqual([server.NOTEBOOK_CHANGED, server.ALLOW_MORE_TURNS, server.MERGE_CONFLICTS,
     server.MERGE_CHECKS_FAILING, server.THREAD_ENDED, server.WORKTREE_DISCARDED.trim()]);
   expect(copy.discardQuestion('jv/fix-login-abc123')).toBe('Remove the worktree and local branch jv/fix-login-abc123?');
   expect(copy.GITHUB_TOKEN_HELP).toBe('Used only to open, read and merge pull requests for Jevellan threads. A fine-grained token with Pull requests read and write, Contents read and write, Checks read and Commit statuses read on your repositories is enough.');
@@ -694,7 +694,10 @@ test('interface copy: brief-verbatim texts, shared server texts and no conversat
     else if (typeof value === 'function') collect((value as (...args: unknown[]) => unknown)('Sample', 3, 'Sample', 'Sample'));
     else if (value && typeof value === 'object') Object.values(value).forEach(collect);
   };
-  Object.values(copy).forEach(collect);
+  Object.entries(copy).forEach(([name, value]) => {
+    if (name === 'placementConstraintText') collect(copy.placementConstraintText(['Sample'], 'high'));
+    else collect(value);
+  });
   expect(texts.length).toBeGreaterThan(120);
   for (const value of texts) {
     expect(value, value).not.toMatch(/conversation|stretch|handoff/i);

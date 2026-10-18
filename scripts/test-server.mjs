@@ -1009,8 +1009,8 @@ improverControl = createServer((request, response) => {
     for (const n of [1, 2, 3]) if (!application.hub.get('overrides', `improver_plan_${n}`, OverrideRecordSchema)) correction('plan', n, 'plan', 'claude-fable', 'claude-sonnet');
     response.writeHead(204).end(); return;
   }
-  // The control listener binds after all seeding, so this is the --projects servers' readiness check.
-  if (projectsMode && request.method === 'GET' && request.url === '/projects/ready') { response.writeHead(204).end(); return; }
+  // The ordinary HTTP health listener binds before the member and accounts are seeded. Readiness belongs here for every fixture.
+  if (request.method === 'GET' && (request.url === '/ready' || projectsMode && request.url === '/projects/ready')) { response.writeHead(204).end(); return; }
   if (projectsMode && request.method === 'POST' && request.url?.startsWith('/projects/')) {
     const work = projectControl(request, response).catch((error) => { if (response.headersSent) response.destroy(); else response.writeHead(500, { 'Content-Type': 'application/json' }).end(JSON.stringify({ message: error instanceof Error ? error.message : 'The control request failed.' })); })
       .finally(() => controlWork.delete(work));

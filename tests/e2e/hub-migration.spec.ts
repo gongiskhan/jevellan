@@ -46,7 +46,7 @@ test('migrated conversation history and Project Settings stay usable on the new 
     const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     await page.goto(url); await page.getByRole('textbox', { name: 'Passphrase', exact: true }).fill(passphrase);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Migration fixture', exact: true })).toBeVisible();
     await page.goto(`${url}/settings/projects`);
     await expect(page.getByRole('heading', { name: 'Migration fixture', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Edit', exact: true }).click();

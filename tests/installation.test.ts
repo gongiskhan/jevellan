@@ -25,7 +25,7 @@ afterEach(async () => {
   roots.splice(0).forEach(root => rmSync(root, { recursive: true, force: true }));
 });
 function file(path: string, value: string) { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, value); return path; }
-function fixture(httpsService?: HttpsService) {
+function fixture(httpsService?: HttpsService, name?: string) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan-installation-'))); roots.push(root);
   const user = join(root, 'user'); mkdirSync(user); const homes = new Homes(join(user, '.jevellan'), user);
   const canaries = ['.claude/settings.json', '.codex/config.toml', '.basic-memory/config.json', 'dev/garrison/reference.txt', '.zshrc'];
@@ -38,7 +38,7 @@ function fixture(httpsService?: HttpsService) {
   };
   let running = false, failStart = false, failStop = false, joinFetch: typeof fetch | undefined;
   const calls: string[] = [], messages: string[] = [];
-  const native = new UserServiceManager({ platform: 'darwin', userHome: user, uid: 502, run: async () => { throw new Error('Native services must never run in installer tests.'); } });
+  const native = new UserServiceManager({ platform: 'darwin', userHome: user, uid: 502, ...(name ? { name } : {}), run: async () => { throw new Error('Native services must never run in installer tests.'); } });
   let onStop: () => void | Promise<void> = () => {}, onStart: () => void | Promise<void> = () => {};
   const manager: ServiceManager = {
     definition: spec => native.definition(spec),
@@ -46,8 +46,8 @@ function fixture(httpsService?: HttpsService) {
     stop: async definition => { expect(readFileSync(definition.path, 'utf8')).toBe(serviceContents(definition)); await onStop(); calls.push(`stop:${definition.spec.entry}`); if (failStop) throw new Error('Simulated stop failure'); running = false; },
     removed: async () => { calls.push('removed'); },
   };
-  const open = () => {
-    const installer = new Installer({ homes, manager, alive: () => running, ready: async () => { if (!running) throw new Error('The fake service is not running.'); }, tailscale: async () => null, intervalMs: 5, progress: message => messages.push(message),
+  const open = (explicitName = true) => {
+    const installer = new Installer({ homes, manager, ...(explicitName && name ? { name } : {}), alive: () => running, ready: async () => { if (!running) throw new Error('The fake service is not running.'); }, tailscale: async () => null, intervalMs: 5, progress: message => messages.push(message),
       ...(httpsService ? { httpsService } : {}),
       ...(joinFetch ? { joinFetch } : {}),
       installTools: async files => {
@@ -333,4 +333,25 @@ test('data-retaining uninstall also removes recorded unfinished application prep
   await installer.uninstall(); expect(existsSync(prepared.path)).toBe(false); expect(existsSync(staging)).toBe(false);
   expect(installer.files.load().pendingCopy).toBeUndefined(); expect(installer.files.load().distributions).toEqual([]);
   expect(readFileSync(kept, 'utf8')).toBe('Saved conversation'); f.unchanged();
+});
+
+
+test('named installation update, rollback and removal retain the default hub service and command', async () => {
+  const f = fixture(undefined, 'member');
+  const hubService = file(join(f.homes.userHome, 'Library/LaunchAgents/dev.jevellan.daemon.plist'), 'independent hub service');
+  const hubCommand = file(join(f.homes.userHome, '.local/bin/jevellan'), 'independent hub command');
+  let installer = f.open();
+  const installed = await installer.install(f.source());
+  expect(installed.command).toBe(join(f.homes.userHome, '.local/bin/jevellan-member'));
+  expect(installer.files.load().name).toBe('member');
+  installer.close(); installer = f.open(false);
+  expect((await installer.update(f.source('0.2.0'))).version).toBe('0.2.0');
+  expect((await installer.rollback()).version).toBe('0.1.0');
+  await installer.uninstall(); f.unchanged();
+  expect(readFileSync(hubService, 'utf8')).toBe('independent hub service');
+  expect(readFileSync(hubCommand, 'utf8')).toBe('independent hub command');
+  expect(existsSync(installed.command)).toBe(false);
+  expect(installationArguments('install', ['--name', 'member'])).toMatchObject({ name: 'member' });
+  expect(() => installationArguments('install', ['--name', '../hub'])).toThrow('Usage:');
+  expect(() => installationArguments('update', ['--name', 'member'])).toThrow('Usage:');
 });

@@ -128,7 +128,7 @@ export const MOVING_COORDINATOR = 'Moving…';
 export const FRESH_STARTED = 'The next coordinator turn starts a fresh session.';
 export const RECONNECTING = 'Reconnecting…';
 
-// 12.2 Sections, their empty lines and the tab bar below 1180 px
+// 12.2 Sections, their empty lines and the phone view below 840 px
 export const WAITING_FOR_YOU = 'Waiting for you';
 export const RUNNING = 'Running';
 export const PULL_REQUESTS = 'Pull requests';
@@ -275,7 +275,6 @@ export const notebookUpdated = (by: 'coordinator' | 'owner', when: string): stri
 // 12.2 Project settings modal
 export const DEFAULT_ISOLATION = 'Default isolation';
 export const WORKTREE_AND_PULL_REQUEST = 'Worktree and pull request';
-export const LEAVE_GIT_SETTING = 'This project is set to Leave git to me.';
 export const COORDINATOR_MODEL = 'Coordinator model';
 export const AUTOMATIC_FIRST_AVAILABLE = 'Automatic: first available';
 export const COORDINATOR_EFFORT = 'Coordinator effort';

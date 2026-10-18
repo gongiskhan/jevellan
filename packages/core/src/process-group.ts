@@ -92,8 +92,13 @@ async function terminateOwned(native: NativeProcess, graceMs: number, childrenOn
     return childrenOnly ? alive.filter((row) => row.pid !== native.pid) : alive;
   };
   const signal = (pid: number, name: NodeJS.Signals) => {
-    try { process.kill(pid, name); }
-    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error; }
+    try { process.kill(pid, name); return true; }
+    catch (error) {
+      // A short-lived descendant can refuse a signal during an exec/permission transition. Never
+      // claim it stopped: the bounded fresh identity scans below must still confirm every exit.
+      if (!['ESRCH', 'EPERM'].includes((error as NodeJS.ErrnoException).code ?? '')) throw error;
+      return false;
+    }
   };
   let alive = await observe(); if (!alive.length) return;
   // Capture ancestry before stopping the parent: native shell tools may have
@@ -104,7 +109,7 @@ async function terminateOwned(native: NativeProcess, graceMs: number, childrenOn
   while (alive.length && Date.now() < deadline) {
     for (const row of alive) {
       const identity = `${row.pid}:${row.start}`;
-      if (!signalled.has(identity)) { signal(row.pid, 'SIGTERM'); signalled.add(identity); }
+      if (!signalled.has(identity) && signal(row.pid, 'SIGTERM')) signalled.add(identity);
     }
     await delay(50); alive = await observe();
   }

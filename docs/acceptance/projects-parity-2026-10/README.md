@@ -242,3 +242,111 @@ Live:5e11ad0e is pushed after its normal history secret scan. Phase9 starts2026-
 ## Phase9 checkpoint
 
 Simulated:153 affected backend cases pass across8files, including owner HTTP and member relay, first/explicit triggers, once guards, selected/edited atomic Apply, retries, stale revisions, paused goals, environment names and dismissal. PAR9 passes all4layouts with16 screenshots;16 dedicated vision receipts say not run. Typecheck, lint and production build pass. No source installation or real LP9 acceptance is claimed. Decision893 and phase-9/ hold the evidence.
+
+
+## Phase9 push and phase10 start
+
+Live: b5b2dd43 is pushed on main with its normal history secret scan. Phase10 starts at2026-10-18T01:25:00Z. The original build deadline remains2026-10-18T04:59:21Z; the live clock is unstarted. No additional feature phase is planned.
+
+894. Preserve the complete pre-closing Projects and loop references, byte for byte, as projects-history.md and loop-history.md before replacing the public references with current behavior. This replaces the accumulation of dated delivery claims in the current reference; historical decisions and evidence remain available in their original order.
+
+
+## Closing regressions in progress
+
+Simulated, failed-before: overlapping pulses ran4 concurrent task sweeps, expected1. Named member managers targeted the default hub service on both OS fixtures. Existing Git2.56 dropped-commit receipt cases fail in isolation. Decisions895–897 describe the narrow repairs; their passing tests and full-suite status follow.
+
+Not run for Nightly behavior: the first four-layout LJ5 preflight failed two real sign-in requests, one workspace navigation and one Chrome context setup before reaching the nightly assertions. No test deadlines or assertions were loosened. A fresh four-layout run follows the sweep fix.
+
+Simulated closing checkpoint: the initial7-file regression batch has179 passes,4 failures and2 Linux-only skips. All61 Git policy cases and the named install/service tests pass. The4 failures (missing setup icon, stale Library tool lists, missing work-settings fixture and copy-function argument fixture) were reproduced separately, repaired, and pass4/4. The sweep/shutdown case separately fails before both repairs and passes afterwards. LJ6 now has a reached-journey failing-before receipt for the stale Queue navigation (Decision898).
+
+Live readiness before installation: Pro's existing0.3.6 daemon fails a5-second health request and doctor cannot reach its private control route. Its process is present. This is not a0.5.0 acceptance result; installation must preserve cold rollback and verify readiness. The separate Madrid0.4.1 hub is healthy and its service/CLI fingerprints are retained.
+
+Simulated, failed-before: a normal browser fixture's after-seeding `/ready` route answers404; its real member/account-seeding regression expects204 and a usable owner-authenticated roster. Full-browser startup repeatedly fails before any journey. A private timing probe finds one complete Projects seed takes17.699seconds; eight ordinary/improver hubs previously advertised health earlier and overlapped remaining setup. Decision899 corrects readiness for every fixture without increasing deadlines or serializing the four layout journeys. The new regression and concurrent LJ5/LJ6 run follow.
+
+Live: the unresponsive Pro0.3.6 service and its two owned memory helpers stop cleanly. A full APFS clone plus exact service/CLI files completes at2026-10-18T01:47:24Z in the private rollback folder. No owned runtime turn was active. The old service remains stopped pending verified0.5.0 activation; the live clock remains unstarted. Mini and Madrid installations are still unchanged.
+
+Simulated: the new normal-fixture readiness regression passes, including a real owner sign-in and seeded member roster. The four-layout startup still approaches its unchanged60-second limit under combined load, so a private timing-only probe records the slow stages; no Nightly assertion has been claimed as passed. Cleanup reproduces EPERM on a short-lived descendant. New signal-refusal tests fail before the bounded confirmation repair; persistent refusal must remain a failure (Decision900). Legacy runner fixtures also exposed ten real-host-load refusals and now use explicit simulated facts (Decision902).
+
+A private source snapshot is installed for Linux verification under Madrid's build folder (Decision901). It is not a source branch or worktree and does not change either installed Madrid service. The initial snapshot and local run are diagnostic while closing fixes continue; final verification must identify the stable source.
+
+903. Account-readiness hub outages now retain the existing once-per-wait ledger notice as well as the pending turn and Waiting for hub state. This repairs the P5 early account check replacing the older exception path without its notice. The unchanged PJ5 relay test fails twice with zero notices instead of one before repair; repeated sweeps must still write exactly one.
+
+Live maintenance update: the original Pro LaunchAgent is bootstrapped again from its unchanged, backed-up unit at2026-10-18T02:20Z while final checks continue. The cold rollback remains retained. Initial health is not yet confirmed; this is not0.5.0 activation and does not start the live clock.
+
+Simulated: all22 other cross-device/publication/runner cases pass in the3-file closing batch; PJ5 alone reproduces the missing-notice failure. Its unchanged full relay journey then passes after Decision903 (135.088seconds of test work), including outage, retry order and no duplicate notices. The Mac LJ5/LJ6 attempt again fails fixture startup before reaching either Nightly assertion.
+
+904. The cancellation fixture waits for its actual mocked request and abort events, under the unchanged60-second test limit, instead of assuming filesystem preparation reaches Jev within vi.waitFor's implicit one second. This replaces the old polling setup race reproduced in the four-worker Linux run (release was undefined). The late-answer, no-decision, no-launch and unchanged-HEAD assertions remain intact.
+
+Live: the restored Pro0.3.6 HTTPS health returns200/ok and its sandbox project UI loads. Mini remains apps-only on0.3.2. Its15 current source files and2 app metadata files are fingerprinted; both original9600/9601 HTTPS routes currently return errors before any member update, so their availability is not claimed.
+
+Simulated: the isolated cancellation case passes before and after the event-synchronization repair; the full four-worker run supplies the failed-before timing receipt. No production cancellation behavior changed.
+
+905. The encrypted-migration browser journey expects the imported first project after sign-in, matching the established Projects-first home route. This replaces its stale Runtimes landing-page assertion; the full Linux run first fails there while its snapshot shows Migration fixture loaded. Project-path editing, retained transcript and byte-identical imported history checks remain unchanged.
+
+Simulated: Decision905's unchanged encrypted-import/settings/history journey passes4/4 layouts on the private Linux copy in17.4seconds. Eight resulting screenshots are in phase-10/migration/. These are browser assertions and captures; dedicated vision remains not run without its test credential.
+
+Simulated, diagnostic: the first combined Linux run reproduces the stale migration landing check, the cancellation-fixture race and a60-second real-memory case timeout. Host observations show41.75 load on16 CPUs and55.5/64.3GiB used while the browser matrix and backend overlap. Backend verification is stopped and will restart at the configured two workers after the full browser run. No timeout is increased; the memory timeout is not yet attributed solely to resource contention.
+
+Simulated: the real-memory timeout case passes in isolation on the Pro in45.99seconds under the unchanged60-second limit. This does not replace a full-suite pass. Typecheck and lint pass again after the closing notice and fixture changes. Two migration screenshots were also inspected directly; that does not substitute for the missing dedicated vision credential.
+
+Simulated, reached-journey failed-before: LJ5 fails in all4 concurrent layouts in the third night, waiting60seconds for the failed-suite window to finish. A captured phone fixture then reaches finished with Deploy correctly skipped, establishing delay rather than an unconditional bypass/deadlock. New backend cleanup coverage fails because every later sweep repeats Git worktree/ref cleanup for already-finished jobs, including across accumulated nights. The repair and rerun follow; no Nightly assertion or deadline changes.
+
+906. Finished job receipts gain optional cleanedAt only after process confirmation, worktree removal and private-ref cleanup succeed. Later sweeps skip the repeated Git work, including after restart; a remaining process record still requires confirmation, and interrupted or legacy cleanup retries before recording completion. This replaces cleaning all historical runs on every sweep. Both new backend regressions fail before repair; the unchanged four-layout LJ5 journey also reproduces the third-night delay before this change.
+
+Simulated: both Decision906 cleanup regressions pass on the Pro in12.66seconds, including restart, retry after an interrupted ref removal, legacy receipts, immutable results and residual-process validation. The first repair is correctly refused by the hub's finished-receipt guard; that guard now permits only monotonic cleanup metadata. A newly seeded legacy fixture also initially has an inconsistent hub revision; its explicit seed revision is corrected, preserving every assertion. The four-layout Nightly rerun is pending.
+
+907. State-change callbacks received during a task sweep request one subsequent sweep; ordinary overlapping pulses still share the current sweep. This replaces Decision895's incomplete single-flight behavior, which could drop a job-completion wake-up. The new callback regression fails with one sweep instead of two, and the broader backend test catches a completed failed-suite/skip pair whose window stays open without periodic timers. Shutdown still cancels and drains, and no deadline changes.
+
+Simulated: all31 affected backend cases pass across lifecycle, daily and nightly-review coverage in83.37seconds after Decisions906–907. That includes the unchanged failed-night gate case which exposed the missed wake-up. The cleanup-only four-layout attempt still fails and is not a pass; the full repair is now in the final Linux verification source.
+
+908. LJ5's idempotent fixture POST helper retries one ECONNRESET using the pinned Playwright API. This extends the existing stale-connection handling for fixture reads, after the real four-layout run fails on its daytime job-run request before opening the night. Every helper request has clientRequestId. Playwright's installed types confirm it retries only that network error, never HTTP status failures; no assertion or deadline changes.
+
+Simulated, not passes: the overlapping final Nightly attempt has an ECONNRESET before window open and a merge-candidate publication exceeding60seconds, alongside the two-worker backend suite. All browser work is now separated from the full backend run. Nightly will run alone before the final full matrix; the latest backend run has no failures at this checkpoint.
+
+Simulated: final source typecheck, lint and production build pass after Decision907. A Mac package dry run lists12,777 entries (868,777,960 unpacked bytes), zero prohibited credential/instruction paths and the Darwin ARM64 PTY addon. A separate private0.5.0 candidate copy is prepared for packaging; it is not installed or published. Final source remains0.4.1 until release gates pass.
+
+Live artifact check, unpublished candidate: the packed Darwin ARM64 archive reports0.5.0 through its real CLI and its bundled native PTY passes. The private candidate's offline dependency-lock dry run passes. No service is updated and no release is published; final acceptance documentation still needs to be included before publication.
+
+Live readiness: Pro has no active managed lifecycle work at this checkpoint and pmset reports AC sleep0. No power command or owner change is needed. A Linux0.5.0 candidate copy is prepared separately from the frozen verification source; its build and installation remain gated. The independent Madrid hub is unchanged.
+
+Simulated, failed: Linux backend2 reaches a90-second conflict-integration test timeout; it is stopped and cannot be claimed as a full pass. The Pro's two-worker attempt has no failures but is also superseded, not combined into a pass. A clean four-worker Pro full suite starts at2026-10-18T03:27Z on the same functional source. Observed Pro capacity is10 cores,32GiB and38% free memory. No timeout, assertion or product setting changes.
+
+Simulated, failed: the separate four-layout LJ5 run still fails at unchanged 60-second waits. Phone light has an executing suite in the first night; desktop light has a published late fix still in-review; the dark layouts reach the third night with a fix still publishing. The earlier merged-fix and suite/deploy gates are visible in the captured state, but these are not four-layout passes. A full browser matrix now runs independently on the same frozen source to retain the rest of the acceptance evidence. No new code repair is inferred from these timing failures.
+
+Live readiness regression: the unchanged Pro0.3.6 service again fails both its HTTPS eight-second health request and its loopback five-second health request at03:40Z, although its original process is present. Lifecycle activity is empty. This supersedes the earlier healthy-readiness observation; no0.5.0 service is involved. Verify and restore the original service after verification load settles, without changing the installed version or owner data.
+
+Live: the unchanged Pro0.3.6 service restarts under its original LaunchAgent after an exclusive lifecycle maintenance gate and confirmed old process termination. It has no child runtime sessions or managed active work. Loopback health returns200/ok0.3.6 at2026-10-18T03:42:55Z. No installation or owner data is replaced; the live0.5.0 clock remains unstarted.
+
+Live: a later HTTPS health probe again times out after8seconds on the unchanged0.3.6 hub. The restart's successful loopback health is a point-in-time observation, not sustained readiness. Leave final readiness unconfirmed until verification load ends and a bounded readiness check completes.
+
+Simulated full-run findings: the Mac suite records60-second read-only lifecycle-capture and120-second active-redo timeouts. The browser matrix also finds a409 settings revision conflict in the desktop-dark legacy redo journey while it disables fixture accounts from an earlier account-list revision. This is distinct from the backend redo timeout; neither is dismissed or counted as passed. The full runs continue to expose all failures before selecting reruns.
+
+909. The legacy missing-report regression now distinguishes a usage limit from an agent failure: it asserts the retained continue turn, account wait, cooling and absence of a synthesized blocked report. This replaces its pre-P5 expectation that a rate limit ends the work. The full run supplies the failed-before receipt; production continuation behavior and timeouts do not change.
+
+Simulated: Decision909's first updated regression verifies the retained pending turn and absence of a blocked report, then fails because its new assertion names Claude while this legacy fixture explicitly uses runtime fake. The assertion now names that fixture runtime; no production behavior or guard changes. The rerun is pending.
+
+Simulated: Decision909's corrected missing-report/limit regression passes in42.54seconds, including its unchanged deadline and exact pending continuation, no blocked report and cooling assertions. Sixteen unrelated cases are filtered, not passed. Production source is unchanged; the full run still includes the old loaded expectation and is not reclassified as green.
+
+910. The stale-classification fixture waits for its actual mocked request before changing the owner's message, just as Decision904's cancellation fixture does. This replaces the same implicit one-second setup poll after the full run fails with release still undefined. The test still delivers the late classification and checks that only the owner's newer read-only request runs; its normal deadline and every stale-result/Git assertion remain unchanged.
+
+Simulated: the stale-classification and cancellation regressions pass together,2cases in26.67seconds with42filtered cases. The normal deadlines, late-result delivery and unchanged-Git checks remain. Typecheck and lint also pass after Decision909. The full loaded run remains failed; focused reruns are separate evidence.
+
+911. PJ2's exact coordinator launch snapshot includes the required read-only Library directory and instructions, and its fresh prompt explicitly asserts the new-project setup block before comparing every prior context line. This replaces the pre-P7/P9 snapshot after the full run fails at that exact launch assertion. Routing, publication batching, session reuse, complete context and event ordering checks remain.
+
+912. Takeover state assertions exclude only same-state ledger updates whose sole changed field is usage, and separately require the exact three-turn/two-turn usage totals. This replaces the pre-P5 assumption that the final four index events are all lifecycle transitions, after both takeover journeys fail with the added usage projection. All attach, session adoption, delivery, confinement and redaction checks remain.
+
+913. The shared-registry bridge regression lists the three required P7 Library tools explicitly alongside every previous thread tool. This replaces its old exact scope list after the full run fails there. Token scope, unauthorized-call and cross-scope refusals remain unchanged.
+
+Simulated: PJ2's updated exact launch/context regression passes in29.73seconds, including both real fixture pull requests, publication batching, session reuse and its full ledger-order checks. Seven unrelated cases are filtered. The loaded full run's earlier snapshot failure remains in that result.
+
+914. The paused reserved-job regression drains the existing ProjectWork sweep before asserting that the runner is idle, and additionally asserts that no job worktree exists. This replaces inspecting the temporary sweep-in-progress flag immediately after a concurrent callback, after the full run fails busy=false. The reserved receipt, no conclusion while paused, and successful execution only after resume are still required; no production pause gate changes.
+
+Simulated: the two takeover journeys and the exact bridge-scope regression pass together,3cases in54.09seconds. Both takeover tests retain their full lifecycle assertions and now independently require exact usage totals;16 unrelated cases are filtered. The paused-job fixture rerun is pending. No production code changed for Decisions909–914.
+
+915. The legacy oversized-report probe crosses the current4000-character report bound, expanding4000 to4005 before readback; synthesized reports keep their separately asserted1200 bound. This replaces the old1200/1205 probe, which is now a valid normal report and therefore is correctly preserved. The full run supplies its failed-before assertion. Stable redaction, legacy read recovery and every shorter bounded-redaction assertion remain; production code is unchanged.
+
+Simulated: the paused reserved-job regression passes in15.08seconds, retaining the receipt while paused, proving no worktree was created and requiring successful execution after resume. Two unrelated cases are filtered.
+
+Simulated: all6 redaction-bound cases pass in5.24seconds with the current4000/4005 legacy probe and the unchanged1200-character synthesized bounds. The full run remains separate. The automatic filtered-rerun controller reaches its04:20Z cutoff without a full JSON result and starts nothing; focused unchanged Codex-contract and read-only memory-capture cases now run separately under one worker.
+
+Closing review: one bounded serious-issues review is recorded in phase-10/closing-review.md. It establishes no additional distinct serious source finding; the reproduced Codex safety-contract failure, LJ5/full-suite failures, unstable installed-hub readiness and missing dedicated vision remain release blockers. No adversarial/security review or second pass is run, and no production edit follows the review.

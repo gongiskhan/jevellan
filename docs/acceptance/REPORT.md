@@ -2386,3 +2386,10 @@ Compatible endpoints extend the Claude account path with explicit served models,
 ## Projects parity phase9
 
 Suggested setup now reaches the coordinator on its eligible first turn or an explicit menu request. The owner edits and selects the proposed values before atomic, revisioned Apply; new goals are paused in Propose mode. Simulated:153 backend cases and PAR9 all4layouts pass, with16 screenshots. Dedicated vision and live LP9 are not run. Decision893; see projects-parity-2026-10/phase-9/.
+
+
+## Projects parity closing source checkpoint
+
+The P0–P9 source checkpoints are pushed. P10 preserves the complete prior Projects/loop references in their history documents, rewrites the current references and saves reproduced closing regressions and their focused evidence. Source typecheck, lint and production build pass. Full verification remains failed or incomplete: LJ5 still fails concurrently, the focused Codex safety contract still ends interrupted, and the unchanged installed Pro0.3.6 hub has unstable readiness. Dedicated vision is not run. One bounded closing serious-issues review is recorded; no second review or new production edit follows it.
+
+This is not a0.5.0 release. No installation, real sandbox journey or owner's acceptance is claimed. Source remains0.4.1, rollback is retained privately, and the live clock has not started. The final run result and owner-first continuation are in projects-parity-2026-10/HANDOFF.md and phase-10/.

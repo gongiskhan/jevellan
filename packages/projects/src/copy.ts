@@ -446,7 +446,6 @@ export function coordinatorToolSummary(tool: string, input: unknown, outcome: To
       return line(typeof number === 'number' ? `Checked PR #${number}` : `Checked ${thread}: no pull request`, `check the pull request of ${thread}`);
     }
     case 'jevellan_pr_diff': return line(`Read the pull request diff of ${thread}`, `read the pull request diff of ${thread}`);
-    case 'jevellan_pr_review': return line(`${field(input, 'verdict') === 'approve' ? 'Approved' : 'Requested changes on'} the pull request of ${thread}`, `review the pull request of ${thread}`);
     case 'jevellan_mail_send': {
       // A thread recipient reads as its title when it is known, like the other thread lines; `all` stays as written.
       const to = textField(input, 'to') ?? ''; const named = to === 'all' || title === undefined ? to : thread;

@@ -14,7 +14,7 @@ afterEach(() => { rmSync(root, { recursive: true, force: true }); });
 
 const redactor = new SecretRedactor();
 const stable = (text: string) => redactor.text(text) === text;
-/** 1,200 characters (the report summary maximum) whose redaction is 1,205: "token" (5) becomes "[redacted]" (10). */
+/** 1,200 characters whose redaction is 1,205: "token" (5) becomes "[redacted]" (10). */
 const SUMMARY = `${'Fixed the parser. '.repeat(70)}`.slice(0, 1200 - ' The middleware reads the Bearer token now.'.length) + ' The middleware reads the Bearer token now.';
 const report = (summary: string) => ({ schema: 'thread-report-v1', turn: 1, status: 'progress', summary, changedFiles: [], synthesized: true });
 const event = (summary: string) => ({ schema: 'coordinator-event-v1', kind: 'thread-report', id: 'cev_bearer', at: '2026-10-05T10:00:00.000Z', threadId: 'thread_x', report: report(summary) });
@@ -67,13 +67,16 @@ test('a stored report that is longer than its maximum (written before this fix) 
   const ledger = new ProjectLedgers(paths, { redactor }).thread('project', 'thread_x');
   ledger.append({ type: 'notice', data: { schema: 'project-notice-v1', text: 'First.', kind: 'info' } });
   const folder = join(paths.thread('project', 'thread_x'), 'ledger'); const file = join(folder, readdirSync(folder).sort().at(-1)!);
-  // The record an earlier version wrote: checked at 1,200 characters, then redacted to 1,205.
-  appendFileSync(file, `${JSON.stringify({ schema: 'project-ledger-event-v1', id: 2, t: '2026-10-05T10:00:00.000Z', type: 'thread-report', data: report(redactor.text(SUMMARY)) })}\n`);
+  // The current report limit is 4,000; synthesized reports separately keep their 1,200-character bound.
+  // Reproduce a legacy writer checking at 4,000 and redacting afterwards to 4,005.
+  const summary = 'x'.repeat(2800) + SUMMARY;
+  expect(summary).toHaveLength(4000); expect(redactor.text(summary)).toHaveLength(4005);
+  appendFileSync(file, `${JSON.stringify({ schema: 'project-ledger-event-v1', id: 2, t: '2026-10-05T10:00:00.000Z', type: 'thread-report', data: report(redactor.text(summary)) })}\n`);
   const stored = new ProjectLedgers(paths, { redactor }).thread('project', 'thread_x');
   const events = stored.events().filter((entry) => entry.type === 'thread-report');
   expect(events).toHaveLength(1);
   const read = stored.payload(events[0] as ProjectLedgerEvent & { type: 'thread-report' });
-  expect(read.summary.length).toBeLessThanOrEqual(1200); expect(stable(read.summary)).toBe(true);
+  expect(read.summary.length).toBeLessThanOrEqual(4000); expect(stable(read.summary)).toBe(true);
 });
 
 test('the outbox takes an event that redaction would lengthen and stores it within its maximum', () => {

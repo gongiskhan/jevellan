@@ -248,7 +248,7 @@ export class ProjectJobRunner {
     await endTurnProcess(readDocument(path, JobProcessSchema)); rmSync(path);
   }
   async cleanup(projectId: string): Promise<void> {
-    const runs = (await this.runs(projectId)).filter(run => run.conclusion && run.deviceId === this.o.deviceId); if (!runs.length) return;
+    const runs = (await this.runs(projectId)).filter(run => run.conclusion && run.deviceId === this.o.deviceId && (!run.cleanedAt || existsSync(this.#processPath(run)))); if (!runs.length) return;
     const project = await this.o.project(projectId), repo = resolveProjectPath(project, this.o.deviceId, this.o.deviceName);
     const entries = parseWorktrees((await this.o.git.run(repo, ['worktree', 'list', '--porcelain', '-z'])).stdout);
     for (const run of runs) {
@@ -256,6 +256,8 @@ export class ProjectJobRunner {
       const path = this.o.homes.at('worktrees', projectId, 'jobs', run.id);
       if (entries.some(row => row.path === path)) { if (!existsSync(path)) rmSync(path, { recursive: true, force: true }); await this.o.git.run(repo, ['worktree', 'remove', '--force', path]); }
       await this.o.git.run(repo, ['update-ref', '-d', threadBaseRef(run.id)]);
+      const latest = (await this.o.hub.jobRun(run.id))?.document;
+      if (latest?.conclusion && latest.deviceId === this.o.deviceId && !latest.cleanedAt) await this.#save({ ...latest, cleanedAt: new Date(this.o.now()).toISOString() });
     }
   }
   async close(): Promise<void> { this.#closed = true; for (const row of this.#running.values()) row.controller.abort(); await Promise.allSettled([...this.#running.values()].map(row => row.promise)); }
