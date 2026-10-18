@@ -447,7 +447,8 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
       {completed && view.canMessage && <p className="pw-composer-note">{copy.THREAD_CONTINUE}</p>}
       {!ended && (
         <fieldset className="pw-fields" disabled={!!block}>
-          <AttachmentControls attachments={attachments} disabled={send.busy || !!block} />
+          {/* A composer that takes no message takes no files either, so it keeps no Attach row (an attached page fits the phone). */}
+          {!block && <AttachmentControls attachments={attachments} disabled={send.busy} />}
           <div className="message-input-row">
             <MessageInput value={text} change={setText} label={copy.THREAD_PLACEHOLDER} placeholder={copy.THREAD_PLACEHOLDER} />
             <div className="message-actions">

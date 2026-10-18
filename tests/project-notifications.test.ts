@@ -1,6 +1,7 @@
 import { afterEach, expect, test } from 'vitest';
 import { createECDH, randomBytes } from 'node:crypto';
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:http';
 import webpush from 'web-push';
@@ -12,7 +13,7 @@ import { projectFixture, projectMember, reportStep, type ProjectFixture } from '
 const roots: string[] = [], hubs: HubDatabase[] = [], services: HubNotifications[] = []; let fixture: ProjectFixture | undefined;
 afterEach(async () => { await fixture?.close(); fixture = undefined; for (const service of services.splice(0)) await service.close(); for (const hub of hubs.splice(0)) hub.close(); for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
 function setup(send: PushSend = async () => ({ statusCode: 201, body: '', headers: {} }), now = Date.now) {
-  const root = mkdtempSync('/private/tmp/jevellan-push-'); roots.push(root); mkdirSync(join(root, 'user')); const hub = new HubDatabase(new Homes(join(root, 'data'), join(root, 'user')), 'hub', new SecretRedactor()); hubs.push(hub);
+  const root = mkdtempSync(join(tmpdir(), 'jevellan-push-')); roots.push(root); mkdirSync(join(root, 'user')); const hub = new HubDatabase(new Homes(join(root, 'data'), join(root, 'user')), 'hub', new SecretRedactor()); hubs.push(hub);
   const service = new HubNotifications(hub, () => 'https://fixture.example', send, now); services.push(service); return { hub, service };
 }
 function subscribe(service: HubNotifications, endpoint = 'https://push.example/one') {
