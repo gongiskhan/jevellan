@@ -184,3 +184,58 @@ After the restarts:
 Procedure deviations, recorded as they happened:
 - The Pro's 0.4.1 archive build (npm ci and build, 19:53:53 to 19:54:20, phase 1 preparation) overlapped the Madrid member copy. From then on heavy jobs ran strictly one at a time across both machines.
 - Phase 1 steps 1 to 3 on Madrid (19:58 to 20:00) started while the phase 0 manifests were still hashing the finished copies, before this phase 0 commit. The copies themselves were complete and untouched by those steps.
+- Phase 0 ended with its commit at 20:12:39, about 30 seconds past its 30-minute budget (the secret scan ran twice because the first run's exit status was not captured).
+
+### Phase 1: one mesh on the installed versions (live)
+
+Madrid's installed 0.4.1 was built from `e2a32342` ("Release 0.4.1"): all 2,434 tracked files that the installation ships are byte-identical to that commit, and it was installed four minutes after it.
+
+**dev-madrid**
+
+1. 19:58: `sudo -n tailscale serve --https=8500 off` removed the folder share. To re-add it: `sudo tailscale serve --bg --https=8500 /home/ggomes/Documents/Codex/2026-09-03/so-i-used-to-play-this`.
+2. 19:59: the old member (restored by hand on 16 October, not a managed installation) was retired. Its daemon had no admitted work; this run's own restart had started it at 19:54:45. `systemctl --user disable --now jevellan-member.service` stopped it. The unit file moved to `backup-madrid-2/member/unit-moved/`, and `~/.jevellan-member` is kept.
+3. HTTPS root. A hand-added `:443` route to 9771 (20:00) served health but not the application: 0.4.1 accepts only its recorded address as a request origin, and the state point was installed without HTTPS. So every other request answered 403 "Unknown request host". The address was then set through the normal installation path:
+   - The manual route was removed, and the installed 0.4.1 command ran `jevellan install --https` from a byte-identical copy of itself (20:15:13 to 20:15:24). It reused the installed application, recorded the `:443` route in the installation, set the state point's address to `https://dev-madrid.tail31efa.ts.net` and restarted the service once while idle.
+   - Tailscale refuses non-root route writes on this machine while another route serves a path (`:8497`, belonging to other work and left alone). That one install therefore ran with a temporary `tailscale` shim first on PATH. The shim sent only `tailscale serve` writes through `sudo -n` and was deleted right after. The service's PATH keeps that now-missing directory until the 0.5.0 update rebuilds it.
+   - An earlier attempt with `--from` pointed at the installed folder failed at its build step, before touching the service. It left one empty, not-ready distribution record.
+4. Confirmed:
+   - HTTPS health reports 0.4.1, and the owner UI loads over HTTPS (Settings → Devices, no request errors).
+   - The vault synced at 20:15:26 with no error. ekoa-code and `jevellan-live-sandbox` are listed.
+5. Owner pause: not needed at this step. The dedicated harness owner state from the 15 October run (private, mode 600) still authenticates. A private copy bound to the HTTPS address authenticates too (`/api/auth` true). Both serve the live harness and the join invitation. No passphrase or token was handled.
+
+**The Pro**
+
+6. Notebook:
+   - The Pro's ekoa-code notebook (revision 41, last updated 04:46) was read from the phase 0 clone. After the stop it was confirmed unchanged in the stopped database, opened read-only.
+   - Madrid's notebook lacked its owner instructions, plan and gotchas. A revision-checked write (17 → 18) appended the whole Pro notebook under "From the Pro's coordinator, until 18 October", with its headings demoted one level.
+   - Thread history and memory were not migrated. The Pro's 33 ekoa-code memory notes are copied privately into `backup-pro-2`.
+7. Retirement: the installation's own `jevellan uninstall` (0.3.6, no `--purge`; 20:17:10 to 20:17:27) ran on the idle state point (daemon started by this run's own restart at 19:44:09, no children, no admitted work).
+   - It removed the launchd service, its plist, the `jevellan` command and the Tailscale `:9443` route (recorded as removed).
+   - It then stopped with "An installed application changed outside Jevellan. Its files were preserved". The eight old application folders therefore remain inside the retained `/Users/ggomes/.jevellan`.
+   - The Mac mini drops out with this state point. It was not touched.
+8. Join:
+   - A Darwin archive was built on the Pro from a fresh clone at `e2a32342` (`jevellan-0.4.1-darwin-arm64.tgz`, 380,272,702 bytes, SHA-256 `8fe6febcc68426730bf4cff73a264706038990736370e418d2e50e109216777f`). It was extracted in an empty folder: 2,434 tracked files match the commit, and the actual CLI reports 0.4.1. The native terminal addon ran.
+   - The invitation was created on Madrid with the owner state. The Pro joined from that archive into the fresh home `/Users/ggomes/.jevellan-member` with `--https` and the default name (20:20:15 to 20:20:55).
+   - The Pro member runs at `https://goncalos-macbook-pro.tail31efa.ts.net` under launchd `dev.jevellan.daemon`.
+9. Codex: the Pro's old isolated Codex login was moved, not copied, into the new member's home for Madrid's "Ekoa Codex" account, on the same volume. Its ChatGPT account id matches that account's login on Madrid (compared by hash only). Claude accounts arrived from the state point. After the product's own device switch from the state point, all three accounts report Ready on both machines.
+10. Project clones:
+    - The old Pro clones were idle and clean. They were moved aside, not deleted, to `/Users/ggomes/jevellan-projects/{ekoa-code,jevellan-live-sandbox}.before-one-mesh-2026-10-18`, keeping their local-only branches. The sandbox clone's four linked-worktree registrations were already prunable and are unchanged.
+    - Fresh clones are at `/Users/ggomes/jevellan-projects/ekoa-code` and `/Users/ggomes/jevellan-projects/jevellan-live-sandbox`.
+    - The Pro protects `/Users/ggomes/dev/ekoa-code`, the owner's actual checkout. The old registration's `/Users/ggomes/Projects/ekoa-code` no longer exists.
+    - The Pro's per-device limit is 4 on both projects; nothing else in either project's settings changed, and autoMerge stays off.
+    - Sandbox: one stale in-review test thread from 15 October was stopped. Its pull request #19 stays open. Then the Pro path was added and both devices were allowed.
+    - ekoa-code: **blocked**. 0.4.1 refuses any change to a project's paths while a thread is open (D92), even adding a new device. ekoa-code has five owner-held threads in review, which were not touched. Its Pro path and device permission wait for the correction in phase 2 and the 0.5.0 update.
+11. Disk: the Pro has 38 GiB free (guard 20 GB). Nothing was reclaimed.
+12. The Mac mini is unchanged; see the handoff.
+
+**Phase 1 result: the one-mesh baseline works on the installed versions (live), with one blocked item.**
+
+- `jevellan doctor`: ten of ten OK, exit 0, on both machines (20:30). One Madrid run a minute earlier reported Accounts MISSING "2 of 3", while Gmail's automatic status probe was mid-refresh. The rerun was clean.
+- Settings → Devices lists dev-madrid (state point) and the Pro (member) Online, both 0.4.1, both on HTTPS.
+- Every enabled account (Claude Gmail, Claude Ekoa, Ekoa Codex) is Ready on both machines.
+- Throwaway task:
+  - Created on `jevellan-live-sandbox` with its device fixed to the Pro, at 20:33:42, after four refusals while the Pro's five-minute load was above twice its cores (owner desktop apps, not this run). Placement: Claude Code, Claude Opus 5.5, medium, worktree, on the Pro, Gmail account.
+  - It opened [sandbox pull request #20](https://github.com/gongiskhan/jevellan-live-sandbox/pull/20) at 20:34:40 (README and CHANGELOG, `result` check passing). The thread was Ready for review at 20:35:53.
+  - #20 was closed unmerged at 20:37:10; the sandbox's autoMerge stayed off. The stopped 15 October test thread's pull request #19 is untouched and still open.
+- **Blocked: ekoa-code on the Pro.** No supported operation adds a device path while a project has open threads, and ekoa-code's five owner-held threads in review were not stopped. Decision: correct the guard in 0.5.0 so it allows a pure addition of a new device's path, then register the Pro through the normal API after the verified update (phase 2).
+- Clock: phase 1 work ended at 20:37. No owner pause was sent and no waiting time is excluded.
