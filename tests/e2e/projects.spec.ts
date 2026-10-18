@@ -2179,6 +2179,14 @@ test('PAR5 usage, account waiting notice and placement constraints', async ({ pa
   await expect(usage).toContainText('1,200', LONG); await expect(usage).toContainText('$0.12');
   await expect(usage.getByRole('heading', { name: 'By account', exact: true })).toBeVisible();
   await usage.getByRole('button', { name: '7 days', exact: true }).click(); await expect(usage).toContainText('1,200', LONG);
+  // Numbers never wrap inside a cell and every table fits its box, so no figure is cut on a phone.
+  const layoutFacts = await usage.locator('.pw-usage-table').evaluateAll(boxes => boxes.map(box => {
+    const table = box.querySelector('table')!, cells = [...table.querySelectorAll('tbody td:nth-last-child(-n+3)')];
+    // Adjacent text fragments share a line; distinct line tops mean the figure wrapped.
+    const wrapped = cells.filter(cell => { const range = document.createRange(); range.selectNodeContents(cell); return new Set([...range.getClientRects()].map(rect => Math.round(rect.top))).size > 1; }).map(cell => cell.textContent);
+    return { tableWidth: table.scrollWidth, boxWidth: box.clientWidth, wrapped };
+  }));
+  for (const facts of layoutFacts) { expect(facts.wrapped, JSON.stringify(facts)).toEqual([]); expect(facts.tableWidth, JSON.stringify(facts)).toBeLessThanOrEqual(facts.boxWidth); }
   await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-5/screenshots/PAR5-usage-${layout(info)}.png`, fullPage: false });
   await page.goto(`${path}/threads/${prepared.threadId}`); await expect(page.getByRole('heading', { name: 'A narrow parsing test', exact: true })).toBeVisible(LONG);
   await expect(page.getByText(/Waiting for an account for Fable:/u)).toBeVisible(LONG);
