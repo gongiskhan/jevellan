@@ -5,7 +5,7 @@ Run log for the 18 October 2026 brief: release 0.5.0 with a gate that blocks onl
 ## Clocks
 
 - Preflight started: 2026-10-18T09:27:58Z on dev-madrid, source `2e3f4fd19d05a85aed8e5736c8dd68bde84ceb3c` (0.4.1), clean, equal to `origin/main`.
-- Build clock (phases 0 to 3): first commit `4b21ee84` at 2026-10-18T09:44:42Z; deadline 2026-10-18T18:44:42Z.
+- Build clock (phases 0 to 3): first commit at 2026-10-18T09:44:42Z (pushed as `025d44e4` after an amend that only added these clock lines); deadline 2026-10-18T18:44:42Z.
 - Live clock: three hours from the moment both machines report 0.5.0 in `jevellan doctor`. Not started.
 
 ## Phase log
@@ -13,11 +13,11 @@ Run log for the 18 October 2026 brief: release 0.5.0 with a gate that blocks onl
 | Phase | Status | Evidence |
 | --- | --- | --- |
 | 0 Preflight | Complete, 09:27–09:44 | Live; below |
-| 1 Release gate | Not started | |
-| 2 Release 0.5.0 | Not started | |
-| 3 One mesh | Not started | |
-| 4 Live journeys | Not started | |
-| 5 Closing | Not started | |
+| 1 Release gate | Incomplete at the clock | Simulated; gate not passed (below) |
+| 2 Release 0.5.0 | Not run | Candidate archives only, unpublished |
+| 3 One mesh | Not run | Build clock ended first |
+| 4 Live journeys | Not run | Gate and migration incomplete |
+| 5 Closing | Handoff | [HANDOFF.md](HANDOFF.md) |
 
 ## Phase 0: preflight (live)
 
@@ -53,3 +53,73 @@ Each copy was taken by holding the installation's own lifecycle gate (the exclus
 | Pro | `/Users/ggomes/.jevellan`, `dev.jevellan.daemon.plist`, `~/.local/bin/jevellan` | 09:40:28–09:41:44 | APFS copy-on-write clone (`cp -c`) | 17 GB | 312,772 |
 
 Locations: `~/.jevellan-build/one-mesh-050/backup-madrid/` on dev-madrid and `/Users/ggomes/.jevellan-build/one-mesh-050/backup-pro/` on the Pro. The earlier Pro rollback `projects-parity-050-rollback-pro-2026-10-18` (01:47) is retained untouched.
+
+## Phase 1: release gate (simulated)
+
+Builder: dev-madrid, Node 22.23.2, the isolated APM and Basic Memory toolchain of the retained member home first on PATH (native Basic Memory unused). Browser: Playwright's bundled Chromium, as in the 15 October Madrid run; PAR6 alone uses the installed Google Chrome (Decision 921). Baseline: a separate clone at `da6a9bc96c9b963bb5b9bb2de609dbcddfa5dd06`, built the same way, fixture port base 29771 or a per-case base. Every class and attempt is in [gate.json](gate.json).
+
+### Full runs at main (`025d44e4`)
+
+- Build, typecheck and lint pass. `npm run scan:secrets` passes before every push.
+- Backend (six workers, Decision 916): 2,388 passed, 9 failed, 5 skipped of 2,402, in 34 minutes.
+- Browser (vision off, four workers): 233 passed, 13 failed, 130 not run of 376, in 1.3 hours. `projects.spec.ts` is serial, so its first failure in each layout skipped the rest of that layout's journeys.
+
+### Classes of the main failures
+
+| Case | Main alone | Baseline alone | Class | Action |
+| --- | --- | --- | --- | --- |
+| Six push-notification backend cases (`/private/tmp` path) | 0 of 3 each | absent | Regression | Fixed in `f47b314f` (Decision 918); the file passes 13 of 13 |
+| Two installation-file and one runtime-packaging mode checks | 0 of 3 each | 0 of 3 each | Pre-existing | None. They expect group and other execute bits; the runner's umask is 077, and they pass 26 of 26 under umask 022 |
+| PJ7 attached composer, phone dark | 0 of 3 | 3 of 3 | Regression | Fixed in `f47b314f` (Decision 919); passes 3 of 3 alone after the fix |
+| LJ2 desktop light and desktop dark, PJ5 phone light | 3 of 3 | 3 of 3 | Load-sensitive | None |
+| J8 and J11 mesh journeys, four layouts each | 0 of 3 each | 0 of 3 each | Pre-existing | None. `/` opens the first project since `4af16084` (before the baseline), so the journeys never reach the conversation form. The first runs stopped after one failure; they were completed to three and three later, keeping the first receipts |
+| Packed installation, phone dark | first group 2 of 3 (overlapped); quiet group 3 of 3 | 3 of 3, then 3 of 3 quiet | Load-sensitive (quiet conforming group) | None; see below |
+
+### Packed installation, phone dark
+
+The first main group, 12:45 to 13:15 UTC, passed, passed, then failed with "Update did not reach the running-work wait" after 120 seconds. It overlapped this run's own full backend at `de5bb8ce` and its vision runs, so it was not a run alone. That procedural defect is kept and disclosed: the receipts are retained and gate.json lists each attempt's overlaps.
+
+The conforming quiet group ran at the same commit `025d44e4` with nothing else of this run in parallel, at load 6 to 8:
+- main: three alone, 15:07 to 15:25 UTC, all passed;
+- baseline: three, 15:25 to 15:41 UTC, all passed.
+
+By the brief's table, a case that passes three of three alone at main is load-sensitive.
+
+The update path is unchanged since the baseline apart from named-installation plumbing, and the packed application grew from 1,140 to 1,177 MB unpacked. In timed direct runs of the same spike, the update reached its running-work wait 71 seconds after the previous step at `dbfaf8a0` and 82 seconds at the baseline.
+
+### Superseded full backend at `de5bb8ce`
+
+The release-candidate backend run, 12:47 to 13:32 UTC, recorded 2,387 passed, 10 failed and 5 skipped. Later source fixes followed, so it is not a final-commit run. Its seven new failures were classified the same way:
+- five Conversation timeouts: pre-existing, failing alone at both commits;
+- one member outage case: load-sensitive, 3 of 3 alone;
+- the Codex runtime contract: its single main run overlapped other runs; a quiet group at `4379b1ae` passed 3 of 3 at main and 3 of 3 at baseline, so load-sensitive.
+
+Every group was completed to three runs at each commit.
+
+Many early attempts overlapped other heavy runs of this session. Each attempt's overlaps are listed in gate.json. Where the class depends on isolation, quiet conforming groups decided it: the installation journey and the Codex contract.
+
+### Vision on the parity journeys (live judge, simulated product)
+
+With `JEVELLAN_TEST_CLAUDE_TOKEN` loaded only in the browser-test shell, `npx playwright test --project '*-projects' -g PAR` ran repeatedly. PAR6 ran separately on installed Chrome (Decision 921).
+
+Blocking findings, each a defect fixed and rerun:
+- PAR1 notification radios misaligned;
+- PAR3 expected only four Overview tabs (stale);
+- PAR5 usage headings broke mid-word, then the table clipped on phones;
+- PAR7 chat chips rendered empty containers;
+- PAR7b the phone toast covered the composer;
+- PAR8 the placement fields hid under the sticky dialog actions;
+- PAR9 a fixture step replayed (Decision 923).
+
+One run used the wrong tool PATH; that environment error is recorded and its run discarded.
+
+Latest passing evidence per journey, in all four layouts:
+- PAR1 to PAR6 at `dbfaf8a0`;
+- PAR7, PAR7b and PAR8 at `b831ed04`;
+- PAR8 and PAR9 at `73c99e35`.
+
+Earlier timeouts in the same journeys (login, library and Edit requests under load) are in the receipts.
+
+### Gate result
+
+**Not passed.** The full backend followed by the full browser did not run at the final source commit before the build clock ended, so no release was cut. Class counts are in gate.json. The closing serious-issues review (one pass, by the builder) of the source changes found no serious problem.

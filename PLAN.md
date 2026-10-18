@@ -1,5 +1,9 @@
 # Projects loop implementation plan
 
+## One mesh and 0.5.0, October 2026
+
+Authority: root untracked BRIEF.md, 18 October 2026. Phases: 0 preflight and cold backups (done), 1 release gate (incomplete at the clock), 2 release, 3 one mesh on dev-madrid, 4 live journeys LP1–LP10, 5 closing. Evidence and the continuation steps are in docs/acceptance/one-mesh-050-2026-10/.
+
 ## Projects parity, October 2026
 
 Authority: root untracked BRIEF.md,17October2026, supersedes conflicting older plans. Decisions846–893. Baseline da6a9bc9/0.4.1; current machine Pro, local hub0.3.6 verified by doctor. Other installations remain separate.

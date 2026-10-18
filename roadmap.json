@@ -908,13 +908,13 @@
   {
     "id": "parity-release-live",
     "title": "Complete parity release gates and sandbox acceptance",
-    "why": "BRIEF.md phase10: planned remaining work after the bounded run. Resolve recorded full-suite/LJ5/Codex-contract and hub-readiness blockers, obtain dedicated vision evidence, repeat full gates, then cut/install0.5.0 with cold rollback and run LP1–LP9 within its unstarted three-hour live clock. Optional endpoint credential remains blocked.",
+    "why": "BRIEF.md phase10: planned remaining work after the bounded run. Resolve recorded full-suite/LJ5/Codex-contract and hub-readiness blockers, obtain dedicated vision evidence, repeat full gates, then cut/install0.5.0 with cold rollback and run LP1–LP9 within its unstarted three-hour live clock. Optional endpoint credential remains blocked. Continued by one-mesh-050 (18 October 2026).",
     "status": "planned"
   },
   {
     "id": "one-mesh-050",
     "title": "One mesh on dev-madrid, release 0.5.0 and live journeys",
-    "why": "BRIEF.md 18 October 2026. Phase 0 preflight and cold backups complete; see docs/acceptance/one-mesh-050-2026-10/README.md.",
+    "why": "BRIEF.md 18 October 2026. Preflight and cold backups complete. The release gate is incomplete at the nine-hour clock: the main suites were classified (regressions fixed), and vision passes every PAR journey in four layouts across the final fixes, but the full backend and browser did not run at the final source commit. 0.5.0 is not released, Madrid is not yet the only state point, the Pro is unchanged and no live journey ran. See docs/acceptance/one-mesh-050-2026-10/HANDOFF.md.",
     "status": "in-progress"
   }
 ]

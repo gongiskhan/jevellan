@@ -8,6 +8,8 @@ Last updated: 2026-10-15. On 2026-09-26 the user resumed the build on a second m
 
 ## Current state
 
+18 October, one-mesh run (Decisions 916–923): the 0.5.0 release gate ran on dev-madrid against the baseline `da6a9bc9`. Main-suite regressions were fixed: the Linux temp path in the push tests and the attached composer height on phones. Vision blocking findings in the PAR journeys were fixed: notification radios, usage table, library chips, the phone toast and the placement fields. A fixture step that broke PAR9 was corrected. 0.5.0 is not released: the full backend and browser did not run at the final source commit before the build clock ended. No installation changed. See [the one-mesh handoff](one-mesh-050-2026-10/HANDOFF.md).
+
 15 October, Decisions840–841: saved thread screenshots gain thumbnails and a swipe gallery; reports gain an outcome preview and clearer instructions with a4000-character limit. Compatible Pro0.3.6 web activation retains rollback; the loaded bundled handler still awaits an idle-gated restart. [Evidence and limits](thread-images-2026-10-15/README.md). The independent Madrid0.4.1 work is preserved.
 
 15 October, Decision839: thread history now folds by default, with only current work and thinking expanded. Compatible web-only activation is live on Pro0.3.6, no daemon restart.45 focused cases and the targeted browser journey pass; actual desktop/phone light/dark inspected. [Folding evidence](thread-folding-2026-10-15/README.md). The prior admission retry activation blocker remains unchanged.
