@@ -2374,6 +2374,8 @@ test('PAR8 compatible endpoint form, menu, automatic account choice and Why', as
   const task = page.getByRole('dialog', { name: 'New task', exact: true }); await task.locator('summary').filter({ hasText: 'Choose where it runs' }).click();
   await expect(task.getByRole('combobox', { name: 'Model', exact: true }).locator('option').filter({ hasText: 'PAR8 GLM' })).toHaveCount(1);
   await task.getByRole('combobox', { name: 'Model', exact: true }).selectOption(model.id);
+  // The capture shows the chosen menu entry, not the top of the scrolled dialog.
+  await task.getByRole('combobox', { name: 'Model', exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-menu-${layout(info)}.png` });
   await task.getByRole('button', { name: 'Cancel', exact: true }).click();
   const work = ProjectWorkViewSchema.parse(await read(page, `${PROJECT}/work`)), { schema, projectId, revision, ...settings } = work.settings; void schema; void projectId;

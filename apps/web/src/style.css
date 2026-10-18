@@ -1751,6 +1751,8 @@ button.memory-result + button.memory-result { margin-top: 4px; }
   .effort-line { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .toast { top: auto; bottom: 12px; left: 12px; right: 12px; transform: none; max-width: none; }
   .toast.hub-wait { left: 12px; right: 12px; transform: none; }
+  /* A page with a bottom composer keeps it reachable: the toast sits under the header instead (vision PAR7b finding). */
+  body:has(.pw-composer) .toast:not(.hub-wait) { top: calc(env(safe-area-inset-top, 0px) + 64px); bottom: auto; }
   dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); border-radius: 12px; }
   .modal-body { padding: 14px 16px 16px; }
   dialog .toast, dialog .toast.hub-wait { margin: 0 16px 14px; }
