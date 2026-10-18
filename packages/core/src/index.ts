@@ -103,3 +103,5 @@ export * from './project-setting-values.js';
 
 export * from './notification-schemas.js';
 export * from './library-schemas.js';
+
+export * from './project-setup-schemas.js';

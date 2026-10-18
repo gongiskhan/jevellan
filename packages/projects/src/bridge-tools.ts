@@ -1,3 +1,4 @@
+import { SETUP_ALREADY_PROPOSED } from './copy.js';
 import { LIBRARY_UNAVAILABLE, LIBRARY_READ_ONLY } from './copy.js';
 import type { ProjectDailyWork } from './daily.js';
 import type { ProjectJobRunner } from './job-runner.js';
@@ -32,7 +33,7 @@ export type ProjectMemoryReader = {
   edit?(input: z.infer<typeof BridgeToolSchemas.memory_edit>, signal: AbortSignal): Promise<MemoryNote>;
 };
 /** One coordinator tool line in the coordinator ledger (brief 8.1, 2.6.5). */
-export type ToolLine = { summary: string; threadId?: string | undefined; decisionId?: string | undefined; reason?: string | undefined; taskIds?: string[]; settingsChange?: ProjectSettingsChange };
+export type ToolLine = { summary: string; threadId?: string | undefined; decisionId?: string | undefined; reason?: string | undefined; taskIds?: string[]; settingsChange?: ProjectSettingsChange; setupProposalId?: string };
 export type ToolOutcome = { ok: true; result: unknown } | { ok: false; error: string };
 export type ProjectToolHandlers = {
   capture?(scope: ProjectScope, payload?: { sessionId?: string; transcriptPath?: string }): Promise<void>;
@@ -136,6 +137,7 @@ export class ProjectTools implements BridgeScopeTools {
 export type CoordinatorToolsOptions = {
   deviceId: string; deviceName: string;
   threads: Pick<ThreadService, 'start' | 'message' | 'stop' | 'list' | 'read'>;
+  setupPropose?(projectId: string, triggerId: string, input: unknown): Promise<unknown>;
   settingsUpdate?(projectId: string, input: unknown, requestId: string): Promise<{ schema: 'project-settings-change-result-v1'; change: ProjectSettingsChange; repeated: boolean }>;
   tasks?: ProjectTasks; goals?: ProjectGoals; daily?: ProjectDailyWork; jobs?: ProjectJobRunner;
   github?: ProjectGithub;
@@ -217,6 +219,12 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
         const refill = events.filter(event => event.type === 'coordinator-event').map(event => ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-event' })).findLast(item => ids.has(item.id) && item.kind === 'goal-refill' && item.goals.some(goal => goal.goalId === input.goalId));
         const { source, ...fields } = input;
         return o.tasks.create(projectId, { ...fields, schema: 'task-create-request-v1', clientRequestId: turnId('treq', projectId, turn, input) }, source, { ownerRequested, ...(source === 'refill' && refill ? { refillEventId: refill.id } : {}) });
+      }
+      case 'jevellan_setup_propose': {
+        const ledger = o.ledgers.coordinator(projectId), start = ledger.events().findLast(event => event.type === 'coordinator-turn-start' && event.turn === turn);
+        const trigger = start && ledger.payload(start as ProjectLedgerEvent & { type: 'coordinator-turn-start' }).setupTriggerId;
+        if (!trigger || !o.setupPropose) throw failure(SETUP_ALREADY_PROPOSED, 403);
+        return o.setupPropose(projectId, trigger, raw);
       }
       case 'jevellan_settings_update': {
         if (!hasOwnerMessage(projectId, turn)) throw failure(OWNER_SETTINGS_ONLY, 403);
@@ -358,7 +366,8 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
       const started = outcome.ok && name === 'jevellan_tasks_start' ? field(outcome.result, 'tasks') : undefined;
       const taskIds = taskId ? [taskId] : Array.isArray(started) ? started.flatMap(task => { const id = idField(task, 'taskId'); return id ? [id] : []; }) : undefined;
       const settingsChange = outcome.ok && name === 'jevellan_settings_update' ? field(outcome.result, 'change') as ProjectSettingsChange : undefined;
-      return { summary: coordinatorToolSummary(name, input, outcome, thread?.title), ...(taskIds ? { taskIds } : {}), ...(settingsChange ? { settingsChange } : {}), ...(thread ? { threadId } : {}), ...(decisionId ? { decisionId } : {}),
+      const setupProposalId = outcome.ok && name === 'jevellan_setup_propose' ? idField(field(outcome.result, 'proposal'), 'id') : undefined;
+      return { ...(setupProposalId ? { setupProposalId } : {}), summary: coordinatorToolSummary(name, input, outcome, thread?.title), ...(taskIds ? { taskIds } : {}), ...(settingsChange ? { settingsChange } : {}), ...(thread ? { threadId } : {}), ...(decisionId ? { decisionId } : {}),
         ...(withdrawn ? { reason: (input as Input<'jevellan_withdraw_question'>).reason } : {}) };
     },
   };

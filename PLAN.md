@@ -2,7 +2,7 @@
 
 ## Projects parity, October 2026
 
-Authority: root untracked BRIEF.md,17October2026, supersedes conflicting older plans. Decisions846–892. Baseline da6a9bc9/0.4.1; current machine Pro, local hub0.3.6 verified by doctor. Other installations remain separate.
+Authority: root untracked BRIEF.md,17October2026, supersedes conflicting older plans. Decisions846–893. Baseline da6a9bc9/0.4.1; current machine Pro, local hub0.3.6 verified by doctor. Other installations remain separate.
 
 The build clock starts at this run's first commit, lasts14hours, and closes new feature phases at12hours. The separate3-hour live clock starts at0.5.0 installation. Exact times and all evidence are in docs/acceptance/projects-parity-2026-10/README.md. Orientation is limited to30minutes.
 
@@ -14,8 +14,8 @@ The build clock starts at this run's first commit, lasts14hours, and closes new 
 5. Automatic account waits/continuation, Jev model moves/escalation, placement constraints and usage. Source complete:193 affected backend cases and all4 browser layouts pass; dedicated vision blocked. Decisions861–874; final full suites remain closing gates.
 6. PWA web push, subscription Settings, levels and event triggers. Pushed2375d77c; source verified:142 affected backend cases and all4layouts pass, dedicated vision not run. Decisions875–879; actual web-push license is MPL-2.0.
 7. Hub Library, composer attachments, worktree environment/secrets/copied files and project-scoped rigging. Source and affected checks complete:121 distinct backend cases and two browser journeys in all4layouts pass; dedicated vision is not run. Decisions880–887.
-8. Claude-compatible endpoint accounts/menu/probe and isolated launch. Verified:191 backend cases and PAR8 all4layouts pass. Dedicated vision not run; optional LP8 credential blocked. Push and full closing suites remain.
-9. First-run exploration and editable suggested setup.
+8. Claude-compatible endpoint accounts/menu/probe and isolated launch. Verified:191 backend cases and PAR8 all4layouts pass. Dedicated vision not run; optional LP8 credential blocked. Pushed5e11ad0e; full closing suites remain.
+9. First-run exploration and editable suggested setup. Verified:153 backend cases and PAR9 all4layouts pass; dedicated vision and LP9 not run. Publication pending.
 10. Current-state docs/history, cleanup, LJ5 regression, complete suites/vision, one crucial-issues review,0.5.0 release/update with rollback and LP1–LP9 within the live clock.
 
 Finish and test each phase before beginning the next. Commit/push main after every phase with roadmap/report evidence. Every behavior gets backend tests, every changed screen gets four layouts with vision, every bug fix starts with a failing regression. No interim review passes or heuristic routing. Unreached phases remain planned with their BRIEF.md phase number. Live journeys never touch ekoa-code and restore settings. Missing credentials are blocked checks, not passes.
@@ -468,3 +468,7 @@ Decision844 replaces the root New conversation landing with the first project in
 
 
 Decision844 closure:40 focused project UI checks and the final four-layout browser journey pass, including first-project selection, reload, New conversation, Back, fresh sign-in and the empty-list fallback. Typecheck/lint/build and compatible web build pass. Pro0.3.6 web-only activation is live with rollback retained and no session restart. Opening the real root selects ekoa-code; New conversation opens /new and the Jevellan Home button returns to Ekoa Code. The update prompt is cleared in the verification window. Four simulated screenshots directly inspected; dedicated model vision, full suites and physical-phone acceptance are not run. One closing crucial-issues inspection finds no serious issue. The existing Pro latency remains outside this navigation change. Evidence: docs/acceptance/first-project-home-2026-10-16/.
+
+Phase9 starts00:52:50Z after endpoint commit5e11ad0e is pushed. Decision893: one code-owned trigger per setup proposal; editable owner application with atomic revision checks, selected fields only and paused Propose goals.
+
+Phase9 verified:153 backend cases and PAR9 all4layouts pass,16 screenshots. Dedicated vision and live LP9 remain unrun. Publication follows the mandatory secret scan; phase10 is next.

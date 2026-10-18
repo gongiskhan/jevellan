@@ -21,8 +21,8 @@
 | 5 | Account waits, placement bounds, escalation and usage | Pushed bfb9dc8a; vision blocked |193 affected backend cases and4 browser layouts pass; see phase-5/. |
 | 6 | Web push | Pushed 2375d77c; vision blocked |142 affected backend cases and all4layouts pass; vision not run. See phase-6/. |
 | 7 | Library, attachments, environment and scoped rigging | Pushed92df3929; vision blocked |121 distinct affected backend cases and PAR7/PAR7b in all4layouts pass; typecheck/lint/build pass. See phase-7/. |
-| 8 | Compatible endpoints | Verified; push pending; vision/live blocked |191 affected backend cases and PAR8 all4layouts pass; see phase-8/. |
-| 9 | First-run setup | Not started | Not run |
+| 8 | Compatible endpoints | Pushed5e11ad0e; vision/live blocked |191 affected backend cases and PAR8 all4layouts pass; see phase-8/. |
+| 9 | First-run setup | Verified; push pending; vision blocked |153 backend cases and PAR9 all4layouts pass; see phase-9/. |
 | 10 | Docs, cleanup, suites, review, release and LP1–LP9 | Not started | Not run |
 
 ## Orientation evidence
@@ -232,3 +232,13 @@ The initial real-SDK contract selected global Claude2.1.19 and failed because th
 ## Phase8 checkpoint
 
 Simulated:191 affected backend cases pass; four dedicated Jev-selection checks are skipped for the missing test key. PAR8 passes all4layouts with32 screenshots, exercising the real HTTP probe against a fixture and automatic endpoint account/model placement. The real Agent SDK CLI contract passes against a fake provider with a loopback network guard and unchanged fixture native homes. Typecheck, lint, production build, whitespace and working-tree secret checks pass. Dedicated vision is not run; optional real-provider LP8 is blocked without a credential. The workspace-loading failed attempt remains a closing finding. No installed service or native home changed, and no owner acceptance is claimed.
+
+## Phase8 push and phase9 start
+
+Live:5e11ad0e is pushed after its normal history secret scan. Phase9 starts2026-10-18T00:52:50Z. No service or native home changed.
+
+893. Suggested setup extends the existing coordinator, bridge and hub state. A code-owned turn trigger authorizes one proposal; the proposal is an editable owner card, not an automatic configuration change. Apply validates and writes the chosen fields atomically with revision checks and retry receipts, preserving existing project guards and unrelated values. Goals start paused in Propose mode. This replaces the absence of first-run recommendations without changing existing projects on load.
+
+## Phase9 checkpoint
+
+Simulated:153 affected backend cases pass across8files, including owner HTTP and member relay, first/explicit triggers, once guards, selected/edited atomic Apply, retries, stale revisions, paused goals, environment names and dismissal. PAR9 passes all4layouts with16 screenshots;16 dedicated vision receipts say not run. Typecheck, lint and production build pass. No source installation or real LP9 acceptance is claimed. Decision893 and phase-9/ hold the evidence.

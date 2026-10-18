@@ -1,3 +1,5 @@
+import { setupProposalId } from './setup.js';
+import { SETUP_PROMPT } from './copy.js';
 import { COORDINATOR_ANSWER_IN_CHAT, COORDINATOR_CARRY_RESULT, coordinatorOwnerInstructions } from './copy.js';
 import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -81,6 +83,7 @@ export type CoordinatorPromptInput = {
   outcomes?: readonly ProjectRequestOutcome[];
   notebook: string | null;
   instructions?: string;
+  setupTriggerId?: string;
   memory?: string;
   /** The project's thread indexes; concluded ones are not listed as active. */
   threads: readonly ThreadIndex[];
@@ -126,7 +129,7 @@ export function coordinatorFreshContext(input: CoordinatorPromptInput): string {
 /** The turn prompt (brief 8.1): a session that is not resumed gets the fresh context first, then the event block. */
 export function coordinatorPrompt(input: CoordinatorPromptInput, resumed: boolean): string {
   const goals = input.outcomes?.filter(outcome => outcome.source === 'jev').map(outcome => `Requested result for ${outcome.eventId} (${outcome.source}): ${projectOutcomeInstruction(outcome)}\n${outcome.goal === 'answer' ? COORDINATOR_ANSWER_IN_CHAT : COORDINATOR_CARRY_RESULT}`).join('\n');
-  const block = coordinatorEventBlock(input) + (goals ? `\n\n${goals}` : '')
+  const block = (input.setupTriggerId ? `${SETUP_PROMPT}\n\n` : '') + coordinatorEventBlock(input) + (goals ? `\n\n${goals}` : '')
     + (input.accounts?.length ? `\n\n${ACCOUNTS_NOW}\n${input.accounts.join('\n')}` : '');
   return resumed ? block : `${coordinatorFreshContext(input)}\n\n${block}`;
 }
@@ -137,7 +140,7 @@ export type CoordinatorTimers = { startMs: number; retryMs: number; turnTimeoutM
 export type CoordinatorContext = {
   deviceId: string; deviceName: string; redactor: SecretRedactor;
   store: CoordinatorStore; ledgers: ProjectLedgers;
-  hub: Pick<ProjectHub, 'coordinator' | 'assignCoordinator' | 'coordinatorStatus' | 'putCoordinatorStatus' | 'notebook' | 'threads' | 'decisions'>;
+  hub: Pick<ProjectHub, 'setupProposal' | 'coordinator' | 'assignCoordinator' | 'coordinatorStatus' | 'putCoordinatorStatus' | 'notebook' | 'threads' | 'decisions'>;
   project(projectId: string): Promise<Project>;
   /** Work settings (the hub copy, or the last good one during an outage). */
   workSettings(projectId: string): Promise<ProjectWorkSettings>;
@@ -504,10 +507,13 @@ export class Coordinator {
     const name = (id: string) => id === deviceId ? deviceName : names.get(id) ?? id;
     const accounts = (await this.c.accounts.list()).filter(view => view.account.enabled).map(view => accountNowLine(view.account.label, this.c.runtimes.get(view.account.runtime)?.displayName ?? view.account.runtime,
       view.statuses.map(status => `${name(status.deviceId)} ${status.auth === 'ready' ? 'Ready' : status.auth}`).join(', ') || 'not checked yet'));
+    const requestedSetup = events.findLast(event => event.kind === 'setup-requested');
+    let setupTriggerId = requestedSetup?.id ?? (!notebook?.document.content.trim() && !threads.length && !this.#ledger.events().some(event => event.type === 'coordinator-turn-start') ? 'first' : undefined);
+    if (setupTriggerId && await this.c.hub.setupProposal(setupProposalId(projectId, setupTriggerId))) setupTriggerId = undefined;
     const outcomes: ProjectRequestOutcome[] = [];
     const memory = await this.c.memoryContext?.(project);
     if (this.c.outcome) for (const event of events) if (event.kind === 'user-message') outcomes.push(await this.c.outcome(projectId, event, recentConversation(this.#conversation()), this.#outcomeAbort.signal));
-    return { kind: 'ready', project, cwd, ...chosen, ...(work.coordinator.accountId ? { requiredAccountId: work.coordinator.accountId } : {}), session, prompt: { events, outcomes, instructions: work.instructions, ...(memory ? { memory } : {}), notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(), accounts,
+    return { kind: 'ready', project, cwd, ...chosen, ...(work.coordinator.accountId ? { requiredAccountId: work.coordinator.accountId } : {}), session, prompt: { ...(setupTriggerId ? { setupTriggerId } : {}), events, outcomes, instructions: work.instructions, ...(memory ? { memory } : {}), notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(), accounts,
       runtimeName: (runtime) => this.c.runtimes.get(runtime)?.displayName ?? runtime, deviceName: (id) => id === deviceId ? deviceName : names.get(id) ?? id, base,
       askedDirectly: this.#askedDirectly(events, decisions) } };
   }
@@ -584,7 +590,7 @@ export class Coordinator {
       this.#ownerRetry = false;
       this.c.store.update(projectId, (state) => ({ ...withoutReason(state), state: 'running', session: generation === this.#generation ? record : state.session }));
       if (started.accountChanged) this.#notice(coordinatorAccountMovedNotice(started.accountLabel), 'info');
-      this.#ledger.append({ type: 'coordinator-turn-start', turn, data: { schema: 'coordinator-turn-v1', turn, fresh: !started.resumed, runtime: model.runtime,
+      this.#ledger.append({ type: 'coordinator-turn-start', turn, data: { schema: 'coordinator-turn-v1', turn, ...(prepared.prompt.setupTriggerId ? { setupTriggerId: prepared.prompt.setupTriggerId } : {}), fresh: !started.resumed, runtime: model.runtime,
         ...(started.prompt ? { prompt: this.c.redactor.text(started.prompt).slice(0, 200000), promptTruncated: this.c.redactor.text(started.prompt).length > 200000 } : {}),
         modelLabel: model.label, effort, accountLabel: started.accountLabel, eventIds: events.map((event) => event.id) } });
       this.#publish();

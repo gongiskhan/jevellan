@@ -2408,3 +2408,38 @@ test('PAR8 compatible endpoint form, menu, automatic account choice and Why', as
   expect((await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision: currentRevision, settings: { ...currentSettings, placement: work.settings.placement } } })).ok()).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings', async ({ page }, info) => {
+  const errors = await begin(page); await openProject(page, 'Projects fixture');
+  const original = ProjectWorkViewSchema.parse(await read(page, `${PROJECT}/work`)).settings;
+  const request = async () => {
+    await expect(page.getByRole('button', { name: 'Stop', exact: true })).toHaveCount(0, LONG);
+    await page.getByLabel('Project menu', { exact: true }).click();
+    await page.getByRole('button', { name: 'Suggest setup', exact: true }).click();
+    if (phone(info)) await tab(page, 'Chat').click();
+    const card = page.locator('.pw-setup-card').filter({ has: page.getByRole('button', { name: 'Apply setup', exact: true }) });
+    await expect(card.getByRole('textbox', { name: 'Test command', exact: true })).toHaveValue('npm test', LONG); return card;
+  };
+  let card = await request();
+  await expect(card.getByRole('checkbox', { name: 'Test command', exact: true })).toBeChecked();
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-9/screenshots/PAR9-suggested-${layout(info)}.png`, fullPage: true });
+  for (const name of ['Test command', 'Worktree setup command', 'Copy into new worktrees']) await card.getByRole('checkbox', { name, exact: true }).uncheck();
+  await card.getByRole('textbox', { name: 'Project instructions', exact: true }).fill('Use narrow tests and keep the work focused.');
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-9/screenshots/PAR9-edited-${layout(info)}.png`, fullPage: true });
+  await card.getByRole('button', { name: 'Apply setup', exact: true }).click();
+  await expect(page.getByText('Setup applied: 4 changes.', { exact: true })).toBeVisible(LONG);
+  await expect(page.getByText('Fill in their values in Project settings → Environment.', { exact: true })).toBeVisible();
+  const applied = ProjectWorkViewSchema.parse(await read(page, `${PROJECT}/work`)).settings;
+  expect(applied.instructions).toBe('Use narrow tests and keep the work focused.'); expect(applied.setupCommand).toBe(original.setupCommand);
+  const expectedVariables = original.environment.variables.some(row => row.name === 'SANDBOX_DATA_DIR') ? original.environment.variables : [...original.environment.variables, { name: 'SANDBOX_DATA_DIR', value: '' }];
+  expect(applied.environment).toEqual({ variables: expectedVariables, secrets: [...new Set([...original.environment.secrets, 'SERVICE_TOKEN'])], copyFiles: original.environment.copyFiles });
+  const goals = await read(page, `${PROJECT}/goals`) as { goals: Array<{ goal: { name: string; state: string; autonomy: string } }> }; expect(goals.goals.some(row => row.goal.name === 'Keep the fixture tidy' && row.goal.state === 'paused' && row.goal.autonomy === 'propose')).toBe(true);
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-9/screenshots/PAR9-applied-${layout(info)}.png` });
+  card = await request(); await card.getByRole('button', { name: 'Not now', exact: true }).click(); await expect(page.getByText('Setup dismissed.', { exact: true })).toBeVisible(LONG);
+  expect(ProjectWorkViewSchema.parse(await read(page, `${PROJECT}/work`)).settings).toEqual(applied);
+  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-9/screenshots/PAR9-dismissed-${layout(info)}.png` });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const { schema, projectId, revision, ...fields } = applied; void schema; void projectId;
+  expect((await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision, settings: { ...fields, instructions: original.instructions, environment: original.environment } } })).ok()).toBe(true);
+  expect(errors).toEqual([]);
+});

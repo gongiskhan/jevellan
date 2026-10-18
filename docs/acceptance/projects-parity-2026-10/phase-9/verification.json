@@ -1,0 +1,63 @@
+{
+  "schema": "projects-parity-phase-evidence-v1",
+  "label": "simulated",
+  "phase": 9,
+  "backend": {
+    "passed": 153,
+    "files": 8,
+    "failed": 0,
+    "skipped": 0,
+    "log": "/private/tmp/jevellan-parity-p9-backend-final.log"
+  },
+  "browser": {
+    "schema": "parity-browser-matrix-evidence-v1",
+    "label": "simulated",
+    "results": [
+      {
+        "layout": "desktop-light",
+        "exitCode": 0,
+        "fatalStreamError": false,
+        "seconds": 86,
+        "log": "/private/tmp/jevellan-parity-p9-browser-desktop-light-final.log"
+      },
+      {
+        "layout": "phone-light",
+        "exitCode": 0,
+        "fatalStreamError": false,
+        "seconds": 83,
+        "log": "/private/tmp/jevellan-parity-p9-browser-phone-light-final.log"
+      },
+      {
+        "layout": "desktop-dark",
+        "exitCode": 0,
+        "fatalStreamError": false,
+        "seconds": 66,
+        "log": "/private/tmp/jevellan-parity-p9-browser-desktop-dark-final.log"
+      },
+      {
+        "layout": "phone-dark",
+        "exitCode": 0,
+        "fatalStreamError": false,
+        "seconds": 62,
+        "log": "/private/tmp/jevellan-parity-p9-browser-phone-dark-final.log"
+      }
+    ]
+  },
+  "screenshots": 16,
+  "vision": {
+    "label": "not run",
+    "reason": "Dedicated test credential absent.",
+    "receipts": 16
+  },
+  "typecheck": "passed",
+  "lint": "passed",
+  "build": "passed",
+  "live": {
+    "label": "not run",
+    "reason": "LP9 follows release installation."
+  },
+  "regressions": [
+    "Initial missing setup tool/schema and exploration prompt fail before implementation.",
+    "Atomic selected Apply, replay, stale revisions, invalid input and member transport are covered."
+  ]
+}

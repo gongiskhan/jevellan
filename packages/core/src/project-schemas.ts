@@ -131,6 +131,7 @@ export type DecisionAnswer = z.infer<typeof DecisionAnswerSchema>;
 const ev = <K extends string, S extends z.ZodRawShape>(kind: K, fields: S) => z.strictObject({
   schema: z.literal('coordinator-event-v1'), kind: z.literal(kind), id: IdSchema, at: TimestampSchema, ...fields });
 export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
+  ev('setup-requested', {}),
   ev('settings-changed', { by: z.enum(['owner', 'coordinator']), changes: z.array(z.strictObject({ field: z.string().max(80), from: z.string().max(400), to: z.string().max(400) })).max(30), instructions: z.string().max(16000).optional() }),
   ev('thread-resolved', { threadId: IdSchema, by: z.enum(['owner', 'inactivity']) }),
   ev('thread-placement-changed', { threadId: IdSchema, reason: z.enum(['account-limit', 'model-unavailable', 'escalation']), summary: z.string().max(400) }),
@@ -415,13 +416,13 @@ export const ProjectEventFrameSchema = z.strictObject({ schema: z.literal('proje
 export type ProjectEventFrame = z.infer<typeof ProjectEventFrameSchema>;
 
 export const CoordinatorTurnStartSchema = z.strictObject({ schema: z.literal('coordinator-turn-v1'), turn: positive, fresh: z.boolean(),
-  prompt: z.string().max(200000).optional(), promptTruncated: z.boolean().optional(),
+  prompt: z.string().max(200000).optional(), promptTruncated: z.boolean().optional(), setupTriggerId: IdSchema.optional(),
   runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, eventIds: z.array(IdSchema) });
 export const CoordinatorTextSchema = z.strictObject({ schema: z.literal('coordinator-text-v1'), text });
 // tool is any bridge tool name; the ledger writer checks it against the bridge registry (bridge-schemas imports this module).
 export const CoordinatorToolSchema = z.strictObject({ schema: z.literal('coordinator-tool-v1'), tool: IdSchema, ok: z.boolean(),
   input: z.string().max(32768).optional(), inputTruncated: z.boolean().optional(),
-  taskIds: z.array(IdSchema).max(20).optional(), settingsChange: ProjectSettingsChangeSchema.optional(),
+  setupProposalId: IdSchema.optional(), taskIds: z.array(IdSchema).max(20).optional(), settingsChange: ProjectSettingsChangeSchema.optional(),
   summary: z.string().min(1).max(400), threadId: IdSchema.optional(), decisionId: IdSchema.optional(), reason: z.string().max(400).optional() });
 export const CoordinatorTurnEndSchema = z.strictObject({ schema: z.literal('coordinator-turn-end-v1'), turn: positive, retrying: z.boolean().optional(),
   sessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional(), usage: UsageSchema.optional(),

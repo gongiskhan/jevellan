@@ -1,3 +1,5 @@
+import { SetupCard } from './setup-card.js';
+import { EmptySchema } from '@jevellan/core/client';
 import { AttachmentControls, LibraryMessage, ProjectLibraryPanel, useProjectAttachments } from './project-library.js';
 import { ThreadMergeHoldContext } from './thread-actions.js';
 import { ThreadCard } from './thread-card.js';
@@ -506,6 +508,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             <summary aria-label={copy.PROJECT_MENU}><Icon name="more" /></summary>
             <div>
               <button type="button" onClick={() => { closeMenu(); navigate(`/projects/${id}/settings`); }}>{copy.PROJECT_SETTINGS}</button>
+              <button type="button" disabled={busy || offline || control.busy} onClick={() => { closeMenu(); void control.run(async signal => { await api(`/api/projects/${id}/setup-request`, EmptySchema, 'POST', { schema: 'project-run-request-v1', clientRequestId: `setup_${clientId()}` }, { signal, waitForHub: true }); updated(); }); }}>{copy.SUGGEST_SETUP}</button>
               {coordinator.canMoveHere && (
                 <button type="button" disabled={moving.busy || !!coordinator.moveRefusal} aria-describedby={coordinator.moveRefusal ? menuMoveNote : undefined}
                   onClick={() => { closeMenu(); move(); }}>{copy.MOVE_COORDINATOR}</button>
@@ -655,6 +658,7 @@ function ChatEntry({ item, projectId, navigate, tasks, threads, settings, change
   const thread = (threadId: string) => `/projects/${projectId}/threads/${threadId}`;
   switch (item.kind) {
     case 'routed': return <ChatWorkCards {...{ item, projectId, tasks, threads, startAll, deviceName, navigate, changed, onError }} />;
+    case 'setup': return <SetupCard projectId={projectId} proposalId={item.proposalId} changed={changed} onError={onError} />;
     case 'settings': return <ChatSettingsChanges projectId={projectId} change={item.change} settings={settings} changed={changed} onError={onError} />;
     case 'owner':
       return (

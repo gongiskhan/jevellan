@@ -1,3 +1,5 @@
+import { ProjectSetupProposalSchema, SetupActionRequestSchema, projectSetupPlan, defaultProjectWorkSettings, type ProjectSetupProposal, type SetupActionRequest } from '@jevellan/core';
+import { HubState } from './state.js';
 import { ProjectNotificationSchema, type ProjectNotification } from '@jevellan/core';
 import { MergeDocumentSchema, type MergeDocument } from '@jevellan/core';
 import { ProjectSessionCacheSchema, type ProjectSessionCache } from '@jevellan/core';
@@ -46,6 +48,34 @@ type Page<T> = { records: T[]; next: string | null };
  * build one per request. Reads assert the D3 revision rule; read-then-write operations run in one hub transaction.
  */
 export class HubProjectStore {
+  setupProposal(id: string): Stored<ProjectSetupProposal> | null { return this.#get('project-setup-proposals', id, ProjectSetupProposalSchema); }
+  putSetupProposal(raw: ProjectSetupProposal): Stored<ProjectSetupProposal> {
+    const document = ProjectSetupProposalSchema.parse(raw); this.#project(document.projectId);
+    if (this.coordinator(document.projectId)?.document.deviceId !== this.deviceId) refuse('Only the coordinator device can propose setup.', 403);
+    if (document.revision || document.appliedAt || document.applied || document.dismissedAt) refuse('A setup proposal must be new.', 400);
+    if (this.hub.redactor.text(JSON.stringify(document)) !== JSON.stringify(document)) refuse('Store credentials in their Settings fields.', 400);
+    return this.#put('project-setup-proposals', document.id, ProjectSetupProposalSchema, document, 0);
+  }
+  setupAction(projectId: string, id: string, raw: SetupActionRequest): Stored<ProjectSetupProposal> {
+    const input = SetupActionRequestSchema.parse(raw);
+    const schema = z.strictObject({ revision: z.number().int().positive(), document: ProjectSetupProposalSchema });
+    return settingsMutation(this.hub, this.deviceId, 'setup-action', { projectId, id, input }, input.clientRequestId, schema, () => {
+      const row = this.setupProposal(id); if (!row || row.document.projectId !== projectId) refuse('Setup proposal not found.', 404);
+      if (row.revision !== input.expectedRevision || row.document.appliedAt || row.document.dismissedAt) refuse('This setup changed. Reload before applying it.');
+      const at = new Date(this.now()).toISOString(), proposal = row.document;
+      if (input.action === 'dismiss') return this.#put('project-setup-proposals', id, ProjectSetupProposalSchema, { ...proposal, dismissedAt: at }, row.revision);
+      const project = this.hub.get('projects', projectId, ProjectSchema); if (!project) refuse('Project not found.', 404);
+      const settings = this.settings(projectId), current = settings?.document ?? defaultProjectWorkSettings(projectId);
+      if (project.revision !== input.projectRevision || (settings?.revision ?? 0) !== input.settingsRevision) refuse('These settings changed elsewhere. Reload to see them.');
+      const plan = projectSetupPlan(proposal, input.selected, current, project.document, at);
+      if (this.hub.redactor.text(JSON.stringify(plan)) !== JSON.stringify(plan)) refuse('Store credentials in their Settings fields.', 400);
+      if (plan.projectChanged) new HubState(this.hub, this.deviceId, Object.keys(this.hub.configuration.current()!.configuration['x-jevellan'].runtimes)).projects.put(plan.project, project.revision);
+      if (stableJson(plan.settings) !== stableJson(current)) this.putSettings(plan.settings, settings?.revision ?? 0);
+      for (const goal of plan.goals) this.putGoal(goal, 0);
+      const items = proposal.items.map((item, index) => ({ ...item, value: input.selected.find(row => row.index === index)?.value ?? item.value }));
+      return this.#put('project-setup-proposals', id, ProjectSetupProposalSchema, { ...proposal, items, appliedAt: at, applied: input.selected.map(row => row.index) }, row.revision);
+    });
+  }
   usageDays(projectId: string): ProjectUsageDay[] { return this.#documents('project-usage', ProjectUsageDaySchema, projectId).filter(row => Date.parse(`${row.day}T12:00:00Z`) >= this.now() - 32 * 86400000); }
   usagePage(projectId: string, after?: string): Page<ProjectUsageDay> {
     const records: ProjectUsageDay[] = []; let cursor = after, bytes = 0;
@@ -656,6 +686,9 @@ export class HubProjectStore {
       case 'coordinator-assign': result = { ...base, record: this.assignCoordinator(request.projectId, request.deviceId, request.expectedRevision) }; break;
       case 'coordinator-status-get': result = { ...base, record: this.coordinatorStatus(request.projectId) }; break;
       case 'session-caches': result = { ...base, records: this.sessionCaches(request.projectId) }; break;
+      case 'setup-get': result = { ...base, record: this.setupProposal(request.id) }; break;
+      case 'setup-put': result = { ...base, record: this.putSetupProposal(request.document) }; break;
+      case 'setup-action': result = { ...base, record: this.setupAction(request.projectId, request.id, request.input) }; break;
       case 'usage-days': result = { ...base, ...this.usagePage(request.projectId, request.after) }; break;
       case 'notification-put': this.putNotification(request.document); result = { ...base }; break;
       case 'usage-day-put': this.putUsageDay(request.document); result = base; break;
@@ -697,6 +730,9 @@ export class HubProjectStore {
 
 /** The hub's own `ProjectHub`: the same store and authority rules, bound to the hub device. */
 export class HubProjectAccess implements ProjectHub {
+  async setupProposal(id: string) { return this.#store.setupProposal(id); }
+  async putSetupProposal(document: ProjectSetupProposal) { return this.#store.putSetupProposal(document); }
+  async setupAction(projectId: string, id: string, input: SetupActionRequest) { return this.#store.setupAction(projectId, id, input); }
   async sessionCaches(projectId: string) { return this.#store.sessionCaches(projectId); }
   async usageDays(projectId: string) { return this.#store.usageDays(projectId); }
   async putNotification(document: ProjectNotification) { this.#store.putNotification(document); }
@@ -770,6 +806,9 @@ export class HubProjectAccess implements ProjectHub {
 
 /** A member's `ProjectHub` over the device-token HTTP API; every reply must match the requested identity and revision. */
 export class MemberProjectStore implements ProjectHub {
+  async setupProposal(id: string) { const result = await this.#call('setup-get', { id }); return result.record; }
+  async putSetupProposal(document: ProjectSetupProposal) { return (await this.#call('setup-put', { document })).record; }
+  async setupAction(projectId: string, id: string, input: SetupActionRequest) { return (await this.#call('setup-action', { projectId, id, input })).record; }
   async sessionCaches(projectId: string) { return this.#check((await this.#call('session-caches', { projectId })).records, rows => rows.every(row => row.projectId === projectId)); }
   async usageDays(projectId: string) {
     const records: ProjectUsageDay[] = []; let after: string | undefined;

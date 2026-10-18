@@ -779,3 +779,9 @@ button.pw-session-badge { display: inline-flex; gap: 6px; min-height: 30px; padd
 .endpoint-model { display: grid; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .endpoint-model fieldset { min-width: 0; }
 .endpoint-model .check-label { display: inline-flex; align-items: center; gap: 6px; }
+
+.pw-setup-card { border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin: 12px 0; min-width: 0; }
+.pw-setup-card h3 { margin-top: 0; }
+.pw-setup-item { margin: 16px 0; min-width: 0; }
+.pw-setup-item textarea { width: 100%; min-height: 84px; margin-top: 8px; resize: vertical; }
+.pw-setup-item .check-label { align-items: flex-start; }

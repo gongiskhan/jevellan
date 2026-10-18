@@ -836,8 +836,8 @@
   {
     "id": "parity-first-run",
     "title": "Suggested project setup",
-    "why": "BRIEF.md phase 9. Ordered Projects parity run; implementation and evidence not started. See docs/acceptance/projects-parity-2026-10/.",
-    "status": "planned"
+    "why": "BRIEF.md phase9: first-turn/explicit setup triggers, scoped proposal tool, editable owner card and atomic selected Apply with retry/revision guards are implemented.153 affected backend cases and PAR9 all4layouts pass;16 screenshots. Dedicated vision and real LP9 are not run. Decision893; docs/acceptance/projects-parity-2026-10/phase-9/.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "parity-docs-release",

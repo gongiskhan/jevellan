@@ -1,3 +1,4 @@
+import { SETUP_PROMPT } from '../packages/projects/dist/copy.js';
 import { afterEach, beforeEach, expect, test } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
@@ -136,7 +137,8 @@ test('one turn at a time: events during a turn arrive batched in the next, which
   expect(first).toMatchObject({ owner: { kind: 'coordinator', projectId: 'proj_a', id: 'proj_a' }, turn: 1, permissions: 'read-only', safetyProfile: 'coordinator', cwd: checkout,
     model: 'scripted-model', effort: 'medium', timeoutMs: 1_200_000, systemAppend: coordinatorSystemAppend('Shop') });
   expect(first!.resume).toBeUndefined();
-  expect(withoutLiveAccounts(first!.prompt)).toMatch(/^Project notebook:\n\(empty\)\n\nActive threads:\n\(none\)\n\nOpen questions to the owner \(numbered as the owner sees them\):\n\(none\)\n\nRecent conversation with the owner:\n\(none\)\n\nProject memory:\nProject memory is unavailable for this turn\.\n\nEvents since your last turn:\n\[owner \d{2}:\d{2}\] add A and fix B$/);
+  expect(first!.prompt).toContain(`${SETUP_PROMPT}\n\nEvents since your last turn:`);
+  expect(withoutLiveAccounts(first!.prompt).replace(`${SETUP_PROMPT}\n\n`, '')).toMatch(/^Project notebook:\n\(empty\)\n\nActive threads:\n\(none\)\n\nOpen questions to the owner \(numbered as the owner sees them\):\n\(none\)\n\nRecent conversation with the owner:\n\(none\)\n\nProject memory:\nProject memory is unavailable for this turn\.\n\nEvents since your last turn:\n\[owner \d{2}:\d{2}\] add A and fix B$/);
   expect(second).toMatchObject({ turn: 2, resume: { sessionId: work.coordinators.get('proj_a').state().session!.nativeSessionId } });
   expect(withoutLiveAccounts(second!.prompt)).toBe('Events since your last turn:\n[thread "Add A" (thread_a)] Pull request #1 opened.\n[thread "(unknown thread)" (thread_b)] Pull request #2 opened.');
   const state = work.coordinators.get('proj_a').state();
@@ -145,7 +147,7 @@ test('one turn at a time: events during a turn arrive batched in the next, which
   // Ledger: events on receipt (D2a), delivered ids on the turn start, the final text, and completed ends.
   const starts = payloads(work, 'coordinator-turn-start');
   expect(starts).toEqual([
-    { schema: 'coordinator-turn-v1', turn: 1, fresh: true, runtime: 'fake', modelLabel: 'Fixture', effort: 'medium', accountLabel: 'Work', eventIds: [expect.stringMatching(/^cev_/)], prompt: first!.prompt, promptTruncated: false },
+    { schema: 'coordinator-turn-v1', turn: 1, setupTriggerId: 'first', fresh: true, runtime: 'fake', modelLabel: 'Fixture', effort: 'medium', accountLabel: 'Work', eventIds: [expect.stringMatching(/^cev_/)], prompt: first!.prompt, promptTruncated: false },
     { schema: 'coordinator-turn-v1', turn: 2, fresh: false, runtime: 'fake', modelLabel: 'Fixture', effort: 'medium', accountLabel: 'Work', eventIds: ['cev_pa', 'cev_pb'], prompt: second!.prompt, promptTruncated: false }]);
   expect(payloads(work, 'coordinator-text').map((data) => data.text)).toEqual(['Started two threads.', 'Both pull requests are open.']);
   const extras = { sessionKey: expect.stringMatching(/^[a-f0-9]{64}$/u), usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, costSource: 'unknown' } };

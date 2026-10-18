@@ -452,6 +452,7 @@ export type ChatItem =
   | { kind: 'owner'; id: number; text: string; at: string; delivered: boolean }
   | { kind: 'reply'; id: number; text: string }
   | { kind: 'routed'; id: number; turn?: number; taskIds?: string[]; threadId?: string; message: boolean }
+  | { kind: 'setup'; id: number; proposalId: string }
   | { kind: 'settings'; id: number; change: import('@jevellan/core/client').ProjectSettingsChange }
   | { kind: 'tool'; id: number; tool: string; summary: string; ok: boolean; threadId?: string }
   | { kind: 'event'; id: number; text: string; detail?: string; threadId?: string; delivered: boolean }
@@ -467,6 +468,7 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
   const name = (threadId: string) => { const title = titles(threadId); return title ? copy.quotedTitle(title) : copy.UNKNOWN_THREAD_NAME; };
   const text = copy.eventCopy;
   switch (event.kind) {
+    case 'setup-requested': return card(copy.SETUP_REQUESTED_EVENT, undefined);
     case 'settings-changed': return card(copy.SETTINGS_CHANGED_EVENT, undefined, event.changes.map(change => `${copy.settingFieldLabel(change.field)}: ${change.from} → ${change.to}`).join('; '));
     case 'thread-resolved': return card(copy.threadResolved(titles(event.threadId) ?? copy.UNKNOWN_THREAD_NAME), event.threadId);
     case 'thread-placement-changed': return card(event.summary, event.threadId);
@@ -531,6 +533,7 @@ export function chatItems(events: readonly ProjectLedgerEvent[], titles: ThreadT
       case 'coordinator-text': { const data = payload(event, 'coordinator-text'); return data ? [{ kind: 'reply', id, text: data.text }] : []; }
       case 'coordinator-tool': {
         const data = payload(event, 'coordinator-tool');
+        if (data?.ok && data.setupProposalId) return [{ kind: 'setup', id, proposalId: data.setupProposalId }];
         if (data?.ok && data.settingsChange) {
           if (settingCards.has(data.settingsChange.id)) return [];
           settingCards.add(data.settingsChange.id); return [{ kind: 'settings', id, change: data.settingsChange }];

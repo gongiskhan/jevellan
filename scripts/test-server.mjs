@@ -113,6 +113,18 @@ const EVENTS_HEADER = eventBlock([]);
 function coordinatorStep(input) {
   // Only delivered events count; the fresh-session recap repeats earlier messages.
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
+  if (events.includes('[the owner requested setup recommendations]')) return async turn => {
+    await projectTool(turn, 'jevellan_setup_propose', { items: [
+      { key: 'testCommand', value: 'npm test', note: 'The repository has a test script.' },
+      { key: 'setupCommand', value: 'npm ci' },
+      { key: 'instructions', value: 'Keep changes focused.' },
+      { key: 'copyFiles', value: '.env.local' },
+      { key: 'variables', value: 'SANDBOX_DATA_DIR' },
+      { key: 'secrets', value: 'SERVICE_TOKEN' },
+      { key: 'goal', value: 'Keep the fixture tidy\nMake small, useful improvements supported by the repository.' },
+    ] });
+    turn.say('Suggested setup is ready for you to choose.'); return { status: 'completed' };
+  };
   if (events.includes('PAR8 endpoint')) return async turn => {
     await projectTool(turn, 'jevellan_task_create', { title: 'PAR8 endpoint task', brief: 'PAR8 inspect: read README and report progress.', type: 'analysis', source: 'owner-request', now: true });
     turn.say('PAR8 endpoint task: new task.'); return { status: 'completed' };

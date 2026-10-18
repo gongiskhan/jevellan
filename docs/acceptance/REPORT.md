@@ -2382,3 +2382,7 @@ Decisions880–887 add the hub Library, authenticated streaming and read-only mi
 ## Projects parity phase8
 
 Compatible endpoints extend the Claude account path with explicit served models, billing, isolated environment and one-request probes. Simulated:191 affected backend cases and all4 PAR8 layouts pass; the real SDK/CLI fake-provider contract preserves fixture native homes.32 screenshots retained. Dedicated vision not run; optional real-provider LP8 blocked. Decisions888–892 and phase evidence are in projects-parity-2026-10/phase-8/. Installation and full suites remain phase10 gates.
+
+## Projects parity phase9
+
+Suggested setup now reaches the coordinator on its eligible first turn or an explicit menu request. The owner edits and selects the proposed values before atomic, revisioned Apply; new goals are paused in Propose mode. Simulated:153 backend cases and PAR9 all4layouts pass, with16 screenshots. Dedicated vision and live LP9 are not run. Decision893; see projects-parity-2026-10/phase-9/.

@@ -1,3 +1,4 @@
+import type { ProjectSetupProposal, SetupActionRequest } from './project-setup-schemas.js';
 import type { MergeDocument } from './merge-schemas.js';
 import type { ProjectJob, ProjectDaily, ProjectJobRun, ProjectWindow } from './project-daily-schemas.js';
 import type {
@@ -26,6 +27,9 @@ export type ReserveOutcome = { granted: true; reservation: Stored<FileReservatio
  * Phase 6 adds mail, reservations and held checkouts.
  */
 export interface ProjectHub {
+  setupProposal(id: string): Promise<Stored<ProjectSetupProposal> | null>;
+  putSetupProposal(document: ProjectSetupProposal): Promise<Stored<ProjectSetupProposal>>;
+  setupAction(projectId: string, id: string, input: SetupActionRequest): Promise<Stored<ProjectSetupProposal>>;
   putNotification?(document: ProjectNotification): Promise<void>;
   usageDays?(projectId: string): Promise<ProjectUsageDay[]>;
   putUsageDay?(document: ProjectUsageDay): Promise<void>;

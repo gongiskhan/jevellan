@@ -1,3 +1,4 @@
+import { SetupProposeInputSchema, SetupProposalResultSchema } from './project-setup-schemas.js';
 import { ProjectSettingsUpdateSchema, ProjectSettingsChangeResultSchema, TasksStartInputSchema, TasksStartResultSchema } from './project-parity-schemas.js';
 import { VerificationReportSchema } from './merge-schemas.js';
 import { GithubInputSchema, GithubResultSchema } from './github-awareness-schemas.js';
@@ -117,6 +118,7 @@ export const BridgeToolSchemas = {
   jevellan_job_runs: z.strictObject({ jobId: IdSchema.optional() }),
   jevellan_daily_list: z.strictObject({}),
   jevellan_settings_update: ProjectSettingsUpdateSchema,
+  jevellan_setup_propose: SetupProposeInputSchema,
   jevellan_library_list: LibraryListInputSchema, jevellan_library_get: LibraryGetInputSchema, jevellan_library_add: LibraryAddInputSchema,
   jevellan_tasks_start: TasksStartInputSchema,
   jevellan_task_create: TaskCreateRequestSchema.omit({ schema: true, clientRequestId: true }).extend({ source: z.enum(['owner-request', 'refill', 'finding']) }),
@@ -191,6 +193,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
     jevellan_tasks_list: 'Read the task queue, including drafts and linked threads. Open includes draft, queued, active and in-review tasks.',
     jevellan_goals_list: 'Read owner-defined goals, motivations, health, state, autonomy, limits and today counts. Goals can only be changed by the owner.',
     jevellan_task_create: 'Create a session task with a self-contained brief and type. Owner-request requires an owner message in this turn; only that source may use Now. Code decides proposal state, placement and dispatch. When the owner asks for a task but not to start it yet, pass held: true; it stays queued until jevellan_task_update sets held: false on the owner\'s word.',
+    jevellan_setup_propose: 'Propose repository-supported setup once for this turn setup trigger. The owner chooses what to apply.',
     jevellan_settings_update: 'Change the permitted project settings only on the owner words in this turn. Every change appears in chat with Undo.',
     jevellan_library_list: 'List files in this project library. Optionally filter by name or note.',
     jevellan_library_get: 'Get a library file by id, mirrored locally when needed. Read the returned localPath.',
@@ -226,7 +229,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
 
 // Project scopes (D104). The coordinator's read-only Claude allow list and the bridge's scope lists both derive from
 // projectToolNames, never a copy.
-export const COORDINATOR_TOOLS = ['jevellan_library_list', 'jevellan_library_get', 'jevellan_review_followup', 'jevellan_jobs_list', 'jevellan_job_run', 'jevellan_job_runs', 'jevellan_daily_list', 'jevellan_goals_list', 'jevellan_tasks_list', 'jevellan_task_create', 'jevellan_tasks_start', 'jevellan_settings_update', 'jevellan_task_update', 'jevellan_task_cancel', 'jevellan_threads_list', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
+export const COORDINATOR_TOOLS = ['jevellan_setup_propose', 'jevellan_library_list', 'jevellan_library_get', 'jevellan_review_followup', 'jevellan_jobs_list', 'jevellan_job_run', 'jevellan_job_runs', 'jevellan_daily_list', 'jevellan_goals_list', 'jevellan_tasks_list', 'jevellan_task_create', 'jevellan_tasks_start', 'jevellan_settings_update', 'jevellan_task_update', 'jevellan_task_cancel', 'jevellan_threads_list', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
   'jevellan_ask_user', 'jevellan_answer_question', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_pr_diff', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
 const MAIN_THREAD_TOOLS = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'] as const satisfies readonly BridgeTool[];
 export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_library_add' | 'jevellan_thread_report' | 'jevellan_app_start' | 'jevellan_app_stop' | 'jevellan_apps_list' | 'memory_write' | 'memory_edit';
@@ -253,6 +256,7 @@ export const ProjectToolResultSchemas = {
   jevellan_apps_list: z.strictObject({ schema: z.literal('project-apps-v1'), apps: z.array(ProjectAppSchema) }),
   jevellan_tasks_list: z.strictObject({ schema: z.literal('tasks-list-result-v1'), tasks: z.array(ProjectWorkTaskSchema.extend({ position: z.number().int().positive() })) }),
   jevellan_settings_update: ProjectSettingsChangeResultSchema,
+  jevellan_setup_propose: SetupProposalResultSchema,
   jevellan_tasks_start: TasksStartResultSchema,
   jevellan_task_create: TaskReceiptSchema,
   jevellan_task_update: z.strictObject({ schema: z.literal('task-update-result-v1'), task: ProjectWorkTaskSchema }),

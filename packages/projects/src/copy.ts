@@ -117,6 +117,7 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
   const title = (id: string) => context.title(id) ?? UNKNOWN_THREAD;
   const thread = (id: string) => `thread "${title(id)}" (${id})`;
   switch (event.kind) {
+    case 'setup-requested': return SETUP_REQUESTED;
     case 'settings-changed': return event.instructions !== undefined ? `[instructions changed by ${event.by === 'owner' ? 'the owner' : 'you'}] Project instructions are now:\n${event.instructions}` : `[settings changed by ${event.by === 'owner' ? 'the owner' : 'you'}] ${event.changes.map(change => `${settingLabel(change.field)}: ${change.from} → ${change.to}`).join('; ')}`;
     case 'thread-resolved': return `[thread "${title(event.threadId)}" resolved by ${event.by === 'owner' ? 'the owner' : 'inactivity'}]`;
     case 'thread-placement-changed': return `[thread "${title(event.threadId)}" moved: ${event.summary}]`;
@@ -422,6 +423,7 @@ export function coordinatorToolSummary(tool: string, input: unknown, outcome: To
     case 'jevellan_tasks_list': return line('Listed tasks', 'list tasks');
     case 'jevellan_task_create': return line(`${field(result, 'state') === 'draft' ? 'Proposed' : 'Queued'} task "${textField(input, 'title') ?? ''}"`, 'create a task');
     case 'jevellan_tasks_start': return line('Started proposed tasks', 'start proposed tasks');
+    case 'jevellan_setup_propose': return line(SETUP_PROPOSED, 'propose project setup');
     case 'jevellan_settings_update': return line('Changed project settings', 'change project settings');
     case 'jevellan_task_update': return line('Updated a queued task', 'update a task');
     case 'jevellan_task_cancel': return line('Cancelled a queued task', 'cancel a task');
@@ -636,3 +638,11 @@ export const LIBRARY_HEADERS_REQUIRED = 'Content-Type and Content-Length are req
 export const LIBRARY_THREAD_FORBIDDEN = 'This thread cannot add files to that library.';
 export const LIBRARY_OPERATION_MISSING = 'Library operation not found.';
 export const LIBRARY_READ_ONLY = 'This session can only read the project library.';
+
+export const SETUP_ALREADY_PROPOSED = 'Setup was already proposed for this project. The owner can ask for it again from the project menu.';
+export const SETUP_PROPOSED = 'Proposed project setup';
+export const SETUP_REQUESTED = '[the owner requested setup recommendations]';
+export const SETUP_PROMPT = `This project is new to you. Before anything else, read the README, AGENTS.md or CLAUDE.md, the package or build files, the CI workflows (jevellan_github) and the last 20 commits.
+Write a short notebook entry: what the project is, how it is built and tested, and what looks unfinished.
+Then call jevellan_setup_propose with what you would set: the test command, the worktree setup command, project instructions drawn from the repository's own conventions, untracked files new worktrees need (such as .env.local), environment variable and secret names they need (never values), and at most three goals.
+Propose only what the repository supports, and leave out what you cannot tell. Then answer the owner's message, if there is one.`;

@@ -508,3 +508,16 @@ export const ENDPOINT = {
   background: 'Background model', backgroundHelp: "Used for Claude Code's small background calls. Defaults to the first model.", keyRefused: 'Key refused',
 } as const;
 export const modelNotServed = (model: string): string => `This account does not serve ${model}.`;
+
+export const SUGGEST_SETUP = 'Suggest setup';
+export const SUGGESTED_SETUP = 'Suggested setup';
+export const APPLY_SETUP = 'Apply setup';
+export const SETUP_NOT_NOW = 'Not now';
+export const SETUP_DISMISSED = 'Setup dismissed.';
+export const SETUP_FILL_VALUES = 'Fill in their values in Project settings → Environment.';
+export const SETUP_LABELS = { testCommand: 'Test command', setupCommand: 'Worktree setup command', instructions: 'Project instructions', copyFiles: 'Copy into new worktrees', variables: 'Variables to fill in', secrets: 'Secrets to fill in' };
+export const setupGoalLabel = (value: string) => `Goal: ${value.split('\n')[0]}`;
+export const setupApplied = (count: number) => `Setup applied: ${count} changes.`;
+export const SETUP_REQUESTED_EVENT = 'Setup recommendations requested';
+
+export const SETTINGS_CONFLICT = 'These settings changed elsewhere. Reload to see them.';

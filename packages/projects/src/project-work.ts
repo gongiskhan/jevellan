@@ -1,3 +1,6 @@
+import { setupProposalId } from './setup.js';
+import { SETUP_ALREADY_PROPOSED } from './copy.js';
+import { ProjectSetupProposalSchema, SetupProposeInputSchema, SetupProposalViewSchema, SetupActionRequestSchema, ProjectRunRequestSchema, projectSetupPlan } from '@jevellan/core';
 import { ProjectNotifications } from './notifications.js';
 import { ProjectUsage } from './usage.js';
 import { SettingsChangePlanSchema, settingsChangePlan } from './settings-changes.js';
@@ -46,7 +49,7 @@ import {
 } from './copy.js';
 import { coordinatorToolHandlers } from './bridge-tools.js';
 import { CoordinatorService, type Coordinator, type CoordinatorToolHandlers } from './coordinator.js';
-import { DecisionItems } from './decision-items.js';
+import { DecisionItems, derivedId } from './decision-items.js';
 import { Inbox, Outbox, type EnvelopeOf } from './envelopes.js';
 import { ThreadGit } from './git.js';
 import { ThreadIndexPublisher } from './index-publisher.js';
@@ -440,6 +443,7 @@ export class ProjectWork {
   /** Coordinator tool handlers (brief 7.1), built on first use because the thread service and the tracker come after the coordinators. Memory is read-only. */
   #coordinatorTools(): CoordinatorToolHandlers {
     return this.#tools ??= { ...coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, tasks: this.tasks, goals: this.goals, daily: this.daily, jobs: this.jobs, store: this.store, decisions: this.decisions,
+      setupPropose: (id, trigger, input) => this.proposeSetup(id, trigger, input),
       settingsUpdate: (id, input, requestId) => this.coordinatorSettings(id, input, requestId),
       library: this.#o.library, pullRequests: this.tracker, github: this.#github, terminalRead: this.#o.terminalRead, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
       memory: async (projectId, scope) => this.#o.memory.project(await this.#project(projectId), this.#o.deviceId, () => { throw new Error(COORDINATOR_MEMORY_READ_ONLY); },
@@ -802,6 +806,32 @@ export class ProjectWork {
         id: `cev_settings_${projectId}_${saved.revision}`, at: plan.change.at });
     }
     return { schema: 'project-settings-change-result-v1', change: plan.change, repeated };
+  }
+  async requestSetup(projectId: string, raw: unknown) {
+    const input = ProjectRunRequestSchema.parse(raw); await this.#coordinatorHere(projectId);
+    const at = this.#timers.now(), id = derivedId('setuprequest', projectId, input.clientRequestId);
+    this.coordinators.get(projectId).enqueue({ schema: 'coordinator-event-v1', kind: 'setup-requested', id, at: new Date(at).toISOString() });
+    return { schema: 'empty-request-v1' as const };
+  }
+  async proposeSetup(projectId: string, trigger: string, raw: unknown) {
+    const project = await this.#project(projectId), id = setupProposalId(projectId, trigger);
+    if (await this.#o.hub.setupProposal(id)) throw refuse(SETUP_ALREADY_PROPOSED, 409);
+    const { items } = SetupProposeInputSchema.parse(raw), at = new Date(this.#timers.now()).toISOString();
+    const proposal = ProjectSetupProposalSchema.parse(this.#o.redactor.document({ schema: 'project-setup-proposal-v1', id, projectId, revision: 0, createdAt: at, items }));
+    projectSetupPlan(proposal, items.map((item, index) => ({ index, value: item.value })), await this.admission.settings(projectId), project, at);
+    return { schema: 'setup-proposal-result-v1' as const, proposal: (await this.#o.hub.putSetupProposal(proposal)).document };
+  }
+  async setupView(projectId: string, id: string) {
+    const project = await this.#o.projects.get(projectId), proposal = (await this.#o.hub.setupProposal(id))?.document;
+    if (!project || !proposal || proposal.projectId !== projectId) throw refuse('Setup proposal not found.', 404);
+    return SetupProposalViewSchema.parse({ schema: 'setup-proposal-view-v1', proposal, projectRevision: project.revision, settingsRevision: (await this.#o.hub.settings(projectId))?.revision ?? 0 });
+  }
+  async setupAction(projectId: string, id: string, raw: unknown) {
+    const input = SetupActionRequestSchema.parse(raw), before = (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId);
+    await this.#o.hub.setupAction(projectId, id, input);
+    const after = (await this.#o.hub.settings(projectId))?.document;
+    if (after && before.instructions !== after.instructions) await this.#settingsEvent(projectId, { schema: 'coordinator-event-v1', kind: 'settings-changed', by: 'owner', id: `cev_settings_${projectId}_${after.revision}`, at: new Date(this.#timers.now()).toISOString(), instructions: after.instructions, changes: [{ field: 'instructions', from: before.instructions.slice(0, 400), to: after.instructions.slice(0, 400) }] });
+    return this.setupView(projectId, id);
   }
   async notebookView(projectId: string): Promise<z.infer<typeof ProjectNotebookViewSchema>> {
     await this.#project(projectId); const stored = await this.#o.hub.notebook(projectId);
