@@ -125,7 +125,8 @@ function coordinatorStep(input) {
     ] });
     turn.say('Suggested setup is ready for you to choose.'); return { status: 'completed' };
   };
-  if (events.includes('PAR8 endpoint')) return async turn => {
+  // The owner's own line only: the started thread's reports also name "PAR8 endpoint task".
+  if (/\] PAR8 endpoint$/mu.test(events)) return async turn => {
     await projectTool(turn, 'jevellan_task_create', { title: 'PAR8 endpoint task', brief: 'PAR8 inspect: read README and report progress.', type: 'analysis', source: 'owner-request', now: true });
     turn.say('PAR8 endpoint task: new task.'); return { status: 'completed' };
   };
