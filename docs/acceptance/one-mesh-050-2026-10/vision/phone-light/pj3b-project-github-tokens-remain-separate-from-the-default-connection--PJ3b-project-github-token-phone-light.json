@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PJ3b project GitHub tokens remain separate from the default connection",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/screenshots/PJ3b-project-github-token-phone-light.png",
+  "expected": "the Jevellan web app \"project github token\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PJ3b project GitHub tokens remain separate from the default connection\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Tab strip clips the leftmost tab label (\"...ices\") and the rightmost tab icon at the edges; it is a horizontally scrollable strip with prev/next arrow buttons, so the tabs can still be reached",
+      "The \"Save Git settings\" button looks disabled and has low contrast against the card background, though its label can still be read",
+      "The muted helper text (\"This choice is saved only in Jevellan...\") is small and light grey, but it is still readable",
+      "The \"Check a project\" selector shows \"Outside context fixture\", while the token scope shows \"Projects fixture\". This may be intended for the separation scenario. It is not a layout problem."
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-form-bottom-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR8 form bottom\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal isn't scrolled all the way down: the 'Usage ceiling (%)' input is cut off by the edge of the scroll area, so its value is only partly visible. You can still reach it by scrolling.",
+      "The 'Model id' label at the top is clipped by the modal header because of the scroll position.",
+      "The 'Add model' button sits almost directly on top of the 'Background model' label with no space between them.",
+      "The 'Used for Claude Code's small background calls…' help text runs straight into the 'Auth token' label with very little space.",
+      "The Efforts box has extra empty space below the checkbox row."
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-9/screenshots/PAR9-dismissed-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR9 dismissed\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'PAR8 endpoint task' progress card at the top of the thread is cut off by the scroll area, so its top edge is hidden.",
+      "The 'Open on GitHub' button on the 'Write the welcome copy' card at the bottom of the Overview panel is partly clipped by the scroll area.",
+      "Session titles and subtitles in the sidebar are cut short with ellipses (e.g. 'Context · Mesh journey fixt…', 'Context · J11 memory journ…').",
+      "The Overview tab row ends with 'Library' right against the panel edge; any more tabs may be off-screen.",
+      "The header shows 'Context unavailable' and 'Cache today Unknown', which are placeholder-like values."
+    ]
+  }
+}

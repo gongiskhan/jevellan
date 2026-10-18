@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-disabled-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR8 disabled\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The masked key preview 'Saved · ••••eady' reads oddly, as if it ends in a fragment of the word 'ready'.",
+      "Session titles and subtitles in the sidebar are cut off with an ellipsis (for example 'Context · Mesh journey fix…'). This is deliberate truncation, but the full names can't be read.",
+      "The Projects Claude usage bars for 'Five hours' and 'Week' are empty and show 'Unknown', so they add little.",
+      "The 'Disabled' status uses low-contrast gray text and a gray dot, which is fainter than the other status labels.",
+      "The Codex devices card runs to the bottom edge of the viewport, so any content below it needs scrolling. Nothing visible is clipped."
+    ]
+  }
+}

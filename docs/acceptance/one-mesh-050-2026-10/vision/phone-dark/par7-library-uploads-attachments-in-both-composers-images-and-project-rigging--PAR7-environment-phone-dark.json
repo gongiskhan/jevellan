@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR7 library uploads, attachments in both composers, images and project rigging",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7-environment-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR7 environment\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR7 library uploads, attachments in both composers, images and project rigging\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Edit in Settings → Rigging' link sits very close to the divider above the Cancel/Save footer, with almost no bottom padding.",
+      "The example path in the help text looks like '.envlocal'. The dot in '.env.local' is hard to see at this size.",
+      "Part of a textarea from the section above shows at the top edge. This is from the scroll position, not a layout problem."
+    ]
+  }
+}

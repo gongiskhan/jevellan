@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR3 Overview groups, owner actions and saved-work publication",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-3/screenshots/PAR3-resolve-confirmation-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR3 resolve confirmation\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR3 Overview groups, owner actions and saved-work publication\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal backdrop blurs and dims the background a lot, so the page behind the dialog is unreadable. That is expected for a modal and does not block anything.",
+      "The dialog body text wraps onto a second line, leaving only 'worktree stay.' there. The text is still fully readable."
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-unreachable-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR8 unreachable\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The bottom of the page is cut off at the viewport edge after the 'Codex sign-ins are kept per device for now.' note. The page scrolls, so this doesn't block anything.",
+      "Sidebar conversation titles and subtitles are truncated with ellipses ('Mesh journey fix…', 'dev-ma…')",
+      "In the Projects Claude account, the 'Five hours' and 'Week' usage bars are empty and show 'Unknown', so they look sparse.",
+      "The 'Log in on Offline fixture' link is grey, so it reads as disabled next to the pink login links in the other rows."
+    ]
+  }
+}

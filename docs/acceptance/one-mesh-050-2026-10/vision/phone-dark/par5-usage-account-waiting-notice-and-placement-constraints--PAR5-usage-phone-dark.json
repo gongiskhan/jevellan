@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR5 usage, account waiting notice and placement constraints",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-5/screenshots/PAR5-usage-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR5 usage\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR5 usage, account waiting notice and placement constraints\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The Cancel/Save footer covers the bottom of the BY THREAD table. Only the top line of the one row ('A narrow parsing … Fable 1 1,500 $0.12') shows, and the thread name looks wrapped or truncated with no ellipsis. The panel looks scrollable, so the row is probably reachable, but at this scroll position it is not fully visible.",
+      "The thread table is tight at phone width: the COST column sits right against the panel's right edge.",
+      "'2 turns without a reported cost' is in muted gray and has low contrast against the dark background."
+    ]
+  }
+}

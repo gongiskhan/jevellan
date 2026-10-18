@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-9/screenshots/PAR9-dismissed-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR9 dismissed\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The status badge text 'Working…' is cut short inside its pill in the header.",
+      "Sidebar session titles and subtitles are cut off with ellipses, such as 'Context · Mesh journey fixt…' and 'Done · Improver sandbox · dev-ma…'.",
+      "The first conversation card is partly hidden under the sticky header at the top of the scroll area. This is normal scroll behavior.",
+      "The 'Write the welcome copy' card in the Overview panel is cut off at the bottom of the viewport, so the 'Open on GitHub' button is only partly visible until you scroll.",
+      "The empty space between the 'Suggested setup' blocks is uneven."
+    ]
+  }
+}

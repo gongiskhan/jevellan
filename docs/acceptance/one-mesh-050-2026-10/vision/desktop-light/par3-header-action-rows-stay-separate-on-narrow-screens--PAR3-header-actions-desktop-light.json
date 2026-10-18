@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR3 header action rows stay separate on narrow screens",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-3/screenshots/PAR3-header-actions-desktop-light.png",
+  "expected": "the Jevellan web app \"PAR3 header actions\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PAR3 header action rows stay separate on narrow screens\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · J11 memory journ…', 'Done · J11 memory journey · dev-…'). This truncation looks intentional and the main parts are still readable.",
+      "The 'Resolve' button sits alone on its own row below the token, model and host row, which leaves a slightly sparse gap above the thread."
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-form-bottom-desktop-light.png",
+  "expected": "the Jevellan web app \"PAR8 form bottom\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal body isn't scrolled all the way down. The 'Usage ceiling (%)' input is half hidden behind the sticky footer, so its value ('90'?) is only partly visible. It can still be reached by scrolling, but a 'form bottom' capture would normally show the last field in full.",
+      "The 'Model id' label at the top of the scrolled area is clipped by the modal header. This is normal for scrolled content.",
+      "The 'Add model' button sits almost directly on top of the 'Background model' label with no vertical gap.",
+      "The helper text under 'Background model' runs straight into the 'Auth token' label with too little spacing."
+    ]
+  }
+}

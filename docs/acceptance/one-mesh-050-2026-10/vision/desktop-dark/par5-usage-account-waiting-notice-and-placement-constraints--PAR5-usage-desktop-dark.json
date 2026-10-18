@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR5 usage, account waiting notice and placement constraints",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-5/screenshots/PAR5-usage-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR5 usage\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR5 usage, account waiting notice and placement constraints\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The page is scrolled down, so the bottom of the Notifications section above Usage is cut off at the top of the viewport. This is normal scrolling; the Usage section itself is fully visible.",
+      "Sidebar session titles and subtitles are cut off with an ellipsis (e.g. 'Context · Mesh journey fixt…'). The 6m timestamps and overflow menus are still visible.",
+      "The Today / 7 days / 30 days range chips look almost the same, so it's hard to tell which range is selected."
+    ]
+  }
+}

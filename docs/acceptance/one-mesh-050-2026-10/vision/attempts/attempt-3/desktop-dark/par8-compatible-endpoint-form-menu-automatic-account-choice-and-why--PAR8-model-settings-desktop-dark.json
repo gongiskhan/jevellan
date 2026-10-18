@@ -1,0 +1,21 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-model-settings-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR8 model settings\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The Decisions settings page appears where a dedicated 'model settings' screen was expected. The Model menu section, with the Jev model and per-model Enabled, Label and Description fields, covers model settings, so this is probably the intended screen.",
+      "The Label fields sit in the middle of each model card, with a lot of empty space before the provider and model ID on the right, so the row looks unbalanced.",
+      "The 'Test connection' button wraps below the Jev key input instead of lining up with 'Save key'.",
+      "The Jev key input is empty even though the status reads 'Saved · ••••1d17', which could confuse users. Showing the masked key or a placeholder would help.",
+      "The second model card's description is cut off at the bottom of the scroll area, but the page scrolls, so it is still reachable.",
+      "'Supported efforts: low, high' is in small, low-contrast grey text, though it is still readable."
+    ]
+  }
+}

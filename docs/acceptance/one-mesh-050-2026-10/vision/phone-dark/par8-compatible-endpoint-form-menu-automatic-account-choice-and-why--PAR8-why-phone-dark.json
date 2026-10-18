@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-why-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR8 why\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The bottom line under 'ACCOUNTS WHEN CHOSEN' ('PAR8 endpoint account · chosen; eligible · Shared…') is cut off by the bottom of the screen. This looks like normal scrollable content past the fold, not a layout problem.",
+      "The 'Main', 'Browser member' and lower effort bars are dim grey on a dark background, so they have low contrast but can still be read.",
+      "'Offline fixture: offline' under DEVICE sits close to the bars above it, so that spot feels slightly cramped."
+    ]
+  }
+}

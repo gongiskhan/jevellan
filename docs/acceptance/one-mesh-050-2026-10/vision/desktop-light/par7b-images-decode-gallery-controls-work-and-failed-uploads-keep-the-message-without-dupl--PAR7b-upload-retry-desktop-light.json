@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR7b images decode, gallery controls work and failed uploads keep the message without duplicates",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7b-upload-retry-desktop-light.png",
+  "expected": "the Jevellan web app \"PAR7b upload retry\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PAR7b images decode, gallery controls work and failed uploads keep the message without duplicates\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Simulated upload interruption.' toast covers a round header button to the left of 'Override coordinator'. The toast is temporary and can be dismissed, so the button becomes reachable again.",
+      "The top message card in the chat is clipped at the top edge because the conversation is scrolled. This is normal scrolling, not a layout fault.",
+      "Long session titles in the sidebar (e.g. 'Context · J11 memory journ…') are shortened with an ellipsis, as intended.",
+      "The byte sizes on the attachment chips ('11 B', '12 B') are very small but still readable."
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR2 live cards, proposed starts, follow-ups and settings Undo",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-2/screenshots/PAR2-proposals-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR2 proposals\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR2 live cards, proposed starts, follow-ups and settings Undo\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Composer placeholder 'Tell the coordinator what you nee…' is cut off by the stop and send buttons",
+      "Status pill text 'Working…' is truncated in a tight badge next to the model label",
+      "Context and cache stats in the header wrap into narrow monospace columns that are hard to scan",
+      "Large empty gap between 'Start all (2)' and the coordinator status and composer area"
+    ]
+  }
+}

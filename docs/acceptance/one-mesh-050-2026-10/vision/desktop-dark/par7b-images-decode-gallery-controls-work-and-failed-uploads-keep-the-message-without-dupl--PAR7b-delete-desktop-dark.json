@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR7b images decode, gallery controls work and failed uploads keep the message without duplicates",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7b-delete-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR7b delete\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR7b images decode, gallery controls work and failed uploads keep the message without duplicates\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal has empty space under the Delete/Cancel buttons and no body text saying the delete can't be undone or what happens to messages that reference the file",
+      "The background blur makes the rest of the app unreadable while the modal is open. This looks intentional for a modal state."
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-unreachable-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR8 unreachable\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'dev-ma…'). This looks like intentional truncation, not a layout fault.",
+      "The note 'Codex sign-ins are kept per device for now' sits inside the Claude Code 'Projects Claude' device list. The wording looks out of place for this runtime.",
+      "The 'Projects Claude' usage bars for 'Five hours' and 'Week' show 'Unknown' with empty, low-contrast tracks that are hard to see on the dark background.",
+      "The masked key 'Saved · ••••able' is a little unclear, but it is readable.",
+      "The 'Projects Claude' card runs past the bottom of the viewport. The page should scroll, so this isn't blocking for this step."
+    ]
+  }
+}

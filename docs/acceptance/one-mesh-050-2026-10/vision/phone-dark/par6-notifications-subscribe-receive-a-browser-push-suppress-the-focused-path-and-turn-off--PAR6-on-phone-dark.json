@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR6 Notifications subscribe, receive a browser push, suppress the focused path and turn off",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-6/screenshots/PAR6-on-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR6 on\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR6 Notifications subscribe, receive a browser push, suppress the focused path and turn off\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab strip cuts off the third tab ('Riggin…') at the right edge. The strip scrolls horizontally and has prev/next arrow buttons, so it is still reachable.",
+      "There is a large empty area between the 'Devices with notifications' card and the toast at the bottom.",
+      "The 'Send a test notification' button uses a light pink fill that stands out sharply against the dark theme."
+    ]
+  }
+}

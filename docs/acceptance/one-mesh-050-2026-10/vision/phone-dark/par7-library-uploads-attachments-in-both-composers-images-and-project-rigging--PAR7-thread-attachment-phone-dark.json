@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR7 library uploads, attachments in both composers, images and project rigging",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7-thread-attachment-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR7 thread attachment\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR7 library uploads, attachments in both composers, images and project rigging\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The top tool card (mcp__jevellan__jevellan_library_list) is cut off by the scroll area just below the Resolve button. This is normal scrolled content, not a layout fault.",
+      "Tool calls are shown with raw internal names (mcp__jevellan__jevellan_library_list / _get) instead of friendly labels.",
+      "The collapsed 'Prompt' card has a large, mostly empty inner box around the one-line 'Project now (22:17):' summary, which wastes vertical space.",
+      "Attached files only appear as text in the report lines ('PAR7 attachment.txt', 'PAR7 follow up.txt'). There are no attachment chips or previews on the messages.",
+      "The '0 tokens · $0.00' counter looks out of date for a thread that has already run two turns."
+    ]
+  }
+}

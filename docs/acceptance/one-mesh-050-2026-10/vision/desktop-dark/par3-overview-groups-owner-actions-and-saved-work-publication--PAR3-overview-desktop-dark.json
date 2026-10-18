@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR3 Overview groups, owner actions and saved-work publication",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-3/screenshots/PAR3-overview-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR3 overview\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR3 Overview groups, owner actions and saved-work publication\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Thread titles and subtitles in the left sidebar are cut off with ellipses (e.g. 'Context · Mesh journey fixt…', 'Context · J11 memory journ…'). The full text isn't shown, but they are still readable.",
+      "The Overview tab row (Threads, Pull requests, Queue, Routines, Library) ends right at the panel's right edge with no margin. If there are more tabs past 'Library', they may be hidden without any sign that the row scrolls.",
+      "The top of the center thread is scrolled part-way through a card, so only an 'Open thread' link shows at the top edge. This is normal scrolling, not clipping.",
+      "The low-contrast grey 'Merge' button is still readable. It appears intentionally disabled because checks are failing and there are conflicts."
+    ]
+  }
+}

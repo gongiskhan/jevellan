@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR5 usage, account waiting notice and placement constraints",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-5/screenshots/PAR5-recovery-phone-light.png",
+  "expected": "the Jevellan web app \"PAR5 recovery\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PAR5 usage, account waiting notice and placement constraints\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The attach command 'jevellan thread attach thread_01M58DYYV1BR…' is cut off with an ellipsis. The copy button next to it still gives the full command, so this is acceptable on a narrow screen.",
+      "The left edge of the 'REPORT · TURN 1' card has a thick accent border and sits slightly inset from the session panel and composer above and below it, so the left edges don't line up.",
+      "The engine line 'Claude Code · Fable · high effort · Projects Claude · Worktree on jv/a-narrow-parsing-test-awwfez · dev-madrid' wraps awkwardly over four lines and leaves trailing '·' separators at line ends.",
+      "The header controls (settings and stop) are tall circular buttons that make the title row heavier than the rest of the compact layout."
+    ]
+  }
+}

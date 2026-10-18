@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR1 project settings save, conflict, pause and archive",
+  "layout": "desktop-dark",
+  "screenshot": "test-results/PAR1-conflict-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR1 conflict\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR1 project settings save, conflict, pause and archive\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "A 'Project settings saved.' toast at the top shows at the same time as the 'These settings changed elsewhere. Reload to see them.' conflict banner at the bottom, so the messages contradict each other.",
+      "Shell session titles in the sidebar are cut off with ellipses (e.g. 'Context · Mesh journey fix…', 'Context · Shared memory …')."
+    ]
+  }
+}

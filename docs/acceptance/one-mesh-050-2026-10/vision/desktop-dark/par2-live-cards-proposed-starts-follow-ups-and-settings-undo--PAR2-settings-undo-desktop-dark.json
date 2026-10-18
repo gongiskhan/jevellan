@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR2 live cards, proposed starts, follow-ups and settings Undo",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-2/screenshots/PAR2-settings-undo-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR2 settings undo\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR2 live cards, proposed starts, follow-ups and settings Undo\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Resolved' card at the bottom of the right Overview panel is cut off at the scroll edge, so the '#7 Checks pass' row is only partly visible. It is scrollable content, not a hidden control.",
+      "A partial card edge shows at the top of the conversation pane, cut off by the scroll region under the header.",
+      "Sidebar session titles and subtitles end in ellipses (e.g. 'Context · Mesh journey fixt…', 'Done · Improver sandbox · dev-ma…'). This is expected truncation.",
+      "The header metadata line ('Context unavailable · Compacted 0 times today', 'Cache today Unknown · 0 cold starts · 0 tokens written cold') uses small, low-contrast monospace text. It is still legible."
+    ]
+  }
+}

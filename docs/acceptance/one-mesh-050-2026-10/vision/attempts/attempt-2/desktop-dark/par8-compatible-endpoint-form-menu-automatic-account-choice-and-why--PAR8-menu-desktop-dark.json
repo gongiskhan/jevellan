@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-menu-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR8 menu\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal is scrolled, so the top of the description textarea (and any fields above it) is hidden; you can still reach them by scrolling.",
+      "The 'Start now' label sits under its checkbox instead of beside it.",
+      "The empty 'After' select is much taller than the other single-line fields.",
+      "The Model dropdown shows 'Claude Code PAR8 GLM' selected, but its option list is closed, so the PAR8 menu items themselves aren't visible in this capture."
+    ]
+  }
+}

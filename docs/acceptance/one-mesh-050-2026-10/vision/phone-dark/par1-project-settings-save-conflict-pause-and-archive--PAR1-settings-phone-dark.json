@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR1 project settings save, conflict, pause and archive",
+  "layout": "phone-dark",
+  "screenshot": "test-results/PAR1-settings-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR1 settings\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR1 project settings save, conflict, pause and archive\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab strip at the top is cut off at the right edge ('Threads a…'). It is probably a horizontally scrollable tab row, but nothing on screen shows that more tabs exist.",
+      "The 'Project settings saved.' toast at the bottom covers part of a small green element at the bottom right, probably a floating button. It is likely a temporary overlay.",
+      "The full-page capture is long (390x5256) and was reviewed downscaled, so small helper text could only be checked roughly. No overlap or clipping is visible."
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-form-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR8 form\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The form is cut off below the Efforts checkboxes. It looks like a scrolling modal, but no scroll indicator is visible, so it's unclear that more fields exist below.",
+      "The Model id and Label fields are empty and have no placeholder hint text."
+    ]
+  }
+}

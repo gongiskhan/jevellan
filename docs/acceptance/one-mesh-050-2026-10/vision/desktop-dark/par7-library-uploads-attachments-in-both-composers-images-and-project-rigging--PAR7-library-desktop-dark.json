@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR7 library uploads, attachments in both composers, images and project rigging",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7-library-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR7 library\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR7 library uploads, attachments in both composers, images and project rigging\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The thumbnail box for 'PAR7 screen.png' in the Library panel is empty. The image preview didn't render or hadn't loaded yet, though the file name, metadata and the Open/Download/Delete actions are all visible and usable.",
+      "The top message card in the chat feed is cut off by the header ('PAR2 inspect: read the README and report progress.'). This comes from the scroll position, not a layout overlap.",
+      "'Delete' is styled differently from the 'Open' and 'Download' links next to it (bold and not underlined)."
+    ]
+  }
+}

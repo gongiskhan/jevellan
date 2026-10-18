@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-form-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR8 form\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The modal body is scrollable, and the Models/Efforts fieldset runs past the sticky footer at the bottom edge. Scrolling reaches the rest, so nothing is unreachable.",
+      "The blurred settings page behind the modal can't be read. That's expected with a modal backdrop."
+    ]
+  }
+}

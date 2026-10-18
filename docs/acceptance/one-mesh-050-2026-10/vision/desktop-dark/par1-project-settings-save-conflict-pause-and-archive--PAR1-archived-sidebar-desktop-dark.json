@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR1 project settings save, conflict, pause and archive",
+  "layout": "desktop-dark",
+  "screenshot": "test-results/PAR1-archived-sidebar-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR1 archived sidebar\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR1 project settings save, conflict, pause and archive\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Project settings saved.' toast covers a header button just left of 'Override coordinator'. Only the button's rounded edge shows, but the toast is temporary and has a close button.",
+      "In the sidebar session list, the third item ('Context · J11 memory jour…') is cut off at the bottom of its scroll area. The list scrolls, so the item can still be reached.",
+      "Long session titles and subtitles in the sidebar are shortened with ellipses ('Context · Mesh journey fix…', 'dev-ma…')."
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-9/screenshots/PAR9-dismissed-phone-light.png",
+  "expected": "the Jevellan web app \"PAR9 dismissed\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Composer placeholder text is cut off with an ellipsis ('Tell the coordinator what you ne…') at phone width",
+      "Header status badge text is cut off ('Working…')",
+      "The status text in the header ('Context unavailable · Compacted 0 times today', 'Cache today Unknown · 0 cold starts…') wraps onto 3–4 lines in small monospace type, so the header looks crowded"
+    ]
+  }
+}

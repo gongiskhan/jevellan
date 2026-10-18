@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR7 library uploads, attachments in both composers, images and project rigging",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7-thread-attachment-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR7 thread attachment\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR7 library uploads, attachments in both composers, images and project rigging\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Session titles in the sidebar are cut off with ellipses (e.g. 'Context · Mesh journey fixt…', 'Context · J11 memory journ…', 'Context · Shared memory fi…'), and so are their subtitle lines. This is intended truncation.",
+      "The token/cost pill reads '0 tokens · $0.00' even though two turns have finished, which may be misleading but isn't a layout problem.",
+      "The 'Project now (22:19):' prompt preview ends at a colon with nothing after it, which looks a bit odd collapsed.",
+      "The thread doesn't show any attachment chips. Attached files appear only as text in the report rows ('PAR7 attachment.txt', 'PAR7 follow up.txt')."
+    ]
+  }
+}

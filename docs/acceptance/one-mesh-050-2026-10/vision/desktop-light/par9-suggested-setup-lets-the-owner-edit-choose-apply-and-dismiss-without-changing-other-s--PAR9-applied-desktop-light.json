@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-9/screenshots/PAR9-applied-desktop-light.png",
+  "expected": "the Jevellan web app \"PAR9 applied\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PAR9 suggested setup lets the owner edit, choose, apply and dismiss without changing other settings\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar thread titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'Done · Improver sandbox · dev-ma…')",
+      "The suggested-setup card has a lot of empty space below 'Fill in their values in Project settings → Environment.'",
+      "The last 'PAR3 review' card in the right Overview panel is cut off at the bottom of the viewport; the panel appears to scroll",
+      "The small monospace status text ('Context unavailable · Compacted 0 times today', 'Cache today Unknown…') is faint and low-contrast but still readable"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR4 reconnect page recovers after a transient hub navigation failure",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-recovered-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR4 recovered\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR4 reconnect page recovers after a transient hub navigation failure\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The sub-tab row is clipped at the right edge, so the last tab shows only 'Lib'. It looks like a horizontally scrollable tab strip, but nothing on screen shows that more tabs are available.",
+      "The context and cache stats text in the header wraps into narrow monospace columns, which makes it dense and harder to scan.",
+      "Every item on the page is labelled PAR3 ('PAR3 choose the next step?', 'PAR3 waiting', 'PAR3 publish work') even though this is the PAR4 recovered screen. This is probably reused fixture data, but it is worth checking that the step is capturing the intended state.",
+      "The 'Ready for review' card is cut off at the bottom of the screen. This is normal scrolling and not a layout fault."
+    ]
+  }
+}

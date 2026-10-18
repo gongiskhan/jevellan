@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR7 library uploads, attachments in both composers, images and project rigging",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7-environment-phone-light.png",
+  "expected": "the Jevellan web app \"PAR7 environment\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PAR7 library uploads, attachments in both composers, images and project rigging\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Edit in Settings → Rigging' link sits right against the sticky footer's top border, so its descenders look slightly clipped. The link is still readable and clickable, and probably scrolls clear of the footer.",
+      "The textarea at the top is cut off by the viewport. This is expected for a scrolled view of the form.",
+      "The helper text under the Secrets box ('Variables and secrets reach…') sits inside the Secrets fieldset, though it applies to both Variables and Secrets. This grouping is slightly ambiguous."
+    ]
+  }
+}

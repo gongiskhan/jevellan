@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR5 usage, account waiting notice and placement constraints",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-5/screenshots/PAR5-usage-desktop-light.png",
+  "expected": "the Jevellan web app \"PAR5 usage\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PAR5 usage, account waiting notice and placement constraints\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The page is scrolled down, so the bottom of the Notifications section is partly cut off at the top of the window. The Usage section is fully visible.",
+      "The breakdown tables don't line up with each other: the Turns, Tokens and Cost columns sit at different horizontal positions in By thread, By model, By account and By kind.",
+      "Sidebar conversation titles and subtitles are shortened with an ellipsis (e.g. 'Context · J11 memory journ…'). This is intentional truncation.",
+      "The By thread table shows 1 turn while By model and By account show 3. This matches the 2 Coordinator turns listed under By kind, but it can look inconsistent at first glance."
+    ]
+  }
+}

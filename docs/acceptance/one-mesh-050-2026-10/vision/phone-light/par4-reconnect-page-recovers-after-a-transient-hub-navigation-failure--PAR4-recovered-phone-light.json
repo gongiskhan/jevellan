@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR4 reconnect page recovers after a transient hub navigation failure",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-recovered-phone-light.png",
+  "expected": "the Jevellan web app \"PAR4 recovered\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PAR4 reconnect page recovers after a transient hub navigation failure\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The secondary tab row (Threads, Pull requests, Queue, Routines, Lib…) runs past the right edge. The last tab is cut to \"Lib\", which looks like a horizontal scroller with no visible scroll cue.",
+      "The \"READY FOR REVIEW\" card is cut off at the bottom edge of the screen. This is normal for a page that scrolls, but the rest of the card isn't visible in this capture.",
+      "Nothing on screen says \"PAR4\" or \"recovered\". Every item is labeled PAR3 (for example \"PAR3 choose the next step?\", \"PAR3 waiting\" and \"PAR3 publish work\"), so this capture alone doesn't show that it's the PAR4 recovered state.",
+      "The header status text (\"Context unavailable · Compacted 0 times today\" and the cache-stats line) is small and wraps over several lines. It is still readable."
+    ]
+  }
+}

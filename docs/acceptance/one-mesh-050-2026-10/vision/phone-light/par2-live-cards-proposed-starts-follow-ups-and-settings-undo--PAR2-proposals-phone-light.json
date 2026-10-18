@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR2 live cards, proposed starts, follow-ups and settings Undo",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-2/screenshots/PAR2-proposals-phone-light.png",
+  "expected": "the Jevellan web app \"PAR2 proposals\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PAR2 live cards, proposed starts, follow-ups and settings Undo\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The composer placeholder 'Tell the coordinator what you nee…' is cut off by the stop and send buttons. It is placeholder text only, and the input still works.",
+      "The status pill shows 'Working…' in a small dashed box, which looks a little cramped next to the model label.",
+      "The header stats ('Context unavailable · Compacted 0 times today' and 'Cache today Unknown · 0 cold starts…') wrap into dense small monospace blocks on either side of 'Fresh session'. They are still readable."
+    ]
+  }
+}

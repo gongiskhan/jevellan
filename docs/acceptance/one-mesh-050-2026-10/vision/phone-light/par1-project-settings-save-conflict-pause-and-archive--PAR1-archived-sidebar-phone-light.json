@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR1 project settings save, conflict, pause and archive",
+  "layout": "phone-light",
+  "screenshot": "test-results/PAR1-archived-sidebar-phone-light.png",
+  "expected": "the Jevellan web app \"PAR1 archived sidebar\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PAR1 project settings save, conflict, pause and archive\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Archived (1)' heading doesn't match the 'PROJECTS' heading: it uses a larger font in mixed case instead of small uppercase letters.",
+      "The filter chips (All / Running / Waiting for you / Done) are packed tightly with very little padding between them.",
+      "The 'Projects fixture' row under Archived uses the same open-circle icon as active projects, so nothing visually marks it as archived apart from its section."
+    ]
+  }
+}

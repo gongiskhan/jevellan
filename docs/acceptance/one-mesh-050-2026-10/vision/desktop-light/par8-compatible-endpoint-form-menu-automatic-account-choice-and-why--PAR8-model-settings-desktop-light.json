@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-model-settings-desktop-light.png",
+  "expected": "the Jevellan web app \"PAR8 model settings\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Test connection' button sits right under the Jev key input with almost no space, apart from the 'Save key' button, so the row looks crowded.",
+      "The Label field and the provider/model-id column sit at slightly different horizontal positions in the Fable and Opus cards (about 3–7 px apart), so the cards don't line up.",
+      "The sticky 'Save decisions settings' footer covers the bottom of the Opus description field at this scroll position. It's scrollable content, so nothing is out of reach.",
+      "The model-id chips ('claude-fable-5-1', 'claude-opus-5-5') are pushed to the far right edge, well away from the Label field they belong to."
+    ]
+  }
+}

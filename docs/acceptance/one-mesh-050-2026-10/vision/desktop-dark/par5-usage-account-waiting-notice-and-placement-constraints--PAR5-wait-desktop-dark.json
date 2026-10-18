@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR5 usage, account waiting notice and placement constraints",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-5/screenshots/PAR5-wait-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR5 wait\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR5 usage, account waiting notice and placement constraints\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The session titles in the sidebar are cut off with ellipses (for example, 'Context · Mesh journey fixt…' and 'Context · J11 memory journ…'), and so is their metadata line (for example, 'dev-ma…'). This looks like intended overflow handling.",
+      "The secondary metadata text in the sidebar and the 'v0.5.0' label are small and low-contrast, but they can still be read.",
+      "A large empty area sits between the report card and the message composer. This is expected for a short thread."
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR1 project settings save, conflict, pause and archive",
+  "layout": "desktop-dark",
+  "screenshot": "test-results/PAR1-settings-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR1 settings\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR1 project settings save, conflict, pause and archive\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The Status choices (Active, Paused, Archived) don't clearly show which one is selected",
+      "Missing space in the Status help text: \"no routines.Turns already running finish\"",
+      "Sidebar session titles are cut off with ellipses (e.g. \"Context · Mesh journey fix…\"); this is expected truncation",
+      "The \"Project settings saved.\" message sits in the header gap between the title and \"Back to the project\" but covers nothing",
+      "The Secrets value field for PARITY_TOKEN looks empty (likely redacted on purpose) and has no placeholder"
+    ]
+  }
+}

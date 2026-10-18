@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR6 Notifications subscribe, receive a browser push, suppress the focused path and turn off",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-6/screenshots/PAR6-off-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR6 off\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR6 Notifications subscribe, receive a browser push, suppress the focused path and turn off\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The tab strip clips the 'Rigging' tab label at the right edge ('Riggin…'). It's a horizontal scroller with arrow controls, so the tab can still be reached.",
+      "There's a lot of empty space below the 'Devices with notifications' card, which is expected for this state."
+    ]
+  }
+}

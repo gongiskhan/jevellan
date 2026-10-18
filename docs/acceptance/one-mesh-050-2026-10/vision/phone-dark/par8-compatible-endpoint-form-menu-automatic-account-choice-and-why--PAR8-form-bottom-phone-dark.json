@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-form-bottom-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR8 form bottom\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Add model' button sits right against the 'Background model' label below it, with almost no vertical gap.",
+      "The Efforts fieldset has extra empty space under its second row of checkboxes.",
+      "The 'Usage ceiling (%)' input is partly cut off by the sticky footer at this scroll position. It can still be reached by scrolling."
+    ]
+  }
+}

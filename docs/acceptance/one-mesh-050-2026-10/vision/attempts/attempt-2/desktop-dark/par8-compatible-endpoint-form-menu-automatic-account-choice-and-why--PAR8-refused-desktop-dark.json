@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-refused-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR8 refused\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The PAR8 account subtitle 'Compatible endpoint · Saved · ••••used' reads oddly. The masked key suffix looks like it runs into the word 'used', so it is unclear whether this is a masked key or a usage label.",
+      "The footer note under the Claude Code device list says 'Codex sign-ins are kept per device for now.' This looks like copy carried over from the Codex section by mistake.",
+      "The 'Key refused' status is shown in small amber text and is the only sign of the refusal. There is no inline explanation or 'Why' link next to it on this view.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · Mesh journey fix…'). This truncation is intentional.",
+      "The Runtimes card continues past the bottom of the viewport. The rest of the page is reachable by scrolling."
+    ]
+  }
+}

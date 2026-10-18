@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR3 Overview groups, owner actions and saved-work publication",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-3/screenshots/PAR3-resolve-confirmation-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR3 resolve confirmation\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR3 Overview groups, owner actions and saved-work publication\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The background header area has small, crowded text ('Context unavailable · Compacted 0 times today', 'Cache today unknown · 0 cold starts · 0 tokens written cold') that wraps awkwardly next to the 'Fresh session' button. It is dimmed behind the modal, so it doesn't block this step.",
+      "The dialog's Cancel and Resolve buttons are both labeled clearly, but the Resolve title and the Resolve action button use the same word, which reads a little repetitive."
+    ]
+  }
+}

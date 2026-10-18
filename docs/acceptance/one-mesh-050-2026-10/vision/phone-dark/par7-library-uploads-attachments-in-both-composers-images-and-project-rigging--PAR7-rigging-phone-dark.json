@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR7 library uploads, attachments in both composers, images and project rigging",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7-rigging-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR7 rigging\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR7 library uploads, attachments in both composers, images and project rigging\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The project checkbox list wraps unevenly: some rows have two items and others have one (e.g. 'External activity fixture', 'Checkpoint recovery fixture' and 'J11 memory journey' each sit alone), so the list looks ragged.",
+      "The Content textarea is cut off at the scroll edge above the sticky Cancel/Add item footer. Only the top of 'Keep fixture changes small' shows, but the dialog body scrolls, so it can still be reached."
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR1 project settings save, conflict, pause and archive",
+  "layout": "desktop-dark",
+  "screenshot": "test-results/PAR1-archived-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR1 archived\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR1 project settings save, conflict, pause and archive\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Project settings saved.' toast covers a header control to the left of 'Override coordinator', so only its edge shows. The toast can be closed and is temporary, so this isn't blocking.",
+      "The Overview tab row (Threads … Library) runs right up to the panel's right edge. 'Library' is still fully readable, but the row looks tight and may scroll sideways.",
+      "The 'Write the welcome copy' resolved card is cut off at the bottom of the viewport. It's in a scrollable panel, so the content can still be reached.",
+      "Sidebar conversation titles and subtitles end in '…'. They're truncated on purpose and still readable.",
+      "The session info line shows the placeholder values 'Cache today Unknown' and 'Unknown tokens written cold'.",
+      "The project is archived ('Nothing runs'), but the composer and the 'New task' / 'Fresh session' controls still look active. This is a possible state inconsistency, not a layout problem."
+    ]
+  }
+}

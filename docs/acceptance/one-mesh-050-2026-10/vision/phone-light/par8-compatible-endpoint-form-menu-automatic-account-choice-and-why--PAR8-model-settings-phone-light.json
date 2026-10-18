@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-model-settings-phone-light.png",
+  "expected": "the Jevellan web app \"PAR8 model settings\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The leftmost tab label in the scrollable tab strip is clipped at the left edge (only 's' shows). Scroll arrows are there, so it is still reachable.",
+      "The model description textarea is only about three lines tall, so its text is cut off inside the field (it can be scrolled or resized), and the card runs under the sticky save footer. The rest of the page scrolls into view.",
+      "The Jev key input and 'Save key' button are squeezed side by side, so 'Test connection' wraps onto its own line, which looks a little cramped."
+    ]
+  }
+}

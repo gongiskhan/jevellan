@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR1 project settings save, conflict, pause and archive",
+  "layout": "desktop-light",
+  "screenshot": "test-results/PAR1-paused-desktop-light.png",
+  "expected": "the Jevellan web app \"PAR1 paused\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PAR1 project settings save, conflict, pause and archive\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The 'Project settings saved.' toast sits on top of the header action row and hides a circular button to the left of 'Override coordinator'. The toast can be dismissed and goes away on its own, so the button is only covered for a short time.",
+      "The Overview tab row is clipped at the right edge: the border of the 'Library' tab is cut off, and any tabs after it can only be reached by scrolling sideways.",
+      "The 'Resolved' thread card is cut off at the bottom of the viewport (it can be scrolled into view).",
+      "The header metadata reads 'Cache today Unknown' and 'Unknown tokens written cold'. Placeholder values like these look unfinished."
+    ]
+  }
+}

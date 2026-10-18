@@ -1,0 +1,20 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-disabled-desktop-light.png",
+  "expected": "the Jevellan web app \"PAR8 disabled\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The PAR8 account subtitle shows the saved key masked as '••••eady', which looks like the tail of a status word rather than a real key suffix.",
+      "The footnote inside the Claude Code device list says 'Codex sign-ins are kept per device for now.' This looks like copy from the wrong runtime.",
+      "The 'Enable' link on the PAR8 account is underlined, but the 'Disable' link on Projects Claude is not, so the action links are styled inconsistently.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses ('Context · J11 memory jour...', 'dev-ma...'). This is intended, but the full names can't be read.",
+      "The Runtimes card runs past the bottom of the viewport, which is normal page scrolling and not a clipping bug."
+    ]
+  }
+}

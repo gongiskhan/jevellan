@@ -1,0 +1,17 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR7b images decode, gallery controls work and failed uploads keep the message without duplicates",
+  "layout": "phone-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-7/screenshots/PAR7b-delete-phone-light.png",
+  "expected": "the Jevellan web app \"PAR7b delete\" screen at phone-light, rendered completely and legibly (one of several screens captured during \"PAR7b images decode, gallery controls work and failed uploads keep the message without duplicates\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The background tab row is clipped at the left edge (\"...ads\" for Threads). It sits behind the modal scrim and doesn't affect this dialog.",
+      "There's a lot of empty space below the Delete and Cancel buttons in the dialog."
+    ]
+  }
+}

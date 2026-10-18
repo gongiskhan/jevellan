@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-8/screenshots/PAR8-refused-desktop-light.png",
+  "expected": "the Jevellan web app \"PAR8 refused\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PAR8 compatible endpoint form, menu, automatic account choice and Why\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The PAR8 endpoint account subtitle reads 'Compatible endpoint · Saved · ••••used'. The masked key suffix 'used' looks like a leftover word, not a real key ending, which could confuse users.",
+      "Sidebar conversation titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…'). This looks like intended responsive truncation.",
+      "The 'Projects Claude' usage bars for Five hours and Week show 'Unknown' with empty tracks, so there is little visual difference between an empty bar and a missing one.",
+      "The page content goes below the bottom of the viewport ('Codex sign-ins are kept per device for now.' sits right at the edge). It can be scrolled to, so nothing is unreachable."
+    ]
+  }
+}

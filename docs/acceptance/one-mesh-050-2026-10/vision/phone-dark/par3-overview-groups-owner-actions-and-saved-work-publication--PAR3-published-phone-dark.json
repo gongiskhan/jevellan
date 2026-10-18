@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR3 Overview groups, owner actions and saved-work publication",
+  "layout": "phone-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-3/screenshots/PAR3-published-phone-dark.png",
+  "expected": "the Jevellan web app \"PAR3 published\" screen at phone-dark, rendered completely and legibly (one of several screens captured during \"PAR3 Overview groups, owner actions and saved-work publication\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The sub-tab strip cuts off the last tab at the right edge (\"Lib…\"). It looks like a horizontally scrollable strip, so the tab can still be reached, but nothing on screen shows that more tabs exist.",
+      "The header stats (\"Context unavailable · Compacted 0 times today\" and \"Cache today Unknown · 0 cold starts · 0 tokens written cold\") wrap onto 3–4 narrow lines beside the Fresh session button, which makes them cramped and hard to scan.",
+      "The \"PAR3 publish work\" card in Ready for review is cut off by the bottom of the viewport (it shows #1 and Checks pending). The page scrolls normally, but the second ready-for-review item is not visible in this capture."
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PJ3b project GitHub tokens remain separate from the default connection",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/screenshots/PJ3b-project-github-token-desktop-light.png",
+  "expected": "the Jevellan web app \"project github token\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PJ3b project GitHub tokens remain separate from the default connection\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "Sidebar session titles and subtitles are cut off with ellipses (e.g. 'Context · J11 memory jour…', 'dev-ma…'). This looks like intentional truncation.",
+      "The 'GitHub token scope' label and dropdown sit outside any card, unlike the other sections, so the layout looks a little inconsistent.",
+      "The token scope is 'Projects fixture' but 'Check a project' has 'Outside context fixture' selected. This may confuse users about which project's token the check uses.",
+      "The 'Save Git settings' button is pale and looks disabled, which is expected when nothing has changed."
+    ]
+  }
+}
