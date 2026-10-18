@@ -866,6 +866,8 @@ dialog::backdrop { background: var(--backdrop); backdrop-filter: blur(2px); }
 }
 .modal-heading h2 { margin: 0; font-size: 16px; }
 .modal-body { padding: 16px 20px 20px; overflow: auto; min-height: 0; }
+/* Scrolling a field into view keeps it clear of the sticky action bar below (vision PAR8 finding). */
+.modal-body:has(> form:last-child > .form-actions:last-child, > .form-actions:last-child) { scroll-padding-bottom: 72px; }
 .modal-body > :first-child { margin-top: 0; }
 /* Only a dialog's closing actions stick to its bottom; actions nested inside content stay in place. */
 :is(.modal-body > form:last-child, .modal-body) > .form-actions:last-child { position: sticky; bottom: -20px; margin: 16px -20px -20px; padding: 12px 20px; background: var(--card); border-top: 1px solid var(--edge); }

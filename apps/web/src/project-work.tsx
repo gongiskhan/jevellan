@@ -940,7 +940,7 @@ function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: Pa
         <label className="check"><input type="checkbox" checked={now} onChange={event => setNow(event.target.checked)} />Start now</label>
         <label>After<select multiple value={after} onChange={event => setAfter(Array.from(event.target.selectedOptions, option => option.value))}>{tasks.filter(task => task.state !== 'done' && task.state !== 'cancelled').map(task => <option value={task.id} key={task.id}>{task.title}</option>)}</select></label>
         <label>Needs<input value={needs} placeholder="residential, mac" onChange={event => setNeeds(event.target.value)} /></label>
-        <details className="pw-placement">
+        <details className="pw-placement" onToggle={event => { if (event.currentTarget.open) event.currentTarget.querySelector('.pw-placement-fields')?.scrollIntoView({ block: 'nearest' }); }}>
           <summary>Choose where it runs</summary>
           <div className="form-grid pw-placement-fields">
             <div className="pw-field">
