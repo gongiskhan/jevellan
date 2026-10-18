@@ -910,5 +910,11 @@
     "title": "Complete parity release gates and sandbox acceptance",
     "why": "BRIEF.md phase10: planned remaining work after the bounded run. Resolve recorded full-suite/LJ5/Codex-contract and hub-readiness blockers, obtain dedicated vision evidence, repeat full gates, then cut/install0.5.0 with cold rollback and run LP1–LP9 within its unstarted three-hour live clock. Optional endpoint credential remains blocked.",
     "status": "planned"
+  },
+  {
+    "id": "one-mesh-050",
+    "title": "One mesh on dev-madrid, release 0.5.0 and live journeys",
+    "why": "BRIEF.md 18 October 2026. Phase 0 preflight and cold backups complete; see docs/acceptance/one-mesh-050-2026-10/README.md.",
+    "status": "in-progress"
   }
 ]
