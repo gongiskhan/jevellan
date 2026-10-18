@@ -143,3 +143,44 @@ Every PAR journey has passed with vision in all four layouts.
 Caveats: the judged images and vision records were not retained; several early attempt groups overlapped this run's own heavy jobs, as listed per attempt in gate.json; and the one closing review did not cover the last two fixes.
 
 The single closing serious-issues review was one pass by the builder at about 15:25 UTC. It covered the source diff `2e3f4fd1..b831ed04` and found no serious problem. The later fixes `73c99e35` (a fixture step) and `c82c371e` (usage figures and the PAR5 assertion) were not reviewed.
+
+## Second run, 18 to 19 October
+
+A fresh run of the revised brief: one mesh first on the installed versions, then release 0.5.0, then the live journeys. It does not resume the first run's clocks. Times are UTC; every result is labelled live, simulated or not run.
+
+### Clocks
+
+- Started: 2026-10-18T19:42:09Z on dev-madrid, `main` at `6ff46c1c` (source 0.5.0, gate complete at `c82c371e`). The phase 0 start starts the clock.
+- Phases 0 and 1: four hours, not counting any wait for the owner pause; nominal deadline 2026-10-18T23:42:09Z.
+- Phase 2: four hours from its start. Phase 3: three hours from the moment both machines report 0.5.0.
+- The full test gate does not run again unless the source changes.
+
+### Phase 0: fresh cold backups (live)
+
+Before the copies, no service had admitted work (each home's lifecycle activity list was empty) and no agent process ran under any of the three services. Each copy held the installation's lifecycle gate until no admitted work remained, stopped the service, copied the stopped home, then restarted it and waited for health.
+
+| Machine | Source | Stopped | Method | Destination |
+| --- | --- | --- | --- | --- |
+| Pro | `/Users/ggomes/.jevellan`, `dev.jevellan.daemon.plist`, `~/.local/bin/jevellan` | 19:43:00–19:44:16 | APFS clone (`cp -a -c`) | `/Users/ggomes/.jevellan-build/one-mesh-050/backup-pro-2/` |
+| dev-madrid | `~/.jevellan-hub`, `jevellan.service`, `~/.local/bin/jevellan` | 19:44:48–19:50:03 | `cp -a` | `~/.jevellan-build/one-mesh-050/backup-madrid-2/hub/` |
+| dev-madrid | `~/.jevellan-member`, `jevellan-member.service` | 19:50:40–19:54:47 | `cp -a` | `~/.jevellan-build/one-mesh-050/backup-madrid-2/member/` |
+
+Each service answered its previous version again afterwards (0.3.6, 0.4.1, 0.3.6).
+
+| Copy | Size | Files in SHA-256 manifest | Symbolic links |
+| --- | ---: | ---: | ---: |
+| Pro state point home | 17 GB | 312,772 | 331 |
+| Madrid state point home | 37 GB | 497,102 | 1,776 |
+| Madrid old member home | 25 GB | 430,598 | 1,731 |
+
+Manifests, unit-file and command hashes stay private beside each copy. The Madrid manifests ran 19:55:36 to 20:03:30 as the only heavy job (load 2.8 at its start).
+
+After the restarts:
+- Pro: `jevellan doctor` (0.3.6) nine checks OK, Accounts WARNING "3 of 3 enabled accounts last reported ready on this device. 3 status checks need refreshing in Settings", exit 1. Free disk 40 GiB of 460 GiB; load 7.7 on 10 cores.
+- Madrid state point: `jevellan doctor` (0.4.1) nine checks OK with the same Accounts WARNING, exit 1. Free disk 251 GB; load 2.7 to 3.4 on 16 cores.
+- Madrid old member, doctor run from a shell with its home and Node 22 but without the service's full PATH: Daemon, Hub and Jev OK; Basic Memory, Claude and Codex reported missing on that shell's PATH; exit 1. It is retired in phase 1 step 2, so this is recorded as is.
+- `tailscale serve status` on Madrid listed the same routes before and after the copies (order differs only). Root `:443` → 9772 and the `:8500` folder share were still in place.
+
+Procedure deviations, recorded as they happened:
+- The Pro's 0.4.1 archive build (npm ci and build, 19:53:53 to 19:54:20, phase 1 preparation) overlapped the Madrid member copy. From then on heavy jobs ran strictly one at a time across both machines.
+- Phase 1 steps 1 to 3 on Madrid (19:58 to 20:00) started while the phase 0 manifests were still hashing the finished copies, before this phase 0 commit. The copies themselves were complete and untouched by those steps.
