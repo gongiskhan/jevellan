@@ -63,3 +63,18 @@ test('a project with an open thread keeps its paths and Git policy while its oth
   saved = await right.projects.put({ ...saved.project, paths: { left: join(root, 'final-left') } }, saved.revision);
   expect(saved.project.paths).toEqual({ left: join(root, 'final-left') });
 });
+
+test('an open thread still lets a project add a path for a device that has none, without touching existing paths (D924)', async () => {
+  const left = await member('left'); const right = await member('right'); const owner = new HubProjectStore(app.hub, 'left');
+  let saved = await left.projects.put(project('project', { paths: { left: join(root, 'project-left') }, allowedDevices: ['left'] }), 0);
+  owner.publishThread(index('thread_one', 'project', 'in-review'), 1);
+  const added = { ...saved.project.paths, right: join(root, 'project-right') };
+  for (const changed of [{ paths: { left: join(root, 'moved-left'), right: join(root, 'project-right') } }, { paths: { right: join(root, 'project-right') } }, { paths: added, branchPolicy: 'external' as const }]) {
+    await expect(right.projects.put({ ...saved.project, ...changed }, saved.revision)).rejects.toMatchObject({ status: 409, message: OPEN_THREADS });
+  }
+  expect(await right.projects.get('project')).toEqual(saved);
+
+  saved = await right.projects.put({ ...saved.project, paths: added, allowedDevices: ['left', 'right'] }, saved.revision);
+  expect(saved.project).toMatchObject({ paths: { left: join(root, 'project-left'), right: join(root, 'project-right') }, allowedDevices: ['left', 'right'], branchPolicy: 'main' });
+  await expect(right.projects.put({ ...saved.project, paths: { left: join(root, 'project-left') } }, saved.revision)).rejects.toMatchObject({ status: 409, message: OPEN_THREADS });
+});

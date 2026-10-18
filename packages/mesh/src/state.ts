@@ -1,5 +1,5 @@
 import {
-  EnvNameSchema, StoredProjectWorkSettingsSchema, ProjectEnvSecretSummarySchema, CheckoutClaimSchema, ConfigWriteSchema, ConversationIndexSchema, CredentialInputSchema, GitHubTokenStateSchema, IdSchema, ProjectSchema, ProjectViewSchema, RiggingEntrySchema, RiggingStore, SecretSummarySchema, SharedStateRequestSchema, SharedStateResultSchema, ThreadIndexSchema, isTerminal, stableJson,
+  EnvNameSchema, StoredProjectWorkSettingsSchema, ProjectEnvSecretSummarySchema, CheckoutClaimSchema, ConfigWriteSchema, ConversationIndexSchema, CredentialInputSchema, GitHubTokenStateSchema, IdSchema, ProjectSchema, ProjectViewSchema, RiggingEntrySchema, RiggingStore, SecretSummarySchema, SharedStateRequestSchema, SharedStateResultSchema, ThreadIndexSchema, isTerminal,
   type SharedProjectEnvironment, type GitHubTokenState, type Project, type SharedConfiguration, type SharedGitHub, type SharedJev, type SharedProjects, type SharedRigging,
 } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
@@ -37,7 +37,9 @@ export class HubState {
           const previous = hub.get('projects', project.id, ProjectSchema)?.document;
           if (previous && hub.list('checkout-ownership', CheckoutClaimSchema).some(({ document: claim }) => claim.held && (previous.paths[claim.deviceId] === claim.path || hub.get('conversations', claim.conversationId, ConversationIndexSchema)?.document.projectId === project.id))) throw Object.assign(new Error('This project is in use. Finish its open work before changing its settings.'), { status: 409 });
           // D92: worktree threads hold no checkout claim, so paths and Git policy stay fixed while any thread is open.
-          if (previous && (stableJson(previous.paths) !== stableJson(project.paths) || previous.branchPolicy !== project.branchPolicy) && hub.listByField('project-threads', 'projectId', project.id, ThreadIndexSchema).some(({ document: thread }) => !isTerminal(thread.state))) throw Object.assign(new Error('This project has open threads. Stop or finish them before changing its path or Git policy.'), { status: 409 });
+          // D924: adding a path for a device that has none leaves every existing path in place, so it stays allowed.
+          const pathsChanged = previous && Object.entries(previous.paths).some(([id, path]) => project.paths[id] !== path);
+          if (previous && (pathsChanged || previous.branchPolicy !== project.branchPolicy) && hub.listByField('project-threads', 'projectId', project.id, ThreadIndexSchema).some(({ document: thread }) => !isTerminal(thread.state))) throw Object.assign(new Error('This project has open threads. Stop or finish them before changing its path or Git policy.'), { status: 409 });
           if (repository?.owner === 'gongiskhan' && repository.repo === 'ekoa-code') {
             for (const row of hub.list('devices', DeviceSchema)) if (row.document.os === 'linux' && project.paths[row.document.id] === '/home/ggomes/jevellan-projects/ekoa-code') {
               const protectedPaths = [...new Set([...(row.document.protectedPaths ?? []), '/home/ggomes/dev/ekoa-code'])];
