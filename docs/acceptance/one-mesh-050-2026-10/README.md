@@ -239,3 +239,59 @@ Madrid's installed 0.4.1 was built from `e2a32342` ("Release 0.4.1"): all 2,434 
   - #20 was closed unmerged at 20:37:10; the sandbox's autoMerge stayed off. The stopped 15 October test thread's pull request #19 is untouched and still open.
 - **Blocked: ekoa-code on the Pro.** No supported operation adds a device path while a project has open threads, and ekoa-code's five owner-held threads in review were not stopped. Decision: correct the guard in 0.5.0 so it allows a pure addition of a new device's path, then register the Pro through the normal API after the verified update (phase 2).
 - Clock: phase 1 work ended at 20:37. No owner pause was sent and no waiting time is excluded.
+
+### Phase 2: release 0.5.0
+
+Clock: started 2026-10-18T20:40:50Z, after the phase 1 push; deadline 2026-10-19T00:40:50Z.
+
+**Source correction (Decision 924, simulated evidence).** The parent agent decided to correct the open-thread path guard on main for 0.5.0 instead of stopping ekoa-code's threads.
+- A regression test (`tests/project-settings-guard.test.ts`) first failed exactly at the pure addition, while the three mixed changes it also tries were refused.
+- `packages/mesh/src/state.ts` now allows a write whose existing paths and Git policy are all unchanged and which only adds a path for a device that had none. Changing or removing a path, or changing the Git policy, still answers 409 while a thread is open.
+- Build, typecheck and lint pass. The guard file passes 2 of 2, and the related backend files (project settings guard, mesh state, project context service, ekoa-code setup, mesh devices, member application, project work API) pass 178 of 178 tests in 7 files.
+- Committed as `fd115cc7`. The earlier gate does not cover this change; the full suites below do.
+
+**Vision on the parity journeys (live judge, simulated product), at `fd115cc7`.** `npx playwright test --project '*-projects' -g 'PAR'` ran with the whole `.env` loaded and `JEVELLAN_VISION_EVIDENCE_DIR` set to [vision/](vision/). PAR6 ran separately on installed Chrome (Decision 921). The `-g 'PAR'` pattern also selects PJ3b, as in the first run.
+- 21:09:28: 46 passed, 1 failed, 1 not run (48 cases). The failure was PAR8 desktop-dark: `apiRequestContext.get` timed out after 15 s reading the fixture's `/hub/config`, with no vision verdict involved. PAR9 desktop-dark did not run because the spec is serial.
+- PAR6 on Chrome, 21:26:01: 4 of 4 passed.
+- PAR8 and PAR9 desktop-dark then ran alone at main three times, with vision (21:30 to 21:42). Each attempt passed 2 of 2, so the PAR8 failure is load-sensitive. The baseline `da6a9bc9` has no PAR8 or PAR9, so the baseline half of the rule is not comparable.
+- The failing attempt's trace was lost: the PAR6 run reset `test-results/` before it was copied. Its error text is kept privately.
+- Result: every PAR journey passed with vision in all four layouts, with no blocking finding, so no source fix was needed.
+- Retained evidence:
+  - 176 judged records with their exact PNGs for the first runs, plus 12 and 12 per rerun attempt in `vision/attempts/attempt-2` to `attempt-4`.
+  - `images.sha256` maps each image to its source path and record. A copier saved each image as soon as its record appeared, because the records point at `test-results/`, which the next run clears.
+  - The canonical parity screenshots in the repository are those judged captures.
+
+**Full backend at the final source (simulated), one run.** 21:42:49 to 22:15:49 UTC at `65cc8f8b`, which is source-identical to `fd115cc7`. The whole `.env` was loaded, with six workers (Decision 916) and the gate's tool PATH.
+- Result: 2,402 passed, 0 failed, 1 skipped of 2,403 tests in 228 files.
+- The skip is the opt-in `live-sandbox-node20` case.
+- The umask-dependent installation-file and runtime-packaging cases, pre-existing failures under the first run's umask 077, passed under this shell's umask 002.
+- **Step 2, Jev-key cases (live Jev, simulated product):** with `JEVELLAN_TEST_JEV_KEY` loaded, all 23 cases of `tests/decision-selection.test.ts` passed. That includes the four that skipped in the first run: three live operational action regressions and the live dedicated Jev smoke of Call A and Call B with effort. No case in that file skipped.
+
+**Full browser at the final source (simulated), one run.** 22:15:50 to 23:25:37 UTC at `65cc8f8b`, with vision off, the whole `.env` loaded and four workers.
+- Result: 242 passed, 12 failed, 122 not run of 376.
+- The 122 not-run cases are the serial `projects.spec.ts` chain after the first failure in each projects layout. They are not failures; each one's vision-judged parity journey is covered above.
+- All four packed installation journeys passed.
+- Failures:
+  - J8 and J11 in four layouts each: the same pre-existing cases.
+  - LJ2 desktop-light and phone-light: already classified load-sensitive at `025d44e4` and `c82c371e`. `fd115cc7` does not touch their code path.
+  - Two new cases, classified below: LJ2 phone-dark, and "Thread history folds while current work and thinking stay expanded" desktop-dark.
+
+**Classification of the new browser failures (simulated).** Each new case ran three times alone at main, then three times at the baseline `da6a9bc9`, serially (23:27:48 to 23:36 UTC):
+
+| Case | Main alone | Baseline alone | Class |
+| --- | --- | --- | --- |
+| Thread history folds while current work and thinking stay expanded, desktop-dark | 3 of 3 passed | 3 of 3 passed | Load-sensitive |
+| LJ2 native setup remains visible and merge routing explains its ask-owner choice, phone-dark | 3 of 3 passed | 3 of 3 passed | Load-sensitive |
+
+A first classification attempt (23:27:10) was stopped after a few seconds, before any case finished: its filter had taken the 122 not-run cases as failures. Only this run's own verified process group was stopped.
+
+The browser runs rewrote 337 tracked canonical screenshots and added new captures, none of them vision-judged. They are kept privately as simulated recaptures. The repository's canonical screenshots stay at the judged captures of `65cc8f8b`.
+
+**Gate result: passed.** There is no regression. Every failure at the final source is either pre-existing (J8, J11) or load-sensitive (LJ2 in three layouts, Thread history folds desktop-dark, and PAR8 desktop-dark in the vision run). Every PAR journey passed with vision in all four layouts.
+
+**Closing review (one pass, serious issues only).** The builder read the source diffs of `73c99e35`, `c82c371e` and `fd115cc7` at about 21:17 to 21:21 UTC, during the first vision run. Notes were written at 22:27. The final source after the gate is still `fd115cc7`, so the review covers it.
+- `73c99e35`: test fixture only. The PAR8 step now matches only the owner's own line.
+- `c82c371e`: the last three usage cells (turns, tokens, cost) no longer wrap. Larger figures scroll inside their box rather than clip.
+- `fd115cc7`: an addition cannot move a running thread, because a thread's device always had a path. Changes and removals are still refused.
+
+No serious problem was found, so there is no second pass.

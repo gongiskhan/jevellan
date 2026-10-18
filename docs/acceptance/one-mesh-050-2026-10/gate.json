@@ -1,5 +1,5 @@
 {
-  "schema": "one-mesh-gate-v2",
+  "schema": "one-mesh-gate-v3",
   "label": "simulated",
   "baselineCommit": "da6a9bc96c9b963bb5b9bb2de609dbcddfa5dd06",
   "jobs": [
@@ -2651,5 +2651,161 @@
     "pre-existing": 16,
     "regression": 7,
     "load-sensitive": 8
+  },
+  "secondRun": {
+    "label": "simulated",
+    "sourceRevision": "fd115cc709273b679aa95ad887d729f805442021",
+    "suiteRevision": "65cc8f8bbeb01983b90a307911cd7b8fb598ff5f",
+    "baselineCommit": "da6a9bc96c9b963bb5b9bb2de609dbcddfa5dd06",
+    "sourceFix": {
+      "commit": "fd115cc7",
+      "decision": 924,
+      "failingTestFirst": true,
+      "affectedBackend": {
+        "files": 7,
+        "passed": 178,
+        "failed": 0
+      }
+    },
+    "vision": {
+      "label": "live judge, simulated product",
+      "folder": "vision/",
+      "runs": [
+        {
+          "name": "PAR bundled",
+          "start": "2026-10-18T21:09:28Z",
+          "expected": 46,
+          "unexpected": 1,
+          "skipped": 1,
+          "flaky": 0,
+          "failure": "PAR8 desktop-dark: apiRequestContext.get timeout 15 s on fixture /hub/config (no vision verdict); PAR9 desktop-dark not run (serial)"
+        },
+        {
+          "name": "PAR6 Chrome",
+          "start": "2026-10-18T21:26:01Z",
+          "expected": 4,
+          "unexpected": 0,
+          "skipped": 0,
+          "flaky": 0
+        },
+        {
+          "name": "PAR8+PAR9 desktop-dark alone, attempts 2-4",
+          "start": "2026-10-18T21:30:14Z",
+          "perAttempt": {
+            "expected": 2,
+            "unexpected": 0
+          },
+          "attempts": 3
+        }
+      ],
+      "records": {
+        "attempt1": 176,
+        "attempt2": 12,
+        "attempt3": 12,
+        "attempt4": 12
+      },
+      "blockingVerdicts": 0,
+      "imagesRetained": "every live record, see vision/images.sha256 and attempts/*/images.sha256"
+    },
+    "backend": {
+      "start": "2026-10-18T21:42:49Z",
+      "end": "2026-10-18T22:15:49Z",
+      "workers": 6,
+      "passed": 2402,
+      "failed": 0,
+      "skipped": 1,
+      "total": 2403,
+      "files": 228,
+      "skips": [
+        "live-sandbox-node20 opt-in"
+      ],
+      "decisionSelection": {
+        "passed": 23,
+        "skipped": 0,
+        "formerJevKeySkipsNowRun": 4
+      }
+    },
+    "browser": {
+      "start": "2026-10-18T22:15:50Z",
+      "end": "2026-10-18T23:25:37Z",
+      "vision": "off",
+      "expected": 242,
+      "unexpected": 12,
+      "skipped": 122,
+      "flaky": 0,
+      "total": 376,
+      "skippedReason": "serial projects.spec.ts chain after the first failure in each projects layout",
+      "failures": {
+        "preExisting": [
+          "J8 x4 layouts",
+          "J11 x4 layouts"
+        ],
+        "loadSensitiveEarlier": [
+          "LJ2 desktop-light-projects",
+          "LJ2 phone-light-projects"
+        ],
+        "new": [
+          "Thread history folds while current work and thinking stay expanded, desktop-dark-projects",
+          "LJ2 native setup remains visible and merge routing explains its ask-owner choice, phone-dark-projects"
+        ]
+      },
+      "installationJourneys": "4 of 4 passed"
+    },
+    "classification": [
+      {
+        "case": "Thread history folds while current work and thinking stay expanded",
+        "project": "desktop-dark-projects",
+        "main": [
+          "passed",
+          "passed",
+          "passed"
+        ],
+        "baseline": [
+          "passed",
+          "passed",
+          "passed"
+        ],
+        "class": "load-sensitive"
+      },
+      {
+        "case": "LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+        "project": "phone-dark-projects",
+        "main": [
+          "passed",
+          "passed",
+          "passed"
+        ],
+        "baseline": [
+          "passed",
+          "passed",
+          "passed"
+        ],
+        "class": "load-sensitive"
+      },
+      {
+        "case": "PAR8 compatible endpoint form, menu, automatic account choice and Why",
+        "project": "desktop-dark-projects",
+        "main": [
+          "passed",
+          "passed",
+          "passed"
+        ],
+        "baseline": "not comparable: PAR8 absent at da6a9bc9",
+        "class": "load-sensitive"
+      }
+    ],
+    "abortedAttempts": [
+      "classification 23:27:10Z stopped within seconds (filter took not-run cases as failures); no case finished"
+    ],
+    "result": "passed: no regression",
+    "review": {
+      "scope": [
+        "73c99e35",
+        "c82c371e",
+        "fd115cc7"
+      ],
+      "at": "2026-10-18T21:17Z-21:21Z (notes 22:27Z)",
+      "serious": 0
+    }
   }
 }
