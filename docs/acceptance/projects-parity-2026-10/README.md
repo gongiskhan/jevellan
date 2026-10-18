@@ -1,5 +1,15 @@
 # Projects parity, October 2026
 
+## Closing result
+
+Source checkpoint: `7763e0c254ae7ad064f1ad5993abcd9595415c8e` (version0.4.1). P0–P9 are pushed. P10 source cleanup and focused regressions are saved, but release0.5.0 remains held. No installation or real sandbox journey ran; the live clock is unstarted.
+
+Simulated: the final backend attempt records2334 passing and17 failing cases before interruption. Its remaining-case count is unknown. The full browser matrix records212 passed,29 failed,2 interrupted and133 not run, out of376. Both controllers were stopped at04:33:56Z to keep reporting and the mandatory push scan inside the14-hour clock. These are not clean full suites.
+
+Typecheck, lint and production build pass. Focused repaired-fixture results and the unchanged memory-capture pass are separate evidence. The unchanged Codex safety contract still fails in isolation. Dedicated vision is not run. One closing serious-issues review is recorded; no second review or later production edit occurs.
+
+Read [the owner-first handoff](HANDOFF.md) and [the full closing receipt](phase-10/verification.json).
+
 ## Clocks and scope
 
 - Orientation started: 2026-10-17T14:51:52Z.
@@ -350,3 +360,5 @@ Simulated: the paused reserved-job regression passes in15.08seconds, retaining t
 Simulated: all6 redaction-bound cases pass in5.24seconds with the current4000/4005 legacy probe and the unchanged1200-character synthesized bounds. The full run remains separate. The automatic filtered-rerun controller reaches its04:20Z cutoff without a full JSON result and starts nothing; focused unchanged Codex-contract and read-only memory-capture cases now run separately under one worker.
 
 Closing review: one bounded serious-issues review is recorded in phase-10/closing-review.md. It establishes no additional distinct serious source finding; the reproduced Codex safety-contract failure, LJ5/full-suite failures, unstable installed-hub readiness and missing dedicated vision remain release blockers. No adversarial/security review or second pass is run, and no production edit follows the review.
+
+Final simulated counts and interrupted cases are retained in phase-10/verification.json. Raw logs and traces remain private. Four current coordinator screenshots were directly inspected; dedicated vision is still not run. Mini preservation hashes match15 source files and2 app metadata files; a first comparison incorrectly resolved relative baseline paths from home, then the corrected comparison used the original roots. Madrid's independent service/CLI hashes also match. No installation changed.

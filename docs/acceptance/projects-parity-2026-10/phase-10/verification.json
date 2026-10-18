@@ -1,0 +1,460 @@
+{
+  "schema": "projects-closing-verification-v1",
+  "at": "2026-10-18T04:35:08.121435+00:00",
+  "source": {
+    "schema": "parity-source-fingerprint-v1",
+    "label": "live",
+    "baseCommit": "b5b2dd431aa3bc91b431f255d13ff8786cbcb60d",
+    "version": "0.4.1",
+    "sha256": "47270b21ac63d1c73e9c23b2d760ace4e0201d043c3e0bfafce072d1215cb551",
+    "files": 502,
+    "algorithm": "Sorted tracked apps, packages, runtimes and scripts plus root package/lock/Playwright/Vitest configuration: path, NUL, SHA256(file bytes). Documentation and tests are excluded.",
+    "productionFrozenThroughDecision": 907,
+    "testFixtureChangesAfterRunStarted": [
+      909,
+      910,
+      911,
+      912,
+      913,
+      914,
+      915
+    ],
+    "installed": false,
+    "codeCommit": "7763e0c254ae7ad064f1ad5993abcd9595415c8e"
+  },
+  "backend": {
+    "label": "simulated",
+    "result": "interrupted",
+    "passed": 2334,
+    "failed": 17,
+    "failures": [
+      {
+        "file": "tests/conversation-service.test.ts",
+        "test": "read-only lifecycle capture is queued during the stretch and published only after an owned memory checkpoint",
+        "durationMs": 61608,
+        "result": "failed",
+        "reason": "Test timed out in 60000ms."
+      },
+      {
+        "file": "tests/conversation-service.test.ts",
+        "test": "redo stops the running step, saves code and memory, resets the selected range and launches the chosen step once",
+        "durationMs": 122546,
+        "result": "failed",
+        "reason": "Test timed out in 120000ms."
+      },
+      {
+        "file": "tests/conversation-service.test.ts",
+        "test": "a second published undo reverses only surviving checkpoints across the earlier undo and retains upstream work",
+        "durationMs": 91593,
+        "result": "failed",
+        "reason": "Test timed out in 90000ms."
+      },
+      {
+        "file": "tests/projects-threads.test.ts",
+        "test": "PJ1c turns without a report or with a failure synthesize the report",
+        "durationMs": 28814,
+        "result": "failed",
+        "reason": "expected { Object (schema, kind, ...) } to match object { kind: 'thread-report', \u2026(1) }"
+      },
+      {
+        "file": "tests/conversation-service.test.ts",
+        "test": "separately queued memory checkpoints belong to the selected step and disappear with its undo",
+        "durationMs": 65143,
+        "result": "failed",
+        "reason": "Test timed out in 60000ms."
+      },
+      {
+        "file": "tests/runtime-contracts.test.ts",
+        "test": "codex runs all seven contract cases through the production adapter and simulated CLI",
+        "durationMs": 19481,
+        "result": "failed",
+        "reason": "expected [ { check: 'interrupt', \u2026(2) }, \u2026(6) ] to deeply equal [ { check: 'interrupt', \u2026(2) }, \u2026(6) ]"
+      },
+      {
+        "file": "tests/automatic-conversations.test.ts",
+        "test": "a stale in-flight classification is discarded after a new user message",
+        "durationMs": 2671,
+        "result": "failed",
+        "reason": "expected undefined to be type of 'function'"
+      },
+      {
+        "file": "tests/conversation-service.test.ts",
+        "test": "memory captured by a read-only reply publishes without running a failing code test",
+        "durationMs": 62292,
+        "result": "failed",
+        "reason": "Test timed out in 60000ms."
+      },
+      {
+        "file": "tests/conversation-service.test.ts",
+        "test": "conflict integration publishes verified code and memory, and undo from step 1 preserves upstream intent",
+        "durationMs": 92780,
+        "result": "failed",
+        "reason": "Test timed out in 90000ms."
+      },
+      {
+        "file": "tests/project-attach-routes.test.ts",
+        "test": "a Claude thread attaches at rest with its session and account, queues owner messages, and adopts the terminal session at detach",
+        "durationMs": 11447,
+        "result": "failed",
+        "reason": "expected [ 'idle', 'running', 'idle', 'idle' ] to deeply equal [ 'attached', 'idle', 'running', \u2026(1) ]"
+      },
+      {
+        "file": "tests/conversation-service.test.ts",
+        "test": "conflict integration publishes verified code and memory, and undo from step 2 preserves upstream intent",
+        "durationMs": 93293,
+        "result": "failed",
+        "reason": "Test timed out in 90000ms."
+      },
+      {
+        "file": "tests/projects-coordinator.test.ts",
+        "test": "PJ2 one owner message starts two threads and the publications arrive batched",
+        "durationMs": 12569,
+        "result": "failed",
+        "reason": "expected { schema: 'turn-input-v1', \u2026(14) } to match object { owner: { \u2026(3) }, turn: 1, \u2026(5) }"
+      },
+      {
+        "file": "tests/stretch-bridge.test.ts",
+        "test": "other scopes share the registry, token rules and route, and stretch tokens cannot reach project tools",
+        "durationMs": 1318,
+        "result": "failed",
+        "reason": "expected [ 'jevellan_library_list', \u2026(10) ] to deeply equal [ 'jevellan_thread_report', \u2026(7) ]"
+      },
+      {
+        "file": "tests/projects-attach.test.ts",
+        "test": "PJ7 terminal takeover adopts the new session and delivers waiting messages",
+        "durationMs": 11673,
+        "result": "failed",
+        "reason": "expected [ 'idle', 'running', 'idle', 'idle' ] to deeply equal [ 'attached', 'idle', 'running', \u2026(1) ]"
+      },
+      {
+        "file": "tests/project-parity-resume.test.ts",
+        "test": "a reserved job is not started by recovery while its project is paused",
+        "durationMs": 1229,
+        "result": "failed",
+        "reason": "expected true to be false // Object.is equality"
+      },
+      {
+        "file": "tests/project-redaction-bounds.test.ts",
+        "test": "a stored report that is longer than its maximum (written before this fix) reads back cut to the maximum instead of failing the page",
+        "durationMs": 71,
+        "result": "failed",
+        "reason": "expected 1205 to be less than or equal to 1200"
+      },
+      {
+        "file": "tests/conversation-service.test.ts",
+        "test": "outside activity during queued memory preserves partial notes and requires review before their checkpoint",
+        "durationMs": 91181,
+        "result": "failed",
+        "reason": "Test timed out in 90000ms."
+      }
+    ],
+    "privateLog": "/private/tmp/parity-p10-backend-mac4.log",
+    "note": "Started on the closing production tree. Loaded old fixture assertions remain failures in this run; focused repairs are separate.",
+    "remainingCases": "Not determined: interrupted before Vitest wrote its final JSON result."
+  },
+  "browser": {
+    "label": "simulated",
+    "result": "interrupted",
+    "scheduled": 376,
+    "summary": {
+      "failed": 29,
+      "interrupted": 2,
+      "did not run": 133,
+      "passed": 212
+    },
+    "passingCasesRecorded": 212,
+    "unsuccessfulCases": [
+      {
+        "index": 80,
+        "layout": "desktop-dark",
+        "test": "tests/e2e/skeleton.spec.ts:223:1 \u203a step corrections survive reload and undo launches the requested redo with visible history",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 82,
+        "layout": "desktop-dark",
+        "test": "tests/e2e/skeleton.spec.ts:273:1 \u203a blocked files can be reviewed, refreshed and accepted before verified publication",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 84,
+        "layout": "desktop-light",
+        "test": "tests/e2e/skeleton.spec.ts:297:1 \u203a undo from the last closed work includes newer work and preserves both requests after reload",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 85,
+        "layout": "desktop-dark",
+        "test": "tests/e2e/skeleton.spec.ts:297:1 \u203a undo from the last closed work includes newer work and preserves both requests after reload",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 86,
+        "layout": "phone-light",
+        "test": "tests/e2e/skeleton.spec.ts:297:1 \u203a undo from the last closed work includes newer work and preserves both requests after reload",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 93,
+        "layout": "desktop-light",
+        "test": "tests/e2e/skeleton.spec.ts:369:1 \u203a conversation titles, expanded tools and outside outcomes survive updates and reload",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 92,
+        "layout": "phone-dark",
+        "test": "tests/e2e/skeleton.spec.ts:297:1 \u203a undo from the last closed work includes newer work and preserves both requests after reload",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 94,
+        "layout": "desktop-light",
+        "test": "tests/e2e/skeleton.spec.ts:403:1 \u203a file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 95,
+        "layout": "desktop-dark",
+        "test": "tests/e2e/skeleton.spec.ts:369:1 \u203a conversation titles, expanded tools and outside outcomes survive updates and reload",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 96,
+        "layout": "phone-light",
+        "test": "tests/e2e/skeleton.spec.ts:369:1 \u203a conversation titles, expanded tools and outside outcomes survive updates and reload",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 100,
+        "layout": "desktop-dark",
+        "test": "tests/e2e/skeleton.spec.ts:403:1 \u203a file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 102,
+        "layout": "phone-light",
+        "test": "tests/e2e/skeleton.spec.ts:403:1 \u203a file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 97,
+        "layout": "phone-dark",
+        "test": "tests/e2e/skeleton.spec.ts:334:1 \u203a context merge is drafted read-only, survives reload, cancels and applies through verified publication",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 112,
+        "layout": "phone-dark",
+        "test": "tests/e2e/skeleton.spec.ts:369:1 \u203a conversation titles, expanded tools and outside outcomes survive updates and reload",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 114,
+        "layout": "phone-dark",
+        "test": "tests/e2e/skeleton.spec.ts:403:1 \u203a file and evidence links show recorded versions, source lines, Markdown, images and verification output",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 127,
+        "layout": "desktop-light",
+        "test": "tests/e2e/skeleton.spec.ts:668:1 \u203a context changes interrupted by outside activity require a fresh reviewed diff before publication",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 138,
+        "layout": "desktop-light",
+        "test": "tests/e2e/skeleton.spec.ts:859:1 \u203a J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 153,
+        "layout": "desktop-dark",
+        "test": "tests/e2e/skeleton.spec.ts:859:1 \u203a J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 154,
+        "layout": "phone-light",
+        "test": "tests/e2e/skeleton.spec.ts:859:1 \u203a J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 155,
+        "layout": "phone-dark",
+        "test": "tests/e2e/skeleton.spec.ts:668:1 \u203a context changes interrupted by outside activity require a fresh reviewed diff before publication",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 145,
+        "layout": "desktop-light",
+        "test": "tests/e2e/skeleton.spec.ts:913:1 \u203a J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 165,
+        "layout": "phone-dark",
+        "test": "tests/e2e/skeleton.spec.ts:859:1 \u203a J8 simulated mesh journey switches, streams, corrects, logs in remotely and respects outside work",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 156,
+        "layout": "desktop-dark",
+        "test": "tests/e2e/skeleton.spec.ts:913:1 \u203a J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 157,
+        "layout": "phone-light",
+        "test": "tests/e2e/skeleton.spec.ts:913:1 \u203a J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 166,
+        "layout": "phone-dark",
+        "test": "tests/e2e/skeleton.spec.ts:913:1 \u203a J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 180,
+        "layout": "desktop-light-improver",
+        "test": "tests/e2e/improver.spec.ts:164:1 \u203a J12: memory care applies and tells, shows and undoes its commit, suggests only on request, refuses stale patches and proposes an AGENTS.md rule",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 224,
+        "layout": "phone-light-projects",
+        "test": "tests/e2e/projects.spec.ts:920:1 \u203a PJ5 a thread on the member device opens through the hub",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 271,
+        "layout": "phone-dark-projects",
+        "test": "tests/e2e/projects.spec.ts:1003:1 \u203a PJ7 an attached thread disables its composer",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 307,
+        "layout": "desktop-light-projects",
+        "test": "tests/e2e/projects.spec.ts:1233:1 \u203a LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 267,
+        "layout": "installation",
+        "test": "tests/e2e/installation.spec.ts:18:3 \u203a packed first run, active update, rollback and removal \u00b7 desktop light",
+        "result": "failed-or-interrupted"
+      },
+      {
+        "index": 343,
+        "layout": "desktop-dark-projects",
+        "test": "tests/e2e/projects.spec.ts:1233:1 \u203a LJ2 native setup remains visible and merge routing explains its ask-owner choice",
+        "result": "failed-or-interrupted"
+      }
+    ],
+    "privateLog": "/home/ggomes/.jevellan-build/projects-parity-050-verify-2026-10-18/browser2.log",
+    "note": "Unsuccessful entries include any active case interrupted to preserve closing and push time; final summary distinguishes those. Raw traces remain private."
+  },
+  "typecheck": {
+    "label": "simulated",
+    "result": "passed"
+  },
+  "lint": {
+    "label": "simulated",
+    "result": "passed"
+  },
+  "build": {
+    "label": "simulated",
+    "result": "passed",
+    "note": "Production build after Decision907; production code unchanged afterwards."
+  },
+  "secretScan": {
+    "label": "live",
+    "result": "passed",
+    "note": "Normal history and working-tree scan passed; final normal pre-push scan remains required."
+  },
+  "vision": {
+    "label": "not run",
+    "reason": "Dedicated test credential is absent."
+  },
+  "release": {
+    "label": "not run",
+    "version": "0.5.0",
+    "result": "held"
+  },
+  "liveClock": {
+    "label": "not run",
+    "startedAt": null
+  },
+  "review": "closing-review.md",
+  "stoppedAt": "2026-10-18T04:33:56Z",
+  "focusedReruns": [
+    {
+      "label": "simulated",
+      "name": "Rate-limit report fixture",
+      "passed": 1,
+      "filtered": 16,
+      "decision": 909
+    },
+    {
+      "label": "simulated",
+      "name": "Stale classification and cancellation",
+      "passed": 2,
+      "filtered": 42,
+      "decision": 910
+    },
+    {
+      "label": "simulated",
+      "name": "Two-thread coordinator and exact context",
+      "passed": 1,
+      "filtered": 7,
+      "decision": 911
+    },
+    {
+      "label": "simulated",
+      "name": "Takeover and bridge scopes",
+      "passed": 3,
+      "filtered": 16,
+      "decisions": [
+        912,
+        913
+      ]
+    },
+    {
+      "label": "simulated",
+      "name": "Paused reserved-job recovery",
+      "passed": 1,
+      "filtered": 2,
+      "decision": 914
+    },
+    {
+      "label": "simulated",
+      "name": "Redaction bounds",
+      "passed": 6,
+      "filtered": 0,
+      "decision": 915
+    },
+    {
+      "label": "simulated",
+      "name": "Unchanged memory capture",
+      "passed": 1,
+      "durationMs": 47732
+    },
+    {
+      "label": "simulated",
+      "name": "Unchanged Codex adapter contract",
+      "failed": 1,
+      "reason": "Safety check ends interrupted rather than completed."
+    }
+  ],
+  "screenshots": {
+    "label": "simulated",
+    "directlyInspectedLayouts": [
+      "desktop-light",
+      "desktop-dark",
+      "phone-light",
+      "phone-dark"
+    ],
+    "dedicatedVision": "not run",
+    "path": "screenshots/"
+  }
+}

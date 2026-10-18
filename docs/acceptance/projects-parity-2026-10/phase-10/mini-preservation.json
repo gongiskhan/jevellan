@@ -1,0 +1,1 @@
+{"schema": "parity-mini-preservation-v1", "label": "live", "comparison": "Baseline relative paths resolved against their original source and data-home roots.", "originalFiles": {"checked": 15, "changed": 0}, "apps": {"checked": 2, "changed": 0}, "policy": "apps-only", "version": "0.3.2"}

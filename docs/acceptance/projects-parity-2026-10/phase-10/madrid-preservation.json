@@ -1,0 +1,8 @@
+{
+  "schema": "parity-independent-madrid-preservation-v1",
+  "label": "live",
+  "unchanged": true,
+  "serviceSha256": "1af014e795f54c9ba09675e1447e47c5bd048b443a8d06ec69029b71adf685d4",
+  "commandSha256": "9d54dfbd93b4e05c36b42013b4b07b47b211144c3e3a205a45dc6c5c37ccd8ae",
+  "installationUpdated": false
+}

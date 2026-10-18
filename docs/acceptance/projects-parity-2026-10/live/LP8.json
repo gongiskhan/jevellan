@@ -1,0 +1,15 @@
+{
+  "schema": "projects-parity-live-journey-v1",
+  "label": "not run",
+  "journey": "LP8",
+  "verdict": "blocked",
+  "sourceCommit": "7763e0c254ae7ad064f1ad5993abcd9595415c8e",
+  "release": "0.5.0",
+  "reason": "Optional compatible-endpoint credential absent; release and installation are also held.",
+  "liveClockStartedAt": null,
+  "settingsChanged": [],
+  "pullRequestsCreated": [],
+  "tokens": null,
+  "costUsd": null,
+  "ownerAcceptanceClaimed": false
+}

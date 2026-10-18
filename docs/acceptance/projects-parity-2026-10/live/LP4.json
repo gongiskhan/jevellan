@@ -1,0 +1,15 @@
+{
+  "schema": "projects-parity-live-journey-v1",
+  "label": "not run",
+  "journey": "LP4",
+  "verdict": "blocked",
+  "sourceCommit": "7763e0c254ae7ad064f1ad5993abcd9595415c8e",
+  "release": "0.5.0",
+  "reason": "Release and installation remain held by failed or incomplete closing gates.",
+  "liveClockStartedAt": null,
+  "settingsChanged": [],
+  "pullRequestsCreated": [],
+  "tokens": null,
+  "costUsd": null,
+  "ownerAcceptanceClaimed": false
+}
