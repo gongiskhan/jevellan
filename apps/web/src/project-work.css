@@ -762,6 +762,8 @@ button.pw-session-badge { display: inline-flex; gap: 6px; min-height: 30px; padd
 .pw-usage table { width: 100%; border-collapse: collapse; font-size: .85rem; }
 .pw-usage th, .pw-usage td { text-align: left; border-bottom: 1px solid var(--line); padding: 8px 10px; overflow-wrap: anywhere; }
 .pw-usage tbody th { font-weight: 500; }
+/* Column headings never break inside a word; a narrow screen scrolls the table instead (vision PAR5 finding). */
+.pw-usage thead th { overflow-wrap: normal; white-space: nowrap; }
 .pw-usage h3 { margin-top: 24px; }
 
 .pw-attachments, .pw-library-chips { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
