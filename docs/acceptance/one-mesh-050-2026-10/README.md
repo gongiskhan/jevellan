@@ -366,7 +366,8 @@ Receipts are in [live/](live/). Every changed setting was restored and is listed
 - No outcome file was written. On 0.4.1 such files appeared within seconds.
 - No `coordinator-turn-start` followed.
 - The Jev request in that step is bounded (two attempts of 4 seconds), so the wait sits elsewhere in it, in settings, configuration or credential retrieval. Which one was not identified without intrusive debugging.
-- Meanwhile Jev answered placement decisions normally (LP5, LP6), ekoa-code's coordinator ran turns, and doctor reported Jev reachable.
+- Meanwhile Jev answered placement decisions normally (LP5, LP6), and doctor reported Jev reachable.
+- No coordinator turn is recorded for ekoa-code after the update either. Its last turn records are from 17 October, and a lifecycle activity "Coordinator: ekoa-code" seen at 00:21 left no turn record. So the stall may not be limited to the sandbox; that is not established.
 - One owner-UI Fresh session at 00:35:34 did not clear it. There was no daemon restart, hot patch or internal write.
 - ekoa-code's nightly window ran heavy Codex work on Madrid from 00:00. A causal link is not established.
 
@@ -386,7 +387,7 @@ Other live notes:
 - No repair came within 10 minutes. Receipt: [live/LP4-supplemental.json](live/LP4-supplemental.json).
 - Manual test cleanup, not a repair: at 01:07 the owner committed `6a6d5f36` on top of `ca6b6684`, restoring the original changelog. It descends from the injected commit (ahead by 1, behind by 0), and its check succeeded. Nothing was sent to the thread.
 
-At 01:08 the stall was unchanged. The LP5 first-attempt thread waited for the owner with a sound question (the sandbox targets Node 20, not 22) and changed nothing. It was stopped through the normal owner Stop, and its branch is kept. No further tests were started. The remaining live clock was not used, because every remaining journey depends on the stalled coordinator.
+At 01:08 the stall was unchanged. At 01:13, one restart was tried through the state point's lifecycle gate, the one `jevellan update` uses. The service had been verified first: PID 2446679, started by the update at 23:45:43, parent `systemd --user`, only the daemon and Basic Memory in its tree, and no other admitted work. The guard did not grant the gate within 60 seconds, because the stalled interpretation counts as running work, so nothing was stopped and the stall remains. The LP5 first-attempt thread waited for the owner with a sound question (the sandbox targets Node 20, not 22) and changed nothing. It was stopped through the normal owner Stop, and its branch is kept. No further tests were started. The remaining live clock was not used, because every remaining journey depends on the stalled coordinator.
 
 ### Phase 4: closing
 
