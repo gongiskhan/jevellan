@@ -14,7 +14,7 @@ import { serveAgentMcp } from './agent-mcp.js';
 import { hubCommand } from './hub-command.js';
 import { journalCommand } from './journal-command.js';
 import { serveOwnerMcp } from './owner-mcp.js';
-import { attachCommand, callCommand, hookCommand, pluginCommand, statuslineCommand, watchCommand } from './owner-commands.js';
+import { attachCommand, callCommand, hookCommand, pluginCommand, pluginDoctorLine, statuslineCommand, watchCommand } from './owner-commands.js';
 
 function printInstallation(result: Awaited<ReturnType<Installer['install']>>) {
   if (result.changedPort) console.log(`The default port was occupied. Jevellan uses ${result.port}.`);
@@ -43,6 +43,7 @@ export async function main(args: string[], options: { installer?: () => Installe
   if (args[0] === 'doctor') {
     if (args.length !== 1) throw new Error('Usage: jevellan doctor');
     const report = await (options.doctor ?? doctor)(); doctorLines(report).forEach(line => console.log(line));
+    if (!options.doctor) console.log(await pluginDoctorLine());
     if (report.checks.some(check => check.status !== 'ok')) process.exitCode = 1;
     return;
   }

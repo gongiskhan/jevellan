@@ -6,6 +6,17 @@ Jevellan runs coding agents in conversations across your runtimes, accounts and 
 
 This repository is under active development. See [the acceptance report](docs/acceptance/REPORT.md) for what is built, tested and still blocked. The complete product is not ready to install yet.
 
+## Use it from Claude Code
+
+On one machine with one Claude account, two commands take you from nothing to asking any Claude Code session in a project folder "what's running?":
+
+```sh
+npx github:gongiskhan/jevellan install
+jevellan plugin install
+```
+
+The plugin gives Claude Code twelve Jevellan tools, five slash commands and a status line (`jevellan statusline install`). See [the bridge](docs/bridge.md) for the bridge session you reach from the Claude app.
+
 ## Install
 
 The installation command, once the repository is published, is:

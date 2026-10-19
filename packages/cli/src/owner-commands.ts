@@ -194,3 +194,12 @@ export async function hookCommand(args: string[], homes = new Homes(), env: Node
   console.log(`Jevellan bridge for ${env.JEVELLAN_PROJECT}. Waiting on you: ${view?.waiting?.length ?? 0}. Running: ${view?.running?.length ?? 0}.`);
   return 0;
 }
+
+/** The plugin line `jevellan doctor` prints after its ten checks (bridge specification, "Installing the plugin"); it never changes the exit code. */
+export async function pluginDoctorLine(homes = new Homes(), env: NodeJS.ProcessEnv = process.env): Promise<string> {
+  const built = existsSync(join(pluginDist(homes), 'jevellan', '.claude-plugin', 'plugin.json'));
+  const dir = env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude');
+  let installed = false; try { installed = readFileSync(join(dir, 'plugins', 'installed_plugins.json'), 'utf8').includes('jevellan@jevellan-local'); } catch { /* not installed */ }
+  const reachable = (await callOwnerTool('status', {}, { homes, caller: 'cli', timeoutMs: 5000 })).ok;
+  return `INFO Plugin: ${built ? 'built' : 'not built (jevellan plugin build)'} · ${installed ? `installed for Claude Code (${dir})` : 'not installed (jevellan plugin install)'} · forwarder ${reachable ? 'reachable' : 'not reachable'}`;
+}
