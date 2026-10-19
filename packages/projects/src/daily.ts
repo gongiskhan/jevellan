@@ -16,7 +16,9 @@ export class ProjectDailyWork {
     event(projectId: string, event: CoordinatorEvent): Promise<void>; changed(): void;
     memoryDream?(projectId: string, requestId: string): Promise<{ schema: 'memory-dream-run-receipt-v1'; id: string; accepted: true }>;
     landing?(threadId: string, held: boolean): void;
-    memoryDreamLine?(projectId: string): string | undefined }) {}
+    memoryDreamLine?(projectId: string): string | undefined;
+    /** Missed nights (bridge): a window opened late enough is skipped and recorded as missed instead; earlier late opens are catch-ups. */
+    nightGuard?(projectId: string, date: string, latenessMs: number, items: readonly string[]): Promise<{ open: true } | { open: false; outcome: string }> }) {}
   async jobs(projectId: string): Promise<ProjectJob[]> {
     const rows: ProjectJob[] = []; let after: string | undefined;
     do { const page = await this.o.hub.jobs(projectId, after); rows.push(...page.records); after = page.next ?? undefined; } while (after); return rows;
@@ -277,6 +279,13 @@ export class ProjectDailyWork {
         const job = daily.target.kind === 'job' ? jobs.get(daily.target.jobId) ?? null : null;
         if (daily.target.kind === 'job' && !job) return refuse('A daily job definition is missing.');
         plans.unshift({ ...await this.#plan(projectId, derivedId('task', 'window', id, daily.id), closingProjectDay, daily, job, rank), nightlyWindowId: id }); rank = taskRankBetween(null, rank);
+      }
+      const guard = this.o.now() - boundary > 60_000 ? await this.o.nightGuard?.(projectId, date, this.o.now() - boundary, enabled.map(daily => daily.name)) : undefined;
+      if (guard && !guard.open) {
+        const at = this.o.tasks.at();
+        await this.o.hub.putWindow(ProjectWindowSchema.parse({ schema: 'project-window-v1', id, projectId, revision: 0, date, closingProjectDay, state: 'finished', mergesHeld: false, openedAt: at, scheduledAt: new Date(boundary).toISOString(),
+          finishedAt: at, taskIds: [], plans: [], outcome: guard.outcome, failed: true }), 0);
+        this.o.changed(); return;
       }
       const openedAt = this.o.tasks.at(), scheduledAt = new Date(boundary).toISOString(), openedLateReason = this.o.now() - boundary > 60_000 ? `The hub did not process this boundary on time (${Math.floor((this.o.now() - boundary) / 60_000)} minutes late).` : undefined;
       window = (await this.o.hub.putWindow(ProjectWindowSchema.parse({ schema: 'project-window-v1', id, projectId, revision: 0, date, closingProjectDay, state: 'open', mergesHeld: true, openedAt, scheduledAt, ...(openedLateReason ? { openedLateReason } : {}), taskIds: plans.map(plan => plan.id), plans, memoryDreamPending: enabled.some(daily => daily.target.kind === 'memory-dream') }), 0)).document;

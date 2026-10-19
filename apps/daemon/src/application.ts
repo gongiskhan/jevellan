@@ -9,6 +9,7 @@ import { OwnerTools } from './owner-tools.js';
 import { OwnerEvents } from './owner-events.js';
 import { OwnerPushes } from './owner-pushes.js';
 import { OwnerBridges } from './owner-bridge.js';
+import { OwnerSchedules } from './owner-schedules.js';
 import type { EkoaConnector } from './ekoa-client.js';
 import { collectDeviceFacts, EkoaRequestSchema, DeviceSettingsInputSchema, DeviceTagsInputSchema, type DeviceFacts } from '@jevellan/core';
 import { existsSync } from 'node:fs';
@@ -78,6 +79,8 @@ export class Application {
   #ownerEvents: OwnerEvents | undefined;
   #ownerPushes: OwnerPushes | undefined;
   #ownerBridges: OwnerBridges | undefined;
+  #ownerSchedules: OwnerSchedules | undefined;
+  get ownerSchedules(): OwnerSchedules { if (!this.#ownerSchedules) throw Object.assign(new Error('Jevellan tools run on the state point. Use them on the device that holds the hub.'), { status: 409 }); return this.#ownerSchedules; }
   get ownerPushes(): OwnerPushes { if (!this.#ownerPushes) throw Object.assign(new Error('Jevellan tools run on the state point. Use them on the device that holds the hub.'), { status: 409 }); return this.#ownerPushes; }
   get ownerBridges(): OwnerBridges { if (!this.#ownerBridges) throw Object.assign(new Error('The bridge runs on the state point. Start it on the device that holds the hub.'), { status: 409 }); return this.#ownerBridges; }
   get ownerEvents(): OwnerEvents { if (!this.#ownerEvents) throw Object.assign(new Error('Jevellan tools run on the state point. Use them on the device that holds the hub.'), { status: 409 }); return this.#ownerEvents; }
@@ -187,7 +190,7 @@ export class Application {
       // Projects share the account serialization, checkout ownership, leases, bridge registry and memory with conversations.
       this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId, undefined, () => this.devices.list());
       this.library = new ProjectLibraryService(this);
-      this.projectWork = new ProjectWork({ deployHealth: async (id, checks, trigger, deployId) => { const runs: ProjectHealthRun[] = []; for (const definition of checks) { const view = await this.projectHealthRequest({ schema: 'project-health-request-v1', project: id, operation: 'run', trigger, deployId, definition }); runs.push(...view.runs); } return runs; }, library: this.library, homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor, workRefusal: () => this.versionRefusal(),
+      this.projectWork = new ProjectWork({ nightGuard: (projectId, date, lateness, items) => this.#ownerSchedules ? this.#ownerSchedules.nightGuard(projectId, date, lateness, items) : Promise.resolve({ open: true as const }), deployHealth: async (id, checks, trigger, deployId) => { const runs: ProjectHealthRun[] = []; for (const definition of checks) { const view = await this.projectHealthRequest({ schema: 'project-health-request-v1', project: id, operation: 'run', trigger, deployId, definition }); runs.push(...view.runs); } return runs; }, library: this.library, homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor, workRefusal: () => this.versionRefusal(),
         journal: { isHub: !this.member, ...(this.member ? { request: input => this.member!.projectJournal(input) } : {}) },
         terminalRead: (scope, input) => this.terminals.read(scope.kind === 'thread' ? { kind: 'thread', projectId: scope.projectId, threadId: scope.threadId }
           : { kind: 'coordinator', projectId: scope.projectId }, input),
@@ -214,7 +217,7 @@ export class Application {
       this.notifications = this.#hub ? new HubNotifications(this.hub, () => this.device.url, options.pushSend) : undefined;
       this.ekoa = this.#hub ? new EkoaMirrorService(this.hub, () => this.device.url, options.ekoaConnector) : undefined;
       // The owner event stream listens from the start so watch and pushes see everything after start-up (bridge).
-      if (this.#hub) { this.#ownerEvents = new OwnerEvents(this); this.#ownerPushes = new OwnerPushes(this); this.#ownerBridges = new OwnerBridges(this); }
+      if (this.#hub) { this.#ownerEvents = new OwnerEvents(this); this.#ownerPushes = new OwnerPushes(this); this.#ownerBridges = new OwnerBridges(this); this.#ownerSchedules = new OwnerSchedules(this); }
       const improverReady = Promise.all([this.conversations.ready, this.backgroundDrafts.ready]).then(() => undefined);
       const hub = this.#hub; const mesh = this.#mesh;
       this.improver = hub && mesh ? new Improver({ hub, deviceId: this.device.deviceId, ready: improverReady,
@@ -296,7 +299,7 @@ export class Application {
   bindDaemonUrl(url: string): void {
     this.conversations.daemonUrl = url; this.backgroundDrafts.daemonUrl = url;
     // Thread turns need the bridge URL; queued work may start from here. Its periodic loops follow `timers` on their own.
-    if (this.#improverTimers) { this.ekoa?.start(); this.notifications?.start(); this.cleanup.start(); this.#ownerPushes?.start(); this.#ownerBridges?.start(); if (this.#hub) this.ownerTools.takeover.start(); }
+    if (this.#improverTimers) { this.ekoa?.start(); this.notifications?.start(); this.cleanup.start(); this.#ownerPushes?.start(); this.#ownerBridges?.start(); this.#ownerSchedules?.start(); if (this.#hub) this.ownerTools.takeover.start(); }
     this.projectWork.daemonUrl = url; this.projectWork.start();
     if (this.#improverTimers) { this.routingImprover?.start(); this.projectImprover.start(); }
   }
@@ -433,7 +436,7 @@ export class Application {
     const failures: unknown[] = [];
     try { await this.cleanup.close(); } catch (error) { failures.push(error); }
     try { await this.settingsSync.close(); await this.#riggingQueue.catch(() => undefined); } catch (error) { failures.push(error); }
-    try { this.#ownerPushes?.close(); this.#ownerBridges?.close(); this.#ownerTools?.takeover.close(); } catch (error) { failures.push(error); }
+    try { this.#ownerPushes?.close(); this.#ownerBridges?.close(); this.#ownerSchedules?.close(); this.#ownerTools?.takeover.close(); } catch (error) { failures.push(error); }
     try { await this.notifications?.close(); } catch (error) { failures.push(error); }
     try { await this.ekoa?.close(); } catch (error) { failures.push(error); }
     try { await this.presence.close(); } catch (error) { failures.push(error); }

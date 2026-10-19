@@ -97,6 +97,8 @@ export const DEFAULT_PROJECT_TIMERS: ProjectTimers = {
   mainLeaseRetryMs: 20_000, fallbackCheckMs: 60_000, now: Date.now,
 };
 export type ProjectWorkOptions = {
+  /** Missed nights (bridge): decides whether a window this late still opens as a catch-up. */
+  nightGuard?(projectId: string, date: string, latenessMs: number, items: readonly string[]): Promise<{ open: true } | { open: false; outcome: string }>;
   /** Why this device may not start new work now (B5: it runs a newer version than its hub). */
   deployHealth?(id: string, checks: import('@jevellan/core').ProjectHealthCheck[], trigger: import('@jevellan/core').ProjectHealthRun['trigger'], deployId: string): Promise<import('@jevellan/core').ProjectHealthRun[]>;
   workRefusal?(): string | undefined;
@@ -405,7 +407,7 @@ export class ProjectWork {
       windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
     this.daily = new ProjectDailyWork({ landing: (threadId, held) => { if (!this.store.get(threadId)) return; if (held) this.store.setIndexFields(threadId, { landing: 'held' }); else if (this.store.local(threadId).landing === 'held') this.store.setIndexFields(threadId, { landing: undefined }); }, fixCutoffMinutes: nightlyFixMinutes(o.homes), hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
       memoryDream: async (id, requestId) => { if (!this.memoryProgramme) throw new Error('The memory dream runs on the hub.'); return this.memoryProgramme.runNow(await this.#project(id), requestId); },
-      memoryDreamLine: id => this.memoryProgramme?.line(id),
+      memoryDreamLine: id => this.memoryProgramme?.line(id), ...(o.nightGuard ? { nightGuard: o.nightGuard } : {}),
       validateGoal: async (id, goalId) => { if (goalId) await this.goals.read(id, goalId); }, event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
     this.memoryProgramme = o.hubMemory ? new ProjectMemoryProgramme({ sessionEnd: evidence => this.ledgers.sessionEnd(evidence), store: o.hubMemory, captures: this.captures, hub: o.hub, launcher, placement, git, daily: this.daily,
       deviceId: o.deviceId, redactor: o.redactor, accounts: o.accounts, settings: id => this.admission.settings(id), repository: project => worktrees.repository(project), baseBranch: repo => worktrees.baseBranch(repo),

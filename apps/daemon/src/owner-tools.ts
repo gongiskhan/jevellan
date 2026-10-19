@@ -2,7 +2,7 @@ import { appendFileSync, mkdirSync, readFileSync, renameSync, existsSync, writeF
 import { createHash } from 'node:crypto';
 import { dirname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { CallerLogEntrySchema, HubUnavailable, OwnerInstallationSettingsSchema, OwnerProjectSettingsSchema, SteeringRecordSchema, defaultOwnerInstallationSettings, defaultOwnerProjectSettings, newId,
+import { CallerLogEntrySchema, HubUnavailable, ownerClock, OwnerInstallationSettingsSchema, OwnerProjectSettingsSchema, SteeringRecordSchema, defaultOwnerInstallationSettings, defaultOwnerProjectSettings, newId,
   type OwnerInstallationSettings, type OwnerProjectSettings, type SteeringRecord, OWNER_TOOLS, OwnerToolResultSchema, ownerTool, ownerToolAction, type CallerLogEntry, type OwnerToolDefinition, type OwnerToolRequest, type OwnerToolResult,
   type Project, type ProjectStatusView } from '@jevellan/core';
 import { OwnerShortIds, projectStatus, renderStatus, renderStatusLine } from '@jevellan/projects';
@@ -135,8 +135,15 @@ export class OwnerTools {
       return { at: handoff.at, text: [handoff.inFlight, handoff.pendingAsks, handoff.decisions].filter(Boolean).join(' ').replace(/\s+/gu, ' ') };
     } catch { return null; }
   }
-  /** Missed nights arrive with phase 6. */
-  async missedSince(...input: [string, string]): Promise<string> { void input; return 'none'; }
+  async missedSince(projectId: string, since: string): Promise<string> {
+    const rows = this.app.ownerSchedules.missed(projectId, 30).filter(row => row.at >= since);
+    return rows.length ? rows.map(row => `${row.items.join(', ')} on ${row.date} (${row.reason}${row.caughtUp ? '; caught up' : ''})`).join('; ') : 'none';
+  }
+  async missedNights(projectId: string, days: number): Promise<string[]> {
+    const tz = (await this.app.projectWork.view(projectId)).settings.nightlyWindow.timezone; const now = this.now();
+    return this.app.ownerSchedules.missed(projectId, days).map(row => `${ownerClock(`${row.date}T12:00:00.000Z`, now, tz).replace(/ \d\d:\d\d$/u, '')} night (${row.reason}${row.caughtUp ? `; caught up at ${ownerClock(row.at, now, tz)}` : '; ran the next night'})`);
+  }
+  nextInterval(interval: { everyMinutes: number; start: string; end: string }, lastStartedAt: string | null, tz: string): string { return this.app.ownerSchedules.nextInterval(interval, lastStartedAt, tz); }
   async overridesSince(projectId: string, since: string): Promise<number> {
     try { return (await this.app.projectHub.recentOverrides(projectId, 200)).filter(row => row.at >= since).length; } catch { return 0; }
   }
