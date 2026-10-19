@@ -1,0 +1,91 @@
+{
+  "schema": "live-parity-receipt-v2",
+  "journey": "LP4",
+  "label": "live",
+  "passed": false,
+  "startedAt": "2026-10-19T00:55:41.051Z",
+  "endedAt": "2026-10-19T01:05:55.905Z",
+  "steps": [
+    {
+      "id": "supplemental-failing-checks",
+      "assertion": "Supplemental, not LP4: after the owner restores PR #21's CHANGELOG.md to main, the thread runs \"Automatic fix: failing checks\" and the checks pass on a new head within 10 minutes",
+      "verdict": "failed",
+      "at": "2026-10-19T01:05:55.905Z",
+      "reason": "The injected owner head ca6b6684 failed its result check. The thread then ran \"Automatic fix: failing checks\" (turn 2, round 1 of 3) but reported blocked. Its jevellan_github run-list requests were refused by the thread scope (\"A thread can read only its own pull request and runs and job logs on its current head commit\"), which the brief deliberately restricts. It read PR #21 (head ca6b6684, the owner commit) while its clean worktree was still at its own earlier head 0a585e3 with the changelog entry, so it could not find the cause. The failure is in how the fix turn discovers the failing run and in its stale worktree, not in the scope rule. There was no new head and no green check within 10 minutes of the injected commit.",
+      "evidence": {
+        "startedAt": "2026-10-19T00:55:41.051Z",
+        "headBefore": "0a585e3ed7505c321f0face8c7f8cbb977603cd2",
+        "branch": "jv/add-a-readme-line-about-npm-test-e8gczy",
+        "autoMerge": null,
+        "threadStateBefore": "in-review",
+        "fixTurnsBefore": 0,
+        "turnsBefore": 1,
+        "injected": {
+          "commit": "ca6b66840bc203e2f6aa081904171e781b881c5f",
+          "at": "2026-10-19T00:55:43.969Z",
+          "branchBlobBefore": "23c876b758bf1b668fd0e2bacc24c24a7656f2bd",
+          "mainBlob": "ddcc448cc6062fa02197150744bb25fc591fa63f"
+        },
+        "lastSeen": {
+          "head": "ca6b66840bc203e2f6aa081904171e781b881c5f",
+          "checks": [
+            {
+              "name": "result",
+              "status": "completed",
+              "conclusion": "failure"
+            }
+          ],
+          "threadState": "idle",
+          "fixTurns": 1,
+          "at": "2026-10-19T01:05:30.708Z"
+        },
+        "observedFailure": {
+          "head": "ca6b66840bc203e2f6aa081904171e781b881c5f",
+          "checks": [
+            {
+              "name": "result",
+              "status": "completed",
+              "conclusion": "failure"
+            }
+          ],
+          "at": "2026-10-19T00:56:19.027Z"
+        },
+        "fixed": null,
+        "automaticFixLabels": 2,
+        "headBeforeInjection": "0a585e3ed7505c321f0face8c7f8cbb977603cd2",
+        "automaticFix": [
+          {
+            "turn": 2,
+            "fix": {
+              "by": "automatic",
+              "id": "pfix_01M58THYDAFHN0XJ4F5XJFTE75",
+              "kind": "checks",
+              "round": 1,
+              "maxRounds": 3
+            }
+          }
+        ],
+        "threadReport": {
+          "turn": 2,
+          "status": "blocked",
+          "summary": "Cannot diagnose PR #21's failed `result` check because jevellan_github rejected both run-list requests (with this branch and without a branch) with: 'A thread can read only its own pull request and runs and job logs on its current head commit.' Reading PR #21 succeeded: its current head is ca6b66840bc203e2f6aa081904171e781b881c5f and its file list contains only README.md. This assigned worktree remains clean at 0a585e3, which includes both the README test command and the required CHANGELOG.md entry. The mismatch may be relevant, but the failure cause is unconfirmed without logs. Coordinator needs to reconcile the thread's current PR head/access so the failed run and logs can be read. No files changed or tests rerun this turn; previous local whitespace and changelog checks passed."
+        }
+      }
+    }
+  ],
+  "messages": [],
+  "pullRequests": [
+    21
+  ],
+  "restored": [
+    "autoMerge stayed false",
+    "MANUAL TEST CLEANUP, not an automatic repair: at 01:07Z the owner, through the GitHub API, committed 6a6d5f36 on top of the injected ca6b6684. It restores PR #21's original CHANGELOG.md (blob 23c876b7) under the precondition of the current blob ddcc448c. The compare API reports ahead by 1 and behind by 0, so the head descends from the injected commit. Its result check succeeded. Nothing was sent to the thread or coordinator."
+  ],
+  "cleanupErrors": [],
+  "notes": [
+    "This supplemental check uses PR #21 (LP5 attempt 2) because LP1 produced no pull requests. It does not count as LP4, which stays blocked. passed is false by construction for this supplemental receipt; see the step verdict."
+  ],
+  "screenshots": [
+    "docs/acceptance/one-mesh-050-2026-10/live/screenshots/LP4-supplemental-thread.png"
+  ]
+}

@@ -18,9 +18,10 @@ An admitted context operation waits before draft launch and at its project, owne
 
 ## One mesh
 
-Target layout, not yet in place: the October 2026 migration has not run (see [the one-mesh handoff](acceptance/one-mesh-050-2026-10/HANDOFF.md)).
+In place since 18 October 2026 (see [the one-mesh run](acceptance/one-mesh-050-2026-10/README.md#second-run-18-to-19-october)).
 - dev-madrid is the single state point, the device the code calls the hub. It serves `https://dev-madrid.tail31efa.ts.net`.
-- Every other machine is an ordinary member that joins it with a code from Settings → Devices.
+- Every other machine is an ordinary member that joins it with a code from Settings → Devices. The MacBook Pro is the first such member, at `https://goncalos-macbook-pro.tail31efa.ts.net`.
+- A project can add a new member's checkout path even while its threads are open (Decision 924); existing paths and the Git policy stay fixed until those threads finish.
 - Moving the state point to another machine is a vault restore. Install a fresh hub there, add the credentials, restore each project from the vault, then re-join the members from fresh homes. See [New hub or new machine](install.md#new-hub-or-new-machine).
 
 ## A disposable hub

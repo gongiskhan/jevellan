@@ -376,3 +376,26 @@ Other live notes:
   - during LP5's first attempt, once its precondition had failed, so the shared ceilings could be restored at once.
 - Thread `thread_01M58SA1R0VMBK3JSMYH06E9KG` ("Add a README line about Node 22", Gmail) started after the ceiling was restored. It now waits for the owner with a question, because the sandbox targets Node 20. It is left for the owner.
 - No live journey changed ekoa-code. Its ceilings were lowered only during LP5, while it had no running work. Ekoa Codex was never changed.
+
+**Supplemental automatic-fix check (live; parent agent's request; not LP4).** LP4 stays blocked, since LP1 opened no pull request, so this check used [sandbox #21](https://github.com/gongiskhan/jevellan-live-sandbox/pull/21).
+- At 00:55:43 the owner restored #21's `CHANGELOG.md` to main's content through the GitHub API (commit `ca6b6684`, guarded by the file's blob precondition). The real `result` check failed on that head.
+- The thread ran "Automatic fix: failing checks" (round 1 of 3) and reported **blocked**:
+  - its `jevellan_github` run-list requests were refused by the thread scope, which only allows its own pull request and the runs on its current head;
+  - its clean worktree was still at its own earlier head `0a585e3`, which has the changelog entry;
+  - so it could not find the cause. The gap is in how the fix turn finds the failing run and refreshes its worktree, not in the scope rule.
+- No repair came within 10 minutes. Receipt: [live/LP4-supplemental.json](live/LP4-supplemental.json).
+- Manual test cleanup, not a repair: at 01:07 the owner committed `6a6d5f36` on top of `ca6b6684`, restoring the original changelog. It descends from the injected commit (ahead by 1, behind by 0), and its check succeeded. Nothing was sent to the thread.
+
+At 01:08 the stall was unchanged. The LP5 first-attempt thread waited for the owner with a sound question (the sandbox targets Node 20, not 22) and changed nothing. It was stopped through the normal owner Stop, and its branch is kept. No further tests were started. The remaining live clock was not used, because every remaining journey depends on the stalled coordinator.
+
+### Phase 4: closing
+
+- `docs/mesh.md` describes the one mesh as in place, with the Pro as the first member and Decision 924.
+- No command changed, so `docs/install.md` and the README are unchanged.
+- `PLAN.md`, `roadmap.json` and the [acceptance report](../REPORT.md) record the run, and [HANDOFF.md](HANDOFF.md) lists the owner's steps first.
+- Clocks:
+  - phases 0 and 1: 19:42:09 to 20:40:34 (within four hours, with no owner pause);
+  - phase 2: 20:40:50 to about 00:05 (within four hours);
+  - phase 3: 00:01:40 to about 01:08, ended early because every remaining journey was blocked (live clock until 03:01:40).
+- The one closing review is recorded under phase 2.
+- Every push passed the pre-push secret scan.

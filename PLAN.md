@@ -4,6 +4,8 @@
 
 Authority: root untracked BRIEF.md, 18 October 2026. Phases: 0 preflight and cold backups (done), 1 release gate (passed by the brief's rule at 18:43:46 UTC, with caveats), 2 release (partial: version bump and superseded candidates), 3 one mesh on dev-madrid (not run), 4 live journeys LP1–LP10 (not run), 5 closing. Evidence and the continuation steps are in docs/acceptance/one-mesh-050-2026-10/.
 
+Second run, revised brief (18 to 19 October): 0 fresh cold backups (done, 19:42 to 20:12 UTC), 1 one mesh on the installed versions (done, 20:40; ekoa-code's Pro path waited for Decision 924), 2 release 0.5.0 (done: correction fd115cc7, gate passed, published from f212c3d3, both machines updated by 00:01:40 UTC 19 October), 3 live journeys (LP6 passed; LP1 failed and LP2, LP3, LP4, LP9 and LP10 blocked by a stalled sandbox coordinator; LP5 blocked/failed; LP7 not run; LP8 blocked), 4 closing. The handoff lists the owner's steps and the open coordinator stall.
+
 ## Projects parity, October 2026
 
 Authority: root untracked BRIEF.md,17October2026, supersedes conflicting older plans. Decisions846–893. Baseline da6a9bc9/0.4.1; current machine Pro, local hub0.3.6 verified by doctor. Other installations remain separate.
