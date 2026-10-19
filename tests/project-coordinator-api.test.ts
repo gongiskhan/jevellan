@@ -216,7 +216,7 @@ test('coordinator routes: session required, assignment by the first message, ide
   const after = ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200));
   expect(after.coordinator).toEqual({ state: 'idle', deviceId: f.app.device.deviceId, deviceName: f.deviceName, online: true,
     session: { runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', turns: 1,
-      context: expect.objectContaining({ schema: 'project-session-context-v1', thresholdPercent: 70, compactions: [], lastCompactionAt: null, needsFreshContext: false }), cacheSessionKey: expect.stringMatching(/^[a-f0-9]{64}$/u) }, sessionHistory: [], planned, canMoveHere: false });
+      context: expect.objectContaining({ schema: 'project-session-context-v1', thresholdPercent: 95, compactions: [], lastCompactionAt: null, needsFreshContext: false }), cacheSessionKey: expect.stringMatching(/^[a-f0-9]{64}$/u) }, sessionHistory: [], planned, canMoveHere: false });
   expect(after.lastEventId).toBe(lastOne);
   expect(ProjectWorkListViewSchema.parse(await call(f, '/api/project-work', 'GET', undefined, 200)).projects)
     .toEqual([{ projectId: pid, name: 'Shop', status: 'active', waiting: 0, running: 0, inReview: 0, coordinator: { deviceId: f.app.device.deviceId, state: 'idle' } }]);
@@ -252,7 +252,7 @@ test('coordinator routes: session required, assignment by the first message, ide
   reply(f, 'Starting over.');
   await call(f, route('/coordinator/messages'), 'POST', message('msg_api_3', 'Fresh start.'), 202); await work.idle(pid);
   const freshTurn = f.fake.turnStarts.filter((turn) => turn.owner.kind === 'coordinator').at(-1)!;
-  expect(freshTurn.resume).toBeUndefined(); expect(freshTurn.prompt.startsWith('Project notebook:')).toBe(true);
+  expect(freshTurn.resume).toBeUndefined(); expect(freshTurn.prompt.startsWith('Latest coordinator handoff:')).toBe(true);
 
   // Authentication is checked again on every flush: a signed-out viewer's stream ends before the next frame.
   const login = await fetch(`${f.base}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schema: 'passphrase-input-v1', passphrase: PASSPHRASE }) });

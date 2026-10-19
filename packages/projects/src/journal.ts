@@ -2,9 +2,9 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
-import { defaultProjectWorkSettings, IdSchema, JournalConfigSchema, JournalDocumentSchema, JournalRelativePathSchema, JournalThreadSchema, ProjectJournalRecordSchema, ProjectJournalRequestSchema, ProjectJournalResultSchema,
+import { CoordinatorEventSchema, CoordinatorHandoffSchema, defaultProjectWorkSettings, IdSchema, JournalConfigSchema, JournalDocumentSchema, JournalRelativePathSchema, JournalThreadSchema, ProjectJournalRecordSchema, ProjectJournalRequestSchema, ProjectJournalResultSchema,
   ProjectJournalStateSchema, ProjectLedgerEventSchema, atomicWrite, parseProjectLedgerData, readDocument, stableJson, writeDocument, type Homes, type Project,
-  type ProjectHub, type JournalDocument, type ProjectJournalRecord, type ProjectJournalRequest, type ProjectJournalResult, type ProjectJournalState, type Thread } from '@jevellan/core';
+  type CoordinatorHandoff, type ProjectHub, type JournalDocument, type ProjectJournalRecord, type ProjectJournalRequest, type ProjectJournalResult, type ProjectJournalState, type Thread } from '@jevellan/core';
 import type { ProjectLedgers } from './ledger.js';
 import { journalRecordKey, renderProjectJournal, threadJournalFile, validateJournalDocument } from './journal-render.js';
 import { taskOrder } from './tasks.js';
@@ -29,6 +29,20 @@ export class ProjectJournals {
     return path;
   }
   readableDirectory(projectId: string): string { const path = this.path(projectId); mkdirSync(path, { recursive: true, mode: 0o700 }); return path; }
+  async handoffContext(projectId: string): Promise<{ handoff: CoordinatorHandoff | null; transcripts: string[] }> {
+    await this.sync(projectId);
+    const files = Object.keys(this.state(projectId).files);
+    const handoffs = files.filter(path => path.startsWith('handoffs/') && path.endsWith('.json')).map(path => readDocument(this.#file(projectId, path), CoordinatorHandoffSchema));
+    return { handoff: handoffs.sort((a, b) => a.at.localeCompare(b.at) || a.sequence - b.sequence).at(-1) ?? null,
+      transcripts: files.filter(path => path.startsWith('days/')).sort().map(path => this.#file(projectId, path)) };
+  }
+  async writeHandoff(request: Extract<ProjectJournalRequest, { operation: 'handoff-write' }>): Promise<CoordinatorHandoff> {
+    await this.sync(request.projectId);
+    const result = this.o.isHub ? await this.request(request, this.o.deviceId) : await this.o.request?.(request);
+    if (!result || result.operation !== 'handoff-write') throw refuse('The handoff authority is unavailable.');
+    if (!this.o.isHub) await this.sync(request.projectId);
+    return result.handoff;
+  }
   async contents(projectId: string, threadId?: string): Promise<{ path: string; text: string }> {
     await this.sync(projectId);
     const state = this.state(projectId);
@@ -168,6 +182,41 @@ export class ProjectJournals {
     if (!this.o.isHub) throw refuse('The journal authority is the hub.', 404);
     const input = ProjectJournalRequestSchema.parse(raw), project = (await this.o.projects()).find(row => row.id === input.projectId); if (!project) throw refuse('Project not found.', 404);
     if (input.operation === 'publish') return ProjectJournalResultSchema.parse({ schema: 'project-journal-result-v1', operation: 'publish', accepted: this.#accept(input, deviceId) });
+    if (input.operation === 'handoff-write') {
+      if ((await this.o.hub.coordinator(input.projectId))?.document.deviceId !== deviceId) throw refuse('Only the assigned coordinator can write its handoff.', 403);
+      await this.sync(input.projectId);
+      const ledger = this.o.ledgers.coordinator(input.projectId);
+      const handoffs = ledger.events().flatMap(event => event.type === 'coordinator-handoff' ? [ledger.payload(event as typeof event & { type: 'coordinator-handoff' })] : []);
+      const prior = handoffs.find(row => row.id === input.id);
+      if (prior) {
+        if (prior.deviceId !== deviceId || prior.turn !== input.turn || stableJson({ inFlight: prior.inFlight, pendingAsks: prior.pendingAsks, decisions: prior.decisions, ownerMessages: prior.ownerMessages }) !== stableJson(input.input)) throw refuse('A handoff identity cannot change.');
+        await this.sync(input.projectId, true);
+        return { schema: 'project-journal-result-v1', operation: 'handoff-write', handoff: prior };
+      }
+      const settings = (await this.o.hub.settings(input.projectId))?.document ?? defaultProjectWorkSettings(input.projectId);
+      if ((await this.o.hub.coordinator(input.projectId))?.document.deviceId !== deviceId) throw refuse('Only the assigned coordinator can write its handoff.', 403);
+      const owner = new Map<string, string>();
+      for (const event of [...ledger.events().filter(event => event.type === 'coordinator-event').map(event => ({ type: event.type, data: ledger.payload(event) })), ...this.#records(input.projectId).filter(row => row.ledgerId === 'coordinator').map(row => row.event)]) {
+        if (event.type !== 'coordinator-event') continue;
+        const item = CoordinatorEventSchema.parse(event.data); if (item.kind === 'user-message') owner.set(item.id, item.text);
+      }
+      const covered = new Set(handoffs.flatMap(row => row.ownerMessages.map(message => message.eventId)));
+      const listed = new Set(input.input.ownerMessages.map(message => message.eventId));
+      if (listed.size !== input.input.ownerMessages.length) throw refuse('Each owner message must be listed once.');
+      for (const id of listed) if (!owner.has(id)) throw refuse(`Unknown owner message: ${id}.`);
+      const missing = [...owner].filter(([id]) => !covered.has(id) && !listed.has(id));
+      if (missing.length) throw refuse(`These owner messages are not accounted for: ${missing.map(([id, text]) => `{${id}: ${text.slice(0, 80)}}`).join(', ')}. Turn each into a thread, a task or a memory note, or mark it answered or declined, then write the handoff again.`);
+      const date = new Intl.DateTimeFormat('en-CA', { timeZone: settings.nightlyWindow.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(this.o.now()));
+      // No asynchronous work between the last identity check and the durable append.
+      const existing = ledger.events().filter(event => event.type === 'coordinator-handoff').map(event => ledger.payload(event as typeof event & { type: 'coordinator-handoff' }));
+      const concurrent = existing.find(row => row.id === input.id);
+      if (concurrent) return this.request(input, deviceId);
+      const handoff = CoordinatorHandoffSchema.parse({ ...input.input, schema: 'coordinator-handoff-v1', id: input.id, projectId: input.projectId, deviceId, turn: input.turn,
+        at: new Date(this.o.now()).toISOString(), date, sequence: existing.filter(row => row.date === date).length + 1 });
+      ledger.append({ type: 'coordinator-handoff', turn: input.turn, data: handoff });
+      await this.sync(input.projectId, true);
+      return { schema: 'project-journal-result-v1', operation: 'handoff-write', handoff };
+    }
     await this.sync(input.projectId, input.operation === 'rebuild');
     if (input.operation === 'state' || input.operation === 'rebuild') return ProjectJournalResultSchema.parse({ schema: 'project-journal-result-v1', operation: input.operation, state: this.state(input.projectId) });
     const state = this.state(input.projectId); if (state.files[input.path] !== input.sha256) throw refuse('The journal changed; read its manifest again.');
@@ -205,6 +254,13 @@ export class ProjectJournals {
     const latest = this.o.ledgers.coordinator(project.id).events().findLast(event => event.type === 'journal-source');
     const updatedAt = latest?.t ?? '1970-01-01T00:00:00.000Z';
     const rendered = renderProjectJournal({ name: project.name, timezone: settings.nightlyWindow.timezone, records, open, updatedAt });
+    const handoffs = this.o.ledgers.coordinator(project.id).events().flatMap(event => event.type === 'coordinator-handoff' ? [this.o.ledgers.coordinator(project.id).payload(event as typeof event & { type: 'coordinator-handoff' })] : []);
+    for (const handoff of handoffs) {
+      const path = `handoffs/${handoff.date}-${handoff.sequence}`;
+      rendered.files[`${path}.json`] = `${JSON.stringify(handoff, null, 2)}\n`;
+      rendered.files[`${path}.md`] = `# Coordinator handoff ${handoff.date}-${handoff.sequence}\n\nIn flight:\n${handoff.inFlight}\n\nPending asks:\n${handoff.pendingAsks || '(none)'}\n\nDecisions:\n${handoff.decisions || '(none)'}\n\nOwner messages:\n${handoff.ownerMessages.map(row => `- ${row.eventId}: ${row.outcome}${row.ref ? ` (${row.ref})` : ''}`).join('\n') || '(none)'}\n`;
+    }
+    if (handoffs.length) rendered.files['INDEX.md'] += `\n## Coordinator handoffs\n${handoffs.map(row => `- ${row.date}-${row.sequence} → handoffs/${row.date}-${row.sequence}.md`).join('\n')}\n`;
     const state: ProjectJournalState = { schema: 'project-journal-state-v1', lastLedgerEventId: records.at(-1) ? journalRecordKey(records.at(-1)!) : null, files: {}, indexUpdatedAt: new Date(this.o.now()).toISOString() };
     for (const [path, text] of Object.entries(rendered.files)) {
       if (path === 'INDEX.md' && !rebuild && this.o.now() - Date.parse(prior.indexUpdatedAt) < 10000) { if (prior.files[path]) state.files[path] = prior.files[path]; state.indexUpdatedAt = prior.indexUpdatedAt; continue; }

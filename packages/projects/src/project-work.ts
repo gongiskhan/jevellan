@@ -284,7 +284,7 @@ export class ProjectWork {
     const main = new MainCheckout({ git, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName, ownership: o.ownership, outside: o.outside });
     this.coordinators = new CoordinatorService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: coordinatorStore, ledgers: this.ledgers, hub: o.hub,
       captureTurn: (project, session) => this.#capture(project, { scope: 'coordinator', runtime: session.runtime, model: session.model, accountId: session.accountId, sessionId: session.nativeSessionId }),
-      ...(this.journal ? { journalContents: (projectId: string) => this.journal!.contents(projectId) } : {}),
+      ...(this.journal ? { handoffContext: (projectId: string) => this.journal!.handoffContext(projectId) } : {}),
       memoryContext: async project => {
         try { const port = o.memory.project(project, o.deviceId, () => {}, { kind: 'viewer' }), signal = AbortSignal.timeout(150_000);
           const notes = port.list ? await port.list(signal) : (await port.search('Project OR build OR test OR convention OR decision', signal)).notes;
@@ -502,6 +502,14 @@ export class ProjectWork {
   /** Coordinator tool handlers (brief 7.1), built on first use because the thread service and the tracker come after the coordinators. Memory is read-only. */
   #coordinatorTools(): CoordinatorToolHandlers {
     return this.#tools ??= { ...coordinatorToolHandlers({ deviceId: this.#o.deviceId, deviceName: this.#o.deviceName, threads: this.threads, tasks: this.tasks, goals: this.goals, daily: this.daily, jobs: this.jobs, store: this.store, decisions: this.decisions,
+      handoffWrite: async (projectId, turn, input) => {
+        if (!this.journal) throw new Error('Coordinator handoffs are unavailable.');
+        const ledger = this.ledgers.coordinator(projectId);
+        const ownerEventIds = ledger.events().flatMap(event => { if (event.type !== 'coordinator-event') return []; const data = ledger.payload(event as typeof event & { type: 'coordinator-event' }); return data.kind === 'user-message' ? [data.id] : []; });
+        const handoff = await this.journal.writeHandoff({ schema: 'project-journal-request-v1', operation: 'handoff-write', projectId, id: derivedId('handoff', projectId, this.#o.deviceId, String(turn)), turn, input });
+        this.coordinators.store.updateLocal(projectId, local => ({ ...local, handoffSaved: { id: handoff.id, turn, ownerDigest: createHash('sha256').update(JSON.stringify([...new Set(ownerEventIds)].sort())).digest('hex') } }));
+        return handoff;
+      },
       setupPropose: (id, trigger, input) => this.proposeSetup(id, trigger, input),
       settingsUpdate: (id, input, requestId) => this.coordinatorSettings(id, input, requestId),
       library: this.#o.library, pullRequests: this.tracker, github: this.#github, terminalRead: this.#o.terminalRead, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
@@ -810,6 +818,11 @@ export class ProjectWork {
   async stopCoordinator(projectId: string): Promise<void> { await (await this.#assignedHere(projectId))?.stop(); }
   /** The next coordinator turn starts a fresh session (D77). Before assignment there is no session, and Fresh assigns nothing (D206). */
   async freshCoordinator(projectId: string): Promise<void> { (await this.#assignedHere(projectId))?.fresh(); }
+  async requestCoordinatorHandoff(projectId: string): Promise<void> {
+    const assigned = await this.coordinators.ensureAssigned(projectId);
+    if (assigned !== this.#o.deviceId) throw refuse(COORDINATOR_ELSEWHERE, 409);
+    this.coordinators.get(projectId).requestHandoff();
+  }
   async settingsView(projectId: string): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
     const project = await this.#project(projectId);
     return this.#settingsView(project, (await this.#o.hub.settings(projectId))?.document ?? null);

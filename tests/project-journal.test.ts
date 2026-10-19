@@ -215,3 +215,42 @@ test('INDEX links a thread only when its journal file exists, and lists a remote
   expect(line).toContain('(no journal yet)'); expect(line).toContain('running'); expect(line).not.toMatch(/threads\//u);
   for (const link of index.matchAll(/(?:→ |\]\()((?:threads|days|nights)\/[^\s#)]+)/gu)) expect(existsSync(join(engine.path(project.id), link[1]!)), link[1]).toBe(true);
 });
+
+test('coordinator handoffs refuse unaccounted owner messages, persist both files, and survive a member mirror', async () => {
+  const { engine, ledgers, hub } = setup();
+  await hub.assignCoordinator('project', 'hub', 0);
+  const text = 'Please implement the requested report. '.repeat(4);
+  ledgers.coordinator('project').append({ type: 'coordinator-event', data: { schema: 'coordinator-event-v1', id: 'owner_first', at, kind: 'user-message', text, clientMessageId: 'message_first' } });
+  const request = { schema: 'project-journal-request-v1', operation: 'handoff-write', projectId: 'project', id: 'handoff_first', turn: 1,
+    input: { inFlight: 'Report work is queued.', pendingAsks: '', decisions: 'Keep the report small.', ownerMessages: [] } };
+  await expect(engine.request(request, 'hub')).rejects.toThrow(`These owner messages are not accounted for: {owner_first: ${text.slice(0, 80)}}. Turn each into a thread, a task or a memory note, or mark it answered or declined, then write the handoff again.`);
+  const valid = { ...request, input: { ...request.input, ownerMessages: [{ eventId: 'owner_first', outcome: 'task', ref: 'task_report' }] } };
+  const first = await engine.request(valid, 'hub');
+  expect(first).toMatchObject({ operation: 'handoff-write', handoff: { schema: 'coordinator-handoff-v1', ownerMessages: valid.input.ownerMessages, inFlight: request.input.inFlight } });
+  expect(await engine.request(valid, 'hub')).toEqual(first);
+  await expect(engine.request({ ...valid, input: { ...valid.input, inFlight: 'Changed replay.' } }, 'hub')).rejects.toThrow('identity');
+  await expect(engine.request({ ...valid, id: 'other' }, 'member')).rejects.toMatchObject({ status: 403 });
+  await engine.sync('project', true);
+  const files = Object.keys(engine.state('project').files).filter(path => path.startsWith('handoffs/'));
+  expect(files).toEqual(['handoffs/2026-10-14-1.json', 'handoffs/2026-10-14-1.md']);
+  expect(readFileSync(join(engine.path('project'), files[1]!), 'utf8')).toContain('Keep the report small.');
+  expect(readFileSync(join(engine.path('project'), 'INDEX.md'), 'utf8')).toContain('handoffs/2026-10-14-1.md');
+  const memberHomes = new Homes(join(root, 'member'), join(root, 'user')); memberHomes.ensure();
+  const member = new ProjectJournals({ ...engine.o, homes: memberHomes, deviceId: 'member', isHub: false,
+    ledgers: new ProjectLedgers(new ProjectPaths(memberHomes)), request: request => engine.request(request, 'member') }); engines.push(member);
+  await member.sync('project');
+  expect(readFileSync(join(member.path('project'), files[0]!), 'utf8')).toBe(readFileSync(join(engine.path('project'), files[0]!), 'utf8'));
+});
+
+test('handoffs account for late owner events without requiring previously covered messages again', async () => {
+  const { engine, ledgers, hub } = setup(); await hub.assignCoordinator('project', 'hub', 0);
+  const write = (id: string, ownerMessages: unknown[]) => engine.request({ schema: 'project-journal-request-v1', operation: 'handoff-write', projectId: 'project', id, turn: 1,
+    input: { inFlight: 'Work continues.', pendingAsks: '', decisions: '', ownerMessages } }, 'hub');
+  const owner = (id: string) => ({ schema: 'coordinator-event-v1', id, at, kind: 'user-message', text: id, clientMessageId: `message_${id}` });
+  ledgers.coordinator('project').append({ type: 'coordinator-event', data: owner('first') as never });
+  await write('first_handoff', [{ eventId: 'first', outcome: 'answered' }]);
+  await engine.request({ schema: 'project-journal-request-v1', operation: 'publish', projectId: 'project', records: [{ ...record(1, 'coordinator-event', owner('late'), 'coordinator'), deviceId: 'member' }] }, 'member');
+  await expect(write('next_handoff', [])).rejects.toThrow('{late: late}');
+  await write('next_handoff', [{ eventId: 'late', outcome: 'declined' }]);
+  await expect(write('unknown_handoff', [{ eventId: 'invented', outcome: 'answered' }])).rejects.toThrow('Unknown owner message');
+});

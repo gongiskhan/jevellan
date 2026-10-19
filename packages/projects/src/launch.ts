@@ -175,7 +175,7 @@ export class TurnLauncher {
     };
     try {
       const projectSettings = await this.#o.projectSettings?.(request.owner.projectId);
-      const percent = compactPercent(projectSettings?.compactAtPercent ?? 70, this.#o.homes);
+      const percent = request.owner.kind === 'coordinator' ? 95 : compactPercent(projectSettings?.compactAtPercent ?? 70, this.#o.homes);
       const cacheWindow = cacheWindowMinutes(await this.#o.cacheWindowMinutes?.(request.runtime) ?? defaultCacheWindow(request.runtime), this.#o.homes);
       const resolved = await this.#o.accounts.resolve(account.id);
       let contextWindow: number | undefined;
@@ -205,7 +205,7 @@ export class TurnLauncher {
       const cacheLedger = this.#o.cacheLedger?.(request.owner) ?? this.#o.sessionLedger?.(request.owner.projectId);
       const now = this.#o.now ?? Date.now;
       const previous = resumed && cacheLedger ? cacheRecords(cacheLedger).findLast(row => sameCacheSession(row, request.owner, request.resume!, request.runtime, account.id)) : undefined;
-      const checkpoint = resumed && journal && request.checkpointPrompt ? coldCheckpoint(projectSettings?.sessionCheckpoints, previous, request.resume, cacheWindow, now(), request.contextTokensBefore) : undefined;
+      const checkpoint = request.owner.kind !== 'coordinator' && resumed && journal && request.checkpointPrompt ? coldCheckpoint(projectSettings?.sessionCheckpoints, previous, request.resume, cacheWindow, now(), request.contextTokensBefore) : undefined;
       const checkpointPrompt = checkpoint ? await request.checkpointPrompt!(journal!) : undefined;
       if (checkpoint) resumed = false;
       const prompt = checkpointPrompt ? `${checkpointPrompt.digest}\n\n${checkpointPrompt.pending}` : await request.prompt(resumed);

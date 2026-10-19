@@ -39,13 +39,14 @@ const landingSettings = ProjectWorkSettingsSchema.shape;
 export const VaultProjectSchemaV3 = VaultProjectSchemaV2.extend({ schema: z.literal('vault-project-v3'),
   work: VaultProjectSchemaV2.shape.work.omit({ defaultIsolation: true, allowMainIsolation: true, requiredChecks: true, autoMerge: true }).extend({
     deploy: z.strictObject({ mode: z.enum(['approve', 'automatic']).default('approve'), job: z.string().nullable().default(null), desktopJob: z.string().nullable().default(null), suiteJob: z.string().nullable().default(null) }).default({ mode: 'approve', job: null, desktopJob: null, suiteJob: null }),
+    coordinatorHandoffAtPercent: landingSettings.coordinatorHandoffAtPercent.removeDefault().optional(),
     delivery: landingSettings.delivery, autoLand: landingSettings.autoLand, landingChecks: landingSettings.landingChecks, smokeCheck: landingSettings.smokeCheck, mergeCommitPaths: landingSettings.mergeCommitPaths, healthChecks: landingSettings.healthChecks }),
 });
 export const VaultProjectSchema = z.union([VaultProjectSchemaV1, VaultProjectSchemaV2, VaultProjectSchemaV3]).transform(value => {
-  if (value.schema === 'vault-project-v3') return value;
+  if (value.schema === 'vault-project-v3') return { ...value, work: { ...value.work, coordinatorHandoffAtPercent: value.work.coordinatorHandoffAtPercent ?? value.work.compactAtPercent } };
   const v2 = value.schema === 'vault-project-v1' ? (() => { const { threadRules, ...work } = value.work; return VaultProjectSchemaV2.parse({ ...value, schema: 'vault-project-v2', work: { ...work, instructions: threadRules } }); })() : value;
   const { defaultIsolation: _isolation, allowMainIsolation: _main, requiredChecks: _checks, autoMerge, ...work } = v2.work; void _isolation; void _main; void _checks;
-  return VaultProjectSchemaV3.parse({ ...v2, schema: 'vault-project-v3', work: { ...work, autoLand: autoMerge } });
+  return VaultProjectSchemaV3.parse({ ...v2, schema: 'vault-project-v3', work: { ...work, coordinatorHandoffAtPercent: work.compactAtPercent, autoLand: autoMerge } });
 });
 export type VaultProject = z.infer<typeof VaultProjectSchema>;
 export const VaultViewSchema = z.strictObject({ schema: z.literal('vault-view-v1'), remote: z.string().nullable(), lastSyncAt: z.string().nullable(), lastError: z.string().nullable(),

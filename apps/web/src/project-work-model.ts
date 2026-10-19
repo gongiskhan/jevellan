@@ -464,6 +464,7 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
   const name = (threadId: string) => { const title = titles(threadId); return title ? copy.quotedTitle(title) : copy.UNKNOWN_THREAD_NAME; };
   const text = copy.eventCopy;
   switch (event.kind) {
+    case 'handoff-requested': return card('Coordinator saved its work', undefined, 'Saving what is in flight before the next session.');
     case 'setup-requested': return card(copy.SETUP_REQUESTED_EVENT, undefined);
     case 'settings-changed': return card(copy.SETTINGS_CHANGED_EVENT, undefined, event.changes.map(change => `${copy.settingFieldLabel(change.field)}: ${change.from} → ${change.to}`).join('; '));
     case 'thread-resolved': return card(copy.threadResolved(titles(event.threadId) ?? copy.UNKNOWN_THREAD_NAME), event.threadId);

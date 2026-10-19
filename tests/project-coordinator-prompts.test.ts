@@ -60,7 +60,7 @@ const input = (events: CoordinatorEvent[], over: Partial<CoordinatorPromptInput>
 
 test('owner instructions lead fresh context and answer outcomes stay in chat', () => {
   const request = input([], { instructions: 'Keep changes small.', outcomes: [{ schema: 'project-request-outcome-v1', projectId: 'proj_a', eventId: 'cev_msg', at: at('09:00'), calls: [], source: 'jev', goal: 'answer', probabilities: { answer: 1, change: 0, 'run-app': 0, verify: 0, other: 0 } }] });
-  expect(coordinatorFreshContext(request)).toMatch(/^Project instructions from the owner \(every new thread receives them too\):\nKeep changes small\.\n\nProject notebook:/u);
+  expect(coordinatorFreshContext(request)).toContain('Project instructions from the owner (every new thread receives them too):\nKeep changes small.');
   const resumed = coordinatorPrompt(request, true);
   expect(resumed).toContain('Answer it in the chat if you can from the notebook, memory, the threads, GitHub or the repository. Create a task only if the answer needs a change, a run or a long investigation.');
   expect(resumed).not.toContain('Carry this result into the thread task');
@@ -146,61 +146,24 @@ Open questions to the owner (numbered as the owner sees them):
   expect(coordinatorPrompt(input(events), true)).toBe(coordinatorEventBlock(input(events)));
 });
 
-test('the fresh context lists active threads, open questions and the recap without the batch being delivered (9.2, D36)', () => {
-  const events = [event({ kind: 'user-message', id: 'cev_msg', at: at('09:05'), text: 'Also write docs.', clientMessageId: 'msg_1' }),
-    event({ kind: 'pr-update', id: 'cev_u', at: at('09:06'), threadId: 'thread_a', prNumber: 42, change: 'checks-failed' })];
-  const context = `Project notebook:
-Prefer SQLite.
-Ship small pull requests.
-
-Active threads:
-- Fix login (thread_a): in-review, worktree, Codex GPT-5 high on Mac mini, PR #42 failing. Last report: Fixed the redirect.
-- Store data (thread_b): waiting-for-you, main, Claude Code Opus medium on Studio. Last report: none
-- Docs (thread_c): idle, worktree, Scripted test runtime Fixture low on Mac mini. Last report: Wrote the outline.
-
-Open questions to the owner (numbered as the owner sees them):
-1. [Store data] Which database should Store data use? Options: SQLite, Postgres. (questionId pdec_1)
-2. [Docs] "Docs" reached its turn limit of 30 turns. Allow 10 more turns or stop it? Options: Allow 10 more turns, Stop the thread. (questionId pdec_4)
-
-Recent conversation with the owner:
-Owner: Fix login and store data.
-
-You: Started "Fix login" and "Store data".`;
-  expect(coordinatorFreshContext(input(events))).toBe(context);
-  expect(coordinatorPrompt(input(events), false)).toBe(`${context}
-
-Events since your last turn:
-[owner 09:05] Also write docs.
-[PR #42 "Fix login"] checks failing
-
-Open questions to the owner (numbered as the owner sees them):
-1. [Store data] Which database should Store data use? Options: SQLite, Postgres. (questionId pdec_1)
-2. [Docs] "Docs" reached its turn limit of 30 turns. Allow 10 more turns or stop it? Options: Allow 10 more turns, Stop the thread. (questionId pdec_4)`);
-  // Once delivered, the same owner message is part of the next fresh session's recap.
-  expect(coordinatorFreshContext(input([]))).toContain('You: Started "Fix login" and "Store data".\n\nOwner: Also write docs.');
+test('fresh context carries the complete handoff then numbered asks, live work, memory and transcript paths', () => {
+  const handoff = { schema: 'coordinator-handoff-v1' as const, id: 'handoff_a', projectId: 'proj_a', deviceId: 'dev_a', turn: 1, at: at('08:00'), date: '2026-10-03', sequence: 1,
+    inFlight: 'Finish the report. '.repeat(300), pendingAsks: 'Choose the store.', decisions: 'Use transactions.', ownerMessages: [{ eventId: 'owner_a', outcome: 'task' as const, ref: 'task_a' }] };
+  const landed = index('thread_landed', 'Landed report', 'done', { delivery: 'land', landing: { commit: 'a'.repeat(40), at: at('08:00'), routeId: 'route_a', strategy: 'squash' } as never });
+  const deployed = index('thread_deployed', 'Deployed report', 'done', { landing: landed.landing, resolution: { by: 'deploy', at: at('08:10'), deployId: 'deploy_a' } });
+  const text = coordinatorFreshContext(input([], { handoff, threads: [...threads, landed, deployed], memory: 'Project memory:\nProject brief body.\n- Invoice rules', transcripts: ['/journal/days/2026-10-02.md'] }));
+  const markers = ['Latest coordinator handoff:', 'Waiting on you:', 'Live thread registry:', 'Project memory:', 'Earlier coordinator transcripts:'];
+  expect(markers.map(marker => text.indexOf(marker))).toEqual([...markers.map(marker => text.indexOf(marker))].sort((a, b) => a - b));
+  expect(text).toContain(JSON.stringify(handoff, null, 2));
+  expect(text).toContain('1. [Store data]'); expect(text).toContain('2. [Docs]');
+  expect(text).toContain('Landed report'); expect(text).not.toContain('Deployed report');
+  expect(text).toContain('Earlier coordinator transcripts: /journal/days/2026-10-02.md. Search them with your file tools when you need detail.');
+  expect(text).not.toContain('Recent conversation with the owner:'); expect(text).not.toContain('Fix login and store data.');
 });
 
-test('a first turn with nothing known yet reads (empty) and (none), the PJ2 opening prompt', () => {
-  const events = [event({ kind: 'user-message', id: 'cev_1', at: at('09:05'), text: 'add A and fix B', clientMessageId: 'msg_pj2' })];
-  const first = input(events, { notebook: null, threads: [], decisions: [], history: [{ from: 'owner', text: 'add A and fix B', eventId: 'cev_1' }] });
-  expect(coordinatorPrompt(first, false)).toBe('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nEvents since your last turn:\n[owner 09:05] add A and fix B');
-  // Only concluded threads and settled questions: still (none); a blank notebook is (empty).
-  expect(coordinatorFreshContext(input([], { notebook: '  \n', threads: threads.slice(3), decisions: decisions.slice(1, 3), history: [] })))
-    .toBe('Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)');
-  // Without an injected clock the time is the coordinator device's local 24-hour time (D36).
-  const local = new Date(2026, 9, 3, 7, 4); const plain = coordinatorEventBlock(input([event({ kind: 'user-message', id: 'cev_2', at: local.toISOString(), text: 'Hi', clientMessageId: 'msg_2' })], { clock: undefined, decisions: [] }));
-  expect(plain).toBe('Events since your last turn:\n[owner 07:04] Hi');
-});
-
-test('the recap keeps the newest 8,000 characters, oldest first, and drops older items whole', () => {
-  const history = [
-    { from: 'owner' as const, text: 'a'.repeat(3000), eventId: 'cev_1' }, { from: 'coordinator' as const, text: 'b'.repeat(3000) },
-    { from: 'owner' as const, text: 'c'.repeat(4000), eventId: 'cev_2' }, { from: 'owner' as const, text: 'pending', eventId: 'cev_3' },
-  ];
-  const events = [event({ kind: 'user-message', id: 'cev_3', at: at('09:05'), text: 'pending', clientMessageId: 'msg_3' })];
-  const recap = coordinatorFreshContext(input(events, { history })).split('Recent conversation with the owner:\n')[1];
-  expect(recap).toBe(`You: ${'b'.repeat(3000)}\n\nOwner: ${'c'.repeat(4000)}`);
-  expect(recap!.length).toBeLessThanOrEqual(8000);
+test('a first fresh session states missing handoff and empty live state without replaying owner history', () => {
+  const fresh = coordinatorFreshContext(input([], { notebook: null, threads: [], decisions: [], history: [{ from: 'owner', text: 'Old private discussion.' }] }));
+  expect(fresh).toBe('Latest coordinator handoff:\n(none yet)\n\nWaiting on you:\n(none)\n\nLive thread registry:\n(none)\n\nProject memory:\n(unavailable)\n\nEarlier coordinator transcripts: (none yet). Search them with your file tools when you need detail.\n\nProject notebook:\n(empty)');
 });
 
 test('sessions persist beyond forty turns and rotate on on a pinned model change, an effort change or a session model that cannot run here (brief 8.1, D77)', () => {

@@ -113,6 +113,12 @@ const EVENTS_HEADER = eventBlock([]);
 function coordinatorStep(input) {
   // Only delivered events count; the fresh-session recap repeats earlier messages.
   const at = input.prompt.lastIndexOf(EVENTS_HEADER); const events = at < 0 ? input.prompt : input.prompt.slice(at);
+  if (events.includes("Write today's handoff with jevellan_handoff_write.")) return async turn => {
+    const ledger = application.projectWork.coordinatorLedger(input.owner.projectId);
+    const ownerMessages = ledger.events().flatMap(event => { if (event.type !== 'coordinator-event') return []; const item = ledger.payload(event); return item.kind === 'user-message' ? [{ eventId: item.id, outcome: 'answered' }] : []; });
+    await projectTool(turn, 'jevellan_handoff_write', { inFlight: 'The browser fixture is ready for the next session.', pendingAsks: '', decisions: 'Keep the fixture isolated.', ownerMessages });
+    turn.say('I saved the current work for the next session.'); return { status: 'completed' };
+  };
   if (events.includes('[the owner requested setup recommendations]')) return async turn => {
     await projectTool(turn, 'jevellan_setup_propose', { items: [
       { key: 'testCommand', value: 'npm test', note: 'The repository has a test script.' },

@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { IdSchema, TimestampSchema } from './schemas.js';
 
+export const CoordinatorHandoffInputSchema = z.strictObject({ inFlight: z.string().min(1).max(8000), pendingAsks: z.string().max(4000), decisions: z.string().max(8000),
+  ownerMessages: z.array(z.strictObject({ eventId: IdSchema, outcome: z.enum(['thread', 'task', 'note', 'answered', 'declined']), ref: z.string().max(200).optional() })).max(10000) });
+export const CoordinatorHandoffSchema = CoordinatorHandoffInputSchema.extend({ schema: z.literal('coordinator-handoff-v1'), id: IdSchema, projectId: IdSchema,
+  deviceId: IdSchema, turn: z.number().int().positive(), at: TimestampSchema, date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u), sequence: z.number().int().positive() });
+export type CoordinatorHandoff = z.infer<typeof CoordinatorHandoffSchema>;
+
 export const JournalConfigSchema = z.strictObject({ schema: z.literal('journal-config-v1'), name: z.string().min(1).max(200), timezone: z.string().min(1).max(120) });
 const count = z.number().int().nonnegative();
 export const JournalThreadSchema = z.strictObject({
@@ -23,7 +29,7 @@ export const ProjectJournalRecordSchema = z.strictObject({ schema: z.literal('pr
     type: IdSchema, turn: z.number().int().positive().optional(), data: z.unknown() }),
 });
 export type ProjectJournalRecord = z.infer<typeof ProjectJournalRecordSchema>;
-export const JournalRelativePathSchema = z.string().max(300).regex(/^(?:INDEX\.md|(?:threads|days|nights)\/[A-Za-z0-9_-]+\.md)$/u);
+export const JournalRelativePathSchema = z.string().max(300).regex(/^(?:INDEX\.md|(?:threads|days|nights)\/[A-Za-z0-9_-]+\.md|handoffs\/\d{4}-\d{2}-\d{2}-[1-9]\d*\.(?:md|json))$/u);
 export const ProjectJournalStateSchema = z.strictObject({ schema: z.literal('project-journal-state-v1'),
   lastLedgerEventId: z.string().max(512).nullable(), files: z.record(JournalRelativePathSchema, z.string().regex(/^[a-f0-9]{64}$/u)),
   indexUpdatedAt: TimestampSchema,
@@ -35,6 +41,7 @@ export const ProjectJournalRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...request, operation: z.literal('state') }),
   z.strictObject({ ...request, operation: z.literal('file'), path: JournalRelativePathSchema, sha256: z.string().regex(/^[a-f0-9]{64}$/u), offset: count }),
   z.strictObject({ ...request, operation: z.literal('rebuild') }),
+  z.strictObject({ ...request, operation: z.literal('handoff-write'), id: IdSchema, turn: z.number().int().positive(), input: CoordinatorHandoffInputSchema }),
 ]);
 export type ProjectJournalRequest = z.infer<typeof ProjectJournalRequestSchema>;
 export const ProjectJournalResultSchema = z.discriminatedUnion('operation', [
@@ -43,6 +50,7 @@ export const ProjectJournalResultSchema = z.discriminatedUnion('operation', [
   z.strictObject({ schema: z.literal('project-journal-result-v1'), operation: z.literal('file'), path: JournalRelativePathSchema,
     sha256: z.string().regex(/^[a-f0-9]{64}$/u), offset: count, totalBytes: count, base64: z.string().max(350000) }),
   z.strictObject({ schema: z.literal('project-journal-result-v1'), operation: z.literal('rebuild'), state: ProjectJournalStateSchema }),
+  z.strictObject({ schema: z.literal('project-journal-result-v1'), operation: z.literal('handoff-write'), handoff: CoordinatorHandoffSchema }),
 ]);
 export type ProjectJournalResult = z.infer<typeof ProjectJournalResultSchema>;
 export const JournalRebuildInputSchema = z.strictObject({ schema: z.literal('project-journal-rebuild-v1'), project: z.string().min(1).max(200) });

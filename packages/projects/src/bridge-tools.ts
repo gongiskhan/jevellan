@@ -138,6 +138,7 @@ export type CoordinatorToolsOptions = {
   deviceId: string; deviceName: string;
   threads: Pick<ThreadService, 'start' | 'message' | 'stop' | 'list' | 'read'>;
   setupPropose?(projectId: string, triggerId: string, input: unknown): Promise<unknown>;
+  handoffWrite?(projectId: string, turn: number, input: Input<'jevellan_handoff_write'>): Promise<unknown>;
   settingsUpdate?(projectId: string, input: unknown, requestId: string): Promise<{ schema: 'project-settings-change-result-v1'; change: ProjectSettingsChange; repeated: boolean }>;
   tasks?: ProjectTasks; goals?: ProjectGoals; daily?: ProjectDailyWork; jobs?: ProjectJobRunner;
   github?: ProjectGithub;
@@ -195,6 +196,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
   async function call(projectId: string, turn: number, name: ProjectToolName, raw: unknown, signal: AbortSignal): Promise<unknown> {
     signal.throwIfAborted();
     switch (name) {
+      case 'jevellan_handoff_write': if (!o.handoffWrite) throw new Error('Coordinator handoffs are unavailable.'); return o.handoffWrite(projectId, turn, raw as Input<typeof name>);
       case 'jevellan_review_followup': if (!o.daily) throw new Error('Nightly reviews are unavailable.'); return o.daily.followup(projectId, raw);
       case 'jevellan_jobs_list': if (!o.daily) throw new Error('Jobs are unavailable.'); return { schema: 'project-job-list-view-v1', projectId, jobs: await o.daily.jobs(projectId) };
       case 'jevellan_daily_list': if (!o.daily) throw new Error('Daily work is unavailable.'); return o.daily.view(projectId);

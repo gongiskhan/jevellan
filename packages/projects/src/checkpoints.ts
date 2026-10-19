@@ -4,12 +4,11 @@ import type { StretchRun } from '@jevellan/runtime-contract';
 import type { ProjectLedger } from './ledger.js';
 
 export type ColdCheckpoint = { idleSeconds: number; previousContextTokens: number; previousSessionId: string };
-export const coordinatorRestart = 'This is a fresh coordinator session: the previous one was idle long enough for its cache to expire. Continue from the notebook, the open state and the journal index below.';
 export const threadRestart = (path: string): string => `You are continuing this task in a fresh session: the previous one was idle long enough for its cache to expire. Everything you reported and every message you received is in ${path}; the most recent part is below. Check git log and git diff in your worktree for the work already done, and continue from there.`;
 export const sessionHash = (id: string): string => createHash('sha256').update(id).digest('hex');
 export function coldCheckpoint(settings: SessionCheckpointSettings | undefined, previous: SessionTurnCache | undefined, sessionId: string | undefined,
   windowMinutes: number, now: number, tokens?: number | null): ColdCheckpoint | undefined {
-  if (!settings?.enabled || !sessionId || !previous || !['thread', 'coordinator'].includes(previous.owner.kind)) return undefined;
+  if (!settings?.enabled || !sessionId || !previous || previous.owner.kind !== 'thread') return undefined;
   const idleSeconds = Math.max(0, (now - Date.parse(previous.activityAt)) / 1000), context = tokens ?? previous.contextTokensAfter;
   if (idleSeconds <= windowMinutes * 60 || context === null || context < settings.checkpointMinTokens) return undefined;
   return { idleSeconds, previousContextTokens: context, previousSessionId: sessionId };

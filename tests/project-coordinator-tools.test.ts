@@ -367,7 +367,7 @@ test('thread tools start, list, read, message and stop as brief 7.1 says, refuse
 
 test('questions, the notebook with its revision conflict, pull request status, queued and refused starts, and owner work reaching the coordinator', { timeout: 120_000 }, async () => {
   const f = fixture = await projectFixture({ coordinator: true });
-  await f.app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings(f.project.id), maxRunningThreads: 1 }), 0);
+  await f.app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings(f.project.id), delivery: 'pull-request', maxRunningThreads: 1 }), 0);
   const cache = deferred();
   f.fake.enqueueTurn(commitStep({ 'cache.txt': 'cache\n' }, { status: 'done', summary: 'Cache added.' }, () => cache.promise), forThread((input) => input.prompt.startsWith('Task: Add cache')));
   f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Tests planned.' }), forThread((input) => input.prompt.startsWith('Task: Write tests')));

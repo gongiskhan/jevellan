@@ -118,6 +118,7 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
   const title = (id: string) => context.title(id) ?? UNKNOWN_THREAD;
   const thread = (id: string) => `thread "${title(id)}" (${id})`;
   switch (event.kind) {
+    case 'handoff-requested': return "Write today's handoff with jevellan_handoff_write. Account for every owner message since the last handoff: each must already be a thread, a task or a memory note, or be answered or declined. Create any that are missing first. The next session starts only from the handoff, memory, the thread registry and what waits on the owner.";
     case 'setup-requested': return SETUP_REQUESTED;
     case 'settings-changed': return event.instructions !== undefined ? `[instructions changed by ${event.by === 'owner' ? 'the owner' : 'you'}] Project instructions are now:\n${event.instructions}` : `[settings changed by ${event.by === 'owner' ? 'the owner' : 'you'}] ${event.changes.map(change => `${settingLabel(change.field)}: ${change.from} → ${change.to}`).join('; ')}`;
     case 'thread-resolved': return `[thread "${title(event.threadId)}" resolved by ${event.by === 'owner' ? 'the owner' : event.by === 'deploy' ? 'the deploy' : 'inactivity'}]`;
@@ -417,6 +418,7 @@ export function coordinatorToolSummary(tool: string, input: unknown, outcome: To
   const thread = `"${title ?? UNKNOWN_THREAD}"`;
   const line = (done: string, attempt: string) => (outcome.ok ? done : `Could not ${attempt}: ${firstSentence(outcome.error)}`).slice(0, 400);
   switch (tool) {
+    case 'jevellan_handoff_write': return line('Saved coordinator work', 'save coordinator work');
     case 'jevellan_jobs_list': return line('Read jobs', 'read jobs');
     case 'jevellan_job_runs': return line('Read job runs', 'read job runs');
     case 'jevellan_daily_list': return line('Read daily work', 'read daily work');

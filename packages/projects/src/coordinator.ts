@@ -7,14 +7,14 @@ import type { AccountService } from '@jevellan/accounts';
 import {
   CoordinatorEventSchema, CoordinatorStateSchema, HubUnavailable, ProjectCoordinatorStatusSchema, boundedRedaction, coordinatorMovable, isTerminal, mapEffort, openQuestions, resolveProjectPath, type Account,
   type AccountStatus, type Configuration, type CoordinatorEvent, type CoordinatorState, type Effort, type ModelOption, type Project, type ProjectDecision, type ProjectHub,
-  type ProjectLedgerEvent, type ProjectRequestOutcome, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
+  type CoordinatorHandoff, type ProjectLedgerEvent, type ProjectRequestOutcome, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
 } from '@jevellan/core';
 import { modelCandidates, projectOutcomeInstruction, type RuntimeSupport } from '@jevellan/decisions';
 import { SESSION_NOT_FOUND, type RuntimeAdapter } from '@jevellan/runtime-contract';
 import { ProjectTools, type ProjectScope, type ProjectToolHandlers } from './bridge-tools.js';
 import {
   COORDINATOR_PROCESS_UNCONFIRMED, MESSAGE_ID_REUSED, TURN_FAILED, activeThreadLine, coordinatorAccountMovedNotice, coordinatorFailedTwiceNotice, coordinatorMovedNotice, coordinatorSystemAppend,
-  coordinatorTurnTimedOut, coordinatorUnavailableNotice, coordinatorWorking, eventBlock, eventLine, freshContext, coordinatorWaitsForAccount, noCoordinatorAccount, noCoordinatorModel, numberedQuestionLine, OPEN_QUESTIONS, ACCOUNTS_NOW, accountNowLine,
+  coordinatorTurnTimedOut, coordinatorUnavailableNotice, coordinatorWorking, eventBlock, eventLine, coordinatorWaitsForAccount, noCoordinatorAccount, noCoordinatorModel, numberedQuestionLine, OPEN_QUESTIONS, ACCOUNTS_NOW, accountNowLine,
   recentConversation,
 } from './copy.js';
 import { derivedId, type DecisionItems } from './decision-items.js';
@@ -24,8 +24,7 @@ import type { ProjectLedger, ProjectLedgers } from './ledger.js';
 import type { DeviceRoster } from './placement.js';
 import type { CoordinatorStore } from './stores.js';
 import { contextEvent, sessionContext } from './session-context.js';
-import { coordinatorJournalDigest } from './journal-digest.js';
-import { coordinatorRestart } from './checkpoints.js';
+import { projectBoundary, projectDay } from './project-day.js';
 import { cacheRecords, sessionCacheKey, sessionCacheSnapshot } from './session-cache.js';
 import { TurnExecution, type TurnOutcome } from './turn-execution.js';
 
@@ -78,6 +77,8 @@ export { coordinatorMovable };
 
 /** Everything a coordinator prompt is built from; read before launch, because the launcher builds the prompt synchronously. */
 export type CoordinatorPromptInput = {
+  handoff?: CoordinatorHandoff | null;
+  transcripts?: string[];
   /** The batch this turn delivers, in arrival order. */
   events: readonly CoordinatorEvent[];
   outcomes?: readonly ProjectRequestOutcome[];
@@ -116,15 +117,16 @@ function coordinatorQuestions(input: CoordinatorPromptInput): string[] {
 }
 /** Brief 9.2 for a new session. The recap leaves out the batch being delivered, which follows as events (D36). */
 export function coordinatorFreshContext(input: CoordinatorPromptInput): string {
-  const batch = new Set(input.events.map((event) => event.id));
-  return (input.instructions ? coordinatorOwnerInstructions(input.instructions) : '') + freshContext({
-    notebook: input.notebook,
-    threads: input.threads.filter((thread) => !isTerminal(thread.state) && !thread.resolution).map((thread) => activeThreadLine({ title: thread.title, id: thread.id, state: thread.state,
+  const threads = input.threads.filter(thread => !thread.resolution && (!isTerminal(thread.state) || !!thread.landing)).map((thread) => activeThreadLine({ title: thread.title, id: thread.id, state: thread.state,
       isolation: thread.isolation, runtime: input.runtimeName(thread.runtime), modelLabel: thread.modelLabel, effort: thread.effort, deviceName: input.deviceName(thread.ownerDeviceId),
-      pr: thread.pr ? { number: thread.pr.number, checks: thread.pr.checks } : undefined, lastSummary: thread.lastSummary })),
-    questions: coordinatorQuestions(input),
-    recent: recentConversation(input.history.filter((item) => item.eventId === undefined || !batch.has(item.eventId))),
-  }) + (input.memory ? `\n\n${input.memory}` : '');
+      pr: thread.pr ? { number: thread.pr.number, checks: thread.pr.checks } : undefined, lastSummary: thread.lastSummary }));
+  const deploy = openQuestions(input.decisions).filter(item => item.deploy?.action === 'approve').map(item => item.question);
+  return [`Latest coordinator handoff:\n${input.handoff ? JSON.stringify(input.handoff, null, 2) : '(none yet)'}\n\nWaiting on you:\n${coordinatorQuestions(input).join('\n') || '(none)'}`,
+    `Live thread registry:\n${threads.join('\n') || '(none)'}${deploy.length ? `\n\nOpen deploy message:\n${deploy.join('\n\n')}` : ''}`,
+    input.memory || 'Project memory:\n(unavailable)',
+    `Earlier coordinator transcripts: ${input.transcripts?.join(', ') || '(none yet)'}. Search them with your file tools when you need detail.`,
+    ...(input.instructions ? [coordinatorOwnerInstructions(input.instructions).trim()] : []),
+    `Project notebook:\n${input.notebook?.trim() || '(empty)'}`].join('\n\n');
 }
 /** The turn prompt (brief 8.1): a session that is not resumed gets the fresh context first, then the event block. */
 export function coordinatorPrompt(input: CoordinatorPromptInput, resumed: boolean): string {
@@ -154,7 +156,7 @@ export type CoordinatorContext = {
   decisions: Pick<DecisionItems, 'fallbackFromReports'>;
   /** Bound after construction: the thread service is built later. */
   tools(): CoordinatorToolHandlers;
-  journalContents?(projectId: string): Promise<{ path: string; text: string }>;
+  handoffContext?(projectId: string): Promise<{ handoff: CoordinatorHandoff | null; transcripts: string[] }>;
   memoryContext?(project: Project): Promise<string>;
   captureTurn?(project: Project, session: CoordinatorSession): Promise<void>;
   outcome?(projectId: string, event: Extract<CoordinatorEvent, { kind: 'user-message' }>, history: string, signal: AbortSignal): Promise<ProjectRequestOutcome>;
@@ -228,6 +230,7 @@ export class Coordinator {
   #fallbacks: Promise<void> = Promise.resolve();
   readonly #tasks = new Set<Promise<unknown>>();
   #base: Promise<string> | undefined;
+  #handoffChecking: Promise<void> | undefined;
   constructor(readonly projectId: string, private readonly c: CoordinatorContext) {}
   get #ledger(): ProjectLedger { return this.c.ledgers.coordinator(this.projectId); }
   #at(): string { return new Date(this.c.now()).toISOString(); }
@@ -349,6 +352,43 @@ export class Coordinator {
     if (this.state().state === 'unavailable' || this.state().queue.length) this.kick();
     // A status the hub missed is written again, else the hub keeps the last one it got (a turn it thinks still runs, P8 review C-2).
     if (this.#statusDirty && !this.#running) this.#publish();
+    this.#maybeHandoff();
+  }
+  #maybeHandoff(): void {
+    if (!this.c.handoffContext || this.#handoffChecking || this.#running || this.#timer || this.#closed || this.#moved || !this.#started || this.state().queue.length || this.state().failedTurnsInARow >= 2) return;
+    this.#handoffChecking = (async () => {
+      const work = await this.c.workSettings(this.projectId); if (work.status !== 'active') return;
+      const local = this.c.store.local(this.projectId);
+      if (local.handoffSaved && local.handoffSaved.id !== local.handoffResetId && this.state().session) {
+        const ended = this.#ledger.events().findLast(event => event.type === 'coordinator-turn-end' && event.turn === local.handoffSaved!.turn);
+        if (ended && this.#ledger.payload(ended as typeof ended & { type: 'coordinator-turn-end' }).status === 'completed') {
+          const ownerIds = this.#ledger.events().flatMap(event => { if (event.type !== 'coordinator-event') return []; const item = this.#ledger.payload(event as typeof event & { type: 'coordinator-event' }); return item.kind === 'user-message' ? [item.id] : []; });
+          const extra = createHash('sha256').update(JSON.stringify([...new Set(ownerIds)].sort())).digest('hex') !== local.handoffSaved.ownerDigest;
+          if (!extra && !this.#running && !this.#timer && !this.state().queue.length) {
+            this.c.store.update(this.projectId, state => ({ ...state, session: null }));
+            this.c.store.updateLocal(this.projectId, state => ({ ...state, handoffResetId: local.handoffSaved!.id, needsHandoff: false }));
+            this.#publish(); return;
+          }
+          if (extra) this.c.store.updateLocal(this.projectId, state => ({ ...state, needsHandoff: true }));
+        }
+      }
+      const context = this.state().session?.context;
+      const threshold = !!context?.tokens && !!context.contextWindow && context.tokens / context.contextWindow * 100 >= work.coordinatorHandoffAtPercent;
+      const day = projectDay(this.c.now(), work.nightlyWindow.time, work.nightlyWindow.timezone);
+      const boundary = projectBoundary(day, work.nightlyWindow.time, work.nightlyWindow.timezone);
+      const night = work.nightlyWindow.enabled && this.c.now() >= boundary && this.c.now() < boundary + 7 * 3_600_000;
+      const pending = this.c.store.local(this.projectId).needsHandoff;
+      if (!threshold && !night && !pending) return;
+      const { handoff } = await this.c.handoffContext!(this.projectId);
+      const nightlyDone = handoff && Date.parse(handoff.at) >= boundary;
+      if (!threshold && !pending && (!night || nightlyDone)) return;
+      if (this.#running || this.#timer || this.#closed || this.#moved || this.state().queue.length || await this.#fence()) return;
+      if (this.#running || this.#timer || this.#closed || this.#moved || this.state().queue.length) return;
+      const reason = pending ? 'owner-pending' : threshold ? 'context' : 'nightly';
+      const key = reason === 'nightly' ? day : `${this.state().session?.startedAt ?? 'fresh'}:${handoff?.id ?? 'first'}`;
+      this.enqueue({ schema: 'coordinator-event-v1', kind: 'handoff-requested', id: derivedId('cev', 'handoff', this.projectId, reason, key), at: this.#at(), reason, ...(night ? { night: day } : {}) });
+    })().catch(() => undefined).finally(() => { this.#handoffChecking = undefined; });
+    this.#track(this.#handoffChecking);
   }
   /** Stop from the chat: interrupts the running turn, whose events count as delivered (D33); a scheduled start is dropped. */
   async stop(): Promise<void> {
@@ -363,6 +403,11 @@ export class Coordinator {
     this.#generation += 1; this.#outcomeAbort.abort();
     this.c.store.update(this.projectId, (state) => ({ ...state, session: null }));
     if (this.#started) this.#publish();
+  }
+  /** A requested save follows all running and queued work before starting its own turn. */
+  requestHandoff(): void {
+    this.c.store.updateLocal(this.projectId, local => ({ ...local, needsHandoff: true }));
+    this.#maybeHandoff();
   }
   /** Daemon shutdown: a running turn is terminated and left `running` for recovery (2.6.13 step 5). */
   async close(): Promise<void> {
@@ -432,6 +477,7 @@ export class Coordinator {
       try {
         if (end === 'retry' || end === 'postpone') this.#schedule(this.c.timers.retryMs);
         else if (end === 'continue' || this.#again) this.kick();
+        this.#maybeHandoff();
       } catch { /* The next event tries again. */ }
     });
     this.#running = running;
@@ -515,8 +561,9 @@ export class Coordinator {
     if (setupTriggerId && await this.c.hub.setupProposal(setupProposalId(projectId, setupTriggerId))) setupTriggerId = undefined;
     const outcomes: ProjectRequestOutcome[] = [];
     const memory = await this.c.memoryContext?.(project);
+    const handoff = await this.c.handoffContext?.(projectId);
     if (this.c.outcome) for (const event of events) if (event.kind === 'user-message') outcomes.push(await this.c.outcome(projectId, event, recentConversation(this.#conversation()), this.#outcomeAbort.signal));
-    return { kind: 'ready', project, cwd, ...chosen, ...(work.coordinator.accountId ? { requiredAccountId: work.coordinator.accountId } : {}), session, prompt: { ...(setupTriggerId ? { setupTriggerId } : {}), events, outcomes, instructions: work.instructions, ...(memory ? { memory } : {}), notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(), accounts,
+    return { kind: 'ready', project, cwd, ...chosen, ...(work.coordinator.accountId ? { requiredAccountId: work.coordinator.accountId } : {}), session, prompt: { ...handoff, ...(setupTriggerId ? { setupTriggerId } : {}), events, outcomes, instructions: work.instructions, ...(memory ? { memory } : {}), notebook: notebook?.document.content ?? null, threads, decisions, history: this.#conversation(), accounts,
       runtimeName: (runtime) => this.c.runtimes.get(runtime)?.displayName ?? runtime, deviceName: (id) => id === deviceId ? deviceName : names.get(id) ?? id, base,
       askedDirectly: this.#askedDirectly(events, decisions) } };
   }
@@ -570,10 +617,6 @@ export class Coordinator {
       launched = await this.c.launcher.launch({ owner: { kind: 'coordinator', projectId, id: projectId }, turn, runtime: model.runtime, modelId: model.id, model: model.model,
         modelLabel: model.label, effort, pinnedAccountId: prepared.accountId, ...(prepared.requiredAccountId ? { requiredAccountId: prepared.requiredAccountId } : {}), permissions: 'read-only', cwd: prepared.cwd, systemAppend: coordinatorSystemAppend(project.name, project.branchPolicy, (await this.c.workSettings(projectId)).startMode),
         prompt: (resumed) => coordinatorPrompt(prepared.prompt, resumed && !session?.context?.needsFreshContext), ...(session?.nativeSessionId ? { resume: session.nativeSessionId } : {}),
-        ...(this.c.journalContents ? { checkpointPrompt: async () => {
-          const journal = await this.c.journalContents!(projectId);
-          return { digest: `${coordinatorRestart}\n\n${coordinatorJournalDigest(coordinatorFreshContext(prepared.prompt), journal.path.replace(/\/INDEX\.md$/u, ''), journal.text, 60000 - coordinatorRestart.length - 2)}`, pending: coordinatorPrompt(prepared.prompt, true) };
-        } } : {}),
         contextTokensBefore: session?.context?.tokens,
         safetyProfile: 'coordinator', timeoutMs: this.c.timers.turnTimeoutMs, tools, memoryMode: project.memory.mode });
     } catch (error) { this.#scope = undefined; await tools.close(); return this.#failed(turn, messageOf(error), 'failed'); }
@@ -646,6 +689,9 @@ export class Coordinator {
       if (outcome.error?.message === SESSION_NOT_FOUND) this.c.store.update(this.projectId, (state) => ours(state) ? { ...state, session: null } : state);
       return this.#failed(turn, outcome.error?.message || (outcome.status === 'timed-out' ? coordinatorTurnTimedOut(this.c.timers.turnTimeoutMs) : TURN_FAILED), outcome.status, true, outcome);
     }
+    if (outcome.status === 'completed' && events.some(event => event.kind === 'handoff-requested') && this.c.store.local(this.projectId).handoffSaved?.turn !== turn) {
+      return this.#failed(turn, 'The coordinator did not save a valid handoff. Write it with jevellan_handoff_write before ending this turn.', 'failed', true, outcome);
+    }
     // Completed, or stopped by the owner (D33): the batch was delivered. `steered` cannot happen here; it reads as completed.
     const completed = outcome.status !== 'stopped'; const delivered = new Set(events.map((event) => event.id));
     this.c.store.update(this.projectId, (state) => ({ ...withoutReason(state), state: 'idle', queue: state.queue.filter((event) => !delivered.has(event.id)), lastTurnAt: this.#at(),
@@ -655,6 +701,14 @@ export class Coordinator {
     if (completed && outcome.finalText) this.#ledger.append({ type: 'coordinator-text', turn, data: { schema: 'coordinator-text-v1', text: outcome.finalText } });
     this.#ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status: completed ? 'completed' : 'interrupted', usage: outcome.usage,
       ...(outcome.sessionId ? { sessionKey: createHash('sha256').update(outcome.sessionId).digest('hex') } : {}) } });
+    const local = this.c.store.local(this.projectId);
+    if (completed && local.handoffSaved?.turn === turn && local.handoffSaved.id !== local.handoffResetId) {
+      if (this.state().queue.some(event => event.kind === 'user-message')) this.c.store.updateLocal(this.projectId, state => ({ ...state, needsHandoff: true }));
+      else {
+        this.c.store.update(this.projectId, state => ours(state) ? { ...state, session: null } : state);
+        this.c.store.updateLocal(this.projectId, state => ({ ...state, handoffResetId: local.handoffSaved!.id, needsHandoff: false }));
+      }
+    }
     this.#publish();
     return 'continue';
   }

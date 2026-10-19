@@ -140,7 +140,11 @@ test('one turn at a time: events during a turn arrive batched in the next, which
   expect(first!.prompt).toContain(`${SETUP_PROMPT}\n\nEvents since your last turn:`);
   // Without a Jev key the owner's request is uninterpreted, and the turn says so (fix-051).
   const firstPrompt = withEventIds(withoutLiveAccounts(first!.prompt).replace(`${SETUP_PROMPT}\n\n`, ''));
-  expect(firstPrompt.replace(/\[owner \d{2}:\d{2}\]/u, '[owner HH:MM]')).toBe(`Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nProject memory:\nProject memory is unavailable for this turn.\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B${uninterpretedBlock(1)}`);
+  expect(firstPrompt).toContain('Latest coordinator handoff:\n(none yet)');
+  expect(firstPrompt).toContain('Waiting on you:\n(none)');
+  expect(firstPrompt).toContain('Live thread registry:\n(none)');
+  expect(firstPrompt).toContain('Project memory is unavailable for this turn.');
+  expect(firstPrompt).toContain('add A and fix B');
   expect(second).toMatchObject({ turn: 2, resume: { sessionId: work.coordinators.get('proj_a').state().session!.nativeSessionId } });
   expect(withoutLiveAccounts(second!.prompt)).toBe('Events since your last turn:\n[thread "Add A" (thread_a)] Pull request #1 opened.\n[thread "(unknown thread)" (thread_b)] Pull request #2 opened.');
   const state = work.coordinators.get('proj_a').state();
@@ -188,7 +192,7 @@ test('sessions persist past forty turns, and rotate on Fresh, on an effort chang
   await work.freshCoordinator('proj_a');
   expect(coordinator.state().session).toBeNull();
   const fresh = await next('five');
-  expect(fresh.resume).toBeUndefined(); expect(fresh.prompt.startsWith('Project notebook:')).toBe(true);
+  expect(fresh.resume).toBeUndefined(); expect(fresh.prompt.startsWith('Latest coordinator handoff:')).toBe(true);
   // The settings effort maps to another effort on the session model.
   await settings({ coordinator: { modelId: null, effort: 'low' } });
   const lower = await next('six');
@@ -197,7 +201,7 @@ test('sessions persist past forty turns, and rotate on Fresh, on an effort chang
   // The session's account is no longer eligible: another account, a fresh session and a notice (D16).
   accounts.push(account('acc_other', 'Other')); ineligible.add('acc_work');
   const moved = await next('eight');
-  expect(moved.resume).toBeUndefined(); expect(moved.account.account.id).toBe('acc_other'); expect(moved.prompt.startsWith('Project notebook:')).toBe(true);
+  expect(moved.resume).toBeUndefined(); expect(moved.account.account.id).toBe('acc_other'); expect(moved.prompt.startsWith('Latest coordinator handoff:')).toBe(true);
   expect(coordinator.state().session).toMatchObject({ accountId: 'acc_other', turns: 1 });
   expect(notices(work)).toEqual(['The coordinator moved to account Other; a fresh session started.']);
   expect(payloads(work, 'coordinator-turn-start').at(-1)).toMatchObject({ fresh: true, accountLabel: 'Other' });
@@ -418,7 +422,7 @@ test('a coordinator session that no longer exists is dropped: the retry starts a
   expect(turns()).toHaveLength(3);
   expect(missing!.resume).toBeDefined();
   expect(fresh!.resume).toBeUndefined();
-  expect(fresh!.prompt.startsWith('Project notebook:')).toBe(true); expect(fresh!.prompt).toContain('second');
+  expect(fresh!.prompt.startsWith('Latest coordinator handoff:')).toBe(true); expect(fresh!.prompt).toContain('second');
   expect(work.coordinators.get('proj_a').state()).toMatchObject({ state: 'idle', failedTurnsInARow: 0, queue: [] });
 });
 
@@ -462,7 +466,7 @@ test('compaction keeps the coordinator session and refreshes the next prompt acr
     turn.emit({ type: 'compacted', beforeTokens: 7500, afterTokens: 1500, contextWindow: 10000 }); turn.say('Saved the plan.'); return { status: 'completed' }; }, forCoordinator);
   await message(work, 'Keep the release plan.'); await work.idle('proj_a');
   const coordinator = work.coordinators.get('proj_a'); const session = coordinator.state().session!;
-  expect(session.context).toMatchObject({ needsFreshContext: true, tokens: 1500, contextWindow: 10000, thresholdPercent: 70 });
+  expect(session.context).toMatchObject({ needsFreshContext: true, tokens: 1500, contextWindow: 10000, thresholdPercent: 95 });
   expect(payloads(work, 'session-compacted')).toHaveLength(1);
   expect(payloads(work, 'session-compacted')[0]).toMatchObject({ schema: 'session-compacted-v1', beforeTokens: 7500, afterTokens: 1500, owner: { kind: 'coordinator', id: 'proj_a' } });
   await work.close(); const restarted = await started();
@@ -470,13 +474,13 @@ test('compaction keeps the coordinator session and refreshes the next prompt acr
   await message(restarted, 'Continue.'); await restarted.idle('proj_a');
   const next = turns().at(-1)!;
   expect(next.resume).toEqual({ sessionId: session.nativeSessionId });
-  expect(next.prompt.startsWith('Project notebook:')).toBe(true);
+  expect(next.prompt.startsWith('Latest coordinator handoff:')).toBe(true);
   expect(restarted.coordinators.get('proj_a').state().session?.context?.needsFreshContext).toBe(false);
   expect(payloads(restarted, 'coordinator-turn-start').at(-1)).toMatchObject({ fresh: false });
 });
 
 
-test('a cold coordinator starts from notebook and journal, keeps earlier native history and delivers the owner event once after restart', { timeout: 60000 }, async () => {
+test('a cold coordinator retains its native session despite enabled thread checkpoints', { timeout: 60000 }, async () => {
   let now = Date.now();
   await settings({ sessionCheckpoints: { enabled: true, checkpointMinTokens: 40000 } });
   const access = new HubProjectAccess(hub, 'dev_a');
@@ -490,14 +494,14 @@ test('a cold coordinator starts from notebook and journal, keeps earlier native 
   fake.enqueueTurn(turn => { turn.emit({ type: 'usage', inputTokens: 10, outputTokens: 2, cacheReadTokens: 0, cacheWriteTokens: 2000 }); turn.say('Invoices: PDF.'); return { status: 'completed' }; }, forCoordinator);
   await message(work, 'Add a PDF download for invoices.', 'checkpoint_pending'); await work.idle('proj_a');
   const next = turns().at(-1)!;
-  expect(next.resume).toBeUndefined();
-  expect(next.prompt).toMatch(/^This is a fresh coordinator session: the previous one was idle long enough for its cache to expire\./u);
-  expect(next.prompt).toContain('Invoice titles start with Invoices:.'); expect(next.prompt).toContain('INDEX.md follows.');
+  expect(next.resume).toEqual({ sessionId: previous });
+  expect(next.prompt).not.toContain('fresh coordinator session');
+  expect(next.prompt).not.toContain('INDEX.md follows.');
   expect(next.prompt.match(/Add a PDF download for invoices\./gu)).toHaveLength(1);
-  expect(work.coordinators.get('proj_a').state().session!.nativeSessionId).not.toBe(previous);
+  expect(work.coordinators.get('proj_a').state().session!.nativeSessionId).toBe(previous);
   expect(work.coordinators.get('proj_a').state().queue).toEqual([]);
-  expect(work.coordinators.get('proj_a').sessionHistory()).toMatchObject([{ nativeSessionId: previous }]);
-  expect(payloads(work, 'session-checkpointed')).toMatchObject([{ owner: { kind: 'coordinator', id: 'proj_a' }, previousContextTokens: 45000, firstTurnCacheWriteTokens: 2000 }]);
+  expect(work.coordinators.get('proj_a').sessionHistory()).toEqual([]);
+  expect(payloads(work, 'session-checkpointed')).toEqual([]);
   expect(JSON.stringify((await work.view('proj_a')).coordinator)).not.toContain(previous);
   await work.journal!.sync('proj_a', true);
   expect((await work.journal!.contents('proj_a')).text).toContain('journal');
@@ -522,4 +526,85 @@ test('every turn states account readiness as it is now, and a sign-in question i
   // The resumed turn carries no fresh context, yet it states the current readiness.
   expect(turns()[1]!.resume).toBeDefined();
   expect(turns()[1]!.prompt).toMatch(/\n- Ekoa Codex \(Scripted test runtime\): Mac mini Ready$/u);
+});
+
+test('context handoff precedes native compaction, accounts for owner events and starts the next session fresh', { timeout: 60000 }, async () => {
+  const work = app({}, { journal: { isHub: true } }); await work.ready; work.start();
+  fake.enqueueTurn(turn => { expect(turn.input.compaction?.thresholdPercent).toBe(95); turn.emit({ type: 'context', tokens: 7100, contextWindow: 10000 }); turn.say('Ready for handoff.'); return { status: 'completed' }; }, forCoordinator);
+  let previous: string | undefined;
+  fake.enqueueTurn(async turn => {
+    previous = turn.input.resume?.sessionId;
+    expect(turn.input.prompt).toContain("Write today's handoff with jevellan_handoff_write.");
+    const owner = payloads(work, 'coordinator-event').filter(row => row.kind === 'user-message');
+    await turn.bridge('jevellan_handoff_write', { inFlight: 'The report is queued.', pendingAsks: '', decisions: 'Keep it small.', ownerMessages: owner.map(row => ({ eventId: row.id, outcome: 'task', ref: 'task_report' })) });
+    turn.say('Handoff saved.'); return { status: 'completed' };
+  }, forCoordinator);
+  await message(work, 'Implement a report.', 'report_request'); await work.idle('proj_a');
+  expect(previous).toBeTruthy(); expect(turns()).toHaveLength(2);
+  expect(work.coordinators.get('proj_a').state().session).toBeNull();
+  expect(payloads(work, 'coordinator-handoff')).toHaveLength(1);
+  expect(payloads(work, 'session-compacted')).toEqual([]);
+  fake.enqueueTurn(say('Continuing the report.'), forCoordinator);
+  await message(work, 'Continue.', 'continue_report'); await work.idle('proj_a');
+  expect(turns().at(-1)?.resume).toBeUndefined();
+  expect(turns().at(-1)?.prompt).toContain('The report is queued.');
+  expect(turns().at(-1)?.prompt).toContain('Earlier coordinator transcripts:');
+});
+
+test('an owner message queued after the handoff save keeps the session until a new handoff accounts for it', { timeout: 60000 }, async () => {
+  const work = app({}, { journal: { isHub: true } }); await work.ready; work.start();
+  const saved = deferred(), finish = deferred();
+  fake.enqueueTurn(async turn => {
+    const owner = payloads(work, 'coordinator-event').filter(row => row.kind === 'user-message');
+    await turn.bridge('jevellan_handoff_write', { inFlight: 'First request handled.', pendingAsks: '', decisions: '', ownerMessages: owner.map(row => ({ eventId: row.id, outcome: 'answered' })) });
+    saved.resolve(); await finish.promise; turn.say('Saved.'); return { status: 'completed' };
+  }, forCoordinator);
+  await message(work, 'First request.', 'first_owner'); await saved.promise;
+  const previous = work.coordinators.get('proj_a').state().session?.nativeSessionId;
+  fake.enqueueTurn(turn => { expect(turn.input.resume?.sessionId).toBe(previous); turn.say('Second request handled.'); return { status: 'completed' }; }, forCoordinator);
+  fake.enqueueTurn(async turn => {
+    expect(turn.input.resume?.sessionId).toBe(previous);
+    const owner = payloads(work, 'coordinator-event').filter(row => row.kind === 'user-message');
+    await turn.bridge('jevellan_handoff_write', { inFlight: 'Both requests handled.', pendingAsks: '', decisions: '', ownerMessages: owner.map(row => ({ eventId: row.id, outcome: 'answered' })) });
+    return { status: 'completed' };
+  }, forCoordinator);
+  await message(work, 'Second request.', 'second_owner'); finish.resolve(); await work.idle('proj_a');
+  expect(payloads(work, 'coordinator-handoff')).toHaveLength(2);
+  expect(work.coordinators.get('proj_a').state().session).toBeNull();
+});
+
+test('nightly handoff waits for running turns and queued owner work and runs once in the window', { timeout: 60000 }, async () => {
+  let now = Date.parse('2026-10-19T00:00:00Z');
+  await settings({ nightlyWindow: { enabled: true, time: '02:00', timezone: 'UTC' } });
+  const work = app({ now: () => now }, { journal: { isHub: true } }); await work.ready; work.start();
+  const opened = deferred(), finish = deferred();
+  fake.enqueueTurn(async () => { opened.resolve(); await finish.promise; return { status: 'completed' }; }, forCoordinator);
+  await message(work, 'First.', 'night_first'); await opened.promise;
+  now = Date.parse('2026-10-19T02:00:00Z'); work.coordinators.sweep();
+  expect(work.coordinators.get('proj_a').state().queue.some(row => row.kind === 'handoff-requested')).toBe(false);
+  fake.enqueueTurn(say('Second handled.'), forCoordinator);
+  fake.enqueueTurn(async turn => {
+    const owner = payloads(work, 'coordinator-event').filter(row => row.kind === 'user-message');
+    await turn.bridge('jevellan_handoff_write', { inFlight: 'Nightly work continues.', pendingAsks: '', decisions: '', ownerMessages: owner.map(row => ({ eventId: row.id, outcome: 'answered' })) });
+    return { status: 'completed' };
+  }, forCoordinator);
+  await message(work, 'Second.', 'night_second'); finish.resolve(); await work.idle('proj_a');
+  expect(turns()).toHaveLength(3); expect(work.coordinators.get('proj_a').state().session).toBeNull();
+  work.coordinators.sweep(); await work.idle('proj_a');
+  expect(turns()).toHaveLength(3);
+});
+
+test('a handoff turn without a valid save retries with the same undelivered request', { timeout: 60000 }, async () => {
+  const work = app({}, { journal: { isHub: true } }); await work.ready; work.start();
+  fake.enqueueTurn(turn => { turn.emit({ type: 'context', tokens: 7500, contextWindow: 10000 }); return { status: 'completed' }; }, forCoordinator);
+  fake.enqueueTurn(say('I forgot the required save.'), forCoordinator);
+  fake.enqueueTurn(async turn => {
+    expect(turn.input.prompt).toContain("Write today's handoff with jevellan_handoff_write.");
+    const owner = payloads(work, 'coordinator-event').filter(row => row.kind === 'user-message');
+    await turn.bridge('jevellan_handoff_write', { inFlight: 'Work continues.', pendingAsks: '', decisions: '', ownerMessages: owner.map(row => ({ eventId: row.id, outcome: 'answered' })) });
+    return { status: 'completed' };
+  }, forCoordinator);
+  await message(work, 'Start.', 'handoff_retry'); await work.idle('proj_a');
+  expect(turns()).toHaveLength(3); expect(work.coordinators.get('proj_a').state().session).toBeNull();
+  expect(payloads(work, 'coordinator-turn-end').map(row => row.status)).toEqual(['completed', 'failed', 'completed']);
 });

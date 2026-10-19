@@ -962,8 +962,8 @@
   {
     "id": "wg-handoff",
     "title": "Coordinator handoff and fresh sessions",
-    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
-    "status": "planned"
+    "why": "Coordinator handoff tool and immutable hub journal records account for all owner events, including late device events; idle/night/context triggers,95% native compaction, ordered fresh context and safe session rotation replace coordinator cold checkpoints.167 affected cases, typecheck/lint/build, four browser layouts and eight live vision checks passed. Installed first handoff not run; see docs/acceptance/without-github-2026-10/.",
+    "status": "complete"
   },
   {
     "id": "wg-cleanup",

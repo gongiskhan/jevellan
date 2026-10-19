@@ -2526,3 +2526,22 @@ test('WG5 pinned deploy message, Not now and confirmed rollback', async ({ page 
     await overview.getByRole('button', { name: 'Cancel', exact: true }).click(); expect(errors).toEqual([]);
   } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
 });
+
+test('WG6 coordinator session settings and durable save', async ({ page }, info) => {
+  const errors = await begin(page);
+  const current = (await work(page)).settings, { schema, projectId, revision, ...settings } = current; void schema; void projectId;
+  expect((await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision, settings: { ...settings, coordinator: { ...settings.coordinator, modelId: 'codex-gpt' }, nightlyWindow: { ...settings.nightlyWindow, enabled: false }, coordinatorHandoffAtPercent: 75 } } })).ok()).toBe(true);
+  await page.goto('/projects/projects_fixture/settings');
+  const limits = page.locator('#project-settings-limits'); await limits.scrollIntoViewIfNeeded();
+  await expect(limits.getByRole('spinbutton', { name: 'Coordinator session reset at (%)', exact: true })).toHaveValue('75');
+  await expect(limits.getByRole('spinbutton', { name: 'Thread compaction at (%)', exact: true })).toHaveValue(String(settings.compactAtPercent));
+  await page.screenshot({ path: info.outputPath(`coordinator-session-settings-${layout(info)}.png`), fullPage: true });
+  expect((await page.request.post(`${PROJECT}/coordinator/messages`, { data: { schema: 'coordinator-message-request-v1', clientMessageId: `wg6_${info.project.name}`, text: 'Remember this completed browser check.' } })).ok()).toBe(true);
+  await expect.poll(async () => (await work(page)).coordinator.session?.turns, { timeout: 60000 }).toBeGreaterThan(0);
+  expect((await page.request.post(`${PROJECT}/coordinator/handoff`, { data: { schema: 'empty-request-v1' } })).ok()).toBe(true);
+  await expect.poll(async () => (await work(page)).coordinator.session, { timeout: 60000 }).toBeNull();
+  await page.goto('/projects/projects_fixture'); await sectionTab(page, info, 'Chat');
+  await expect(page.getByText('I saved the current work for the next session.', { exact: true })).toBeVisible(LONG);
+  await page.screenshot({ path: info.outputPath(`coordinator-saved-work-${layout(info)}.png`) });
+  expect(errors).toEqual([]);
+});

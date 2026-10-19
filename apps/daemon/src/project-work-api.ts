@@ -19,7 +19,7 @@ import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 import { readProjectImage } from '@jevellan/conversations';
 
-export type ProjectWorkRouteName = 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -64,6 +64,7 @@ const rows: readonly Row[] = [
   { name: 'events', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/events$/, methods: ['GET'], target: 'coordinator', stream: true },
   { name: 'message', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/messages$/, methods: ['POST'], target: 'coordinator' },
   { name: 'stop', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/stop$/, methods: ['POST'], target: 'coordinator' },
+  { name: 'handoff', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/handoff$/, methods: ['POST'], target: 'coordinator' },
   { name: 'fresh', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/fresh$/, methods: ['POST'], target: 'coordinator' },
   // Move coordinator here runs on the device the owner uses, never proxied (3.5.3).
   { name: 'move', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/move$/, methods: ['POST'], target: 'local' },
@@ -281,6 +282,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
       send(CoordinatorMessageReceiptSchema.parse({ schema: 'coordinator-message-receipt-v1', repeated }), 202); return true;
     }
     case 'stop': EmptySchema.parse(await requestBody(request)); await work.stopCoordinator(projectId); send(await work.view(projectId), 202); return true;
+    case 'handoff': EmptySchema.parse(await requestBody(request)); await work.requestCoordinatorHandoff(projectId); send(await work.view(projectId), 202); return true;
     case 'fresh': EmptySchema.parse(await requestBody(request)); await work.freshCoordinator(projectId); send(await work.view(projectId), 202); return true;
     case 'move': EmptySchema.parse(await requestBody(request)); await work.moveCoordinatorHere(projectId); send(await work.view(projectId)); return true;
     case 'settings': {

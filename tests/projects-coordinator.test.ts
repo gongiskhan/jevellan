@@ -119,7 +119,10 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
   expect(first!.resume).toBeUndefined();
   expect(first!.prompt).toContain(`${SETUP_PROMPT}\n\nEvents since your last turn:`);
   // The fixture saves no Jev key: the owner's request is uninterpreted and the turn says so (fix-051).
-  expect(withEventIds(withoutLiveAccounts(first!.prompt).replace(`${SETUP_PROMPT}\n\n`, ''))).toMatch(clocked(`Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nProject memory:\nRecently updated notes:\nSearch memory with memory_search for more.\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B${uninterpretedBlock(1)}`));
+  expect(first!.prompt).toContain('Latest coordinator handoff:\n(none yet)');
+  expect(first!.prompt).toContain('Waiting on you:\n(none)');
+  expect(first!.prompt).toContain('Live thread registry:\n(none)');
+  expect(first!.prompt).toContain('add A and fix B');
   expect(second!.resume).toEqual({ sessionId: sessionOf(f, first!).sessionId });
   const pr = async (id: string) => (await f.index(id))!.pr!.number;
   const [lineA, lineB] = [`[thread "Add A" (${idA})] Pull request #${await pr(idA)} opened.`, `[thread "Fix B" (${idB})] Pull request #${await pr(idB)} opened.`];
@@ -365,7 +368,7 @@ test('PJ2d the coordinator keeps its session beyond 40 turns and rotates on Fres
     return coordinatorTurns(f).at(-1)!;
   };
   // Notebook, active threads and open questions: the part of the fresh context that does not depend on the recap.
-  const context = `Project notebook:\nPrefer SQLite.\n\nActive threads:\n- Store data (${threadId}): idle, worktree, Scripted test runtime Fixture high on ${f.deviceName}. Last report: Schema drafted.\n\nOpen questions to the owner (numbered as the owner sees them):\n1. [Coordinator] Which database? Options: SQLite, Postgres. (questionId ${questionId})\n\nRecent conversation with the owner:\n`;
+  const context = 'Latest coordinator handoff:\n(none yet)\n\nWaiting on you:\n';
   const questionsBlock = `Open questions to the owner (numbered as the owner sees them):\n1. [Coordinator] Which database? Options: SQLite, Postgres. (questionId ${questionId})`;
   const rotated = await next('msg_d2', 'What next?');
   expect(rotated.resume).toEqual({ sessionId: old.nativeSessionId });

@@ -7,7 +7,7 @@ import { ThreadUsageTotalSchema } from './project-usage-schemas.js';
 import { PlacementConstraintsSchema, ProjectEnvironmentSchema, ProjectPlacementSettingsSchema, ProjectPrAutoFixSettingsSchema, ProjectSettingsChangeSchema } from './project-parity-schemas.js';
 import { SessionCheckpointSettingsSchema, SessionCheckpointedSchema, SessionHistorySchema, SessionHistoryLinkSchema } from './checkpoint-schemas.js';
 import { SessionTurnCacheSchema, SessionCacheSummarySchema } from './session-cache-schemas.js';
-import { JournalConfigSchema, JournalDocumentSchema, JournalThreadSchema, ProjectJournalRecordSchema } from './project-journal-schemas.js';
+import { CoordinatorHandoffSchema, JournalConfigSchema, JournalDocumentSchema, JournalThreadSchema, ProjectJournalRecordSchema } from './project-journal-schemas.js';
 import { OwnerCommandsSchema } from './owner-command-schemas.js';
 import { ProjectReviewReportSchema } from './project-review-schemas.js';
 import { CursorTranscriptSchema } from './cursor-schemas.js';
@@ -62,13 +62,13 @@ export const ProjectWorkSettingsSchemaV4 = ProjectWorkSettingsSchemaV3.omit({ th
   environment: ProjectEnvironmentSchema.default({ variables: [], secrets: [], copyFiles: [] }),
   notifications: z.enum(['everything', 'standard', 'needs-you', 'off']).default('standard'),
 });
-export const ProjectWorkSettingsSchemaV5 = ProjectWorkSettingsSchemaV4.omit({ defaultIsolation: true, allowMainIsolation: true, autoMerge: true, requiredChecks: true }).extend({ schema: z.literal('project-work-settings-v5'), healthChecks: ProjectHealthChecksSchema, deploy: ProjectDeploySettingsSchema.default({ mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }), delivery: DeliverySchema.default('land'), autoLand: z.boolean().default(false), landingChecks: z.array(LandingCheckSchema).max(30).default([]), smokeCheck: z.string().max(2000).nullable().default(null), mergeCommitPaths: z.array(ProjectRelativePathSchema).max(20).default([]) });
+export const ProjectWorkSettingsSchemaV5 = ProjectWorkSettingsSchemaV4.omit({ defaultIsolation: true, allowMainIsolation: true, autoMerge: true, requiredChecks: true }).extend({ schema: z.literal('project-work-settings-v5'), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).default(70), healthChecks: ProjectHealthChecksSchema, deploy: ProjectDeploySettingsSchema.default({ mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }), delivery: DeliverySchema.default('land'), autoLand: z.boolean().default(false), landingChecks: z.array(LandingCheckSchema).max(30).default([]), smokeCheck: z.string().max(2000).nullable().default(null), mergeCommitPaths: z.array(ProjectRelativePathSchema).max(20).default([]) });
 export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV5;
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
-export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4, ProjectWorkSettingsSchemaV5])
+export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4, ProjectWorkSettingsSchemaV5.extend({ coordinatorHandoffAtPercent: z.number().int().min(50).max(90).optional() })])
   .transform(value => {
     const { coordinatorReview: _retired, threadRules, defaultIsolation: _isolation, allowMainIsolation: _main, requiredChecks: _checks, autoMerge, ...fields } = { coordinatorReview: undefined, threadRules: undefined, defaultIsolation: undefined, allowMainIsolation: undefined, requiredChecks: undefined, autoMerge: undefined, ...value }; void _retired; void _isolation; void _main; void _checks;
-    return ProjectWorkSettingsSchemaV5.parse({ ...fields, autoLand: 'autoLand' in value ? value.autoLand : autoMerge ?? false, instructions: 'instructions' in value ? value.instructions : threadRules ?? '', schema: 'project-work-settings-v5' });
+    return ProjectWorkSettingsSchemaV5.parse({ ...fields, coordinatorHandoffAtPercent: 'coordinatorHandoffAtPercent' in value ? value.coordinatorHandoffAtPercent ?? value.compactAtPercent : 'compactAtPercent' in value ? value.compactAtPercent : 70, autoLand: 'autoLand' in value ? value.autoLand : autoMerge ?? false, instructions: 'instructions' in value ? value.instructions : threadRules ?? '', schema: 'project-work-settings-v5' });
   });
 export const ProjectRequestOutcomeSchema = z.strictObject({ schema: z.literal('project-request-outcome-v1'), projectId: IdSchema, eventId: IdSchema,
   goal: z.enum(['answer', 'change', 'run-app', 'verify', 'other']).nullable(), source: z.enum(['jev', 'unavailable']),
@@ -137,6 +137,7 @@ const ev = <K extends string, S extends z.ZodRawShape>(kind: K, fields: S) => z.
   schema: z.literal('coordinator-event-v1'), kind: z.literal(kind), id: IdSchema, at: TimestampSchema, ...fields });
 export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
   ev('setup-requested', {}),
+  ev('handoff-requested', { reason: z.enum(['nightly', 'context', 'owner-pending']), night: z.string().max(10).optional() }),
   ev('deploy', { deployId: IdSchema, commit: z.string().regex(/^[a-f0-9]{40}$/u), threads: count, outcome: z.enum(['deployed', 'failed', 'rolled-back']), summary: z.string().max(1200) }),
   ev('settings-changed', { by: z.enum(['owner', 'coordinator']), changes: z.array(z.strictObject({ field: z.string().max(80), from: z.string().max(400), to: z.string().max(400) })).max(30), instructions: z.string().max(16000).optional() }),
   ev('thread-resolved', { threadId: IdSchema, by: z.enum(['owner', 'inactivity', 'deploy']), deployId: IdSchema.optional() }),
@@ -168,14 +169,14 @@ export type CoordinatorEvent = z.infer<typeof CoordinatorEventSchema>;
 export type CoordinatorEventKind = CoordinatorEvent['kind'];
 
 export const ProjectSessionContextSchema = z.strictObject({ schema: z.literal('project-session-context-v1'),
-  tokens: count.nullable(), contextWindow: positive.nullable(), thresholdPercent: z.number().int().min(15).max(90),
+  tokens: count.nullable(), contextWindow: positive.nullable(), thresholdPercent: z.number().int().min(15).max(95),
   compactions: z.array(TimestampSchema).max(500), lastCompactionAt: TimestampSchema.nullable(),
   needsFreshContext: z.boolean(), notice: z.string().max(500).optional() });
 export type ProjectSessionContext = z.infer<typeof ProjectSessionContextSchema>;
 export const SessionCompactedSchema = z.strictObject({ schema: z.literal('session-compacted-v1'),
   owner: z.strictObject({ kind: z.enum(['coordinator', 'thread', 'review', 'verification', 'memory']), id: IdSchema }),
   runtime: IdSchema, model: text, at: TimestampSchema,
-  beforeTokens: count.nullable(), afterTokens: count.nullable(), contextWindow: positive.nullable(), thresholdPercent: z.number().int().min(15).max(90) });
+  beforeTokens: count.nullable(), afterTokens: count.nullable(), contextWindow: positive.nullable(), thresholdPercent: z.number().int().min(15).max(95) });
 export type SessionCompacted = z.infer<typeof SessionCompactedSchema>;
 
 // 5.3 owner-local <home>/projects/<pid>/coordinator.json
@@ -352,6 +353,7 @@ export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-loca
 export type ThreadLocal = z.infer<typeof ThreadLocalSchema>;
 // <home>/projects/<pid>/coordinator-local.json
 export const CoordinatorLocalSchema = z.strictObject({ schema: z.literal('coordinator-local-v1'),
+  handoffSaved: z.strictObject({ id: IdSchema, turn: positive, ownerDigest: z.string().regex(/^[a-f0-9]{64}$/u) }).optional(), handoffResetId: IdSchema.optional(), needsHandoff: z.boolean().optional(),
   limitRetryBatch: z.string().max(64).optional(),
   sessionHistory: z.array(SessionHistorySchema).optional(),
   process: TurnProcessSchema.optional(), deliveredTurn: count.default(0),
@@ -420,7 +422,7 @@ export type InboxSeen = z.infer<typeof InboxSeenSchema>;
 
 // Project ledger (brief 5.13, D2). data stays unknown in the envelope: payloads over 64 KiB spill to a blob-ref.
 export const ProjectLedgerEventTypeSchema = z.enum(['coordinator-turn-start', 'coordinator-text', 'coordinator-tool',
-  'coordinator-turn-end', 'coordinator-event', 'thread-turn-start', 'thread-turn-end', 'thread-report',
+  'coordinator-turn-end', 'coordinator-handoff', 'coordinator-event', 'thread-turn-start', 'thread-turn-end', 'thread-report',
   'thread-placement', 'thread-message-route', 'thread-state', 'thread-verification', 'thread-publication', 'session-compacted', 'session-checkpointed', 'project-session-end', 'session-turn-cache', 'journal-config', 'journal-thread', 'journal-source', 'journal-document', 'journal-message', 'notice']);
 export type ProjectLedgerEventType = z.infer<typeof ProjectLedgerEventTypeSchema>;
 export const ProjectLedgerEventSchema = z.strictObject({ schema: z.literal('project-ledger-event-v1'), t: TimestampSchema,
@@ -470,7 +472,7 @@ export const ProjectLedgerDataSchemas = {
   'journal-message': QueuedMessageSchema.extend({ schema: z.literal('journal-message-v1') }),
   'coordinator-turn-start': CoordinatorTurnStartSchema, 'coordinator-text': CoordinatorTextSchema,
   'coordinator-tool': CoordinatorToolSchema, 'coordinator-turn-end': CoordinatorTurnEndSchema,
-  'coordinator-event': CoordinatorEventSchema, 'thread-turn-start': ThreadTurnStartSchema, 'thread-turn-end': ThreadTurnEndSchema,
+  'coordinator-handoff': CoordinatorHandoffSchema, 'coordinator-event': CoordinatorEventSchema, 'thread-turn-start': ThreadTurnStartSchema, 'thread-turn-end': ThreadTurnEndSchema,
   'thread-report': ThreadReportSchema, 'thread-placement': PlacementRecordSchema, 'thread-message-route': ThreadMessageRouteSchema, 'thread-state': ThreadStateChangeSchema,
   'session-compacted': SessionCompactedSchema,
   'session-checkpointed': SessionCheckpointedSchema,
@@ -558,6 +560,7 @@ export const ProjectWorkSettingsRequestSchema = z.strictObject({ schema: z.liter
     instructions: z.string().max(16000).optional(), autoLand: z.boolean().optional(), riskyAreas: z.string().max(2000).optional(),
     nightlyWindow: ProjectWorkSettingsSchema.shape.nightlyWindow.removeDefault().optional(), refill: ProjectWorkSettingsSchema.shape.refill.removeDefault().optional(),
     compactAtPercent: ProjectWorkSettingsSchema.shape.compactAtPercent.removeDefault().optional(),
+    coordinatorHandoffAtPercent: ProjectWorkSettingsSchema.shape.coordinatorHandoffAtPercent.removeDefault().optional(),
     sessionCheckpoints: ProjectWorkSettingsSchema.shape.sessionCheckpoints.removeDefault().optional(),
     memory: ProjectWorkSettingsSchema.shape.memory.removeDefault().optional(),
     perDeviceLimits: ProjectWorkSettingsSchema.shape.perDeviceLimits.removeDefault().optional(),

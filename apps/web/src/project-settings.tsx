@@ -113,7 +113,8 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
             <div className="form-grid">{data.roster.devices.filter(row => !row.revoked && row.device.workPolicy?.mode !== 'apps-only').map(row => <label key={row.device.id}>{copy.deviceLimit(row.device.name)}<input type="number" min={1} max={10} placeholder={copy.deviceDefaultLimit(draft.maxRunningPerDevice)} value={draft.perDeviceLimits[row.device.id] ?? ''} onChange={event => {
               const perDeviceLimits = { ...draft.perDeviceLimits }; if (event.target.value) perDeviceLimits[row.device.id] = Number(event.target.value); else delete perDeviceLimits[row.device.id]; change({ perDeviceLimits });
             }} /></label>)}</div>
-            {number(copy.COMPACT_AT_PERCENT, draft.compactAtPercent, 50, 90, compactAtPercent => change({ compactAtPercent }))}
+            {number('Thread compaction at (%)', draft.compactAtPercent, 50, 90, compactAtPercent => change({ compactAtPercent }))}
+            {number('Coordinator session reset at (%)', draft.coordinatorHandoffAtPercent, 50, 90, coordinatorHandoffAtPercent => change({ coordinatorHandoffAtPercent }))}
             <label className="checkbox"><input type="checkbox" checked={draft.sessionCheckpoints.enabled} onChange={event => change({ sessionCheckpoints: { ...draft.sessionCheckpoints, enabled: event.target.checked } })} />{copy.CHECKPOINT_LARGE}</label>
             {number(copy.CHECKPOINT_MINIMUM, draft.sessionCheckpoints.checkpointMinTokens, 20000, 200000, checkpointMinTokens => change({ sessionCheckpoints: { ...draft.sessionCheckpoints, checkpointMinTokens } }))}
           </>)}

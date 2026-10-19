@@ -140,7 +140,7 @@ test('nested documents are strict too', () => {
 
 test('defaults match the brief and fill optional collections', () => {
   expect(settings).toEqual({ schema: 'project-work-settings-v5', projectId: 'project', revision: 0, delivery: 'land', landingChecks: [], smokeCheck: null, mergeCommitPaths: [], coordinator: { modelId: null, effort: 'medium' }, setupCommand: null, maxRunningThreads: 6, maxRunningPerDevice: 4, threadTurnCap: 30,
-    deploy: { mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }, healthChecks: [], status: 'active', startMode: 'start', maxNewThreadsPerDay: 100, placement: { allowedModelIds: null, minEffort: null, guidance: '' }, prAutoFix: { checks: true, conflicts: true, comments: true, maxRounds: 3 }, environment: { variables: [], secrets: [], copyFiles: [] }, notifications: 'standard', perDeviceLimits: {}, instructions: '', autoLand: false, riskyAreas: '', compactAtPercent: 70, sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 }, memory: { mode: 'hub', capture: true, dreamMode: 'apply' },
+    coordinatorHandoffAtPercent: 70, deploy: { mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }, healthChecks: [], status: 'active', startMode: 'start', maxNewThreadsPerDay: 100, placement: { allowedModelIds: null, minEffort: null, guidance: '' }, prAutoFix: { checks: true, conflicts: true, comments: true, maxRounds: 3 }, environment: { variables: [], secrets: [], copyFiles: [] }, notifications: 'standard', perDeviceLimits: {}, instructions: '', autoLand: false, riskyAreas: '', compactAtPercent: 70, sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 }, memory: { mode: 'hub', capture: true, dreamMode: 'apply' },
     nightlyWindow: { enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }, refill: { enabled: true, minIntervalMinutes: 30 } });
   expect(() => defaultProjectWorkSettings('../escape')).toThrow();
   expect(ThreadReportSchema.parse(without(report, 'changedFiles')).changedFiles).toEqual([]);
@@ -254,6 +254,7 @@ test('ledger envelopes are separate from conversation ledgers and payloads are v
     'coordinator-text': { schema: 'coordinator-text-v1', text: 'Started two threads.' },
     'coordinator-tool': { schema: 'coordinator-tool-v1', tool: 'jevellan_withdraw_question', ok: true, summary: 'Withdrew a question.', decisionId: 'pdec_1', reason: 'The thread solved it.' },
     'coordinator-turn-end': { schema: 'coordinator-turn-end-v1', turn: 1, status: 'dropped' },
+    'coordinator-handoff': { schema: 'coordinator-handoff-v1', id: 'handoff_a', projectId: 'project', deviceId: 'dev_a', turn: 1, at, date: '2026-10-03', sequence: 1, inFlight: 'Work continues.', pendingAsks: '', decisions: '', ownerMessages: [] },
     'coordinator-event': event,
     'thread-turn-start': { schema: 'thread-turn-v1', turn: 2, resumed: true, runtime: 'codex', modelId: 'fast', model: 'gpt-5', effort: 'low', accountId: 'acc_b' },
     'thread-turn-end': { schema: 'thread-turn-end-v1', turn: 2, status: 'steered' },

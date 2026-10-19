@@ -52,7 +52,7 @@ test('project and memory tools extend the closed enum while preserving the stret
     expect(tool.inputSchema).toMatchObject({ type: 'object', additionalProperties: false });
     expect(tool.description.length).toBeGreaterThan(20);
     // Agents in a project never read the conversation vocabulary.
-    expect(tool.description).not.toMatch(/conversation|stretch|handoff/i);
+    expect(tool.description).not.toMatch(tool.name === 'jevellan_handoff_write' ? /conversation|stretch/i : /conversation|stretch|handoff/i);
   }
   expect(tools.find((tool) => tool.name === 'jevellan_thread_report')!.inputSchema).toMatchObject({ required: ['status', 'summary'] });
   expect(Object.keys(tools.find((tool) => tool.name === 'jevellan_thread_report')!.inputSchema.properties as object)).toEqual(['status', 'summary', 'question', 'options', 'testsRun', 'changedFiles', 'ownerCommands']);
