@@ -1,0 +1,11 @@
+sandbox · coordinator crashed (opus-5.5 high, main) · 0 running · 0 landing · 0 queued · 0 waiting on you
+Budgets: main 41% of 90% · second 12% of 90%
+Night: next at 01:00
+Quiet hours: on, 23:00 to 08:00
+
+Waiting on you
+Nothing waiting on you.
+
+Finished in the last 12 hours
+T1 manual · Add parser fuzz tests · failed 09:40 (landing checks failed three times)
+J1 job: Review since last · passed 04:24 · 4 fix tasks queued

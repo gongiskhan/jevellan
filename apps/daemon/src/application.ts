@@ -5,6 +5,7 @@ import { ProjectLibraryService } from './library.js';
 import { HubNotifications, type PushSend } from './notifications.js';
 import { NotificationOwnerRequestSchema } from '@jevellan/core';
 import { EkoaMirrorService } from './ekoa-mirror.js';
+import { OwnerTools } from './owner-tools.js';
 import type { EkoaConnector } from './ekoa-client.js';
 import { collectDeviceFacts, EkoaRequestSchema, DeviceSettingsInputSchema, DeviceTagsInputSchema, type DeviceFacts } from '@jevellan/core';
 import { existsSync } from 'node:fs';
@@ -69,6 +70,9 @@ export class Application {
   readonly library: ProjectLibraryService;
   readonly notifications: HubNotifications | undefined;
   readonly cleanup: CleanupService; readonly projectWork: ProjectWork; readonly projectHub: ProjectHub;
+  /** The owner tools (bridge): only the state point serves them. */
+  #ownerTools: OwnerTools | undefined;
+  get ownerTools(): OwnerTools { if (!this.#hub) throw Object.assign(new Error('Jevellan tools run on the state point. Use them on the device that holds the hub.'), { status: 409 }); return this.#ownerTools ??= new OwnerTools(this); }
   readonly terminals: TerminalService;
   readonly projectVisibility: ProjectVisibility;
   readonly state: HubState | MemberState;

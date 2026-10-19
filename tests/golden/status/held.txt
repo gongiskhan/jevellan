@@ -1,0 +1,21 @@
+sandbox · coordinator idle (opus-5.5 high, main) · 3 running · 0 landing · 2 queued · 0 waiting on you
+Budgets: main 41% of 90% · second 12% of 90%
+Night: next at 01:00
+Quiet hours: on, 23:00 to 08:00
+
+Goals
+G1 Goal A: 1 running, 1 queued
+G2 Goal B: 1 running
+G3 Goal C: paused
+
+Waiting on you
+Nothing waiting on you.
+
+Running
+T1 Goal A · Harden parser tests · opus-5.5 high · main · held by you for 40 min
+J1 job: Full suite · dev-box · 8 min
+T2 Goal B · Compare extraction on twenty samples · gpt-6.1 high · codex · dev-box · 5 min
+
+Queued
+T3 Goal A · Review flaky browser test · next
+T4 manual · Bump the PDF library

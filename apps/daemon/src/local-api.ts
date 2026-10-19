@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { EmptySchema, ErrorDocumentSchema, HubUnavailable, IdSchema, ThreadAttachRequestSchema, ThreadDetachRequestSchema } from '@jevellan/core';
 import { JournalRebuildInputSchema, JournalRebuildReceiptSchema } from '@jevellan/core';
 import { ProjectSendRequestSchema, ProjectSendResultSchema } from '@jevellan/core';
+import { OwnerToolRequestSchema, StatusLineRequestSchema, StatusLineViewSchema } from '@jevellan/core';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { Application } from './application.js';
 import { diagnoseApplication, type LocalDiagnostics } from './diagnostics.js';
@@ -55,6 +56,18 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
       }
       if (!response.destroyed) json(response, ProjectSendResultSchema.parse({ schema: 'project-send-result-v1', projectId, turn: null, reply: null, at: new Date().toISOString() }));
       return;
+    }
+    const tool = path.match(/^\/api\/local\/tools\/([a-z_]{1,40})$/u);
+    if (tool) {
+      if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
+      const input = OwnerToolRequestSchema.parse(await requestBody(request));
+      release = app.lifecycle.enter({ kind: 'request' });
+      json(response, app.redactor.document(await app.ownerTools.call(tool[1]!, input))); return;
+    }
+    if (path === '/api/local/statusline') {
+      if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
+      const input = StatusLineRequestSchema.parse(await requestBody(request));
+      json(response, StatusLineViewSchema.parse({ schema: 'status-line-view-v1', text: await app.ownerTools.statusLine(input) })); return;
     }
     if (path === '/api/local/health') {
       if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
