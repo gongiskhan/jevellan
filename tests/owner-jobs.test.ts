@@ -67,3 +67,26 @@ test('interval jobs are due only inside their hours and after their interval', a
   now = at('23:30'); expect(schedules.due(interval, null, 'Europe/Lisbon')).toBe(false);
   expect(schedules.nextInterval(interval, null, 'Europe/Lisbon')).toMatch(/ 08:00$/u);
 });
+
+test('the deploy switch approves through the owner path in nightly mode, holds database changes, and pauses after a failed automatic deploy', async () => {
+  const at = Date.parse('2026-10-20T05:00:00.000Z'); let now = at;
+  const store = new (await import('./helpers/owner-fixtures.js')).MemoryStore();
+  const answers: unknown[] = []; const pushes: string[] = []; let database = false; let paused = false;
+  const record = { id: 'deploy_1', state: 'open', commit: 'c'.repeat(40), suite: { commit: 'c'.repeat(40), conclusion: 'passed' }, threads: [{ threadId: 'thread_1', title: 'Fix', landingCommit: 'c'.repeat(40) }] };
+  const decision = { id: 'decision_1', revision: 3, deploy: { deployId: 'deploy_1', action: 'approve' }, options: [{ label: 'Deploy ccccccc' }, { label: 'Not now' }] };
+  let mode = 'approve';
+  const app = { hub: store, projectWork: {
+      view: async () => ({ settings: { deploy: { mode }, nightlyWindow: { timezone: 'Europe/Lisbon' } }, decisions: { open: [decision] }, threads: [{ id: 'thread_1', landing: { at: new Date(at - 3600_000).toISOString() } }] }),
+      deploys: { view: async () => ({ records: [record] }), changesDatabase: async () => database },
+      answerDecision: async (...args: unknown[]) => { answers.push(args); }, daily: { view: async () => ({ jobs: [], runs: [], tasks: [] }) } },
+    ownerTools: { projects: async () => [{ id: 'project', name: 'sandbox' }], projectSettings: () => ({ deploy: { paused, debounceMinutes: 10 } }), updateProjectSettings: () => { paused = true; }, ids: { one: () => 'W1' } },
+    ownerPushes: { add: (push: { text: string }) => { pushes.push(push.text); } }, ownerEvents: { publish: () => undefined } };
+  const schedules = new OwnerSchedules(app as never, () => now);
+  await schedules.autoDeploy(); expect(answers).toEqual([]);
+  mode = 'nightly'; database = true; await schedules.autoDeploy();
+  expect(answers).toEqual([]); expect(pushes).toEqual(['Deploy ccccccc is ready, but it changes the database, so it waits for your approval.']);
+  database = false; await schedules.autoDeploy();
+  expect(answers).toMatchObject([['project', 'decision_1', { schema: 'decision-answer-request-v1', expectedRevision: 3, optionLabel: 'Deploy ccccccc' }]]);
+  record.state = 'failed'; now += 60_000; await schedules.autoDeploy();
+  expect(paused).toBe(true); expect(pushes.at(-1)).toBe('Deploy ccccccc failed. Automatic deploys are paused until you resume them.');
+});

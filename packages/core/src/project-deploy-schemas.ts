@@ -3,7 +3,7 @@ import { IdSchema, TimestampSchema } from './schemas.js';
 import { ProjectHealthChecksSchema, ProjectHealthRunSchema } from './project-health-schemas.js';
 import { ProjectRelativePathSchema } from './project-parity-schemas.js';
 const commit = z.string().regex(/^[a-f0-9]{40}$/u), revision = z.number().int().nonnegative();
-export const ProjectDeploySettingsSchema = z.strictObject({ mode: z.enum(['approve', 'automatic']).default('approve'), jobId: IdSchema.nullable().default(null), desktopJobId: IdSchema.nullable().default(null), suiteJobId: IdSchema.nullable().default(null) });
+export const ProjectDeploySettingsSchema = z.strictObject({ mode: z.enum(['approve', 'nightly', 'automatic']).default('approve'), jobId: IdSchema.nullable().default(null), desktopJobId: IdSchema.nullable().default(null), suiteJobId: IdSchema.nullable().default(null) });
 export const DeploymentJobSchema = z.strictObject({ deployId: IdSchema, commandCommit: commit.optional(), mode: z.enum(['deploy', 'rollback', 'desktop']), commit, previousCommit: commit.nullable() });
 export type DeploymentJob = z.infer<typeof DeploymentJobSchema>;
 export const ProjectDeployJobResultSchema = z.strictObject({ schema: z.literal('project-deploy-job-result-v1'), mode: z.enum(['preflight', 'deploy', 'rollback', 'desktop']), commit,

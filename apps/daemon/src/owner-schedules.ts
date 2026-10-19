@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { IdSchema, TimestampSchema, newId, ownerClock, ownerLocal, type ProjectJob } from '@jevellan/core';
 import type { Application } from './application.js';
 
-const ALIVE = 'owner-alive', MISSED = 'owner-missed-nights';
+const ALIVE = 'owner-alive', MISSED = 'owner-missed-nights', AUTO = 'owner-auto-deploys';
+// state point hub namespace owner-auto-deploys, key deployId: deploys the switch approved, watched until they conclude
+const AutoDeploySchema = z.strictObject({ schema: z.literal('owner-auto-deploy-v1'), projectId: IdSchema, deployId: IdSchema, mode: z.enum(['nightly', 'automatic']), at: TimestampSchema, handled: z.boolean() });
 const AliveSchema = z.strictObject({ schema: z.literal('owner-alive-v1'), at: TimestampSchema, startedAt: TimestampSchema });
 // state point hub namespace owner-missed-nights, key `${projectId}_${date}`
 export const MissedNightSchema = z.strictObject({ schema: z.literal('owner-missed-night-v1'), projectId: IdSchema, date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u), items: z.array(z.string().max(120)).max(50),
@@ -32,8 +34,47 @@ export class OwnerSchedules {
   async tick(): Promise<void> {
     this.#alive();
     await this.intervals();
+    await this.autoDeploy().catch(() => undefined);
     await this.heartbeat();
   }
+
+  /**
+   * The deploy switch (bridge specification, "Deploy switch"): in nightly mode the open deploy message is approved once the night's full
+   * suite passed on its pinned commit; in automatic mode also `debounceMinutes` after the last landing (at most 30 minutes after the first).
+   * Approval goes through the owner's own answer path, so health checks, rollback and the database exception apply unchanged. A deploy
+   * that changes the database waits for the owner; an automatic deploy that fails or is rolled back pauses deploys.
+   */
+  async autoDeploy(): Promise<void> {
+    for (const project of await this.app.ownerTools.projects()) {
+      const view = await this.app.projectWork.view(project.id).catch(() => null); if (!view) continue;
+      const owner = this.app.ownerTools.projectSettings(project.id); const records = (await this.app.projectWork.deploys.view(project.id)).records;
+      for (const auto of this.app.hub.list(AUTO, AutoDeploySchema).map(row => row.document).filter(row => row.projectId === project.id && !row.handled)) {
+        const record = records.find(row => row.id === auto.deployId); if (!record) continue;
+        if (record.state === 'failed' || record.rollback) {
+          this.app.ownerTools.updateProjectSettings(project.id, current => ({ ...current, deploy: { ...current.deploy, paused: true } }));
+          this.app.ownerPushes.add({ projectId: project.id, kind: 'deploy', key: `auto-paused:${record.id}`, urgent: true, text: `Deploy ${record.commit.slice(0, 7)} ${record.rollback ? 'was rolled back' : 'failed'}. Automatic deploys are paused until you resume them.` });
+          this.#auto({ ...auto, handled: true });
+        } else if (record.state === 'deployed') this.#auto({ ...auto, handled: true });
+      }
+      const mode = view.settings.deploy.mode; if (mode === 'approve' || owner.deploy.paused) continue;
+      const decision = view.decisions.open.find(row => row.deploy?.action === 'approve'); if (!decision) continue;
+      const record = records.find(row => row.id === decision.deploy!.deployId); if (!record || record.state !== 'open') continue;
+      const suitePassed = record.suite.conclusion === 'passed' && record.suite.commit === record.commit;
+      const landings = record.threads.flatMap(thread => { const row = view.threads.find(entry => entry.id === thread.threadId); return row?.landing ? [Date.parse(row.landing.at)] : []; });
+      const settled = landings.length > 0 && (this.now() - Math.max(...landings) >= owner.deploy.debounceMinutes * 60_000 || this.now() - Math.min(...landings) >= 30 * 60_000);
+      if (!(suitePassed || (mode === 'automatic' && settled))) continue;
+      if (await this.app.projectWork.deploys.changesDatabase(project.id, record.id)) {
+        this.app.ownerPushes.add({ projectId: project.id, kind: 'deploy', key: `database:${record.id}:${record.commit}`, ref: this.app.ownerTools.ids.one(project.id, 'W', decision.id),
+          text: `Deploy ${record.commit.slice(0, 7)} is ready, but it changes the database, so it waits for your approval.` });
+        continue;
+      }
+      const option = decision.options.find(entry => entry.label.startsWith('Deploy ')); if (!option) continue;
+      await this.app.projectWork.answerDecision(project.id, decision.id, { schema: 'decision-answer-request-v1', clientRequestId: `auto_${record.id}`.slice(0, 128), expectedRevision: decision.revision, optionLabel: option.label });
+      this.#auto({ schema: 'owner-auto-deploy-v1', projectId: project.id, deployId: record.id, mode, at: new Date(this.now()).toISOString(), handled: false });
+      this.app.ownerEvents.publish({ projectId: project.id, source: 'jevellan', kind: 'state', text: `${mode} deploy of ${record.commit.slice(0, 7)} approved by the deploy switch` });
+    }
+  }
+  #auto(row: z.infer<typeof AutoDeploySchema>): void { const stored = this.app.hub.get(AUTO, row.deployId, AutoDeploySchema); this.app.hub.put(AUTO, row.deployId, AutoDeploySchema, row, stored?.revision ?? 0); }
 
   /** Interval command jobs: due when inside their local hours and no run of theirs started within the interval. */
   async intervals(): Promise<void> {

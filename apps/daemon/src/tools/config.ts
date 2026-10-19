@@ -46,6 +46,28 @@ const SETTERS: Record<string, Setter> = {
     const old = tools.projectSettings(project.id).bridge.account; tools.updateProjectSettings(project.id, settings => ({ ...settings, bridge: { ...settings.bridge, account: label } }));
     return { old, new: label, consequence: 'Restart the bridge to use it: jevellan bridge --restart.' };
   },
+  'deploy.mode': async ({ app, project }, _key, value) => {
+    const mode = String(value); if (!['approve', 'nightly', 'automatic'].includes(mode)) throw new OwnerRefusal('deploy.mode must be approve, nightly or automatic.', 'invalid_value');
+    const view = await app.projectWork.settingsView(project.id); const old = view.settings.deploy.mode;
+    await app.projectWork.putSettings(project.id, { schema: 'project-work-settings-request-v1', revision: view.settings.revision, settings: { ...withoutIdentity(view.settings), deploy: { ...view.settings.deploy, mode: mode as 'approve' } } } as never);
+    const consequence = mode === 'nightly' ? 'From tonight, production deploys run after the night\'s full suite passes.' : mode === 'automatic' ? 'Production deploys now run after the night\'s full suite passes and after each landing settles.' : 'Production deploys wait for your approval again.';
+    return { old, new: mode, consequence: `${consequence} Deploys that change the database still wait for your approval.` };
+  },
+  'deploy.debounceMinutes': async ({ tools, project }, _key, value) => {
+    const minutes = Number(value); if (!Number.isInteger(minutes) || minutes < 1 || minutes > 30) throw new OwnerRefusal('deploy.debounceMinutes must be a whole number from 1 to 30.', 'invalid_value');
+    const old = tools.projectSettings(project.id).deploy.debounceMinutes; tools.updateProjectSettings(project.id, settings => ({ ...settings, deploy: { ...settings.deploy, debounceMinutes: minutes } }));
+    return { old: String(old), new: String(minutes) };
+  },
+  'night.catchUpHours': async ({ tools, project }, _key, value) => {
+    const hours = Number(value); if (!Number.isInteger(hours) || hours < 0 || hours > 12) throw new OwnerRefusal('night.catchUpHours must be a whole number from 0 to 12.', 'invalid_value');
+    const old = tools.projectSettings(project.id).night.catchUpHours; tools.updateProjectSettings(project.id, settings => ({ ...settings, night: { ...settings.night, catchUpHours: hours } }));
+    return { old: String(old), new: String(hours) };
+  },
+  'heartbeat.url': async ({ tools }, _key, value) => {
+    const url = String(value); if (url && url !== 'none' && !/^https:\/\/\S+$/u.test(url)) throw new OwnerRefusal('heartbeat.url must be an https address, or none.', 'invalid_value');
+    const old = tools.installationSettings().heartbeat.url; tools.updateInstallationSettings(settings => ({ ...settings, heartbeat: { ...settings.heartbeat, url: url && url !== 'none' ? url : null } }));
+    return { old: old ? 'set' : 'none', new: url && url !== 'none' ? 'set' : 'none', consequence: url && url !== 'none' ? `The state point calls it every ${tools.installationSettings().heartbeat.intervalMinutes} minutes.` : 'No heartbeat is sent.' };
+  },
   'deploy.paused': async ({ tools, project }, _key, value) => {
     const paused = value === true || value === 'true' || value === 'yes'; if (!paused && !(value === false || value === 'false' || value === 'no')) throw new OwnerRefusal('deploy.paused must be true or false.', 'invalid_value');
     const old = tools.projectSettings(project.id).deploy.paused; tools.updateProjectSettings(project.id, settings => ({ ...settings, deploy: { ...settings.deploy, paused } }));
@@ -76,3 +98,5 @@ export const config: OwnerHandler = async (context) => {
   throw new OwnerRefusal(`config ${context.action} is not available in this version yet.`, 'not_available', 501);
 };
 export { SETTERS as CONFIG_SETTERS };
+
+const withoutIdentity = <T extends { schema?: unknown; projectId?: unknown; revision?: unknown }>(value: T) => { const { schema: _s, projectId: _p, revision: _r, ...rest } = value; void _s; void _p; void _r; return rest; };

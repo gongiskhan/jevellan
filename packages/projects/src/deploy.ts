@@ -37,6 +37,14 @@ export class ProjectDeployService {
     await this.#writer(id); return (await this.o.hub.putDeployBaseline(ProjectDeployBaselineSchema.parse({ ...raw, schema: 'project-deploy-baseline-v1', id, projectId: id, revision, updatedAt: this.#at() }), revision)).document;
   }
   async #save(row: ProjectDeploy): Promise<ProjectDeploy> { return (await this.o.hub.putDeploy(ProjectDeploySchema.parse(this.o.redactor.document({ ...row, updatedAt: this.#at() })), row.revision)).document; }
+  /** Whether deploying this record would change the database (the rollback exception's detection), for the deploy switch (bridge). */
+  async changesDatabase(id: string, deployId: string): Promise<boolean> {
+    const rows = await this.records(id); const row = rows.find(item => item.id === deployId); if (!row) return false;
+    const baseline = (await this.o.hub.deployBaseline(id))?.document ?? null; const current = this.#current(rows, baseline);
+    if (!current.commit || current.commit === row.commit) return false;
+    const paths = await this.o.diff(id, current.commit, row.commit);
+    return paths.some(path => baseline?.migrationPaths.some(prefix => path === prefix || path.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`)) ?? false);
+  }
   #current(rows: ProjectDeploy[], baseline: ProjectDeployBaseline | null): { commit: string | null; rollbackAvailable: boolean } {
     const events = rows.flatMap(row => [
       ...(row.deployedAt ? [{ at: row.deployedAt, commit: row.releaseUncertain ? null : row.commit, rollbackAvailable: !row.releaseUncertain }] : []),
