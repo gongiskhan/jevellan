@@ -17,7 +17,7 @@ export async function callCommand(args: string[], homes = new Homes()): Promise<
   const [name, ...rest] = args; const tool = name ? ownerTool(name) : undefined;
   if (!tool) { console.error(`Usage: jevellan call <tool> [action] [--key value ...]. Tools: ${OWNER_TOOLS.map(entry => entry.name).join(', ')}.`); return 1; }
   const input: Record<string, unknown> = {}; let index = 0;
-  if (rest[0] && !rest[0].startsWith('--')) { if (tool.name === 'ask_coordinator') input.mode = rest[0]; else input.action = rest[0]; index = 1; }
+  if (rest[0] && !rest[0].startsWith('--') && (!tool.single || tool.name === 'ask_coordinator')) { if (tool.name === 'ask_coordinator') input.mode = rest[0]; else input.action = rest[0]; index = 1; }
   const positional: string[] = [];
   for (; index < rest.length; index++) {
     const item = rest[index]!;
@@ -90,7 +90,7 @@ function statuslineInstall(args: string[], homes: Homes): number {
   const command = installedCommand(homes).map(quote).join(' ');
   const existing = (settings.statusLine as { command?: unknown } | undefined)?.command;
   const mine = typeof existing === 'string' && existing.includes(' statusline');
-  const statusLine = { type: 'command', command: `${command} statusline${typeof existing === 'string' && !mine ? ` --wrap ${quote(existing)}` : ''}` };
+  const statusLine = mine ? settings.statusLine : { type: 'command', command: `${command} statusline${typeof existing === 'string' ? ` --wrap ${quote(existing)}` : ''}` };
   mkdirSync(dir, { recursive: true }); writeFileSync(path, `${JSON.stringify({ ...settings, statusLine }, null, 2)}\n`);
   console.log(`Installed the Jevellan status line for Claude Code (${dir})${typeof existing === 'string' && !mine ? ', after your existing status line' : ''}.`);
   return 0;

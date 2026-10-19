@@ -64,7 +64,7 @@ export class OwnerTools {
     if (!action) return fail('unknown_action', `${tool.name} takes ${tool.actions.map(entry => entry.name).join(', ')}.`);
     const { action: _ignored, ...rest } = args; void _ignored;
     const parsed = action.input.safeParse(rest);
-    if (!parsed.success) return fail('invalid_arguments', invalidArguments(tool, action.name, parsed.error));
+    if (!parsed.success) return fail('invalid_arguments', invalidArguments(tool, tool.single ? '' : action.name, parsed.error));
     try {
       await this.app.projectWork.ready;
       const project = await this.resolveProject(request, (parsed.data as { project?: unknown }).project); projectId = project.id;
@@ -174,6 +174,7 @@ export class OwnerTools {
 function invalidArguments(tool: OwnerToolDefinition, action: string, error: z.ZodError): string {
   const issue = error.issues[0];
   const field = issue?.path.join('.') || 'arguments';
-  if (issue?.code === 'unrecognized_keys') return `${tool.name} ${action} does not take ${issue.keys.join(', ')}.`;
-  return `${tool.name} ${action}: ${field} ${issue?.code === 'invalid_type' && issue.input === undefined ? 'is required' : `is not valid (${issue?.message ?? 'check it'})`}.`;
+  const name = action ? `${tool.name} ${action}` : tool.name;
+  if (issue?.code === 'unrecognized_keys') return `${name} does not take ${issue.keys.join(', ')}.`;
+  return `${name}: ${field} ${issue?.code === 'invalid_type' && issue.input === undefined ? 'is required' : `is not valid (${issue?.message ?? 'check it'})`}.`;
 }
