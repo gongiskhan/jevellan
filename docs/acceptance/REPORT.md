@@ -2419,3 +2419,8 @@ This is not a0.5.0 release. No installation, real sandbox journey or owner's acc
 ## Release 0.5.1 installation resume, 19 October 2026
 
 Live: the owner authorized clearing the stale coordinator maintenance hold. After fresh process/activity checks, the named Madrid service stopped normally, both machines received fresh cold backups, and the verified published archives installed through the normal updater, Madrid first. Both devices now report healthy and Online on 0.5.1; doctor is 10/10 on each, account checks are refreshed, vault synchronization completed and the Devices UI check passes. Rollback to 0.5.0 remains. No product source, project settings or production changed. Prior live journeys and cleanups remain not run. See release-051-2026-10/HANDOFF.md.
+
+
+## Without GitHub run: P0
+
+Live orientation and private continuity snapshot completed. Both active devices are Online on 0.5.1. No implementation or live project settings changed. Required references were read; private source-location provenance and refused branch-protection read are preserved in `snapshot.md`. The run follows the separate clocks and does not reopen the old release run. See [run log](without-github-2026-10/README.md). Routine choices will be recorded there. Tests not run for this documentation-only phase.

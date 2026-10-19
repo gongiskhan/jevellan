@@ -928,5 +928,65 @@
     "title": "Publish and install 0.5.1, live journeys, two cleanups",
     "why": "Published 0.5.1 at c083ec8d and installed both verified archives after the owner authorized clearing the stale lifecycle gate. Live: fresh cold backups, normal updates, both devices Online and healthy on 0.5.1, doctor 10/10 each, vault synced, no open classifications, Devices UI passed at 2026-10-19T13:18:28.681Z. Product source unchanged. The earlier live journeys and two cleanups remain not run; the subsequent without-GitHub run has its own acceptance. See docs/acceptance/release-051-2026-10/HANDOFF.md.",
     "status": "in-progress"
+  },
+  {
+    "id": "wg-health",
+    "title": "Health checks after deploys",
+    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
+    "status": "planned"
+  },
+  {
+    "id": "wg-secrets",
+    "title": "Vault environment and device job placement",
+    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
+    "status": "planned"
+  },
+  {
+    "id": "wg-nights",
+    "title": "Command jobs and nightly routines",
+    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
+    "status": "planned"
+  },
+  {
+    "id": "wg-landing",
+    "title": "Threads land on main",
+    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
+    "status": "planned"
+  },
+  {
+    "id": "wg-deploy",
+    "title": "Pinned deploy approval and rollback",
+    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
+    "status": "planned"
+  },
+  {
+    "id": "wg-handoff",
+    "title": "Coordinator handoff and fresh sessions",
+    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
+    "status": "planned"
+  },
+  {
+    "id": "wg-cleanup",
+    "title": "Cleanup settings",
+    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
+    "status": "planned"
+  },
+  {
+    "id": "wg-removals",
+    "title": "Worktree-only threads and global limits",
+    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
+    "status": "planned"
+  },
+  {
+    "id": "wg-owner-reach",
+    "title": "Owner commands, quiet hours and OAuth",
+    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
+    "status": "planned"
+  },
+  {
+    "id": "wg-release",
+    "title": "Release, installation and live checks",
+    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
+    "status": "planned"
   }
 ]
