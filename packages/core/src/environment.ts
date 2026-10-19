@@ -1,7 +1,8 @@
-import { EnvNameSchema } from './project-parity-schemas.js';
+import { EnvNameSchema, ProjectEnvNameSchema } from './project-parity-schemas.js';
 
-export function projectEnvironment(values: Record<string, string> = {}): Record<string, string> {
-  return Object.fromEntries(Object.entries(values).map(([name, value]) => [EnvNameSchema.parse(name), value]));
+export function projectEnvironment(values: Record<string, string> = {}, scope: 'runtime' | 'command' = 'runtime'): Record<string, string> {
+  const entries = Object.entries(values).map(([name, value]) => [ProjectEnvNameSchema.parse(name), value] as const);
+  return Object.fromEntries(scope === 'command' ? entries : entries.filter(([name]) => EnvNameSchema.safeParse(name).success));
 }
 
 const BASE = ['PATH', 'HOME', 'USER', 'LANG', 'TERM', 'SHELL', 'TMPDIR'] as const;

@@ -1,7 +1,8 @@
+import { ProjectEnvImportRequestSchema } from '@jevellan/core';
 import { healthRefusal } from '@jevellan/core';
 import { handleLibrary } from './library-api.js';
 import { handleNotificationsApi } from './notifications-api.js';
-import { EnvNameSchema, ProjectEnvSecretSummarySchema } from '@jevellan/core';
+import { ProjectEnvNameSchema, ProjectEnvSecretSummarySchema } from '@jevellan/core';
 import { EkoaSettingsInputSchema, EmptySchema as EkoaEmptySchema } from '@jevellan/core';
 import { handleSessionListApi } from './session-list-api.js';
 import { handleGitApi } from './git-api.js';
@@ -241,9 +242,14 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       send(await app.state.jev.summary());
       return;
     }
+    const environmentImport = /^\/api\/projects\/([A-Za-z0-9_-]+)\/env-secrets\/([A-Z_][A-Z0-9_]{0,63})\/import$/u.exec(path);
+    if (environmentImport && method === 'POST') {
+      const input = ProjectEnvImportRequestSchema.parse(await body(request));
+      send(await app.state.environment.copy(IdSchema.parse(environmentImport[1]), ProjectEnvNameSchema.parse(environmentImport[2]), input.source)); return;
+    }
     const environmentSecret = /^\/api\/projects\/([A-Za-z0-9_-]+)\/env-secrets\/([A-Z_][A-Z0-9_]{0,63})$/u.exec(path);
     if (environmentSecret) {
-      const projectId = IdSchema.parse(environmentSecret[1]), name = EnvNameSchema.parse(environmentSecret[2]); retryable = true;
+      const projectId = IdSchema.parse(environmentSecret[1]), name = ProjectEnvNameSchema.parse(environmentSecret[2]); retryable = true;
       if (method === 'GET') { send(ProjectEnvSecretSummarySchema.parse(await app.state.environment.summary(projectId, name))); return; }
       if (method === 'PUT') { const input = SecretInputSchema.parse(await body(request)); send(ProjectEnvSecretSummarySchema.parse(await app.state.environment.put(projectId, name, input.value))); return; }
       if (method === 'DELETE') { EmptySchema.parse(await body(request)); send(ProjectEnvSecretSummarySchema.parse(await app.state.environment.remove(projectId, name))); return; }

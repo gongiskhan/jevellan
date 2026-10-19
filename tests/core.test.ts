@@ -196,6 +196,7 @@ test('requested menu labels use only discovered identifiers and efforts without 
 test('project environment is explicit and cannot override runtime or internal variables', () => {
   expect(minimalEnvironment('claude', '/isolated', {}, {}, { PATH: '/bin', LEAK: 'native' }, { SANDBOX_DATA_DIR: '/data', TZ: 'UTC' })).toMatchObject({ HOME: '/isolated', SANDBOX_DATA_DIR: '/data', TZ: 'UTC' });
   expect(minimalEnvironment('claude', '/isolated', {}, {}, { LEAK: 'native' })).not.toHaveProperty('LEAK');
-  for (const name of ['HOME', 'PATH', 'CLAUDE_CONFIG_DIR', 'GIT_CONFIG_COUNT', 'OPENAI_API_KEY'])
+  for (const name of ['HOME', 'PATH', 'CLAUDE_CONFIG_DIR', 'GIT_CONFIG_COUNT'])
     expect(() => minimalEnvironment('claude', '/isolated', {}, {}, {}, { [name]: 'bad' })).toThrow('reserved');
+  expect(minimalEnvironment('claude', '/isolated', {}, {}, {}, { OPENAI_API_KEY: 'job-only' })).not.toHaveProperty('OPENAI_API_KEY');
 });

@@ -29,3 +29,19 @@ Simulated: **145 backend checks in five files passed**, including settings migra
 Simulated browser journeys: **four passed**, desktop 1440×900 and phone 390×844, light and dark. Live vision: **eight checks passed**, using `tests/e2e/vision.ts` and its documented dedicated credential. Evidence is private in `p1-vision` and `p1-browser.log`.
 
 Live: **the ERP check passed**. Discovery and coverage are in private `erp.md`; the definition and CLI result are `erp-check.json` and `erp-check-result.json`. The active project's settings are unchanged; application is reserved for the release switch. Production was not deployed, restarted or modified.
+
+## P2 project environment and command placement
+
+Command jobs now declare device tags and checkout or retained workspace execution. Code selects an eligible online work device by resources and active work, reserves the project and device at the hub, and relays only the receipt reference. The executing device fetches its environment from the encrypted vault. Waiting runs retry on sweeps and skip at the nightly deadline or after six hours outside a window. Receipts identify the executing device; remote execution survives coordinator placement changes.
+
+Choices: retained workspaces remain isolated git worktrees until cleanup; per-project job caches live in the installation home. Commands receive pinned-run metadata. Provider credential names are accepted for command jobs and filtered from managed runtime environments so they cannot replace account authentication. Environment configuration allows 200 variables and 100 secret names to accommodate the complete inventory. Vault-to-vault imports return only a saved summary.
+
+Live inventory and value-source receipts are private in `inventory.json`, `secrets.md`, `production-read.json` and `vault-stage.json`. The single authorized read-only production environment read is complete. Missing values remain not set. Exact secret-name promotion and the remaining configuration wait for the release switch because the installed release predates the new schema.
+
+Live staging repair: nonsecret configuration was initially staged as vault credentials, causing the installed release's redactor to over-redact API responses. The values were moved into project variables through revision-checked APIs and their staging entries removed. Genuine credentials remain encrypted. Fresh cold backups preceded normal restarts of the two named Jevellan services with no active turns. Existing threads were retained; no production service changed. Private `staging-incident.md` records the repair and device checks.
+
+The required project task for nightly script entrypoints was created through Jevellan. Its result is recorded privately; this session does not edit or push that project's checkout.
+
+Simulated: **75 backend checks in five files passed**. They cover local and member execution, project/device admission, guards, waiting and expiry, paused projects, retained workspaces, inventory parsing and summary-only credential copying. Typecheck and lint passed. The self-admission, paused-project and credential-name defects each had a failing regression before correction. No screen changed in this phase; the job editor follows in P3. Release and live clocks remain unstarted.
+
+Live repair verification: doctor returned **10/10 on both devices**, each still on 0.5.1. Normal account checks succeeded; the first refresh helper used the wrong empty-request schema and was corrected. Private doctor receipts are `staging-doctor-madrid.txt` and `staging-doctor-pro.txt`.

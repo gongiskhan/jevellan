@@ -59,3 +59,6 @@ export * from './usage.js';
 export * from './notifications.js';
 
 export * from './health.js';
+
+export * from './job-placement.js';
+export * from './environment-inventory.js';

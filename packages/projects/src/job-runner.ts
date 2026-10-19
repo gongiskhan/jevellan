@@ -1,3 +1,5 @@
+import { placeCommandJob } from './job-placement.js';
+import type { DeviceView, ThreadIndex } from '@jevellan/core';
 import { existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { deviceAllowsWork, parseGitHubRemote, ProjectJobRunSchema, resolveProjectPath, WorkflowHandoffStateSchema, type WorkflowHandoffState, type CoordinatorEvent, type Homes, type Project, type ProjectHub, type ProjectJob, type ProjectJobRun, type ProjectWorkTask, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
@@ -19,6 +21,7 @@ export class ProjectJobRunner {
   readonly #starting = new Set<string>();
   #closed = false;
   constructor(readonly o: { projectEnvironment?(projectId: string): Promise<Record<string, string>>; homes: Homes; hub: ProjectHub; tasks: ProjectTasks; git: ThreadGit; github: GitHubAccess; deviceId: string; deviceName: string; redactor: SecretRedactor;
+    roster?(): Promise<{ devices: DeviceView[] }>; relay?(projectId: string, deviceId: string, runId: string): Promise<void>;
     now(): number; settings(projectId: string): Promise<ProjectWorkSettings>; project(projectId: string): Promise<Project>; baseBranch(repo: string): Promise<string>; event(projectId: string, event: CoordinatorEvent): Promise<void>;
     windowOpened(projectId: string): Promise<string | undefined>; day(projectId: string): Promise<string>; dayStart(projectId: string, day: string): Promise<number>; changed(): void; facts?(): DeviceFacts }) {}
   runningIds(): string[] { return [...this.#running.values()].map(row => row.id); }
@@ -90,7 +93,7 @@ export class ProjectJobRunner {
   }
   async #sync(run: ProjectJobRun): Promise<void> {
     if (!run.conclusion) return;
-    await this.o.tasks.exclusive(run.projectId, async () => {
+    if ((await this.o.hub.coordinator(run.projectId))?.document.deviceId === this.o.deviceId) await this.o.tasks.exclusive(run.projectId, async () => {
       const task = await this.o.tasks.read(run.projectId, run.taskId);
       if (!['done', 'failed', 'cancelled'].includes(task.state)) await this.o.tasks.save({ ...task, jobRunId: run.id, state: run.conclusion === 'passed' ? 'done' : run.conclusion === 'cancelled' ? 'cancelled' : 'failed', endedAt: run.endedAt!, endNote: run.summary.slice(0, 400) });
     });
@@ -105,9 +108,6 @@ export class ProjectJobRunner {
     try { await this.#start(task); } finally { this.#starting.delete(task.projectId); }
   }
   async #start(task: ProjectWorkTask): Promise<void> {
-    if (!deviceAllowsWork(this.o.homes)) throw Object.assign(new Error('This device serves apps only; project work runs on a working device.'), { status: 409 });
-    const resource = deviceResourceRefusal(this.o.deviceName, this.o.facts?.() ?? collectDeviceFacts(this.o.homes));
-    if (resource) throw Object.assign(new Error(resource), { status: 409, resourceRefusal: true });
     const job = task.jobId ? (await this.o.hub.job(task.jobId))?.document : null;
     if (!job || job.projectId !== task.projectId || !job.enabled) throw Object.assign(new Error('This job is unavailable or disabled.'), { status: 409 });
     const id = derivedId('jrun', task.id); let run = (await this.o.hub.jobRun(id))?.document;
@@ -125,7 +125,7 @@ export class ProjectJobRunner {
       const at = new Date(this.o.now()).toISOString();
       run = await this.#save(ProjectJobRunSchema.parse({ schema: 'project-job-run-v1', id, projectId: task.projectId, revision: 0, jobId: job.id, taskId: task.id,
         commit: gate?.commit ?? base, deviceId: this.o.deviceId, projectDay: day, startedAt: at, conclusion: null, summary: '', logTail: '', spec, baseBranch,
-        phase: 'reserved', setupCommand: (await this.o.settings(task.projectId)).setupCommand, ...(gate ? { gateRunId: gate.id } : {}), ...(handoff ? { workflowHandoff: handoff } : {}), ...(scheduler ? { workflowScheduler: scheduler } : {}), ...(task.nightlyWindowId ? { nightlyWindowId: task.nightlyWindowId } : {}), watchAfter: await this.o.windowOpened(task.projectId) ?? new Date(await this.o.dayStart(task.projectId, day)).toISOString() }));
+        phase: spec.kind === 'command' ? 'waiting' : 'reserved', requestedByDeviceId: this.o.deviceId, waitingUntil: new Date(window ? Date.parse(window.openedAt) + 7 * 3600000 : this.o.now() + 6 * 3600000).toISOString(), setupCommand: (await this.o.settings(task.projectId)).setupCommand, ...(gate ? { gateRunId: gate.id } : {}), ...(handoff ? { workflowHandoff: handoff } : {}), ...(scheduler ? { workflowScheduler: scheduler } : {}), ...(task.nightlyWindowId ? { nightlyWindowId: task.nightlyWindowId } : {}), watchAfter: await this.o.windowOpened(task.projectId) ?? new Date(await this.o.dayStart(task.projectId, day)).toISOString() }));
       if (job.run.kind === 'github-workflow' || gateRequired && !gate) await this.o.git.run(repo, ['update-ref', '-d', privateRef]);
       if (handoff?.state === 'blocked') { this.#launch(run, async () => this.#finish(run!, 'failed', `Workflow handoff blocked: ${handoff.reason ?? 'Cannot read the pull request.'}`)); return; }
       if (gateRequired && !gate) {
@@ -134,8 +134,53 @@ export class ProjectJobRunner {
         this.#launch(run, async () => this.#finish(run!, 'skipped', `Skipped: ${gateName} has not passed today.`)); return;
       }
     }
+    if (run.conclusion) return;
+    if (run.spec.kind === 'command') return this.#place(run, job, task);
     await this.o.tasks.save({ ...task, state: 'active', jobRunId: id, dispatchedAt: task.dispatchedAt ?? new Date(this.o.now()).toISOString() });
     const saved = run; this.#launch(saved, controller => this.#execute(saved, job, controller.signal));
+  }
+  async #place(run: ProjectJobRun, job: ProjectJob, task: ProjectWorkTask): Promise<void> {
+    if (run.spec.kind !== 'command') return;
+    if (run.phase !== 'waiting') {
+      if (run.deviceId === this.o.deviceId) await this.accept(run.id);
+      else await this.o.relay?.(run.projectId, run.deviceId, run.id);
+      return;
+    }
+    const window = run.nightlyWindowId ? (await this.o.hub.window(run.nightlyWindowId))?.document : null;
+    if (run.waitingUntil && this.o.now() >= Date.parse(run.waitingUntil) || window?.state === 'finished') {
+      this.#launch(run, () => this.#finish(run, 'skipped', run.nightlyWindowId ? 'No device was available before the night window ended.' : 'No device was available within 6 hours.')); return;
+    }
+    if ((await this.o.settings(run.projectId)).status !== 'active') return;
+    const project = await this.o.project(run.projectId), threads: ThreadIndex[] = []; let after: string | undefined;
+    do { const page = await this.o.hub.threads(run.projectId, after); threads.push(...page.records); after = page.next ?? undefined; } while (after);
+    const roster = await this.o.roster?.(), runs = await this.runs(run.projectId);
+    const devices = roster?.devices.map(view => view.device.id === this.o.deviceId && view.heartbeat ? { ...view, heartbeat: { ...view.heartbeat, facts: this.o.facts?.() ?? collectDeviceFacts(this.o.homes, [], this.runningIds()) } } : view) ?? [];
+    const choice = placeCommandJob(project, run.spec.needs, devices, threads, runs, run.id);
+    if (!choice.deviceId || choice.deviceId === this.o.deviceId && this.#running.size > 0) {
+      const reason = choice.reason ?? `Waiting for a device with ${run.spec.needs.join(', ') || 'project access'}: ${this.o.deviceName}: another job is running.`;
+      if (run.summary !== reason) run = await this.#save({ ...run, summary: reason });
+      await this.o.tasks.save({ ...task, jobRunId: run.id, state: 'queued', endNote: reason.slice(0, 400) }); return;
+    }
+    try { run = await this.#save({ ...run, deviceId: choice.deviceId, phase: 'reserved', summary: '' }); }
+    catch (error) { if ((error as { status?: number }).status === 409) return; throw error; }
+    await this.o.tasks.save({ ...task, state: 'active', jobRunId: run.id, dispatchedAt: task.dispatchedAt ?? new Date(this.o.now()).toISOString() });
+    if (run.deviceId === this.o.deviceId) { const saved = run; this.#launch(saved, controller => this.#execute(saved, job, controller.signal)); }
+    else { if (!this.o.relay) throw new Error('Job relay is unavailable.'); await this.o.relay(run.projectId, run.deviceId, run.id); }
+  }
+  /** A relay carries only a receipt reference. Secrets are fetched locally from the vault at execution. */
+  async accept(runId: string, sourceDeviceId?: string): Promise<void> {
+    const run = (await this.o.hub.jobRun(runId))?.document;
+    if (!run || run.conclusion || run.deviceId !== this.o.deviceId || run.phase === 'waiting' || this.#running.size > 0) return;
+    if (sourceDeviceId && sourceDeviceId !== (run.requestedByDeviceId ?? (await this.o.hub.coordinator(run.projectId))?.document.deviceId)) throw Object.assign(new Error('Only the requesting coordinator can relay this job.'), { status: 403 });
+    if (!deviceAllowsWork(this.o.homes) || deviceResourceRefusal(this.o.deviceName, this.o.facts?.() ?? collectDeviceFacts(this.o.homes))) return;
+    const job = (await this.o.hub.job(run.jobId))?.document; if (!job) return;
+    const project = await this.o.project(run.projectId);
+    if (project.allowedDevices && !project.allowedDevices.includes(this.o.deviceId)) return;
+    if (run.spec.kind === 'command' && this.o.roster) {
+      const device = (await this.o.roster()).devices.find(view => view.device.id === this.o.deviceId);
+      if (!device || device.revoked || device.status !== 'online' || run.spec.needs.some(tag => !device.device.tags?.includes(tag))) return;
+    }
+    this.#launch(run, controller => this.#execute(run, job, controller.signal));
   }
   #launch(run: ProjectJobRun, operation: (controller: AbortController) => Promise<void>): void {
     const controller = new AbortController();
@@ -155,8 +200,8 @@ export class ProjectJobRunner {
       if (run.spec.kind === 'command') {
         const commandSpec = run.spec;
         run = await this.#save({ ...run, phase: 'executing' });
-        const path = this.o.homes.at('worktrees', run.projectId, 'jobs', run.id);
-        if (path !== join(this.o.homes.root, 'worktrees', run.projectId, 'jobs', run.id)) throw new Error('Job worktrees cannot alias another location.');
+        const path = run.spec.kind === 'command' && run.spec.cwd === 'workspace' ? this.o.homes.at('project-work', run.projectId, 'job-workspaces', run.id) : this.o.homes.at('worktrees', run.projectId, 'jobs', run.id);
+        if (commandSpec.cwd === 'workspace') this.o.homes.ensure('project-work', run.projectId, 'job-workspaces');
         this.o.homes.ensure('worktrees', run.projectId, 'jobs');
         if (existsSync(path)) throw new Error('A leftover job worktree needs cleanup before retry.');
         let added = false; let outcome: { conclusion: NonNullable<ProjectJobRun['conclusion']>; summary: string; logTail: string } | undefined;
@@ -166,17 +211,17 @@ export class ProjectJobRunner {
           await this.o.git.run(repo, ['worktree', 'add', '--detach', path, run.commit]); added = true;
           const setupCommand = run.setupCommand;
           const onProcess = (native: NativeProcess) => { writeDocument(this.#processPath(run), JobProcessSchema, { ...native, schema: 'project-job-process-v1', turn: 1, startedAt: new Date(this.o.now()).toISOString() }); };
-          const setup = setupCommand ? await runThreadCommand(path, setupCommand, { homes: this.o.homes, workId: run.id, timeoutMs: SETUP_TIMEOUT_MS, redactor: this.o.redactor, projectEnv: await this.o.projectEnvironment?.(run.projectId) ?? {}, signal, minimal: true, onProcess }) : null;
+          const setup = setupCommand ? await runThreadCommand(path, setupCommand, { homes: this.o.homes, workId: run.id, timeoutMs: SETUP_TIMEOUT_MS, redactor: this.o.redactor, projectEnv: await this.o.projectEnvironment?.(run.projectId) ?? {}, signal, minimal: true, environmentScope: 'command', jobContext: { schema: 'project-job-context-v1', runId: run.id, projectId: run.projectId, jobId: run.jobId, commit: run.commit }, onProcess }) : null;
           if (setup && (setup.timedOut || setup.code !== 0)) outcome = { conclusion: setup.timedOut ? 'timed-out' : 'failed', summary: 'The project setup command failed.', logTail: outputTail(setup, 8000) };
-          else { const result = await runThreadCommand(path, commandSpec.command, { homes: this.o.homes, workId: run.id, timeoutMs: commandSpec.timeoutMinutes * 60_000, redactor: this.o.redactor, projectEnv: await this.o.projectEnvironment?.(run.projectId) ?? {}, signal, minimal: true, onProcess });
+          else { const result = await runThreadCommand(path, commandSpec.command, { homes: this.o.homes, workId: run.id, timeoutMs: commandSpec.timeoutMinutes * 60_000, redactor: this.o.redactor, projectEnv: await this.o.projectEnvironment?.(run.projectId) ?? {}, signal, minimal: true, environmentScope: 'command', jobContext: { schema: 'project-job-context-v1', runId: run.id, projectId: run.projectId, jobId: run.jobId, commit: run.commit }, onProcess });
           outcome = { conclusion: signal.aborted ? 'cancelled' : result.timedOut ? 'timed-out' : result.code === 0 ? 'passed' : 'failed', summary: result.code === 0 ? 'Command passed.' : result.timedOut ? 'Command timed out.' : `Command exited with ${result.code}.`, logTail: outputTail(result, 8000) }; }
         } finally {
           await this.#stopRecordedProcess(run);
-          if (added) await this.o.git.run(repo, ['worktree', 'remove', '--force', path]);
+          if (added && commandSpec.cwd !== 'workspace') await this.o.git.run(repo, ['worktree', 'remove', '--force', path]);
           await this.o.git.run(repo, ['update-ref', '-d', threadBaseRef(run.id)]).catch(() => undefined);
         }
         if (!outcome) throw new Error('The command has no recorded outcome.');
-        await this.#finish(run, outcome.conclusion, outcome.summary, outcome.logTail);
+        await this.#finish(commandSpec.cwd === 'workspace' ? { ...run, workspaceRetainedAt: new Date(this.o.now()).toISOString() } : run, outcome.conclusion, outcome.summary, outcome.logTail);
       } else {
         const repository = parseGitHubRemote(await this.o.git.remoteUrl(repo) ?? ''); if (!repository) throw new Error('This project does not have a GitHub remote.');
         const workflowSpec = run.spec;
@@ -231,14 +276,16 @@ export class ProjectJobRunner {
     await this.cleanup(projectId);
     for (const run of await this.runs(projectId)) {
       if (run.conclusion) { await this.#sync(run); await this.#deleteDispatchRef(run).catch(() => undefined); continue; }
-      if (run.deviceId !== this.o.deviceId) { await this.#finish(run, 'failed', 'The coordinator device changed during this job. It was not repeated.'); continue; }
+      if (run.phase === 'waiting' && (await this.o.hub.coordinator(projectId))?.document.deviceId === this.o.deviceId) { const job = (await this.o.hub.job(run.jobId))?.document; if (job) await this.#place(run, job, await this.o.tasks.read(projectId, run.taskId)); continue; }
+      if (run.deviceId !== this.o.deviceId) { if (run.phase === 'reserved' && (await this.o.hub.coordinator(projectId))?.document.deviceId === this.o.deviceId) await this.o.relay?.(projectId, run.deviceId, run.id); continue; }
+      if (run.phase === 'waiting' || this.#running.size > 0) continue;
       if (run.pollAfter && Date.parse(run.pollAfter) > this.o.now()) continue;
       if (run.phase === 'reserved' && (await this.o.settings(projectId)).status !== 'active') continue;
       const task = await this.o.tasks.read(projectId, run.taskId);
       if (task.state === 'cancelled') { await this.#finish(run, 'cancelled', 'Cancelled before execution.'); continue; }
       const job = (await this.o.hub.job(run.jobId))?.document;
       if (!job) { await this.#finish(run, 'failed', 'The job definition is unavailable.'); continue; }
-      this.#launch(run, controller => this.#execute(run, job, controller.signal)); break;
+      await this.accept(run.id); if (this.busy()) break;
     }
   }
   cancel(projectId: string): void { this.#running.get(projectId)?.controller.abort(); }

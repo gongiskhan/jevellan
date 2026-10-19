@@ -1,5 +1,5 @@
 import {
-  EnvNameSchema, StoredProjectWorkSettingsSchema, ProjectEnvSecretSummarySchema, CheckoutClaimSchema, ConfigWriteSchema, ConversationIndexSchema, CredentialInputSchema, GitHubTokenStateSchema, IdSchema, ProjectSchema, ProjectViewSchema, RiggingEntrySchema, RiggingStore, SecretSummarySchema, SharedStateRequestSchema, SharedStateResultSchema, ThreadIndexSchema, isTerminal,
+  ProjectEnvNameSchema, StoredProjectWorkSettingsSchema, ProjectEnvSecretSummarySchema, CheckoutClaimSchema, ConfigWriteSchema, ConversationIndexSchema, CredentialInputSchema, GitHubTokenStateSchema, IdSchema, ProjectSchema, ProjectViewSchema, RiggingEntrySchema, RiggingStore, SecretSummarySchema, SharedStateRequestSchema, SharedStateResultSchema, ThreadIndexSchema, isTerminal,
   type SharedProjectEnvironment, type GitHubTokenState, type Project, type SharedConfiguration, type SharedGitHub, type SharedJev, type SharedProjects, type SharedRigging,
 } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
@@ -66,7 +66,7 @@ export class HubState {
     };
     const environmentKey = (projectId: string, name: string) => {
       if (!hub.get('projects', IdSchema.parse(projectId), ProjectSchema)) throw Object.assign(new Error('Project not found.'), { status: 404 });
-      return `project-env/${projectId}/${EnvNameSchema.parse(name)}`;
+      return `project-env/${projectId}/${ProjectEnvNameSchema.parse(name)}`;
     };
     const environmentSummary = (projectId: string, name: string) => {
       const key = environmentKey(projectId, name), saved = !!hub.db.prepare('SELECT id FROM secrets WHERE id=?').get(key);
@@ -74,6 +74,11 @@ export class HubState {
     };
     this.environment = {
       summary: environmentSummary,
+      copy: async (projectId, name, source) => {
+        const value = await (source.kind === 'github' ? this.github.credential(projectId) : source.kind === 'jev' ? this.jev.credential() : hub.vault.forLaunch(environmentKey(projectId, source.name)));
+        if (!value) throw Object.assign(new Error('That vault credential is not set.'), { status: 404 });
+        return this.environment.put(projectId, name, value);
+      },
       put: (projectId, name, value) => { hub.vault.put(environmentKey(projectId, name), CredentialInputSchema.parse(value)); return environmentSummary(projectId, name); },
       remove: (projectId, name) => { hub.vault.remove(environmentKey(projectId, name)); return environmentSummary(projectId, name); },
       credentials: projectId => {
@@ -112,6 +117,7 @@ export class HubState {
     const request = SharedStateRequestSchema.parse(raw); let result: unknown;
     switch (request.operation) {
       case 'project-env-summary': result = { schema: 'shared-project-env-summary-v1', summary: await this.environment.summary(request.projectId, request.name) }; break;
+      case 'project-env-copy': result = { schema: 'shared-project-env-summary-v1', summary: await this.environment.copy(request.projectId, request.name, request.source) }; break;
       case 'project-env-put': result = { schema: 'shared-project-env-summary-v1', summary: await this.environment.put(request.projectId, request.name, request.value) }; break;
       case 'project-env-remove': result = { schema: 'shared-project-env-summary-v1', summary: await this.environment.remove(request.projectId, request.name) }; break;
       case 'project-env-credentials': result = { schema: 'shared-project-env-credentials-v1', values: await this.environment.credentials(request.projectId) }; break;
@@ -185,6 +191,7 @@ export class MemberState {
       if (summary.name !== name) throw new HubProtocolError(); return summary;
     };
     this.environment = {
+      copy: async (projectId, name, source) => { const summary = (await request('project-env-copy', 'shared-project-env-summary-v1', { projectId, name, source })).summary; if (summary.name !== name) throw new HubProtocolError(); return summary; },
       summary: (projectId, name) => environment('project-env-summary', projectId, name),
       put: (projectId, name, value) => environment('project-env-put', projectId, name, value),
       remove: (projectId, name) => environment('project-env-remove', projectId, name),

@@ -28,7 +28,7 @@ test('v4 defaults, optional request fields and sixteen-thousand-character instru
   for (const field of ['status', 'instructions', 'startMode', 'placement', 'prAutoFix', 'environment', 'notifications', 'maxNewThreadsPerDay']) expect(request.settings).not.toHaveProperty(field);
 });
 
-test.each(['PATH', 'HOME', 'USER', 'SHELL', 'TERM', 'LANG', 'TMPDIR', 'CLAUDE_TOKEN', 'CODEX_HOME', 'ANTHROPIC_TOKEN', 'OPENAI_KEY', 'JEVELLAN_TOKEN', 'GIT_CONFIG'])('reserved environment name %s is refused precisely', name => {
+test.each(['PATH', 'HOME', 'USER', 'SHELL', 'TERM', 'LANG', 'TMPDIR', 'CODEX_HOME', 'JEVELLAN_TOKEN', 'GIT_CONFIG'])('reserved environment name %s is refused precisely', name => {
   const parsed = ProjectWorkSettingsSchema.safeParse({ ...defaultProjectWorkSettings('parity'), environment: { variables: [{ name, value: 'value' }], secrets: [], copyFiles: [] } });
   expect(parsed.success).toBe(false);
   if (!parsed.success) expect(parsed.error.issues.map(issue => issue.message)).toContain(`${name} is reserved for Jevellan and the runtimes.`);

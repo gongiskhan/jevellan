@@ -363,7 +363,7 @@ export class ProjectWork {
         },
         runtimeName: (runtime) => o.runtimes.get(runtime)?.displayName ?? runtime, enterOperation: o.enterOperation,
         timers: { threadTurnTimeoutMs: timers.threadTurnTimeoutMs, setupTimeoutMs: timers.setupTimeoutMs }, now } });
-    this.jobs = new ProjectJobRunner({ projectEnvironment, homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
+    this.jobs = new ProjectJobRunner({ roster: o.roster, relay: async (projectId, deviceId, runId) => { this.outbox.enqueue(projectId, deviceId, { kind: 'job-run', runId, commandId: derivedId('jobcmd', runId, deviceId) }); await this.outbox.drain(); }, projectEnvironment, homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
       project: id => this.#project(id), settings: id => this.admission.settings(id), baseBranch: repo => worktrees.baseBranch(repo), event: (id, event) => delivery.toCoordinator(id, event),
       windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
     this.daily = new ProjectDailyWork({ landing: (threadId, held) => { if (!this.store.get(threadId)) return; if (held) this.store.setIndexFields(threadId, { landing: 'held' }); else if (this.store.local(threadId).landing === 'held') this.store.setIndexFields(threadId, { landing: undefined }); }, fixCutoffMinutes: nightlyFixMinutes(o.homes), hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
@@ -404,6 +404,7 @@ export class ProjectWork {
         if (assigned !== null && assigned.deviceId !== o.deviceId) { await this.coordinators.handover(projectId, [envelope.body.event], assigned.revision); return; }
         this.coordinators.get(projectId).enqueue(envelope.body.event); this.threads.freed(projectId);
       },
+      jobRun: envelope => this.jobs.accept(envelope.body.runId, envelope.sourceDeviceId),
       threadStart: (envelope) => this.#threadStart(envelope),
       threadCommand: (envelope) => this.#threadCommand(envelope),
     }, dropped: (lost) => this.#lostEnvelope(lost) });
@@ -558,7 +559,7 @@ export class ProjectWork {
         if ((await this.admission.settings(project.id)).status === 'active') await this.memoryProgramme?.sweep(project);
         await this.usage.refresh(project.id); await this.notifications.flush();
         await this.#exportToVault(project).catch(() => undefined);
-        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.#withdrawSignIns(project.id); if ((await this.admission.settings(project.id)).status === 'active') await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); }
+        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.#withdrawSignIns(project.id); if ((await this.admission.settings(project.id)).status === 'active') await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); } else await this.jobs.sweep(project.id);
         if ((await this.admission.settings(project.id)).status === 'active') await this.memoryProgramme?.sweep(project);
       }
       this.mergeGate.sweep();

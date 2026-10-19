@@ -388,6 +388,7 @@ export const ProjectEnvelopeSchema = z.strictObject({ schema: z.literal('project
   id: IdSchema, projectId: IdSchema, sourceDeviceId: IdSchema, targetDeviceId: IdSchema,
   seq: positive, createdAt: TimestampSchema, deliveredAt: TimestampSchema.optional(),
   body: z.discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('job-run'), runId: IdSchema, commandId: IdSchema }),
     z.strictObject({ kind: z.literal('coordinator-event'), event: CoordinatorEventSchema }),
     z.strictObject({ kind: z.literal('thread-start'), thread: ThreadSchema }),
     z.strictObject({ kind: z.literal('thread-command'), threadId: IdSchema, commandId: IdSchema, command: ThreadCommandSchema }),

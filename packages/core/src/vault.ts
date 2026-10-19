@@ -3,7 +3,7 @@ import { chmodSync, lstatSync, readFileSync, writeFileSync } from 'node:fs';
 import type { DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
 import type { Homes } from './homes.js';
-import { EnvNameSchema } from './project-parity-schemas.js';
+import { ProjectEnvNameSchema } from './project-parity-schemas.js';
 import { IdSchema, TimestampSchema } from './schemas.js';
 import type { SecretRedactor } from './environment.js';
 import type { SecretSummary } from './client-schemas.js';
@@ -17,7 +17,7 @@ const EnvelopeSchemaV1 = z.strictObject({
 
 const ProjectEnvironmentKeySchema = z.string().superRefine((key, context) => {
   const match = /^project-env\/([^/]+)\/([^/]+)$/u.exec(key);
-  if (!match || !IdSchema.safeParse(match[1]).success || !EnvNameSchema.safeParse(match[2]).success)
+  if (!match || !IdSchema.safeParse(match[1]).success || !ProjectEnvNameSchema.safeParse(match[2]).success)
     context.addIssue({ code: 'custom', message: 'Invalid project environment secret name.' });
 });
 const SecretKeySchema = z.union([IdSchema, ProjectEnvironmentKeySchema]);

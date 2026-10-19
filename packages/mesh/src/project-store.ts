@@ -176,13 +176,19 @@ export class HubProjectStore {
     const document = ProjectJobRunSchema.parse(raw); this.#project(document.projectId);
     const previous = this.jobRun(document.id)?.document;
     if (previous && previous.projectId !== document.projectId) refuse('This document belongs to another project.', 403);
-    if (this.coordinator(document.projectId)?.document.deviceId !== this.deviceId) refuse('Only the coordinator device can write execution receipts.', 403);
+    const coordinatorId = this.coordinator(document.projectId)?.document.deviceId;
+    if (coordinatorId !== this.deviceId && (!previous || previous.deviceId !== this.deviceId)) refuse('Only the coordinator or executing device can write execution receipts.', 403);
+    if (document.requestedByDeviceId && (!previous && document.requestedByDeviceId !== this.deviceId || previous && document.requestedByDeviceId !== previous.requestedByDeviceId)) refuse('The requesting device cannot change.', 400);
+    if (!document.conclusion && document.phase !== 'waiting') {
+      const active = this.hub.list('project-job-runs', ProjectJobRunSchema).map(row => row.document).filter(row => row.id !== document.id && !row.conclusion && row.phase !== 'waiting');
+      if (active.some(row => row.projectId === document.projectId || row.deviceId === document.deviceId)) refuse('One job runs per project and per device at a time.');
+    }
     if (this.devices?.().find(view => view.device.id === this.deviceId)?.device.workPolicy?.mode === 'apps-only') refuse('This device serves apps only; project work runs on a working device.', 409);
     const task = this.task(document.taskId)?.document;
     if (!task || task.projectId !== document.projectId || task.jobId !== document.jobId) refuse('The job run must belong to its task.', 400);
     if (previous && stableJson(previous.workflowHandoff) !== stableJson(document.workflowHandoff)) refuse('The workflow handoff receipt cannot change.', 409);
     if (previous && (stableJson(previous.workflowScheduler) !== stableJson(document.workflowScheduler) || previous.nightlyWindowId !== document.nightlyWindowId)) refuse('The workflow scheduler receipt cannot change.', 409);
-    if (previous && (previous.taskId !== document.taskId || previous.jobId !== document.jobId || previous.projectDay !== document.projectDay || previous.startedAt !== document.startedAt || previous.deviceId !== document.deviceId || previous.setupCommand !== document.setupCommand || stableJson(previous.spec) !== stableJson(document.spec))) refuse('Job run identity cannot change.', 400);
+    if (previous && (previous.taskId !== document.taskId || previous.jobId !== document.jobId || previous.projectDay !== document.projectDay || previous.startedAt !== document.startedAt || (previous.phase !== 'waiting' && previous.deviceId !== document.deviceId || previous.phase === 'waiting' && coordinatorId !== this.deviceId && previous.deviceId !== document.deviceId) || previous.setupCommand !== document.setupCommand || stableJson(previous.spec) !== stableJson(document.spec))) refuse('Job run identity cannot change.', 400);
     // Cleanup metadata may be added after completion; execution results remain immutable.
     if (previous?.conclusion && stableJson({ ...previous, revision: 0, dispatchRefDeletedAt: undefined, cleanedAt: undefined }) !== stableJson({ ...document, revision: 0, dispatchRefDeletedAt: undefined, cleanedAt: undefined })) refuse('A finished job receipt cannot change.', 409);
     if (previous?.dispatchRefDeletedAt && previous.dispatchRefDeletedAt !== document.dispatchRefDeletedAt) refuse('The ref cleanup receipt cannot change.', 409);

@@ -55,7 +55,7 @@ function device(path: string, token: string | undefined, value: unknown, headers
 const overrideEvent = (id: string, summary = `Override ${id}.`): CoordinatorEvent => ({ schema: 'coordinator-event-v1', kind: 'placement-override', id, at, threadId: 'thread_a', summary });
 const toCoordinator = (event: CoordinatorEvent) => ({ kind: 'coordinator-event' as const, event });
 const command = (commandId: string, threadId = 'thread_a') => ({ kind: 'thread-command' as const, threadId, commandId, command: { type: 'allow-turns' as const } });
-const keyOf = (envelope: Pick<ProjectEnvelope, 'body'>) => envelope.body.kind === 'coordinator-event' ? envelope.body.event.id : envelope.body.kind === 'thread-command' ? envelope.body.commandId : envelope.body.thread.id;
+const keyOf = (envelope: Pick<ProjectEnvelope, 'body'>) => envelope.body.kind === 'coordinator-event' ? envelope.body.event.id : envelope.body.kind === 'thread-command' ? envelope.body.commandId : envelope.body.kind === 'thread-start' ? envelope.body.thread.id : envelope.body.runId;
 const stored = () => app.hub.list('project-envelopes', ProjectEnvelopeSchema).map((row) => row.document);
 function envelope(fields: Partial<ProjectEnvelope> = {}): ProjectEnvelope {
   return ProjectEnvelopeSchema.parse({ schema: 'project-envelope-v1', revision: 0, id: 'env_1', projectId: 'project', sourceDeviceId: 'left', targetDeviceId: 'target', seq: 1, createdAt: at,

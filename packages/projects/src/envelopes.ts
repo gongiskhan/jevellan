@@ -26,6 +26,7 @@ function bodyKey(body: EnvelopeBody): string {
     case 'coordinator-event': return body.event.id;
     case 'thread-start': return body.thread.id;
     case 'thread-command': return body.commandId;
+    case 'job-run': return body.commandId;
   }
 }
 
@@ -148,6 +149,7 @@ export class Outbox {
 }
 
 export type InboxHandlers = {
+  jobRun?(envelope: EnvelopeOf<'job-run'>): Promise<void>;
   coordinatorEvent(envelope: EnvelopeOf<'coordinator-event'>): Promise<void>;
   threadStart(envelope: EnvelopeOf<'thread-start'>): Promise<void>;
   threadCommand(envelope: EnvelopeOf<'thread-command'>): Promise<void>;
@@ -218,6 +220,7 @@ export class Inbox {
       case 'coordinator-event': return handlers.coordinatorEvent(envelope as EnvelopeOf<'coordinator-event'>);
       case 'thread-start': return handlers.threadStart(envelope as EnvelopeOf<'thread-start'>);
       case 'thread-command': return handlers.threadCommand(envelope as EnvelopeOf<'thread-command'>);
+      case 'job-run': return handlers.jobRun?.(envelope as EnvelopeOf<'job-run'>) ?? Promise.reject(new Error('Job relay is unavailable.'));
     }
   }
   async #poll(): Promise<void> {
