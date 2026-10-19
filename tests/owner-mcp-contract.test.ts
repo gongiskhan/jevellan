@@ -19,7 +19,7 @@ test('the forwarder lists exactly the twelve tools with their descriptions and f
   const listed = (await mcp.listTools()).tools;
   expect(listed.map(tool => tool.name)).toEqual(['status', 'activity', 'ask_coordinator', 'work', 'goals', 'jobs', 'thread', 'respond', 'override', 'jev', 'config', 'login']);
   for (const tool of OWNER_TOOLS) expect(listed.find(row => row.name === tool.name)?.description).toBe(tool.description);
-  expect((listed.find(row => row.name === 'work')!.inputSchema as { properties: { action: { enum: string[] } } }).properties.action.enum).toEqual(['list', 'add', 'reorder', 'cancel', 'inspect']);
+  expect((listed.find(row => row.name === "work")!.inputSchema as unknown as { properties: { action: { enum: string[] } } }).properties.action.enum).toEqual(['list', 'add', 'reorder', 'cancel', 'inspect']);
   expect(mcp.getServerCapabilities()?.experimental).toBeUndefined();
   const status = await mcp.callTool({ name: 'status', arguments: {} });
   expect(status.isError).toBeFalsy();

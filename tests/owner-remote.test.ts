@@ -6,6 +6,7 @@ import { createServer, request as httpRequest, type Server } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { DoctorControlSchema, doctorControlPath, readDocument } from '../packages/core/dist/index.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
@@ -60,7 +61,7 @@ async function signIn(fetcher: typeof fetch): Promise<{ status: number; tokens?:
 }
 async function mcp(fetcher: typeof fetch, accessToken: string): Promise<Client> {
   const client = new Client({ name: 'remote-test', version: '1.0.0' });
-  await client.connect(new StreamableHTTPClientTransport(new URL(`https://${HOST}/remote/mcp`), { fetch: fetcher, requestInit: { headers: { Authorization: `Bearer ${accessToken}` } } }));
+  await client.connect(new StreamableHTTPClientTransport(new URL(`https://${HOST}/remote/mcp`), { fetch: fetcher, requestInit: { headers: { Authorization: `Bearer ${accessToken}` } } }) as Transport);
   return client;
 }
 
