@@ -70,7 +70,7 @@ export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
       write('add_account', { label: z.string().min(1).max(80), runtime: z.enum(['claude', 'codex']), budgetPercent: z.number().int().min(1).max(100).optional() }), write('remove_account', { label: z.string().min(1).max(80) }),
       write('set_secret', { name: z.string().regex(/^[A-Z][A-Z0-9_]{0,127}$/u), value: z.string().min(1).max(20000) })] },
   { name: 'login', description: 'Log an account in, or check logins. Returns a link, and a code when the provider uses one, for the owner to open. When a Claude login shows a code after approval, call complete with that code.',
-    actions: [write('start', { account: z.string().min(1).max(80) }), write('complete', { account: z.string().min(1).max(80), code: z.string().min(1).max(4000) }), read('status', { account: z.string().min(1).max(80).optional() })] },
+    actions: [write('start', { account: z.string().min(1).max(80), interactive: z.boolean().optional().describe('An interactive Claude login, which remote control needs.') }), write('complete', { account: z.string().min(1).max(80), code: z.string().min(1).max(4000) }), read('status', { account: z.string().min(1).max(80).optional() })] },
 ];
 
 export function ownerTool(name: string): OwnerToolDefinition | undefined { return OWNER_TOOLS.find(tool => tool.name === name); }

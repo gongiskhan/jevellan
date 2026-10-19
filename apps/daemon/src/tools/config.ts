@@ -75,6 +75,19 @@ const SETTERS: Record<string, Setter> = {
   },
 };
 
+/** `accounts.<label>.budgetPercent` and `accounts.<label>.enabled`. */
+const accountSetter: Setter = async (context, key, value) => {
+  const [label, field] = [key.slice(0, key.lastIndexOf('.')), key.slice(key.lastIndexOf('.') + 1)];
+  if (!['budgetPercent', 'enabled'].includes(field)) throw new OwnerRefusal('accounts keys are <label>.budgetPercent or <label>.enabled.', 'invalid_key');
+  const account = await context.app.ownerLogins.account(label);
+  const budget = field === 'budgetPercent' ? Number(value) : account.account.ceilingPct ?? 90;
+  if (!Number.isInteger(budget) || budget < 1 || budget > 100) throw new OwnerRefusal(`accounts.${label}.budgetPercent must be a whole number from 1 to 100.`, 'invalid_value');
+  const enabled = field === 'enabled' ? value === true || value === 'true' : account.account.enabled !== false;
+  await context.app.accounts.update(account.account.id, { schema: 'update-account-v1', revision: account.revision, label: account.account.label, enabled, ceilingPct: budget });
+  return field === 'budgetPercent' ? { old: String(account.account.ceilingPct ?? 90), new: String(budget), consequence: `New work stops using ${account.account.label} at ${budget}% of its limits.` }
+    : { old: String(account.account.enabled !== false), new: String(enabled) };
+};
+
 /** `config` (bridge specification). */
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
@@ -85,7 +98,7 @@ export const config: OwnerHandler = async (context) => {
       return { text: capLines(Object.entries(all).filter(([name]) => !wanted || name === wanted).map(([name, line]) => `${name}: ${line}`)), data: all };
     }
     case 'set': {
-      const section = String(args.section); const key = String(args.key); const setter = SETTERS[`${section}.${key}`];
+      const section = String(args.section); const key = String(args.key); const setter = SETTERS[`${section}.${key}`] ?? (section === 'accounts' ? accountSetter : undefined);
       if (!setter) {
         const known = Object.keys(await sections(context));
         if (!known.includes(section)) throw new OwnerRefusal(`section must be one of ${known.join(', ')}.`, 'invalid_section');
@@ -93,6 +106,41 @@ export const config: OwnerHandler = async (context) => {
       }
       const result = await setter(context, key, args.value as string | number | boolean);
       return { text: `Changed ${section}.${key} from ${result.old} to ${result.new}.${result.consequence ? ` ${result.consequence}` : ''}` };
+    }
+    case 'secrets': {
+      const names = (await context.app.projectWork.view(context.project.id)).settings.environment.secrets;
+      const states = await Promise.all(names.map(async name => ({ name, saved: (await context.app.state.environment.summary(context.project.id, name)).saved })));
+      const missing = states.filter(row => !row.saved).map(row => row.name);
+      return { text: `Environment: ${states.length - missing.length} set, ${missing.length} not set${missing.length ? `: ${missing.join(', ')}` : ''}.` };
+    }
+    case 'set_secret': {
+      const name = String(args.name); const view = await context.app.projectWork.settingsView(context.project.id);
+      if (!view.settings.environment.secrets.includes(name)) {
+        if (view.settings.environment.variables.some(variable => variable.name === name)) throw new OwnerRefusal(`${name} is a plain variable in this project. Use a new name for a secret.`, 'invalid_name');
+        await context.app.projectWork.putSettings(context.project.id, { schema: 'project-work-settings-request-v1', revision: view.settings.revision,
+          settings: { ...withoutIdentity(view.settings), environment: { ...view.settings.environment, secrets: [...view.settings.environment.secrets, name] } } } as never);
+      }
+      await context.app.state.environment.put(context.project.id, name, String(args.value));
+      return { text: context.request.caller === 'cli' ? `Saved ${name}.` : `Saved ${name}. Its value is now in this conversation's transcript; the terminal prompt (jevellan secret set ${name}) keeps it out.` };
+    }
+    case 'add_account': {
+      const label = String(args.label); const runtime = String(args.runtime);
+      if ((await context.app.accounts.list()).some(row => row.account.label.toLowerCase() === label.toLowerCase())) throw new OwnerRefusal(`There is already an account ${label}.`, 'exists', 409);
+      await context.app.accounts.add({ schema: 'add-account-v1', runtime, label, kind: 'subscription', ceilingPct: typeof args.budgetPercent === 'number' ? args.budgetPercent : 90 });
+      return { text: `Added account ${label} (${runtime}). Log it in with login start ${label}${runtime === 'claude' ? ', and with interactive for remote control' : ''}.` };
+    }
+    case 'remove_account': {
+      const account = await context.app.ownerLogins.account(String(args.label));
+      await context.app.accounts.update(account.account.id, { schema: 'update-account-v1', revision: account.revision, label: account.account.label, enabled: false, ceilingPct: account.account.ceilingPct ?? 90 });
+      return { text: `Disabled account ${account.account.label}. Accounts are never deleted, so its history stays; turn it back on with config set accounts ${account.account.label}.enabled true.` };
+    }
+    case 'add_health_check': case 'edit_health_check': {
+      const view = await context.app.projectWork.settingsView(context.project.id); const check = args.check as { id?: string; name?: string };
+      const checks = view.settings.healthChecks; const index = checks.findIndex(row => row.id === check.id || row.name === check.name);
+      if (context.action === 'edit_health_check' && index < 0) throw new OwnerRefusal(`There is no health check ${check.name ?? check.id}. Checks: ${checks.map(row => row.name).join(', ') || 'none'}.`, 'not_found', 404);
+      const next = context.action === 'add_health_check' ? [...checks, { id: check.id ?? `check_${Date.now().toString(36)}`, ...check }] : checks.map((row, position) => position === index ? { ...row, ...check } : row);
+      await context.app.projectWork.putSettings(context.project.id, { schema: 'project-work-settings-request-v1', revision: view.settings.revision, settings: { ...withoutIdentity(view.settings), healthChecks: next } } as never);
+      return { text: `${context.action === 'add_health_check' ? 'Added' : 'Changed'} the health check ${check.name ?? checks[index]?.name}. Run it with jobs health_run.` };
     }
   }
   throw new OwnerRefusal(`config ${context.action} is not available in this version yet.`, 'not_available', 501);

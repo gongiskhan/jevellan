@@ -11,6 +11,7 @@ import { OwnerPushes } from './owner-pushes.js';
 import { OwnerBridges } from './owner-bridge.js';
 import { OwnerSchedules } from './owner-schedules.js';
 import { OwnerJev } from './owner-jev.js';
+import { OwnerLogins } from './owner-logins.js';
 import type { EkoaConnector } from './ekoa-client.js';
 import { collectDeviceFacts, EkoaRequestSchema, DeviceSettingsInputSchema, DeviceTagsInputSchema, type DeviceFacts } from '@jevellan/core';
 import { existsSync } from 'node:fs';
@@ -82,6 +83,8 @@ export class Application {
   #ownerBridges: OwnerBridges | undefined;
   #ownerSchedules: OwnerSchedules | undefined;
   #ownerJev: OwnerJev | undefined;
+  #ownerLogins: OwnerLogins | undefined;
+  get ownerLogins(): OwnerLogins { return this.#ownerLogins ??= new OwnerLogins(this); }
   get ownerJev(): OwnerJev { if (!this.#hub) throw Object.assign(new Error('Jev control runs on the state point.'), { status: 409 }); return this.#ownerJev ??= new OwnerJev(this); }
   get ownerSchedules(): OwnerSchedules { if (!this.#ownerSchedules) throw Object.assign(new Error('Jevellan tools run on the state point. Use them on the device that holds the hub.'), { status: 409 }); return this.#ownerSchedules; }
   get ownerPushes(): OwnerPushes { if (!this.#ownerPushes) throw Object.assign(new Error('Jevellan tools run on the state point. Use them on the device that holds the hub.'), { status: 409 }); return this.#ownerPushes; }

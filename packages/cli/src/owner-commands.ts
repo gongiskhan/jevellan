@@ -180,3 +180,40 @@ export async function bridgeCommand(args: string[], homes = new Homes()): Promis
   if (body?.ok) { console.log(body.text); return 0; }
   console.error(body?.text ?? body?.message ?? `The bridge could not start (HTTP ${response.status}).`); return 1;
 }
+
+/** Reads one line from the terminal without echoing it, so codes and secrets never appear on screen or in a transcript. */
+async function hidden(question: string): Promise<string> {
+  const { createInterface } = await import('node:readline');
+  const terminal = createInterface({ input: process.stdin, output: process.stdout, terminal: true }) as unknown as { question(q: string, cb: (a: string) => void): void; close(): void; _writeToOutput?: (s: string) => void };
+  let muted = false; terminal._writeToOutput = (text: string) => { if (!muted) process.stdout.write(text); };
+  return new Promise(resolvePromise => { terminal.question(question, answer => { terminal.close(); process.stdout.write('\n'); resolvePromise(answer); }); muted = true; });
+}
+/** `jevellan login <account> [--interactive]`: the same flow as the login tool, with the code typed in the terminal. */
+export async function loginCommand(args: string[], homes = new Homes()): Promise<number> {
+  const account = args.find(arg => !arg.startsWith('--')); if (!account) { console.error('Usage: jevellan login <account> [--interactive]'); return 1; }
+  const started = await callOwnerTool('login', { action: 'start', account, ...(args.includes('--interactive') ? { interactive: true } : {}) }, { homes, caller: 'cli' });
+  if (!started.ok) { console.error(started.error.text); return 1; }
+  console.log(started.text.replace(' Then tell me the code it shows.', ''));
+  if (/A push confirms when it is done\./u.test(started.text)) { console.log('Waiting for the login to finish here as well...'); }
+  else {
+    const code = await hidden('Paste the code it shows: ');
+    const done = await callOwnerTool('login', { action: 'complete', account, code }, { homes, caller: 'cli' });
+    console.log(done.ok ? done.text : done.error.text); return done.ok && /is logged in\./u.test(done.text) ? 0 : 1;
+  }
+  for (let attempt = 0; attempt < 180; attempt++) {
+    const status = await callOwnerTool('login', { action: 'status', account }, { homes, caller: 'cli' });
+    if (status.ok && /: logged in/u.test(status.text)) { console.log(`Account ${account} is logged in.`); return 0; }
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+  console.error(`Account ${account} still is not logged in.`); return 1;
+}
+/** `jevellan secret set NAME [--project p]`: a project secret typed at a hidden prompt, saved in the vault. */
+export async function secretCommand(args: string[], homes = new Homes()): Promise<number> {
+  if (args[0] !== 'set' || !args[1]) { console.error('Usage: jevellan secret set NAME [--project p]'); return 1; }
+  const index = args.indexOf('--project'); const project = index >= 0 ? args[index + 1] : undefined;
+  const value = process.stdin.isTTY ? await hidden(`Value for ${args[1]}: `) : (await readStdin()).replace(/\n$/u, '');
+  if (!value) { console.error('No value given; nothing was saved.'); return 1; }
+  const result = await callOwnerTool('config', { action: 'set_secret', name: args[1], value, ...(project ? { project } : {}) }, { homes, caller: 'cli' });
+  if (result.ok) { console.log(result.text); return 0; }
+  console.error(result.error.text); return 1;
+}

@@ -96,6 +96,7 @@ export class OwnerPushes {
       if (pending.question !== undefined) this.add({ projectId: project.id, kind: 'coordinator_answer', key: `reply:${clientMessageId}`, text: `Coordinator answered "${pending.question.slice(0, 80)}": ${line(reply)}` });
       else this.add({ projectId: project.id, kind: 'coordinator_reply', key: `reply:${clientMessageId}`, text: `Coordinator replied: ${line(reply)}` });
     }
+    await this.app.ownerLogins.sweep().catch(() => undefined);
     // Unacked pushes older than a day leave the queue; they stay in status and activity.
     for (const { document, revision } of hub.list(NAMESPACE, OwnerPushSchema)) {
       if (!document.ackedAt && !document.droppedAt && Date.parse(document.createdAt) < cutoff) hub.put(NAMESPACE, document.id, OwnerPushSchema, { ...document, droppedAt: new Date(now).toISOString() }, revision);
