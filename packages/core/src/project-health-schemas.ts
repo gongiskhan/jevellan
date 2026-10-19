@@ -24,7 +24,7 @@ export const HealthStepResultSchema = z.strictObject({ name: z.string().min(1).m
 export const ProjectHealthRunSchema = z.strictObject({ schema: z.literal('project-health-run-v1'), id: IdSchema, projectId: IdSchema, checkId: IdSchema, at: TimestampSchema,
   trigger: z.enum(['manual', 'deploy-before', 'deploy-after']), deployId: IdSchema.optional(), passed: z.boolean(), steps: z.array(HealthStepResultSchema).min(1).max(5) });
 export const ProjectHealthRequestSchema = z.strictObject({ schema: z.literal('project-health-request-v1'), project: z.string().min(1).max(200), operation: z.enum(['list', 'run']),
-  check: z.string().min(1).max(200).optional(), definition: ProjectHealthCheckSchema.optional() });
+  trigger: z.enum(['manual', 'deploy-before', 'deploy-after']).optional(), deployId: IdSchema.optional(), check: z.string().min(1).max(200).optional(), definition: ProjectHealthCheckSchema.optional() });
 export const ProjectHealthViewSchema = z.strictObject({ schema: z.literal('project-health-view-v1'), projectId: IdSchema, runs: z.array(ProjectHealthRunSchema).max(5000) });
 export type HealthStep = z.infer<typeof HealthStepSchema>;
 export type ProjectHealthCheck = z.infer<typeof ProjectHealthCheckSchema>;

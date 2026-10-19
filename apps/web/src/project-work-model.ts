@@ -470,6 +470,7 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
     case 'thread-placement-changed': return card(event.summary, event.threadId);
     case 'thread-auto-fix': return card(copy.automaticFixEvent(event.prNumber, event.outcome), event.threadId);
     case 'memory-dreamed': return card('Memory dream completed', undefined, event.summary);
+    case 'deploy': return card(event.outcome === 'deployed' ? `Deployed ${event.commit.slice(0, 7)} with ${event.threads} threads` : `Deploy ${event.commit.slice(0, 7)} ${event.outcome}`, undefined, event.summary);
     case 'job-finished': return card(`Job "${event.name}" ${event.conclusion}`, undefined, `${event.commit.slice(0, 7)} · ${event.summary}`);
     case 'project-reviewed': return card('Nightly review completed', undefined, event.report.summary);
     case 'window-opened': return card('Nightly window opened', undefined, `${event.pending} nightly tasks pending. Merges are held.`);
@@ -481,6 +482,7 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
     }
     case 'thread-published': {
       const n = name(event.threadId);
+      if (event.result === 'landed') return card(`${n} landed as ${(event.commit ?? '').slice(0, 7)}`, event.threadId);
       return card(event.result === 'pr-opened' ? text.prOpened(n, event.prNumber) : event.result === 'pr-updated' ? text.prUpdated(n, event.prNumber)
         : event.result === 'main-published' ? text.mainPublished(n) : event.result === 'checkout-completed' ? text.checkoutCompleted(n) : text.noChanges(n), event.threadId);
     }

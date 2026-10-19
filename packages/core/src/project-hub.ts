@@ -1,3 +1,4 @@
+import type { ProjectDeploy, ProjectDeployBaseline } from './project-deploy-schemas.js';
 import type { ProjectSetupProposal, SetupActionRequest } from './project-setup-schemas.js';
 import type { MergeDocument } from './merge-schemas.js';
 import type { ProjectJob, ProjectDaily, ProjectJobRun, ProjectWindow } from './project-daily-schemas.js';
@@ -27,6 +28,12 @@ export type ReserveOutcome = { granted: true; reservation: Stored<FileReservatio
  * Phase 6 adds mail, reservations and held checkouts.
  */
 export interface ProjectHub {
+  deploys(projectId: string, after?: string): Promise<{ records: ProjectDeploy[]; next: string | null }>;
+  deploy(id: string): Promise<Stored<ProjectDeploy> | null>;
+  putDeploy(document: ProjectDeploy, expectedRevision: number): Promise<Stored<ProjectDeploy>>;
+  deployBaseline(projectId: string): Promise<Stored<ProjectDeployBaseline> | null>;
+  putDeployBaseline(document: ProjectDeployBaseline, expectedRevision: number): Promise<Stored<ProjectDeployBaseline>>;
+  updateDeployDecision(document: ProjectDecision, expectedRevision: number): Promise<Stored<ProjectDecision>>;
   setupProposal(id: string): Promise<Stored<ProjectSetupProposal> | null>;
   putSetupProposal(document: ProjectSetupProposal): Promise<Stored<ProjectSetupProposal>>;
   setupAction(projectId: string, id: string, input: SetupActionRequest): Promise<Stored<ProjectSetupProposal>>;

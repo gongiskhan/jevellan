@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'vitest';
-import { DeviceViewSchema, DeviceSchema, ProjectJobRunSchema, ProjectJobSchema, ProjectSchema, minimalEnvironment, projectEnvironment } from '../packages/core/dist/index.js';
+import { ProjectDeploySchema, ProjectWorkTaskSchema, DeviceViewSchema, DeviceSchema, ProjectJobRunSchema, ProjectJobSchema, ProjectSchema, minimalEnvironment, projectEnvironment } from '../packages/core/dist/index.js';
 import { placeCommandJob, workflowEnvironmentReferences } from '../packages/projects/dist/index.js';
 import { projectFixture, projectMember, type ProjectFixture } from './helpers/project-fixture.js';
 let fixture: ProjectFixture | undefined;
@@ -117,7 +117,7 @@ test('a retained workspace gets the pinned job context and leaves the registered
   await work.daily.runJob('project', job.id, { schema: 'project-run-request-v1', clientRequestId: 'workspace_context_run' }); await work.dispatcher.sweep('project');
   const run = await f.waitFor(async () => (await work.jobs.runs('project'))[0]!, row => row.conclusion === 'passed'); await work.idle(); await work.jobs.cleanup('project');
   const { existsSync } = await import('node:fs');
-  expect(existsSync(f.homes.at('project-work', 'project', 'job-workspaces', run.id, 'report.txt'))).toBe(true);
+  expect(existsSync(f.homes.at('project-work', 'project', 'job-workspaces', run.id, 'checkout', 'report.txt'))).toBe(true);
   expect(existsSync(f.checkout + '/report.txt')).toBe(false); expect(run.workspaceRetainedAt).toBeDefined();
 });
 
@@ -149,4 +149,30 @@ test('the coordinator can cancel a command executing on a member without repeati
   const run = await f.waitFor(async () => (await work.jobs.runs('project')).find(run => run.taskId === receipt.taskId)!, run => run.conclusion === 'cancelled');
   expect(run.deviceId).toBe(member.deviceId); expect(run.cancelRequestedAt).toBeDefined();
   await member.app.projectWork.jobs.sweep('project'); expect((await work.jobs.runs('project')).filter(row => row.taskId === receipt.taskId)).toHaveLength(1);
+});
+
+test('retained command jobs expose an outer workspace, a pinned checkout and an isolated home within it', async () => {
+  const f = fixture = await projectFixture();
+  let job = await command(f, 'outer_workspace', [], 'test "$PWD" = "$JEVELLAN_JOB_WORKSPACE/checkout" && test "$HOME" = "$JEVELLAN_JOB_WORKSPACE/home" && test "$(git rev-parse HEAD)" = "$JEVELLAN_JOB_COMMIT" && printf \'{"schema":"project-job-findings-v1","findings":[{"title":"Workspace contract","brief":"Review the completed command result."}]}\' > "$JEVELLAN_JOB_WORKSPACE/project-job-findings.json"');
+  if (job.run.kind !== 'command') throw new Error('Expected a command job.');
+  job = await f.app.projectWork.daily.updateJob('project', job.id, { schema: 'job-update-request-v1', expectedRevision: job.revision, name: job.name, goalId: null, enabled: true, gate: null, run: { ...job.run, cwd: 'workspace' } });
+  const receipt = await f.app.projectWork.daily.runJob('project', job.id, { schema: 'project-run-request-v1', clientRequestId: 'outer_workspace_run' });
+  await f.app.projectWork.dispatcher.sweep('project');
+  const run = await f.waitFor(async () => (await f.app.projectWork.jobs.runs('project')).find(row => row.taskId === receipt.taskId), row => !!row?.conclusion);
+  expect(run?.conclusion).toBe('passed'); expect(run?.findings).toEqual([{ title: 'Workspace contract', brief: 'Review the completed command result.' }]);
+});
+
+test('rollback runs its approved driver while the older application has no deploy script', async () => {
+  const { writeFileSync } = await import('node:fs'); const { join } = await import('node:path'); const { derivedId } = await import('../packages/projects/dist/index.js');
+  const f = fixture = await projectFixture(), work = f.app.projectWork; await work.coordinators.ensureAssigned('project');
+  const previous = f.git(f.checkout, 'rev-parse', 'HEAD');
+  writeFileSync(join(f.checkout, 'driver.mjs'), `import fs from 'node:fs'; const e=process.env; if(fs.existsSync('driver.mjs')) throw new Error('Expected the older application tree'); fs.writeFileSync(e.JEVELLAN_JOB_WORKSPACE+'/project-deploy-job-result.json',JSON.stringify({schema:'project-deploy-job-result-v1',mode:e.JEVELLAN_JOB_MODE,commit:e.JEVELLAN_JOB_COMMIT,previousCommit:e.JEVELLAN_DEPLOY_PREVIOUS_COMMIT,rollbackAvailable:true,releaseStarted:true,released:true,migrationChanged:false,missing:[],summary:'Trusted driver executed the older pinned application'}));`);
+  f.git(f.checkout, 'add', 'driver.mjs'); f.git(f.checkout, 'commit', '-m', 'Add a trusted fixture driver'); f.git(f.checkout, 'push', 'origin', 'main'); const main = f.git(f.checkout, 'rev-parse', 'HEAD');
+  const job = await command(f, 'rollback_driver', [], 'node "$JEVELLAN_JOB_COMMAND_CHECKOUT/driver.mjs"');
+  const settings = await work.admission.settings('project'); await f.app.projectHub.putSettings({ ...settings, deploy: { ...settings.deploy, jobId: job.id } }, settings.revision);
+  const taskId = 'task_rollback_driver', runId = derivedId('jrun', taskId);
+  await f.app.projectHub.putDeploy(ProjectDeploySchema.parse({ schema: 'project-deploy-v1', id: 'deploy_driver', projectId: 'project', revision: 0, state: 'running', commit: main, previousCommit: previous, threads: [], suite: { commit: main, conclusion: null }, health: { before: [], after: [] }, checks: [], rollbackAvailable: true, decisionId: 'driver_decision', rollbackPending: { reason: 'owner', checkName: 'owner request', taskId, jobRunId: runId, at }, createdAt: at, updatedAt: at }), 0);
+  const task = await work.tasks.save(ProjectWorkTaskSchema.parse({ schema: 'project-work-task-v1', id: taskId, projectId: 'project', revision: 0, title: 'Roll back fixture', brief: 'Run only the harmless fixture driver.', kind: 'job', type: 'fix', goalId: null, source: 'owner', state: 'queued', rank: '8', ownerRanked: false, now: false, after: [], needs: [], dailyId: null, jobId: job.id, threadId: null, jobRunId: null, fixed: {}, deployment: { deployId: 'deploy_driver', mode: 'rollback', commit: previous, commandCommit: main, previousCommit: main }, createdAt: at, updatedAt: at }));
+  await work.jobs.start(task); const run = await f.waitFor(async () => (await work.jobs.runs('project')).find(run => run.id === runId)!, row => !!row?.conclusion);
+  expect(run.conclusion).toBe('passed'); expect(run.commit).toBe(previous); expect(run.deployResult?.summary).toContain('older pinned application'); expect(f.git(f.checkout, 'rev-parse', 'HEAD')).toBe(main);
 });

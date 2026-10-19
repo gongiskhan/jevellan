@@ -1,3 +1,4 @@
+import { ProjectDeploySchema, ProjectDeployBaselineSchema, type ProjectDeploy, type ProjectDeployBaseline } from '@jevellan/core';
 import { ProjectSetupProposalSchema, SetupActionRequestSchema, projectSetupPlan, defaultProjectWorkSettings, type ProjectSetupProposal, type SetupActionRequest } from '@jevellan/core';
 import { HubState } from './state.js';
 import { ProjectNotificationSchema, type ProjectNotification } from '@jevellan/core';
@@ -48,6 +49,31 @@ type Page<T> = { records: T[]; next: string | null };
  * build one per request. Reads assert the D3 revision rule; read-then-write operations run in one hub transaction.
  */
 export class HubProjectStore {
+  #deployWriter(projectId: string) { this.#project(projectId); if (this.coordinator(projectId)?.document.deviceId !== this.deviceId) refuse('Only the coordinator device can advance a deploy.', 403); }
+  deploys(projectId: string, after?: string): Page<ProjectDeploy> { return this.#page('project-deploys', ProjectDeploySchema, projectId, after, () => true); }
+  deploy(id: string): Stored<ProjectDeploy> | null { return this.#get('project-deploys', id, ProjectDeploySchema); }
+  putDeploy(raw: ProjectDeploy, expectedRevision: number): Stored<ProjectDeploy> {
+    const document = ProjectDeploySchema.parse(raw); this.#deployWriter(document.projectId);
+    const previous = this.deploy(document.id)?.document;
+    if (previous && (previous.projectId !== document.projectId || previous.createdAt !== document.createdAt || previous.decisionId !== document.decisionId)) refuse('A deploy cannot change identity.');
+    if (previous && previous.commit !== document.commit && (previous.state !== 'open' || document.state !== 'open')) refuse('An approved deploy cannot change its commit.');
+    return this.#put('project-deploys', document.id, ProjectDeploySchema, document, expectedRevision);
+  }
+  deployBaseline(projectId: string): Stored<ProjectDeployBaseline> | null { this.#project(projectId); return this.#get('project-deploy-baselines', projectId, ProjectDeployBaselineSchema); }
+  putDeployBaseline(raw: ProjectDeployBaseline, expectedRevision: number): Stored<ProjectDeployBaseline> {
+    const document = ProjectDeployBaselineSchema.parse(raw); this.#deployWriter(document.projectId);
+    if (document.id !== document.projectId) refuse('A deploy baseline belongs to its project.');
+    return this.#put('project-deploy-baselines', document.projectId, ProjectDeployBaselineSchema, document, expectedRevision);
+  }
+  updateDeployDecision(raw: ProjectDecision, expectedRevision: number): Stored<ProjectDecision> {
+    const document = ProjectDecisionSchema.parse(raw); this.#deployWriter(document.projectId);
+    const previous = this.decision(document.id)?.document;
+    if (!previous?.deploy || !document.deploy || previous.projectId !== document.projectId || previous.createdAt !== document.createdAt) refuse('Only an existing deploy question can be updated.');
+    const next = this.deploy(document.deploy.deployId)?.document;
+    if (!next || next.projectId !== document.projectId || next.decisionId !== document.id && next.rollbackDecisionId !== document.id && next.failureDecisionId !== document.id) refuse('This question does not belong to the deploy.');
+    if (previous.answer && !document.answer && this.deploy(previous.deploy.deployId)?.document.state !== 'rolled-back') refuse('An answered deploy question cannot be reopened before rollback.');
+    return this.#put(DECISIONS, document.id, ProjectDecisionSchema, document, expectedRevision);
+  }
   setupProposal(id: string): Stored<ProjectSetupProposal> | null { return this.#get('project-setup-proposals', id, ProjectSetupProposalSchema); }
   putSetupProposal(raw: ProjectSetupProposal): Stored<ProjectSetupProposal> {
     const document = ProjectSetupProposalSchema.parse(raw); this.#project(document.projectId);
@@ -188,6 +214,9 @@ export class HubProjectStore {
     if (!task || task.projectId !== document.projectId || task.jobId !== document.jobId) refuse('The job run must belong to its task.', 400);
     if (previous && stableJson(previous.workflowHandoff) !== stableJson(document.workflowHandoff)) refuse('The workflow handoff receipt cannot change.', 409);
     if (previous && (stableJson(previous.workflowScheduler) !== stableJson(document.workflowScheduler) || previous.nightlyWindowId !== document.nightlyWindowId)) refuse('The workflow scheduler receipt cannot change.', 409);
+    if (previous?.deploymentCommandStartedAt && previous.deploymentCommandStartedAt !== document.deploymentCommandStartedAt) refuse('The deploy command start receipt cannot change.', 409);
+    if (previous && (previous.commit !== document.commit || stableJson(previous.deployment) !== stableJson(document.deployment))) refuse('The pinned job commit cannot change.', 409);
+    if (document.deployment && stableJson(task.deployment) !== stableJson(document.deployment)) refuse('The deploy receipt must match its approved task.', 409);
     if (previous && (previous.taskId !== document.taskId || previous.jobId !== document.jobId || previous.projectDay !== document.projectDay || previous.startedAt !== document.startedAt || (previous.phase !== 'waiting' && previous.deviceId !== document.deviceId || previous.phase === 'waiting' && coordinatorId !== this.deviceId && previous.deviceId !== document.deviceId) || previous.setupCommand !== document.setupCommand || stableJson(previous.spec) !== stableJson(document.spec))) refuse('Job run identity cannot change.', 400);
     // Cleanup metadata may be added after completion; execution results remain immutable.
     if (previous?.conclusion && stableJson({ ...previous, revision: 0, dispatchRefDeletedAt: undefined, cleanedAt: undefined }) !== stableJson({ ...document, revision: 0, dispatchRefDeletedAt: undefined, cleanedAt: undefined })) refuse('A finished job receipt cannot change.', 409);
@@ -666,6 +695,12 @@ export class HubProjectStore {
     const request = ProjectHubRequestSchema.parse(raw); const base = { schema: 'project-hub-result-v1', operation: request.operation };
     let result: unknown;
     switch (request.operation) {
+      case 'deploys-list': result = { ...base, ...this.deploys(request.projectId, request.after) }; break;
+      case 'deploy-get': result = { ...base, record: this.deploy(request.id) }; break;
+      case 'deploy-put': result = { ...base, record: this.putDeploy(request.document, request.expectedRevision) }; break;
+      case 'deploy-baseline-get': result = { ...base, record: this.deployBaseline(request.projectId) }; break;
+      case 'deploy-baseline-put': result = { ...base, record: this.putDeployBaseline(request.document, request.expectedRevision) }; break;
+      case 'deploy-decision-update': result = { ...base, record: this.updateDeployDecision(request.document, request.expectedRevision) }; break;
       case 'jobs-list': result = { ...base, ...this.jobs(request.projectId, request.after) }; break;
       case 'job-get': result = { ...base, record: this.job(request.jobId) }; break;
       case 'job-put': result = { ...base, record: this.putJob(request.job, request.expectedRevision) }; break;
@@ -745,6 +780,12 @@ export class HubProjectAccess implements ProjectHub {
   async putNotification(document: ProjectNotification) { this.#store.putNotification(document); }
   async putUsageDay(document: ProjectUsageDay) { this.#store.putUsageDay(document); }
   async putSessionCache(snapshot: ProjectSessionCache) { this.#store.putSessionCache(snapshot); }
+  async deploys(projectId: string, after?: string) { return this.#store.deploys(projectId, after); }
+  async deploy(id: string) { return this.#store.deploy(id); }
+  async putDeploy(document: ProjectDeploy, expectedRevision: number) { return this.#store.putDeploy(document, expectedRevision); }
+  async deployBaseline(projectId: string) { return this.#store.deployBaseline(projectId); }
+  async putDeployBaseline(document: ProjectDeployBaseline, expectedRevision: number) { return this.#store.putDeployBaseline(document, expectedRevision); }
+  async updateDeployDecision(document: ProjectDecision, expectedRevision: number) { return this.#store.updateDeployDecision(document, expectedRevision); }
   async jobs(projectId: string, after?: string) { return this.#store.jobs(projectId, after); }
   async job(jobId: string) { return this.#store.job(jobId); }
   async putJob(job: ProjectJob, expectedRevision: number) { return this.#store.putJob(job, expectedRevision); }
@@ -844,6 +885,12 @@ export class MemberProjectStore implements ProjectHub {
   #check<T>(record: T, valid: (value: T) => boolean): T { if (!valid(record)) throw new HubProtocolError(); return record; }
 
   async settings(projectId: string) { return this.#check((await this.#call('settings-get', { projectId })).record, (row) => !row || row.document.projectId === projectId); }
+  async deploys(projectId: string, after?: string) { return this.#page(await this.#call('deploys-list', { projectId, ...(after ? { after } : {}) }), projectId, after); }
+  async deploy(id: string) { return this.#check((await this.#call('deploy-get', { id })).record, row => !row || row.document.id === id); }
+  async putDeploy(document: ProjectDeploy, expectedRevision: number) { return this.#check((await this.#call('deploy-put', { document, expectedRevision })).record, row => row.document.id === document.id && row.document.projectId === document.projectId && row.revision === expectedRevision + 1); }
+  async deployBaseline(projectId: string) { return this.#check((await this.#call('deploy-baseline-get', { projectId })).record, row => !row || row.document.projectId === projectId); }
+  async putDeployBaseline(document: ProjectDeployBaseline, expectedRevision: number) { return this.#check((await this.#call('deploy-baseline-put', { document, expectedRevision })).record, row => row.document.projectId === document.projectId && row.revision === expectedRevision + 1); }
+  async updateDeployDecision(document: ProjectDecision, expectedRevision: number) { return this.#check((await this.#call('deploy-decision-update', { document, expectedRevision })).record, row => row.document.id === document.id && row.revision === expectedRevision + 1); }
   async jobs(projectId: string, after?: string) { return this.#page(await this.#call('jobs-list', { projectId, ...(after ? { after } : {}) }), projectId, after); }
   async job(jobId: string) { return this.#check((await this.#call('job-get', { jobId })).record, row => !row || row.document.id === jobId); }
   async putJob(job: ProjectJob, expectedRevision: number) { return this.#check((await this.#call('job-put', { job, expectedRevision })).record, row => row.document.id === job.id && row.document.projectId === job.projectId); }

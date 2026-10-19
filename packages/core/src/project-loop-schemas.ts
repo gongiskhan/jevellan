@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DeploymentJobSchema } from './project-deploy-schemas.js';
 import { ProjectReviewRunSchema } from './project-review-schemas.js';
 import { WorkflowHandoffStateSchema, WorkflowSchedulerStateSchema } from './workflow-schemas.js';
 import { EffortSchema, IdSchema, TimestampSchema } from './schemas.js';
@@ -14,7 +15,7 @@ export const TaskFixedSchema = z.strictObject({ isolation: IsolationSchema.optio
 const title = z.string().trim().min(1).max(120), brief = z.string().trim().min(1).max(20000);
 const needs = z.array(z.string().regex(/^[a-z0-9-]{1,32}$/u)).max(8), after = z.array(IdSchema).max(10);
 /** Separate from the legacy Improver ProjectTaskSchema and namespace (decision 636). */
-export const ProjectWorkTaskSchema = z.strictObject({ schema: z.literal('project-work-task-v1'), id: IdSchema, projectId: IdSchema, revision: z.number().int().nonnegative(),
+export const ProjectWorkTaskSchema = z.strictObject({ schema: z.literal('project-work-task-v1'), deployment: DeploymentJobSchema.optional(), id: IdSchema, projectId: IdSchema, revision: z.number().int().nonnegative(),
   title, brief, kind: TaskKindSchema, type: TaskTypeSchema, goalId: IdSchema.nullable(), source: TaskSourceSchema, state: TaskStateSchema,
   rank: z.string().min(1).max(64), ownerRanked: z.boolean(), now: z.boolean(), after, needs,
   fromBranch: z.string().min(1).max(200).optional(),

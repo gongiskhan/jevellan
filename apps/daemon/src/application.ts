@@ -173,7 +173,7 @@ export class Application {
       // Projects share the account serialization, checkout ownership, leases, bridge registry and memory with conversations.
       this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId, undefined, () => this.devices.list());
       this.library = new ProjectLibraryService(this);
-      this.projectWork = new ProjectWork({ library: this.library, homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor, workRefusal: () => this.versionRefusal(),
+      this.projectWork = new ProjectWork({ deployHealth: async (id, checks, trigger, deployId) => { const runs: ProjectHealthRun[] = []; for (const definition of checks) { const view = await this.projectHealthRequest({ schema: 'project-health-request-v1', project: id, operation: 'run', trigger, deployId, definition }); runs.push(...view.runs); } return runs; }, library: this.library, homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor, workRefusal: () => this.versionRefusal(),
         journal: { isHub: !this.member, ...(this.member ? { request: input => this.member!.projectJournal(input) } : {}) },
         terminalRead: (scope, input) => this.terminals.read(scope.kind === 'thread' ? { kind: 'thread', projectId: scope.projectId, threadId: scope.threadId }
           : { kind: 'coordinator', projectId: scope.projectId }, input),
@@ -295,7 +295,7 @@ export class Application {
     const projectId = matches[0]!.id;
     if (input.operation === 'list') return ProjectHealthViewSchema.parse({ schema: 'project-health-view-v1', projectId,
       runs: this.hub.listByField('project-health', 'projectId', projectId, ProjectHealthRunSchema).map(row => row.document).sort((a, b) => b.at.localeCompare(a.at)) });
-    return ProjectHealthViewSchema.parse({ schema: 'project-health-view-v1', projectId, runs: await this.runProjectHealth(projectId, 'manual', undefined, input) });
+    return ProjectHealthViewSchema.parse({ schema: 'project-health-view-v1', projectId, runs: await this.runProjectHealth(projectId, input.trigger ?? 'manual', input.deployId, input) });
   }
   async runProjectHealth(projectId: string, trigger: ProjectHealthRun['trigger'], deployId?: string, input?: Pick<ProjectHealthRequest, 'check' | 'definition'>): Promise<ProjectHealthRun[]> {
     if (this.member) throw new Error('Health checks run at the state point.');

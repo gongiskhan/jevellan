@@ -25,7 +25,7 @@ function notification(id: string, at: number, kind: ProjectNotification['kind'] 
 }
 test('notification levels filter every kind without affecting the test notification', () => {
   for (const level of ['everything', 'standard', 'needs-you', 'off']) for (const kind of ProjectNotificationSchema.shape.kind.options) {
-    const expected = kind === 'test' || level === 'everything' || level === 'standard' && kind !== 'thread-finished' || level === 'needs-you' && ['needs-you', 'thread-failed', 'coordinator-unavailable'].includes(kind);
+    const expected = kind === 'test' || level === 'everything' || level === 'standard' && kind !== 'thread-finished' || level === 'needs-you' && ['needs-you', 'thread-failed', 'coordinator-unavailable', 'deploy'].includes(kind);
     expect(notificationAllowed(kind, level), `${level}:${kind}`).toBe(expected);
   }
 });

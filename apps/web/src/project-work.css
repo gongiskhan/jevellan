@@ -791,3 +791,7 @@ button.pw-session-badge { display: inline-flex; gap: 6px; min-height: 30px; padd
 .pw-setup-item { margin: 16px 0; min-width: 0; }
 .pw-setup-item textarea { width: 100%; min-height: 84px; margin-top: 8px; resize: vertical; }
 .pw-setup-item .check-label { align-items: flex-start; }
+
+.pw-deploy-question { font-size: 13.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.pw-deploy-question p { white-space: pre-wrap; margin: 0 0 8px; }
+.pw-last-deploy { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }

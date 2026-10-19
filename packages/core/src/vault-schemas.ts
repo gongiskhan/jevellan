@@ -38,6 +38,7 @@ export const VaultProjectSchemaV2 = VaultProjectSchemaV1.extend({ schema: z.lite
 const landingSettings = ProjectWorkSettingsSchema.shape;
 export const VaultProjectSchemaV3 = VaultProjectSchemaV2.extend({ schema: z.literal('vault-project-v3'),
   work: VaultProjectSchemaV2.shape.work.omit({ defaultIsolation: true, allowMainIsolation: true, requiredChecks: true, autoMerge: true }).extend({
+    deploy: z.strictObject({ mode: z.enum(['approve', 'automatic']).default('approve'), job: z.string().nullable().default(null), desktopJob: z.string().nullable().default(null), suiteJob: z.string().nullable().default(null) }).default({ mode: 'approve', job: null, desktopJob: null, suiteJob: null }),
     delivery: landingSettings.delivery, autoLand: landingSettings.autoLand, landingChecks: landingSettings.landingChecks, smokeCheck: landingSettings.smokeCheck, mergeCommitPaths: landingSettings.mergeCommitPaths, healthChecks: landingSettings.healthChecks }),
 });
 export const VaultProjectSchema = z.union([VaultProjectSchemaV1, VaultProjectSchemaV2, VaultProjectSchemaV3]).transform(value => {

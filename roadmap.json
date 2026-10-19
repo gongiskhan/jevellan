@@ -956,8 +956,8 @@
   {
     "id": "wg-deploy",
     "title": "Pinned deploy approval and rollback",
-    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
-    "status": "planned"
+    "why": "Approved pinned deploys, coordinator CAS registry, admission-time health baselines, durable monitors/rollback, recovery and owner UI implemented. Final 186 affected backend cases, four browser layouts and 16 live vision checks passed; typecheck/lint/build passed. Private integration preflight is blocked after one VM invocation, with no production change; executor argument correction remains in normal project work. See docs/acceptance/without-github-2026-10/README.md.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "wg-handoff",

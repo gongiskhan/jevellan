@@ -1,3 +1,4 @@
+import { ProjectDeploySchema, ProjectDeployBaselineSchema } from './project-deploy-schemas.js';
 import { ProjectSetupProposalSchema, SetupActionRequestSchema } from './project-setup-schemas.js';
 import { MergeDocumentSchema } from './merge-schemas.js';
 import { ProjectSessionCacheSchema } from './session-cache-schemas.js';
@@ -18,7 +19,7 @@ import { ProjectGoalSchema, ProjectRefillStateSchema } from './project-goal-sche
 // Members reach project hub state through POST /hub/mesh/projects/<collection> with operation-discriminated bodies (D7).
 // The main isolation phase adds the held checkouts read (6).
 export const ProjectHubCollectionSchema = z.enum(['settings', 'coordinators', 'threads', 'decisions', 'notebooks', 'overrides',
-  'envelopes', 'work', 'mail', 'reservations', 'checkouts', 'tasks', 'goals', 'jobs', 'dailies', 'job-runs', 'windows']);
+  'envelopes', 'work', 'mail', 'reservations', 'checkouts', 'tasks', 'goals', 'jobs', 'dailies', 'job-runs', 'windows', 'deploys']);
 export type ProjectHubCollection = z.infer<typeof ProjectHubCollectionSchema>;
 export const PROJECT_HUB_PAGE = 100;
 /** A pending-envelope page also stops near this many serialized bytes (at least one envelope), under the member's 2 MiB reply cap (D260). */
@@ -56,6 +57,12 @@ const project = { projectId: IdSchema };
 const page = { projectId: IdSchema, after: IdSchema.optional() };
 const expectedRevision = z.number().int().nonnegative();
 export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ ...request, operation: z.literal('deploys-list'), ...page }),
+  z.strictObject({ ...request, operation: z.literal('deploy-get'), id: IdSchema }),
+  z.strictObject({ ...request, operation: z.literal('deploy-put'), document: ProjectDeploySchema, expectedRevision }),
+  z.strictObject({ ...request, operation: z.literal('deploy-baseline-get'), ...project }),
+  z.strictObject({ ...request, operation: z.literal('deploy-baseline-put'), document: ProjectDeployBaselineSchema, expectedRevision }),
+  z.strictObject({ ...request, operation: z.literal('deploy-decision-update'), document: ProjectDecisionSchema, expectedRevision }),
   z.strictObject({ ...request, operation: z.literal('setup-get'), id: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('setup-put'), document: ProjectSetupProposalSchema }),
   z.strictObject({ ...request, operation: z.literal('setup-action'), ...project, id: IdSchema, input: SetupActionRequestSchema }),
@@ -126,6 +133,7 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
 export type ProjectHubRequest = z.infer<typeof ProjectHubRequestSchema>;
 export type ProjectHubOperation = ProjectHubRequest['operation'];
 const collections = {
+  'deploys-list': 'deploys', 'deploy-get': 'deploys', 'deploy-put': 'deploys', 'deploy-baseline-get': 'deploys', 'deploy-baseline-put': 'deploys', 'deploy-decision-update': 'deploys',
   'setup-get': 'work', 'setup-put': 'work', 'setup-action': 'work',
   'notification-put': 'work', 'session-caches': 'work', 'session-cache-put': 'work', 'usage-days': 'work', 'usage-day-put': 'work',
   'merge-documents': 'threads', 'merge-document-get': 'threads', 'merge-document-put': 'threads',
@@ -151,6 +159,7 @@ const collections = {
 export function collectionOf(operation: ProjectHubOperation): ProjectHubCollection { return collections[operation]; }
 // Every operation is classified, so an operation added by a later phase cannot skip the lifecycle gate unnoticed.
 const access = {
+  'deploys-list': 'read', 'deploy-get': 'read', 'deploy-put': 'write', 'deploy-baseline-get': 'read', 'deploy-baseline-put': 'write', 'deploy-decision-update': 'write',
   'setup-get': 'read', 'setup-put': 'write', 'setup-action': 'write',
   'notification-put': 'write', 'session-caches': 'read', 'session-cache-put': 'write', 'usage-days': 'read', 'usage-day-put': 'write',
   'merge-documents': 'read', 'merge-document-get': 'read', 'merge-document-put': 'write',
@@ -194,6 +203,12 @@ export const ProjectHubResultSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...result, operation: z.literal('merge-documents'), ...records(MergeDocumentSchema) }),
   z.strictObject({ ...result, operation: z.literal('merge-document-get'), record: stored(MergeDocumentSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('merge-document-put'), record: stored(MergeDocumentSchema) }),
+  z.strictObject({ ...result, operation: z.literal('deploys-list'), ...records(ProjectDeploySchema) }),
+  z.strictObject({ ...result, operation: z.literal('deploy-get'), record: stored(ProjectDeploySchema).nullable() }),
+  z.strictObject({ ...result, operation: z.literal('deploy-put'), record: stored(ProjectDeploySchema) }),
+  z.strictObject({ ...result, operation: z.literal('deploy-baseline-get'), record: stored(ProjectDeployBaselineSchema).nullable() }),
+  z.strictObject({ ...result, operation: z.literal('deploy-baseline-put'), record: stored(ProjectDeployBaselineSchema) }),
+  z.strictObject({ ...result, operation: z.literal('deploy-decision-update'), record: stored(ProjectDecisionSchema) }),
   z.strictObject({ ...result, operation: z.literal('jobs-list'), ...records(ProjectJobSchema) }),
   z.strictObject({ ...result, operation: z.literal('job-get'), record: stored(ProjectJobSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('job-put'), record: stored(ProjectJobSchema) }),

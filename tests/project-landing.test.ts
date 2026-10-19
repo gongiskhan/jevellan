@@ -33,7 +33,7 @@ test('checks use path boundaries, empty paths and an unconditional smoke check',
 });
 test('old threads default to pull-request delivery and old settings migrate to land without retired fields', () => {
   const old = { ...defaultProjectWorkSettings('p'), schema: 'project-work-settings-v4', autoMerge: true, defaultIsolation: 'main', allowMainIsolation: true, requiredChecks: ['result'] };
-  for (const k of ['delivery', 'autoLand', 'landingChecks', 'smokeCheck', 'mergeCommitPaths', 'healthChecks']) delete old[k as keyof typeof old];
+  for (const k of ['delivery', 'autoLand', 'landingChecks', 'smokeCheck', 'mergeCommitPaths', 'healthChecks', 'deploy']) delete old[k as keyof typeof old];
   const migrated = StoredProjectWorkSettingsSchema.parse(old); expect(migrated).toMatchObject({ delivery: 'land', autoLand: true }); expect(migrated).not.toHaveProperty('requiredChecks');
   const index = ThreadIndexSchema.parse({ schema: 'project-thread-index-v1', revision: 0, id: 't', projectId: 'p', title: 'Old', state: 'running', isolation: 'worktree', ownerDeviceId: 'd', runtime: 'fake', modelLabel: 'Fixture', effort: 'medium', accountLabel: 'Work', turns: 1, createdAt: '2026-10-19T00:00:00Z', updatedAt: '2026-10-19T00:00:00Z' });
   expect(index.delivery).toBe('pull-request');

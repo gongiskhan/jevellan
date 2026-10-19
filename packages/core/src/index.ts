@@ -109,3 +109,5 @@ export * from './project-setup-schemas.js';
 export * from './project-health-schemas.js';
 
 export * from './project-landing-schemas.js';
+
+export * from './project-deploy-schemas.js';

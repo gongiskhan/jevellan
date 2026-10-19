@@ -61,7 +61,7 @@ export class HubNotifications {
     for (const { document } of this.hub.list('project-decisions', ProjectDecisionSchema)) {
       if (document.answer || document.withdrawnAt || Date.parse(document.createdAt) < cutoff) continue;
       const project = this.hub.get('projects', document.projectId, ProjectSchema)?.document; if (!project) continue;
-      this.enqueue({ schema: 'project-notification-v1', revision: 0, id: `question_${key(document.id)}`, projectId: project.id, kind: 'needs-you',
+      this.enqueue({ schema: 'project-notification-v1', revision: 0, id: `question_${key(document.id)}`, projectId: project.id, kind: 'needs-you', ...(document.urgent ? { urgent: true } : {}),
         title: clipRedacted(this.hub.redactor.text(notificationQuestionTitle(project.name)), 80), body: clipRedacted(this.hub.redactor.text(document.question), 180),
         url: `/projects/${project.id}?view=overview`, tag: `${project.id}:decision:${document.id}`.slice(0, 100), createdAt: document.createdAt });
     }

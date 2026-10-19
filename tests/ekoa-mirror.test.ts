@@ -84,3 +84,14 @@ test('one failed night creates one durable report mirror and respects the owner 
   report.status = 'done'; await service.tick(); expect(report.status).toBe('done'); expect(service.state().mirrors[0]).toMatchObject({ kind: 'night-report', state: 'completed' });
   expect(remote.calls.filter(call => call.name === 'task_create')).toHaveLength(1); expect(remote.calls.some(call => call.name === 'task_reopen')).toBe(false);
 });
+
+test('a deploy pin updates one Ekoa task in place and rollback reopens that same task', async () => {
+  const put = (question: string, commit: string, answered = false) => {
+    const row = hub.get('project-decisions', 'deploy_message', ProjectDecisionSchema);
+    hub.put('project-decisions', 'deploy_message', ProjectDecisionSchema, ProjectDecisionSchema.parse({ schema: 'project-decision-v1', revision: (row?.revision ?? 0) + 1, id: 'deploy_message', projectId: 'project', from: 'coordinator', question, options: [{ label: `Deploy ${commit}` }, { label: 'Not now' }], deploy: { deployId: 'deploy_1' }, createdAt: at, ...(answered ? { answeredAt: at, answer: { optionLabel: `Deploy ${commit}`, source: 'panel' } } : {}) }), row?.revision ?? 0);
+  };
+  put('Deploy 1 landed thread(s) to production at aaaaaaa?\nSandbox app: passed', 'aaaaaaa'); await service.tick(); const task = [...remote.tasks.values()][0]!;
+  put('Deploy 2 landed thread(s) to production at bbbbbbb?\nSandbox app: passed', 'bbbbbbb'); await service.tick(); expect(remote.tasks.size).toBe(1); expect(task.notes).toContain('Deploy 2 landed');
+  put('Deploy 2 landed thread(s) to production at bbbbbbb?', 'bbbbbbb', true); await service.tick(); expect(task.status).toBe('done');
+  put('Deploy 2 landed thread(s) to production at bbbbbbb?\nRolled back at 12:05: Sandbox app failed.', 'bbbbbbb'); await service.tick(); expect(task.status).toBe('open'); expect(task.notes).toContain('Rolled back at'); expect(remote.tasks.size).toBe(1);
+});

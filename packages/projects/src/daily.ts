@@ -178,6 +178,7 @@ export class ProjectDailyWork {
       const daily = (await this.o.hub.daily(id))?.document; if (!daily || daily.projectId !== projectId || !daily.enabled) return refuse('This daily item is unavailable or disabled.');
       const tasks = await this.o.tasks.list(projectId), pending = tasks.find(task => task.dailyId === id && ['queued', 'active'].includes(task.state));
       if (pending) return { schema: 'task-receipt-v1' as const, taskId: pending.id, state: pending.state, repeated: true };
+      if (daily.target.kind === 'job') await this.#ordinaryJob(projectId, daily.target.jobId);
       const job = daily.target.kind === 'job' ? (await this.o.hub.job(daily.target.jobId))?.document ?? null : null;
       if (daily.target.kind === 'job' && !job?.enabled) return refuse('This job is unavailable or disabled.');
       const rank = taskRankBetween(tasks.filter(task => ['draft', 'queued', 'active'].includes(task.state)).map(task => task.rank).sort().at(-1) ?? null, null);
@@ -187,6 +188,7 @@ export class ProjectDailyWork {
   }
   async runJob(projectId: string, id: string, raw: unknown) {
     const { clientRequestId } = ProjectRunRequestSchema.parse(raw);
+    await this.#ordinaryJob(projectId, id);
     return this.o.tasks.exclusive(projectId, async () => {
       await this.o.tasks.assertWriter(projectId); const taskId = derivedId('task', 'job-now', projectId, id, clientRequestId), existing = (await this.o.hub.task(taskId))?.document;
       if (existing) return { schema: 'task-receipt-v1' as const, taskId, state: existing.state, repeated: true };
@@ -198,12 +200,17 @@ export class ProjectDailyWork {
       return { schema: 'task-receipt-v1' as const, taskId, state: task.state, repeated: false };
     });
   }
+  async #ordinaryJob(projectId: string, id: string): Promise<void> {
+    const deploy = (await this.o.settings(projectId)).deploy;
+    if (id === deploy.jobId || id === deploy.desktopJobId) refuse('Deploy jobs run only from the owner’s deploy message.');
+  }
   async eligible(task: ProjectWorkTask, tasks: readonly ProjectWorkTask[]): Promise<boolean> {
     const window = await this.window(task.projectId);
     if (window && task.nightlyWindowId === window.id && !task.nightlyFixFor && this.o.now() < Date.parse(window.openedAt) + 7 * 3_600_000) {
       const next = await this.#next(window, tasks);
       if (task.id !== next) return false;
     }
+    if (task.kind === 'job' && !task.deployment) { let after: string | undefined; do { const page = await this.o.hub.deploys(task.projectId, after); if (page.records.some(row => ['approved', 'running'].includes(row.state) || row.monitor || row.rollbackPending && !row.rollback)) return false; after = page.next ?? undefined; } while (after); }
     return task.kind !== 'job' || !this.o.runner.busy(task.projectId) && !tasks.some(row => row.id !== task.id && row.kind === 'job' && row.state === 'active');
   }
   async sweep(projectId: string): Promise<void> {

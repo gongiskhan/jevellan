@@ -120,7 +120,7 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
   switch (event.kind) {
     case 'setup-requested': return SETUP_REQUESTED;
     case 'settings-changed': return event.instructions !== undefined ? `[instructions changed by ${event.by === 'owner' ? 'the owner' : 'you'}] Project instructions are now:\n${event.instructions}` : `[settings changed by ${event.by === 'owner' ? 'the owner' : 'you'}] ${event.changes.map(change => `${settingLabel(change.field)}: ${change.from} → ${change.to}`).join('; ')}`;
-    case 'thread-resolved': return `[thread "${title(event.threadId)}" resolved by ${event.by === 'owner' ? 'the owner' : 'inactivity'}]`;
+    case 'thread-resolved': return `[thread "${title(event.threadId)}" resolved by ${event.by === 'owner' ? 'the owner' : event.by === 'deploy' ? 'the deploy' : 'inactivity'}]`;
     case 'thread-placement-changed': return `[thread "${title(event.threadId)}" moved: ${event.summary}]`;
     case 'thread-auto-fix': return autoFixEventLine(event, title(event.threadId));
     case 'memory-dreamed': return `[memory dream] ${event.summary}\nChanges: ${JSON.stringify(event.counts)}`;
@@ -143,6 +143,7 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
     }
     case 'pr-update': return `[PR #${event.prNumber} "${title(event.threadId)}"] ${event.change === 'conflict' ? `has conflicts with ${context.base}` : PR_CHANGES[event.change]}`;
     case 'pr-ready-for-review': return `[PR #${event.prNumber} "${title(event.threadId)}" on ${event.commit.slice(0, 7)}] ready for coordinator review`;
+    case 'deploy': return event.outcome === 'deployed' ? `[deployed ${event.commit.slice(0, 7)} with ${event.threads} threads]` : event.outcome === 'rolled-back' ? `[deploy ${event.commit.slice(0, 7)} rolled back: ${event.summary}]` : `[deploy ${event.commit.slice(0, 7)} failed: ${event.summary}]`;
     case 'merge-gate': return `[PR #${event.prNumber} "${title(event.threadId)}" on ${event.commit.slice(0, 7)}] ${event.outcome}: ${event.summary}`;
     case 'job-finished': return `[job "${event.name}" ${event.conclusion === 'timed-out' ? 'timed out' : event.conclusion === 'skipped' ? 'was skipped' : event.conclusion} on ${event.commit.slice(0, 7)}] ${event.summary}`;
     case 'project-reviewed': return `[nightly review at ${event.report.commit}] ${JSON.stringify(event.report)}\nChoose exactly one combined finding task, or none, with jevellan_review_followup for reviewTaskId ${event.report.taskId}. Do not create separate tasks for individual findings.`;

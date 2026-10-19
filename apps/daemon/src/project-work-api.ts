@@ -1,3 +1,4 @@
+import { DeployBaselineRequestSchema, DeployRollbackRequestSchema } from '@jevellan/core';
 import { ProjectHealthRequestSchema } from '@jevellan/core';
 import { SetupActionRequestSchema } from '@jevellan/core';
 import { parseReply, EkoaCodeSetupRequestSchema, JobCreateRequestSchema, JobUpdateRequestSchema, DailyCreateRequestSchema, DailyUpdateRequestSchema, ProjectRunRequestSchema } from '@jevellan/core';
@@ -18,7 +19,7 @@ import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 import { readProjectImage } from '@jevellan/conversations';
 
-export type ProjectWorkRouteName = 'health-list' | 'health-run' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -40,6 +41,9 @@ const rows: readonly Row[] = [
   { name: 'job-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs$/, methods: ['POST'], target: 'coordinator' },
   { name: 'job-update', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/edit$/, methods: ['POST'], target: 'any', ids: ['projectId', 'jobId'] },
   { name: 'job-run', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/run$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'jobId'] },
+  { name: 'deploy-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/deploys$/, methods: ['GET'], target: 'any' },
+  { name: 'deploy-baseline', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/deploys\/baseline$/, methods: ['PUT'], target: 'coordinator' },
+  { name: 'deploy-rollback', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/deploys\/([A-Za-z0-9_-]+)\/rollback$/, methods: ['POST'], target: 'coordinator' },
   { name: 'health-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/health$/, methods: ['GET'], target: 'any' },
   { name: 'health-run', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/health\/run$/, methods: ['POST'], target: 'any' },
   { name: 'daily-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies$/, methods: ['GET'], target: 'any' },
@@ -237,6 +241,9 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'usage': send(await work.usage.view(projectId, url.searchParams.get('range') ?? 'today')); return true;
     case 'session-history': send(await work.sessionTranscript(projectId, url.searchParams.get('session') ?? '')); return true;
     case 'ekoa-code-setup': send(await work.setupEkoaCode(projectId, EkoaCodeSetupRequestSchema.parse(await requestBody(request)))); return true;
+    case 'deploy-list': send(await work.deploys.view(projectId)); return true;
+    case 'deploy-baseline': { const { expectedRevision, schema: _schema, ...input } = DeployBaselineRequestSchema.parse(await requestBody(request)); void _schema; send(await work.deploys.baseline(projectId, input, expectedRevision)); return true; }
+    case 'deploy-rollback': { const input = DeployRollbackRequestSchema.parse(await requestBody(request)); send(await work.deploys.rollback(projectId, threadId, input.expectedRevision), 202); return true; }
     case 'health-list': send(await app.projectHealthRequest({ schema: 'project-health-request-v1', project: projectId, operation: 'list' })); return true;
     case 'health-run': { const input = ProjectHealthRequestSchema.parse(await requestBody(request)); send(await app.projectHealthRequest({ ...input, project: projectId, operation: 'run' })); return true; }
     case 'job-list': send({ schema: 'project-job-list-view-v1', projectId, jobs: await work.daily.jobs(projectId) }); return true;
@@ -287,8 +294,8 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'notebook':
       send(write ? await work.putNotebook(projectId, NotebookRequestSchema.parse(await requestBody(request))) : await work.notebookView(projectId)); return true;
     case 'answer': {
-      const { repeated } = await work.answerDecision(projectId, decisionId, DecisionAnswerRequestSchema.parse(await requestBody(request)));
-      send(DecisionAnsweredViewSchema.parse({ schema: 'decision-answered-view-v1', repeated }), 202); return true;
+      const { repeated, closed } = await work.answerDecision(projectId, decisionId, DecisionAnswerRequestSchema.parse(await requestBody(request)));
+      send(DecisionAnsweredViewSchema.parse({ schema: 'decision-answered-view-v1', repeated, ...(closed === undefined ? {} : { closed }) }), 202); return true;
     }
     case 'thread-create': send(await work.createThread(projectId, ThreadCreateRequestSchema.parse(await requestBody(request))), 201); return true;
     case 'thread': send(url.searchParams.has('session') ? await work.sessionTranscript(projectId, url.searchParams.get('session')!, threadId) : await work.threadView(projectId, threadId)); return true;

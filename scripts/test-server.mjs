@@ -243,6 +243,11 @@ function threadStep(input) {
     if (input.turn >= 3) github.setChecks(application.projectWork.store.get(input.owner.id).pr.number, 'passing');
     return report('done', `Greeting version ${input.turn} is ready.`, { changedFiles: ['greeting.txt'] })(turn);
   };
+  if (input.prompt.includes('WG5 landing:')) return async turn => {
+    writeFileSync(join(turn.input.cwd, 'wg-deploy.txt'), 'A deployable fixture.\n'); writeFileSync(join(turn.input.cwd, 'greeting.txt'), 'A fixture greeting.\n');
+    git(turn.input.cwd, 'add', 'wg-deploy.txt', 'greeting.txt'); git(turn.input.cwd, 'commit', '-m', 'Deploy fixture change');
+    return report('done', 'A harmless deploy fixture.', { changedFiles: ['wg-deploy.txt', 'greeting.txt'] })(turn);
+  };
   if (input.prompt.includes('WG4 legacy:')) return async turn => {
     writeFileSync(join(turn.input.cwd, 'wg-legacy.txt'), 'Preserved legacy work.\n');
     writeFileSync(join(turn.input.cwd, 'greeting.txt'), 'A legacy greeting.\n');

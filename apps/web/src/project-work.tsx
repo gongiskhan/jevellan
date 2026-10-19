@@ -1,3 +1,4 @@
+import { LastDeploy } from './project-deploy.js';
 import { SetupCard } from './setup-card.js';
 import { EmptySchema } from '@jevellan/core/client';
 import { AttachmentControls, LibraryMessage, ProjectLibraryPanel, useProjectAttachments } from './project-library.js';
@@ -574,7 +575,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             stopping={control.busy} stop={stop} onError={onError} />
         </div>
         <div className="pw-side" id={sideId} {...sidePanel}>
-          <h2 className="pw-overview-title">{copy.OVERVIEW}</h2>
+          <h2 className="pw-overview-title">{copy.OVERVIEW}</h2><LastDeploy projectId={id} fail={onError} />
           <div className="pw-overview-tabs" role="tablist" aria-label={copy.OVERVIEW}>
             {OVERVIEW_TABS.filter(name => name !== 'pull-requests' || view.threads.some(thread => thread.delivery === 'pull-request')).map(name => <button key={name} role="tab" className="pw-tab" aria-selected={overviewTab === name} onClick={() => setOverviewTab(name)}>{name === 'routines' ? copy.ROUTINES : name === 'library' ? copy.LIBRARY : copy.TAB_LABELS[name]}</button>)}
           </div>
@@ -583,7 +584,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             {sent && showSent(sent, open) && <p className="pw-sent" role="status"><Icon name="check" size={14} />{sent.text}</p>}
             {drafts.length > 0 && <div className="pw-proposed"><h4>{copy.PROPOSED_TASKS}</h4><TaskQueue projectId={id} tasks={drafts} goals={goals} threads={view.threads} navigate={navigate} changed={updated} onError={onError} /></div>}
             {open.length ? open.map((decision, index) => (
-              <DecisionCard key={decision.id} number={index + 1} projectId={id} decision={decision} titles={titles} now={now} answered={answeredQuestion} onError={onError} />
+              <DecisionCard key={decision.id} number={index + 1} projectId={id} decision={decision} titles={titles} now={now} answered={answeredQuestion} changed={updated} onError={onError} />
             )) : drafts.length === 0 && groups.waiting.length === 0 && <p className="pw-empty">{copy.BOARD_EMPTY.waiting}</p>}
             {groups.waiting.map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} deviceName={deviceName} navigate={navigate} changed={updated} onError={onError} />)}
             {view.decisions.answered.length > 0 && <AnsweredList decisions={view.decisions.answered} titles={titles} now={now} />}
@@ -747,8 +748,8 @@ function Composer({ projectId, busy, offline, offlineText, behind, jump, stoppin
  * A question for the owner (12.2): its source and age, the question as Markdown, the options with their details, and an
  * answer in the owner's own words. Every answer is idempotent by its client id.
  */
-function DecisionCard({ projectId, decision, number, titles, now, answered, onError }: {
-  projectId: string; decision: ProjectDecision; number: number; titles: ThreadTitles; now: number; answered(decision: ProjectDecision): void; onError(error: unknown): void;
+function DecisionCard({ projectId, decision, number, titles, now, answered, changed, onError }: {
+  projectId: string; decision: ProjectDecision; number: number; titles: ThreadTitles; now: number; answered(decision: ProjectDecision): void; changed(): void; onError(error: unknown): void;
 }) {
   const { error, setError, fail } = useLocalError(onError);
   const task = useTask(fail);
@@ -757,16 +758,16 @@ function DecisionCard({ projectId, decision, number, titles, now, answered, onEr
   const questionId = useId();
   const answer = (value: { optionLabel: string } | { text: string }) => void task.run(async (signal) => {
     setError('');
-    await api(`/api/projects/${projectId}/decisions/${decision.id}/answer`, DecisionAnsweredViewSchema, 'POST',
-      { schema: 'decision-answer-request-v1', clientRequestId: ids.id({ decision: decision.id, ...value }), ...value }, { signal, waitForHub: true });
+    const result = await api(`/api/projects/${projectId}/decisions/${decision.id}/answer`, DecisionAnsweredViewSchema, 'POST',
+      { schema: 'decision-answer-request-v1', clientRequestId: ids.id({ decision: decision.id, revision: decision.revision, ...value }), ...(decision.deploy ? { expectedRevision: decision.revision } : {}), ...value }, { signal, waitForHub: true });
     ids.done();
-    answered(decision);
+    if (result.closed === false) changed(); else answered(decision);
   });
   return (
     <OwnerCommandScope value={{ threadId: decision.threadId, decisionId: decision.id, ...(decision.from === 'thread' && decision.threadId ? { cwd: 'worktree' as const } : { deviceId: undefined, cwd: 'checkout' as const }) }}>
     <section className="answer-card pw-decision" aria-labelledby={questionId}>
       <p className="pw-source"><span className="pw-question-number" aria-label={`Question ${number}`}>{number}</span> {decisionSource(decision, titles)} · <Stamp at={decision.createdAt} label={shortTime(decision.createdAt, now)} /></p>
-      <div className="pw-question" id={questionId}><Markdown>{decision.question}</Markdown></div>
+      <div className="pw-question" id={questionId}>{decision.deploy ? <div className="pw-deploy-question">{decision.question.split('\n').map((line, index) => <p key={index}>{index === 0 ? <strong>{line}</strong> : line}</p>)}</div> : <Markdown>{decision.question}</Markdown>}</div>
       <OwnerCommands commands={decision.ownerCommands} />
       {decision.merge?.reason && <p>{decision.merge.reason}</p>}{decision.merge?.failures?.map((failure, index) => <details key={index}><summary>{failure.what}</summary><pre>{failure.output}</pre></details>)}
       {decision.options.length > 0 && (
@@ -779,13 +780,13 @@ function DecisionCard({ projectId, decision, number, titles, now, answered, onEr
           ))}
         </div>
       )}
-      <form className="pw-answer" onSubmit={(event) => {
+      {!decision.deploy && <form className="pw-answer" onSubmit={(event) => {
         event.preventDefault();
         if (!task.busy && text.trim()) answer({ text: text.trim() });
       }}>
         <MessageInput value={text} change={setText} label={copy.ANSWER_IN_OWN_WORDS} placeholder={copy.ANSWER_IN_OWN_WORDS} />
         <button className="small" disabled={task.busy || !text.trim()}>{copy.SEND}</button>
-      </form>
+      </form>}
       {error && <p className="error">{error}</p>}
     </section>
     </OwnerCommandScope>

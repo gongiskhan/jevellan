@@ -104,7 +104,7 @@ export type ThreadServiceOptions = {
   /** Why this device may not start new work now (B5: it runs a newer version than its hub). */
   workRefusal?(): string | undefined;
   store: ThreadStore; ledgers: ProjectLedgers; receipts: StartReceipts;
-  hub: Pick<ProjectHub, 'threads' | 'thread' | 'coordinator' | 'addOverride'>; projects: Pick<SharedProjects, 'get'>;
+  hub: Pick<ProjectHub, 'threads' | 'thread' | 'coordinator' | 'addOverride' | 'deploy'>; projects: Pick<SharedProjects, 'get'>;
   admission: Pick<Admission, 'newThreadRefusal' | 'admit' | 'counts' | 'settings' | 'dispatched' | 'isDispatched'>; placement: Pick<Placement, 'place' | 'refusal'>; accounts: Pick<AccountService, 'list'>;
   /** The configuration: the menu resolves an overridden model. */
   settings(): Promise<Configuration['x-jevellan']>;
@@ -799,6 +799,15 @@ export class ThreadService {
   async command(projectId: string, threadId: string, command: ThreadCommand): Promise<void> {
     const thread = this.#local(projectId, threadId); const runner = this.runner(threadId)!;
     switch (command.type) {
+      case 'deploy-resolution': {
+        const deploy = (await this.#o.hub.deploy(command.deployId))?.document;
+        if (!deploy || deploy.projectId !== projectId || !deploy.threads.some(item => item.threadId === threadId && item.landingCommit === command.landingCommit) || (command.clear ? deploy.state !== 'rolled-back' : deploy.state !== 'deployed')) throw refuse('This deploy cannot change the thread resolution.', 409);
+        if (thread.landing?.commit !== command.landingCommit) return;
+        this.#o.store.update(threadId, current => {
+          if (command.clear) { if (current.resolution?.by !== 'deploy' || current.resolution.deployId !== command.deployId) return current; const next = { ...current }; delete next.resolution; return next; }
+          return current.resolution ? current : { ...current, resolution: { by: 'deploy', deployId: deploy.id, at: deploy.updatedAt } };
+        }); return;
+      }
       case 'dispatch': await runner.prepare(); return;
       case 'message': { const { from, text, interrupt, id } = command.message; await this.message(projectId, threadId, from, text, interrupt, id); return; }
       case 'stop': await runner.stop(command.reason, command.notify ?? false); return;

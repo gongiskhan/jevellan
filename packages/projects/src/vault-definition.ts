@@ -12,7 +12,7 @@ export function vaultDefinition(project: Project, settings: ProjectWorkSettings,
   const byName = <T extends { name: string }>(rows: T[]) => rows.sort((a, b) => a.name.localeCompare(b.name));
   return VaultProjectSchema.parse({
     schema: 'vault-project-v3', name: project.name, origin: project.remoteUrl ?? '', testCommand: project.testCommand ?? null, setupCommand: settings.setupCommand, gitPolicy: project.branchPolicy,
-    work: { delivery: settings.delivery, autoLand: settings.autoLand, landingChecks: settings.landingChecks, smokeCheck: settings.smokeCheck, mergeCommitPaths: settings.mergeCommitPaths, healthChecks: settings.healthChecks, maxRunningThreads: settings.maxRunningThreads, maxRunningPerDevice: settings.maxRunningPerDevice,
+    work: { deploy: { mode: settings.deploy.mode, job: jobName(settings.deploy.jobId), desktopJob: jobName(settings.deploy.desktopJobId), suiteJob: jobName(settings.deploy.suiteJobId) }, delivery: settings.delivery, autoLand: settings.autoLand, landingChecks: settings.landingChecks, smokeCheck: settings.smokeCheck, mergeCommitPaths: settings.mergeCommitPaths, healthChecks: settings.healthChecks, maxRunningThreads: settings.maxRunningThreads, maxRunningPerDevice: settings.maxRunningPerDevice,
       threadTurnCap: settings.threadTurnCap, instructions: settings.instructions, riskyAreas: settings.riskyAreas,
       nightlyWindow: settings.nightlyWindow, refill: settings.refill, memory: settings.memory, sessionCheckpoints: settings.sessionCheckpoints, compactAtPercent: settings.compactAtPercent, startMode: settings.startMode, maxNewThreadsPerDay: settings.maxNewThreadsPerDay, placement: settings.placement, prAutoFix: settings.prAutoFix, environment: settings.environment, notifications: settings.notifications,
       coordinator: { runtimeId: settings.coordinator.runtimeId ?? null, modelId: settings.coordinator.modelId, effort: settings.coordinator.effort } },
@@ -51,7 +51,8 @@ export async function restoreFromVault(work: ProjectWork, projectId: string, fol
   const definition = VaultProjectSchema.parse(raw), id = (...parts: string[]) => derivedId('vault', folder, ...parts);
   const current = await work.admission.settings(projectId);
   const { schema: _schema, projectId: _project, revision, ...settings } = current; void _schema; void _project;
-  const restored = { ...settings, ...definition.work, status: 'active' as const, setupCommand: definition.setupCommand, coordinator: { ...definition.work.coordinator, accountId: current.coordinator.accountId ?? null } };
+  const { deploy: portableDeploy, ...portableWork } = definition.work;
+  const restored = { ...settings, ...portableWork, status: 'active' as const, setupCommand: definition.setupCommand, coordinator: { ...definition.work.coordinator, accountId: current.coordinator.accountId ?? null } };
   if (stableJson(restored) !== stableJson(settings)) await work.putSettings(projectId, { schema: 'project-work-settings-request-v1', revision, clientRequestId: id('settings', String(revision)), settings: restored });
   const goals = new Map<string, string>();
   for (const goal of definition.goals) goals.set(goal.name, (await goalNamed(work, projectId, { schema: 'goal-create-request-v1', ...goal }, id('goal', goal.name))).id);
@@ -63,6 +64,9 @@ export async function restoreFromVault(work: ProjectWork, projectId: string, fol
     if (gate && saved.gate?.jobId !== gate.id) jobs.set(job.name, await work.daily.updateJob(projectId, saved.id, { schema: 'job-update-request-v1', expectedRevision: saved.revision,
       name: saved.name, goalId: saved.goalId, run: saved.run, enabled: saved.enabled, gate: { jobId: gate.id } }));
   }
+  const latest = await work.admission.settings(projectId);
+  const deploy = { mode: portableDeploy.mode, jobId: portableDeploy.job ? jobs.get(portableDeploy.job)?.id ?? null : null, desktopJobId: portableDeploy.desktopJob ? jobs.get(portableDeploy.desktopJob)?.id ?? null : null, suiteJobId: portableDeploy.suiteJob ? jobs.get(portableDeploy.suiteJob)?.id ?? null : null };
+  if (stableJson(deploy) !== stableJson(latest.deploy)) { const { schema: _s, projectId: _p, revision: rev, ...kept } = latest; void _s; void _p; await work.putSettings(projectId, { schema: 'project-work-settings-request-v1', revision: rev, clientRequestId: id('deploy', String(rev)), settings: { ...kept, deploy } }); }
   for (const daily of definition.dailies) {
     const target = daily.target.kind === 'job' ? jobs.get(daily.target.job) : undefined;
     if (daily.target.kind === 'job' && !target) continue;

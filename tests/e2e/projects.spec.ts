@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { DeviceRosterSchema, MergeDocumentsViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
+import { DeviceRosterSchema, MergeDocumentsViewSchema, ProjectJobRunListViewSchema, ProjectDeployViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
@@ -2491,4 +2491,38 @@ test('WG4 landing settings, owner route, landed groups and branch continuation',
   await form.getByRole('button', { name: 'Add to queue', exact: true }).click();
   await expect(form.getByText('Branch missing-branch is not on origin.', { exact: true })).toBeVisible();
   void question; expect(errors).toEqual([]);
+});
+
+test('WG5 pinned deploy message, Not now and confirmed rollback', async ({ page }, info) => {
+  const { createServer } = await import('node:http');
+  const server = createServer((_, response) => { response.writeHead(200); response.end('sandbox app'); });
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const errors = await begin(page); await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 0, reset: true });
+    const command = `node -e 'const e=process.env; require("fs").writeFileSync(e.JEVELLAN_JOB_WORKSPACE+"/project-deploy-job-result.json",JSON.stringify({schema:"project-deploy-job-result-v1",mode:e.JEVELLAN_JOB_MODE||"preflight",commit:e.JEVELLAN_JOB_COMMIT,previousCommit:e.JEVELLAN_DEPLOY_PREVIOUS_COMMIT||null,rollbackAvailable:!!e.JEVELLAN_DEPLOY_PREVIOUS_COMMIT,released:!!e.JEVELLAN_JOB_MODE,migrationChanged:false,missing:[],summary:"Harmless fixture release"}))'`;
+    const jobResponse = await page.request.post(`${PROJECT}/jobs`, { data: { schema: 'job-create-request-v1', clientRequestId: `deploy_${info.project.name}`, name: 'Harmless deploy', goalId: null, enabled: true, run: { kind: 'command', command, timeoutMinutes: 1 }, gate: null } }); expect(jobResponse.ok()).toBe(true); const job = await jobResponse.json() as { id: string };
+    expect((await page.request.post(`${PROJECT}/jobs/${job.id}/run`, { data: { schema: 'project-run-request-v1', clientRequestId: `base_${info.project.name}` } })).ok()).toBe(true);
+    const jobRuns = async () => ProjectJobRunListViewSchema.parse(await read(page, `${PROJECT}/job-runs`)).runs;
+    await expect.poll(async () => (await jobRuns()).find(run => run.jobId === job.id)?.conclusion, { timeout: 60000 }).toBe('passed');
+    const base = (await jobRuns()).find(run => run.jobId === job.id)!.commit;
+    const original = (await work(page)).settings, { schema, projectId, revision, ...settings } = original; void schema; void projectId;
+    expect((await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision, settings: { ...settings, delivery: 'land', autoLand: false, landingChecks: [], smokeCheck: 'true', nightlyWindow: { ...settings.nightlyWindow, enabled: false }, deploy: { mode: 'approve', jobId: job.id, desktopJobId: job.id, suiteJobId: null }, healthChecks: [{ id: 'wg5_app', name: 'Sandbox app', enabled: true, steps: [{ name: 'The page', method: 'GET', url: `http://127.0.0.1:${(server.address() as { port: number }).port}/`, expectStatus: [200], expectBody: 'sandbox app' }] }] } } })).ok()).toBe(true);
+    await page.goto('/projects/projects_fixture/settings'); const landing = page.locator('#project-settings-pull-requests');
+    await expect(landing.getByRole('combobox', { name: 'Deploy job', exact: true })).toHaveValue(job.id); await landing.scrollIntoViewIfNeeded(); await page.screenshot({ path: info.outputPath(`deploy-settings-${layout(info)}.png`), fullPage: true });
+    const start = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `wg5_${info.project.name}`, title: 'A deployable change', task: 'WG5 landing: create a harmless fixture.', modelId: 'codex-gpt', effort: 'high' } }); expect(start.ok()).toBe(true); const { threadId } = await start.json() as { threadId: string };
+    await expect.poll(async () => (await threadView(page, threadId)).thread.state, { timeout: 90_000 }).toBe('in-review');
+    expect((await page.request.put(`${PROJECT}/deploys/baseline`, { data: { schema: 'project-deploy-baseline-request-v1', expectedRevision: ProjectDeployViewSchema.parse(await read(page, `${PROJECT}/deploys`)).baseline?.revision ?? 0, commit: base, rollbackAvailable: true, migrationPaths: [], desktopPaths: ['wg-deploy.txt'], desktopSecretNames: ['FIXTURE_SIGNING_SECRET'] } })).ok()).toBe(true);
+    await page.goto(`/projects/projects_fixture/threads/${threadId}`); await page.getByRole('button', { name: 'Land now', exact: true }).click(); await expect(page.getByText(/^Landed as /)).toBeVisible({ timeout: 90_000 });
+    const commit = (await threadView(page, threadId)).thread.landing!.commit;
+    await pulse(); await page.goto('/projects/projects_fixture'); await sectionTab(page, info, 'Waiting');
+    const message = page.locator('.pw-decision').filter({ hasText: `Deploy 1 landed thread(s) to production at ${commit.slice(0, 7)}?` }); await expect(message).toBeVisible(LONG); await expect(message.getByText(/Sandbox app: passed/)).toBeVisible(); await expect(message.getByText('Desktop build skipped: Missing signing secrets: FIXTURE_SIGNING_SECRET', { exact: true })).toBeVisible();
+    await message.getByRole('button', { name: 'Not now', exact: true }).click(); await expect(message.getByText(/Not now at/)).toBeVisible(LONG); await message.scrollIntoViewIfNeeded(); await page.screenshot({ path: info.outputPath(`deploy-not-now-${layout(info)}.png`) });
+    await message.getByRole('button', { name: `Deploy ${commit.slice(0, 7)}`, exact: true }).click();
+    await expect.poll(async () => { const value = await read(page, `${PROJECT}/deploys`) as { records: Array<{ commit: string; deployedAt?: string }> }; return value.records.find(row => row.commit === commit)?.deployedAt; }, { timeout: 60_000 }).toBeTruthy();
+    await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 6 }); await pulse();
+    await expect.poll(async () => (await threadView(page, threadId)).thread.resolution?.by, { timeout: 60_000 }).toBe('deploy');
+    await page.reload(); await sectionTab(page, info, 'Threads'); const overview = page.locator('.pw-last-deploy'); await expect(overview.getByText(new RegExp(`Last deploy: ${commit.slice(0, 7)}`))).toBeVisible(LONG); await overview.scrollIntoViewIfNeeded(); await page.screenshot({ path: info.outputPath(`deploy-last-${layout(info)}.png`) });
+    await overview.getByRole('button', { name: `Roll back to ${base.slice(0, 7)}`, exact: true }).click(); await expect(overview.getByRole('button', { name: 'Confirm rollback', exact: true })).toBeVisible(); await page.screenshot({ path: info.outputPath(`deploy-rollback-confirm-${layout(info)}.png`) });
+    await overview.getByRole('button', { name: 'Cancel', exact: true }).click(); expect(errors).toEqual([]);
+  } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
 });

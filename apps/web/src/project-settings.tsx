@@ -1,3 +1,4 @@
+import { DeploySettings } from './project-deploy.js';
 import { ProjectHealthEditor } from './project-health.js';
 import { browserPushId } from './notifications.js';
 import { NotificationsViewSchema } from '@jevellan/core/client';
@@ -117,7 +118,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
             {number(copy.CHECKPOINT_MINIMUM, draft.sessionCheckpoints.checkpointMinTokens, 20000, 200000, checkpointMinTokens => change({ sessionCheckpoints: { ...draft.sessionCheckpoints, checkpointMinTokens } }))}
           </>)}
           {section('pull-requests', <>
-            <LandingSettings value={draft} change={change} />
+            <LandingSettings value={draft} change={change} /><DeploySettings projectId={id} value={draft} change={change} fail={local.fail} />
             {([['checks', copy.FIX_CHECKS_AUTOMATICALLY], ['conflicts', copy.FIX_CONFLICTS_AUTOMATICALLY], ['comments', copy.FIX_COMMENTS_AUTOMATICALLY]] as const).map(([kind, label]) => <label className="checkbox" key={kind}><input type="checkbox" checked={draft.prAutoFix[kind]} onChange={event => change({ prAutoFix: { ...draft.prAutoFix, [kind]: event.target.checked } })} />{label}</label>)}
             {number(copy.AUTOMATIC_FIX_LIMIT, draft.prAutoFix.maxRounds, 1, 10, maxRounds => change({ prAutoFix: { ...draft.prAutoFix, maxRounds } }))}
             <label>{copy.RISKY_AREAS}<textarea aria-label={copy.RISKY_AREAS} rows={4} maxLength={2000} value={draft.riskyAreas} onChange={event => change({ riskyAreas: event.target.value })} /></label>

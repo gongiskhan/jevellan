@@ -32,6 +32,7 @@ export type DecisionItemsOptions = {
   toCoordinator(projectId: string, event: CoordinatorEvent): Promise<void>;
   /** Bound after construction: the thread service is built later. */
   threads(): DecisionThreadActions;
+  deployAnswer?(decision: ProjectDecision, answer: DecisionAnswer, request: { clientRequestId: string; expectedRevision?: number | undefined }): Promise<{ repeated: boolean; closed: boolean }>;
   mergeAnswer?(decision: ProjectDecision, answer: DecisionAnswer, validateOnly: boolean): Promise<boolean>;
   now?(): number;
 };
@@ -128,17 +129,22 @@ export class DecisionItems {
    * event, a turn-limit item allows turns or stops the thread (D31), and any other thread item reaches the thread as an
    * owner message. Every route is safe to repeat, because `repeated` is also reported to the retry of a lost reply.
    */
-  async answer(projectId: string, decisionId: string, request: { clientRequestId: string; optionLabel?: string | undefined; text?: string | undefined }): Promise<{ repeated: boolean }> {
+  async answer(projectId: string, decisionId: string, request: { clientRequestId: string; expectedRevision?: number | undefined; optionLabel?: string | undefined; text?: string | undefined }): Promise<{ repeated: boolean; closed?: boolean }> {
     return this.#answer(projectId, decisionId, request);
   }
   /** The coordinator already has the owner message and distributes ordinary answers itself; no echo event or duplicate thread message. */
-  async answerChat(projectId: string, decisionId: string, request: { clientRequestId: string; optionLabel?: string | undefined; text?: string | undefined }, ownerMessage: string): Promise<{ repeated: boolean }> {
+  async answerChat(projectId: string, decisionId: string, request: { clientRequestId: string; expectedRevision?: number | undefined; optionLabel?: string | undefined; text?: string | undefined }, ownerMessage: string): Promise<{ repeated: boolean; closed?: boolean }> {
     return this.#answer(projectId, decisionId, request, ownerMessage);
   }
-  async #answer(projectId: string, decisionId: string, request: { clientRequestId: string; optionLabel?: string | undefined; text?: string | undefined }, ownerMessage?: string): Promise<{ repeated: boolean }> {
+  async #answer(projectId: string, decisionId: string, request: { clientRequestId: string; expectedRevision?: number | undefined; optionLabel?: string | undefined; text?: string | undefined }, ownerMessage?: string): Promise<{ repeated: boolean; closed?: boolean }> {
     const asked = await this.#decision(projectId, decisionId);
     const answer: DecisionAnswer = DecisionAnswerSchema.parse({ ...(request.optionLabel ? { optionLabel: request.optionLabel } : {}), ...(request.text ? { text: request.text } : {}),
       source: ownerMessage === undefined ? 'panel' : 'owner-chat', ...(ownerMessage === undefined ? {} : { ownerMessage }) });
+    if (asked.deploy) {
+      if (ownerMessage !== undefined) throw refuse('Use the owner’s deploy message to approve or roll back a deploy.', 403);
+      if (!this.#o.deployAnswer) throw refuse('Deploy approval is unavailable.', 409);
+      return this.#o.deployAnswer(asked, answer, request);
+    }
     if (answer.optionLabel !== undefined && !asked.options.some((option) => option.label === answer.optionLabel)) throw refuse(UNKNOWN_OPTION, 400);
     if (asked.automaticFix && !answer.optionLabel) throw refuse('Choose an automatic fix option.', 400);
     if (asked.merge || asked.landing) await this.#o.mergeAnswer?.(asked, answer, true);

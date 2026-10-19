@@ -1,3 +1,5 @@
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { ProjectJobContextSchema, type ProjectJobContext } from '@jevellan/core';
 import { projectEnvironment, gitEnvironment, runOwnedCommand, type CommandResult, type Homes, type SecretRedactor, type NativeProcess } from '@jevellan/core';
 import { tail } from './git.js';
@@ -10,11 +12,13 @@ export const TEST_TIMEOUT_MS = 30 * 60_000;
  * environment with HOME set to an empty Jevellan folder (no user credentials or test tokens), redacted output, and the
  * whole process group stopped at the timeout.
  */
-export async function runThreadCommand(cwd: string, command: string, o: { homes: Homes; workId: string; timeoutMs: number; redactor: SecretRedactor; signal?: AbortSignal | undefined; minimal?: boolean; environmentScope?: 'runtime' | 'command'; jobContext?: ProjectJobContext; projectEnv?: Record<string, string>; onProcess?(native: NativeProcess): void | Promise<void> }): Promise<CommandResult> {
-  const env = { ...gitEnvironment(), ...projectEnvironment(o.projectEnv, o.environmentScope) }; if (o.minimal) delete env.SSH_AUTH_SOCK; env.HOME = o.homes.ensure('tmp', 'verification', o.workId);
+export async function runThreadCommand(cwd: string, command: string, o: { homes: Homes; workId: string; timeoutMs: number; redactor: SecretRedactor; signal?: AbortSignal | undefined; minimal?: boolean; environmentScope?: 'runtime' | 'command'; jobContext?: ProjectJobContext; projectEnv?: Record<string, string>; gitEnv?: Record<string, string>; onProcess?(native: NativeProcess): void | Promise<void> }): Promise<CommandResult> {
+  const env = { ...gitEnvironment(), ...projectEnvironment(o.projectEnv, o.environmentScope), ...o.gitEnv }; if (o.minimal) delete env.SSH_AUTH_SOCK; env.HOME = o.homes.ensure('tmp', 'verification', o.workId);
   if (o.jobContext) {
     const context = ProjectJobContextSchema.parse(o.jobContext);
-    Object.assign(env, { JEVELLAN_JOB_COMMIT: context.commit, JEVELLAN_JOB_RUN_ID: context.runId, JEVELLAN_JOB_PROJECT_ID: context.projectId, JEVELLAN_JOB_ID: context.jobId, JEVELLAN_JOB_WORKSPACE: cwd, JEVELLAN_JOB_CACHE: o.homes.ensure('project-work', context.projectId, 'job-cache') });
+    const workspace = context.workspace ?? cwd;
+    env.HOME = join(workspace, 'home'); env.TMPDIR = join(env.HOME, 'tmp'); mkdirSync(env.TMPDIR, { recursive: true, mode: 0o700 });
+    Object.assign(env, { JEVELLAN_JOB_COMMIT: context.commit, JEVELLAN_JOB_RUN_ID: context.runId, JEVELLAN_JOB_PROJECT_ID: context.projectId, JEVELLAN_JOB_ID: context.jobId, ...(context.deployment ? { JEVELLAN_JOB_MODE: context.deployment.mode, JEVELLAN_DEPLOY_ID: context.deployment.deployId, JEVELLAN_DEPLOY_PREVIOUS_COMMIT: context.deployment.previousCommit ?? '' } : {}), JEVELLAN_JOB_WORKSPACE: workspace, JEVELLAN_JOB_COMMAND_CHECKOUT: context.commandCheckout ?? cwd, JEVELLAN_JOB_CACHE: o.homes.ensure('project-work', context.projectId, 'job-cache') });
   }
   return runOwnedCommand('/bin/sh', ['-c', command], { cwd, env, timeoutMs: o.timeoutMs, redactor: o.redactor, ...(o.minimal ? { outputLimitBytes: 64 * 1024 } : {}), ...(o.signal ? { signal: o.signal } : {}), ...(o.onProcess ? { onProcess: o.onProcess } : {}) });
 }

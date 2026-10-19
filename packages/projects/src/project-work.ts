@@ -1,3 +1,4 @@
+import { ProjectDeployService } from './deploy.js';
 import { setupProposalId } from './setup.js';
 import { SETUP_ALREADY_PROPOSED } from './copy.js';
 import { ProjectSetupProposalSchema, SetupProposeInputSchema, SetupProposalViewSchema, SetupActionRequestSchema, ProjectRunRequestSchema, projectSetupPlan } from '@jevellan/core';
@@ -97,6 +98,7 @@ export const DEFAULT_PROJECT_TIMERS: ProjectTimers = {
 };
 export type ProjectWorkOptions = {
   /** Why this device may not start new work now (B5: it runs a newer version than its hub). */
+  deployHealth?(id: string, checks: import('@jevellan/core').ProjectHealthCheck[], trigger: import('@jevellan/core').ProjectHealthRun['trigger'], deployId: string): Promise<import('@jevellan/core').ProjectHealthRun[]>;
   workRefusal?(): string | undefined;
   journal?: Pick<JournalOptions, 'isHub' | 'request'>;
   library?: import('@jevellan/core').ProjectLibrary;
@@ -145,6 +147,7 @@ export class ProjectWork {
   readonly memoryProgramme: ProjectMemoryProgramme | undefined;
   readonly reviews: NightlyReview; readonly daily: ProjectDailyWork; readonly jobs: ProjectJobRunner;
   readonly goals: ProjectGoals; readonly tasks: ProjectTasks; readonly dispatcher: ProjectDispatcher;
+  readonly deploys: ProjectDeployService;
   readonly mergeGate: ProjectMergeGate; readonly landings: ThreadLandingService;
   readonly disk: WorktreeDiskService;
   /** Mail and reservations between main threads (brief 5.11, 7.2). */
@@ -239,7 +242,7 @@ export class ProjectWork {
       deviceName: o.deviceName, hub: o.hub, redactor: o.redactor, now, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}),
       local: (projectId) => this.store.list(projectId).map((thread) => threadIndex(thread, this.store.labels(thread.id), thread.createdAt)),
       pendingMain: (projectId) => this.threads.pendingMain(projectId) });
-    this.decisions = new DecisionItems({ hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), mergeAnswer: (decision, answer, validateOnly) => decision.landing ? this.landings.answer(decision, answer, validateOnly) : this.mergeGate.answer(decision, answer, validateOnly), threads: () => ({
+    this.decisions = new DecisionItems({ deployAnswer: (decision, answer, request) => this.deploys.answer(decision, answer, request), hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), mergeAnswer: (decision, answer, validateOnly) => decision.landing ? this.landings.answer(decision, answer, validateOnly) : this.mergeGate.answer(decision, answer, validateOnly), threads: () => ({
       automaticFixAnswer: (projectId, threadId, prNumber, allow, commandId) => this.threads.automaticFixAnswer(projectId, threadId, prNumber, allow, commandId),
       allowTurns: (projectId, threadId, commandId) => this.threads.allowTurns(projectId, threadId, commandId),
       stop: (projectId, threadId, reason, commandId) => this.threads.stop(projectId, threadId, reason, true, commandId),
@@ -397,7 +400,7 @@ export class ProjectWork {
         },
         runtimeName: (runtime) => o.runtimes.get(runtime)?.displayName ?? runtime, enterOperation: o.enterOperation,
         timers: { threadTurnTimeoutMs: timers.threadTurnTimeoutMs, setupTimeoutMs: timers.setupTimeoutMs }, now } });
-    this.jobs = new ProjectJobRunner({ roster: o.roster, relay: async (projectId, deviceId, runId) => { this.outbox.enqueue(projectId, deviceId, { kind: 'job-run', runId, commandId: derivedId('jobcmd', runId, deviceId) }); await this.outbox.drain(); }, projectEnvironment, homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
+    this.jobs = new ProjectJobRunner({ beforeDeployment: run => this.deploys.beforeJob(run), roster: o.roster, relay: async (projectId, deviceId, runId) => { this.outbox.enqueue(projectId, deviceId, { kind: 'job-run', runId, commandId: derivedId('jobcmd', runId, deviceId) }); await this.outbox.drain(); }, projectEnvironment, homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
       project: id => this.#project(id), settings: id => this.admission.settings(id), baseBranch: repo => worktrees.baseBranch(repo), event: (id, event) => delivery.toCoordinator(id, event),
       windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
     this.daily = new ProjectDailyWork({ landing: (threadId, held) => { if (!this.store.get(threadId)) return; if (held) this.store.setIndexFields(threadId, { landing: 'held' }); else if (this.store.local(threadId).landing === 'held') this.store.setIndexFields(threadId, { landing: undefined }); }, fixCutoffMinutes: nightlyFixMinutes(o.homes), hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
@@ -417,6 +420,17 @@ export class ProjectWork {
         const brief = `${task.brief}${goal ? `\n\nGoal: ${goal.name}. Why it matters: ${goal.motivation}` : ''}\n\nTask type: ${task.type}.`;
         return { brief, taskContext: { type: task.type, needs: task.needs, goal: goal ? { name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: brief };
       }, review: task => this.reviews.start(task), job: task => this.jobs.start(task), eligible: async (task, tasks) => await this.daily.eligible(task, tasks) && await this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
+    this.deploys = new ProjectDeployService({ discoverBaseline: async id => {
+      const repo = worktrees.repository(await this.#project(id)); if (!await git.remoteUrl(repo)) return null;
+      const tags = (await git.run(repo, ['ls-remote', '--tags', 'origin', 'refs/tags/deployed/*'], { timeoutMs: GIT_NETWORK_TIMEOUT_MS })).stdout.trim().split('\n').map(line => line.split(/\s+/u)).filter((row): row is [string, string] => !!row[0]?.match(/^[a-f0-9]{40}$/u) && !!row[1]);
+      const latest = tags.filter(([, ref]) => !ref.endsWith('^{}')).sort((a, b) => b[1].localeCompare(a[1]))[0];
+      return latest ? tags.find(([, ref]) => ref === `${latest[1]}^{}`)?.[0] ?? latest[0] : null;
+    }, hub: o.hub, tasks: this.tasks, jobs: this.jobs, deviceId: o.deviceId, redactor: o.redactor, now, settings: id => this.admission.settings(id), environment: projectEnvironment,
+      health: async (id, checks, trigger, deployId) => { if (!o.deployHealth && checks.length) throw new Error('Health checks are unavailable at the state point.'); return o.deployHealth?.(id, checks, trigger, deployId) ?? []; },
+      diff: async (id, before, after) => { const repo = worktrees.repository(await this.#project(id)); return (await git.run(repo, ['diff', '--name-only', before, after])).stdout.trim().split('\n').filter(Boolean); },
+      onMain: async (id, commit) => { const main = await this.jobs.mainHead(id), repo = worktrees.repository(await this.#project(id)); if ((await git.run(repo, ['merge-base', '--is-ancestor', commit, main], { permitted: [1, 128] })).code !== 0) throw refuse(`Commit ${commit} is not on origin/main. Deploys build only from main.`, 409); },
+      resolution: async (id, thread, deployId, clear) => { const index = (await o.hub.thread(thread.threadId))?.document; if (!index) return; await delivery.toThreadOwner(id, index.id, index.ownerDeviceId, { type: 'deploy-resolution', deployId, landingCommit: thread.landingCommit, clear }, derivedId('tcmd', deployId, thread.threadId, String(clear))); },
+      event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
     this.tracker = new PullRequestTracker({ withdrawDecision: (id, questionId) => this.decisions.withdraw(id, questionId), settings: id => this.admission.settings(id), automaticFix: (id, kind) => this.threads.automaticFix(id, kind), automaticFixLimit: (id, kind) => this.threads.automaticFixLimit(id, kind), comments: (thread, since) => this.#github.reviewComments(thread, since), threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
@@ -598,7 +612,7 @@ export class ProjectWork {
         if ((await this.admission.settings(project.id)).status === 'active') await this.memoryProgramme?.sweep(project);
         await this.usage.refresh(project.id); await this.notifications.flush();
         await this.#exportToVault(project).catch(() => undefined);
-        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.#withdrawSignIns(project.id); if ((await this.admission.settings(project.id)).status === 'active') await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); } else await this.jobs.sweep(project.id);
+        if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.#withdrawSignIns(project.id); if ((await this.admission.settings(project.id)).status === 'active') await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); await this.deploys.sweep(project.id); } else await this.jobs.sweep(project.id);
         if ((await this.admission.settings(project.id)).status === 'active') await this.memoryProgramme?.sweep(project);
       }
       this.mergeGate.sweep(); await this.landings.sweep();
@@ -961,10 +975,11 @@ export class ProjectWork {
   async mergeCorrection(projectId: string, threadId: string, input: unknown) { await this.#project(projectId); return this.mergeGate.correct(projectId, threadId, input); }
   async decisionOwner(projectId: string, decisionId: string) {
     const decision = (await this.#o.hub.decision(decisionId))?.document;
+    if (decision?.projectId === projectId && decision.deploy) return (await this.#o.hub.coordinator(projectId))?.document.deviceId ?? null;
     return decision?.projectId === projectId && (decision.merge || decision.landing) && decision.threadId ? this.threadOwner(projectId, decision.threadId) : null;
   }
   async refreshPullRequest(projectId: string, threadId: string): Promise<void> { this.#thread(projectId, threadId); await this.tracker.refresh(threadId); }
-  answerDecision(projectId: string, decisionId: string, input: z.infer<typeof DecisionAnswerRequestSchema>): Promise<{ repeated: boolean }> {
+  answerDecision(projectId: string, decisionId: string, input: z.infer<typeof DecisionAnswerRequestSchema>): Promise<{ repeated: boolean; closed?: boolean }> {
     return this.decisions.answer(projectId, decisionId, input);
   }
   /**
