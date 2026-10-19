@@ -44,3 +44,15 @@ test('the overview board comes from the engine in display order', async () => {
   const view = await f.app.projectWork.view('project');
   expect(Object.keys(view.board ?? {})).toEqual(['waiting', 'review', 'working', 'landing', 'landed', 'idle', 'resolved']);
 });
+
+test('the recursion guard: every session Jevellan starts carries its role, so the forwarder registers no tools there', async () => {
+  const { forCoordinator } = await import('../packages/runtime-contract/dist/index.js');
+  f = await projectFixture({ control: true, coordinator: true });
+  f.fake.enqueueTurn(async turn => { turn.say('Noted.'); return { status: 'completed' }; }, forCoordinator);
+  const control = readDocument(doctorControlPath(f.homes), DoctorControlSchema);
+  await fetch(`${control.origin}/api/local/projects/project/coordinator/messages`, { method: 'POST', headers: { Authorization: `Bearer ${control.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ schema: 'project-send-request-v1', clientMessageId: 'role_one', text: 'Hello.', waitSeconds: 30 }) });
+  const coordinatorTurn = f.fake.turnStarts.find(input => input.owner.kind === 'coordinator');
+  expect(coordinatorTurn?.launch.env.JEVELLAN_ROLE).toBe('coordinator');
+  expect(coordinatorTurn?.launch.mcpServers?.jevellan?.env?.JEVELLAN_ROLE).toBe('coordinator');
+});

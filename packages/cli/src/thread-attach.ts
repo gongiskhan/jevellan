@@ -96,7 +96,8 @@ async function prepare(answer: unknown, base: NodeJS.ProcessEnv, homes: Homes): 
   if (!home || !isAbsolute(home) || view.env[view.runtime === 'claude' ? 'CLAUDE_CONFIG_DIR' : 'CODEX_HOME'] !== home || view.env[view.runtime === 'claude' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR'] !== undefined) return UNUSABLE;
   const launchKeys = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE'];
   const auth = Object.fromEntries(Object.entries(view.env).filter(([key]) => !HOME_KEYS.includes(key) && !launchKeys.includes(key)));
-  const launch = Object.fromEntries(Object.entries(view.env).filter(([key]) => launchKeys.includes(key)));
+  // The recursion guard (bridge): a taken-over thread never sees the owner tools either.
+  const launch = { ...Object.fromEntries(Object.entries(view.env).filter(([key]) => launchKeys.includes(key))), JEVELLAN_ROLE: 'thread' };
   let env: Record<string, string>; try { env = minimalEnvironment(view.runtime, home, auth, launch, base); } catch { return UNUSABLE; }
   if (view.runtime === 'claude' && view.integration) env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE = String(view.integration.compactAtPercent);
   const executable = findExecutable(view.runtime, env.PATH ?? '/usr/bin:/bin');
