@@ -14,9 +14,9 @@ Run log for the 19 October 2026 brief: diagnose the coordinator hang live, fix i
 | --- | --- | --- |
 | 0 Diagnose the hang | Complete, 01:41–02:00 (live). Root cause not established | Below; private records in `~/.jevellan-build/fix-051/diagnosis/` on dev-madrid |
 | 1 Fixes | Complete, 02:08–03:35 (simulated): failing-first tests red, then green; affected tests, PAR4 with vision in four layouts, typecheck and lint pass | Below; red and green logs in `~/.jevellan-build/fix-051/phase1/` |
-| 2 Release 0.5.1 | Not started | |
-| 3 Live journeys | Not started | |
-| 4 Closing | Not started | |
+| 2 Release 0.5.1 | Gate accepted at 07:57:58 (simulated); the clock ended at 08:01:43 before the Linux archive, publication, backups and updates | Below |
+| 3 Live journeys | Not run: 0.5.1 was not installed within the build clock | |
+| 4 Closing | Complete: one closing review at about 08:00 (no serious issue), docs, handoff | Below; [HANDOFF.md](HANDOFF.md) |
 
 `PRD.md`, `PLANING.md` and `TASKS.md` do not exist in this checkout, so there was nothing to update there. `PLAN.md` stays as context.
 
@@ -86,9 +86,9 @@ All four answered, each well within the 30-second client timeout.
   - A restart cleared it, and the same request then classified in 25 s.
 - **Hypothesis, not proven:** the Jev fetch, or its body read, became a promise nothing could settle, and the waiting chain was then garbage-collected. The absence of a frame or object in one heap snapshot supports this, but it does not prove that a fetch was dropped without settling.
 - **Tested and not reproduced:** the combined abort signal being collected while a fetch waits. On Node 22.23.2, with garbage collection forced every 50 ms, the 1-second timeout fired in 3 of 3 runs against a server that never answers. The service journal around 00:08 holds nothing.
-- **Ruled out:**
-  - A wait on the maintenance or lifecycle gate: no awaited step touches it.
-  - A configuration, settings or key read that never settles, as the cause of this hang: they completed for this request, and they answer.
+- **Not supported by the evidence:**
+  - A wait on the maintenance or lifecycle gate: no awaited step in the outcome path touches it.
+  - A configuration, settings or key read that never settles: for the original request, execution had passed them (step 3), and they answered directly (step 4). Neither proves exactly where the original promise waited.
 - **For phase 1:**
   - The decision deadline races the whole decision against a timer the shared helper owns, so the caller settles even when an inner promise never settles and ignores its abort. A guard test uses exactly such a fetch.
   - Stop, Fresh session, Move and shutdown settle the outcome wait themselves and release the operation.
@@ -174,7 +174,7 @@ The seven intended contract changes, each with its expectation updated to assert
 ### Browser journey with vision (simulated product, live vision judge)
 
 - **What changed.** The PAR4 automatic-fix journey now has the owner push a commit to the pull request branch first, through the new fixture action `owner-commit`, before the failing checks. The journey checks that the thread shows "Updated the worktree to pull request #1's head {short sha} before this fix." under Session notices.
-- **The run.** It ran in the four layouts with `JEVELLAN_VISION_EVIDENCE_DIR=docs/acceptance/fix-051-2026-10/vision`, from 03:27:48 to 03:31:45, with load average 14 to 23 from other users' CI on the machine. All 4 passed.
+- **The run.** It ran in the four layouts with `JEVELLAN_VISION_EVIDENCE_DIR=docs/acceptance/fix-051-2026-10/vision`, from 03:27:48 to 03:31:45, with a load average of 14 to 23. All 4 passed.
 - **Vision.** 16 live vision receipts, with 0 blocking and 67 cosmetic findings, recorded only.
 - **Where the images are.**
   - The new screens are in [screenshots/](screenshots/).
@@ -189,3 +189,107 @@ The seven intended contract changes, each with its expectation updated to assert
 - `npm run typecheck` and `npm run lint` pass (03:32–03:33).
 - The targeted and affected tests are as above.
 - The full backend and browser suites run once in phase 2.
+
+## Phase 2: release 0.5.1 and update both machines
+
+### Sequencing and gate setup
+
+- **Version bump before the gate.** `c083ec8d` ("Release 0.5.1 version"), pushed at 03:48:23, bumps every package to 0.5.1 the same way `de5bb8ce` did for 0.5.0, and adds the 0.5.1 release notes to `docs/acceptance/REPORT.md`.
+  - This came before the full gate, a small deviation from the brief's order. It changes version strings and notes only.
+  - The full gate runs on this bumped source, and nothing is published or installed until the gate is accepted.
+- **The gate**, on dev-madrid at `c083ec8d`, one heavy step at a time with `uptime` recorded:
+  - build, typecheck, lint and the secret scan;
+  - the full backend with six Vitest workers (Decision 916);
+  - the full browser suite with vision off.
+- **The gate's environment:**
+  - the whole `.env` loaded;
+  - the pinned APM 0.10.0 first on PATH;
+  - umask 002, as in the previous accepted gate, whose umask-dependent installation cases are noted there;
+  - the browser run's "not run" vision records in a private folder, so the tracked evidence is not overwritten. Tracked screenshots that the run rewrites are restored from git afterwards.
+- **The classification baseline** is a private copy of the v0.5.0 build tree (`f212c3d3`), not a worktree or branch. All 3,819 files tracked at the tag match it byte for byte, its `dist` comes from that tree's own 0.5.0 release build, and its tests are the tag's originals.
+- **The Darwin archive** builds on the Pro from a fresh private clone at `c083ec8d`, started at 03:48:51.
+- **Deviation: overlapping heavy jobs.** The Darwin build overlapped Madrid's gate build, typecheck, lint and secret scan (03:48:28 to about 03:52). The heavy-job rule spans both machines, so this was a mistake. At 03:51:44, after the scan step had started, this run stopped only its own gate wrapper (PID 3782743, after checking its parent and start time). The scan finished by itself, and the secret scan passed. The full suites wait for the Pro build to end, and every later heavy job runs one at a time across both machines.
+
+### Archives
+
+| Archive | Built | Revision | Bytes | SHA-256 | Verification |
+| --- | --- | --- | --- | --- | --- |
+| `jevellan-0.5.1-darwin-arm64.tgz` | On the Pro, from a fresh private clone of GitHub, 03:48:51 to 04:03:05 | `c083ec8d` | 443,432,589 | `cdb19b01cee1fe48f97d7f8420f6ccc5f1f301e78523515254ad5ff9ee498e6b` | Extracted: 3,603 tracked files byte-identical to the revision, none different (279 tracked files are not shipped); its own CLI reports 0.5.1; its native terminal addon ran a PTY. The copy on dev-madrid matches the checksum |
+
+### Gate results at `c083ec8d` (simulated)
+
+| Step | Start | End | Result |
+| --- | --- | --- | --- |
+| Build (`npm run build`) | 03:48:28 | 03:48:32 | Passed |
+| Typecheck | 03:48:32 | 03:48:52 | Passed |
+| Lint | 03:48:52 | 03:49:14 | Passed |
+| Secret scan | 03:49:14 | about 03:52 | Passed |
+| Full backend (six workers) | 04:03:47 | 04:36:53 (33 min 6 s) | 2,425 passed, 0 failed, 1 skipped of 2,426 tests in 224 files; the skip is the opt-in `live-sandbox-node20` case |
+| Full browser (vision off, four workers) | 04:36:53 | 05:58:22 (1 h 21 min 29 s) | 244 passed, 13 failed, 119 not run of 376. The not-run cases are the serial `projects.spec.ts` chains after their first failure in each projects layout |
+
+**The 13 browser failures** go to classification below:
+- LJ2 in desktop-dark and phone-dark: the new thread's pull request did not appear within 60 s;
+- "Thread images open from folded history…" in desktop-light: a visibility timeout;
+- LJ3 "five tasks…" in phone-light;
+- J8 and J11 in all four layouts, each at the same `selectOption` timeout;
+- the packed installation journey in desktop dark.
+
+**Machine conditions during the browser run** (observed; their cause was not established, and this run's suites also had many fixture processes running):
+- The kernel recorded OOM kills of Chrome processes at 05:14:21 and 05:14:43. Memory stood at 57.0 of 64.3 GB used, with no swap.
+- The load average reached 69 at about 05:39 and 92 at about 05:50.
+- SSH and HTTPS health checks to dev-madrid timed out between about 05:38 and 05:50. Tailscale SSH failed between 05:44 and 05:50 and recovered at 06:14.
+- LJ2, Thread images and LJ3 failed between 05:13 and 05:16, and the installation journey in desktop dark failed at about 05:43.
+
+**Evidence restored.** The browser run rewrites tracked screenshots and records across `docs/acceptance`. Its 334 changed tracked files were restored from git, and the 8 new screenshots it created were removed. Its "not run" vision records went to a private folder.
+
+### Classification of the browser failures (simulated)
+
+Each failed case is rerun alone, three times at `c083ec8d` and three times at the private v0.5.0 copy, each run in a fresh invocation with only its own fixture server, one heavy job at a time.
+- A failure is a **regression** if it fails alone at main and passes at v0.5.0.
+- It is **pre-existing** if it fails alone at both.
+- It is **load-sensitive** if it passes alone at both.
+
+The order puts the cases nearest to this run's changes first. At 06:16, after case 3, the remaining cases were reordered to put the installation journey, which exercises update and rollback, before J8 and J11. No completed run was repeated.
+
+| # | Case | Alone at main | Alone at v0.5.0 | Class |
+| --- | --- | --- | --- | --- |
+| 0 | LJ2 native setup and merge routing, desktop-dark | 3 of 3 passed | 3 of 3 passed | Load-sensitive |
+| 1 | LJ2, phone-dark | 3 of 3 passed | 3 of 3 passed | Load-sensitive |
+| 2 | Thread images open from folded history, desktop-light | 3 of 3 passed | 3 of 3 passed | Load-sensitive |
+| 3 | LJ3 five tasks obey phone drag, phone-light | 3 of 3 passed | 3 of 3 passed | Load-sensitive |
+| 12 | Packed first run, active update, rollback and removal, desktop dark (installation) | 3 of 3 passed | 3 of 3 passed | Load-sensitive. The full-suite failure ("Jevellan did not become ready") was at about 05:43, in the high-load window |
+| 4–7 | J8 simulated mesh journey, all four layouts | 0 of 3 passed in each layout | 0 of 3 passed in each layout | Pre-existing. All 24 runs, 12 at main and 12 at v0.5.0, fail at the same step: `locator.selectOption` times out after 15 s waiting for `getByRole('combobox', { name: 'Project', exact: true })` at `tests/e2e/skeleton.spec.ts:880`, about 20 s in, after the journey opens `/` |
+| 8 | J11 simulated mesh journey, desktop-light | 0 of 3 passed | 0 of 3 passed | Pre-existing. All six runs fail at the same step after about 118 s: `locator.selectOption` times out waiting for `getByRole('combobox', { name: 'Project', exact: true })` at `tests/e2e/skeleton.spec.ts:967`. That is after the saved-note search and published-commit assertions (lines 965–966) pass. Like J8, the journey expects a conversation form on `/`, which now opens the first project |
+| 9 | J11, phone-light | 0 of 3 passed | 0 of 3 passed | Pre-existing; the same `skeleton.spec.ts:967` Project combobox step in all six runs |
+| 10 | J11, desktop-dark | 0 of 3 passed | 0 of 3 passed | Pre-existing; the same `skeleton.spec.ts:967` Project combobox step in all six runs |
+| 11 | J11, phone-dark | 0 of 3 passed | 0 of 3 passed | Pre-existing; the same `skeleton.spec.ts:967` Project combobox step in all six runs |
+
+**Gate result: accepted under the brief's rule at 07:57:58, with no regression.**
+- All 13 failed cases were classified, 78 isolated runs in all, from 05:59:37 to 07:57:58.
+- **Load-sensitive (5):** LJ2 in desktop-dark and phone-dark, Thread images in desktop-light, LJ3 in phone-light, and the installation journey in desktop dark.
+- **Pre-existing (8):** J8 and J11 in all four layouts. They fail at the same step at main and at v0.5.0: the journeys expect a project picker on `/`, which opens the first project.
+- After the classification, the 30 tracked evidence files the reruns had rewritten were restored from git, and the one new vision record they created was removed.
+
+### Release, backups and updates: not done
+
+- The phases 0–2 clock ended at 08:01:43, with no time left for the steps after the gate. None of them was started:
+  - the Linux archive;
+  - the `v0.5.1` tag and GitHub release;
+  - the cold backups of both homes;
+  - the updates;
+  - the confirmation.
+- Phase 3 (live) did not start.
+- Both machines still run 0.5.0, healthy and online, checked at 07:45.
+- The Darwin archive stays private and unpublished.
+- The scripts for the remaining steps are in `~/.jevellan-build/fix-051/bin/` on dev-madrid and the Pro.
+
+## Phase 4: closing
+
+- **Closing review.** One review for serious issues ran at about 08:00, over the full source diff since `e0718526`, and found no serious issue, so there was no second review or source change. The tested and versioned source is still `c083ec8d`, and the Darwin archive built from it is still current.
+  - It checked the deadline helper (timers and listeners cleared, late rejections handled), every call site's existing fallback, the coordinator's Fresh, Stop, Move and shutdown paths, the head sync (fast-forward or merge, never rebase, conflict re-detection, push lease) and the scoped GitHub reads.
+  - One non-serious note, recorded only: if a fix turn reported done without resolving a merge left in conflict, publication's leftover commit would commit it. The existing conflict turn has the same exposure, and publication verifies before it pushes.
+- **Docs.**
+  - `docs/projects.md` documents the decision deadline and the head refresh before fix turns.
+  - Decisions 925 to 927 are in `docs/decisions.md`.
+  - The roadmap, `PLAN.md` and `docs/acceptance/REPORT.md` are updated.
+  - The handoff is [HANDOFF.md](HANDOFF.md).

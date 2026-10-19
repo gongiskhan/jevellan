@@ -2,7 +2,7 @@
 
 ## Coordinator hang, fixes on moved heads and 0.5.1, October 2026
 
-Authority: root untracked BRIEF.md, 19 October 2026. Six hours for phases 0 to 2 from the first commit (2026-10-19T02:01:43Z, deadline 08:01:43Z); 2.5 hours live from both machines on 0.5.1. Phases: 0 diagnose the hang live (done: root cause not established, restart cleared it, ekoa-code was not stuck), 1 Fix A decision deadline and Fix B fix turns from the pull request head (Decisions 925 to 927), 2 release 0.5.1 and update both machines, 3 live journeys LP1 to LP10 and E1, 4 closing review, docs and handoff. Run log: docs/acceptance/fix-051-2026-10/README.md.
+Authority: root untracked BRIEF.md, 19 October 2026. Six hours for phases 0 to 2 from the first commit (2026-10-19T02:01:43Z, deadline 08:01:43Z). Phases: 0 diagnose the hang live (done: root cause not established, restart cleared it, ekoa-code was not stuck), 1 Fix A decision deadline and Fix B fix turns from the pull request head (done, Decisions 925 to 927), 2 release 0.5.1 (gate accepted at 07:57:58Z; the clock ended before the Linux archive, publication, backups and updates, so both machines stay on 0.5.0), 3 live journeys (not run), 4 closing (one review with no serious issue, docs, handoff). Run log and handoff: docs/acceptance/fix-051-2026-10/.
 
 ## One mesh and 0.5.0, October 2026
 
