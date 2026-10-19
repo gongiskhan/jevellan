@@ -50,9 +50,11 @@ export async function main(args: string[], options: { installer?: () => Installe
   if (args[0] === 'thread') {
     // Terminal takeover (brief phase 7, D47): every outcome is one printed sentence and an exit code, never a stack trace.
     const id = IdSchema.safeParse(args[2]);
-    if (args.length !== 3 || (args[1] !== 'attach' && args[1] !== 'detach')) { console.error('Usage: jevellan thread attach threadId, or jevellan thread detach threadId'); process.exitCode = 1; return; }
+    // `--remote-control <name>` (bridge takeover) also shows the resumed session in the Claude app.
+    const remoteControl = args[1] === 'attach' && args[3] === '--remote-control' && args[4] ? args[4] : undefined;
+    if ((args.length !== 3 && !(remoteControl && args.length === 5)) || (args[1] !== 'attach' && args[1] !== 'detach')) { console.error('Usage: jevellan thread attach threadId [--remote-control name], or jevellan thread detach threadId'); process.exitCode = 1; return; }
     if (!id.success) { console.error('That is not a thread id. Copy the command from the thread page.'); process.exitCode = 1; return; }
-    try { process.exitCode = await (args[1] === 'attach' ? options.attach ?? attachThread : options.detach ?? detachThread)(id.data); }
+    try { process.exitCode = await (args[1] === 'attach' ? options.attach ?? attachThread : options.detach ?? detachThread)(id.data, remoteControl ? { remoteControl } : {}); }
     catch (error) { console.error(error instanceof Error && error.message ? error.message : 'The command could not complete.'); process.exitCode = 1; }
     return;
   }

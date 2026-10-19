@@ -251,8 +251,8 @@ test('the command prints the daemon refusals, hands back a thread it cannot resu
   };
 
   // 1. Usage and ids are checked before anything is sent; unknown threads and threads on another device get the daemon's sentence.
-  await refused(['thread', 'attach'], 'Usage: jevellan thread attach threadId, or jevellan thread detach threadId');
-  await refused(['thread', 'leave', 'thread_x'], 'Usage: jevellan thread attach threadId, or jevellan thread detach threadId');
+  await refused(['thread', 'attach'], 'Usage: jevellan thread attach threadId [--remote-control name], or jevellan thread detach threadId');
+  await refused(['thread', 'leave', 'thread_x'], 'Usage: jevellan thread attach threadId [--remote-control name], or jevellan thread detach threadId');
   await refused(['thread', 'attach', '../thread'], 'That is not a thread id. Copy the command from the thread page.');
   await refused(['thread', 'attach', 'thread_missing'], THREAD_NOT_FOUND);
   const at = new Date().toISOString();

@@ -2,7 +2,7 @@ import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction } fr
 import { ProjectCleanupInventory } from './cleanup.js';
 import { ProjectDeployService } from './deploy.js';
 import { setupProposalId } from './setup.js';
-import { SETUP_ALREADY_PROPOSED } from './copy.js';
+import { SETUP_ALREADY_PROPOSED, STEERING_PREFIX } from './copy.js';
 import { ProjectSetupProposalSchema, SetupProposeInputSchema, SetupProposalViewSchema, SetupActionRequestSchema, ProjectRunRequestSchema, projectSetupPlan } from '@jevellan/core';
 import { ProjectNotifications } from './notifications.js';
 import { ProjectUsage } from './usage.js';
@@ -314,7 +314,7 @@ export class ProjectWork {
       },
       baseBranch: (project) => worktrees.baseBranch(worktrees.repository(project)), enterOperation: o.enterOperation,
       timers: { startMs: timers.coordinatorStartMs, retryMs: timers.coordinatorRetryMs, turnTimeoutMs: timers.coordinatorTurnTimeoutMs }, now });
-    const delivery = new LocalDelivery({ deviceId: o.deviceId, coordinators: this.coordinators, store: this.store, outbox: () => this.outbox, now,
+    const delivery = this.#delivery = new LocalDelivery({ deviceId: o.deviceId, coordinators: this.coordinators, store: this.store, outbox: () => this.outbox, now,
       command: (projectId, threadId, command) => this.threads.command(projectId, threadId, command) });
     this.tasks = new ProjectTasks({ hub: o.hub, deviceId: o.deviceId, redactor: o.redactor, now,
       settings: projectId => this.admission.settings(projectId), validateBranch: async (id, branch) => validateBranch(await this.#project(id), branch),
@@ -981,6 +981,17 @@ export class ProjectWork {
     return this.threads.stop(projectId, threadId, input?.reason || STOPPED_BY_YOU, true);
   }
   discardThread(projectId: string, threadId: string): Promise<void> { return this.threads.discard(projectId, threadId); }
+  /** A steering line for the coordinator's next turn (bridge): the owner spoke to or took over one of its threads. */
+  steeringNote(projectId: string, threadId: string, text: string): Promise<void> {
+    return this.#delivery!.toCoordinator(projectId, { schema: 'coordinator-event-v1', kind: 'thread-user-message', id: newId('cev'), at: new Date().toISOString(), threadId, text: `${STEERING_PREFIX}${text}`.slice(0, 20000) });
+  }
+  #delivery: LocalDelivery | undefined;
+  /** Takeover (bridge): interrupt a thread on this device at its next safe point so it rests; false when it was not working. */
+  pauseThread(projectId: string, threadId: string): boolean {
+    this.#thread(projectId, threadId); const runner = this.threads.runner(threadId);
+    if (!runner) throw Object.assign(new Error('This thread runs on another device. Take it over there.'), { status: 409 });
+    return runner.pause();
+  }
   allowTurns(projectId: string, threadId: string): Promise<void> { return this.threads.allowTurns(projectId, threadId); }
   /**
    * Override from the thread page (brief 10, 12.3): from the next turn on this device, or a restart whose new thread starts on

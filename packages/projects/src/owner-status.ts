@@ -43,6 +43,8 @@ export type StatusInput = {
   budgets: ProjectStatusView['budgets']; deviceName: (deviceId: string) => string; deployPaused: boolean;
   /** Owner holds from takeover (phase 5); empty until then. */
   holds?: ReadonlyMap<string, NonNullable<RunView['held']>>;
+  /** Waiting items the state point keeps itself (a held thread gone idle). */
+  extraWaiting?: readonly WaitingItemView[];
   goalFilter?: string;
 };
 
@@ -111,6 +113,7 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
       createdAt: decision.createdAt, updatedAt: decision.answeredAt ?? decision.createdAt, state: 'open' as const })),
     ...byCreated(proposed).map(task => ({ schema: 'waiting-item-view-v1' as const, id: proposedIds.get(`draft-${task.id}`.slice(0, 128))!, internalId: task.id, kind: 'other' as const, from: 'C',
       text: `Proposed task ${taskIds.get(task.id)} "${task.title}" waits for your start.`, options: ['Start', 'Reject'], freeText: false, urgent: false, createdAt: task.createdAt, updatedAt: task.updatedAt, state: 'open' as const })),
+    ...(input.extraWaiting ?? []),
   ];
 
   const recent = (run: RunView) => run.endedAt !== undefined && now.getTime() - new Date(run.endedAt).getTime() <= TWELVE_HOURS;

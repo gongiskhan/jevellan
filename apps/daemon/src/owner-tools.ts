@@ -8,18 +8,14 @@ import { CallerLogEntrySchema, HubUnavailable, OwnerInstallationSettingsSchema, 
 import { OwnerShortIds, projectStatus, renderStatus, renderStatusLine } from '@jevellan/projects';
 import type { Application } from './application.js';
 import { OWNER_HANDLERS } from './tools/index.js';
+import { OwnerTakeover } from './owner-takeover.js';
+import { realTmux, type TmuxRunner } from './owner-bridge.js';
 
 /** A refusal whose sentence goes to the owner as it is (bridge specification: one sentence, what is wrong and what is allowed). */
 export class OwnerRefusal extends Error {
   constructor(message: string, readonly code = 'refused', readonly status = 400) { super(message); }
 }
 export type OwnerContext = { app: Application; tools: OwnerTools; project: Project; request: OwnerToolRequest; action: string; args: Record<string, unknown>; now: Date };
-/** Takeover arrives with its phase; until then `thread open` and `return` say so. */
-export class OwnerTakeoverPending {
-  async open(...input: [OwnerContext, string, unknown]): Promise<{ text: string }> { throw new OwnerRefusal(`Taking over ${input[1]} is not available in this version yet.`, 'not_available', 501); }
-  async return(...input: [OwnerContext, string, unknown, 'resume' | 'done' | 'stop', string?]): Promise<{ text: string }> { throw new OwnerRefusal(`${input[1]} is not held.`, 'not_held', 409); }
-  async stop(...input: [OwnerContext, string, unknown, string?]): Promise<{ text: string }> { throw new OwnerRefusal(`${input[1]} is not held.`, 'not_held', 409); }
-}
 export type OwnerHandler = (context: OwnerContext) => Promise<{ text: string; data?: unknown }>;
 
 const CALLER_LOG_DAYS = 30;
@@ -32,7 +28,7 @@ const CALLER_LOG_DAYS = 30;
 export class OwnerTools {
   readonly ids: OwnerShortIds;
   #logDay = '';
-  constructor(readonly app: Application, readonly now: () => Date = () => new Date()) { this.ids = new OwnerShortIds(app.hub); }
+  constructor(readonly app: Application, readonly now: () => Date = () => new Date(), tmux: TmuxRunner = realTmux) { this.ids = new OwnerShortIds(app.hub); this.takeover = new OwnerTakeover(app, tmux); }
   get logPath(): string { return join(this.app.homes.root, 'owner-tools', 'caller-log.jsonl'); }
 
   async projects(): Promise<Project[]> { return (await this.app.state.projects.list()).map(row => row.project); }
@@ -117,11 +113,17 @@ export class OwnerTools {
   steering(projectId: string, record: Pick<SteeringRecord, 'thread' | 'threadId' | 'kind' | 'by'> & { text?: string }): SteeringRecord {
     const id = newId('steering'); const document = SteeringRecordSchema.parse({ schema: 'steering-record-v1', id, projectId, at: this.now().toISOString(), deliveredToCoordinator: false, ...record });
     this.app.hub.put('owner-steering', id, SteeringRecordSchema, document, 0);
+    // The coordinator is never surprised: each act reaches it as a line at its next turn.
+    const lines = { say: `The owner told ${record.thread}: "${record.text ?? ''}".`, takeover: `The owner took over ${record.thread}. It is held until he hands it back.`, return: `The owner handed ${record.thread} back.`,
+      stop: `The owner stopped ${record.thread}.`, auto_return: `Jevellan handed ${record.thread} back after the owner left it idle.` };
+    void this.app.projectWork.steeringNote(projectId, record.threadId, lines[record.kind]).then(() => {
+      const stored = this.app.hub.get('owner-steering', id, SteeringRecordSchema); if (stored) this.app.hub.put('owner-steering', id, SteeringRecordSchema, { ...stored.document, deliveredToCoordinator: true }, stored.revision);
+    }).catch(() => undefined);
     return document;
   }
   steeringRecords(projectId: string): SteeringRecord[] { return this.app.hub.list('owner-steering', SteeringRecordSchema).map(row => row.document).filter(row => row.projectId === projectId).sort((a, b) => a.at.localeCompare(b.at)); }
   steeringBy(caller: string): SteeringRecord['by'] { return caller.startsWith('bridge:') ? 'bridge' : caller.startsWith('remote:') ? caller as SteeringRecord['by'] : caller === 'ui' ? 'ui' : 'cli'; }
-  readonly takeover = new OwnerTakeoverPending();
+  readonly takeover: OwnerTakeover;
   /** Replies to bridge messages are pushed (phase 4); until a push queue exists they stay in the event stream. */
   awaitCoordinatorReply(projectId: string, clientMessageId: string, context: { question?: string }): void { this.#awaiting.set(clientMessageId, { projectId, ...context }); }
   coordinatorReplyDelivered(clientMessageId: string): void { this.#awaiting.delete(clientMessageId); }
@@ -158,7 +160,10 @@ export class OwnerTools {
     const view_ = projectStatus({ project: { id: projectId, name: project.name }, now: this.now(), settings: view.settings, coordinator: view.coordinator, coordinatorStalled: false,
       threads: view.threads, tasks: tasks.tasks, goals: goals.goals.map(row => row.goal), decisions: view.decisions.open, jobs: daily.jobs, dailies: daily.dailies, runs: daily.runs,
       windows: daily.window ? [daily.window] : [], deploys: deploys.records,
-      budgets, deviceName: id => names.get(id) ?? id, deployPaused: false, ...(goal ? { goalFilter: goal } : {}) }, this.ids);
+      budgets, deviceName: id => names.get(id) ?? id, deployPaused: this.projectSettings(projectId).deploy.paused, ...(goal ? { goalFilter: goal } : {}),
+      holds: new Map(this.takeover.holds(projectId).map(hold => [hold.threadId, { since: hold.since, via: hold.via, tmuxSession: hold.tmuxSession }])),
+      extraWaiting: this.takeover.holds(projectId).filter(hold => hold.warnedAt).map(hold => ({ schema: 'waiting-item-view-v1' as const, id: this.takeover.waitingId(hold), internalId: `held-${hold.threadId}`.slice(0, 128), kind: 'held_idle' as const,
+        from: 'jevellan', text: `${hold.id} has been held with no activity since ${hold.keptAt ?? hold.since}.`, options: ['keep', 'return'], freeText: false, urgent: false, createdAt: hold.warnedAt!, updatedAt: hold.warnedAt!, state: 'open' as const })) }, this.ids);
     for (const run of [...view_.running, ...view_.queued, ...view_.landed, ...view_.finished]) if (run.kind === 'thread') this.app.ownerEvents.noteSource(run.internalId, run.id);
     return view_;
   }

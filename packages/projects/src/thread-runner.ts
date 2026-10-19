@@ -1089,6 +1089,16 @@ export class ThreadRunner {
     }
   }
   /**
+   * The owner's takeover (bridge): a running turn is interrupted at its next safe point and, with no message queued, the thread rests so
+   * it can be attached. Answers whether a turn was running.
+   */
+  pause(): boolean {
+    const thread = this.#thread();
+    if (atRest(thread.state) || isTerminal(thread.state) || thread.state === 'attached') return false;
+    if (this.#execution) void this.#execution.steer().catch(() => undefined); else this.#steer = true;
+    return true;
+  }
+  /**
    * Terminal takeover (brief phase 7, D46, D297): a thread at rest with a session, and no step on its chain, becomes `attached`
    * with `attach.startedAt`. `prepare` (the checkout and the account) runs first; the thread is checked again afterwards and set
    * without any wait in between, so no turn can start in the meantime, and none starts while it is attached (messages wait). It

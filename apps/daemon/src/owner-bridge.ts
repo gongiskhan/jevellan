@@ -24,7 +24,7 @@ const DIALOGS: Array<{ text: RegExp; keys: string[] }> = [
 ];
 
 export type TmuxRunner = (args: string[]) => { status: number | null; stdout: string };
-const realTmux: TmuxRunner = (args) => { const result = spawnSync('tmux', args, { encoding: 'utf8' }); return { status: result.status, stdout: result.stdout ?? '' }; };
+export const realTmux: TmuxRunner = (args) => { const result = spawnSync('tmux', args, { encoding: 'utf8' }); return { status: result.status, stdout: result.stdout ?? '' }; };
 
 /**
  * One Claude Code session per project on the state point (bridge specification, "Bridge session and push"): Sonnet at medium effort,

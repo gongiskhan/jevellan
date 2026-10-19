@@ -296,7 +296,7 @@ export class Application {
   bindDaemonUrl(url: string): void {
     this.conversations.daemonUrl = url; this.backgroundDrafts.daemonUrl = url;
     // Thread turns need the bridge URL; queued work may start from here. Its periodic loops follow `timers` on their own.
-    if (this.#improverTimers) { this.ekoa?.start(); this.notifications?.start(); this.cleanup.start(); this.#ownerPushes?.start(); this.#ownerBridges?.start(); }
+    if (this.#improverTimers) { this.ekoa?.start(); this.notifications?.start(); this.cleanup.start(); this.#ownerPushes?.start(); this.#ownerBridges?.start(); if (this.#hub) this.ownerTools.takeover.start(); }
     this.projectWork.daemonUrl = url; this.projectWork.start();
     if (this.#improverTimers) { this.routingImprover?.start(); this.projectImprover.start(); }
   }
@@ -433,7 +433,7 @@ export class Application {
     const failures: unknown[] = [];
     try { await this.cleanup.close(); } catch (error) { failures.push(error); }
     try { await this.settingsSync.close(); await this.#riggingQueue.catch(() => undefined); } catch (error) { failures.push(error); }
-    try { this.#ownerPushes?.close(); this.#ownerBridges?.close(); } catch (error) { failures.push(error); }
+    try { this.#ownerPushes?.close(); this.#ownerBridges?.close(); this.#ownerTools?.takeover.close(); } catch (error) { failures.push(error); }
     try { await this.notifications?.close(); } catch (error) { failures.push(error); }
     try { await this.ekoa?.close(); } catch (error) { failures.push(error); }
     try { await this.presence.close(); } catch (error) { failures.push(error); }

@@ -9,6 +9,10 @@ import { clientId, matchOption, resolveWaiting } from './common.js';
 export const respond: OwnerHandler = async (context) => {
   const { app, project, args } = context; const engine = app.projectWork; const answer = String(args.answer); const note = typeof args.note === 'string' ? args.note : undefined;
   const item = await resolveWaiting(context, String(args.item));
+  if (item.held) {
+    const option = matchOption(['keep', 'return'], answer); if (!option) throw new OwnerRefusal(`${item.id} takes keep, return.`, 'invalid_answer');
+    return { text: await context.tools.takeover.answerIdle(context, item.held, option as 'keep' | 'return') };
+  }
   if (item.draft) {
     const option = matchOption(['Start', 'Reject'], answer); if (!option) throw new OwnerRefusal(`${item.id} takes Start or Reject.`, 'invalid_answer');
     await engine.taskAction(project.id, item.draft.id, { schema: 'task-action-request-v1', expectedRevision: item.draft.revision, action: option === 'Start' ? 'approve' : 'reject', ...(note ? { reason: note } : {}) });

@@ -96,7 +96,9 @@ export const eventBlock = (lines: readonly string[]): string => `Events since yo
 export const UNKNOWN_THREAD = '(unknown thread)';
 export const SYNTHESIZED_SUFFIX = ' (Jevellan wrote this report because the thread did not.)';
 export const ASKED_DIRECTLY_SUFFIX = ' (Jevellan asked the owner directly.)';
-const PREFORMATTED = [OWNER_STARTED_PREFIX, OWNER_WORKED_PREFIX];
+/** Steering from the bridge reaches the coordinator as written (bridge specification, "Steering record"). */
+export const STEERING_PREFIX = '[Jevellan] ';
+const PREFORMATTED = [OWNER_STARTED_PREFIX, OWNER_WORKED_PREFIX, STEERING_PREFIX];
 export type EventLineContext = {
   /** Thread title from the hub index; missing titles read `(unknown thread)`. */
   title(threadId: string): string | undefined;
