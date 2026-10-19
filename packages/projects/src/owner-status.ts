@@ -1,19 +1,32 @@
-import { ownerLocal, type CoordinatorView, type GoalLine, type ProjectDecision, type ProjectDeploy, type ProjectDaily, type ProjectGoal, type ProjectJob, type ProjectJobRun, type ProjectStatusView,
+import { boardGroup, ownerLocal, type BoardGroup, type CoordinatorView, type GoalLine, type ProjectDecision, type ProjectDeploy, type ProjectDaily, type ProjectGoal, type ProjectJob, type ProjectJobRun, type ProjectStatusView,
   type ProjectWindow, type ProjectWorkSettings, type ProjectWorkTask, type RunView, type ThreadIndex, type WaitingItemView, type WaitingKind } from '@jevellan/core';
 import type { OwnerShortIds } from './owner-ids.js';
 
-/** What a thread is to the owner (bridge specification, run view states); `null` hides it from status. */
+/** What a thread is to the owner (bridge specification, run view states), from the Overview's board group so both always agree. */
 export function threadRunState(thread: Pick<ThreadIndex, 'state' | 'landing' | 'landingStage' | 'resolution' | 'delivery' | 'pr'>, deployed: boolean): RunView['state'] {
+  const group = boardGroup(thread);
   if (thread.state === 'attached') return 'held';
-  if (thread.state === 'waiting-for-you') return 'waiting';
-  if (thread.state === 'publishing' || thread.landingStage) return 'landing';
-  if (thread.state === 'queued') return 'queued';
-  if (thread.state === 'preparing' || thread.state === 'running') return 'running';
-  if (thread.state === 'in-review') return 'waiting';
-  if (thread.state === 'failed') return 'failed';
-  if (thread.state === 'stopped') return thread.resolution?.by === 'owner' ? 'cancelled' : 'stopped';
-  if (thread.state === 'done') return thread.resolution?.by === 'deploy' || deployed ? 'deployed' : thread.landing || thread.pr?.state === 'merged' ? 'landed' : 'idle';
+  if (group === 'landed') return deployed ? 'deployed' : 'landed';
+  if (group === 'waiting') return thread.state === 'failed' ? 'failed' : 'waiting';
+  if (group === 'review') return 'waiting';
+  if (group === 'landing') return 'landing';
+  if (group === 'working') return thread.state === 'queued' ? 'queued' : 'running';
+  if (group === 'resolved') {
+    if (thread.resolution?.by === 'deploy' || deployed) return 'deployed';
+    if (thread.state === 'failed') return 'failed';
+    if (thread.state === 'stopped') return 'stopped';
+    return thread.landing || thread.pr?.state === 'merged' ? 'landed' : 'idle';
+  }
   return 'idle';
+}
+
+/** The Overview's thread groups in display order (Waiting for you oldest first, every other group newest first). */
+export function overviewBoard(threads: readonly ThreadIndex[]): Record<BoardGroup, Array<{ id: string; at: string }>> {
+  const board = { waiting: [], review: [], working: [], landing: [], landed: [], idle: [], resolved: [] } as Record<BoardGroup, Array<{ id: string; at: string }>>;
+  const when = (thread: ThreadIndex) => thread.resolution?.at ?? thread.endedAt ?? thread.updatedAt;
+  for (const thread of threads) board[boardGroup(thread)].push({ id: thread.id, at: boardGroup(thread) === 'waiting' ? thread.updatedAt : when(thread) });
+  for (const [group, rows] of Object.entries(board)) rows.sort((a, b) => group === 'waiting' ? a.at.localeCompare(b.at) : b.at.localeCompare(a.at));
+  return board;
 }
 
 /** The waiting-item kind of a decision item, from the fields the engine already sets on it. */

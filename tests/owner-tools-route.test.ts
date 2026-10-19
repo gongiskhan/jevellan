@@ -1,0 +1,46 @@
+import { afterEach, expect, test } from 'vitest';
+import { DoctorControlSchema, doctorControlPath, readDocument, OWNER_TOOLS } from '../packages/core/dist/index.js';
+import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
+
+let f: ProjectFixture | undefined;
+afterEach(async () => { await f?.close(); f = undefined; });
+const call = async (name: string, body: Record<string, unknown>, headers: Record<string, string> = {}) => {
+  const control = readDocument(doctorControlPath(f!.homes), DoctorControlSchema);
+  const response = await fetch(`${control.origin}/api/local/tools/${name}`, { method: 'POST', headers: { Authorization: `Bearer ${control.token}`, 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify({ schema: 'owner-tool-request-v1', caller: 'cli', ...body }) });
+  return { status: response.status, body: await response.json() as Record<string, unknown> };
+};
+
+test('the tool route answers status with text and logs every call, refusing unknown tools, actions and arguments', async () => {
+  f = await projectFixture({ control: true });
+  const first = await call('status', { args: {} });
+  expect(first.status).toBe(200);
+  expect(first.body).toMatchObject({ schema: 'owner-tool-result-v1', ok: true });
+  expect(String(first.body.text)).toMatch(/^\S+ · coordinator \w+/u);
+  expect(String(first.body.text)).toContain('Nothing waiting on you.');
+  expect((await call('nothing', { args: {} })).body).toMatchObject({ ok: false, error: { code: 'unknown_tool', text: `There is no tool nothing. Tools: ${OWNER_TOOLS.map(tool => tool.name).join(', ')}.` } });
+  expect((await call('work', { action: 'juggle', args: {} })).body).toMatchObject({ ok: false, error: { code: 'unknown_action', text: 'work takes list, add, reorder, cancel, inspect.' } });
+  expect((await call('status', { args: { section: 'everything' } })).body).toMatchObject({ ok: false, error: { code: 'invalid_arguments' } });
+  expect((await call('status', { args: { project: 'missing' } })).body).toMatchObject({ ok: false, error: { code: 'project_unknown', text: `Which project? Known projects: ${f.project.name}.` } });
+  expect((await call('status', { args: {} }, { Origin: 'http://example.test' })).status).toBe(401);
+  const log = f.app.ownerTools.callerLog();
+  expect(log.map(entry => [entry.tool, entry.action, entry.access, entry.ok, entry.errorCode ?? null])).toEqual([
+    ['status', 'status', 'read', true, null], ['status', 'nothing', 'read', false, 'unknown_tool'], ['work', 'juggle', 'read', false, 'unknown_action'],
+    ['status', 'status', 'read', false, 'invalid_arguments'], ['status', 'status', 'read', false, 'project_unknown']]);
+  expect(log.every(entry => entry.caller === 'cli' && /^[a-f0-9]{64}$/u.test(entry.argsDigest))).toBe(true);
+});
+
+test('the status line resolves the project from the working folder and says when there is none', async () => {
+  f = await projectFixture({ control: true });
+  const control = readDocument(doctorControlPath(f.homes), DoctorControlSchema);
+  const line = async (cwd: string) => (await (await fetch(`${control.origin}/api/local/statusline`, { method: 'POST', headers: { Authorization: `Bearer ${control.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ schema: 'status-line-request-v1', cwd }) })).json() as { text: string }).text;
+  expect(await line(f.checkout)).toMatch(new RegExp(`^Jevellan ${f.project.name} · 0 running · 0 queued · 0 waiting`, 'u'));
+  expect(await line('/')).toMatch(/^Jevellan /u); // the only project answers anywhere
+});
+
+test('the overview board comes from the engine in display order', async () => {
+  f = await projectFixture();
+  const view = await f.app.projectWork.view('project');
+  expect(Object.keys(view.board ?? {})).toEqual(['waiting', 'review', 'working', 'landing', 'landed', 'idle', 'resolved']);
+});

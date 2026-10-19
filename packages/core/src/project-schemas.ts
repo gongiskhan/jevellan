@@ -518,7 +518,9 @@ export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project
   // The placement phase gates (D88) this device applies, so the interface disables what placement would refuse (D221).
   gates: z.strictObject({ mainIsolation: z.boolean(), remoteDevices: z.boolean() }),
   // phase 5: every roster device that is not revoked, in roster order, so New thread and Override disable what placement refuses (D281)
-  devices: z.array(ProjectDeviceSetupSchema).optional() });
+  devices: z.array(ProjectDeviceSetupSchema).optional(),
+  // bridge phase 2: the Overview's thread groups and their order, decided by the engine; `at` lets the page page Resolved by age.
+  board: z.strictObject(Object.fromEntries(['waiting', 'review', 'working', 'landing', 'landed', 'idle', 'resolved'].map(group => [group, z.array(z.strictObject({ id: IdSchema, at: TimestampSchema }))])) as Record<'waiting' | 'review' | 'working' | 'landing' | 'landed' | 'idle' | 'resolved', z.ZodArray<z.ZodObject<{ id: typeof IdSchema; at: typeof TimestampSchema }, z.core.$strict>>>).optional() });
 export type ProjectWorkView = z.infer<typeof ProjectWorkViewSchema>;
 export const ThreadViewSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-thread-view-v1'),
   notices: z.array(z.strictObject({ at: TimestampSchema, text: z.string().max(4000), kind: z.enum(['info', 'error']) })).max(20).optional(),
