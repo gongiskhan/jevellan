@@ -13,6 +13,8 @@ import { attachThread, detachThread } from './thread-attach.js';
 import { serveAgentMcp } from './agent-mcp.js';
 import { hubCommand } from './hub-command.js';
 import { journalCommand } from './journal-command.js';
+import { serveOwnerMcp } from './owner-mcp.js';
+import { attachCommand, callCommand, hookCommand, pluginCommand, statuslineCommand, watchCommand } from './owner-commands.js';
 
 function printInstallation(result: Awaited<ReturnType<Installer['install']>>) {
   if (result.changedPort) console.log(`The default port was occupied. Jevellan uses ${result.port}.`);
@@ -53,6 +55,14 @@ export async function main(args: string[], options: { installer?: () => Installe
     catch (error) { console.error(error instanceof Error && error.message ? error.message : 'The command could not complete.'); process.exitCode = 1; }
     return;
   }
+  // The bridge (owner tools): the plugin's forwarder and the terminal commands over the same tool route.
+  if (args[0] === 'mcp') { await serveOwnerMcp(); return; }
+  if (args[0] === 'call') { process.exitCode = await callCommand(args.slice(1)); return; }
+  if (args[0] === 'statusline') { process.exitCode = await statuslineCommand(args.slice(1)); return; }
+  if (args[0] === 'watch') { process.exitCode = await watchCommand(args.slice(1)); return; }
+  if (args[0] === 'attach') { process.exitCode = attachCommand(args.slice(1)); return; }
+  if (args[0] === 'plugin') { process.exitCode = pluginCommand(args.slice(1)); return; }
+  if (args[0] === 'hook') { process.exitCode = await hookCommand(args.slice(1)); return; }
   if (args[0] === 'mcp-bridge') { await serveMcpBridge(); return; }
   if (args[0] === 'mcp-server') { if (args.length !== 1) throw new Error('Usage: jevellan mcp-server (connection details come from the environment).'); await (options.mcpServer ?? serveAgentMcp)(); return; }
   if (args[0] === 'memory-hook') { await serveMemoryHook(); return; }

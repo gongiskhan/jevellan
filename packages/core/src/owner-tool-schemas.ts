@@ -81,3 +81,22 @@ export const StatusLineViewSchema = z.strictObject({ schema: z.literal('status-l
 export const OwnerEventSchema = z.strictObject({ schema: z.literal('owner-event-v1'), seq: z.number().int().positive(), at: TimestampSchema, projectId: IdSchema,
   source: z.string().min(1).max(20), kind: z.enum(['text', 'tool', 'done', 'think', 'decide', 'land', 'state', 'push']), text: z.string().max(4000) });
 export type OwnerEvent = z.infer<typeof OwnerEventSchema>;
+
+/** Push kinds (bridge specification, "Push"), each switchable under `config push`. */
+export const PushKindSchema = z.enum(['waiting_created', 'deploy', 'coordinator_crashed', 'coordinator_stalled', 'budget_exhausted', 'job_failed', 'night_missed', 'held_idle_warning', 'held_auto_return', 'coordinator_reply', 'coordinator_answer', 'login_done']);
+export type PushKind = z.infer<typeof PushKindSchema>;
+// state point hub namespace owner-settings: key a project id, or `installation` for the installation-wide sections
+export const OwnerProjectSettingsSchema = z.strictObject({ schema: z.literal('owner-project-settings-v1'), projectId: IdSchema,
+  push: z.strictObject({ kinds: z.partialRecord(PushKindSchema, z.boolean()), batchSeconds: z.number().int().min(10).max(3600), transport: z.enum(['channel', 'inject', 'none']) }),
+  bridge: z.strictObject({ account: z.string().min(1).max(80), wanted: z.boolean() }),
+  deploy: z.strictObject({ paused: z.boolean(), debounceMinutes: z.number().int().min(1).max(30) }),
+  night: z.strictObject({ catchUpHours: z.number().int().min(0).max(12) }) });
+export type OwnerProjectSettings = z.infer<typeof OwnerProjectSettingsSchema>;
+export const OwnerInstallationSettingsSchema = z.strictObject({ schema: z.literal('owner-installation-settings-v1'),
+  remote: z.strictObject({ enabled: z.boolean(), writeEnabled: z.boolean(), hostname: z.string().max(253).nullable(), identityProvider: z.enum(['github', 'fake']), allowedIdentity: z.string().max(200).nullable() }),
+  heartbeat: z.strictObject({ url: z.url().nullable(), intervalMinutes: z.number().int().min(1).max(60) }) });
+export type OwnerInstallationSettings = z.infer<typeof OwnerInstallationSettingsSchema>;
+export const defaultOwnerProjectSettings = (projectId: string): OwnerProjectSettings => ({ schema: 'owner-project-settings-v1', projectId,
+  push: { kinds: {}, batchSeconds: 60, transport: 'channel' }, bridge: { account: 'main', wanted: false }, deploy: { paused: false, debounceMinutes: 10 }, night: { catchUpHours: 4 } });
+export const defaultOwnerInstallationSettings = (): OwnerInstallationSettings => ({ schema: 'owner-installation-settings-v1',
+  remote: { enabled: false, writeEnabled: false, hostname: null, identityProvider: 'github', allowedIdentity: null }, heartbeat: { url: null, intervalMinutes: 5 } });

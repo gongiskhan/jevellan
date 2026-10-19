@@ -1,0 +1,7 @@
+{
+  "schema": "jevellan-plugin-source-v1",
+  "name": "jevellan",
+  "description": "Drive Jevellan from Claude Code: status, activity, the coordinator, the queue, goals, jobs, threads, decisions, Jev and settings.",
+  "marketplace": "jevellan-local",
+  "targets": { "claude": { "server": "jevellan", "channel": true } }
+}

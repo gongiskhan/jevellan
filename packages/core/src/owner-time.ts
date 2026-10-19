@@ -3,9 +3,10 @@
  * `Mon 18 Oct 02:00` beyond, always in the project's time zone so the text never depends on the machine.
  */
 const parts = (at: Date, timeZone: string) => {
-  const values = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric', month: 'short', day: '2-digit', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+  const values = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
     .formatToParts(at).map(part => [part.type, part.value]));
-  return { day: `${values.year}-${values.month}-${values.day}`, clock: `${values.hour}:${values.minute}`, weekday: values.weekday!, dayOfMonth: String(Number(values.day)), month: values.month! };
+  const month = new Intl.DateTimeFormat('en-GB', { timeZone, month: 'short' }).format(at);
+  return { day: `${values.year}-${values.month}-${values.day}`, clock: `${values.hour}:${values.minute}`, weekday: values.weekday!, dayOfMonth: String(Number(values.day)), month };
 };
 
 export function ownerClock(at: string | Date, now: string | Date, timeZone: string): string {

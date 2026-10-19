@@ -2,7 +2,8 @@ import { appendFileSync, mkdirSync, readFileSync, renameSync, existsSync, writeF
 import { createHash } from 'node:crypto';
 import { dirname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { CallerLogEntrySchema, HubUnavailable, OWNER_TOOLS, OwnerToolResultSchema, ownerTool, ownerToolAction, type CallerLogEntry, type OwnerToolDefinition, type OwnerToolRequest, type OwnerToolResult,
+import { CallerLogEntrySchema, HubUnavailable, OwnerInstallationSettingsSchema, OwnerProjectSettingsSchema, SteeringRecordSchema, defaultOwnerInstallationSettings, defaultOwnerProjectSettings, newId,
+  type OwnerInstallationSettings, type OwnerProjectSettings, type SteeringRecord, OWNER_TOOLS, OwnerToolResultSchema, ownerTool, ownerToolAction, type CallerLogEntry, type OwnerToolDefinition, type OwnerToolRequest, type OwnerToolResult,
   type Project, type ProjectStatusView } from '@jevellan/core';
 import { OwnerShortIds, projectStatus, renderStatus, renderStatusLine } from '@jevellan/projects';
 import type { Application } from './application.js';
@@ -13,6 +14,12 @@ export class OwnerRefusal extends Error {
   constructor(message: string, readonly code = 'refused', readonly status = 400) { super(message); }
 }
 export type OwnerContext = { app: Application; tools: OwnerTools; project: Project; request: OwnerToolRequest; action: string; args: Record<string, unknown>; now: Date };
+/** Takeover arrives with its phase; until then `thread open` and `return` say so. */
+export class OwnerTakeoverPending {
+  async open(_context: OwnerContext, id: string, _thread: unknown): Promise<{ text: string }> { throw new OwnerRefusal(`Taking over ${id} is not available in this version yet.`, 'not_available', 501); }
+  async return(_context: OwnerContext, id: string, _thread: unknown, _as: 'resume' | 'done' | 'stop', _note?: string): Promise<{ text: string }> { throw new OwnerRefusal(`${id} is not held.`, 'not_held', 409); }
+  async stop(_context: OwnerContext, id: string, _thread: unknown, _reason?: string): Promise<{ text: string }> { throw new OwnerRefusal(`${id} is not held.`, 'not_held', 409); }
+}
 export type OwnerHandler = (context: OwnerContext) => Promise<{ text: string; data?: unknown }>;
 
 const CALLER_LOG_DAYS = 30;
@@ -88,6 +95,49 @@ export class OwnerTools {
     const kept = readFileSync(this.logPath, 'utf8').split('\n').filter(line => { if (!line) return false; try { return (JSON.parse(line) as { at: string }).at >= cutoff; } catch { return false; } });
     const temporary = `${this.logPath}.tmp`; writeFileSync(temporary, kept.length ? `${kept.join('\n')}\n` : '', { mode: 0o600 }); renameSync(temporary, this.logPath);
   }
+  /** Bridge settings of a project on the state point (push, bridge, deploy pause, catch-up), defaults until changed. */
+  projectSettings(projectId: string): OwnerProjectSettings {
+    return this.app.hub.get('owner-settings', projectId, OwnerProjectSettingsSchema)?.document ?? defaultOwnerProjectSettings(projectId);
+  }
+  updateProjectSettings(projectId: string, change: (settings: OwnerProjectSettings) => OwnerProjectSettings): OwnerProjectSettings {
+    const stored = this.app.hub.get('owner-settings', projectId, OwnerProjectSettingsSchema);
+    return this.app.hub.put('owner-settings', projectId, OwnerProjectSettingsSchema, change(stored?.document ?? defaultOwnerProjectSettings(projectId)), stored?.revision ?? 0).document;
+  }
+  installationSettings(): OwnerInstallationSettings {
+    return this.app.hub.get('owner-settings', 'installation', OwnerInstallationSettingsSchema)?.document ?? defaultOwnerInstallationSettings();
+  }
+  updateInstallationSettings(change: (settings: OwnerInstallationSettings) => OwnerInstallationSettings): OwnerInstallationSettings {
+    const stored = this.app.hub.get('owner-settings', 'installation', OwnerInstallationSettingsSchema);
+    return this.app.hub.put('owner-settings', 'installation', OwnerInstallationSettingsSchema, change(stored?.document ?? defaultOwnerInstallationSettings()), stored?.revision ?? 0).document;
+  }
+  async deployPaused(projectId: string): Promise<boolean> { return this.projectSettings(projectId).deploy.paused; }
+  async runId(projectId: string, jobRunId: string): Promise<string> { return this.ids.one(projectId, 'J', jobRunId); }
+
+  /** Every steering act (bridge specification, "Steering record"), kept on the state point for the coordinator and the handoff. */
+  steering(projectId: string, record: Pick<SteeringRecord, 'thread' | 'threadId' | 'kind' | 'by'> & { text?: string }): SteeringRecord {
+    const id = newId('steering'); const document = SteeringRecordSchema.parse({ schema: 'steering-record-v1', id, projectId, at: this.now().toISOString(), deliveredToCoordinator: false, ...record });
+    this.app.hub.put('owner-steering', id, SteeringRecordSchema, document, 0);
+    return document;
+  }
+  steeringRecords(projectId: string): SteeringRecord[] { return this.app.hub.list('owner-steering', SteeringRecordSchema).map(row => row.document).filter(row => row.projectId === projectId).sort((a, b) => a.at.localeCompare(b.at)); }
+  steeringBy(caller: string): SteeringRecord['by'] { return caller.startsWith('bridge:') ? 'bridge' : caller.startsWith('remote:') ? caller as SteeringRecord['by'] : caller === 'ui' ? 'ui' : 'cli'; }
+  readonly takeover = new OwnerTakeoverPending();
+  /** Replies to bridge messages are pushed (phase 4); until a push queue exists they stay in the event stream. */
+  awaitCoordinatorReply(projectId: string, clientMessageId: string, context: { question?: string }): void { this.#awaiting.set(clientMessageId, { projectId, ...context }); }
+  coordinatorReplyDelivered(clientMessageId: string): void { this.#awaiting.delete(clientMessageId); }
+  readonly #awaiting = new Map<string, { projectId: string; question?: string }>();
+  awaitingReplies(): ReadonlyMap<string, { projectId: string; question?: string }> { return this.#awaiting; }
+  async latestHandoff(projectId: string): Promise<{ at: string; text: string } | null> {
+    try {
+      const context = await this.app.projectWork.journal?.handoffContext(projectId); const handoff = context?.handoff; if (!handoff) return null;
+      return { at: handoff.at, text: [handoff.inFlight, handoff.pendingAsks, handoff.decisions].filter(Boolean).join(' ').replace(/\s+/gu, ' ') };
+    } catch { return null; }
+  }
+  async missedSince(_projectId: string, _since: string): Promise<string> { return 'none'; }
+  async overridesSince(projectId: string, since: string): Promise<number> {
+    try { return (await this.app.projectHub.recentOverrides(projectId, 200)).filter(row => row.at >= since).length; } catch { return 0; }
+  }
+
   callerLog(): CallerLogEntry[] {
     if (!existsSync(this.logPath)) return [];
     return readFileSync(this.logPath, 'utf8').split('\n').filter(Boolean).flatMap(line => { const parsed = CallerLogEntrySchema.safeParse(JSON.parse(line)); return parsed.success ? [parsed.data] : []; });
