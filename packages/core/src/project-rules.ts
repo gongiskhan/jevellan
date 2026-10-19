@@ -126,12 +126,14 @@ export function coordinatorMovable(deviceId: string, row: Pick<DeviceView, 'stat
 /** The refusal of a move while the coordinator runs a turn on a device that is online (3.5.3); the Projects copy module re-exports it. */
 export const coordinatorWorking = (deviceName: string): string => `The coordinator is working on ${deviceName}. Try again when it is idle.`;
 
-export type BoardGroup = 'waiting' | 'review' | 'working' | 'landing' | 'idle' | 'resolved';
+export type BoardGroup = 'waiting' | 'review' | 'working' | 'landing' | 'landed' | 'idle' | 'resolved';
 /** Overview grouping is ordered: a resolution wins over the stored resting state. */
-export function boardGroup(thread: Pick<ThreadIndex, 'state' | 'resolution' | 'landing'>): BoardGroup {
+export function boardGroup(thread: Pick<ThreadIndex, 'state' | 'resolution'> & Partial<Pick<ThreadIndex, 'landing' | 'landingStage' | 'delivery'>>): BoardGroup {
+  if (!thread.resolution && thread.landing) return 'landed';
   if (thread.resolution || thread.state === 'done' || thread.state === 'stopped') return 'resolved';
   if (thread.state === 'failed' || thread.state === 'waiting-for-you') return 'waiting';
+  if (thread.state === 'publishing' && thread.delivery === 'land') return 'landing';
   if (['queued', 'preparing', 'running', 'publishing', 'attached'].includes(thread.state)) return 'working';
-  if (thread.state === 'in-review') return thread.landing ? 'landing' : 'review';
+  if (thread.state === 'in-review') return thread.landingStage || thread.delivery === 'land' ? 'landing' : 'review';
   return 'idle';
 }

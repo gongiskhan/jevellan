@@ -176,7 +176,7 @@ function ProjectStatusBanner({ view, props }: { view: ProjectWorkView; props: Pa
     <button type="button" className="secondary" disabled={task.busy} onClick={() => void task.run(async signal => {
       const { schema: _schema, projectId, revision, ...settings } = view.settings; void _schema;
       await save(`/api/projects/${projectId}/work-settings`, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision,
-        settings: { ...settings, defaultIsolation: view.settingsNotice ? 'main' : settings.defaultIsolation, status: archived ? 'paused' : 'active' } }, signal);
+        settings: { ...settings, status: archived ? 'paused' : 'active' } }, signal);
       updated();
     })}>{archived ? copy.UNARCHIVE_PROJECT : copy.RESUME_PROJECT}</button>{local.error && <p className="error">{local.error}</p>}
   </div>;
@@ -576,10 +576,10 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         <div className="pw-side" id={sideId} {...sidePanel}>
           <h2 className="pw-overview-title">{copy.OVERVIEW}</h2>
           <div className="pw-overview-tabs" role="tablist" aria-label={copy.OVERVIEW}>
-            {OVERVIEW_TABS.map(name => <button key={name} role="tab" className="pw-tab" aria-selected={overviewTab === name} onClick={() => setOverviewTab(name)}>{name === 'routines' ? copy.ROUTINES : name === 'library' ? copy.LIBRARY : copy.TAB_LABELS[name]}</button>)}
+            {OVERVIEW_TABS.filter(name => name !== 'pull-requests' || view.threads.some(thread => thread.delivery === 'pull-request')).map(name => <button key={name} role="tab" className="pw-tab" aria-selected={overviewTab === name} onClick={() => setOverviewTab(name)}>{name === 'routines' ? copy.ROUTINES : name === 'library' ? copy.LIBRARY : copy.TAB_LABELS[name]}</button>)}
           </div>
           <section className="pw-section" hidden={overviewTab !== 'threads'} data-tab="waiting" aria-labelledby={`${sideId}-waiting`}>
-            {sectionHeading(`${sideId}-waiting`, copy.WAITING_FOR_YOU, open.length + drafts.length + groups.waiting.length)}
+            {sectionHeading(`${sideId}-waiting`, view.settings.delivery === 'land' ? 'Waiting on you' : copy.WAITING_FOR_YOU, open.length + drafts.length + groups.waiting.length)}
             {sent && showSent(sent, open) && <p className="pw-sent" role="status"><Icon name="check" size={14} />{sent.text}</p>}
             {drafts.length > 0 && <div className="pw-proposed"><h4>{copy.PROPOSED_TASKS}</h4><TaskQueue projectId={id} tasks={drafts} goals={goals} threads={view.threads} navigate={navigate} changed={updated} onError={onError} /></div>}
             {open.length ? open.map((decision, index) => (
@@ -593,7 +593,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             {sectionHeading(`${sideId}-queue`, 'Queue', tasks.filter(task => ['draft', 'queued', 'active', 'in-review'].includes(task.state)).length)}
             <TaskQueue projectId={id} tasks={tasks} goals={goals} threads={view.threads} grouped navigate={navigate} changed={updated} onError={onError} />
           </section>
-          {(['review', 'working', 'landing', 'idle', 'resolved'] as const).map(group => <section key={group} className="pw-section" hidden={overviewTab !== 'threads'} aria-labelledby={`${sideId}-${group}`}>
+          {(['review', 'working', 'landing', 'landed', 'idle', 'resolved'] as const).filter(group => (group !== 'review' || view.settings.delivery === 'pull-request') && (group !== 'landed' || view.settings.delivery === 'land' || groups.landed.length > 0)).map(group => <section key={group} className="pw-section" hidden={overviewTab !== 'threads'} aria-labelledby={`${sideId}-${group}`}>
             {sectionHeading(`${sideId}-${group}`, copy.BOARD_LABELS[group], groups[group].length)}
             {groups[group].length ? <div className="pw-list">{groups[group].map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} deviceName={deviceName} navigate={navigate} changed={updated} onError={onError} />)}</div> : <p className="pw-empty">{copy.BOARD_EMPTY[group]}</p>}
             {group === 'resolved' && <button className="secondary small" onClick={() => setResolvedDays(days => days + 14)}>{copy.SHOW_OLDER}</button>}
@@ -602,7 +602,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             {sectionHeading(`${sideId}-pulls`, copy.PULL_REQUESTS, pulls.length)}
             {view.githubNotice && <p role="status" className="notice">{view.githubNotice}</p>}
             {pulls.length ? pulls.map((entry) => (
-              <PullRequestRow key={entry.threadId} projectId={id} entry={entry} navigate={navigate} taskId={tasks.find(task => task.threadId === entry.threadId)?.id} shadow={!view.settings.autoMerge} hold={daily?.mergesHeld === true && !daily.mergeAllowedThreads.includes(entry.threadId)} merge={() => setMerging(entry)} />
+              <PullRequestRow key={entry.threadId} projectId={id} entry={entry} navigate={navigate} taskId={tasks.find(task => task.threadId === entry.threadId)?.id} shadow={!view.settings.autoLand} hold={daily?.mergesHeld === true && !daily.mergeAllowedThreads.includes(entry.threadId)} merge={() => setMerging(entry)} />
             )) : <p className="pw-empty">{copy.NO_OPEN_PULL_REQUESTS}</p>}
             {recentPulls.length > 0 && <details><summary>Recently merged · last 7 days</summary>{recentPulls.map(entry => <PullRequestRow key={entry.threadId} projectId={id} entry={entry} navigate={navigate} taskId={tasks.find(task => task.threadId === entry.threadId)?.id} merge={() => undefined} />)}</details>}
           </section>
@@ -904,6 +904,7 @@ function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: Pa
   const [type, setType] = useState<'feature' | 'fix' | 'finding' | 'refactor' | 'docs' | 'analysis' | 'review' | 'ops' | 'memory'>('feature');
   const [goalId, setGoalId] = useState('');
   const [now, setNow] = useState(false), [after, setAfter] = useState<string[]>([]), [needs, setNeeds] = useState('');
+  const [fromBranch, setFromBranch] = useState('');
   const change = (fields: Partial<ThreadForm>) => setForm((previous) => ({ ...previous, ...fields }));
   const isolationNote = useId(); const deviceNote = useId();
   const runtimeName = runtimeNames(data);
@@ -922,10 +923,10 @@ function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: Pa
         if (offline) return;
         void task.run(async (signal) => {
           setError('');
-          const request = threadCreateRequest(ids.id({ form, type, now, after, needs }), form);
+          const request = threadCreateRequest(ids.id({ form, type, now, after, needs, fromBranch }), form);
           const { schema: _schema, clientRequestId, title, task: brief, ...fixed } = request; void _schema;
           const created = await api(`/api/projects/${view.project.id}/tasks`, TaskReceiptSchema, 'POST',
-            { schema: 'task-create-request-v1', clientRequestId, title, brief, fixed, type, goalId: goalId || null, now, after, needs: needs.split(',').map(value => value.trim()).filter(Boolean) }, { signal, waitForHub: true });
+            { schema: 'task-create-request-v1', clientRequestId, title, brief, ...(fromBranch.trim() ? { fromBranch: fromBranch.trim() } : {}), fixed, type, goalId: goalId || null, now, after, needs: needs.split(',').map(value => value.trim()).filter(Boolean) }, { signal, waitForHub: true });
           ids.done(); updated();
           afterDialogs(props.message, `Queued task "${form.title}".`); close();
           if (created.taskId) props.navigate(`/projects/${view.project.id}`);
@@ -939,6 +940,7 @@ function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: Pa
         <label>Goal<select value={goalId} onChange={event => setGoalId(event.target.value)}><option value="">Asks</option>{goals.filter(entry => entry.goal.state !== 'done').map(entry => <option key={entry.goal.id} value={entry.goal.id}>{entry.goal.name}</option>)}</select></label>
         <label className="check"><input type="checkbox" checked={now} onChange={event => setNow(event.target.checked)} />Start now</label>
         <label>After<select multiple value={after} onChange={event => setAfter(Array.from(event.target.selectedOptions, option => option.value))}>{tasks.filter(task => task.state !== 'done' && task.state !== 'cancelled').map(task => <option value={task.id} key={task.id}>{task.title}</option>)}</select></label>
+        <label>From branch<input maxLength={200} value={fromBranch} onChange={event => setFromBranch(event.target.value)} placeholder="Optional existing branch on origin" /></label>
         <label>Needs<input value={needs} placeholder="residential, mac" onChange={event => setNeeds(event.target.value)} /></label>
         <details className="pw-placement" onToggle={event => { if (event.currentTarget.open) event.currentTarget.querySelector('.pw-placement-fields')?.scrollIntoView({ block: 'nearest' }); }}>
           <summary>Choose where it runs</summary>
@@ -1088,9 +1090,7 @@ function CoordinatorOverrideDialog({ props, view, close }: { props: PageProps; v
     <form className="pw-settings" onSubmit={event => { event.preventDefault(); if (!base) return;
       void task.run(async signal => {
         setError('');
-        const kept = { defaultIsolation: base.defaultIsolation, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads,
-          maxRunningPerDevice: base.maxRunningPerDevice, perDeviceLimits: base.perDeviceLimits, threadTurnCap: base.threadTurnCap, allowMainIsolation: base.allowMainIsolation,
-          instructions: base.instructions, autoMerge: base.autoMerge, riskyAreas: base.riskyAreas, requiredChecks: base.requiredChecks, nightlyWindow: base.nightlyWindow, refill: base.refill };
+        const { schema: _schema, projectId: _project, revision: _revision, ...kept } = base; void _schema; void _project; void _revision;
         await save(path, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision: base.revision,
           settings: { ...kept, coordinator: { ...base.coordinator, modelId: modelId || null, effort } } }, signal);
         if (fresh) await api(`/api/projects/${view.project.id}/coordinator/fresh`, ProjectWorkViewSchema, 'POST', empty, { signal });

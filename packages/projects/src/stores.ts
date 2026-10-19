@@ -28,6 +28,7 @@ export function threadIndex(thread: Thread, labels: ThreadLabels, updatedAt: str
     schema: 'project-thread-index-v1', revision: 0, id: thread.id, projectId: thread.projectId, title: thread.title, state: thread.state,
     ...(thread.stateReason === undefined ? {} : { stateReason: thread.stateReason }), isolation: thread.isolation, ...(thread.gitPolicy ? { gitPolicy: thread.gitPolicy } : {}), ownerDeviceId: thread.ownerDeviceId,
     runtime: thread.placement.runtime, modelLabel: labels.modelLabel, effort: thread.placement.effortEffective, accountLabel: labels.accountLabel,
+    delivery: thread.delivery, ...(thread.landing ? { landing: thread.landing } : {}),
     ...(thread.resolution ? { resolution: thread.resolution } : {}),
     ...(thread.branch === undefined ? {} : { branch: thread.branch }), ...(thread.pr ? { pr: thread.pr } : {}),
     // Redacted, then cut where no later redaction rewrites it, so the summary keeps within 400 characters on every hop (P8 review S-1)
@@ -57,7 +58,7 @@ export class ThreadStore {
   index(thread: Thread, labels: ThreadLabels, at: string): ThreadIndex {
     const sessionCache = sessionCacheSnapshot(cacheRecords(this.ledgers.thread(thread.projectId, thread.id)));
     const { landing, fixable, usage } = this.local(thread.id);
-    return { ...threadIndex(thread, labels, at), ...(usage ? { usage } : {}), ...(landing ? { landing } : {}), ...(fixable ? { fixable: { ...fixable, checks: thread.pr?.state === 'open' && thread.pr.checks === 'failing', conflicts: thread.pr?.state === 'open' && thread.pr.mergeable === 'conflict', publish: fixable.publish && thread.state === 'idle' && thread.pr?.state !== 'open' } } : {}), ...(sessionCache.length ? { sessionCache } : {}) };
+    return { ...threadIndex(thread, labels, at), ...(usage ? { usage } : {}), ...(landing ? { landingStage: landing } : {}), ...(fixable ? { fixable: { ...fixable, checks: thread.pr?.state === 'open' && thread.pr.checks === 'failing', conflicts: thread.pr?.state === 'open' && thread.pr.mergeable === 'conflict', publish: fixable.publish && thread.state === 'idle' && thread.pr?.state !== 'open' } } : {}), ...(sessionCache.length ? { sessionCache } : {}) };
   }
   #all(): Map<string, Thread> {
     if (this.#threads) return this.#threads;

@@ -11,7 +11,7 @@ import {
 const at = (time: string) => `2026-10-03T${time}:00.000Z`;
 const event = (raw: Record<string, unknown>): CoordinatorEvent => CoordinatorEventSchema.parse({ schema: 'coordinator-event-v1', ...raw });
 const report = (fields: Record<string, unknown>) => ({ schema: 'thread-report-v1', turn: 1, changedFiles: [], synthesized: false, ...fields });
-const index = (id: string, title: string, state: ThreadIndex['state'], over: Partial<ThreadIndex> = {}): ThreadIndex => ({ schema: 'project-thread-index-v1', revision: 1, id,
+const index = (id: string, title: string, state: ThreadIndex['state'], over: Partial<ThreadIndex> = {}): ThreadIndex => ({ schema: 'project-thread-index-v1', delivery: 'pull-request', revision: 1, id,
   projectId: 'proj_a', title, state, isolation: 'worktree', ownerDeviceId: 'dev_a', runtime: 'codex', modelLabel: 'GPT-5', effort: 'high', accountLabel: 'Work', turns: 1,
   createdAt: at('08:00'), updatedAt: at('08:30'), ...over });
 const pr = (number: number, checks: 'pending' | 'passing' | 'failing' | 'none') => ({ number, url: `https://github.com/o/r/pull/${number}`, state: 'open' as const, headSha: 'a'.repeat(40),

@@ -64,3 +64,5 @@ export * from './library-schemas.js';
 export * from './project-setup-schemas.js';
 
 export * from './project-health-schemas.js';
+
+export * from './project-landing-schemas.js';

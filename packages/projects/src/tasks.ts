@@ -29,6 +29,7 @@ type Hub = Pick<ProjectHub, 'tasks' | 'task' | 'putTask' | 'coordinator'>;
 export class ProjectTasks {
   readonly #chains = new Map<string, Promise<unknown>>();
   constructor(readonly o: { hub: Hub; deviceId: string; redactor: SecretRedactor; now(): number;
+    validateBranch?(projectId: string, branch: string): Promise<void>;
     settings?(projectId: string): Promise<ProjectWorkSettings>;
     reviewed?(task: ProjectWorkTask, outcome: 'approved' | 'rejected', note?: string): Promise<void>;
     cancelThread?(task: ProjectWorkTask, reason: string, owner: boolean): Promise<void>;
@@ -63,6 +64,7 @@ export class ProjectTasks {
       const id = authority.id ?? derivedId('task', projectId, input.clientRequestId), digest = createHash('sha256').update(stableJson({ ...input, source })).digest('hex');
       const previous = (await this.o.hub.task(id))?.document;
       if (previous) { if (previous.projectId !== projectId || previous.requestDigest !== digest) refuse('This request ID already created a different task.'); return { schema: 'task-receipt-v1' as const, taskId: id, state: previous.state, repeated: true }; }
+      if (input.fromBranch) await this.o.validateBranch?.(projectId, input.fromBranch);
       const goalState = await this.o.validateGoal?.(projectId, input.goalId, source, authority.refillEventId) ?? 'queued';
       const proposed = source === 'owner-request' && (await this.o.settings?.(projectId))?.startMode === 'propose';
       const state = proposed ? 'draft' : goalState;

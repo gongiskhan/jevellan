@@ -282,7 +282,7 @@ test('the hub derives held checkouts for any device from claims and main thread 
     const id = createHash('sha256').update(`${deviceId}\0${path}`).digest('hex');
     f.app.hub.put('checkout-ownership', id, CheckoutClaimSchema, { schema: 'checkout-claim-v1', deviceId, path, held, conversationId: owner, conversationTitle: title, workId: owner, pid: 4242, updatedAt: at }, 0);
   };
-  const index = (id: string, owner: string, fields: Partial<ThreadIndex>): ThreadIndex => ({ schema: 'project-thread-index-v1', revision: 0, id, projectId: 'project', title: `${id} title`,
+  const index = (id: string, owner: string, fields: Partial<ThreadIndex>): ThreadIndex => ({ schema: 'project-thread-index-v1', delivery: 'pull-request', revision: 0, id, projectId: 'project', title: `${id} title`,
     state: 'running', isolation: 'main', ownerDeviceId: owner, runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', turns: 1, createdAt: at, updatedAt: at, ...fields });
   // The hub's checkout by its stored path; dev_b's claim at a resolved path is a thread of this project; dev_c has a main thread whose claim is
   // not there yet and a claim of other work at another path; dev_d has no path in the project; dev_e has only ended or worktree threads.

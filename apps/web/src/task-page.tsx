@@ -22,7 +22,7 @@ export function TaskPage({ projectId, taskId, navigate, onError }: PageProps & {
     {!task ? <p>Loading task…</p> : <><h2>{task.title}</h2><p className="muted">{task.type} · {task.state}</p><Markdown>{task.brief}</Markdown>
       {task.endNote && <p>{task.endNote}</p>}
       {thread?.pr && <article className="pw-pr"><a href={thread.pr.url} target="_blank" rel="noopener noreferrer">#{thread.pr.number} · {thread.pr.state}</a>
-        <div className="pw-pr-actions"><MergeWhy projectId={projectId} threadId={thread.id} commit={thread.pr.headSha} shadow={project && !project.settings.autoMerge} /></div></article>}
+        <div className="pw-pr-actions"><MergeWhy projectId={projectId} threadId={thread.id} commit={thread.pr.headSha} shadow={project && !project.settings.autoLand} /></div></article>}
       {task.threadId && <button className="secondary small" onClick={() => navigate(`/projects/${projectId}/threads/${task.threadId}`)}>Open thread</button>}
     </>}
   </section>;

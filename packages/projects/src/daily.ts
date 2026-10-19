@@ -96,6 +96,17 @@ export class ProjectDailyWork {
     return ProjectDailyListViewSchema.parse({ schema: 'project-daily-list-view-v1', projectId, projectDay, dailies, jobs, runs, tasks, window, lastReview, lastReviewedCommit: lastRun && lastTask?.dailyId === definition?.id && (lastRun.reviewFromVersion ?? 0) === definition?.reviewFromVersion ? lastRun.commit : fromCommit ?? lastReview?.commit ?? null, mergeAllowedThreads: await this.allowedMergeThreads(projectId, tasks),
       mergesHeld: await this.mergesHeld(projectId) });
   }
+  /** Historical vault definitions remain readable; retired work is imported disabled and can never execute. */
+  async restoreRetiredJob(projectId: string, raw: unknown): Promise<ProjectJob> {
+    const input = JobCreateRequestSchema.parse(raw);
+    if (input.run.kind !== 'github-workflow') throw new Error('Only a retired job uses historical restore.');
+    const id = derivedId('pjob', projectId, input.clientRequestId), previous = (await this.o.hub.job(id))?.document;
+    if (previous) return previous;
+    const { schema: _schema, clientRequestId: _id, ...fields } = input; void _schema; void _id;
+    await this.o.validateGoal(projectId, input.goalId);
+    const at = this.o.tasks.at();
+    return (await this.o.hub.putJob(ProjectJobSchema.parse({ ...fields, schema: 'project-job-v1', id, projectId, revision: 0, enabled: false, gate: null, createdAt: at, updatedAt: at }), 0)).document;
+  }
   async createJob(projectId: string, raw: unknown): Promise<ProjectJob> {
     const input = JobCreateRequestSchema.parse(raw);
     if (input.run.kind === 'github-workflow') return refuse('GitHub workflow jobs retired on 19 October. Use a command job.', 400);

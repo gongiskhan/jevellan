@@ -6,13 +6,13 @@ import { EkoaCodeSetupReceiptSchema, EffortSchema, EmptySchema, ProjectEnvSecret
   type ProjectEnvSecretSummary, type ProjectWorkSettings, type ProjectWorkView } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
 import { dateTime, useSettingsSave, useTask, type PageProps } from './components.js';
-import { mainIsolationBlock } from './project-work-model.js';
+import { LandingSettings } from './project-landing-settings.js';
 import { updated, useLocalError } from './project-work.js';
 import * as copy from './project-work-copy.js';
 import { ProjectUsageSection } from './project-usage.js';
 
 const sections = [['general', copy.SETTINGS_GENERAL], ['instructions', copy.SETTINGS_INSTRUCTIONS], ['placement', copy.SETTINGS_PLACEMENT],
-  ['limits', copy.SETTINGS_LIMITS], ['pull-requests', copy.PULL_REQUESTS], ['environment', copy.SETTINGS_ENVIRONMENT], ['routines', copy.SETTINGS_ROUTINES],
+  ['limits', copy.SETTINGS_LIMITS], ['pull-requests', 'Landing'], ['environment', copy.SETTINGS_ENVIRONMENT], ['routines', copy.SETTINGS_ROUTINES],
   ['health', 'Health checks'], ['notifications', copy.SETTINGS_NOTIFICATIONS], ['usage', copy.SETTINGS_USAGE]] as const;
 const fields = (settings: ProjectWorkSettings) => {
   const { schema: _schema, projectId: _projectId, revision: _revision, ...value } = settings; void _schema; void _projectId; void _revision;
@@ -27,9 +27,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const [draft, setDraft] = useState<ProjectWorkSettings>();
   const [work, setWork] = useState<ProjectWorkView>();
   const [stale, setStale] = useState(false);
-  const [settingsNotice, setSettingsNotice] = useState<string>();
   const [pushEnabled, setPushEnabled] = useState(false);
-  const [isolationChanged, setIsolationChanged] = useState(false);
   const [secretValues, setSecretValues] = useState<Record<string, string>>({});
   const [secretStates, setSecretStates] = useState<Record<string, ProjectEnvSecretSummary>>({});
   const path = `/api/projects/${id}/work-settings`, secretPath = (name: string) => `/api/projects/${id}/env-secrets/${encodeURIComponent(name)}`;
@@ -37,7 +35,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
     const [settings, view] = await Promise.all([api(path, ProjectWorkSettingsViewSchema, 'GET', undefined, { signal, waitForHub: true }),
       api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true })]);
     const states = await Promise.all(settings.settings.environment.secrets.map(name => api(`/api/projects/${id}/env-secrets/${encodeURIComponent(name)}`, ProjectEnvSecretSummarySchema, 'GET', undefined, { signal, waitForHub: true })));
-    setSettingsNotice(settings.notice); setIsolationChanged(false); setBase(settings.settings); setDraft(settings.settings); setWork(view); setStale(false); setSecretValues({});
+    setBase(settings.settings); setDraft(settings.settings); setWork(view); setStale(false); setSecretValues({});
     setSecretStates(Object.fromEntries(states.map(state => [state.name, state]))); local.setError('');
   }, [id, path, local.setError]);
   useEffect(() => {
@@ -52,11 +50,12 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
     return () => controller.abort();
   }, []);
   const change = (patch: Partial<ProjectWorkSettings>) => setDraft(value => value && { ...value, ...patch });
-  const write = async (value: ProjectWorkSettings, signal: AbortSignal, statusOnly = false) => {
+  const write = async (value: ProjectWorkSettings, signal: AbortSignal, _statusOnly = false) => {
+    void _statusOnly;
     const parsed = ProjectWorkSettingsSchema.safeParse(value);
     if (!parsed.success) throw new Error(parsed.error.issues[0]?.message);
     try {
-      const result = await save(path, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision: base!.revision, settings: { ...fields(parsed.data), defaultIsolation: settingsNotice && (statusOnly || !isolationChanged) ? 'main' : parsed.data.defaultIsolation } }, signal);
+      const result = await save(path, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision: base!.revision, settings: fields(parsed.data) }, signal);
       setBase(result.settings); updated(); return result.settings;
     } catch (error) { if (error instanceof ApiError && error.status === 409) setStale(true); throw error; }
   };
@@ -97,12 +96,6 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
               <option value="">{copy.AUTOMATIC_FIRST_AVAILABLE}</option>{models.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}</select></label>
               <label>{copy.COORDINATOR_EFFORT}<select value={draft.coordinator.effort} onChange={event => change({ coordinator: { ...draft.coordinator, effort: EffortSchema.parse(event.target.value) } })}>{EffortSchema.options.map(effort => <option key={effort} value={effort}>{copy.EFFORT_LABELS[effort]}</option>)}</select></label></div>
             <button type="button" className="secondary" onClick={() => void task.run(async signal => { await api(`/api/projects/${id}/coordinator/fresh`, EmptySchema, 'POST', empty, { signal, waitForHub: true }); props.message(copy.FRESH_STARTED); })}>{copy.FRESH_COORDINATOR_SETTINGS}</button>
-            <fieldset className="pw-isolation"><legend>{copy.DEFAULT_ISOLATION}</legend>
-              {(['worktree', 'main'] as const).map(isolation => <label className="checkbox" key={isolation}><input type="radio" name="project-isolation" checked={draft.defaultIsolation === isolation} disabled={isolation === 'main' && !!mainIsolationBlock(work)} aria-describedby={isolation === 'main' && mainIsolationBlock(work) ? 'project-main-note' : undefined} onChange={() => { setIsolationChanged(true); change({ defaultIsolation: isolation }); }} />{isolation === 'worktree' ? copy.WORKTREE_AND_PULL_REQUEST : copy.MAIN}</label>)}
-              {mainIsolationBlock(work) && <p id="project-main-note" className="pw-field-note">{mainIsolationBlock(work)}</p>}
-              {!mainIsolationBlock(work) && work.project.branchPolicy === 'external' && <p className="pw-field-note">{copy.MANUAL_MAIN_HELP}</p>}
-            </fieldset>
-            <label className="checkbox"><input type="checkbox" checked={draft.allowMainIsolation} onChange={event => change({ allowMainIsolation: event.target.checked })} />{copy.ALLOW_MAIN}</label>
           </>)}
           {section('instructions', <><label>{copy.PROJECT_INSTRUCTIONS}<textarea aria-label={copy.PROJECT_INSTRUCTIONS} rows={8} maxLength={16000} value={draft.instructions} onChange={event => change({ instructions: event.target.value })} /></label><p className="pw-field-note">{copy.PROJECT_INSTRUCTIONS_HELP}</p><p className="pw-counter">{copy.instructionsCount(draft.instructions.length)}</p></>)}
           {section('placement', <>
@@ -124,10 +117,9 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
             {number(copy.CHECKPOINT_MINIMUM, draft.sessionCheckpoints.checkpointMinTokens, 20000, 200000, checkpointMinTokens => change({ sessionCheckpoints: { ...draft.sessionCheckpoints, checkpointMinTokens } }))}
           </>)}
           {section('pull-requests', <>
+            <LandingSettings value={draft} change={change} />
             {([['checks', copy.FIX_CHECKS_AUTOMATICALLY], ['conflicts', copy.FIX_CONFLICTS_AUTOMATICALLY], ['comments', copy.FIX_COMMENTS_AUTOMATICALLY]] as const).map(([kind, label]) => <label className="checkbox" key={kind}><input type="checkbox" checked={draft.prAutoFix[kind]} onChange={event => change({ prAutoFix: { ...draft.prAutoFix, [kind]: event.target.checked } })} />{label}</label>)}
             {number(copy.AUTOMATIC_FIX_LIMIT, draft.prAutoFix.maxRounds, 1, 10, maxRounds => change({ prAutoFix: { ...draft.prAutoFix, maxRounds } }))}
-            <label className="checkbox"><input type="checkbox" checked={draft.autoMerge} onChange={event => change({ autoMerge: event.target.checked })} />{copy.AUTO_MERGE}</label>
-            <label>{copy.REQUIRED_CHECKS}<textarea aria-label={copy.REQUIRED_CHECKS} value={draft.requiredChecks.join('\n')} onChange={event => change({ requiredChecks: event.target.value.split('\n').map(line => line.trim()).filter(Boolean) })} /></label>
             <label>{copy.RISKY_AREAS}<textarea aria-label={copy.RISKY_AREAS} rows={4} maxLength={2000} value={draft.riskyAreas} onChange={event => change({ riskyAreas: event.target.value })} /></label>
           </>)}
           {section('environment', <>

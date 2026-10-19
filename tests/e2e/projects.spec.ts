@@ -1240,7 +1240,7 @@ test('LJ2 native setup remains visible and merge routing explains its ask-owner 
   await page.goto('/projects/projects_fixture');
   const settingsResponse = await page.request.get(`${PROJECT}/work-settings`), settings = await settingsResponse.json();
   expect(settings.settings.autoMerge).toBe(false);
-  const saved = await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision: settings.settings.revision, clientRequestId: `merge_settings_${info.project.name}`, settings: { ...Object.fromEntries(Object.entries(settings.settings).filter(([key]) => !['schema', 'projectId', 'revision'].includes(key))), autoMerge: false, riskyAreas: 'Stored data and deploy files.' } } });
+  const saved = await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision: settings.settings.revision, clientRequestId: `merge_settings_${info.project.name}`, settings: { ...Object.fromEntries(Object.entries(settings.settings).filter(([key]) => !['schema', 'projectId', 'revision'].includes(key))), autoLand: false, riskyAreas: 'Stored data and deploy files.' } } });
   expect(saved.ok(), await saved.text()).toBe(true);
   const created = await page.request.post(`${PROJECT}/tasks`, { data: { schema: 'task-create-request-v1', clientRequestId: `request_gate_${info.project.name}`, title: 'Review loop', brief: 'LJ2 review loop: add a greeting example.', type: 'fix', fixed: { isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } } });
   expect(created.ok(), await created.text()).toBe(true); const receipt = TaskReceiptSchema.parse(await created.json());
@@ -2441,4 +2441,54 @@ test('WG1 Health checks can be edited, disabled and run with step results', asyn
     await expect(page.locator('#project-settings-health').getByText(/status 500, expected \[200\]/)).toBeVisible();
     expect(errors).toEqual([]);
   } finally { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); }
+});
+
+test('WG4 landing settings, owner route, landed groups and branch continuation', async ({ page }, info) => {
+  const errors = await begin(page);
+  const legacyResponse = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `legacy_${info.project.name}`, title: 'A legacy pull request', task: 'WG4 legacy: preserve this work.', modelId: 'codex-gpt', effort: 'high' } }); expect(legacyResponse.ok()).toBe(true);
+  const { threadId: legacyId } = await legacyResponse.json() as { threadId: string };
+  await expect.poll(async () => (await threadView(page, legacyId)).thread.pr?.state, { timeout: 90_000 }).toBe('open');
+  await page.goto('/projects/projects_fixture/settings');
+  const landing = page.locator('#project-settings-pull-requests');
+  await landing.getByRole('combobox', { name: 'Delivery', exact: true }).selectOption('land');
+  await landing.getByLabel('Land automatically', { exact: true }).uncheck();
+  await landing.getByRole('button', { name: 'Add landing check', exact: true }).click();
+  const check = landing.locator('fieldset fieldset').last();
+  await check.getByLabel('Name', { exact: true }).fill('Selected check');
+  await check.getByLabel('Paths', { exact: true }).fill('wg-landing.txt');
+  await check.getByLabel('Command', { exact: true }).fill('test -f wg-landing.txt');
+  await landing.getByLabel('Smoke check', { exact: true }).fill('true');
+  await landing.getByLabel('Keep commits for these paths', { exact: true }).fill('docs/legal/');
+  await landing.scrollIntoViewIfNeeded(); await page.screenshot({ path: info.outputPath(`landing-settings-${layout(info)}.png`), fullPage: true });
+  await page.getByRole('button', { name: 'Save', exact: true }).click(); await expect(page).toHaveURL('/projects/projects_fixture');
+  expect((await work(page)).settings.delivery).toBe('land');
+  const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `landing_${info.project.name}`, title: 'A checked landing', task: 'WG4 landing: make a checked change.', modelId: 'codex-gpt', effort: 'high' } }); expect(created.ok()).toBe(true);
+  const { threadId } = await created.json() as { threadId: string };
+  await expect.poll(async () => (await read(page, `${PROJECT}/threads/${threadId}`) as ThreadView).thread.state, { timeout: 90_000 }).toBe('in-review');
+  await page.reload(); await sectionTab(page, info, 'Threads');
+  const question = page.locator('.pw-decision').filter({ hasText: 'A checked landing' });
+  // Owner action is available both on the thread and on its pinned decision.
+  await page.goto(`/projects/projects_fixture/threads/${threadId}`);
+  await page.getByRole('button', { name: 'Why this landing', exact: true }).click();
+  const why = page.getByRole('dialog', { name: 'Why this landing', exact: true }); await expect(why.getByText('Selected check: passed', { exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath(`landing-why-${layout(info)}.png`) });
+  await why.getByRole('button', { name: 'Close panel', exact: true }).click();
+  await page.getByRole('button', { name: 'Land now', exact: true }).click();
+  await expect(page.getByText(/^Landed as /)).toBeVisible({ timeout: 90_000 });
+  await page.goto('/projects/projects_fixture'); await sectionTab(page, info, 'Threads');
+  await expect(page.getByRole('heading', { name: 'Landed, waiting for deploy', exact: true })).toBeVisible();
+  await page.getByText(/^Landed as /).first().scrollIntoViewIfNeeded(); await page.screenshot({ path: info.outputPath(`landing-groups-${layout(info)}.png`) });
+  await page.goto(`/projects/projects_fixture/threads/${legacyId}`);
+  await page.getByRole('button', { name: 'Land instead', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Land now', exact: true })).toBeVisible(LONG);
+  await page.getByRole('button', { name: 'Land now', exact: true }).click();
+  await expect(page.getByText(/^Landed as /)).toBeVisible(LONG);
+  await page.screenshot({ path: info.outputPath(`landing-legacy-converted-${layout(info)}.png`) });
+  await page.goto('/projects/projects_fixture');
+  await page.getByRole('button', { name: 'New task', exact: true }).click();
+  const form = page.getByRole('dialog'); await form.getByLabel('Title', { exact: true }).fill('Continue a branch'); await form.getByLabel('Brief', { exact: true }).fill('Continue existing work.'); await form.getByLabel('From branch', { exact: true }).fill('missing-branch');
+  await page.screenshot({ path: info.outputPath(`landing-branch-form-${layout(info)}.png`) });
+  await form.getByRole('button', { name: 'Add to queue', exact: true }).click();
+  await expect(form.getByText('Branch missing-branch is not on origin.', { exact: true })).toBeVisible();
+  void question; expect(errors).toEqual([]);
 });

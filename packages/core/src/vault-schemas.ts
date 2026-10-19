@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { GoalAutonomySchema, GoalStateSchema } from './project-goal-schemas.js';
 import { JobRunSpecSchema } from './project-daily-schemas.js';
 import { TaskTypeSchema } from './project-loop-schemas.js';
-import { ProjectWorkSettingsSchema, ProjectWorkSettingsSchemaV3 } from './project-schemas.js';
+import { ProjectWorkSettingsSchema, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4 } from './project-schemas.js';
 
 const name = z.string().trim().min(1).max(120);
 const settings = ProjectWorkSettingsSchemaV3.shape;
@@ -29,16 +29,22 @@ export const VaultProjectSchemaV1 = z.strictObject({
     target: z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('memory-dream') }), z.strictObject({ kind: z.literal('job'), job: z.string().min(1).max(80) }),
       z.strictObject({ kind: z.literal('review-since-last') }), z.strictObject({ kind: z.literal('session'), title: z.string().min(1).max(120), brief: z.string().min(1).max(20000), type: TaskTypeSchema })]) })).max(100),
 });
-const currentSettings = ProjectWorkSettingsSchema.shape;
+const currentSettings = ProjectWorkSettingsSchemaV4.shape;
 export const VaultProjectSchemaV2 = VaultProjectSchemaV1.extend({ schema: z.literal('vault-project-v2'),
   work: VaultProjectSchemaV1.shape.work.omit({ threadRules: true }).extend({ instructions: currentSettings.instructions,
     startMode: currentSettings.startMode, maxNewThreadsPerDay: currentSettings.maxNewThreadsPerDay, placement: currentSettings.placement,
     prAutoFix: currentSettings.prAutoFix, environment: currentSettings.environment, notifications: currentSettings.notifications }),
 });
-export const VaultProjectSchema = z.union([VaultProjectSchemaV1, VaultProjectSchemaV2]).transform(value => {
-  if (value.schema === 'vault-project-v2') return value;
-  const { threadRules, ...work } = value.work;
-  return VaultProjectSchemaV2.parse({ ...value, schema: 'vault-project-v2', work: { ...work, instructions: threadRules } });
+const landingSettings = ProjectWorkSettingsSchema.shape;
+export const VaultProjectSchemaV3 = VaultProjectSchemaV2.extend({ schema: z.literal('vault-project-v3'),
+  work: VaultProjectSchemaV2.shape.work.omit({ defaultIsolation: true, allowMainIsolation: true, requiredChecks: true, autoMerge: true }).extend({
+    delivery: landingSettings.delivery, autoLand: landingSettings.autoLand, landingChecks: landingSettings.landingChecks, smokeCheck: landingSettings.smokeCheck, mergeCommitPaths: landingSettings.mergeCommitPaths, healthChecks: landingSettings.healthChecks }),
+});
+export const VaultProjectSchema = z.union([VaultProjectSchemaV1, VaultProjectSchemaV2, VaultProjectSchemaV3]).transform(value => {
+  if (value.schema === 'vault-project-v3') return value;
+  const v2 = value.schema === 'vault-project-v1' ? (() => { const { threadRules, ...work } = value.work; return VaultProjectSchemaV2.parse({ ...value, schema: 'vault-project-v2', work: { ...work, instructions: threadRules } }); })() : value;
+  const { defaultIsolation: _isolation, allowMainIsolation: _main, requiredChecks: _checks, autoMerge, ...work } = v2.work; void _isolation; void _main; void _checks;
+  return VaultProjectSchemaV3.parse({ ...v2, schema: 'vault-project-v3', work: { ...work, autoLand: autoMerge } });
 });
 export type VaultProject = z.infer<typeof VaultProjectSchema>;
 export const VaultViewSchema = z.strictObject({ schema: z.literal('vault-view-v1'), remote: z.string().nullable(), lastSyncAt: z.string().nullable(), lastError: z.string().nullable(),

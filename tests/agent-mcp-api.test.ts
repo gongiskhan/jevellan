@@ -156,7 +156,7 @@ test('coordinator override preserves unrelated limits and explicit auto clears s
   const selected = await app.projectWork.settingsView('allowed'); expect(selected.settings.coordinator).toEqual({ runtimeId: 'fake', accountId: 'fixture_account', modelId: 'fixture_model', effort: 'high' });
   const cleared = await external.callTool({ name: 'jevellan_coordinator_override', arguments: { projectId: 'allowed', clientRequestId: 'auto_coordinator', revision: selected.settings.revision, providerId: 'auto', accountId: 'auto', modelId: 'auto', effort: 'auto' } }); expect(cleared.isError).not.toBe(true);
   const automatic = await app.projectWork.settingsView('allowed'); expect(automatic.settings.coordinator).toEqual({ runtimeId: null, accountId: null, modelId: null, effort: 'medium' });
-  expect(automatic.settings.maxRunningThreads).toBe(selected.settings.maxRunningThreads); expect(automatic.settings.defaultIsolation).toBe(selected.settings.defaultIsolation);
+  expect(automatic.settings.maxRunningThreads).toBe(selected.settings.maxRunningThreads); expect(automatic.settings.delivery).toBe(selected.settings.delivery);
   expect((await external.callTool({ name: 'jevellan_coordinator_override', arguments: { projectId: 'allowed', clientRequestId: 'stale_coordinator', revision: selected.settings.revision, effort: 'max' } })).isError).toBe(true);
   expect((await app.projectWork.settingsView('allowed')).settings.coordinator.effort).toBe('medium');
 });

@@ -16,6 +16,7 @@ import { ProjectMemoryProgramme } from './memory-programme.js';
 import { listNativeSessions } from '@jevellan/mesh';
 import { nativeFormat } from '@jevellan/runtime-contract';
 import { WorktreeDiskService } from './worktree-disk.js';
+import { ThreadLandingService } from './landing.js';
 import { applyEkoaCodeSetup, EKOA_FAST_CHECKS } from './ekoa-code.js';
 import { EkoaCodeSetupRequestSchema, collectDeviceFacts, deviceResourceRefusal, parseGitHubRemote, liveWork, resolveProjectPath, type DeviceFacts } from '@jevellan/core';
 import { ProjectDailyWork } from './daily.js';
@@ -51,7 +52,7 @@ import { coordinatorToolHandlers } from './bridge-tools.js';
 import { CoordinatorService, type Coordinator, type CoordinatorToolHandlers } from './coordinator.js';
 import { DecisionItems, derivedId } from './decision-items.js';
 import { Inbox, Outbox, type EnvelopeOf } from './envelopes.js';
-import { ThreadGit } from './git.js';
+import { GIT_NETWORK_TIMEOUT_MS, ThreadGit } from './git.js';
 import { ThreadIndexPublisher } from './index-publisher.js';
 import { TurnLauncher } from './launch.js';
 import { ProjectJournals, type JournalOptions } from './journal.js';
@@ -78,6 +79,8 @@ import { PullRequestVerification } from './pr-verification.js';
 import { TaskCreateRequestSchema, TaskListViewSchema, TaskViewSchema, type TaskUpdateRequest } from '@jevellan/core';
 
 export type ProjectTimers = {
+  /** Fixtures exercising pre-switch threads may retain their original delivery. */
+  defaultDelivery?: 'land' | 'pull-request';
   /** PR poll, queue sweep and inbox poll; false in tests, which call `pulse()`. The outbox retries a failed drain either way. */
   periodic: boolean;
   prPollMs: number; coordinatorStartMs: number; coordinatorRetryMs: number; coordinatorTurnTimeoutMs: number; threadTurnTimeoutMs: number;
@@ -142,7 +145,7 @@ export class ProjectWork {
   readonly memoryProgramme: ProjectMemoryProgramme | undefined;
   readonly reviews: NightlyReview; readonly daily: ProjectDailyWork; readonly jobs: ProjectJobRunner;
   readonly goals: ProjectGoals; readonly tasks: ProjectTasks; readonly dispatcher: ProjectDispatcher;
-  readonly mergeGate: ProjectMergeGate;
+  readonly mergeGate: ProjectMergeGate; readonly landings: ThreadLandingService;
   readonly disk: WorktreeDiskService;
   /** Mail and reservations between main threads (brief 5.11, 7.2). */
   readonly mail: MailService;
@@ -219,7 +222,7 @@ export class ProjectWork {
       },
       protectedPaths: async () => { const [projects, roster] = await Promise.all([o.projects.list(), o.roster()]); return [...new Set([
         ...projects.flatMap(row => row.project.paths[o.deviceId] ? [row.project.paths[o.deviceId]!] : []), ...(roster.devices.find(row => row.device.id === o.deviceId)?.device.protectedPaths ?? [])])]; } });
-    this.admission = new Admission({ createdThreads: id => this.store.created(id), hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
+    this.admission = new Admission({ ...(timers.defaultDelivery ? { defaultDelivery: timers.defaultDelivery } : {}), createdThreads: id => this.store.created(id), hub: o.hub, deviceId: o.deviceId, deviceName: o.deviceName, localLive: (projectId) => this.threads.liveThreads(projectId),
       facts,
       guard: async (_projectId, deviceId, threadId) => {
         if (deviceId === o.deviceId && !deviceAllowsWork(o.homes)) return 'This device serves apps only; project work runs on a working device.';
@@ -236,7 +239,7 @@ export class ProjectWork {
       deviceName: o.deviceName, hub: o.hub, redactor: o.redactor, now, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}),
       local: (projectId) => this.store.list(projectId).map((thread) => threadIndex(thread, this.store.labels(thread.id), thread.createdAt)),
       pendingMain: (projectId) => this.threads.pendingMain(projectId) });
-    this.decisions = new DecisionItems({ hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), mergeAnswer: (decision, answer, validateOnly) => this.mergeGate.answer(decision, answer, validateOnly), threads: () => ({
+    this.decisions = new DecisionItems({ hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), mergeAnswer: (decision, answer, validateOnly) => decision.landing ? this.landings.answer(decision, answer, validateOnly) : this.mergeGate.answer(decision, answer, validateOnly), threads: () => ({
       automaticFixAnswer: (projectId, threadId, prNumber, allow, commandId) => this.threads.automaticFixAnswer(projectId, threadId, prNumber, allow, commandId),
       allowTurns: (projectId, threadId, commandId) => this.threads.allowTurns(projectId, threadId, commandId),
       stop: (projectId, threadId, reason, commandId) => this.threads.stop(projectId, threadId, reason, true, commandId),
@@ -255,7 +258,19 @@ export class ProjectWork {
       }
       return owners;
     } });
-    const worktrees = new ThreadWorktree({ projectEnvironment, git, homes: o.homes, paths: this.paths, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName });
+    const validateBranch = async (project: Project, branch: string) => {
+      const repo = resolveProjectPath(project, o.deviceId, o.deviceName);
+      const valid = await git.run(repo, ['check-ref-format', '--branch', branch], { permitted: [1, 128] });
+      if (valid.code !== 0 || branch.startsWith('-')) throw refuse(`Branch ${branch} is not a valid branch name.`, 400);
+      const remote = await git.run(repo, ['ls-remote', '--heads', 'origin', `refs/heads/${branch}`], { timeoutMs: GIT_NETWORK_TIMEOUT_MS });
+      if (!remote.stdout.trim()) throw refuse(`Branch ${branch} is not on origin.`, 409);
+      const repository = parseGitHubRemote(project.remoteUrl ?? await git.remoteUrl(repo) ?? '');
+      if (repository) {
+        const client = await github.open(project.id), pull = await client.findOpenPull(repository, branch);
+        if (pull && pull.author !== await client.viewer()) throw refuse(`Branch ${branch} belongs to #${pull.number} by ${pull.author ?? 'unknown'}; only your own work can be continued.`, 409);
+      }
+    };
+    const worktrees = new ThreadWorktree({ validateBranch, projectEnvironment, git, homes: o.homes, paths: this.paths, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName });
     this.#github = new ProjectGithub({ github, redactor: o.redactor, now, project: id => this.#project(id),
       // The thread's pull request as this device's tracker last read it from GitHub, which can be newer than the hub's index (fix-051).
       thread: async id => { const index = (await o.hub.thread(id))?.document, pr = this.store.get(id)?.pr; return index && pr ? { ...index, pr } : index; },
@@ -299,7 +314,7 @@ export class ProjectWork {
       command: (projectId, threadId, command) => this.threads.command(projectId, threadId, command) });
     this.mail = new MailService({ hub: o.hub, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), local: (threadId) => this.store.get(threadId), now });
     this.tasks = new ProjectTasks({ hub: o.hub, deviceId: o.deviceId, redactor: o.redactor, now,
-      settings: projectId => this.admission.settings(projectId),
+      settings: projectId => this.admission.settings(projectId), validateBranch: async (id, branch) => validateBranch(await this.#project(id), branch),
       validateGoal: (projectId, goalId, source, refillEventId) => this.goals.validate(projectId, goalId, source, refillEventId), projectDay: projectId => this.goals.day(projectId),
       changed: () => { void this.#sweepTasks(true).catch(() => undefined); },
       cancelThread: (task, reason, owner) => this.threads.stop(task.projectId, task.threadId!, reason, owner),
@@ -318,10 +333,29 @@ export class ProjectWork {
     this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, ...(o.workRefusal ? { workRefusal: o.workRefusal } : {}), store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
       projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, settings: o.settings, now,
       roster: o.roster, decisions: this.decisions, fallbackCheckMs: timers.fallbackCheckMs, managedQueue: true, failedJobs: (thread, head) => this.#github.failedJobs(thread, head),
+      validateBranch: async (id, branch) => validateBranch(await this.#project(id), branch),
+      landInstead: async (thread, requestId) => {
+        const prior = this.store.local(thread.id).landInstead; if (thread.delivery === 'land' && prior?.commandId === requestId) return;
+        if (!thread.pr || thread.pr.state !== 'open') throw new Error('This thread has no open pull request.');
+        const opened = this.ledgers.thread(thread.projectId, thread.id).events().some(event => event.type === 'thread-publication' && (() => { const data = this.ledgers.thread(thread.projectId, thread.id).payload(event as typeof event & { type: 'thread-publication' }); return data.result === 'pr-opened' && data.prNumber === thread.pr!.number; })());
+        const project = await this.#project(thread.projectId), repository = parseGitHubRemote(project.remoteUrl ?? await git.remoteUrl(thread.cwd) ?? '');
+        if (!opened || !repository) throw new Error('Only a pull request opened by Jevellan can use Land instead.');
+        const client = await github.open(thread.projectId), pull = await client.getPull(repository, thread.pr.number), login = await client.viewer();
+        if (!pull.author || pull.author !== login) throw new Error('Only your own pull request can use Land instead.');
+        if (pull.merged || pull.state !== 'open' && prior?.commandId !== requestId) throw new Error('The pull request is no longer open.');
+        if (!prior) this.store.updateLocal(thread.id, local => ({ ...local, landInstead: { commandId: requestId, prNumber: pull.number, head: pull.headSha, at: new Date(now()).toISOString() } }));
+        if (pull.state === 'open') {
+          const synced = await worktrees.syncPullHead(project, thread);
+          if (synced.kind === 'conflict') throw new Error('The pull request head conflicts with this worktree. Resolve it before Land instead.');
+          await client.closePull(repository, pull.number);
+        }
+        this.store.update(thread.id, current => { const next = { ...current, delivery: 'land' as const }; delete next.pr; return next; }, { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'pr-state', prNumber: pull.number, pr: { ...thread.pr!, state: 'closed' } } });
+      },
       pullRequestChanged: () => { void this.tracker.poll(); },
       refreshLanding: (projectId, threadId) => this.daily.assertMerge(projectId, threadId),
       queueChanged: projectId => { void this.dispatcher.sweep(projectId).catch(() => undefined); },
       runner: {
+        landing: { publish: (...args) => this.landings.publish(...args), concluded: (...args) => this.landings.concluded(...args) },
         library: o.library,
         routeMessages: (thread, body, ids, signal) => followups.route(thread, body, ids, signal),
         reconsider: async (thread, reason, trouble, signal, minimumEffort) => placement.reconsider(await this.#project(thread.projectId), await this.admission.settings(thread.projectId), thread, reason, trouble, signal, minimumEffort),
@@ -390,6 +424,11 @@ export class ProjectWork {
       redactor: o.redactor, now, pollMs: timers.prPollMs, periodic: timers.periodic });
     const verification = new PullRequestVerification({ projectEnvironment, sessionEnd: evidence => this.ledgers.sessionEnd(evidence), hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, facts, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs,
       memory: project => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'verification' }) });
+    publication.bindBackup(id => this.store.local(id), (id, pushedCommit) => this.store.updateLocal(id, local => ({ ...local, pushedCommit })));
+    this.landings = new ThreadLandingService({ homes: o.homes, git, github, publication, hub: o.hub, store: this.store, verification,
+      ...(o.leases ? { leases: o.leases } : {}), deviceId: o.deviceId, redactor: o.redactor, now, settings: id => this.admission.settings(id), configuration: o.settings,
+      ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}), projectEnvironment, assertLanding: (id, tid) => this.daily.assertMerge(id, tid),
+      retry: async (_projectId, threadId) => { const runner = this.threads.runner(threadId); if (runner && !runner.busy) await runner.requestTurn('publish', 'Retry the checked landing.'); } });
     this.mergeGate = new ProjectMergeGate({ hub: o.hub, store: this.store, tracker: this.tracker, github, verification, deviceId: o.deviceId, redactor: o.redactor, now,
       settings: id => this.admission.settings(id), configuration: o.settings, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}), project: id => this.#project(id), repository: project => worktrees.repository(project),
       event: (id, event) => delivery.toCoordinator(id, event), assertMerge: (id, tid) => this.daily.assertMerge(id, tid), message: (id, tid, text, messageId) => this.threads.message(id, tid, 'coordinator', text, false, messageId) });
@@ -562,7 +601,7 @@ export class ProjectWork {
         if ((await this.#o.hub.coordinator(project.id))?.document.deviceId === this.#o.deviceId) { await this.#withdrawSignIns(project.id); if ((await this.admission.settings(project.id)).status === 'active') await this.reviews.sweep(project.id); await this.daily.sweep(project.id); await this.dispatcher.sweep(project.id); await this.goals.sweep(project.id); } else await this.jobs.sweep(project.id);
         if ((await this.admission.settings(project.id)).status === 'active') await this.memoryProgramme?.sweep(project);
       }
-      this.mergeGate.sweep();
+      this.mergeGate.sweep(); await this.landings.sweep();
     } catch (error) { if (!(error instanceof HubUnavailable)) throw error; }
   }
   /** Phase 5: the project's definition and coordinator notebook follow every change into its vault folder; the vault pushes them. */
@@ -870,7 +909,7 @@ export class ProjectWork {
    */
   async createThread(projectId: string, input: ThreadCreateRequest): Promise<z.infer<typeof ThreadCreatedViewSchema>> {
     const coordinatorDeviceId = await this.#coordinatorHere(projectId);
-    const started = await this.threads.start({ projectId, title: input.title, task: input.task, taskContext: input.taskContext, createdBy: 'owner', clientRequestId: input.clientRequestId, coordinatorDeviceId, note: input.note,
+    const started = await this.threads.start({ projectId, title: input.title, task: input.task, taskContext: input.taskContext, ...(input.fromBranch ? { fromBranch: input.fromBranch } : {}), createdBy: 'owner', clientRequestId: input.clientRequestId, coordinatorDeviceId, note: input.note,
       fixed: { ...(input.isolation ? { isolation: input.isolation } : {}), ...(input.modelId ? { modelId: input.modelId } : {}), ...(input.effort ? { effort: input.effort } : {}),
         ...(input.runtimeId ? { runtimeId: input.runtimeId } : {}), ...(input.accountId ? { accountId: input.accountId } : {}),
         ...(input.deviceId ? { deviceId: input.deviceId } : {}) } });
@@ -916,11 +955,13 @@ export class ProjectWork {
     return ThreadOverrideViewSchema.parse({ schema: 'thread-override-view-v1', newThreadId });
   }
   async mergePullRequest(projectId: string, threadId: string): Promise<MergeResultView> { this.#thread(projectId, threadId); return this.tracker.merge(threadId); }
+  async landingRoute(projectId: string, threadId: string) { await this.#project(projectId); return this.landings.view(projectId, threadId); }
+  async landingCorrection(projectId: string, threadId: string, input: unknown) { await this.#project(projectId); return this.landings.correct(projectId, threadId, input); }
   async mergeRoute(projectId: string, threadId: string) { await this.#project(projectId); return this.mergeGate.view(projectId, threadId); }
   async mergeCorrection(projectId: string, threadId: string, input: unknown) { await this.#project(projectId); return this.mergeGate.correct(projectId, threadId, input); }
   async decisionOwner(projectId: string, decisionId: string) {
     const decision = (await this.#o.hub.decision(decisionId))?.document;
-    return decision?.projectId === projectId && decision.merge && decision.threadId ? this.threadOwner(projectId, decision.threadId) : null;
+    return decision?.projectId === projectId && (decision.merge || decision.landing) && decision.threadId ? this.threadOwner(projectId, decision.threadId) : null;
   }
   async refreshPullRequest(projectId: string, threadId: string): Promise<void> { this.#thread(projectId, threadId); await this.tracker.refresh(threadId); }
   answerDecision(projectId: string, decisionId: string, input: z.infer<typeof DecisionAnswerRequestSchema>): Promise<{ repeated: boolean }> {

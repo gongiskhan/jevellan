@@ -27,6 +27,7 @@ import type { AccountWait, LaunchResult, TurnLauncher } from './launch.js';
 import type { ProjectLedgers } from './ledger.js';
 import type { MailService } from './mail.js';
 import type { CheckoutSeen, CheckoutSettlement, ClaimKeptError, MainCheckout, StopRefusal } from './main-checkout.js';
+import type { ThreadLandingService } from './landing.js';
 import type { PublicationResult, ThreadPublication } from './publication.js';
 import type { PlacementResult } from './placement.js';
 import type { ThreadEvent, ThreadStore } from './stores.js';
@@ -106,8 +107,9 @@ export function transientPreparationFailure(error: unknown): boolean {
  * Why Restart is not allowed (brief 10): an open pull request, a publication to main, or an earlier restart (D252); for now, the owner's
  * terminal session on the thread (phase 8).
  */
-export function restartRefusal(thread: Pick<Thread, 'id' | 'state' | 'pr' | 'isolation' | 'publishedCommit' | 'stateReason'>): string | undefined {
+export function restartRefusal(thread: Pick<Thread, 'id' | 'state' | 'pr' | 'isolation' | 'publishedCommit' | 'stateReason' | 'landing'>): string | undefined {
   if (thread.pr?.state === 'open') return RESTART_OPEN_PULL_REQUEST;
+  if (thread.landing) return 'This thread already landed on main. Continue it with a message instead.';
   if (thread.isolation === 'main' && thread.publishedCommit) return RESTART_PUBLISHED_TO_MAIN;
   if (isRestarted(thread.stateReason)) return THREAD_ALREADY_RESTARTED;
   return thread.state === 'attached' ? attachedRefusal(thread.id) : undefined;
@@ -144,7 +146,8 @@ export type ThreadRunnerContext = {
   accountWait(thread: Thread): Promise<string | undefined>;
   unavailableAccount?(thread: Thread): Promise<AccountWait | undefined>;
   reconsider?(thread: Thread, reason: 'model-unavailable' | 'escalation', trouble: string, signal: AbortSignal, minimumEffort?: Effort): Promise<PlacementResult>;
-  publication: Pick<ThreadPublication, 'publishWorktree' | 'publishMain'>;
+  publication: Pick<ThreadPublication, 'publishWorktree' | 'publishMain'> & Partial<Pick<ThreadPublication, 'backupWorktree'>>;
+  landing?: Pick<ThreadLandingService, 'publish' | 'concluded'>;
   launcher: Pick<TurnLauncher, 'launch'>;
   accounts: Pick<AccountService, 'recordUsage' | 'recordError'>;
   admission: Pick<Admission, 'admit'>;
@@ -730,6 +733,7 @@ export class ThreadRunner {
   }
   /** Step 9 in the D73 order. */
   async #act(thread: Thread, report: ThreadReport): Promise<NextTurn | null> {
+    if (thread.delivery === 'land') await this.#c.publication.backupWorktree?.(thread, this.#abort.signal).catch(error => this.#notice(thread, `Branch backup will retry: ${this.#message(error)}`, 'error'));
     const action = turnEndAction(thread, report);
     switch (action.kind) {
       case 'publish': return this.#publish();
@@ -764,11 +768,41 @@ export class ThreadRunner {
   }
   /** Publication of a done report (brief 8.4, 2.6.9 #publish); returns the verification fix turn when there is one. */
   async #publish(): Promise<NextTurn | null> {
+    const priorState = this.#thread().state;
     let thread = this.#set((current) => withState(current, 'publishing'));
     const release = this.#c.enterOperation(this.threadId, thread.title);
     try {
       const project = await this.#c.project(thread.projectId);
       const local = this.#c.store.local(thread.id); const ledger = this.#c.ledgers.thread(thread.projectId, thread.id); const signal = this.#abort.signal;
+      if (thread.delivery === 'land') {
+        if (!this.#c.landing) throw new Error('Landing is unavailable on this installation.');
+        const outcome = await this.#c.landing.publish(project, thread, signal, priorState);
+        if (outcome.kind === 'fix') {
+          if (outcome.reason === 'verification') {
+            const attempts = thread.verificationAttempts + 1;
+            if (attempts >= 3) {
+              this.#set(current => ({ ...withState(current, 'idle', 'Landing checks failed three times.'), verificationAttempts: 0 }));
+              await this.#tell(thread.projectId, { kind: 'thread-verification-failed', threadId: thread.id, attempts, tail: (outcome.tail ?? outcome.body).slice(-4000) });
+              return this.#afterStep();
+            }
+            this.#set(current => ({ ...current, verificationAttempts: attempts }));
+          }
+          return { reason: outcome.reason, body: outcome.body, messages: [] };
+        }
+        if (outcome.kind === 'waiting') {
+          this.#set(current => ({ ...withState(current, 'in-review', outcome.reason.slice(0, 400)), verificationAttempts: 0 })); return this.#afterStep();
+        }
+        if (outcome.kind === 'no-changes') {
+          thread = this.#set(current => ({ ...withState(current, 'done', NO_CHANGES), verificationAttempts: 0, endedAt: this.#at() }), { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'no-changes' } });
+          await this.#tell(thread.projectId, { kind: 'thread-published', threadId: thread.id, result: 'no-changes' }); return this.#afterCompletion();
+        }
+        thread = this.#set(current => ({ ...withState(current, 'done'), landing: outcome.landing, verificationAttempts: 0, endedAt: this.#at() }),
+          { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'landed', commit: outcome.landing.commit } });
+        this.#c.store.setIndexFields(thread.id, { landing: undefined });
+        await this.#c.landing.concluded(thread, outcome.routeId).catch(error => this.#notice(thread, `Branch backup cleanup will retry: ${this.#message(error)}`, 'error'));
+        await this.#tell(thread.projectId, { kind: 'thread-published', threadId: thread.id, result: 'landed', commit: outcome.landing.commit });
+        return this.#afterCompletion();
+      }
       let result: PublicationResult;
       if (thread.isolation === 'main') {
         // Publication can follow a restart without a turn (allow-turns), so the claim is this process's first.
@@ -880,7 +914,7 @@ export class ThreadRunner {
     this.#abort = new AbortController(); this.#stopping = undefined;
     this.#set(current => {
       const next = { ...withState(current, 'idle'), verificationAttempts: 0 }; delete next.endedAt; delete next.resolution;
-      delete next.publishedCommit;
+      delete next.publishedCommit; delete next.landing;
       if (next.pr?.state !== 'open') delete next.pr;
       if (missing) {
         next.cwd = ''; next.baseCommit = ''; next.baseBranch = ''; delete next.branch;

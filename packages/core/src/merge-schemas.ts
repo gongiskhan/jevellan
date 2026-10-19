@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LandingRouteSchema, LandingCorrectionSchema } from './project-landing-schemas.js';
 import { IdSchema, JevCallSchema, TimestampSchema } from './schemas.js';
 import { TaskPlacementContextSchema } from './task-types.js';
 const commit = z.string().regex(/^[a-f0-9]{40,64}$/u), revision = z.number().int().nonnegative();
@@ -25,7 +26,7 @@ export const VerificationRunSchema = z.strictObject({ schema: z.literal('verific
   runtime: IdSchema, modelId: IdSchema, model: z.string().min(1), modelLabel: z.string().min(1), providerChoice: z.enum(['other-provider', 'different-model']),
   headMoved: z.boolean().optional(), state: z.enum(['reserved', 'running', 'passed', 'failed']), report: VerificationReportSchema.nullable(), endedAt: TimestampSchema.optional(), note: z.string().max(1200).optional() });
 export type VerificationRun = z.infer<typeof VerificationRunSchema>;
-export const MergeDocumentSchema = z.discriminatedUnion('schema', [MergeRouteSchema, MergeCorrectionSchema, VerificationRunSchema]);
+export const MergeDocumentSchema = z.discriminatedUnion('schema', [MergeRouteSchema, MergeCorrectionSchema, VerificationRunSchema, LandingRouteSchema, LandingCorrectionSchema]);
 export type MergeDocument = z.infer<typeof MergeDocumentSchema>;
 export const MergeDocumentsViewSchema = z.strictObject({ schema: z.literal('merge-documents-view-v1'), records: z.array(MergeDocumentSchema).max(10000) });
 export const MergeCorrectionInputSchema = z.strictObject({ schema: z.literal('merge-correction-input-v1'), clientRequestId: IdSchema,

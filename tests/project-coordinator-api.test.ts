@@ -14,7 +14,7 @@ import {
 import { HubProjectAccess, HubUnavailable } from '../packages/mesh/dist/index.js';
 import { forCoordinator, type FakeTurn } from '../packages/runtime-contract/dist/index.js';
 import {
-  EVENT_CURSOR_AHEAD, EVENT_CURSOR_INVALID, LEAVE_GIT_SETTING, MESSAGE_ID_REUSED, NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, QUESTION_NOT_FOUND,
+  EVENT_CURSOR_AHEAD, EVENT_CURSOR_INVALID, MESSAGE_ID_REUSED, NOTEBOOK_CHANGED, PROJECT_NOT_FOUND, QUESTION_NOT_FOUND,
   SETTINGS_CHANGED, UNKNOWN_OPTION, coordinatorOfflineNotice, publicProjectData,
 } from '../packages/projects/dist/index.js';
 import { projectWorkRoute } from '../apps/daemon/dist/index.js';
@@ -276,7 +276,7 @@ test('work settings, notebook and answers: revision checks, the main default coe
   const pid = f.project.id; const route = (suffix: string) => `/api/projects/${pid}${suffix}`;
   const initial = defaultProjectWorkSettings(pid);
   const base = { ...initial, memory: { ...initial.memory, mode: 'repo' as const } };
-  const defaults = { defaultIsolation: base.defaultIsolation, coordinator: base.coordinator, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads,
+  const defaults = { delivery: base.delivery, coordinator: base.coordinator, setupCommand: base.setupCommand, maxRunningThreads: base.maxRunningThreads,
     maxRunningPerDevice: base.maxRunningPerDevice, threadTurnCap: base.threadTurnCap };
   const put = (revision: number, over: object = {}, clientRequestId?: string) =>
     ({ schema: 'project-work-settings-request-v1', revision, settings: { ...defaults, ...over }, ...(clientRequestId ? { clientRequestId } : {}) });
@@ -289,19 +289,15 @@ test('work settings, notebook and answers: revision checks, the main default coe
   expect(await call(f, route('/work-settings'), 'PUT', put(0, { maxRunningThreads: 21 }), 400)).toEqual(refused('request-failed', CHECK));
   expect(await call(f, route('/work-settings'), 'PUT', { ...put(1), settings: { ...defaults, setupCommand: 'x'.repeat(501) } }, 400)).toEqual(refused('request-failed', CHECK));
   expect(await call(f, '/api/projects/missing/work-settings', 'GET', undefined, 404)).toEqual(refused('not-found', PROJECT_NOT_FOUND));
-  // A main default is stored and read as main now that main isolation exists (D88, phase 6), without a notice.
-  expect(await call(f, route('/work-settings'), 'PUT', put(1, { maxRunningThreads: 3, defaultIsolation: 'main' }), 200)).toEqual({ schema: 'project-work-settings-view-v1',
-    settings: { ...base, revision: 2, maxRunningThreads: 3, defaultIsolation: 'main' } });
-  expect((await f.app.projectHub.settings(pid))?.document).toMatchObject({ revision: 2, defaultIsolation: 'main' });
-  expect(await call(f, route('/work-settings'), 'GET', undefined, 200)).toEqual({ schema: 'project-work-settings-view-v1',
-    settings: { ...base, revision: 2, maxRunningThreads: 3, defaultIsolation: 'main' } });
+  // Retired isolation fields are refused, and delivery is a revision-checked project default only.
+  expect(await call(f, route('/work-settings'), 'PUT', put(1, { defaultIsolation: 'main' }), 400)).toMatchObject({ code: 'request-failed' });
+  expect(await call(f, route('/work-settings'), 'PUT', put(1, { maxRunningThreads: 3, delivery: 'land' }), 200)).toEqual({ schema: 'project-work-settings-view-v1', settings: { ...base, revision: 2, maxRunningThreads: 3, delivery: 'land' } });
   const opened = ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200));
-  expect(opened).toMatchObject({ settings: { defaultIsolation: 'main', revision: 2 }, gates: { mainIsolation: true } }); expect(opened.settingsNotice).toBeUndefined();
-  // On a Leave git project the brief's text wins over the phase text (5.1, D88).
+  expect(opened).toMatchObject({ settings: { delivery: 'land', revision: 2 }, gates: { mainIsolation: false } }); expect(opened.settingsNotice).toBeUndefined();
   const stored = await f.app.state.projects.get(pid);
   await f.app.conversations.saveProject({ schema: 'project-write-v1', revision: stored!.revision, project: { ...f.project, branchPolicy: 'external' } });
-  expect(await call(f, route('/work-settings'), 'GET', undefined, 200)).toMatchObject({ settings: { defaultIsolation: 'main' }, notice: LEAVE_GIT_SETTING });
-  expect(ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200))).toMatchObject({ project: { branchPolicy: 'external' }, settingsNotice: LEAVE_GIT_SETTING });
+  expect(await call(f, route('/work-settings'), 'GET', undefined, 200)).toMatchObject({ settings: { delivery: 'land' } });
+  expect(ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200)).settingsNotice).toBeUndefined();
   // A retried save with its client request id repeats instead of conflicting (D101).
   const retried = put(2, { maxRunningThreads: 5 }, 'set_retry');
   const saved = await call(f, route('/work-settings'), 'PUT', retried, 200);

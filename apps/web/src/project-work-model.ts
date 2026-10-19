@@ -153,8 +153,7 @@ export function openPullRequests(entries: readonly PullRequestEntry[]): PullRequ
 
 /** Why Main cannot be chosen here, or null: the Leave git text wins over the phase text (D88, D221). */
 export function mainIsolationBlock(view: Pick<ProjectWorkView, 'project' | 'gates'> & Partial<Pick<ProjectWorkView, 'settings'>>): string | null {
-  if (view.settings?.allowMainIsolation === false) return 'This project requires worktree isolation.';
-  return view.gates.mainIsolation ? null : copy.MAIN_NOT_AVAILABLE;
+  void view; return copy.MAIN_NOT_AVAILABLE;
 }
 /** Why another device cannot be chosen yet, or null (D88, D221). */
 export function deviceBlock(view: Pick<ProjectWorkView, 'gates'>, deviceId: string, currentDeviceId: string): string | null {
@@ -188,22 +187,18 @@ export function threadCreateRequest(clientRequestId: string, form: ThreadForm) {
 }
 
 export type SettingsForm = { defaultIsolation: Isolation; isolationChanged: boolean; modelId: string; effort: Effort; setupCommand: string;
-  refill?: ProjectWorkView['settings']['refill']; nightlyWindow?: ProjectWorkView['settings']['nightlyWindow']; autoMerge?: boolean; riskyAreas?: string; requiredChecks?: string[]; instructions?: string; allowMainIsolation?: boolean;
+  refill?: ProjectWorkView['settings']['refill']; nightlyWindow?: ProjectWorkView['settings']['nightlyWindow']; autoLand?: boolean; riskyAreas?: string; requiredChecks?: string[]; instructions?: string; allowMainIsolation?: boolean;
   sessionCheckpoints?: ProjectWorkView['settings']['sessionCheckpoints']; compactAtPercent?: number; maxRunningThreads: number; maxRunningPerDevice: number; perDeviceLimits?: Record<string, number>; threadTurnCap: number };
 /**
  * `PUT /api/projects/:id/work-settings`. Reads show a stored `main` default as worktree with a notice (D205); unless the
  * owner picked an isolation, a save keeps the stored `main` instead of silently replacing it (D223).
  */
 export function settingsRequest(view: Pick<ProjectWorkView, 'settings' | 'settingsNotice'>, form: SettingsForm) {
-  const keptMain = !form.isolationChanged && view.settingsNotice !== undefined;
-  const settings = { allowMainIsolation: view.settings.allowMainIsolation, instructions: view.settings.instructions,
-    autoMerge: view.settings.autoMerge, riskyAreas: view.settings.riskyAreas, requiredChecks: view.settings.requiredChecks, nightlyWindow: view.settings.nightlyWindow, refill: view.settings.refill };
+  const { schema: _schema, projectId: _project, revision: _revision, ...settings } = view.settings; void _schema; void _project; void _revision;
   return { schema: 'project-work-settings-request-v1' as const, revision: view.settings.revision, settings: {
     ...settings, refill: form.refill ?? view.settings.refill, nightlyWindow: form.nightlyWindow ?? view.settings.nightlyWindow,
-    defaultIsolation: keptMain ? 'main' as const : form.defaultIsolation,
     coordinator: { ...view.settings.coordinator, modelId: form.modelId || null, effort: form.effort }, setupCommand: form.setupCommand.trim() || null,
-    autoMerge: form.autoMerge ?? view.settings.autoMerge, riskyAreas: form.riskyAreas ?? view.settings.riskyAreas, requiredChecks: form.requiredChecks ?? view.settings.requiredChecks, instructions: form.instructions ?? view.settings.instructions,
-    allowMainIsolation: form.allowMainIsolation ?? view.settings.allowMainIsolation,
+    autoLand: form.autoLand ?? view.settings.autoLand, riskyAreas: form.riskyAreas ?? view.settings.riskyAreas, instructions: form.instructions ?? view.settings.instructions,
     sessionCheckpoints: form.sessionCheckpoints ?? view.settings.sessionCheckpoints,
     compactAtPercent: form.compactAtPercent ?? view.settings.compactAtPercent,
     perDeviceLimits: form.perDeviceLimits ?? view.settings.perDeviceLimits,

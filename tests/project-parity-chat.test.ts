@@ -15,7 +15,7 @@ test('settings append limits, strict allowed fields and field-specific Undo pres
   expect(undoProjectSetting(plan.settings, first)).toMatchObject({ maxRunningThreads: original.maxRunningThreads, instructions: 'Keep it small.', prAutoFix: { checks: false, conflicts: true } });
   expect(undoProjectSetting({ ...plan.settings, maxRunningThreads: 4 }, first)).toBeUndefined();
   expect(() => settingsChangePlan({ ...original, instructions: 'x'.repeat(16000) }, { instructionsAppend: 'More', ownerWords: 'More' }, 'setting_limit', new Date().toISOString())).toThrow('Project instructions would exceed 16,000 characters.');
-  expect(ProjectSettingsUpdateSchema.safeParse({ autoMerge: true, ownerWords: 'Merge' }).success).toBe(false);
+  expect(ProjectSettingsUpdateSchema.safeParse({ autoLand: true, ownerWords: 'Merge' }).success).toBe(false);
   expect(ProjectSettingsUpdateSchema.safeParse({ ownerWords: 'No change' }).success).toBe(false);
   expect(ProjectSettingsUpdateSchema.safeParse({ prAutoFix: {}, ownerWords: 'No change' }).success).toBe(false);
 });

@@ -91,7 +91,7 @@ export type StartRequest = {
   clientRequestId?: string | undefined;
   /** The project's coordinator device; starts run there (D9a). */
   coordinatorDeviceId: string;
-  assembledTask?: string; taskContext?: TaskPlacementContext | undefined;
+  assembledTask?: string; taskContext?: TaskPlacementContext | undefined; fromBranch?: string;
   /**
    * Internal, a restart of a main thread (D292): that thread's own claim does not count against the main rule, and the new thread's
    * preparation waits for the caller, which starts it once the old thread has given the checkout back.
@@ -121,6 +121,8 @@ export type ThreadServiceOptions = {
   now(): number;
   managedQueue?: boolean;
   queueChanged?(projectId: string): void;
+  validateBranch?(projectId: string, branch: string): Promise<void>;
+  landInstead?(thread: Thread, requestId: string): Promise<void>;
   pullRequestChanged?(): void;
   refreshLanding?(projectId: string, threadId: string): Promise<void>;
 };
@@ -211,7 +213,7 @@ export class ThreadService {
     if (refusal) return Promise.reject(refuse(refusal, 409));
     return this.#exclusive(request.projectId, async () => {
       const { projectId } = request;
-      const normalized = { title: request.title, task: request.assembledTask ?? request.task, ...(request.taskContext ? { taskContext: request.taskContext } : {}), ...request.fixed };
+      const normalized = { title: request.title, ...(request.fromBranch ? { fromBranch: request.fromBranch } : {}), task: request.assembledTask ?? request.task, ...(request.taskContext ? { taskContext: request.taskContext } : {}), ...request.fixed };
       const digest = createHash('sha256').update(stableJson(normalized)).digest('hex');
       const planFile = request.clientRequestId ? join(this.#o.store.paths.project(projectId), 'start-plans', `${IdSchema.parse(request.clientRequestId)}.json`) : undefined;
       if (request.clientRequestId !== undefined) {
@@ -234,6 +236,7 @@ export class ThreadService {
         if (thread.state === 'queued' && thread.ownerDeviceId !== this.#o.deviceId) this.#remoteQueue.set(projectId, (this.#remoteQueue.get(projectId) ?? new Set()).add(thread.id));
         return result;
       }
+      if (request.fromBranch) await this.#o.validateBranch?.(projectId, request.fromBranch);
       const project = (await this.#o.projects.get(projectId))?.project;
       if (!project) throw refuse(PROJECT_NOT_FOUND, 404);
       const settings = await this.#o.admission.settings(projectId);
@@ -254,7 +257,7 @@ export class ThreadService {
         const admitted = await this.#o.admission.admit(projectId, record.deviceId, threadId);
         if (admitted.ok) hold = admitted.release; else queued = admitted.queued;
       }
-      const thread = ThreadSchema.parse({ schema: 'project-thread-v1', id: threadId, projectId, title: request.title, task, instructions: settings.instructions, brief: request.task, ...(request.taskContext ? { taskContext: request.taskContext } : {}), createdAt: new Date(at).toISOString(),
+      const thread = ThreadSchema.parse({ schema: 'project-thread-v1', id: threadId, projectId, title: request.title, task, delivery: settings.delivery, ...(request.fromBranch ? { fromBranch: request.fromBranch } : {}), instructions: settings.instructions, brief: request.task, ...(request.taskContext ? { taskContext: request.taskContext } : {}), createdAt: new Date(at).toISOString(),
         createdBy: request.createdBy, state: queued === undefined ? 'preparing' : 'queued', ...(queued === undefined ? {} : { stateReason: queued }), isolation: record.isolation,
         placement: record, ownerDeviceId: record.deviceId, coordinatorDeviceId: request.coordinatorDeviceId, cwd: '', baseBranch: '', baseCommit: '', turns: 0,
         turnAllowance: settings.threadTurnCap, queuedMessages: [], verificationAttempts: 0 });
@@ -585,6 +588,10 @@ export class ThreadService {
         if (!['idle', 'waiting-for-you', 'failed'].includes(thread.state)) throw refuse(ACTION_NOT_RESOLVABLE, 409);
       } else if (input.action === 'reopen') {
         if (!thread.resolution || !['idle', 'failed'].includes(thread.state)) throw refuse(ACTION_NOT_REOPENABLE, 409);
+      } else if (input.action === 'land-now') {
+        if (thread.delivery !== 'land' || thread.landing) throw refuse('This thread is not waiting to land.', 409);
+      } else if (input.action === 'land-instead') {
+        if ((thread.delivery !== 'pull-request' || !open) && this.#o.store.local(threadId).landInstead?.commandId !== input.clientRequestId || !this.#o.landInstead) throw refuse('This thread cannot use Land instead.', 409);
       } else if (input.action === 'publish') {
         if (open) throw refuse(ACTION_OPEN_PR, 409);
         if (thread.isolation !== 'worktree' || thread.state !== 'idle' || !await this.#o.runner.worktrees.hasCommits?.(thread)) throw refuse(ACTION_NO_COMMITS, 409);
@@ -598,9 +605,11 @@ export class ThreadService {
       if (input.action === 'resolve') await this.#resolve(thread, 'owner', receipt.at, input.clientRequestId);
       else if (input.action === 'reopen') this.#o.store.update(threadId, current => { const next = { ...current }; delete next.resolution; return next; });
       else {
+        if (input.action === 'land-instead') await this.#o.landInstead!(thread, input.clientRequestId);
+        if (input.action === 'land-now') this.#o.store.updateLocal(threadId, local => ({ ...local, ownerLandingRequested: true }));
         const questionId = this.#o.store.local(threadId).prAutoFix?.questionId;
         if (questionId) await this.#o.decisions.withdraw?.(projectId, questionId);
-        const reason = input.action === 'publish' ? 'publish' : input.action === 'fix-checks' ? 'checks' : input.action === 'resolve-conflicts' ? 'conflict' : 'comments';
+        const reason = ['publish', 'land-now', 'land-instead'].includes(input.action) ? 'publish' : input.action === 'fix-checks' ? 'checks' : input.action === 'resolve-conflicts' ? 'conflict' : 'comments';
         const comments = reason === 'comments' ? this.#o.store.local(thread.id).prComments?.items.slice(0, 15) ?? [] : [];
         const jobs = reason === 'checks' ? await this.#failedJobs(thread) : [];
         const body = reason === 'comments' ? commentsFixPrompt(thread.pr!.number, comments) : reason === 'publish' ? PUBLISH_REQUESTED : reason === 'checks' ? checksFixPrompt(thread.pr!.number, thread.pr!.headSha, thread.pr!.failedChecks ?? [], jobs) : conflictFixPrompt(thread.pr!.number, thread.baseBranch);

@@ -148,6 +148,21 @@ export class ThreadPublication {
     }
     return head;
   }
+  async backupWorktree(thread: Thread, signal?: AbortSignal): Promise<void> {
+    if (thread.delivery !== 'land' || !thread.cwd || !thread.branch || !await this.#git.remoteUrl(thread.cwd)) return;
+    const head = await this.#head(thread.cwd), localCommit = thread.baseCommit;
+    if (!head || head === localCommit) return;
+    const local = this.#backupLocal?.(thread.id);
+    if (local?.copiedFiles?.length) for (const commit of (await this.#git.run(thread.cwd, ['rev-list', `${thread.baseCommit}..HEAD`])).stdout.trim().split('\n').filter(Boolean)) {
+      const paths = (await this.#git.run(thread.cwd, ['--literal-pathspecs', 'diff-tree', '--root', '-m', '--no-commit-id', '--name-only', '--diff-filter=ACMRT', '-r', '-z', commit, '--', ...local.copiedFiles])).stdout.split('\0').filter(Boolean);
+      if (paths.length) throw new Error(copiedFileCommitted(commit, paths[0]!));
+    }
+    const pushed = await this.#push(thread.cwd, thread, thread.branch, local?.pushedCommit, signal);
+    this.#backupSaved?.(thread.id, pushed);
+  }
+  #backupLocal: ((id: string) => Pick<ThreadLocal, 'pushedCommit' | 'copiedFiles'>) | undefined;
+  #backupSaved: ((id: string, commit: string) => void) | undefined;
+  bindBackup(read: (id: string) => Pick<ThreadLocal, 'pushedCommit' | 'copiedFiles'>, saved: (id: string, commit: string) => void) { this.#backupLocal = read; this.#backupSaved = saved; }
   async publishWorktree(input: WorktreePublication): Promise<PublicationResult> {
     const { project, thread, local, ledger, signal } = input; const { cwd, branch } = thread;
     if (!cwd || !branch || !thread.baseCommit) throw new Error('The thread worktree is not ready.');

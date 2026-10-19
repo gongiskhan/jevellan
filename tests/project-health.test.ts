@@ -49,9 +49,9 @@ test('reports a connection failure and an actual bounded timeout', async () => {
   expect((await runHealthCheck('project', { ...definition(url), steps: [{ ...step(url), timeoutMs: 1000 }] })).steps[0]?.reason).toBe('timed out after 1000 ms');
 });
 test('migrates settings v4 to v5 preserving choices and adding no checks', () => {
-  const { healthChecks: _health, ...current } = defaultProjectWorkSettings('project'); void _health;
-  const old = ProjectWorkSettingsSchemaV4.parse({ ...current, schema: 'project-work-settings-v4', autoMerge: true, instructions: 'Owner choices' });
-  expect(StoredProjectWorkSettingsSchema.parse(old)).toMatchObject({ schema: 'project-work-settings-v5', instructions: 'Owner choices', autoMerge: true, healthChecks: [] });
+  const { healthChecks: _health, delivery: _delivery, autoLand: _land, landingChecks: _checks, smokeCheck: _smoke, mergeCommitPaths: _paths, ...current } = defaultProjectWorkSettings('project'); void [_health, _delivery, _land, _checks, _smoke, _paths];
+  const old = ProjectWorkSettingsSchemaV4.parse({ ...current, schema: 'project-work-settings-v4', defaultIsolation: 'worktree', autoMerge: true, instructions: 'Owner choices' });
+  expect(StoredProjectWorkSettingsSchema.parse(old)).toMatchObject({ schema: 'project-work-settings-v5', instructions: 'Owner choices', autoLand: true, healthChecks: [] });
 });
 test('state point stores only 500 runs per check and manual API results parse', async () => {
   fixture = await projectFixture(); const f = fixture; const url = await serve((_, response) => response.end('fixture'));

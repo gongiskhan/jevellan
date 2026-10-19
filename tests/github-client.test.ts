@@ -65,7 +65,7 @@ test('find and create pull requests read list and single shapes, and a second op
   expect(await client.findOpenPull(repository, branch)).toBeNull();
   expect(github.requests[0]!.query).toEqual({ head: `fixture:${branch}`, state: 'open' });
   const created = await client.createPull(repository, { title: 'Add greeting', head: branch, base: 'main', body: 'Summary\n\nTests: Not run: no test command' });
-  expect(created).toEqual({ number: 1, url: 'https://github.com/fixture/repo/pull/1', state: 'open', merged: false, mergeableState: 'clean', headSha: head, headRef: branch, baseRef: 'main', updatedAt: github.pulls[0]!.updatedAt });
+  expect(created).toEqual({ author: 'fixture', number: 1, url: 'https://github.com/fixture/repo/pull/1', state: 'open', merged: false, mergeableState: 'clean', headSha: head, headRef: branch, baseRef: 'main', updatedAt: github.pulls[0]!.updatedAt });
   expect(github.requests.at(-1)!.body).toEqual({ title: 'Add greeting', head: branch, base: 'main', body: 'Summary\n\nTests: Not run: no test command' });
   // List items carry no merge fields on GitHub.
   expect(await client.findOpenPull(repository, branch)).toEqual({ ...created, mergeableState: null });

@@ -17,7 +17,8 @@ export function ThreadCard({ projectId, thread, task, position, deviceName, navi
     {thread ? <p className="muted pw-card-meta">{copy.cardPlacement(thread.modelLabel, thread.effort, thread.accountLabel, deviceName?.(thread.ownerDeviceId) ?? thread.ownerDeviceId)}</p>
       : task!.state === 'queued' && position ? <p className="muted">{copy.queueCardPosition(position)}</p> : null}
     {thread?.state === 'attached' && <span className="chip">{copy.IN_TERMINAL}</span>}
-    {thread?.landing && <span className="chip">{copy.LANDING_LABELS[thread.landing]}</span>}
+    {thread?.landingStage && <span className="chip">{copy.LANDING_LABELS[thread.landingStage!]}</span>}
+    {thread?.landing && <span className="chip ok">Landed as {thread.landing.commit.slice(0, 7)}</span>}
     {thread?.pr && <p className="pw-card-pr"><a href={thread.pr.url} target="_blank" rel="noreferrer">#{thread.pr.number}</a>
       <span className={`chip ${thread.pr.checks === 'passing' ? 'ok' : thread.pr.checks === 'failing' ? 'danger' : 'muted'}`}>{copy.CARD_CHECKS[thread.pr.checks]}</span>
       {thread.pr.mergeable === 'conflict' && <span className="chip danger">{copy.CONFLICTS}</span>}</p>}

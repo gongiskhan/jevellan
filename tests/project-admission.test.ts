@@ -200,7 +200,7 @@ const place = (value: Placement, over: { fixed?: object; work?: Partial<ProjectW
 
 test('placement without a Jev client falls back on the coordinator device, records why, places on another device when fixed and keeps a closed main gate (D88)', async () => {
   const value = placementWith([], { gates: { mainIsolation: false, remoteDevices: true } }).placement;
-  const placed = await place(value, { work: { defaultIsolation: 'main' } });
+  const placed = await place(value, { work: {} });
   expect(placed.kind).toBe('placed'); if (placed.kind !== 'placed') return;
   // This device reads stale in the roster and is still placed (D8); a main default places a worktree until phase 6. Both devices
   // qualify (phase 5), and the fallback prefers the coordinator's device.
@@ -260,7 +260,7 @@ test('placement asks Jev with the packet: active threads oldest first with this 
     probabilities: { effort: { low: 0, medium: 0.1, high: 0.9, xhigh: 0, max: 0 } }, jevCalls: [{ kind: 'placement', returnedModel: 'jev-fixture' }] });
   expect(placed.kind === 'placed' && 'error' in placed.record).toBe(false);
   // One model and one online device: the isolation (main is allowed on this project) and the effort are asked.
-  expect(requests).toHaveLength(1); expect(Object.keys(requests[0]!.questions)).toEqual(['isolation', 'effort']);
+  expect(requests).toHaveLength(1); expect(Object.keys(requests[0]!.questions)).toEqual(['effort']);
   expect(placed.kind === 'placed' && placed.record.isolation).toBe('worktree');
   const packet = PlacementStateSchema.parse(JSON.parse(requests[0]!.state));
   expect(packet.thread).toEqual({ title: 'Fix login', task: 'The redirect loops.', coordinatorNote: 'The owner asked for speed.' });
@@ -283,41 +283,12 @@ test('placement asks Jev with the packet: active threads oldest first with this 
   expect(requests).toHaveLength(2);
 });
 
-test('main isolation is placed only where the checkout is on main and free: claims and main threads from the hub, this device\'s own and its starts in flight (brief 10, D64, D65, D288)', async () => {
-  const main = (id: string, state: ThreadState, owner: string, title: string) => ({ ...index(id, state, owner), isolation: 'main' as const, title });
-  const fixedMain = { fixed: { isolation: 'main' } };
-  // Both checkouts free and on main: the fallback places main on the coordinator's device; Studio was a candidate too.
-  const free = placementWith([], { branches: { dev_mini: 'main', dev_studio: 'main' } });
-  const placed = await place(free.placement, { work: { defaultIsolation: 'main' } });
-  expect(placed.kind === 'placed' && placed.record).toMatchObject({ isolation: 'main', deviceId: 'dev_mini', eligibleDevices: ['dev_mini', 'dev_studio'], excludedDevices: [] });
-  expect(free.reads.held).toBe(1);
-  // A worktree start never reads the held checkouts.
-  await place(free.placement, { fixed: { isolation: 'worktree' } }); expect(free.reads.held).toBe(1);
-  // The hub's held checkouts (a conversation here) and a checkout on another branch leave no device.
-  const busy = placementWith([], { branches: { dev_studio: 'feature' }, held: [{ deviceId: 'dev_mini', ownerId: 'conv_1', title: 'Tidy the docs' }] }).placement;
-  expect(await place(busy, fixedMain)).toMatchObject({ kind: 'refused',
-    message: 'No device can run any enabled model: Mac mini: main checkout busy: Tidy the docs; Studio: checkout is on feature, not main.' });
-  // Without fixing the isolation, a main default falls back to the worktree where main has no device.
-  const fallback = await place(busy, { work: { defaultIsolation: 'main' } });
-  expect(fallback.kind === 'placed' && [fallback.record.isolation, fallback.record.deviceId]).toEqual(['worktree', 'dev_mini']);
-  // This device's own main thread that has not ended blocks its checkout at once (its hub copy lags), and an ended one does not.
-  const own = placementWith([], { local: [main('thread_own', 'preparing', 'dev_mini', 'Fix login'), main('thread_old', 'done', 'dev_studio', 'Old work')] }).placement;
-  const elsewhere = await place(own, fixedMain);
-  expect(elsewhere.kind === 'placed' && elsewhere.record).toMatchObject({ deviceId: 'dev_studio', excludedDevices: [{ deviceId: 'dev_mini', reason: 'main checkout busy: Fix login' }] });
-  // A main thread just sent to Studio counts there before the hub has its index.
-  const inFlight = placementWith([], { local: [main('thread_own', 'running', 'dev_mini', 'Fix login')], pending: [{ threadId: 'thread_sent', deviceId: 'dev_studio', title: 'Add search' }] }).placement;
-  expect(await place(inFlight, fixedMain)).toMatchObject({ kind: 'refused',
-    message: 'No device can run any enabled model: Mac mini: main checkout busy: Fix login; Studio: main checkout busy: Add search.' });
-  // A thread's own claim does not count against itself (a next-turn override checks the thread where it is).
-  expect(await own.refusal({ project, workSettings: settings(), title: 'Fix login', task: 'x', fixed: { isolation: 'main', modelId: 'swift', deviceId: 'dev_mini' },
-    coordinatorDeviceId: 'dev_mini', ignoreRunningLimit: true, exclude: 'thread_own' })).toBeUndefined();
-  // During a hub outage only this device's knowledge counts; the claim at preparation still refuses a busy checkout.
-  const outage = placementWith([], { held: [{ deviceId: 'dev_mini', ownerId: 'conv_1', title: 'Tidy the docs' }] }); outage.stub.state.down = true;
-  const offline = await place(outage.placement, fixedMain);
-  expect(offline.kind === 'placed' && offline.record.deviceId).toBe('dev_mini');
-  // A Leave git project can use its existing checkout under the same ownership checks.
-  const external = await place(free.placement, { work: { defaultIsolation: 'main' }, project: { ...project, branchPolicy: 'external' } });
-  expect(external.kind === 'placed' && external.record.isolation).toBe('main');
+test('new main-isolation starts are refused without changing checkout claims', async () => {
+  const value = placementWith([], { branches: { dev_mini: 'main', dev_studio: 'main' } });
+  expect(await place(value.placement, { fixed: { isolation: 'main' } })).toMatchObject({ kind: 'refused', message: MAIN_NOT_AVAILABLE });
+  expect(value.reads.held).toBe(0);
+  const placed = await place(value.placement);
+  expect(placed.kind === 'placed' && placed.record.isolation).toBe('worktree');
 });
 
 test('a resource-blocked follow-up remains eligible for the waiting sweep and starts only after the guard clears', async () => {

@@ -8,6 +8,7 @@ import {
 import { ApiError, api, empty } from './api.js';
 import { copyText, selectText } from './clipboard.js';
 import { Confirm, Markdown, Modal, Panel, composerClearance, dateTime, followOnScroll, repinAtEnd, useTask, type PageProps } from './components.js';
+import { LandingWhy } from './landing-route.js';
 import { MergeWhy } from './merge-route.js';
 import { OwnerCommands, OwnerCommandScope } from './owner-commands.js';
 import { OpenTerminalButton } from './terminal.js';
@@ -211,6 +212,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           <span className={`chip pw-state-chip pw-state-${thread.state}`}>
             <i className={dotClass(thread.state)} aria-hidden="true" />{thread.resolution ? copy.BOARD_LABELS.resolved : copy.STATE_LABELS[thread.state]}
           </span>
+          {thread.delivery === 'land' && <>{thread.landing && <span className="chip">Landed as {thread.landing.commit.slice(0, 7)}</span>}<LandingWhy projectId={projectId} threadId={thread.id} /></>}
           {thread.pr && (
             <>
               <a className="chip pw-pr-chip" href={thread.pr.url} target="_blank" rel="noopener noreferrer" title={copy.OPEN_PULL_REQUEST}>

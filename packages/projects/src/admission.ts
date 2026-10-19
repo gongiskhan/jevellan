@@ -43,8 +43,9 @@ export class Admission {
   readonly #now: () => number;
   readonly #facts: (() => DeviceFacts) | undefined;
   readonly #created: ((projectId: string) => Iterable<Pick<ThreadIndex, 'id' | 'createdAt' | 'restartedAs'>>) | undefined;
+  readonly #defaultDelivery: 'land' | 'pull-request';
   readonly #guard: ((projectId: string, deviceId: string, threadId: string) => Promise<string | undefined>) | undefined;
-  constructor(o: { hub: Pick<ProjectHub, 'threads' | 'settings'>; deviceId: string; deviceName: string;
+  constructor(o: { defaultDelivery?: 'land' | 'pull-request'; hub: Pick<ProjectHub, 'threads' | 'settings'>; deviceId: string; deviceName: string;
     /** Local threads of the project in a live step, from the runners' memory. */
     localLive(projectId: string): Iterable<string>;
     /** Names for the device-limit text; this device's name is known. */
@@ -53,7 +54,7 @@ export class Admission {
     guard?(projectId: string, deviceId: string, threadId: string): Promise<string | undefined> }) {
     this.#hub = o.hub; this.#deviceId = o.deviceId; this.#deviceName = o.deviceName; this.#localLive = o.localLive; this.#names = o.nameOf; this.#now = o.now ?? Date.now;
     this.#facts = o.facts; this.#created = o.createdThreads;
-    this.#guard = o.guard;
+    this.#guard = o.guard; this.#defaultDelivery = o.defaultDelivery ?? 'land';
   }
   async #read<T>(cache: Map<string, T>, projectId: string, load: () => Promise<T>, fallback: () => T): Promise<T> {
     try { const value = await load(); cache.set(projectId, value); return value; }
@@ -61,7 +62,8 @@ export class Admission {
   }
   /** Work settings with the hub default; the last good read during an outage. */
   settings(projectId: string): Promise<ProjectWorkSettings> {
-    return this.#read(this.#settings, projectId, async () => (await this.#hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId), () => defaultProjectWorkSettings(projectId));
+    const defaults = () => ({ ...defaultProjectWorkSettings(projectId), delivery: this.#defaultDelivery });
+    return this.#read(this.#settings, projectId, async () => (await this.#hub.settings(projectId))?.document ?? defaults(), defaults);
   }
   #remoteLive(projectId: string): Promise<Live[]> {
     return this.#read(this.#remote, projectId, async () => {

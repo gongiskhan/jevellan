@@ -37,10 +37,11 @@ export type SetupResult = { ok: true; outputRef: string } | { ok: false; reason:
  */
 export class ThreadWorktree {
   readonly #git: ThreadGit; readonly #homes: Homes; readonly #paths: ProjectPaths; readonly #redactor: SecretRedactor;
+  readonly #validateBranch: ((project: Project, branch: string) => Promise<void>) | undefined;
   readonly #deviceId: string; readonly #deviceName: string;
   readonly #projectEnvironment: ((projectId: string) => Promise<Record<string, string>>) | undefined;
-  constructor(o: { projectEnvironment?(projectId: string): Promise<Record<string, string>>; git: ThreadGit; homes: Homes; paths: ProjectPaths; redactor: SecretRedactor; deviceId: string; deviceName: string }) {
-    this.#projectEnvironment = o.projectEnvironment; this.#git = o.git; this.#homes = o.homes; this.#paths = o.paths; this.#redactor = o.redactor; this.#deviceId = o.deviceId; this.#deviceName = o.deviceName;
+  constructor(o: { validateBranch?(project: Project, branch: string): Promise<void>; projectEnvironment?(projectId: string): Promise<Record<string, string>>; git: ThreadGit; homes: Homes; paths: ProjectPaths; redactor: SecretRedactor; deviceId: string; deviceName: string }) {
+    this.#validateBranch = o.validateBranch; this.#projectEnvironment = o.projectEnvironment; this.#git = o.git; this.#homes = o.homes; this.#paths = o.paths; this.#redactor = o.redactor; this.#deviceId = o.deviceId; this.#deviceName = o.deviceName;
   }
   /** The project checkout on this device (brief 8.3 repository). */
   repository(project: Project): string { return resolveProjectPath(project, this.#deviceId, this.#deviceName); }
@@ -92,7 +93,12 @@ export class ThreadWorktree {
       if (present(path)) rmSync(path, { recursive: true, force: true });
       this.#paths.worktreeParent(thread.projectId);
       const exists = await this.#git.resolve(repo, `refs/heads/${branch}`);
-      await this.#git.run(repo, exists ? ['worktree', 'add', path, branch] : ['worktree', 'add', '--no-track', '-b', branch, path, baseCommit], { ...(signal ? { signal } : {}) });
+      let start = baseCommit;
+      if (!exists && thread.fromBranch) {
+        await this.#validateBranch?.(project, thread.fromBranch);
+        start = await this.#git.fetchPrivate(repo, thread.fromBranch, `${THREAD_REF_PREFIX}${thread.id}/from-branch`, signal);
+      }
+      await this.#git.run(repo, exists ? ['worktree', 'add', path, branch] : ['worktree', 'add', '--no-track', '-b', branch, path, start], { ...(signal ? { signal } : {}) });
     }
     const contextNote = await this.#links(project, path);
     return { cwd: path, branch, baseBranch, baseCommit, ...(contextNote ? { contextNote } : {}) };

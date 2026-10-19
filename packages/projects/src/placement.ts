@@ -15,7 +15,7 @@ import { UNKNOWN_THREAD } from './copy.js';
 
 export type DeviceRoster = z.infer<typeof DeviceRosterSchema>;
 /** The phase gates (D88): main isolation opened in phase 6, other devices in phase 5. Placement and the settings views read this one value. */
-export const PHASE_GATES: PlacementGates = { mainIsolation: true, remoteDevices: true };
+export const PHASE_GATES: PlacementGates = { mainIsolation: false, remoteDevices: true };
 export type PlacementLabels = { modelLabel: string; deviceName: string; runtimeName: string };
 export type PlacementResult =
   /** `atLimit`: every device that could run the thread is at its running limit, so the start queues (D9, D133). */
@@ -74,12 +74,12 @@ export class Placement {
     input.signal?.throwIfAborted();
     return {
       settings: input.requiredEffort || input.readOnly ? { ...settings, menu: settings.menu.map(model => ({ ...model, enabled: model.enabled && (!input.requiredEffort || model.efforts.includes(input.requiredEffort)) && (!input.readOnly || this.#o.runtimes.get(model.runtime)?.capabilities.readOnlyEnforced === true) })) } : settings,
-      project, defaultIsolation: workSettings.defaultIsolation, constraints: { allowedModelIds: workSettings.placement.allowedModelIds, minEffort: workSettings.placement.minEffort },
+      project, defaultIsolation: 'worktree', constraints: { allowedModelIds: workSettings.placement.allowedModelIds, minEffort: workSettings.placement.minEffort },
       projectGuidance: workSettings.placement.guidance, reason: input.reason ?? 'start', continuity: input.continuity, minimumEffort: input.minimumEffort, excludedModels: input.excludedModels, runtimes: this.#runtimes(),
       accounts: accounts.map((view) => view.account), statuses: accounts.flatMap((view) => view.statuses), devices: this.#devices(project, roster, input.coordinatorDeviceId, counts.devices, held),
       maxRunningPerDevice: workSettings.maxRunningPerDevice, ignoreRunningLimit: input.ignoreRunningLimit,
       perDeviceLimits: workSettings.perDeviceLimits, needs: input.taskContext?.needs,
-      deviceId: this.#o.deviceId, coordinatorDeviceId: input.coordinatorDeviceId, gates: { ...this.#o.gates, mainIsolation: this.#o.gates.mainIsolation && workSettings.allowMainIsolation }, fixed: input.fixed, now: this.#o.now(),
+      deviceId: this.#o.deviceId, coordinatorDeviceId: input.coordinatorDeviceId, gates: { ...this.#o.gates, mainIsolation: false }, fixed: input.fixed, now: this.#o.now(),
     };
   }
   #runtimes(): PlacementInput['runtimes'] {
@@ -120,9 +120,9 @@ export class Placement {
     read: { settings: Configuration['x-jevellan']; accounts: AccountView[] }): ProjectDeviceSetup[] {
     const { settings, accounts } = read;
     const devices = this.#devices(project, roster, placing);
-    const reasons = new Map(placementDeviceSetup({ settings, project, constraints: { allowedModelIds: workSettings.placement.allowedModelIds, minEffort: workSettings.placement.minEffort }, defaultIsolation: workSettings.defaultIsolation, runtimes: this.#runtimes(), accounts: accounts.map((view) => view.account),
+    const reasons = new Map(placementDeviceSetup({ settings, project, constraints: { allowedModelIds: workSettings.placement.allowedModelIds, minEffort: workSettings.placement.minEffort }, defaultIsolation: 'worktree', runtimes: this.#runtimes(), accounts: accounts.map((view) => view.account),
       statuses: accounts.flatMap((view) => view.statuses), devices, maxRunningPerDevice: workSettings.maxRunningPerDevice, ignoreRunningLimit: true, deviceId: placing,
-      coordinatorDeviceId: placing, gates: { ...this.#o.gates, mainIsolation: this.#o.gates.mainIsolation && workSettings.allowMainIsolation }, fixed: {}, now: this.#o.now() }).map((entry) => [entry.deviceId, entry.reason]));
+      coordinatorDeviceId: placing, gates: { ...this.#o.gates, mainIsolation: false }, fixed: {}, now: this.#o.now() }).map((entry) => [entry.deviceId, entry.reason]));
     return devices.filter((device) => !device.revoked).map((device) => {
       const reason = reasons.get(device.id);
       return ProjectDeviceSetupSchema.parse({ schema: 'project-device-setup-v1', deviceId: device.id, name: device.name, ...(reason ? { reason: reason.slice(0, 400) } : {}) });

@@ -196,8 +196,8 @@ test('placement gates disable Main and other devices with the sentences placemen
     ({ project: { id: 'shop', name: 'Shop', branchPolicy, baseBranch: 'main' }, gates: { mainIsolation, remoteDevices } });
   expect(mainIsolationBlock(view('main', false))).toBe(server.MAIN_NOT_AVAILABLE);
   expect(mainIsolationBlock(view('external', false))).toBe(server.MAIN_NOT_AVAILABLE);
-  expect(mainIsolationBlock(view('external', true))).toBeNull();
-  expect(mainIsolationBlock(view('main', true))).toBeNull();
+  expect(mainIsolationBlock(view('external', true))).toBe(server.MAIN_NOT_AVAILABLE);
+  expect(mainIsolationBlock(view('main', true))).toBe(server.MAIN_NOT_AVAILABLE);
   expect(deviceBlock(view('main', false), 'mac', 'mac')).toBeNull();
   expect(deviceBlock(view('main', false), 'mini', 'mac')).toBe(server.REMOTE_NOT_AVAILABLE);
   expect(deviceBlock(view('main', false, true), 'mini', 'mac')).toBeNull();
@@ -231,11 +231,8 @@ test('request bodies: Automatic placement fields are omitted and a stored main d
   const form = { defaultIsolation: 'worktree' as const, isolationChanged: false, modelId: '', effort: 'high' as const, setupCommand: '  ',
     maxRunningThreads: 3, maxRunningPerDevice: 2, threadTurnCap: 40 };
   const plain = ProjectWorkSettingsRequestSchema.parse(settingsRequest({ settings }, form));
-  expect(plain).toEqual({ schema: 'project-work-settings-request-v1', revision: 4, settings: { defaultIsolation: 'worktree', coordinator: { modelId: null, effort: 'high' },
-    setupCommand: null, maxRunningThreads: 3, maxRunningPerDevice: 2, perDeviceLimits: {}, threadTurnCap: 40, allowMainIsolation: true, instructions: '', autoMerge: false, riskyAreas: '', requiredChecks: [], compactAtPercent: 70,
-    nightlyWindow: { enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }, refill: { enabled: true, minIntervalMinutes: 30 }, sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 } } });
-  expect(settingsRequest({ settings, settingsNotice: server.MAIN_NOT_AVAILABLE }, form).settings.defaultIsolation).toBe('main');
-  expect(settingsRequest({ settings, settingsNotice: server.MAIN_NOT_AVAILABLE }, { ...form, isolationChanged: true }).settings.defaultIsolation).toBe('worktree');
+  expect(plain).toMatchObject({ schema: 'project-work-settings-request-v1', revision: 4, settings: { delivery: 'land', coordinator: { modelId: null, effort: 'high' }, setupCommand: null, maxRunningThreads: 3, maxRunningPerDevice: 2, threadTurnCap: 40 } });
+  expect(plain.settings).not.toHaveProperty('defaultIsolation');
   expect(settingsRequest({ settings }, { ...form, modelId: 'deep', setupCommand: ' npm ci ' }).settings).toMatchObject({ coordinator: { modelId: 'deep' }, setupCommand: 'npm ci' });
   expect(settingsRequest({ settings: { ...settings, compactAtPercent: 65 } }, form).settings.compactAtPercent).toBe(65);
 });

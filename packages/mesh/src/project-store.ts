@@ -355,15 +355,15 @@ export class HubProjectStore {
       if (document.deviceId !== this.deviceId) refuse('This merge receipt belongs to another device.', 403);
       const thread = this.thread(document.threadId)?.document;
       if (!thread || thread.projectId !== document.projectId) refuse('Thread not found.', 404);
-      if (document.schema !== 'merge-correction-v1' && thread.ownerDeviceId !== this.deviceId) refuse('Only the thread owner can advance its merge gate.', 403);
+      if (!['merge-correction-v1', 'landing-correction-v1'].includes(document.schema) && thread.ownerDeviceId !== this.deviceId) refuse('Only the thread owner can advance its merge gate.', 403);
       const old = this.mergeDocument(document.id);
       if (old && (old.document.schema !== document.schema || old.document.projectId !== document.projectId || old.document.threadId !== document.threadId || old.document.commit !== document.commit || old.document.deviceId !== document.deviceId)) refuse('A merge receipt cannot change identity.');
-      if (old && document.schema === 'merge-correction-v1') {
+      if (old && (document.schema === 'merge-correction-v1' || document.schema === 'landing-correction-v1')) {
         if (stableJson({ ...old.document, revision: 0, at: '', receivedOrder: 0 }) !== stableJson({ ...document, revision: 0, at: '', receivedOrder: 0 })) refuse('This correction ID already stores a different correction.');
         return old;
       }
-      const receivedOrder = document.schema === 'merge-correction-v1' ? this.hub.listByField('project-merge-documents', 'projectId', document.projectId, MergeDocumentSchema)
-        .reduce((last, row) => row.document.schema === 'merge-correction-v1' ? Math.max(last, row.document.receivedOrder ?? 0) : last, 0) + 1 : undefined;
+      const receivedOrder = (document.schema === 'merge-correction-v1' || document.schema === 'landing-correction-v1') ? this.hub.listByField('project-merge-documents', 'projectId', document.projectId, MergeDocumentSchema)
+        .reduce((last, row) => (row.document.schema === 'merge-correction-v1' || row.document.schema === 'landing-correction-v1') ? Math.max(last, row.document.receivedOrder ?? 0) : last, 0) + 1 : undefined;
       return this.#put('project-merge-documents', document.id, MergeDocumentSchema, receivedOrder === undefined ? document : { ...document, receivedOrder }, expectedRevision);
     });
   }
@@ -882,7 +882,7 @@ export class MemberProjectStore implements ProjectHub {
   async thread(threadId: string) { return this.#check((await this.#call('thread-get', { threadId })).record, (row) => !row || row.document.id === threadId); }
   async mergeDocuments(projectId: string, after?: string, threadId?: string) { const page = this.#page(await this.#call('merge-documents', { projectId, ...(after ? { after } : {}), ...(threadId ? { threadId } : {}) }), projectId, after); if (threadId && page.records.some(row => row.threadId !== threadId)) throw new HubProtocolError(); return page; }
   async mergeDocument(id: string) { return this.#check((await this.#call('merge-document-get', { id })).record, row => !row || row.document.id === id); }
-  async putMergeDocument(document: MergeDocument, expectedRevision: number) { return this.#check((await this.#call('merge-document-put', { document, expectedRevision })).record, row => row.document.id === document.id && (row.revision === expectedRevision + 1 || document.schema === 'merge-correction-v1' && stableJson({ ...row.document, revision: 0, at: '', receivedOrder: 0 }) === stableJson({ ...document, revision: 0, at: '', receivedOrder: 0 }))); }
+  async putMergeDocument(document: MergeDocument, expectedRevision: number) { return this.#check((await this.#call('merge-document-put', { document, expectedRevision })).record, row => row.document.id === document.id && (row.revision === expectedRevision + 1 || (document.schema === 'merge-correction-v1' || document.schema === 'landing-correction-v1') && stableJson({ ...row.document, revision: 0, at: '', receivedOrder: 0 }) === stableJson({ ...document, revision: 0, at: '', receivedOrder: 0 }))); }
   async publishThread(index: ThreadIndex, eventId: number) {
     const result = this.#check(await this.#call('thread-publish', { index, eventId }), (value) => value.threadId === index.id && value.eventId >= eventId);
     return { eventId: result.eventId };

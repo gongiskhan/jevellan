@@ -17,7 +17,7 @@ test('stored v1 settings migrate explicitly without losing fixed coordinator cho
     coordinator: { runtimeId: 'claude', accountId: 'fixed', modelId: 'chosen', effort: 'high' }, setupCommand: 'npm ci', maxRunningThreads: 9, maxRunningPerDevice: 4, threadTurnCap: 30 });
   app.hub.put('project-work-settings', 'project', ProjectWorkSettingsSchemaV1, { ...legacy, revision: 1 }, 0);
   const left = await member('left'), migrated = await left.hub.settings('project');
-  expect(migrated?.document).toMatchObject({ schema: 'project-work-settings-v5', revision: 1, coordinator: legacy.coordinator, setupCommand: 'npm ci', maxRunningThreads: 9, autoMerge: false, riskyAreas: '', allowMainIsolation: true, sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 } });
+  expect(migrated?.document).toMatchObject({ schema: 'project-work-settings-v5', revision: 1, coordinator: legacy.coordinator, setupCommand: 'npm ci', maxRunningThreads: 9, autoLand: false, riskyAreas: '', allowMainIsolation: true, sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 } });
   expect((await left.hub.putSettings(migrated!.document, 1)).document).toEqual({ ...migrated!.document, revision: 2 });
 });
 beforeEach(async () => {

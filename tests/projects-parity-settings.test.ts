@@ -10,10 +10,11 @@ test.each([1, 2, 3])('settings v%s migrate to v4 without losing owner choices', 
   const before = { ...legacy, schema: `project-work-settings-v${version}`, ...(version > 1 ? { threadRules: 'Keep these instructions.', nightlyWindow } : {}),
     ...(version === 2 ? { coordinatorReview: false } : {}), ...(version === 3 ? { autoMerge: true, requiredChecks: ['result'], perDeviceLimits: { madrid: 8 } } : {}) };
   const after = StoredProjectWorkSettingsSchema.parse(before);
-  expect(after).toMatchObject({ ...legacy, schema: 'project-work-settings-v5', instructions: version > 1 ? 'Keep these instructions.' : '', status: 'active', startMode: 'start', maxNewThreadsPerDay: 100 });
+  const { defaultIsolation: _retired, ...retained } = legacy; void _retired;
+  expect(after).toMatchObject({ ...retained, schema: 'project-work-settings-v5', instructions: version > 1 ? 'Keep these instructions.' : '', status: 'active', startMode: 'start', maxNewThreadsPerDay: 100 });
   expect(after).not.toHaveProperty('threadRules'); expect(after).not.toHaveProperty('coordinatorReview');
   if (version > 1) expect(after.nightlyWindow).toEqual(nightlyWindow);
-  if (version === 3) expect(after).toMatchObject({ autoMerge: true, requiredChecks: ['result'], perDeviceLimits: { madrid: 8 } });
+  if (version === 3) expect(after).toMatchObject({ autoLand: true, perDeviceLimits: { madrid: 8 } });
   expect(StoredProjectWorkSettingsSchema.parse(after)).toEqual(after);
 });
 
@@ -24,7 +25,7 @@ test('v4 defaults, optional request fields and sixteen-thousand-character instru
   expect(ProjectWorkSettingsSchema.parse({ ...value, instructions: 'i'.repeat(16000) })).toHaveProperty('instructions', 'i'.repeat(16000));
   expect(ProjectWorkSettingsSchema.safeParse({ ...value, instructions: 'i'.repeat(16001) }).success).toBe(false);
   const request = ProjectWorkSettingsRequestSchema.parse({ schema: 'project-work-settings-request-v1', revision: 7,
-    settings: { defaultIsolation: 'worktree', coordinator: legacy.coordinator, setupCommand: null, maxRunningThreads: 2, maxRunningPerDevice: 2, threadTurnCap: 20 } });
+    settings: { delivery: 'land', coordinator: legacy.coordinator, setupCommand: null, maxRunningThreads: 2, maxRunningPerDevice: 2, threadTurnCap: 20 } });
   for (const field of ['status', 'instructions', 'startMode', 'placement', 'prAutoFix', 'environment', 'notifications', 'maxNewThreadsPerDay']) expect(request.settings).not.toHaveProperty(field);
 });
 
@@ -54,7 +55,7 @@ test('vault v1 restores to v2 with instructions and portable defaults', () => {
       sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 }, compactAtPercent: 70, coordinator: { runtimeId: 'claude', modelId: 'deep', effort: 'high' } },
     goals: [], jobs: [], dailies: [] };
   const restored = VaultProjectSchema.parse(old);
-  expect(restored).toMatchObject({ schema: 'vault-project-v2', work: { instructions: 'Keep the old instructions.', startMode: 'start', maxNewThreadsPerDay: 100 } });
+  expect(restored).toMatchObject({ schema: 'vault-project-v3', work: { instructions: 'Keep the old instructions.', startMode: 'start', maxNewThreadsPerDay: 100 } });
   expect(restored.work).not.toHaveProperty('threadRules'); expect(restored.work).not.toHaveProperty('status');
   expect(VaultProjectSchema.parse(restored)).toEqual(restored);
 });

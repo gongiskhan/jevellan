@@ -11,9 +11,9 @@ export function vaultDefinition(project: Project, settings: ProjectWorkSettings,
   const jobName = (id: string | null | undefined) => id ? jobs.find(job => job.id === id)?.name ?? null : null;
   const byName = <T extends { name: string }>(rows: T[]) => rows.sort((a, b) => a.name.localeCompare(b.name));
   return VaultProjectSchema.parse({
-    schema: 'vault-project-v2', name: project.name, origin: project.remoteUrl ?? '', testCommand: project.testCommand ?? null, setupCommand: settings.setupCommand, gitPolicy: project.branchPolicy,
-    work: { defaultIsolation: settings.defaultIsolation, allowMainIsolation: settings.allowMainIsolation, maxRunningThreads: settings.maxRunningThreads, maxRunningPerDevice: settings.maxRunningPerDevice,
-      threadTurnCap: settings.threadTurnCap, instructions: settings.instructions, riskyAreas: settings.riskyAreas, requiredChecks: settings.requiredChecks, autoMerge: settings.autoMerge,
+    schema: 'vault-project-v3', name: project.name, origin: project.remoteUrl ?? '', testCommand: project.testCommand ?? null, setupCommand: settings.setupCommand, gitPolicy: project.branchPolicy,
+    work: { delivery: settings.delivery, autoLand: settings.autoLand, landingChecks: settings.landingChecks, smokeCheck: settings.smokeCheck, mergeCommitPaths: settings.mergeCommitPaths, healthChecks: settings.healthChecks, maxRunningThreads: settings.maxRunningThreads, maxRunningPerDevice: settings.maxRunningPerDevice,
+      threadTurnCap: settings.threadTurnCap, instructions: settings.instructions, riskyAreas: settings.riskyAreas,
       nightlyWindow: settings.nightlyWindow, refill: settings.refill, memory: settings.memory, sessionCheckpoints: settings.sessionCheckpoints, compactAtPercent: settings.compactAtPercent, startMode: settings.startMode, maxNewThreadsPerDay: settings.maxNewThreadsPerDay, placement: settings.placement, prAutoFix: settings.prAutoFix, environment: settings.environment, notifications: settings.notifications,
       coordinator: { runtimeId: settings.coordinator.runtimeId ?? null, modelId: settings.coordinator.modelId, effort: settings.coordinator.effort } },
     goals: byName(goals.map(goal => ({ name: goal.name, state: goal.state, motivation: goal.motivation, health: goal.health, autonomy: goal.autonomy, dailyRefillCap: goal.dailyRefillCap, openPrCap: goal.openPrCap }))),
@@ -31,7 +31,7 @@ export async function goalNamed(work: ProjectWork, projectId: string, input: Rec
 }
 export async function jobNamed(work: ProjectWork, projectId: string, input: Record<string, unknown> & { name: string }, requestId: string): Promise<ProjectJob> {
   const existing = (await work.daily.jobs(projectId)).find(job => job.name === input.name);
-  return existing ?? await work.daily.createJob(projectId, { ...input, clientRequestId: requestId });
+  return existing ?? await ((input.run as { kind?: string } | undefined)?.kind === 'github-workflow' ? work.daily.restoreRetiredJob(projectId, { ...input, clientRequestId: requestId }) : work.daily.createJob(projectId, { ...input, clientRequestId: requestId }));
 }
 export async function dailyNamed(work: ProjectWork, projectId: string, input: Record<string, unknown> & { name: string }, requestId: string): Promise<ProjectDaily> {
   // A project has one memory dream: the memory sweep creates it under its own request id, so that id is shared here too.
@@ -66,7 +66,7 @@ export async function restoreFromVault(work: ProjectWork, projectId: string, fol
   for (const daily of definition.dailies) {
     const target = daily.target.kind === 'job' ? jobs.get(daily.target.job) : undefined;
     if (daily.target.kind === 'job' && !target) continue;
-    await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', name: daily.name, goalId: goalId(daily.goal), order: daily.order, ...(daily.days ? { days: daily.days } : {}), enabled: daily.enabled,
+    await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', name: daily.name, goalId: goalId(daily.goal), order: daily.order, ...(daily.days ? { days: daily.days } : {}), enabled: daily.enabled && target?.run.kind !== 'github-workflow',
       target: daily.target.kind === 'job' ? { kind: 'job', jobId: target!.id } : daily.target }, id('daily', daily.name));
   }
   const stored = await work.notebookView(projectId);

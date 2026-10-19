@@ -141,7 +141,7 @@ export class DecisionItems {
       source: ownerMessage === undefined ? 'panel' : 'owner-chat', ...(ownerMessage === undefined ? {} : { ownerMessage }) });
     if (answer.optionLabel !== undefined && !asked.options.some((option) => option.label === answer.optionLabel)) throw refuse(UNKNOWN_OPTION, 400);
     if (asked.automaticFix && !answer.optionLabel) throw refuse('Choose an automatic fix option.', 400);
-    if (asked.merge) await this.#o.mergeAnswer?.(asked, answer, true);
+    if (asked.merge || asked.landing) await this.#o.mergeAnswer?.(asked, answer, true);
     // The hub keeps the first answer, so a Stop the thread cannot take now is refused before it is recorded: the question stays open (phase 8).
     if (asked.threadId !== undefined && isTurnLimitItem(asked) && answer.optionLabel === STOP_THE_THREAD) {
       const refused = await this.#o.threads().stopRefusal?.(projectId, asked.threadId);
@@ -154,7 +154,7 @@ export class DecisionItems {
         given.optionLabel === allowAutomaticFixes(decision.automaticFix.maxRounds), derivedId('tcmd', 'answer', decisionId));
       return { repeated };
     }
-    if (decision.merge && await this.#o.mergeAnswer?.(decision, given, false)) return { repeated };
+    if ((decision.merge || decision.landing) && await this.#o.mergeAnswer?.(decision, given, false)) return { repeated };
     if (decision.from === 'coordinator' && given.source !== 'owner-chat') {
       const at = this.#o.now();
       await this.#o.toCoordinator(projectId, { schema: 'coordinator-event-v1', kind: 'decision-answer', id: derivedId('cev', 'answer', decisionId), at: new Date(at).toISOString(),

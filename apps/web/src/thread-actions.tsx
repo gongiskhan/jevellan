@@ -11,7 +11,7 @@ export const ThreadMergeHoldContext = createContext<{ held: boolean; allowed: re
 /** The same owner actions in chat cards, Overview and the thread header. */
 export function ThreadActions({ projectId, thread, changed, onError, hold }: { projectId: string; thread: ThreadIndex; hold?: boolean | undefined; changed?: (() => void) | undefined; onError?: ((error: unknown) => void) | undefined }) {
   const projectHold = useContext(ThreadMergeHoldContext);
-  const held = hold ?? (projectHold ? projectHold.held && !projectHold.allowed.includes(thread.id) : thread.landing === 'held');
+  const held = hold ?? (projectHold ? projectHold.held && !projectHold.allowed.includes(thread.id) : thread.landingStage === 'held');
   const [error, setError] = useState(''), [confirm, setConfirm] = useState<'merge' | 'resolve'>();
   const operation = useTask(failure => { setError(failure instanceof Error ? failure.message : String(failure)); onError?.(failure); });
   const refresh = () => { changed?.(); window.dispatchEvent(new Event(PROJECT_WORK_UPDATED)); };
@@ -26,6 +26,8 @@ export function ThreadActions({ projectId, thread, changed, onError, hold }: { p
       {resting && thread.fixable?.checks && <button className="secondary small" disabled={operation.busy} onClick={() => act('fix-checks')}>{copy.FIX_CHECKS}</button>}
       {resting && thread.fixable?.conflicts && <button className="secondary small" disabled={operation.busy} onClick={() => act('resolve-conflicts')}>{copy.RESOLVE_CONFLICTS}</button>}
       {resting && !!thread.fixable?.comments && <button className="secondary small" disabled={operation.busy} onClick={() => act('address-comments')}>{copy.addressComments(thread.fixable.comments)}</button>}
+      {thread.delivery === 'land' && resting && !thread.landing && !thread.resolution && <button className="small" disabled={operation.busy || held} onClick={() => act('land-now')}>Land now</button>}
+      {open && thread.delivery === 'pull-request' && <button className="secondary small" disabled={operation.busy || !resting || held} onClick={() => act('land-instead')}>Land instead</button>}
       {open && <button className="small" disabled={operation.busy || !!block || !resting} title={block ?? undefined} onClick={() => setConfirm('merge')}>{copy.MERGE}</button>}
       {thread.pr && <a className="button-link secondary small" href={thread.pr.url} target="_blank" rel="noreferrer">{copy.OPEN_ON_GITHUB}</a>}
       {thread.fixable?.publish && <button className="secondary small" disabled={operation.busy} title={copy.PUBLISH_HELP} onClick={() => act('publish')}>{copy.PUBLISH}</button>}

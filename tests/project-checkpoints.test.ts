@@ -12,9 +12,9 @@ test('unknown timing/context and single-run roles never manufacture a checkpoint
   for (const kind of ['review', 'verification', 'memory'] as const) expect(coldCheckpoint(settings, { ...row, owner: { kind, id: 'aux' } }, 'native', 10, now)).toBeUndefined();
 });
 test('checkpoint settings migrate additively with defaults off, validate limits, and preserve unrelated fields', () => {
-  const old = { ...defaultProjectWorkSettings('project'), autoMerge: true, compactAtPercent: 65, riskyAreas: 'Data' };
+  const old = { ...defaultProjectWorkSettings('project'), autoLand: true, compactAtPercent: 65, riskyAreas: 'Data' };
   const { sessionCheckpoints: _checkpoints, ...stored } = old; void _checkpoints;
-  expect(StoredProjectWorkSettingsSchema.parse(stored)).toMatchObject({ sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 }, autoMerge: true, compactAtPercent: 65, riskyAreas: 'Data' });
+  expect(StoredProjectWorkSettingsSchema.parse(stored)).toMatchObject({ sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 }, autoLand: true, compactAtPercent: 65, riskyAreas: 'Data' });
   for (const n of [19999, 200001, 40000.5]) expect(SessionCheckpointSettingsSchema.safeParse({ enabled: true, checkpointMinTokens: n }).success).toBe(false);
 });
 test('restart copy remains exact', () => {

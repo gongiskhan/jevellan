@@ -37,7 +37,7 @@ export async function applyEkoaCodeSetup(work: ProjectWork, projectId: string, r
   }
   if (!receipt) {
     receipt = EkoaCodeSetupReceiptSchema.parse({ ...input, schema: 'ekoa-code-setup-receipt-v1', projectId, completed: false, presetVersion: 2, settings: ProjectWorkSettingsSchema.parse({ ...current,
-      defaultIsolation: 'worktree', allowMainIsolation: false, autoMerge: false, riskyAreas: EKOA_RISKY_AREAS, requiredChecks: ['result'], setupCommand: 'npm ci', instructions: EKOA_THREAD_RULES, memory: { mode: 'hub', capture: true, dreamMode: 'apply' },
+      delivery: 'land', autoLand: false, riskyAreas: EKOA_RISKY_AREAS, landingChecks: [], smokeCheck: EKOA_FAST_CHECKS, setupCommand: 'npm ci', instructions: EKOA_THREAD_RULES, memory: { mode: 'hub', capture: true, dreamMode: 'apply' },
       maxRunningThreads: 8, maxRunningPerDevice: 6, coordinator: { modelId: input.modelId, runtimeId: 'claude', accountId: null, effort: 'high' }, refill: { enabled: true, minIntervalMinutes: 30 }, nightlyWindow: { enabled: true, time: '01:00', timezone: 'Europe/Lisbon' } }) });
     writeDocument(path, EkoaCodeSetupReceiptSchema, receipt);
   }

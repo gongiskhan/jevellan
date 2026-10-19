@@ -147,7 +147,7 @@ export async function projectFixture(options: ProjectFixtureOptions = {}): Promi
   }
   const appOptions = { homes, timers: false, repositoryVisibility: async () => 'PUBLIC' as const, runtimes: () => new Map(Object.entries(runtimes)), githubBaseUrl: github.url,
     deviceFacts: options.deviceFacts ?? fixtureFacts, ...(options.vaultRemote ? { vaultRemote: options.vaultRemote } : {}),
-    ...(options.decisionFetch ? { decisionFetch: options.decisionFetch } : {}), projectTimers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50, ...options.projectTimers } };
+    ...(options.decisionFetch ? { decisionFetch: options.decisionFetch } : {}), projectTimers: { defaultDelivery: 'pull-request' as const, periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50, ...options.projectTimers } };
   // With `control`, `startDaemon` listens at once and owns the listener; otherwise the application listens after the setup below.
   let daemon: Awaited<ReturnType<typeof startDaemon>> | undefined;
   const boot = async () => {
@@ -270,7 +270,7 @@ export type ProjectMember = {
  * remote added to the project's paths, a signed-in browser session and a heartbeat. Timers are off: tests call `pulse()` on
  * each side. The hub's device row gets its listening URL, which members and proxies use.
  */
-export async function projectMember(f: ProjectFixture, options: { name?: string; version?: string } = {}): Promise<ProjectMember> {
+export async function projectMember(f: ProjectFixture, options: { name?: string; version?: string; decisionFetch?: typeof fetch } = {}): Promise<ProjectMember> {
   const name = options.name ?? 'Fixture member';
   const hubRow = f.app.hub.get('devices', f.app.device.deviceId, DeviceSchema)!;
   if (hubRow.document.url !== f.base) f.app.hub.put('devices', f.app.device.deviceId, DeviceSchema, { ...hubRow.document, url: f.base }, hubRow.revision);
@@ -306,8 +306,8 @@ export async function projectMember(f: ProjectFixture, options: { name?: string;
     await member.afterCall?.(call, parsed);
     return response;
   };
-  const app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', deviceFacts: () => fixtureFacts('linux'), runtimes: () => new Map([['fake', fake as RuntimeAdapter]]), githubBaseUrl: f.github.url, hubFetch,
-    projectTimers: { periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50 }, ...(options.version ? { version: options.version } : {}) });
+  const app = new Application({ homes, timers: false, repositoryVisibility: async () => 'PUBLIC', deviceFacts: () => fixtureFacts('linux'), runtimes: () => new Map([['fake', fake as RuntimeAdapter]]), githubBaseUrl: f.github.url, hubFetch, ...(options.decisionFetch ? { decisionFetch: options.decisionFetch } : {}),
+    projectTimers: { defaultDelivery: 'pull-request' as const, periodic: false, coordinatorStartMs: 0, coordinatorRetryMs: 50 }, ...(options.version ? { version: options.version } : {}) });
   serverOptions.application = app; await app.started; app.bindDaemonUrl(base);
   f.closers.push(async () => {
     await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); });

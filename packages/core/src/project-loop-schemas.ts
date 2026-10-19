@@ -17,6 +17,7 @@ const needs = z.array(z.string().regex(/^[a-z0-9-]{1,32}$/u)).max(8), after = z.
 export const ProjectWorkTaskSchema = z.strictObject({ schema: z.literal('project-work-task-v1'), id: IdSchema, projectId: IdSchema, revision: z.number().int().nonnegative(),
   title, brief, kind: TaskKindSchema, type: TaskTypeSchema, goalId: IdSchema.nullable(), source: TaskSourceSchema, state: TaskStateSchema,
   rank: z.string().min(1).max(64), ownerRanked: z.boolean(), now: z.boolean(), after, needs,
+  fromBranch: z.string().min(1).max(200).optional(),
   // Queued but not started until the owner, or the coordinator on the owner's word, releases it.
   held: z.boolean().optional(),
   dailyId: IdSchema.nullable(), jobId: IdSchema.nullable(), threadId: IdSchema.nullable(), jobRunId: IdSchema.nullable(), fixed: TaskFixedSchema,
@@ -26,7 +27,7 @@ export const ProjectWorkTaskSchema = z.strictObject({ schema: z.literal('project
 export type ProjectWorkTask = z.infer<typeof ProjectWorkTaskSchema>;
 export const TaskPositionSchema = z.union([z.enum(['top', 'bottom']), z.strictObject({ before: IdSchema }), z.strictObject({ after: IdSchema })]);
 export const TaskCreateRequestSchema = z.strictObject({ schema: z.literal('task-create-request-v1'), clientRequestId: IdSchema, title, brief,
-  type: TaskTypeSchema.default('feature'), goalId: IdSchema.nullable().default(null), now: z.boolean().default(false), held: z.boolean().optional(), after: after.default([]), needs: needs.default([]), fixed: TaskFixedSchema.default({}), placementNote: z.string().max(400).optional() });
+  fromBranch: z.string().min(1).max(200).optional(), type: TaskTypeSchema.default('feature'), goalId: IdSchema.nullable().default(null), now: z.boolean().default(false), held: z.boolean().optional(), after: after.default([]), needs: needs.default([]), fixed: TaskFixedSchema.default({}), placementNote: z.string().max(400).optional() });
 export const TaskUpdateRequestSchema = z.strictObject({ schema: z.literal('task-update-request-v1'), expectedRevision: z.number().int().positive(),
   title: title.optional(), brief: brief.optional(), type: TaskTypeSchema.optional(), goalId: IdSchema.nullable().optional(), after: after.optional(), needs: needs.optional(),
   fixed: TaskFixedSchema.optional(), now: z.boolean().optional(), held: z.boolean().optional(), position: TaskPositionSchema.optional() });

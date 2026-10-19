@@ -58,9 +58,8 @@ export class ProjectMergeGate {
     const decision = (await this.o.hub.decision(id))?.document;
     if (decision?.answer) await this.answer(decision, decision.answer, false);
   }
-  #ready(thread: Thread, settings: ProjectWorkSettings) {
+  #ready(thread: Thread) {
     if (!green(thread) || thread.queuedMessages.some(message => message.from === 'coordinator')) return false;
-    if (settings.requiredChecks.length) return settings.requiredChecks.every(name => thread.pr!.passedChecks?.includes(name));
     return thread.pr!.checks !== 'none' || this.o.now() - Date.parse(thread.pr!.headFirstSeenAt ?? thread.pr!.updatedAt) >= 5 * 60_000;
   }
   async #deliverFailure(route: MergeRoute, run: Extract<MergeDocument, { schema: 'verification-run-v1' }>, thread: Thread) {
@@ -89,7 +88,7 @@ export class ProjectMergeGate {
       this.#concluded.add(threadId); return;
     }
     const settings = await this.o.settings(thread.projectId);
-    if (settings.status !== 'active' || !this.#ready(thread, settings)) return;
+    if (settings.status !== 'active' || !this.#ready(thread)) return;
     const commit = thread.pr.headSha, id = derivedId('mroute', threadId, commit);
     for (const row of records) if (row.schema === 'merge-route-v1' && row.commit !== commit && row.decisionId) {
       const old = (await this.o.hub.decision(row.decisionId))?.document; if (old && !old.answer && !old.withdrawnAt) await this.o.hub.withdrawDecision(old.id, new Date(this.o.now()).toISOString());
@@ -98,7 +97,7 @@ export class ProjectMergeGate {
     if (route && route.schema !== 'merge-route-v1') throw refuse('Invalid merge route receipt.');
     if (route?.state === 'failed') {
       const run = route.verificationId ? (await this.o.hub.mergeDocument(route.verificationId))?.document : null;
-      if (settings.autoMerge && run?.schema === 'verification-run-v1' && run.report?.result === 'failed' && !run.note) await this.#deliverFailure(route, run, thread);
+      if (settings.autoLand && run?.schema === 'verification-run-v1' && run.report?.result === 'failed' && !run.note) await this.#deliverFailure(route, run, thread);
       return;
     }
     if (!route) {
@@ -120,7 +119,7 @@ export class ProjectMergeGate {
     const reason = ['stopped', 'failed'].includes(thread.state) ? 'The original thread has stopped or failed.' : route.packet.riskyAreas !== settings.riskyAreas ? 'The project’s risky areas changed after this routing decision.' : null;
     if (reason && (route.route !== 'ask-owner' || route.reason !== reason)) route = await this.#save({ ...route, route: 'ask-owner', source: 'guard', reason });
     // Shadow routes explain Jev's choice without performing the route's actions.
-    if (!settings.autoMerge) return;
+    if (!settings.autoLand) return;
     if (route.route === 'ask-owner') { await this.#ask(route, thread); return; }
     if (route.route === 'test-then-merge') {
       let run = route.verificationId ? (await this.o.hub.mergeDocument(route.verificationId))?.document : null;
@@ -149,7 +148,7 @@ export class ProjectMergeGate {
       route = await this.#event(route, 'verification-passed', `${completed.modelLabel} (${completed.providerChoice}) passed basic verification.`);
     }
     const latest = this.o.store.get(threadId), currentSettings = await this.o.settings(route.projectId);
-    if (this.#closed || !currentSettings.autoMerge || !latest || !this.#ready(latest, currentSettings) || ['stopped', 'failed'].includes(latest.state) || latest.pr!.headSha !== route.commit) return;
+    if (this.#closed || !currentSettings.autoLand || !latest || !this.#ready(latest) || ['stopped', 'failed'].includes(latest.state) || latest.pr!.headSha !== route.commit) return;
     if (route.packet.riskyAreas !== currentSettings.riskyAreas) {
       await this.#ask(await this.#save({ ...route, route: 'ask-owner', source: 'guard', reason: 'The project’s risky areas changed after this routing decision.' }), latest);
       return;

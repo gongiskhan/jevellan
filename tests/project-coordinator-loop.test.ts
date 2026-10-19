@@ -125,7 +125,7 @@ test('one turn at a time: events during a turn arrive batched in the next, which
   expect(work.coordinators.get('proj_a').state()).toMatchObject({ state: 'running', session: { runtime: 'fake', modelId: 'fixture', effort: 'medium', accountId: 'acc_work', turns: 0 } });
   expect((await status())?.state).toBe('running');
   // Two events while the turn runs: they wait and go together in the next turn.
-  await new HubProjectAccess(hub, 'dev_a').publishThread({ schema: 'project-thread-index-v1', revision: 0, id: 'thread_a', projectId: 'proj_a', title: 'Add A', state: 'in-review',
+  await new HubProjectAccess(hub, 'dev_a').publishThread({ schema: 'project-thread-index-v1', delivery: 'pull-request', revision: 0, id: 'thread_a', projectId: 'proj_a', title: 'Add A', state: 'in-review',
     isolation: 'worktree', ownerDeviceId: 'dev_a', runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Work', turns: 1, createdAt: at, updatedAt: at }, 1);
   work.coordinators.get('proj_a').enqueue(published('cev_pa', 'thread_a', 1));
   work.coordinators.get('proj_a').enqueue(published('cev_pb', 'thread_b', 2));

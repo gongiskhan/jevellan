@@ -69,7 +69,7 @@ test('turn ends follow the D73 order, synthesized reports carry the turn outcome
 });
 
 const decision = (over: Partial<ProjectDecision>): ProjectDecision => ({ schema: 'project-decision-v1', revision: 1, id: 'pdec_1', projectId: 'proj_a', from: 'thread', question: 'Q?', options: [], createdAt: at, ...over });
-const index = (id: string, state: ThreadIndex['state'], over: Partial<ThreadIndex> = {}): ThreadIndex => ({ schema: 'project-thread-index-v1', revision: 1, id, projectId: 'proj_a', title: id,
+const index = (id: string, state: ThreadIndex['state'], over: Partial<ThreadIndex> = {}): ThreadIndex => ({ schema: 'project-thread-index-v1', delivery: 'pull-request', revision: 1, id, projectId: 'proj_a', title: id,
   state, isolation: 'worktree', ownerDeviceId: 'dev_a', runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Work', turns: 1, createdAt: at, updatedAt: at, ...over });
 
 test('views count work, list pull requests and questions, coerce a Leave git default, and the coordinator plan follows the null rule (D91, D97)', () => {

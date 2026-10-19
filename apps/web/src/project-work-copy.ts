@@ -436,8 +436,8 @@ export function settingChangeLine(change: { field: string; before: unknown; afte
 
 export const OVERVIEW = 'Overview';
 export const ROUTINES = 'Routines';
-export const BOARD_LABELS = { waiting: 'Waiting for you', review: 'Ready for review', working: 'Working', landing: 'Landing', idle: 'Idle', resolved: 'Resolved' } as const;
-export const BOARD_EMPTY = { waiting: 'Nothing needs you.', review: 'No pull requests waiting for review.', working: 'Nothing running.', landing: 'Nothing landing.', idle: 'No idle threads.', resolved: 'Nothing resolved in the last 14 days.' } as const;
+export const BOARD_LABELS = { waiting: 'Waiting for you', review: 'Ready for review', working: 'Working', landing: 'Landing', landed: 'Landed, waiting for deploy', idle: 'Idle', resolved: 'Resolved' } as const;
+export const BOARD_EMPTY = { waiting: 'Nothing needs you.', review: 'No pull requests waiting for review.', working: 'Nothing running.', landing: 'Nothing landing.', landed: 'Nothing waiting for deploy.', idle: 'No idle threads.', resolved: 'Nothing resolved in the last 14 days.' } as const;
 export const LANDING_LABELS = { verifying: 'Verifying', merging: 'Merging', held: 'Held for the nightly window' } as const;
 export const IN_TERMINAL = 'In a terminal';
 export const FIX_CHECKS = 'Fix checks';

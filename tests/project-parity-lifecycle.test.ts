@@ -142,7 +142,7 @@ test('v4 settings round trip through the hub without losing unrelated fields on 
   expect((await f.app.projectHub.settings(f.project.id))?.document).toEqual(saved.settings);
   const before = saved.settings;
   const next = await f.app.projectWork.putSettings(f.project.id, { schema: 'project-work-settings-request-v1', revision: before.revision,
-    settings: { defaultIsolation: before.defaultIsolation, coordinator: before.coordinator, setupCommand: before.setupCommand, maxRunningThreads: 2, maxRunningPerDevice: before.maxRunningPerDevice, threadTurnCap: before.threadTurnCap } });
+    settings: { ...Object.fromEntries(Object.entries(before).filter(([key]) => !['schema', 'projectId', 'revision'].includes(key))), landingChecks: before.landingChecks, smokeCheck: before.smokeCheck, mergeCommitPaths: before.mergeCommitPaths, delivery: before.delivery, coordinator: before.coordinator, setupCommand: before.setupCommand, maxRunningThreads: 2, maxRunningPerDevice: before.maxRunningPerDevice, threadTurnCap: before.threadTurnCap } });
   expect(next.settings).toEqual(ProjectWorkSettingsSchema.parse({ ...before, revision: before.revision + 1, maxRunningThreads: 2 }));
 });
 

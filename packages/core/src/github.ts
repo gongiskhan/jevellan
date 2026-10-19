@@ -33,7 +33,7 @@ export function parseGitHubPullUrl(url: string): GitHubRepository | null {
 // Responses of API version 2022-11-28 (D38). Loose: unknown fields are dropped, only the fields Jevellan reads are checked.
 // List items omit `merged`, `mergeable` and `mergeable_state`; only single pull requests carry them.
 export const GitHubPullResponseSchema = z.object({
-  updated_at: z.iso.datetime().optional(), number: z.number().int().positive(), html_url: z.url(), state: z.enum(['open', 'closed']),
+  user: z.object({ login: z.string().min(1).max(100) }).optional(), updated_at: z.iso.datetime().optional(), number: z.number().int().positive(), html_url: z.url(), state: z.enum(['open', 'closed']),
   merged: z.boolean().optional(), merged_at: z.string().nullable().optional(), mergeable_state: z.string().nullable().optional(),
   head: z.object({ sha: z.string().regex(sha), ref: z.string().min(1) }), base: z.object({ ref: z.string().min(1) }),
 });
@@ -48,7 +48,7 @@ export const GitHubStatusResponseSchema = z.object({ total_count: z.number().int
 export const GitHubMergeResponseSchema = z.object({ merged: z.boolean(), sha: z.string().optional(), message: z.string() });
 const GitHubErrorBodySchema = z.object({ message: z.string() });
 
-export type GitHubPull = { number: number; url: string; state: 'open' | 'closed'; merged: boolean; mergeableState: string | null; headSha: string; headRef: string; baseRef: string; updatedAt?: string | undefined };
+export type GitHubPull = { author?: string; number: number; url: string; state: 'open' | 'closed'; merged: boolean; mergeableState: string | null; headSha: string; headRef: string; baseRef: string; updatedAt?: string | undefined };
 export type GitHubChecks = PullRequestState['checks'];
 export type GitHubMergeResult = { merged: boolean; sha?: string; message: string };
 export type GitHubErrorKind = 'no-token' | 'auth' | 'not-found' | 'conflict' | 'unprocessable' | 'not-mergeable' | 'redirect' | 'timeout' | 'network' | 'invalid-response' | 'http';
@@ -263,7 +263,7 @@ const repo = (repository: GitHubRepository) => {
   return `/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.repo)}`;
 };
 const pullNumber = (number: number) => { if (!Number.isSafeInteger(number) || number < 1) throw new Error('Invalid pull request number.'); return number; };
-const pull = (value: z.infer<typeof GitHubPullResponseSchema>): GitHubPull => ({ ...(value.updated_at ? { updatedAt: value.updated_at } : {}), number: value.number, url: value.html_url, state: value.state,
+const pull = (value: z.infer<typeof GitHubPullResponseSchema>): GitHubPull => ({ ...(value.user ? { author: value.user.login } : {}), ...(value.updated_at ? { updatedAt: value.updated_at } : {}), number: value.number, url: value.html_url, state: value.state,
   merged: value.merged ?? Boolean(value.merged_at), mergeableState: value.mergeable_state ?? null, headSha: value.head.sha, headRef: value.head.ref, baseRef: value.base.ref });
 const timedOut = () => new GitHubError('timeout', 'GitHub did not answer in time.');
 const invalid = () => new GitHubError('invalid-response', 'GitHub returned an unexpected response.');

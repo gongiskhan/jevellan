@@ -11,7 +11,7 @@ import {
   type ProjectWorkSettings, type ProjectLedgerData, type ProjectLedgerEvent, type ProjectLedgerEventType,
 } from '../packages/core/dist/index.js';
 import { forThread, groupAlive, processIdentity, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
-import { eventLine } from '../packages/projects/dist/index.js';
+import { eventLine, MAIN_NOT_AVAILABLE } from '../packages/projects/dist/index.js';
 import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, threadRequestText, type ProjectFixture, type ProjectFixtureOptions, withoutFollowupRoute } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
@@ -51,7 +51,7 @@ async function start(f: ProjectFixture, title: string, task: string, extra: obje
 }
 async function settings(f: ProjectFixture, over: Partial<ProjectWorkSettings>): Promise<void> {
   const current = await f.app.projectHub.settings('project');
-  await f.app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...(current?.document ?? defaultProjectWorkSettings('project')), ...over }), current?.revision ?? 0);
+  await f.app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...(current?.document ?? defaultProjectWorkSettings('project')), delivery: 'pull-request', ...over }), current?.revision ?? 0);
 }
 
 test('a thread compaction keeps its native session and restores the task block on the next turn', { timeout: 60_000 }, async () => {
@@ -514,7 +514,7 @@ test('placement refusals: fixed main on a busy checkout, a device that cannot ru
   // A conversation holding the checkout keeps main threads off it (brief 10).
   const conversation = { conversationId: 'conv_other', conversationTitle: 'Other work', workId: 'work_other' };
   await f.app.conversations.ownership.acquire(f.project, conversation);
-  await refusedWith({ isolation: 'main' }, `No device can run any enabled model: ${f.deviceName}: main checkout busy: Other work.`);
+  await refusedWith({ isolation: 'main' }, MAIN_NOT_AVAILABLE);
   await f.app.conversations.ownership.release(f.project, conversation, { processesGone: true, commits: 'unchanged' });
   const at = new Date().toISOString();
   f.app.hub.put('devices', 'dev_studio', DeviceSchema, { schema: 'device-v1', id: 'dev_studio', name: 'Studio', role: 'member', url: 'http://127.0.0.1:9772', os: 'darwin', version: '0.1.0', joinedAt: at, lastHeartbeatAt: at }, 0);
@@ -524,24 +524,20 @@ test('placement refusals: fixed main on a busy checkout, a device that cannot ru
   expect((await f.json('/api/projects/project/work', ProjectWorkViewSchema)).threads).toEqual([]);
   expect(f.fake.turnStarts).toEqual([]);
   // A main default places main on the free checkout; this device's stale heartbeat does not exclude it.
-  await settings(f, { defaultIsolation: 'main' });
+  await settings(f, {});
   const device = f.app.hub.get('devices', f.app.device.deviceId, DeviceSchema)!;
   f.app.hub.put('devices', f.app.device.deviceId, DeviceSchema, { ...device.document, lastHeartbeatAt: new Date(Date.now() - 120_000).toISOString() }, device.revision);
   expect((await f.app.roster()).devices.find((view) => view.device.id === f.app.device.deviceId)?.status).toBe('stale');
   f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Placed here.' }), forThread());
-  const created = await start(f, 'Default main', 'Work with the main default.');
-  expect(created).toMatchObject({ state: 'preparing', placement: `Scripted test runtime Fixture · high · Main · ${f.deviceName} · placed without Jev: no key configured` });
+  const created = await start(f, 'Default worktree', 'Work in an isolated worktree.');
+  expect(created).toMatchObject({ state: 'preparing', placement: `Scripted test runtime Fixture · high · Worktree · ${f.deviceName} · placed without Jev: no key configured` });
   await f.waitFor(() => f.thread(created.threadId).turns, (turns) => turns === 1);
-  expect(f.thread(created.threadId)).toMatchObject({ isolation: 'main', ownerDeviceId: f.app.device.deviceId, cwd: f.checkout, baseBranch: 'main' });
+  expect(f.thread(created.threadId)).toMatchObject({ isolation: 'worktree', ownerDeviceId: f.app.device.deviceId, baseBranch: 'main' });
 });
 
-test('a Leave git project admits Main without changing its git policy', { timeout: 60_000 }, async () => {
-  const f = await setup({ branchPolicy: 'external' });
-  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Inspected the checkout.' }), forThread());
+test('a Leave git project also refuses retired main isolation without touching its checkout', async () => {
+  const f = await setup({ branchPolicy: 'external' }), before = f.git(f.checkout, 'status', '--porcelain');
   const response = await f.request('/api/projects/project/threads', 'POST', createBody('Gated', 'Work on main.', undefined, { isolation: 'main' }));
-  expect(response.ok).toBe(true);
-  const created = ThreadCreatedViewSchema.parse(await response.json());
-  await f.waitFor(() => f.thread(created.threadId), thread => thread.state === 'idle');
-  expect(f.thread(created.threadId)).toMatchObject({ isolation: 'main', gitPolicy: 'external', cwd: f.checkout });
-  expect((await f.json('/api/projects/project/work', ProjectWorkViewSchema)).project.branchPolicy).toBe('external');
+  expect(response.status).toBe(409); expect(await response.json()).toMatchObject({ message: MAIN_NOT_AVAILABLE });
+  expect(f.git(f.checkout, 'status', '--porcelain')).toBe(before); expect(f.app.projectWork.store.all()).toHaveLength(0);
 });

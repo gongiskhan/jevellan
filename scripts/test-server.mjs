@@ -86,7 +86,7 @@ let nightlyLateFix = false;
 const simulatedFacts = (os = 'darwin') => DeviceFactsSchema.parse({ schema: 'device-facts-v1', cores: 8, load1: 1, load5: 2, totalMemoryBytes: 32e9, freeMemoryBytes: 12e9, freeDiskBytes: 80e9, os, runningThreads: [], runningJobRuns: [] });
 let hubFacts = simulatedFacts(), memberFacts = simulatedFacts('linux');
 const devicePlacementPackets = [];
-const projectOptions = github ? { githubBaseUrl: github.url, githubFetch, projectTimers: { now: () => frozenProjectClock ?? Date.now() + projectClockOffset, prPollMs: 2_000, coordinatorStartMs: 100, inboxPollMs: 500, queueSweepMs: 1_000, outboxRetryMs: 500, outboxMaxMs: 2_000 } } : {};
+const projectOptions = github ? { githubBaseUrl: github.url, githubFetch, projectTimers: { defaultDelivery: 'pull-request', now: () => frozenProjectClock ?? Date.now() + projectClockOffset, prPollMs: 2_000, coordinatorStartMs: 100, inboxPollMs: 500, queueSweepMs: 1_000, outboxRetryMs: 500, outboxMaxMs: 2_000 } } : {};
 const memberProjectOptions = github ? { ...projectOptions, projectTimers: { ...projectOptions.projectTimers, periodic: true } } : {};
 const projectPause = (ms, signal) => new Promise((resolve) => {
   const timer = setTimeout(resolve, ms);
@@ -242,6 +242,17 @@ function threadStep(input) {
     git(turn.input.cwd, 'add', 'greeting.txt'); git(turn.input.cwd, 'commit', '-m', `Greeting version ${input.turn}`);
     if (input.turn >= 3) github.setChecks(application.projectWork.store.get(input.owner.id).pr.number, 'passing');
     return report('done', `Greeting version ${input.turn} is ready.`, { changedFiles: ['greeting.txt'] })(turn);
+  };
+  if (input.prompt.includes('WG4 legacy:')) return async turn => {
+    writeFileSync(join(turn.input.cwd, 'wg-legacy.txt'), 'Preserved legacy work.\n');
+    writeFileSync(join(turn.input.cwd, 'greeting.txt'), 'A legacy greeting.\n');
+    git(turn.input.cwd, 'add', 'wg-legacy.txt', 'greeting.txt'); git(turn.input.cwd, 'commit', '-m', 'Legacy change');
+    return report('done', 'Preserved legacy work.', { changedFiles: ['wg-legacy.txt'] })(turn);
+  };
+  if (input.prompt.includes('WG4 landing:')) return async turn => {
+    writeFileSync(join(turn.input.cwd, 'wg-landing.txt'), 'A checked thread.\n');
+    git(turn.input.cwd, 'add', 'wg-landing.txt'); git(turn.input.cwd, 'commit', '-m', 'Checked change');
+    return report('done', 'A checked thread for the landing journey.', { changedFiles: ['wg-landing.txt'] })(turn);
   };
   if (input.prompt.includes('PAR2 inspect:')) return report('progress', 'Read the README; ready for the next small step.');
   if (input.prompt.includes('CACHE1 metrics')) return async turn => {
@@ -428,6 +439,7 @@ const decisionFetch = async (_url, init) => {
   // Placement packets carry no conversation, so they are answered before anything reads one.
   if (state.schema === 'merge-route-state-v1' && state.title === 'Fix the nightly review finding') return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: { merge_route: { type: 'choice', choice: 'merge', confidence: 1, probabilities: { merge: 1, 'test-then-merge': 0, 'ask-owner': 0 } } } });
   if (state.schema === 'merge-route-state-v1') return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: { merge_route: { type: 'choice', choice: 'ask-owner', confidence: 1, probabilities: { merge: 0, 'test-then-merge': 0, 'ask-owner': 1 } } } });
+  if (state.schema === 'landing-route-state-v1') return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: { landing_route: { type: 'choice', choice: 'land', confidence: 1, probabilities: { land: 1, 'verify-then-land': 0, 'ask-owner': 0 } } } });
   if (state.schema === 'placement-state-v3') return placementAnswers(body, state);
   const improver = improverAnswers(body, state);
   if (improver) return Response.json({ model: 'jev-browser-simulated', usage: { input_tokens: 25, output_tokens: 15 }, answers: improver });
@@ -698,7 +710,7 @@ if (projectsMode) {
     const saved = await application.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project: ProjectSchema.parse({ schema: 'project-v1', id, name, paths, branchPolicy, ...extra,
       memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
     // Legacy journeys exercise manual PR responses; PAR4 enables the automatic policy on its own project.
-    await application.projectHub.putSettings({ ...defaultProjectWorkSettings(id), memory: { mode: 'repo', capture: true, dreamMode: 'apply' }, prAutoFix: { checks: false, conflicts: false, comments: false, maxRounds: 3 } }, 0);
+    await application.projectHub.putSettings({ ...defaultProjectWorkSettings(id), delivery: 'pull-request', memory: { mode: 'repo', capture: true, dreamMode: 'apply' }, prAutoFix: { checks: false, conflicts: false, comments: false, maxRounds: 3 } }, 0);
     return saved;
   };
   await save('projects_fixture', 'Projects fixture', { [hubId]: projectsPath, [memberId]: projectsMember }, 'main', { testCommand: 'test -f greeting.txt' });

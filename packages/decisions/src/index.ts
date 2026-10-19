@@ -13,3 +13,5 @@ export * from './account-choice.js';
 export * from './project-outcome.js';
 
 export * from './merge-route.js';
+
+export * from './landing-route.js';

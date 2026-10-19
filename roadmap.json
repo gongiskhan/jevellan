@@ -944,14 +944,14 @@
   {
     "id": "wg-nights",
     "title": "Command jobs and nightly routines",
-    "why": "Source complete: ordered command nights, memory fence, weekday selection, goal/daily migration, findings and retired Actions execution. Affected backend sets, eight browser journeys and 20 live vision checks passed; typecheck/lint/build passed. Project script publication and live activation/results remain pending the release switch.",
+    "why": "Ordered command nights, memory fence, weekdays, findings and retired Actions execution are implemented and checked. Project scripts are published through Jevellan; their adapter integration, live activation and night results remain pending. Private night-integration.md records the remaining work.",
     "status": "complete-with-blockers"
   },
   {
     "id": "wg-landing",
     "title": "Threads land on main",
-    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
-    "status": "planned"
+    "why": "Source complete: checked and leased squash/merge-commit landing, durable recovery, sticky delivery, branch continuation and owner actions. 21 landing cases, affected compatibility sets and four browser layouts passed; 20 live vision checks passed. Full release gate and live journeys remain P10/P11.",
+    "status": "complete"
   },
   {
     "id": "wg-deploy",

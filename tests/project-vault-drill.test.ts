@@ -30,7 +30,7 @@ test('a second hub restores notes, settings, goals, jobs, dailies and the notebo
   const a = await hub(), work = a.app.projectWork, id = a.project.id;
   // Hub A: settings, a goal, a gated job, a daily, the notebook and a note; then a dream that is undone.
   const settings = await work.admission.settings(id);
-  await a.app.projectHub.putSettings({ ...settings, instructions: 'Keep each change small.', maxRunningThreads: 5, requiredChecks: ['result'], coordinator: { ...settings.coordinator, accountId: 'acc_fixture' } }, settings.revision);
+  await a.app.projectHub.putSettings({ ...settings, instructions: 'Keep each change small.', maxRunningThreads: 5, landingChecks: [{ name: 'Result', paths: [], command: 'true' }], coordinator: { ...settings.coordinator, accountId: 'acc_fixture' } }, settings.revision);
   const { goal } = await work.goals.create(id, { schema: 'goal-create-request-v1', clientRequestId: 'docs', name: 'Docs and tests', motivation: 'Keep the project easy to work on.', autonomy: 'auto' });
   const suite = await work.daily.createJob(id, { schema: 'job-create-request-v1', clientRequestId: 'suite', name: 'Unit tests', goalId: goal.id, enabled: true, gate: null, run: { kind: 'command', command: 'npm test', timeoutMinutes: 30 } });
   await work.daily.createJob(id, { schema: 'job-create-request-v1', clientRequestId: 'deploy', name: 'Deploy check', goalId: null, enabled: false, gate: { jobId: suite.id }, run: { kind: 'command', command: 'true', timeoutMinutes: 5 } });
@@ -49,7 +49,7 @@ test('a second hub restores notes, settings, goals, jobs, dailies and the notebo
   await a.app.vault!.sync(); await work.pulse(); await a.app.vault!.sync();
   expect(a.app.vault!.status()).toMatchObject({ remote: URL, lastError: null, pending: false });
   const definition = VaultProjectSchema.parse(JSON.parse(git(bare, 'show', 'main:projects/fixture__repo/project.json')));
-  expect(definition).toMatchObject({ origin: ORIGIN, work: { instructions: 'Keep each change small.', maxRunningThreads: 5, requiredChecks: ['result'] }, goals: [{ name: 'Docs and tests', autonomy: 'auto' }] });
+  expect(definition).toMatchObject({ origin: ORIGIN, work: { instructions: 'Keep each change small.', maxRunningThreads: 5, landingChecks: [{ name: 'Result', paths: [], command: 'true' }] }, goals: [{ name: 'Docs and tests', autonomy: 'auto' }] });
   expect(definition.jobs.find(job => job.name === 'Deploy check')).toMatchObject({ gate: 'Unit tests', enabled: false });
   // Nothing device-, account- or path-specific travels.
   const text = JSON.stringify(definition);
@@ -63,7 +63,7 @@ test('a second hub restores notes, settings, goals, jobs, dailies and the notebo
   const restored = await b.app.restoreProjectFromVault(b.project.id);
   expect(restored.restored).toBe(true);
   const restoredSettings = await b.app.projectWork.admission.settings(b.project.id);
-  expect(restoredSettings).toMatchObject({ instructions: 'Keep each change small.', maxRunningThreads: 5, requiredChecks: ['result'] });
+  expect(restoredSettings).toMatchObject({ instructions: 'Keep each change small.', maxRunningThreads: 5, landingChecks: [{ name: 'Result', paths: [], command: 'true' }] });
   expect(restoredSettings.coordinator.accountId ?? null).toBeNull();
   expect((await project(b)).allowedDevices).toEqual([b.app.device.deviceId]);
   expect((await b.app.projectWork.goals.list(b.project.id)).map(row => row.name)).toEqual(['Docs and tests']);

@@ -30,12 +30,12 @@ async function setup(route = 'merge', twoProviders = true, clock?: () => number)
   const jev = transport(route), second = new FakeRuntime(); Object.defineProperty(second, 'id', { value: 'fake2' });
   const f = fixture = await projectFixture({ menu: twoProviders ? [author, verifier] : [author], runtimes: twoProviders ? { fake: new FakeRuntime(), fake2: second } : { fake: new FakeRuntime() }, jevKey: true, decisionFetch: jev.fetch, ...(clock ? { projectTimers: { now: clock } } : {}) });
   if (twoProviders) { f.app.hub.put('accounts', 'verify_account', AccountSchema, { schema: 'account-v1', id: 'verify_account', runtime: 'fake2', label: 'Verification account', kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'per-device' }, 0); await f.app.accounts.check('verify_account'); }
-  await settings(f, { autoMerge: false });
+  await settings(f, { autoLand: false });
   return { f, jev, second };
 }
 async function settings(f: ProjectFixture, over: object = {}) {
   const old = await f.app.projectHub.settings(f.project.id);
-  await f.app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...(old?.document ?? defaultProjectWorkSettings(f.project.id)), autoMerge: true, riskyAreas: 'Stored data.', ...over }), old?.revision ?? 0);
+  await f.app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...(old?.document ?? defaultProjectWorkSettings(f.project.id)), delivery: 'pull-request', autoLand: true, riskyAreas: 'Stored data.', ...over }), old?.revision ?? 0);
 }
 function commitStep(f: ProjectFixture, text: string) {
   f.fake.enqueueTurn(async turn => { writeFileSync(join(turn.input.cwd, 'greeting.txt'), text); git(turn.input.cwd, 'add', '-A'); git(turn.input.cwd, 'commit', '-m', 'Fix greeting'); await turn.bridge('jevellan_thread_report', { status: 'done', summary: `Added ${text.trim()}.` }); return { status: 'completed' }; }, forThread());
@@ -236,17 +236,15 @@ test('a malformed routing packet falls back to ask-owner instead of throwing', a
   await expect(decideMergeRoute(undefined, { ...packet, summary: 'x'.repeat(4001) }, 'jev-latest', new SecretRedactor(), new AbortController().signal)).resolves.toMatchObject({ route: 'ask-owner', source: 'unavailable' });
 });
 test.each(['merge', 'test-then-merge', 'ask-owner'])('shadow mode records %s without merging or verifying', async choice => {
-  const { f, jev, second } = await setup(choice), thread = await published(f); await settings(f, { autoMerge: false });
+  const { f, jev, second } = await setup(choice), thread = await published(f); await settings(f, { autoLand: false });
   f.github.setChecks(thread.pr!.number, 'passing'); await gate(f);
   expect((await routes(f, thread.id))[0]?.route).toBe(choice); expect(jev.state.calls).toHaveLength(1);
   expect(second.turnStarts).toHaveLength(0); expect(f.github.requests.some(row => row.method === 'PUT' && row.path.endsWith('/merge'))).toBe(false);
 });
-test('required checks must exist at the current head and no-checks has a five-minute grace', async () => {
+test('legacy pull requests no longer require a named workflow check', async () => {
   const { f, jev } = await setup(), thread = await published(f);
-  await settings(f, { requiredChecks: ['result'] }); f.github.setChecks(thread.pr!.number, 'passing'); await gate(f);
-  expect(jev.state.calls).toHaveLength(0); expect(f.thread(thread.id).pr?.state).toBe('open');
-  f.github.setChecks(thread.pr!.number, { runs: [{ status: 'completed', conclusion: 'success', name: 'result' }], statuses: [] }); await gate(f);
-  expect(f.thread(thread.id).pr?.state).toBe('merged');
+  await settings(f); f.github.setChecks(thread.pr!.number, 'passing'); await gate(f);
+  expect(jev.state.calls).toHaveLength(1); expect(f.thread(thread.id).pr?.state).toBe('merged');
 });
 test.each(['stopped', 'failed'] as const)('an author thread that is %s asks the owner even when Jev chooses merge', async state => {
   const { f } = await setup(), thread = await published(f); f.app.projectWork.store.update(thread.id, current => ({ ...current, state, endedAt: new Date().toISOString() }));
@@ -346,7 +344,7 @@ test('verification retries one moved head and asks the owner after a second head
 
 test('verification setup and the alternate provider receive fresh project environment', async () => {
   const { f, second } = await setup('test-then-merge');
-  await settings(f, { autoMerge: false, setupCommand: 'test "$TZ" = UTC && test -n "$PRIVATE_VALUE"', environment: { variables: [{ name: 'TZ', value: 'UTC' }], secrets: ['PRIVATE_VALUE'], copyFiles: [] } });
+  await settings(f, { autoLand: false, setupCommand: 'test "$TZ" = UTC && test -n "$PRIVATE_VALUE"', environment: { variables: [{ name: 'TZ', value: 'UTC' }], secrets: ['PRIVATE_VALUE'], copyFiles: [] } });
   await f.app.state.environment.put(f.project.id, 'PRIVATE_VALUE', 'verification environment fixture');
   const thread = await published(f);
   second.enqueueTurn(async turn => { expect(turn.input.launch.projectEnv).toEqual({ TZ: 'UTC', PRIVATE_VALUE: 'verification environment fixture' }); await turn.bridge('jevellan_verification_report', { result: 'passed', commands: ['test "$TZ" = UTC'], failures: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'verification');

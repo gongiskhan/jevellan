@@ -97,7 +97,7 @@ export class PullRequestVerification {
       run = await this.#save({ ...run, state: 'failed', note: 'Verification was interrupted by a restart.', endedAt: new Date(this.o.now()).toISOString() });
     } else {
       run = await this.#save({ ...run, state: 'running' });
-      await this.o.git.run(repo, ['fetch', '--refmap=', '--no-write-fetch-head', '--no-tags', 'origin', `+refs/pull/${thread.pr!.number}/head:${ref}`], { timeoutMs: 120_000, signal: active.controller.signal });
+      if (thread.delivery === 'land') { await this.o.git.run(repo, ['update-ref', ref, run.commit]); } else await this.o.git.run(repo, ['fetch', '--refmap=', '--no-write-fetch-head', '--no-tags', 'origin', `+refs/pull/${thread.pr!.number}/head:${ref}`], { timeoutMs: 120_000, signal: active.controller.signal });
       if (await this.o.git.resolve(repo, ref) !== run.commit) { run = await this.#save({ ...run, state: 'failed', headMoved: true, note: 'The pull request head changed before verification.', endedAt: new Date(this.o.now()).toISOString() }); await this.o.git.run(repo, ['update-ref', '-d', ref]); return run; }
       mkdirSync(dirname(path), { recursive: true });
       await this.o.git.run(repo, ['-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', 'worktree', 'add', '--detach', path, run.commit]);
@@ -111,8 +111,8 @@ export class PullRequestVerification {
         if (this.#closed) return null;
         const tools = new VerificationTools(async report => { run = await this.#save({ ...run, report }); }, this.o.redactor, null, this.o.memory?.(project));
         const launched = await this.o.launcher.launch({ owner: { kind: 'verification', projectId: project.id, id: run.id }, turn: 1, runtime: run.runtime, modelId: run.modelId, model: run.model, modelLabel: run.modelLabel,
-          effort: 'medium', permissions: 'write', cwd: path, safetyProfile: 'verification', systemAppend: VERIFICATION_APPEND,
-          prompt: () => `Verify pull request #${thread.pr!.number}: ${thread.title}\nCommit: ${run.commit}\n\n${thread.lastReport?.summary ?? thread.task}`, tools, timeoutMs: this.o.timeoutMs });
+          effort: 'medium', permissions: 'write', cwd: path, safetyProfile: 'verification', systemAppend: thread.delivery === 'land' ? VERIFICATION_APPEND.replaceAll('pull request', 'thread') : VERIFICATION_APPEND,
+          prompt: () => `Verify ${thread.delivery === 'land' ? 'thread' : `pull request #${thread.pr!.number}`}: ${thread.title}\nCommit: ${run.commit}\n\n${thread.lastReport?.summary ?? thread.task}`, tools, timeoutMs: this.o.timeoutMs });
         if (launched.kind === 'unavailable') { await tools.close(); run = await this.#save({ ...run, state: 'failed', note: launched.reason, endedAt: new Date(this.o.now()).toISOString() }); }
         else {
           if (this.#closed) { await launched.run.terminate(); await launched.release(); return null; }

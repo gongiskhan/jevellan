@@ -70,7 +70,7 @@ export class ProjectDispatcher {
         if (!task.dispatchText) {
           const text = await this.o.text(task); task = await this.o.tasks.save({ ...task, dispatchBrief: text.brief, dispatchText: text.assembled, ...(text.taskContext ? { dispatchContext: text.taskContext } : {}) });
         }
-        const started = await this.o.threads.start({ projectId, title: task.title, task: task.dispatchBrief ?? task.dispatchText!, assembledTask: task.dispatchText!, taskContext: task.dispatchContext, fixed: task.fixed,
+        const started = await this.o.threads.start({ projectId, title: task.title, task: task.dispatchBrief ?? task.dispatchText!, assembledTask: task.dispatchText!, ...(task.fromBranch ? { fromBranch: task.fromBranch } : {}), taskContext: task.dispatchContext, fixed: task.fixed,
           ...(task.placementNote ? { note: task.placementNote } : {}), createdBy: task.source === 'owner' ? 'owner' : 'coordinator', coordinatorDeviceId: this.o.deviceId, clientRequestId: derivedId('treq', 'task', task.id) });
         task = await this.o.tasks.save({ ...task, threadId: started.threadId, state: started.state === 'queued' ? 'queued' : 'active', dispatchedAt: this.o.tasks.at() });
         tasks = tasks.map(row => row.id === task.id ? task : row);

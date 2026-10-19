@@ -7,7 +7,7 @@ import {
 } from '@jevellan/core';
 import type { PlacementGates } from '@jevellan/decisions';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
-import { BRANCH_PUSHED_NO_TOKEN, LEAVE_GIT_SETTING, MAIN_NOT_AVAILABLE, NOT_GITHUB, PROJECT_NOT_FOUND, THREAD_NOT_FOUND, attachCommand, attachedRefusal, checkoutStillHeld } from './copy.js';
+import { BRANCH_PUSHED_NO_TOKEN, NOT_GITHUB, PROJECT_NOT_FOUND, THREAD_NOT_FOUND, attachCommand, attachedRefusal, checkoutStillHeld } from './copy.js';
 import { coordinatorMovable, coordinatorPlan, type CoordinatorService } from './coordinator.js';
 import type { ProjectLedgers } from './ledger.js';
 import { PHASE_GATES, type DeviceRoster, type Placement } from './placement.js';
@@ -53,10 +53,7 @@ export function pullRequestEntries(threads: readonly ThreadIndex[]): PullRequest
  */
 export function effectiveSettings(settings: ProjectWorkSettings, project: Pick<Project, 'branchPolicy'> & Partial<Pick<Project, 'memory'>>, gates: Pick<PlacementGates, 'mainIsolation'> = PHASE_GATES): { settings: ProjectWorkSettings; notice?: string } {
   if (project.memory && project.memory.mode !== settings.memory.mode) settings = { ...settings, memory: { ...settings.memory, mode: project.memory.mode } };
-  if (settings.defaultIsolation !== 'main') return { settings };
-  const worktree: ProjectWorkSettings = { ...settings, defaultIsolation: 'worktree' };
-  if (project.branchPolicy !== 'main' && gates.mainIsolation) return { settings, notice: LEAVE_GIT_SETTING };
-  return gates.mainIsolation ? { settings } : { settings: worktree, notice: MAIN_NOT_AVAILABLE };
+  void gates; return { settings };
 }
 
 export type ProjectViewsOptions = {
