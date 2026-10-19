@@ -295,3 +295,46 @@ The browser runs rewrote 337 tracked canonical screenshots and added new capture
 - `fd115cc7`: an addition cannot move a running thread, because a thread's device always had a path. Changes and removals are still refused.
 
 No serious problem was found, so there is no second pass.
+
+**Release revision:** `f212c3d3`, the latest main containing `c82c371e` and the correction `fd115cc7`. Everything after `fd115cc7` is documentation and evidence.
+
+**Archives (live build, verified).** Each was built from a fresh clone at `f212c3d3` (Linux on dev-madrid, Darwin on the Pro), extracted in an empty folder and checked:
+- all 3,544 tracked files the package ships are byte-identical to the commit;
+- the extracted `jevellan --version` reports 0.5.0;
+- the native terminal addon ran.
+
+| Asset | Bytes | SHA-256 |
+| --- | ---: | --- |
+| jevellan-0.5.0-linux-x64.tgz | 572,116,654 | 97d28d834e185d9ad1031b18d9eb5a1e74773d4d8373e6614469e12aff206fa1 |
+| jevellan-0.5.0-darwin-arm64.tgz | 440,888,012 | 3ee448bd1dfc6ac6e34745a869996acca11bce011f6bc9a3fd87485b3fb06287 |
+
+**Order adjustment, agreed with the parent agent.** ekoa-code's nightly window opens at 00:00 UTC on Madrid. So Madrid's snapshot and update ran right after the Linux archive was verified, before the Darwin build and the publish. Heavy jobs stayed one at a time.
+
+**Pre-update rollback state (live, cold).**
+- Madrid (23:43:24 to 23:44:30, service stopped through its lifecycle gate): 7.8 GB copy of `~/.jevellan-hub` with its SHA-256 manifest, plus the unit file and command, at `~/.jevellan-build/one-mesh-050/second/pre-update-hub/`.
+  - Excluded: `worktrees/` (23 GB), `cache/` and `tmp/`. They stay in place, and the update does not migrate them.
+  - The copy covers the state, configuration, vault checkout and homes as they were on the working one-mesh 0.4.1.
+- The 0.4.1 Pro member cannot read the 0.5.0 documents. It was therefore fenced before Madrid's update: its lifecycle gate was held with no admitted work at 23:44:50, and its launchd job was booted out and not restarted.
+  - Process check: the job's PID 42994 matched the member installed by this run at 20:20:55, seen with that PID at 20:21. The fresh start-time re-check before the stop failed on a parsing error, and that gap is recorded.
+  - The stopped home was then cloned cold (APFS, 2.0 GB, 68,536 files hashed), with its plist and command, at `/Users/ggomes/.jevellan-build/one-mesh-050/pre-update-member/` on the Pro.
+- Rollback: `jevellan rollback` restores the 0.4.1 application only, because the 0.5.0 data (settings v4, accounts v2) cannot be read by 0.4.1. A full rollback stops the service and restores these copies over the home, leaving the worktrees in place.
+
+**Publish (live).** Tag `v0.5.0` at `f212c3d3`, pushed after the pre-push secret scan. The [GitHub release v0.5.0](https://github.com/gongiskhan/jevellan/releases/tag/v0.5.0) carries both assets at the sizes above.
+
+**Updates (live).**
+- Madrid: `jevellan update --from` the Linux archive, 23:45 (service up at 23:45:43, 0 restarts).
+  - It ran with the state point's original service PATH, so the rebuilt service PATH no longer lists the install-time shim directory.
+  - Previous version 0.4.1 is kept.
+- Pro: `jevellan update --from` the Darwin archive, 00:01:03 to 00:01:24. Previous version 0.4.1 is kept.
+
+**Confirmed (live):**
+- doctor ten of ten OK, exit 0, on both machines, after fresh account checks;
+- Settings → Devices lists both on 0.5.0, Online;
+- both projects' settings migrated from v3 to v4. `threadRules` became `instructions` with identical text, and only new defaults were added; ekoa-code's other values, autoMerge off included, are unchanged;
+- the vault synced at 23:45:51 with no error.
+
+Both machines reported 0.5.0 at 00:01:40 UTC, which starts the live clock.
+
+**ekoa-code on the Pro (live, Decision 924).** At 00:03 the normal project write added the Pro's path (`/Users/ggomes/jevellan-projects/ekoa-code`) and allowed the Pro, while the five owner-held threads were still open. Result: 200; the existing path, Git policy and every other field are unchanged. ekoa-code's nightly window had started its own work at 00:00 (three threads running at 00:03); none of it was touched.
+
+Phase 2 finished at about 00:05 UTC, within its clock.
