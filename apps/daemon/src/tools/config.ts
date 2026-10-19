@@ -68,6 +68,26 @@ const SETTERS: Record<string, Setter> = {
     const old = tools.installationSettings().heartbeat.url; tools.updateInstallationSettings(settings => ({ ...settings, heartbeat: { ...settings.heartbeat, url: url && url !== 'none' ? url : null } }));
     return { old: old ? 'set' : 'none', new: url && url !== 'none' ? 'set' : 'none', consequence: url && url !== 'none' ? `The state point calls it every ${tools.installationSettings().heartbeat.intervalMinutes} minutes.` : 'No heartbeat is sent.' };
   },
+  'remote.enabled': async ({ tools }, _key, value) => {
+    const on = value === true || value === 'true'; const old = tools.installationSettings().remote.enabled;
+    tools.updateInstallationSettings(settings => ({ ...settings, remote: { ...settings.remote, enabled: on } }));
+    return { old: String(old), new: String(on), consequence: on ? 'The remote endpoint answers through its tunnel.' : 'Every remote call is refused from now on.' };
+  },
+  'remote.writeEnabled': async ({ tools }, _key, value) => {
+    const on = value === true || value === 'true'; const old = tools.installationSettings().remote.writeEnabled;
+    tools.updateInstallationSettings(settings => ({ ...settings, remote: { ...settings.remote, writeEnabled: on } }));
+    return { old: String(old), new: String(on), consequence: on ? 'Remote callers can change things; deploys and rollbacks stay refused remotely.' : 'Remote callers can read and answer waiting items only.' };
+  },
+  'remote.hostname': async ({ tools }, _key, value) => {
+    const hostname = String(value).toLowerCase(); if (!/^[a-z0-9.-]{3,253}$/u.test(hostname) || !hostname.includes('.')) throw new OwnerRefusal('remote.hostname must be a host name like mcp.example.com.', 'invalid_value');
+    const old = tools.installationSettings().remote.hostname; tools.updateInstallationSettings(settings => ({ ...settings, remote: { ...settings.remote, hostname } }));
+    return { old: old ?? 'none', new: hostname, consequence: 'Run jevellan remote setup for the tunnel configuration.' };
+  },
+  'remote.allowedIdentity': async ({ tools }, _key, value) => {
+    const identity = String(value); if (!/^[A-Za-z0-9-]{1,39}$/u.test(identity)) throw new OwnerRefusal('remote.allowedIdentity must be a GitHub login.', 'invalid_value');
+    const old = tools.installationSettings().remote.allowedIdentity; tools.updateInstallationSettings(settings => ({ ...settings, remote: { ...settings.remote, allowedIdentity: identity } }));
+    return { old: old ?? 'none', new: identity };
+  },
   'deploy.paused': async ({ tools, project }, _key, value) => {
     const paused = value === true || value === 'true' || value === 'yes'; if (!paused && !(value === false || value === 'false' || value === 'no')) throw new OwnerRefusal('deploy.paused must be true or false.', 'invalid_value');
     const old = tools.projectSettings(project.id).deploy.paused; tools.updateProjectSettings(project.id, settings => ({ ...settings, deploy: { ...settings.deploy, paused } }));
@@ -98,7 +118,7 @@ export const config: OwnerHandler = async (context) => {
       return { text: capLines(Object.entries(all).filter(([name]) => !wanted || name === wanted).map(([name, line]) => `${name}: ${line}`)), data: all };
     }
     case 'set': {
-      const section = String(args.section); const key = String(args.key); const setter = SETTERS[`${section}.${key}`] ?? (section === 'accounts' ? accountSetter : undefined);
+      const section = String(args.section); const key = String(args.key); const setter = SETTERS[`${section}.${key === 'write_enabled' ? 'writeEnabled' : key}`] ?? (section === 'accounts' ? accountSetter : undefined);
       if (!setter) {
         const known = Object.keys(await sections(context));
         if (!known.includes(section)) throw new OwnerRefusal(`section must be one of ${known.join(', ')}.`, 'invalid_section');

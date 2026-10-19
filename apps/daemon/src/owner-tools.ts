@@ -148,6 +148,21 @@ export class OwnerTools {
     try { return (await this.app.projectHub.recentOverrides(projectId, 200)).filter(row => row.at >= since).length; } catch { return 0; }
   }
 
+  /** A call refused before it ran (remote write switch, deploy refusal), logged like any other. */
+  logRefusal(caller: string, tool: string, action: string, access: 'read' | 'write', args: Record<string, unknown>, errorCode: string): void {
+    this.#log({ schema: 'caller-log-v1', at: this.now().toISOString(), caller, tool: OWNER_TOOLS.some(entry => entry.name === tool) ? tool as CallerLogEntry['tool'] : 'status', action: action.slice(0, 60), access,
+      argsDigest: createHash('sha256').update(JSON.stringify(args)).digest('hex'), ok: false, errorCode });
+  }
+  /** Whether `jobs run` names a project's deploy job (never run remotely). */
+  async isDeployJob(args: Record<string, unknown>): Promise<boolean> {
+    if (typeof args.job !== 'string') return false;
+    for (const project of await this.projects()) {
+      const settings = (await this.app.projectWork.view(project.id)).settings.deploy; const jobs = await this.app.projectWork.daily.jobs(project.id);
+      const job = jobs.find(row => row.id === args.job || row.name.toLowerCase() === String(args.job).toLowerCase());
+      if (job && (job.id === settings.jobId || job.id === settings.desktopJobId)) return true;
+    }
+    return /deploy|rollback/iu.test(args.job);
+  }
   callerLog(): CallerLogEntry[] {
     if (!existsSync(this.logPath)) return [];
     return readFileSync(this.logPath, 'utf8').split('\n').filter(Boolean).flatMap(line => { const parsed = CallerLogEntrySchema.safeParse(JSON.parse(line)); return parsed.success ? [parsed.data] : []; });

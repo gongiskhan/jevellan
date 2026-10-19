@@ -93,13 +93,13 @@ export const OwnerProjectSettingsSchema = z.strictObject({ schema: z.literal('ow
   night: z.strictObject({ catchUpHours: z.number().int().min(0).max(12) }) });
 export type OwnerProjectSettings = z.infer<typeof OwnerProjectSettingsSchema>;
 export const OwnerInstallationSettingsSchema = z.strictObject({ schema: z.literal('owner-installation-settings-v1'),
-  remote: z.strictObject({ enabled: z.boolean(), writeEnabled: z.boolean(), hostname: z.string().max(253).nullable(), identityProvider: z.enum(['github', 'fake']), allowedIdentity: z.string().max(200).nullable() }),
+  remote: z.strictObject({ enabled: z.boolean(), writeEnabled: z.boolean(), hostname: z.string().max(253).nullable(), identityProvider: z.literal('github'), identityBaseUrl: z.url().default('https://github.com'), allowedIdentity: z.string().max(200).nullable() }),
   heartbeat: z.strictObject({ url: z.url().nullable(), intervalMinutes: z.number().int().min(1).max(60) }) });
 export type OwnerInstallationSettings = z.infer<typeof OwnerInstallationSettingsSchema>;
 export const defaultOwnerProjectSettings = (projectId: string): OwnerProjectSettings => ({ schema: 'owner-project-settings-v1', projectId,
   push: { kinds: {}, batchSeconds: 60, transport: 'channel' }, bridge: { account: 'main', wanted: false }, deploy: { paused: false, debounceMinutes: 10 }, night: { catchUpHours: 4 } });
 export const defaultOwnerInstallationSettings = (): OwnerInstallationSettings => ({ schema: 'owner-installation-settings-v1',
-  remote: { enabled: false, writeEnabled: false, hostname: null, identityProvider: 'github', allowedIdentity: null }, heartbeat: { url: null, intervalMinutes: 5 } });
+  remote: { enabled: false, writeEnabled: false, hostname: null, identityProvider: 'github', identityBaseUrl: 'https://github.com', allowedIdentity: null }, heartbeat: { url: null, intervalMinutes: 5 } });
 
 // state point hub namespace owner-pushes: one push per event for a project's bridge, acked by the bridge's forwarder
 export const OwnerPushSchema = z.strictObject({ schema: z.literal('owner-push-v1'), id: IdSchema, projectId: IdSchema, kind: PushKindSchema, text: z.string().min(1).max(4000), urgent: z.boolean(),
@@ -130,3 +130,5 @@ export type JevProposal = z.infer<typeof JevProposalSchema>;
 export const JevLessonSchema = z.strictObject({ schema: z.literal('jev-lesson-v1'), key: IdSchema, id: z.string().regex(/^L[1-9][0-9]*$/u), scope: z.enum(['global', 'project']), projectId: IdSchema.optional(),
   about: z.enum(['landing', 'placement', 'other']), text: z.string().min(1).max(1000), source: z.string().regex(/^(?:override:D[1-9][0-9]*|owner|migrated)$/u), enabled: z.boolean(), timesApplied: z.number().int().nonnegative(), createdAt: TimestampSchema });
 export type JevLesson = z.infer<typeof JevLessonSchema>;
+export const OwnerRemoteRequestSchema = z.strictObject({ schema: z.literal('owner-remote-request-v1'), operation: z.enum(['setup', 'revoke']), port: z.number().int().min(1).max(65535),
+  clientId: z.string().min(1).max(200).optional(), clientSecret: z.string().min(1).max(400).optional() });

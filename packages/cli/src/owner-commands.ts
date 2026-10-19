@@ -217,3 +217,16 @@ export async function secretCommand(args: string[], homes = new Homes()): Promis
   if (result.ok) { console.log(result.text); return 0; }
   console.error(result.error.text); return 1;
 }
+
+/** `jevellan remote setup [--client-id <id>] | revoke` (bridge specification, "Remote MCP"). */
+export async function remoteCommand(args: string[], homes = new Homes()): Promise<number> {
+  if (!['setup', 'revoke'].includes(args[0] ?? '')) { console.error('Usage: jevellan remote setup [--client-id <id>], or jevellan remote revoke'); return 1; }
+  let control; try { control = readDocument(doctorControlPath(homes), DoctorControlSchema); } catch { console.error('Jevellan is not running on this device.'); return 3; }
+  const index = args.indexOf('--client-id'); const clientId = index >= 0 ? args[index + 1] : undefined;
+  const clientSecret = clientId ? await hidden('OAuth app client secret: ') : undefined;
+  const response = await fetch(`${control.origin}/api/local/remote`, { method: 'POST', headers: { Authorization: `Bearer ${control.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ schema: 'owner-remote-request-v1', operation: args[0], port: Number(new URL(control.origin).port), ...(clientId && clientSecret ? { clientId, clientSecret } : {}) }) });
+  const body = await response.json().catch(() => null) as { text?: string; message?: string } | null;
+  if (response.ok && body?.text) { console.log(body.text); return 0; }
+  console.error(body?.message ?? `Remote ${args[0]} failed (HTTP ${response.status}).`); return 1;
+}

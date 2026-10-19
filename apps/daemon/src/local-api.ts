@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { EmptySchema, ErrorDocumentSchema, HubUnavailable, IdSchema, ThreadAttachRequestSchema, ThreadDetachRequestSchema } from '@jevellan/core';
 import { JournalRebuildInputSchema, JournalRebuildReceiptSchema } from '@jevellan/core';
 import { ProjectSendRequestSchema, ProjectSendResultSchema } from '@jevellan/core';
-import { OwnerBridgeRequestSchema, OwnerPushAckSchema, OwnerToolRequestSchema, StatusLineRequestSchema, StatusLineViewSchema } from '@jevellan/core';
+import { OwnerBridgeRequestSchema, OwnerPushAckSchema, OwnerRemoteRequestSchema, OwnerToolRequestSchema, StatusLineRequestSchema, StatusLineViewSchema } from '@jevellan/core';
 import { OwnerRefusal } from './owner-tools.js';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { Application } from './application.js';
@@ -87,6 +87,15 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
         const text = input.operation === 'stop' ? app.ownerBridges.stopBridge(project) : await app.ownerBridges.startBridge(project, { restart: input.operation === 'restart', ...(input.claudeConfigDir ? { claudeConfigDir: input.claudeConfigDir } : {}) });
         json(response, { schema: 'owner-bridge-result-v1', ok: true, text });
       } catch (error) { if (error instanceof OwnerRefusal) { json(response, { schema: 'owner-bridge-result-v1', ok: false, text: error.message }); return; } throw error; }
+      return;
+    }
+    if (path === '/api/local/remote') {
+      if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
+      const input = OwnerRemoteRequestSchema.parse(await requestBody(request)); const remote = app.ownerRemote;
+      if (!remote) throw failure('Remote access runs on the state point.', 409);
+      if (input.operation === 'revoke') { json(response, { schema: 'owner-remote-result-v1', text: `Revoked ${remote.revoke()} remote tokens and sign-ins. Remote clients must sign in again.` }); return; }
+      try { json(response, { schema: 'owner-remote-result-v1', text: remote.setup(input.port, input.clientId && input.clientSecret ? { clientId: input.clientId, clientSecret: input.clientSecret } : undefined) }); }
+      catch (error) { throw failure(error instanceof Error ? error.message : 'Setup failed.', 400); }
       return;
     }
     const tool = path.match(/^\/api\/local\/tools\/([a-z_]{1,40})$/u);
