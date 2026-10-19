@@ -1,11 +1,10 @@
+import { EkoaOAuthStatusSchema, EkoaOAuthStartSchema, EkoaOAuthCallbackSchema } from './ekoa-oauth-schemas.js';
 import { z } from 'zod';
 import { CredentialInputSchema } from './client-schemas.js';
 import { IdSchema, TimestampSchema } from './schemas.js';
 import { UiSessionTokenSchema } from './mesh-schemas.js';
-export const EkoaUrlSchema = z.url().max(2000).refine(raw => {
-  let url: URL; try { url = new URL(raw); } catch { return false; } return !url.username && !url.password && !url.search && !url.hash
-    && (url.protocol === 'https:' || url.protocol === 'http:' && ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname));
-}, 'Use an HTTPS MCP URL without credentials, query or fragment.');
+export { EkoaUrlSchema } from './ekoa-url-schema.js';
+import { EkoaUrlSchema } from './ekoa-url-schema.js';
 export const EkoaSettingsSchema = z.strictObject({ schema: z.literal('ekoa-settings-v1'), revision: z.number().int().nonnegative(),
   url: z.union([EkoaUrlSchema, z.literal('')]), enabled: z.boolean() }).refine(value => !value.enabled || !!value.url, 'Add the MCP URL before enabling the mirror.');
 export const EkoaSettingsInputSchema = z.strictObject({ schema: z.literal('ekoa-settings-input-v1'), clientRequestId: IdSchema, revision: z.number().int().nonnegative(),
@@ -20,8 +19,10 @@ export const EkoaMirrorSchema = z.strictObject({ schema: z.literal('ekoa-mirror-
   attempts: z.number().int().nonnegative(), retryAt: TimestampSchema.nullable(), error: z.string().max(1200).optional(), updatedAt: TimestampSchema });
 export type EkoaMirror = z.infer<typeof EkoaMirrorSchema>;
 export const EkoaStateSchema = z.strictObject({ schema: z.literal('ekoa-state-v1'), settings: EkoaSettingsSchema, tokenSaved: z.boolean(),
-  connection: EkoaConnectionSchema.nullable(), mirrors: z.array(EkoaMirrorSchema).max(2000) });
+  connection: EkoaConnectionSchema.nullable(), oauth: EkoaOAuthStatusSchema.optional(), mirrors: z.array(EkoaMirrorSchema).max(2000) });
 export const EkoaRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ schema: z.literal('ekoa-request-v1'), operation: z.literal('oauth-start'), ownerSession: UiSessionTokenSchema, input: EkoaOAuthStartSchema }),
+  z.strictObject({ schema: z.literal('ekoa-request-v1'), operation: z.literal('oauth-complete'), ownerSession: UiSessionTokenSchema, input: EkoaOAuthCallbackSchema }),
   z.strictObject({ schema: z.literal('ekoa-request-v1'), operation: z.enum(['state', 'test']), ownerSession: UiSessionTokenSchema }),
   z.strictObject({ schema: z.literal('ekoa-request-v1'), operation: z.literal('save'), ownerSession: UiSessionTokenSchema, input: EkoaSettingsInputSchema }),
 ]);

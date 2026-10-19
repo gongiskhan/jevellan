@@ -177,7 +177,7 @@ export async function applyEkoaCodeSetup(work: ProjectWork, projectId: string, r
     const planned = ProjectWorkSettingsSchema.parse({ ...current,
     delivery: 'land', autoLand: true, maxRunningThreads: 6, riskyAreas: current.riskyAreas || EKOA_RISKY_AREAS, landingChecks: EKOA_LANDING_CHECKS, smokeCheck: EKOA_FAST_CHECKS, mergeCommitPaths: EKOA_MERGE_COMMIT_PATHS,
     setupCommand: current.setupCommand ?? 'npm ci', memory: { mode: 'hub', capture: true, dreamMode: 'apply' }, deploy: { mode: 'approve', jobId: deploy.id, desktopJobId: desktop.id, suiteJobId: jobs.find(row => row.name === 'Full suite')!.id },
-    nightlyWindow: { enabled: true, time: '01:00', timezone: 'Europe/Lisbon' } });
+    notifications: { ...current.notifications, quietHours: { enabled: true, start: '23:00', end: '08:00', timezone: 'Europe/Lisbon' } }, nightlyWindow: { enabled: true, time: '01:00', timezone: 'Europe/Lisbon' } });
     receipt = { ...receipt, presetVersion: 3, settingsPrepared: true, completed: false, settings: planned };
     writeDocument(path, EkoaCodeSetupReceiptSchema, receipt);
   }

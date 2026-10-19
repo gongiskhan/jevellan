@@ -1,4 +1,5 @@
 import { healthCommand } from './health-command.js';
+import { projectCommand } from './project-command.js';
 import { DEFAULT_PORT, IdSchema, VERSION } from '@jevellan/core';
 import { serveMcpBridge } from './mcp-bridge.js';
 import { serveMemoryHook } from './memory-hook.js';
@@ -34,6 +35,7 @@ async function offerHttps() {
 export async function main(args: string[], options: { installer?: () => Installer; confirmPurge?: (path: string) => Promise<string>; doctor?: typeof doctor; offerHttps?: () => Promise<boolean>; attach?: typeof attachThread; detach?: typeof detachThread; mcpServer?: typeof serveAgentMcp } = {}) {
   if (args[0] === '--version') { console.log(VERSION); return; }
   if (args[0] === 'health') { process.exitCode = await healthCommand(args.slice(1)); return; }
+  if (args[0] === 'project') { process.exitCode = await projectCommand(args.slice(1)); return; }
   if (args[0] === 'hub') { await hubCommand(args.slice(1)); return; }
   if (args[0] === 'journal') { await journalCommand(args.slice(1)); return; }
   if (args[0] === 'doctor') {
@@ -91,6 +93,6 @@ export async function main(args: string[], options: { installer?: () => Installe
     console.log(`Jevellan is running at ${daemon.addresses.join(' and ')}`);
     return;
   }
-  console.log('Jevellan — Autonomous development, coordinated.\nCommands: install [--from path] [--join hubUrl code] [--https | --no-https], join hubUrl code [--from path] [--https | --no-https], update [--from path], rollback, uninstall [--purge], doctor, start [--port number] [--force], hub export --out file --to destination-name, hub import file [--paths mapping-file], mcp-server, thread attach threadId, thread detach threadId, health run <project> [<check name>] [--file <path>] [--json], journal rebuild project, --version');
+  console.log('Jevellan — Autonomous development, coordinated.\nCommands: install [--from path] [--join hubUrl code] [--https | --no-https], join hubUrl code [--from path] [--https | --no-https], update [--from path], rollback, uninstall [--purge], doctor, start [--port number] [--force], hub export --out file --to destination-name, hub import file [--paths mapping-file], mcp-server, thread attach threadId, thread detach threadId, health run <project> [<check name>] [--file <path>] [--json], journal rebuild project, project send <project> [--from label] [--wait [seconds]] [--json] [--id clientMessageId] [--] text, --version');
   if (args.length) process.exitCode = 1;
 }

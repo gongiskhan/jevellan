@@ -8,6 +8,29 @@ import { CoordinatorEventSchema, CoordinatorHandoffSchema, defaultProjectWorkSet
 import type { ProjectLedgers } from './ledger.js';
 import { journalRecordKey, renderProjectJournal, threadJournalFile, validateJournalDocument } from './journal-render.js';
 import { taskOrder } from './tasks.js';
+import { CoordinatorReplySchema, CoordinatorTurnStartSchema, CoordinatorTurnEndSchema, CoordinatorTextSchema } from '@jevellan/core';
+
+/** Replies belong to the completed turn that consumed this message, on the same source ledger. */
+export function coordinatorReplyFromRecords(projectId: string, clientMessageId: string, records: readonly ProjectJournalRecord[]) {
+  const groups = new Map<string, ProjectJournalRecord[]>();
+  for (const row of records) if (row.ledgerId === 'coordinator') {
+    const group = groups.get(row.deviceId) ?? []; group.push(row); groups.set(row.deviceId, group);
+  }
+  const replies = [];
+  for (const group of groups.values()) {
+    group.sort((a, b) => a.event.id - b.event.id);
+    const ids = new Set(group.flatMap(row => { if (row.event.type !== 'coordinator-event') return []; const parsed = CoordinatorEventSchema.safeParse(row.event.data); return parsed.success && parsed.data.kind === 'user-message' && parsed.data.clientMessageId === clientMessageId ? [parsed.data.id] : []; }));
+    for (const row of group) {
+      if (row.event.type !== 'coordinator-turn-start') continue;
+      const start = CoordinatorTurnStartSchema.parse(row.event.data); if (!start.eventIds.some(id => ids.has(id))) continue;
+      const end = group.find(next => next.event.id > row.event.id && next.event.type === 'coordinator-turn-end' && next.event.turn === start.turn && CoordinatorTurnEndSchema.parse(next.event.data).status === 'completed');
+      if (!end) continue;
+      const reply = group.filter(next => next.event.id > row.event.id && next.event.id < end.event.id && next.event.turn === start.turn && next.event.type === 'coordinator-text').map(next => CoordinatorTextSchema.parse(next.event.data).text).join('');
+      replies.push(CoordinatorReplySchema.parse({ schema: 'coordinator-reply-v1', projectId, turn: start.turn, reply, at: end.event.t }));
+    }
+  }
+  return replies.sort((a, b) => a.at.localeCompare(b.at))[0] ?? null;
+}
 
 const PublishStateSchema = z.strictObject({ schema: z.literal('project-journal-publish-state-v1'), cursors: z.record(z.string(), z.number().int().nonnegative()) });
 const digest = (bytes: string | Buffer): string => createHash('sha256').update(bytes).digest('hex');
@@ -218,6 +241,7 @@ export class ProjectJournals {
       return { schema: 'project-journal-result-v1', operation: 'handoff-write', handoff };
     }
     await this.sync(input.projectId, input.operation === 'rebuild');
+    if (input.operation === 'coordinator-reply') return { schema: 'project-journal-result-v1', operation: 'coordinator-reply', reply: coordinatorReplyFromRecords(input.projectId, input.clientMessageId, this.#records(input.projectId)) };
     if (input.operation === 'state' || input.operation === 'rebuild') return ProjectJournalResultSchema.parse({ schema: 'project-journal-result-v1', operation: input.operation, state: this.state(input.projectId) });
     const state = this.state(input.projectId); if (state.files[input.path] !== input.sha256) throw refuse('The journal changed; read its manifest again.');
     const bytes = readFileSync(this.#file(input.projectId, input.path)); if (digest(bytes) !== input.sha256) throw refuse('The journal file does not match its manifest.');

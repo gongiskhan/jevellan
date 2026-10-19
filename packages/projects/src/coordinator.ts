@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  CoordinatorEventSchema, CoordinatorStateSchema, HubUnavailable, ProjectCoordinatorStatusSchema, boundedRedaction, coordinatorMovable, isTerminal, mapEffort, openQuestions, resolveProjectPath, type Account,
+  CoordinatorEventSchema, CoordinatorStateSchema, HubUnavailable, ProjectCoordinatorStatusSchema, boundedRedaction, stableJson, coordinatorMovable, isTerminal, mapEffort, openQuestions, resolveProjectPath, type Account,
   type AccountStatus, type Configuration, type CoordinatorEvent, type CoordinatorState, type Effort, type ModelOption, type Project, type ProjectDecision, type ProjectHub,
   type CoordinatorHandoff, type ProjectLedgerEvent, type ProjectRequestOutcome, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex,
 } from '@jevellan/core';
@@ -248,7 +248,7 @@ export class Coordinator {
       if (event.type !== 'coordinator-event') continue;
       const data = this.#ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-event' });
       if (forwarded.has(data.id)) continue;
-      seen.events.add(data.id); if (data.kind === 'user-message') seen.messages.set(data.clientMessageId, data.text);
+      seen.events.add(data.id); if (data.kind === 'user-message') seen.messages.set(data.clientMessageId, stableJson({ text: data.text, via: data.via ?? null }));
     }
     return this.#seen = seen;
   }
@@ -260,12 +260,13 @@ export class Coordinator {
     // Redaction never lengthens a text that was checked against its maximum, so an event that passed its schema still does (P8 review S-1).
     const event = CoordinatorEventSchema.parse(boundedRedaction(this.c.redactor, raw));
     const history = this.#history(); const queue = this.c.store.get(this.projectId).queue;
-    if (history.events.has(event.id) || queue.some((queued) => queued.id === event.id)) return { repeated: true };
     if (event.kind === 'user-message') {
       const queued = queue.find((entry): entry is typeof event => entry.kind === 'user-message' && entry.clientMessageId === event.clientMessageId);
-      const prior = history.messages.get(event.clientMessageId) ?? queued?.text;
-      if (prior !== undefined) { if (prior === event.text) return { repeated: true }; throw refuse(MESSAGE_ID_REUSED, 409); }
+      const identity = stableJson({ text: event.text, via: event.via ?? null });
+      const prior = history.messages.get(event.clientMessageId) ?? (queued ? stableJson({ text: queued.text, via: queued.via ?? null }) : undefined);
+      if (prior !== undefined) { if (prior === identity) return { repeated: true }; throw refuse(MESSAGE_ID_REUSED, 409); }
     }
+    if (history.events.has(event.id) || queue.some((queued) => queued.id === event.id)) return { repeated: true };
     this.c.store.update(this.projectId, (state) => ({ ...state, queue: [...state.queue, event] }));
     if (this.c.store.local(this.projectId).forwardedEventIds?.includes(event.id)) {
       this.c.store.updateLocal(this.projectId, (local) => ({ ...local, forwardedEventIds: (local.forwardedEventIds ?? []).filter((id) => id !== event.id) }));
@@ -280,7 +281,7 @@ export class Coordinator {
   record(event: CoordinatorEvent): void {
     this.#ledger.append({ type: 'coordinator-event', data: event });
     const history = this.#history(); history.events.add(event.id);
-    if (event.kind === 'user-message') history.messages.set(event.clientMessageId, event.text);
+    if (event.kind === 'user-message') history.messages.set(event.clientMessageId, stableJson({ text: event.text, via: event.via ?? null }));
   }
   /** Startup (2.6.13 step 6): queued events whose ledger record a crash lost get one. Returns how many. */
   reconcile(): number {

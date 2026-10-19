@@ -51,18 +51,18 @@ export class DecisionItems {
     if (!decision || decision.projectId !== projectId) throw refuse(QUESTION_NOT_FOUND, 404);
     return decision;
   }
-  async #create(projectId: string, input: { question: string; options: Option[]; threadId?: string | undefined; ownerCommands?: OwnerCommand[] | undefined; accountId?: string | undefined; automaticFix?: ProjectDecision['automaticFix'] }, from: ProjectDecision['from'],
+  async #create(projectId: string, input: { urgent?: boolean | undefined; question: string; options: Option[]; threadId?: string | undefined; ownerCommands?: OwnerCommand[] | undefined; accountId?: string | undefined; automaticFix?: ProjectDecision['automaticFix'] }, from: ProjectDecision['from'],
     fixed?: { id: string; at: string }): Promise<string> {
     const id = fixed?.id ?? newId('pdec', this.#o.now());
     await this.#o.hub.createDecision(ProjectDecisionSchema.parse({ schema: 'project-decision-v1', revision: 0, id, projectId, from, question: input.question,
-      options: input.options, ...(input.automaticFix ? { automaticFix: input.automaticFix } : {}), ...(input.ownerCommands ? { ownerCommands: input.ownerCommands } : {}), ...(input.accountId ? { accountId: input.accountId } : {}), createdAt: fixed?.at ?? this.#at(), ...(input.threadId === undefined ? {} : { threadId: input.threadId }) }));
+      options: input.options, ...(input.urgent ? { urgent: true } : {}), ...(input.automaticFix ? { automaticFix: input.automaticFix } : {}), ...(input.ownerCommands ? { ownerCommands: input.ownerCommands } : {}), ...(input.accountId ? { accountId: input.accountId } : {}), createdAt: fixed?.at ?? this.#at(), ...(input.threadId === undefined ? {} : { threadId: input.threadId }) }));
     return id;
   }
   /**
    * `jevellan_ask_user` (phase 2): a coordinator question, optionally about one thread. With `id` (derived from the coordinator's turn and
    * the call, P8 review C-4) a call the transport repeats returns the question it created instead of asking the owner twice.
    */
-  async ask(projectId: string, input: { question: string; options?: Option[] | undefined; threadId?: string | undefined; ownerCommands?: OwnerCommand[] | undefined; accountId?: string | undefined; automaticFix?: ProjectDecision['automaticFix'] }, from: ProjectDecision['from'], id?: string): Promise<string> {
+  async ask(projectId: string, input: { urgent?: boolean | undefined; question: string; options?: Option[] | undefined; threadId?: string | undefined; ownerCommands?: OwnerCommand[] | undefined; accountId?: string | undefined; automaticFix?: ProjectDecision['automaticFix'] }, from: ProjectDecision['from'], id?: string): Promise<string> {
     const asked = { ...input, options: input.options ?? [] };
     if (id === undefined) return this.#create(projectId, asked, from);
     const stored = async () => (await this.#o.hub.decision(id))?.document.projectId === projectId;

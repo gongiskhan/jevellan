@@ -118,7 +118,9 @@ export class TerminalService {
     return this.ticket(session, token);
   }
   async ownerCommand(raw: unknown, token: string) {
-    const input = OwnerCommandRunRequestSchema.parse(raw), source = await this.#source(input);
+    const input = OwnerCommandRunRequestSchema.parse(raw);
+    if (input.command.kind === 'prompt') throw refuse('Copy this prompt into the Claude app on the named device.', 409);
+    const source = await this.#source(input);
     if (this.app.redactor.text(input.command.command) !== input.command.command) throw refuse('Enter secrets in the terminal’s hidden prompt, rather than an owner command.', 400);
     const plan = await this.#plan(TerminalCreateRequestSchema.parse({ schema: 'terminal-create-request-v1', clientRequestId: input.clientRequestId, projectId: input.projectId,
       ...(input.threadId ? { threadId: input.threadId } : {}), ...(input.command.deviceId ? { deviceId: input.command.deviceId } : {}), cwd: input.command.cwd }), source);
@@ -147,6 +149,7 @@ export class TerminalService {
     if (request.operation === 'snapshot') return this.manager.snapshot(request.sessionId);
     if (request.operation === 'close') { await this.manager.stop(request.sessionId); return TerminalAckSchema.parse({ schema: 'terminal-ack-v1', ok: true }); }
     const owner = request.operation === 'owner-command' ? request.input : undefined;
+    if (owner?.command.kind === 'prompt') throw refuse('Copy this prompt into the Claude app on the named device.', 409);
     const source = owner ? await this.#source(owner) : undefined;
     const input = owner ? TerminalCreateRequestSchema.parse({ schema: 'terminal-create-request-v1', clientRequestId: owner.clientRequestId, projectId: owner.projectId,
       ...(owner.threadId ? { threadId: owner.threadId } : {}), deviceId: owner.command.deviceId, cwd: owner.command.cwd, title: owner.command.command.slice(0, 40) }) : request.input as TerminalCreateRequest;

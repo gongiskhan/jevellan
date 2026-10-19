@@ -1,3 +1,5 @@
+import { NotificationLevelSchema, ProjectNotificationPreferencesSchema, defaultQuietHours, defaultProjectNotifications } from './notification-schemas.js';
+import { OwnerViaSchema } from './project-send-schemas.js';
 import { z } from 'zod';
 import { ProjectDeploySettingsSchema } from './project-deploy-schemas.js';
 import { DeliverySchema, LandingCheckSchema, ThreadLandingSchema } from './project-landing-schemas.js';
@@ -62,13 +64,13 @@ export const ProjectWorkSettingsSchemaV4 = ProjectWorkSettingsSchemaV3.omit({ th
   environment: ProjectEnvironmentSchema.default({ variables: [], secrets: [], copyFiles: [] }),
   notifications: z.enum(['everything', 'standard', 'needs-you', 'off']).default('standard'),
 });
-export const ProjectWorkSettingsSchemaV5 = ProjectWorkSettingsSchemaV4.omit({ defaultIsolation: true, allowMainIsolation: true, autoMerge: true, requiredChecks: true }).extend({ schema: z.literal('project-work-settings-v5'), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).default(70), healthChecks: ProjectHealthChecksSchema, deploy: ProjectDeploySettingsSchema.default({ mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }), delivery: DeliverySchema.default('land'), autoLand: z.boolean().default(false), pullRequestAutoMerge: z.boolean().default(false), landingChecks: z.array(LandingCheckSchema).max(30).default([]), smokeCheck: z.string().max(2000).nullable().default(null), mergeCommitPaths: z.array(ProjectRelativePathSchema).max(20).default([]) });
+export const ProjectWorkSettingsSchemaV5 = ProjectWorkSettingsSchemaV4.omit({ defaultIsolation: true, allowMainIsolation: true, autoMerge: true, requiredChecks: true }).extend({ schema: z.literal('project-work-settings-v5'), notifications: ProjectNotificationPreferencesSchema.default(() => structuredClone(defaultProjectNotifications)), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).default(70), healthChecks: ProjectHealthChecksSchema, deploy: ProjectDeploySettingsSchema.default({ mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }), delivery: DeliverySchema.default('land'), autoLand: z.boolean().default(false), pullRequestAutoMerge: z.boolean().default(false), landingChecks: z.array(LandingCheckSchema).max(30).default([]), smokeCheck: z.string().max(2000).nullable().default(null), mergeCommitPaths: z.array(ProjectRelativePathSchema).max(20).default([]) });
 export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV5;
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
-export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4, ProjectWorkSettingsSchemaV5.extend({ pullRequestAutoMerge: z.boolean().optional(), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).optional() })])
+export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4, ProjectWorkSettingsSchemaV5.extend({ notifications: z.union([NotificationLevelSchema, ProjectNotificationPreferencesSchema]).default(() => structuredClone(defaultProjectNotifications)), pullRequestAutoMerge: z.boolean().optional(), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).optional() })])
   .transform(value => {
     const { coordinatorReview: _retired, threadRules, defaultIsolation: _isolation, allowMainIsolation: _main, requiredChecks: _checks, autoMerge, ...fields } = { coordinatorReview: undefined, threadRules: undefined, defaultIsolation: undefined, allowMainIsolation: undefined, requiredChecks: undefined, autoMerge: undefined, ...value }; void _retired; void _isolation; void _main; void _checks;
-    return ProjectWorkSettingsSchemaV5.parse({ ...fields, coordinatorHandoffAtPercent: 'coordinatorHandoffAtPercent' in value ? value.coordinatorHandoffAtPercent ?? value.compactAtPercent : 'compactAtPercent' in value ? value.compactAtPercent : 70, autoLand: 'autoLand' in value ? value.autoLand : autoMerge ?? false, pullRequestAutoMerge: 'pullRequestAutoMerge' in value ? value.pullRequestAutoMerge ?? ('autoLand' in value ? value.autoLand : false) : autoMerge ?? false, instructions: 'instructions' in value ? value.instructions : threadRules ?? '', schema: 'project-work-settings-v5' });
+    return ProjectWorkSettingsSchemaV5.parse({ ...fields, notifications: 'notifications' in value ? typeof value.notifications === 'string' ? { level: value.notifications, quietHours: defaultQuietHours } : value.notifications : defaultProjectNotifications, coordinatorHandoffAtPercent: 'coordinatorHandoffAtPercent' in value ? value.coordinatorHandoffAtPercent ?? value.compactAtPercent : 'compactAtPercent' in value ? value.compactAtPercent : 70, autoLand: 'autoLand' in value ? value.autoLand : autoMerge ?? false, pullRequestAutoMerge: 'pullRequestAutoMerge' in value ? value.pullRequestAutoMerge ?? ('autoLand' in value ? value.autoLand : false) : autoMerge ?? false, instructions: 'instructions' in value ? value.instructions : threadRules ?? '', schema: 'project-work-settings-v5' });
   });
 export const ProjectRequestOutcomeSchema = z.strictObject({ schema: z.literal('project-request-outcome-v1'), projectId: IdSchema, eventId: IdSchema,
   goal: z.enum(['answer', 'change', 'run-app', 'verify', 'other']).nullable(), source: z.enum(['jev', 'unavailable']),
@@ -144,7 +146,7 @@ export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
   ev('thread-placement-changed', { threadId: IdSchema, reason: z.enum(['account-limit', 'model-unavailable', 'escalation']), summary: z.string().max(400) }),
   ev('thread-auto-fix', { threadId: IdSchema, prNumber: positive, fixKind: z.enum(['checks', 'conflicts', 'comments']), round: positive, maxRounds: positive, outcome: z.enum(['started', 'fixed', 'gave-up']), comments: count.optional() }),
   ev('memory-dreamed', { summary: z.string().max(1500), counts: z.strictObject({ inboxPromoted: count, inboxDropped: count, merged: count, corrected: count, archived: count, created: count }) }),
-  ev('user-message', { text: z.string().min(1).max(200000), clientMessageId: IdSchema }),
+  ev('user-message', { text: z.string().min(1).max(200000), clientMessageId: IdSchema, via: OwnerViaSchema.optional() }),
   ev('thread-report', { threadId: IdSchema, report: ThreadReportSchema }),
   ev('thread-published', { threadId: IdSchema, result: z.enum(['pr-opened', 'pr-updated', 'main-published', 'landed', 'no-changes', 'checkout-completed']),
     prNumber: positive.optional(), commit: z.string().optional() }),
@@ -536,7 +538,7 @@ export type ThreadView = z.infer<typeof ThreadViewSchema>;
 
 // HTTP requests. No-argument POSTs send EmptySchema.
 export const CoordinatorMessageRequestSchema = z.strictObject({ schema: z.literal('coordinator-message-request-v1'),
-  clientMessageId: IdSchema, text: z.string().min(1).max(200000) });
+  clientMessageId: IdSchema, text: z.string().min(1).max(200000), via: OwnerViaSchema.optional() });
 export const ThreadCreateRequestSchema = z.strictObject({ schema: z.literal('thread-create-request-v1'), clientRequestId: IdSchema,
   title: z.string().min(1).max(120), task: z.string().min(1).max(32768),
   taskContext: TaskPlacementContextSchema.optional(), fromBranch: z.string().min(1).max(200).optional(),

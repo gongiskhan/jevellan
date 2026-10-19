@@ -1,18 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EkoaStateSchema } from '@jevellan/core/client';
 import type { z } from 'zod';
 import { api, empty } from './api.js';
 import { SectionHeading, useSettingsSave, useTask, type PageProps } from './components.js';
+import { clientId } from './client-id.js';
 export function EkoaPage({ onError, message }: PageProps) {
   const [state, setState] = useState<z.infer<typeof EkoaStateSchema>>(); const [url, setUrl] = useState(''); const [enabled, setEnabled] = useState(false); const [token, setToken] = useState('');
   const task = useTask(onError); const save = useSettingsSave();
+  const [connectId] = useState(clientId);
+  const callback = useRef(window.location.pathname === '/settings/ekoa/callback' ? new URLSearchParams(window.location.search) : null);
   useEffect(() => {
     const abort = new AbortController();
-    api('/hub/ekoa', EkoaStateSchema, 'GET', undefined, { signal: abort.signal, waitForHub: true }).then(next => { setState(next); setUrl(next.settings.url); setEnabled(next.settings.enabled); }, onError);
+    const query = callback.current;
+    if (query) window.history.replaceState({}, '', '/settings/ekoa');
+    const read = query ? api('/hub/ekoa/callback', EkoaStateSchema, 'POST', { schema: 'ekoa-oauth-callback-v1', state: query.get('state') ?? '', ...(query.get('code') ? { code: query.get('code') } : {}), ...(query.get('error') ? { error: query.get('error') } : {}) }, { signal: abort.signal, waitForHub: true }) : api('/hub/ekoa', EkoaStateSchema, 'GET', undefined, { signal: abort.signal, waitForHub: true });
+    read.then(next => { setState(next); setUrl(next.settings.url); setEnabled(next.settings.enabled); }, onError);
     return () => abort.abort();
   }, [onError]);
   return <div className="settings-page"><SectionHeading title="Ekoa" />
     <section className="card"><h2>Tasks that need you</h2><p>Decisions, merge questions and proposed tasks appear in your Ekoa account with the Jevellan label. Answer and approve them in Jevellan.</p>
+      <div className="actions"><button type="button" disabled={!state || task.busy} onClick={() => void task.run(async signal => {
+        const next = await api('/hub/ekoa/connect', EkoaStateSchema, 'POST', { schema: 'ekoa-oauth-start-v1', clientRequestId: connectId, url: url || 'https://mcp.ekoa.io/mcp' }, { signal, waitForHub: true });
+        setState(next); if (next.oauth?.authorizationUrl) window.location.assign(next.oauth.authorizationUrl);
+        else onError(new Error(next.connection?.reason ?? 'Ekoa could not start sign-in.'));
+      })}>Connect to Ekoa</button></div>
+      <p className="muted">{state?.oauth?.connected ? 'OAuth sign-in saved. Access refreshes automatically.' : 'Sign in to grant task read and write access.'}</p>
+      {state?.oauth?.reason && <p role="alert">{state.oauth.reason}</p>}
       <form onSubmit={event => { event.preventDefault(); void task.run(async signal => {
         try { const next = await save('/hub/ekoa', EkoaStateSchema, 'PUT', { schema: 'ekoa-settings-input-v1', revision: state!.settings.revision, url, enabled, ...(token ? { token } : {}) }, signal); setState(next); message('Ekoa settings saved.'); }
         finally { setToken(''); }

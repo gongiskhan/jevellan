@@ -2,11 +2,18 @@ import { createHash } from 'node:crypto';
 import webpush from 'web-push';
 import { NotificationsViewSchema, PushSubscriptionSchema, ProjectNotificationSchema, PushDeliverySchema, PushKeysSchema, NotificationOwnerRequestSchema,
   ProjectDecisionSchema, ProjectSchema, StoredProjectWorkSettingsSchema, clipRedacted, type ProjectNotification, type DocumentSchema } from '@jevellan/core';
+import { defaultProjectNotifications, type QuietHoursSchema } from '@jevellan/core';
+import type { z } from 'zod';
 import { notificationQuestionTitle, NOTIFICATION_TEST_BODY, NOTIFICATION_TEST_TITLE } from '@jevellan/projects';
 import type { HubDatabase } from '@jevellan/mesh';
 export type PushSend = typeof webpush.sendNotification;
 const key = (...parts: string[]) => createHash('sha256').update(parts.join('\0')).digest('hex');
 const time = (now: number) => new Date(now).toISOString();
+export function insideQuietHours(at: number, hours: z.infer<typeof QuietHoursSchema>): boolean {
+  if (!hours.enabled) return false;
+  const local = new Intl.DateTimeFormat('en-GB', { timeZone: hours.timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(at));
+  return hours.start === hours.end || (hours.start < hours.end ? local >= hours.start && local < hours.end : local >= hours.start || local < hours.end);
+}
 export function notificationAllowed(kind: ProjectNotification['kind'], level: string): boolean {
   if (kind === 'test') return true;
   if (level === 'off') return false;
@@ -68,9 +75,27 @@ export class HubNotifications {
     let notifications = this.hub.list('project-notifications', ProjectNotificationSchema);
     for (const row of notifications) if (Date.parse(row.document.createdAt) < cutoff) this.hub.delete('project-notifications', row.document.id);
     notifications = notifications.filter(row => Date.parse(row.document.createdAt) >= cutoff);
+    const held = new Map<string, typeof notifications>();
+    for (const original of notifications) {
+      let row = original;
+      const n = row.document;
+      if (n.sentAt || n.dropped || n.urgent || n.kind === 'test' || !n.projectId) continue;
+      const preferences = this.hub.get('project-work-settings', n.projectId, StoredProjectWorkSettingsSchema)?.document.notifications ?? defaultProjectNotifications;
+      if (!notificationAllowed(n.kind, preferences.level)) continue;
+      const quiet = insideQuietHours(now, preferences.quietHours);
+      if (!n.heldAt && (quiet || insideQuietHours(Date.parse(n.createdAt), preferences.quietHours))) row = this.#put('project-notifications', n.id, ProjectNotificationSchema, { ...n, heldAt: at }, row.revision);
+      if (row.document.heldAt && !quiet) { const group = held.get(n.projectId) ?? []; group.push(row); held.set(n.projectId, group); }
+    }
+    for (const [projectId, rows] of held) this.hub.transaction(() => {
+      const count = rows.reduce((sum, row) => sum + (row.document.updateCount ?? 1), 0), id = `quiet_${key(projectId, ...rows.map(row => row.document.id).sort())}`;
+      const title = this.hub.get('projects', projectId, ProjectSchema)?.document.name ?? projectId;
+      this.enqueue(ProjectNotificationSchema.parse({ schema: 'project-notification-v1', revision: 0, id, projectId, kind: 'quiet-summary', title: clipRedacted(this.hub.redactor.text(title), 80), body: `${count} updates while you were away`, updateCount: count, url: `/projects/${projectId}`, tag: `${projectId}:quiet-summary`.slice(0, 100), createdAt: at }));
+      for (const row of rows) this.#put('project-notifications', row.document.id, ProjectNotificationSchema, { ...row.document, dropped: 'Included in the quiet hours summary.' }, row.revision);
+    });
+    notifications = this.hub.list('project-notifications', ProjectNotificationSchema);
     for (const receipt of this.hub.list('push-deliveries', PushDeliverySchema)) if (!notifications.some(row => row.document.id === receipt.document.notificationId)) this.hub.delete('push-deliveries', receipt.document.id);
     // Keep only the newest pending reply, including replies received during the30-second send interval.
-    const replies = this.hub.listByField('project-notifications', 'kind', 'coordinator-reply', ProjectNotificationSchema, { order: 'insertion-desc' }).filter(row => !row.document.sentAt && !row.document.dropped);
+    const replies = this.hub.listByField('project-notifications', 'kind', 'coordinator-reply', ProjectNotificationSchema, { order: 'insertion-desc' }).filter(row => !row.document.sentAt && !row.document.dropped && !row.document.heldAt);
     for (const row of replies) if (replies.some(other => other.document.projectId === row.document.projectId && (other.document.createdAt > row.document.createdAt || other.document.createdAt === row.document.createdAt && replies.indexOf(other) < replies.indexOf(row)))) {
       this.#put('project-notifications', row.document.id, ProjectNotificationSchema, { ...row.document, dropped: 'Replaced by a newer coordinator reply.' }, row.revision);
     }
@@ -81,8 +106,9 @@ export class HubNotifications {
       let row = this.hub.get('project-notifications', item.document.id, ProjectNotificationSchema)!;
       if (row.document.dropped) continue;
       const notification = row.document;
-      const level = notification.projectId ? this.hub.get('project-work-settings', notification.projectId, StoredProjectWorkSettingsSchema)?.document.notifications ?? 'standard' : 'everything';
-      if (!notificationAllowed(notification.kind, level)) { this.#put('project-notifications', notification.id, ProjectNotificationSchema, { ...notification, dropped: 'Not enabled by the project notification setting.' }, row.revision); continue; }
+      if (notification.heldAt) continue;
+      const level = notification.projectId ? this.hub.get('project-work-settings', notification.projectId, StoredProjectWorkSettingsSchema)?.document.notifications.level ?? 'standard' : 'everything';
+      if (!notification.urgent && !notificationAllowed(notification.kind, level)) { this.#put('project-notifications', notification.id, ProjectNotificationSchema, { ...notification, dropped: 'Not enabled by the project notification setting.' }, row.revision); continue; }
       if (notification.kind === 'coordinator-reply' && !notification.sentAt && notifications.some(other => other.document.projectId === notification.projectId && other.document.kind === 'coordinator-reply' && other.document.sentAt && Date.parse(other.document.sentAt) > now - 30_000)) continue;
       const prior = this.hub.listByField('push-deliveries', 'notificationId', notification.id, PushDeliverySchema);
       const subscriptions = this.hub.list('push-subscriptions', PushSubscriptionSchema).filter(sub => !notification.sentAt || prior.some(receipt => receipt.document.subscriptionId === sub.document.id));

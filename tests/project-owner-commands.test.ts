@@ -15,7 +15,7 @@ beforeEach(() => { root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan-owne
 afterEach(async () => { member = undefined; await f?.close(); f = undefined; rmSync(root, { recursive: true, force: true }); });
 const context = () => ({ cwd: join(root, 'worktree'), daemonPid: 41999, profile: 'thread' as const, protectedPaths: [join(root, 'checkout'), join(root, 'reserved')] });
 const reason = () => ownerCommandDenial(`A worktree thread cannot act inside a registered checkout or protected path. ${THREAD_SAFETY_REASON}`);
-const command = { command: 'scripts/owner-only.sh', why: 'The project reserves this step for the owner.', cwd: 'worktree' };
+const command = { kind: 'shell' as const, command: 'scripts/owner-only.sh', why: 'The project reserves this step for the owner.', cwd: 'worktree' };
 
 test('owner commands validate exact text, five-command limits and supported folders for every report status', () => {
   for (const cwd of ['worktree', 'checkout', 'home', '/tmp/folder with spaces']) expect(OwnerCommandSchema.parse({ ...command, cwd }).cwd).toBe(cwd);

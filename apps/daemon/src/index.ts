@@ -49,7 +49,7 @@ export function createDaemon(options: { application?: Application; diagnostics?:
         if (!extname(requested) && (error as NodeJS.ErrnoException).code === 'ENOENT') return readFile(resolve(webRoot, 'index.html'));
         throw error;
       });
-      response.writeHead(200, { 'Content-Type': contentTypes[extname(path)] ?? (!extname(requested) ? contentTypes['.html']! : 'application/octet-stream'), 'Cache-Control': requested.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache', ...(requested === '/sw.js' ? { 'Service-Worker-Allowed': '/' } : {}), 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" });
+      response.writeHead(200, { 'Content-Type': contentTypes[extname(path)] ?? (!extname(requested) ? contentTypes['.html']! : 'application/octet-stream'), 'Cache-Control': requested.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache', ...(requested === '/sw.js' ? { 'Service-Worker-Allowed': '/' } : {}), 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': requested === '/settings/ekoa/callback' ? 'no-referrer' : 'same-origin', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" });
       response.end(data);
     } catch {
       response.writeHead(404).end('Not found');

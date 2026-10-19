@@ -664,7 +664,7 @@ function ChatEntry({ item, projectId, navigate, tasks, threads, settings, change
     case 'owner':
       return (
         <article className="user-message pw-owner">
-          <div className="message-heading"><strong>{copy.YOU}</strong><Stamp at={item.at} /></div>
+          <div className="message-heading"><strong>{item.via ? `${copy.YOU}, via ${item.via}` : copy.YOU}</strong><Stamp at={item.at} /></div>
           <LibraryMessage projectId={projectId} text={item.text} />
           {!item.delivered && <p className="pw-pending">{copy.WAITING_FOR_COORDINATOR}</p>}
         </article>

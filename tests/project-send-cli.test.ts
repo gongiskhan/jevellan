@@ -1,0 +1,43 @@
+import { afterEach, expect, test, vi } from 'vitest';
+import { COORDINATOR_REPLY_TIMEOUT, Homes, ProjectSendResultSchema } from '../packages/core/dist/index.js';
+import { projectCommand, projectSendArguments } from '../packages/cli/dist/project-command.js';
+import { coordinatorReplyFromRecords } from '../packages/projects/dist/journal.js';
+import type { ProjectJournalRecord } from '../packages/core/dist/index.js';
+afterEach(() => vi.restoreAllMocks());
+test('project send parses labels, explicit ids, bounded waits, literal options and stdin', () => {
+  const parsed = projectSendArguments(['send', 'My project', '--from', 'Coordenador', '--wait', '--json', '--id', 'same_message', '--', '--literal', 'text']);
+  expect(parsed).toMatchObject({ project: 'My project', json: true, input: { clientMessageId: 'same_message', waitSeconds: 600, text: '--literal text', via: 'Coordenador' } });
+  expect(projectSendArguments(['send', 'project', '--wait', '3600'], () => 'From stdin.').input).toMatchObject({ waitSeconds: 3600, text: 'From stdin.' });
+  for (const value of ['0', '-1', '3601', '1.5']) expect(() => projectSendArguments(['send', 'project', '--wait', value, 'Hello'])).toThrow();
+  for (const args of [[], ['send'], ['send', 'project', '--unknown'], ['send', 'project', '--from'], ['send', 'project', '--id']]) expect(() => projectSendArguments(args, () => '')).toThrow();
+  expect(() => projectSendArguments(['send', 'project', '--from', 'x'.repeat(81), 'Hello'])).toThrow();
+  expect(() => projectSendArguments(['send', 'project'], () => '  ')).toThrow();
+});
+test('wait prints the matching reply and exact JSON keys, and timeout exits two with its sentence', async () => {
+  const log = vi.spyOn(console, 'log').mockImplementation(() => undefined), error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  const homes = new Homes('/tmp/jevellan-project-send-unused');
+  const reply = ProjectSendResultSchema.parse({ schema: 'project-send-result-v1', projectId: 'project', turn: 7, reply: 'npm test', at: '2026-10-19T12:00:00.000Z' });
+  const requester = vi.fn(async () => reply);
+  expect(await projectCommand(['send', 'My project', '--wait', '300', '--id', 'same', '--json', 'Which tests?'], homes, requester)).toBe(0);
+  expect(requester.mock.calls[0]).toBeDefined();
+  expect(JSON.parse(String(log.mock.calls[0]![0]))).toEqual({ ok: true, projectId: 'project', turn: 7, reply: 'npm test', at: reply.at });
+  expect(await projectCommand(['send', 'project', '--wait', '1', 'Status?'], homes, async () => ({ ...reply, reply: null, turn: null }))).toBe(2);
+  expect(error).toHaveBeenCalledWith(COORDINATOR_REPLY_TIMEOUT);
+});
+test('reply lookup ignores other turns, incomplete attempts and identical turn numbers on another device', () => {
+  const records: ProjectJournalRecord[] = [];
+  const add = (deviceId: string, type: string, turn: number, data: unknown) => records.push({ schema: 'project-journal-record-v1', deviceId, ledgerId: 'coordinator', event: { schema: 'project-ledger-event-v1', id: records.filter(row => row.deviceId === deviceId).length + 1, type, turn, t: '2026-10-19T12:00:00.000Z', data } });
+  add('madrid', 'coordinator-event', 1, { schema: 'coordinator-event-v1', kind: 'user-message', id: 'event_one', clientMessageId: 'message_one', text: 'Which tests?', via: 'CLI', at: '2026-10-19T12:00:00.000Z' });
+  const start = (turn: number, eventIds: string[]) => ({ schema: 'coordinator-turn-v1', turn, fresh: false, runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Fixture', eventIds });
+  add('madrid', 'coordinator-turn-start', 1, start(1, ['event_one']));
+  add('pro', 'coordinator-text', 1, { schema: 'coordinator-text-v1', text: 'Wrong device reply.' });
+  add('pro', 'coordinator-turn-end', 1, { schema: 'coordinator-turn-end-v1', turn: 1, status: 'completed' });
+  add('madrid', 'coordinator-text', 1, { schema: 'coordinator-text-v1', text: 'Incomplete.' });
+  expect(coordinatorReplyFromRecords('project', 'message_one', records)).toBeNull();
+  add('madrid', 'coordinator-turn-end', 1, { schema: 'coordinator-turn-end-v1', turn: 1, status: 'failed' });
+  add('madrid', 'coordinator-turn-start', 2, start(2, ['event_one']));
+  add('madrid', 'coordinator-text', 2, { schema: 'coordinator-text-v1', text: 'npm ' });
+  add('madrid', 'coordinator-text', 2, { schema: 'coordinator-text-v1', text: 'test' });
+  add('madrid', 'coordinator-turn-end', 2, { schema: 'coordinator-turn-end-v1', turn: 2, status: 'completed' });
+  expect(coordinatorReplyFromRecords('project', 'message_one', records)).toMatchObject({ turn: 2, reply: 'npm test' });
+});

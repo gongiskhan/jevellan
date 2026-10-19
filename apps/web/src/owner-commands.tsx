@@ -35,14 +35,15 @@ export function OwnerCommandButtons({ command }: { command: OwnerCommand }) {
   const projectId = scope?.projectId, threadId = scope?.threadId, decisionId = scope?.decisionId;
   const commandKey = JSON.stringify(command);
   useEffect(() => {
-    if (!projectId) { setChecking(false); return; }
+    if (!projectId || command.kind === 'prompt') { setChecking(false); return; }
     const controller = new AbortController(); setChecking(true); setReceipt(undefined);
     void api('/api/terminals/owner-command/receipt', OwnerCommandReceiptViewSchema, 'POST', {
       schema: 'owner-command-receipt-request-v1', projectId, ...(threadId ? { threadId } : {}), ...(decisionId ? { decisionId } : {}), command: JSON.parse(commandKey),
     }, { signal: controller.signal }).then(view => { if (!controller.signal.aborted) setReceipt(view.receipt ?? undefined); })
       .catch(() => { /* A fresh or offline card can still try its normal run path. */ }).finally(() => { if (!controller.signal.aborted) setChecking(false); });
     return () => controller.abort();
-  }, [projectId, threadId, decisionId, commandKey]);
+  }, [projectId, threadId, decisionId, commandKey, command.kind]);
+  if (command.kind === 'prompt') return <div className="owner-command-actions"><button type="button" className="secondary" onClick={async event => { const pre = event.currentTarget.closest('.owner-command')?.querySelector('pre'); if (!await copyText(command.command) && pre) selectText(pre); }}>Copy</button></div>;
   if (!scope) return null;
   const run = async () => {
     if (busy || checking) return;
@@ -75,7 +76,7 @@ function CommandCard({ command }: { command: OwnerCommand }) {
   const scope = useContext(Context); const text = useRef<HTMLPreElement>(null); const overflow = useCommandOverflow(text);
   const deviceId = command.deviceId ?? scope?.deviceId;
   return <section className="owner-command" aria-label="Owner command"><p>{command.why}</p>
-    <p className="muted">{deviceId ? scope?.deviceName?.(deviceId) ?? deviceId : 'Session device'} · {command.cwd}</p>
+    <p className="muted">{command.kind === 'prompt' ? `Paste into the Claude app on ${deviceId ? scope?.deviceName?.(deviceId) ?? deviceId : 'the session device'}` : `${deviceId ? scope?.deviceName?.(deviceId) ?? deviceId : 'Session device'} · ${command.cwd}`}</p>
     <pre ref={text} tabIndex={0}><code>{command.command}</code></pre>
     {overflow && <p className="muted small-text">Scroll sideways to read the full command.</p>}
     <OwnerCommandButtons command={command} />

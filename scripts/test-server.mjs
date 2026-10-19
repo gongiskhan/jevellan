@@ -161,6 +161,10 @@ function coordinatorStep(input) {
     turn.emit({ type: 'usage', inputTokens: 10, outputTokens: 5, cacheReadTokens: 80, cacheWriteTokens: 10 });
     turn.say('Session usage is recorded.'); return { status: 'completed' };
   };
+  if (events.includes('WG9 owner prompt')) return async turn => {
+    await projectTool(turn, 'jevellan_ask_user', { question: 'Check the Mac connection through the Claude app?', ownerCommands: [{ kind: 'prompt', command: 'Inspect the local app connection and tell me whether it is online.', why: 'The local Mac step uses the Claude app.', cwd: 'home', deviceId: application.device.deviceId }] });
+    turn.say('The Mac step is ready to copy.'); return { status: 'completed' };
+  };
   if (events.includes('CM4 owner commands')) return async turn => {
     await projectTool(turn, 'jevellan_ask_user', { question: 'Run the owner-only setup?', ownerCommands: [{ command: `printf '%s\\n' '${'owner-visible-text-'.repeat(36)}'`, why: 'The owner needs to run this setup.', cwd: 'checkout' }] });
     turn.say('Sign in from the project terminal:\n\n```bash\ncodex login\n```'); return { status: 'completed' };

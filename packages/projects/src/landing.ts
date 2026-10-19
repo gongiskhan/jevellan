@@ -107,7 +107,14 @@ export class ThreadLandingService {
     if (result.code !== 0 || result.timedOut || !existsSync(resultFile)) throw new Error(`The trusted job gate did not pass: ${outputTail(result, 2000)}`);
     const receipt = readDocument(resultFile, JobGateResultSchema);
     if (!receipt.passed || receipt.checks.some(row => !row.passed) || receipt.trustedCommit !== run.commit || receipt.candidateCommit !== head || await this.o.git.resolve(thread.cwd, 'HEAD') !== head) throw new Error('The trusted job gate refused this candidate.');
-    return { name: gate.id, passed: true, at: new Date(this.o.now()).toISOString() };
+    if (receipt.validUntil && Date.parse(receipt.validUntil) <= this.o.now()) throw new Error('The required job gate deadline expired. This work needs a fresh measured delivery.');
+    return { check: { name: gate.id, passed: true, at: new Date(this.o.now()).toISOString() }, validUntil: receipt.validUntil };
+  }
+  async #expired(route: LandingRoute, validUntil: string | undefined): Promise<LandingOutcome | null> {
+    if (!validUntil || Date.parse(validUntil) > this.o.now()) return null;
+    const reason = 'The required job gate deadline expired. This work needs a fresh measured delivery.';
+    await this.#save({ ...route, state: 'failed', reason });
+    return { kind: 'waiting', reason };
   }
   async #prepare(thread: Thread, settings: ProjectWorkSettings, base: string, signal?: AbortSignal) {
     const rebase = await this.o.git.run(thread.cwd, ['rebase', base], { permitted: [1], ...(signal ? { signal } : {}) });
@@ -128,8 +135,8 @@ export class ThreadLandingService {
         body: `Landing checks failed (attempt ${thread.verificationAttempts + 1} of 3). ${check.name}: ${tail}. Fix the cause, run the relevant tests and report done.` }; }
     }
     const head = (await this.o.git.resolve(thread.cwd, 'HEAD'))!;
-    const gate = await this.#gate(thread, base, head, files.map(file => file.path), signal); if (gate) checks.push(gate);
-    return { kind: 'checked' as const, files, checks, head };
+    const gate = await this.#gate(thread, base, head, files.map(file => file.path), signal); if (gate) checks.push(gate.check);
+    return { kind: 'checked' as const, files, checks, head, gateValidUntil: gate?.validUntil };
   }
   async publish(project: Project, thread: Thread, signal?: AbortSignal, priorState = thread.state): Promise<LandingOutcome> {
     try {
@@ -152,8 +159,9 @@ export class ThreadLandingService {
       if (!(await this.o.git.run(thread.cwd, ['diff', '--name-only', `${base}...HEAD`])).stdout) return { kind: 'no-changes' };
       const settings = await this.o.settings(project.id), digest = (value: ProjectWorkSettings) => createHash('sha256').update(stableJson({ checks: value.landingChecks, smoke: value.smokeCheck, merge: value.mergeCommitPaths, environment: value.environment })).digest('hex');
       const settingsDigest = digest(settings), head = await this.o.git.resolve(thread.cwd, 'HEAD');
-      const cached = records.find((row): row is LandingRoute => row.schema === 'landing-route-v1' && row.checkedCommit === head && row.baseCommit === base && row.settingsDigest === settingsDigest && row.packet.checks.every(check => check.passed));
-      const ready = cached ? { kind: 'checked' as const, files: cached.packet.files, checks: cached.packet.checks, head: cached.checkedCommit! } : await this.#prepare(thread, settings, base, signal); if (ready.kind === 'fix') return ready;
+      const gated = !!(await this.#delivery(thread))?.delivery.gate;
+      const cached = records.find((row): row is LandingRoute => row.schema === 'landing-route-v1' && row.checkedCommit === head && row.baseCommit === base && row.settingsDigest === settingsDigest && row.packet.checks.every(check => check.passed) && (!gated || !!row.gateValidUntil && Date.parse(row.gateValidUntil) > this.o.now()));
+      const ready = cached ? { kind: 'checked' as const, files: cached.packet.files, checks: cached.packet.checks, head: cached.checkedCommit!, gateValidUntil: cached.gateValidUntil } : await this.#prepare(thread, settings, base, signal); if (ready.kind === 'fix') return ready;
       const id = derivedId('lroute', thread.id, ready.head); let route = (await this.o.hub.mergeDocument(id))?.document;
       if (route && route.schema !== 'landing-route-v1') throw new Error('This landing receipt has another schema.');
       if (!route) {
@@ -164,8 +172,9 @@ export class ThreadLandingService {
         const packet = { schema: 'landing-route-state-v1' as const, title: thread.title, task: thread.taskContext ?? { type: 'feature' as const, needs: [], goal: null }, summary: (thread.lastReport?.summary ?? '').slice(0, 4000), files: ready.files, checks: ready.checks, riskyAreas: settings.riskyAreas, corrections };
         const result = await decideLandingRoute(this.o.decisionClient, packet, async () => (await this.o.configuration()).decisions.model, this.o.redactor, signal ?? new AbortController().signal);
         route = await this.#save(LandingRouteSchema.parse({ ...result, schema: 'landing-route-v1', id, projectId: project.id, threadId: thread.id, deviceId: this.o.deviceId,
-          revision: 0, settingsDigest, commit: ready.head, checkedCommit: ready.head, baseCommit: base, at: new Date(this.o.now()).toISOString(), questionSet: 'l-v1', state: 'waiting' }));
+          revision: 0, settingsDigest, gateValidUntil: ready.gateValidUntil, commit: ready.head, checkedCommit: ready.head, baseCommit: base, at: new Date(this.o.now()).toISOString(), questionSet: 'l-v1', state: 'waiting' }));
       }
+      if (route.gateValidUntil !== ready.gateValidUntil || route.settingsDigest !== settingsDigest) route = await this.#save({ ...route, gateValidUntil: ready.gateValidUntil, settingsDigest, packet: { ...route.packet, checks: ready.checks, files: ready.files } });
       if (local.ownerLandingRequested) {
         if (route.source !== 'owner') route = await this.#save({ ...route, source: 'owner', route: 'land', state: 'waiting', reason: 'The owner chose Land now.' });
         this.o.store.updateLocal(thread.id, current => { const next = { ...current }; delete next.ownerLandingRequested; return next; });
@@ -190,6 +199,7 @@ export class ThreadLandingService {
       return await withPublicationLease<LandingOutcome>(leases, remote, thread.id, async assertLease => {
         let checked = ready;
         for (let loop = 0; loop < 3; loop++) {
+          const expired = await this.#expired(selected, checked.gateValidUntil); if (expired) return expired;
           await this.o.assertLanding(project.id, thread.id); await assertLease();
           const current = await this.o.settings(project.id);
           if (digest(current) !== settingsDigest || current.riskyAreas !== settings.riskyAreas || selected.source !== 'owner' && !current.autoLand) { await this.#ask(await this.#save({ ...selected, source: 'guard', route: 'ask-owner', reason: 'The project settings changed before landing.' }), thread); return { kind: 'waiting', reason: 'Waiting for the owner’s landing decision.' }; }
@@ -205,8 +215,9 @@ export class ThreadLandingService {
             if (merge) await this.o.git.run(path, ['merge', '--no-ff', checked.head, '-m', message], { env });
             else { await this.o.git.run(path, ['merge', '--squash', checked.head]); await this.o.git.run(path, ['commit', '-m', message], { env }); }
             const landing: ThreadLanding = { commit: (await this.o.git.resolve(path, 'HEAD'))!, at: new Date(this.o.now()).toISOString(), method: merge ? 'merge-commit' : 'squash', checks: checked.checks, route: selected.route };
-            const saved = await this.#save({ ...selected, state: 'landing', baseCommit: base, checkedCommit: checked.head, candidate: landing });
+            const saved = await this.#save({ ...selected, state: 'landing', baseCommit: base, checkedCommit: checked.head, gateValidUntil: checked.gateValidUntil, packet: { ...selected.packet, checks: checked.checks, files: checked.files }, candidate: landing });
             selected = saved; await this.o.assertLanding(project.id, thread.id); await assertLease();
+            const expired = await this.#expired(saved, checked.gateValidUntil); if (expired) return expired;
             const pushed = await this.o.git.run(path, ['push', 'origin', `HEAD:refs/heads/${thread.baseBranch}`, `--force-with-lease=refs/heads/${thread.baseBranch}:${base}`], { permitted: [1], timeoutMs: GIT_NETWORK_TIMEOUT_MS, ...(signal ? { signal } : {}) });
             if (pushed.code === 0) return { kind: 'landed', landing, routeId: saved.id };
             const moved = await this.o.git.fetchPrivate(thread.cwd, thread.baseBranch, ref, signal);

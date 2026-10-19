@@ -1,3 +1,4 @@
+import { EkoaOAuthStartSchema, EkoaOAuthCallbackSchema } from '@jevellan/core';
 import { DEVICE_CLEANUP_ROUTE, handleDeviceCleanup } from './device-cleanup-api.js';
 import { ProjectEnvImportRequestSchema } from '@jevellan/core';
 import { healthRefusal } from '@jevellan/core';
@@ -109,6 +110,8 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     }
     if (path === '/hub/ekoa' && method === 'GET') { send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'state' }, token!)); return; }
     if (path === '/hub/ekoa' && method === 'PUT') { send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'save', input: EkoaSettingsInputSchema.parse(await body(request)) }, token!)); return; }
+    if (path === '/hub/ekoa/connect' && method === 'POST') { send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'oauth-start', input: EkoaOAuthStartSchema.parse(await body(request)) }, token!)); return; }
+    if (path === '/hub/ekoa/callback' && method === 'POST') { send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'oauth-complete', input: EkoaOAuthCallbackSchema.parse(await body(request)) }, token!)); return; }
     if (path === '/hub/ekoa/test' && method === 'POST') { EkoaEmptySchema.parse(await body(request)); send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'test' }, token!)); return; }
     if (await handleGitApi(app, request, response, url)) return;
     if (await handleProjectWorkApi(app, request, response, url, token!, () => { retryable = true; })) return;

@@ -3,6 +3,7 @@ import type { z } from 'zod';
 
 export type LocalRequestOptions = {
   fetcher?: typeof fetch; timeoutMs?: number;
+  maxBytes?: number;
   /** Thrown when the daemon gives no usable answer: not JSON, no body, or a failure while `daemonErrors` is off. */
   unanswered: string;
   /** Thrown when the answer exceeds 64 KiB. */
@@ -32,7 +33,7 @@ export async function localRequest<T>(homes: Homes, path: string, body: unknown,
   try {
     for (;;) {
       const next = await reader.read(); if (next.done) break;
-      length += next.value.length; if (length > 64 * 1024) { await reader.cancel(); throw new Error(options.tooLarge); }
+      length += next.value.length; if (length > (options.maxBytes ?? 64 * 1024)) { await reader.cancel(); throw new Error(options.tooLarge); }
       chunks.push(next.value);
     }
   } finally { reader.releaseLock(); }

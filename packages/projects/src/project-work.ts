@@ -1,3 +1,4 @@
+import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction } from '@jevellan/core';
 import { ProjectCleanupInventory } from './cleanup.js';
 import { ProjectDeployService } from './deploy.js';
 import { setupProposalId } from './setup.js';
@@ -781,7 +782,19 @@ export class ProjectWork {
   async postMessage(projectId: string, input: z.infer<typeof CoordinatorMessageRequestSchema>): Promise<{ repeated: boolean }> {
     await this.#coordinatorHere(projectId); const at = this.#timers.now();
     return this.coordinators.get(projectId).enqueue({ schema: 'coordinator-event-v1', kind: 'user-message', id: newId('cev', at), at: new Date(at).toISOString(),
-      text: input.text, clientMessageId: input.clientMessageId });
+      text: input.text, clientMessageId: input.clientMessageId, ...(input.via ? { via: input.via } : {}) });
+  }
+  /** Installation control messages use durable owner delivery and retain the first event time across retries. */
+  async sendOwnerMessage(projectId: string, raw: z.input<typeof ProjectSendRequestSchema>): Promise<void> {
+    await this.ready; await this.#project(projectId);
+    const { waitSeconds: _wait, ...input } = ProjectSendRequestSchema.parse(boundedRedaction(this.#o.redactor, raw)); void _wait;
+    const path = this.#o.homes.at('project-work', projectId, 'owner-messages', `${input.clientMessageId}.json`);
+    const saved = existsSync(path) ? readDocument(path, ProjectSendSavedSchema) : writeDocument(path, ProjectSendSavedSchema, { schema: 'project-send-saved-v1', projectId, input, at: new Date(this.#timers.now()).toISOString() });
+    if (saved.projectId !== projectId || stableJson(saved.input) !== stableJson(input)) throw refuse('This message id already has different content.', 409);
+    const event = { schema: 'coordinator-event-v1' as const, kind: 'user-message' as const, id: derivedId('cev', 'local-owner', projectId, input.clientMessageId), at: saved.at, text: input.text, clientMessageId: input.clientMessageId, ...(input.via ? { via: input.via } : {}) };
+    const device = await this.coordinators.deviceOf(projectId);
+    if (device !== null && device !== this.#o.deviceId) this.outbox.enqueue(projectId, 'coordinator', { kind: 'coordinator-event', event });
+    else { await this.coordinators.ensureAssigned(projectId); this.coordinators.get(projectId).enqueue(event); }
   }
   /** Owner-terminal results and Send to use the existing durable message delivery, with a stable id for retry. */
   async terminalMessage(projectId: string, target: { threadId?: string | undefined; coordinator?: true | undefined }, text: string, messageId: string): Promise<void> {

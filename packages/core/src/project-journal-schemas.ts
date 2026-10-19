@@ -1,3 +1,4 @@
+import { CoordinatorReplySchema } from './project-send-schemas.js';
 import { z } from 'zod';
 import { IdSchema, TimestampSchema } from './schemas.js';
 
@@ -39,6 +40,7 @@ const request = { schema: z.literal('project-journal-request-v1'), projectId: Id
 export const ProjectJournalRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...request, operation: z.literal('publish'), records: z.array(ProjectJournalRecordSchema).max(100) }),
   z.strictObject({ ...request, operation: z.literal('state') }),
+  z.strictObject({ ...request, operation: z.literal('coordinator-reply'), clientMessageId: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('file'), path: JournalRelativePathSchema, sha256: z.string().regex(/^[a-f0-9]{64}$/u), offset: count }),
   z.strictObject({ ...request, operation: z.literal('rebuild') }),
   z.strictObject({ ...request, operation: z.literal('handoff-write'), id: IdSchema, turn: z.number().int().positive(), input: CoordinatorHandoffInputSchema }),
@@ -47,6 +49,7 @@ export type ProjectJournalRequest = z.infer<typeof ProjectJournalRequestSchema>;
 export const ProjectJournalResultSchema = z.discriminatedUnion('operation', [
   z.strictObject({ schema: z.literal('project-journal-result-v1'), operation: z.literal('publish'), accepted: count }),
   z.strictObject({ schema: z.literal('project-journal-result-v1'), operation: z.literal('state'), state: ProjectJournalStateSchema }),
+  z.strictObject({ schema: z.literal('project-journal-result-v1'), operation: z.literal('coordinator-reply'), reply: CoordinatorReplySchema.nullable() }),
   z.strictObject({ schema: z.literal('project-journal-result-v1'), operation: z.literal('file'), path: JournalRelativePathSchema,
     sha256: z.string().regex(/^[a-f0-9]{64}$/u), offset: count, totalBytes: count, base64: z.string().max(350000) }),
   z.strictObject({ schema: z.literal('project-journal-result-v1'), operation: z.literal('rebuild'), state: ProjectJournalStateSchema }),

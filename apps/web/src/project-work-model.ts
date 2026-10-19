@@ -445,7 +445,7 @@ function payload<T extends ProjectLedgerEventType>(event: ProjectLedgerEvent, ty
 }
 
 export type ChatItem =
-  | { kind: 'owner'; id: number; text: string; at: string; delivered: boolean }
+  | { kind: 'owner'; id: number; text: string; at: string; via?: string; delivered: boolean }
   | { kind: 'reply'; id: number; text: string }
   | { kind: 'routed'; id: number; turn?: number; taskIds?: string[]; threadId?: string; message: boolean }
   | { kind: 'setup'; id: number; proposalId: string }
@@ -552,7 +552,7 @@ export function chatItems(events: readonly ProjectLedgerEvent[], titles: ThreadT
       case 'coordinator-event': {
         const data = payload(event, 'coordinator-event');
         if (!data) return [];
-        if (data.kind === 'user-message') return [{ kind: 'owner', id, text: data.text, at: data.at, delivered: delivered.has(data.id) }];
+        if (data.kind === 'user-message') return [{ kind: 'owner', id, text: data.text, at: data.at, ...(data.via ? { via: data.via } : {}), delivered: delivered.has(data.id) }];
         return [{ kind: 'event', id, ...eventCard(data, titles), delivered: delivered.has(data.id) }];
       }
       default: return [];

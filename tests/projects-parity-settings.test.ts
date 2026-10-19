@@ -21,7 +21,7 @@ test.each([1, 2, 3])('settings v%s migrate to v4 without losing owner choices', 
 test('v4 defaults, optional request fields and sixteen-thousand-character instructions round trip', () => {
   const value = defaultProjectWorkSettings('parity');
   expect(value).toMatchObject({ schema: 'project-work-settings-v5', placement: { allowedModelIds: null, minEffort: null, guidance: '' },
-    prAutoFix: { checks: true, conflicts: true, comments: true, maxRounds: 3 }, environment: { variables: [], secrets: [], copyFiles: [] }, notifications: 'standard' });
+    prAutoFix: { checks: true, conflicts: true, comments: true, maxRounds: 3 }, environment: { variables: [], secrets: [], copyFiles: [] }, notifications: { level: 'standard', quietHours: { enabled: false, start: '23:00', end: '08:00', timezone: 'Europe/Lisbon' } } });
   expect(ProjectWorkSettingsSchema.parse({ ...value, instructions: 'i'.repeat(16000) })).toHaveProperty('instructions', 'i'.repeat(16000));
   expect(ProjectWorkSettingsSchema.safeParse({ ...value, instructions: 'i'.repeat(16001) }).success).toBe(false);
   const request = ProjectWorkSettingsRequestSchema.parse({ schema: 'project-work-settings-request-v1', revision: 7,
@@ -55,7 +55,22 @@ test('vault v1 restores to v2 with instructions and portable defaults', () => {
       sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 }, compactAtPercent: 70, coordinator: { runtimeId: 'claude', modelId: 'deep', effort: 'high' } },
     goals: [], jobs: [], dailies: [] };
   const restored = VaultProjectSchema.parse(old);
-  expect(restored).toMatchObject({ schema: 'vault-project-v3', work: { instructions: 'Keep the old instructions.', startMode: 'start', maxNewThreadsPerDay: 100 } });
+  expect(restored).toMatchObject({ schema: 'vault-project-v4', work: { instructions: 'Keep the old instructions.', startMode: 'start', maxNewThreadsPerDay: 100 } });
   expect(restored.work).not.toHaveProperty('threadRules'); expect(restored.work).not.toHaveProperty('status');
   expect(VaultProjectSchema.parse(restored)).toEqual(restored);
+});
+test('the portable definition carries quiet hours and the independent legacy PR policy', async () => {
+  const { ProjectSchema } = await import('../packages/core/dist/index.js');
+  const { vaultDefinition } = await import('../packages/projects/dist/vault-definition.js');
+  const settings = defaultProjectWorkSettings('portable');
+  settings.pullRequestAutoMerge = true; settings.notifications = { level: 'needs-you', quietHours: { enabled: true, start: '23:00', end: '08:00', timezone: 'Europe/Lisbon' } };
+  const project = ProjectSchema.parse({ schema: 'project-v1', id: 'portable', name: 'Portable', remoteUrl: 'https://github.com/fixture/portable', paths: {}, branchPolicy: 'main', memory: { mode: 'hub', dir: '.memory' }, context: { state: 'none' } });
+  const definition = VaultProjectSchema.parse(vaultDefinition(project, settings, [], [], []));
+  expect(definition.work).toHaveProperty('pullRequestAutoMerge', true);
+  expect(definition.work.notifications).toEqual(settings.notifications);
+});
+test('default quiet hours are independent for each project', () => {
+  const one = defaultProjectWorkSettings('one'), two = defaultProjectWorkSettings('two');
+  try { one.notifications.quietHours.enabled = true; expect(two.notifications.quietHours.enabled).toBe(false); }
+  finally { one.notifications.quietHours.enabled = false; }
 });

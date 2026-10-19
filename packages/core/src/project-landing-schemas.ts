@@ -20,6 +20,7 @@ export const LandingRouteSchema = z.strictObject({ schema: z.literal('landing-ro
   probabilities: z.record(z.string(), z.number().min(0).max(1)).optional(), state: z.enum(['waiting', 'asked', 'verifying', 'landing', 'landed', 'failed']),
   failures: z.number().int().min(0).max(3).default(0), decisionId: IdSchema.nullable().default(null), verificationId: IdSchema.nullable().default(null),
   baseCommit: z.string().regex(/^[a-f0-9]{40,64}$/u).optional(), checkedCommit: z.string().regex(/^[a-f0-9]{40,64}$/u).optional(),
+  gateValidUntil: TimestampSchema.optional(),
   settingsDigest: z.string().regex(/^[a-f0-9]{64}$/u).optional(), candidate: ThreadLandingSchema.optional(), backupDeletedAt: TimestampSchema.optional() });
 export type LandingRoute = z.infer<typeof LandingRouteSchema>;
 export const LandingCorrectionSchema = z.strictObject({ schema: z.literal('landing-correction-v1'), ...identity, title: z.string().max(120),

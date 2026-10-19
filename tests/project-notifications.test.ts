@@ -25,9 +25,49 @@ function notification(id: string, at: number, kind: ProjectNotification['kind'] 
 }
 test('notification levels filter every kind without affecting the test notification', () => {
   for (const level of ['everything', 'standard', 'needs-you', 'off']) for (const kind of ProjectNotificationSchema.shape.kind.options) {
-    const expected = kind === 'test' || level === 'everything' || level === 'standard' && kind !== 'thread-finished' || level === 'needs-you' && ['needs-you', 'thread-failed', 'coordinator-unavailable', 'deploy'].includes(kind);
+    const expected = kind === 'test' || level === 'everything' || level === 'standard' && kind !== 'thread-finished' || level === 'needs-you' && ['needs-you', 'thread-failed', 'coordinator-unavailable', 'deploy', 'quiet-summary'].includes(kind);
     expect(notificationAllowed(kind, level), `${level}:${kind}`).toBe(expected);
   }
+});
+test('quiet hours hold every update durably and flush one project summary while urgent production questions bypass', async () => {
+  const { ProjectWorkSettingsSchema, defaultProjectWorkSettings } = await import('../packages/core/dist/index.js');
+  let now = Date.parse('2026-10-19T22:30:00.000Z'); const sent: Array<{ body: string }> = [];
+  const send: PushSend = async (_subscription, payload) => { sent.push(JSON.parse(String(payload))); return { statusCode: 201, body: '', headers: {} }; };
+  const { hub, service } = setup(send, () => now); subscribe(service);
+  hub.put('project-work-settings', 'project', ProjectWorkSettingsSchema, ProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings('project'), notifications: { level: 'standard', quietHours: { enabled: true, start: '23:00', end: '08:00', timezone: 'Europe/Lisbon' } } }), 0);
+  service.enqueue(notification('one', now, 'coordinator-reply')); service.enqueue(notification('two', now, 'coordinator-reply'));
+  service.enqueue({ ...notification('urgent', now, 'needs-you'), body: 'production broken', urgent: true });
+  await service.sweep(); expect(sent.map(row => row.body)).toEqual(['production broken']);
+  await service.close();
+  const restarted = new HubNotifications(hub, () => 'https://fixture.example', send, () => now); services.push(restarted);
+  now = Date.parse('2026-10-20T07:01:00.000Z'); await restarted.sweep(); await restarted.sweep();
+  expect(sent.map(row => row.body)).toEqual(['production broken', '2 updates while you were away']);
+});
+test('legacy notification levels migrate with disabled Lisbon quiet hours', async () => {
+  const { StoredProjectWorkSettingsSchema, defaultProjectWorkSettings } = await import('../packages/core/dist/index.js');
+  expect(StoredProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings('project'), notifications: 'needs-you' }).notifications).toEqual({ level: 'needs-you', quietHours: { enabled: false, start: '23:00', end: '08:00', timezone: 'Europe/Lisbon' } });
+});
+test('disabling quiet hours flushes held updates immediately and urgent ask-user survives the bridge input', async () => {
+  const { AskUserInputSchema, ProjectWorkSettingsSchema, defaultProjectWorkSettings } = await import('../packages/core/dist/index.js');
+  const f = fixture = await projectFixture(), sent: Array<{ body: string }> = [];
+  const service = new HubNotifications(f.app.hub, () => 'https://fixture.example', async (_subscription, payload) => { sent.push(JSON.parse(String(payload))); return { statusCode: 201, body: '', headers: {} }; }); services.push(service); subscribe(service);
+  const preferences = { level: 'standard', quietHours: { enabled: true, start: '00:00', end: '00:00', timezone: 'Europe/Lisbon' } };
+  await f.app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings('project'), notifications: preferences }), 0);
+  await f.app.projectWork.decisions.ask('project', { question: 'An ordinary question.' }, 'coordinator', 'quiet_question');
+  await f.app.projectWork.decisions.ask('project', AskUserInputSchema.parse({ question: 'Production is broken.', urgent: true }), 'coordinator', 'urgent_question');
+  await service.sweep(); expect(sent.map(row => row.body)).toEqual(['Production is broken.']);
+  const current = (await f.app.projectHub.settings('project'))!;
+  await f.app.projectHub.putSettings({ ...current.document, notifications: { ...current.document.notifications, quietHours: { ...current.document.notifications.quietHours, enabled: false } } }, current.revision);
+  await service.sweep(); expect(sent.map(row => row.body)).toEqual(['Production is broken.', '1 updates while you were away']);
+});
+test('quiet hours handle daytime boundaries, overnight clocks and the Lisbon offset change', async () => {
+  const { insideQuietHours } = await import('../apps/daemon/dist/notifications.js');
+  const hours = { enabled: true, start: '23:00', end: '08:00', timezone: 'Europe/Lisbon' };
+  expect(insideQuietHours(Date.parse('2026-10-19T22:00:00Z'), hours)).toBe(true);
+  expect(insideQuietHours(Date.parse('2026-10-19T07:00:00Z'), hours)).toBe(false);
+  expect(insideQuietHours(Date.parse('2026-10-26T22:00:00Z'), hours)).toBe(false);
+  expect(insideQuietHours(Date.parse('2026-10-26T23:00:00Z'), hours)).toBe(true);
+  expect(insideQuietHours(Date.parse('2026-10-19T12:00:00Z'), { ...hours, start: '09:00', end: '17:00' })).toBe(true);
 });
 test('VAPID keys are lazy, encrypted, stable across service restarts and absent from the owner view', () => {
   const { hub, service } = setup(); expect(() => hub.vault.forLaunch('web-push')).toThrow('Saved secret is unavailable.');

@@ -980,8 +980,8 @@
   {
     "id": "wg-owner-reach",
     "title": "Owner commands, quiet hours and OAuth",
-    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
-    "status": "planned"
+    "why": "Installation-control project send, owner via labels, matching completed-turn replies, Copy-only Claude app prompts, durable quiet hours/urgent delivery, portable preference migration and OAuth DCR/PKCE with atomic refresh rotation implemented.216 distinct affected backend cases, typecheck/lint/build and four browser layouts with16 live vision checks passed. Sole owner sign-in awaits0.6.0 installation; instructions are private. Legal adapter absolute expiry is enforced before main publication; its final normal project publication remains pending.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "wg-release",

@@ -40,6 +40,7 @@ ${startMode === 'propose' ? '- This project proposes before starting. Tasks you 
 - Project memory is shared by every session in this project, on Claude and on Codex. Search it before planning work in an area. Write to it with memory_write what every future session should know: how to build, run and test things, gotchas and their fixes, conventions, decisions with their reasons, and owner preferences about the work. Plans and task status belong in the notebook, not in memory.
 - Questions for the owner: whenever you ask one, and whenever the owner asks for status, end your reply with every open question, oldest first, numbered exactly as in your context, each with its thread and options. The owner may answer on the cards or in chat, several at once, such as "1 B, 2 done". Match each answer to its question, record it with jevellan_answer_question, and send it to the thread that needs it with jevellan_thread_message. If one answer is unclear, ask about that one only.
 - GitHub: your threads' pull requests and Jevellan's jobs reach you as events. For anything else, such as workflow runs, pull requests from people or other tools, recent commits on main, or the log of a failed check, use jevellan_github.
+- A step that must run on the owner's Mac through the Claude app is an ownerCommands item of kind prompt.
 - When the owner must run something on a machine, such as a sign-in, a sudo command or anything a session was not allowed to do, put the exact command in ownerCommands of jevellan_ask_user with its device and folder, so the owner can run it with one tap. When it has run, its output comes back to you as a message.
 
 Replying to the owner: be brief and concrete. Say what you started, routed, asked or concluded, naming threads by title. Never paste long transcripts. Write in the owner's language.`;
@@ -125,7 +126,7 @@ export function eventLine(event: CoordinatorEvent, context: EventLineContext): s
     case 'thread-placement-changed': return `[thread "${title(event.threadId)}" moved: ${event.summary}]`;
     case 'thread-auto-fix': return autoFixEventLine(event, title(event.threadId));
     case 'memory-dreamed': return `[memory dream] ${event.summary}\nChanges: ${JSON.stringify(event.counts)}`;
-    case 'user-message': return `[owner ${(context.clock ?? clockTime)(event.at)}] ${event.text}`;
+    case 'user-message': return `[owner${event.via ? ` via ${event.via}` : ''} ${(context.clock ?? clockTime)(event.at)}] ${event.text}`;
     case 'thread-report': {
       const report = event.report;
       return `[${thread(event.threadId)} reported ${report.status}] ${report.summary}${reportLines(report)}${report.synthesized ? SYNTHESIZED_SUFFIX : ''}${context.askedDirectly ? ASKED_DIRECTLY_SUFFIX : ''}`;
@@ -178,6 +179,7 @@ ${isolation}
 - Run only surgical tests: the ones that cover what you changed. Jevellan runs the project's checks and the full suite.
 - Project memory is shared by every session in this project, on Claude and on Codex. Read the Project memory and Project now sections you receive. Search memory with memory_search before working in an unfamiliar area. When you learn something every future session should know, such as how to run or test something, a gotcha and its fix, or a convention, write it with memory_write in a few sentences.
 - If your pull request's checks fail, read them with jevellan_github.
+- A step that must run on the owner's Mac through the Claude app is an ownerCommands item of kind prompt.
 - If the owner must run something, because you are not allowed to or it needs their sign-in, put the exact command in ownerCommands of your jevellan_thread_report with why, and report blocked or needs-decision. Never ask the owner to run something you can run yourself. When the owner runs it, its output comes back to you as a message.
 - Don't review your own work beyond normal care. Tests run after you, and a nightly review covers everything that merges.${input.copiedFiles?.length ? `\n- ${copiedFilesInstructions(input.copiedFiles)}` : ''}${input.instructions ? `\n\nProject instructions from the owner:\n${input.instructions}` : ''}`;
 }

@@ -32,7 +32,7 @@ test('checks use path boundaries, empty paths and an unconditional smoke check',
   expect(selectedLandingChecks(work, ['README.md']).map(c => c.command)).toEqual(['all', 'one', 'smoke']);
 });
 test('old threads default to pull-request delivery and old settings migrate to land without retired fields', () => {
-  const old = { ...defaultProjectWorkSettings('p'), schema: 'project-work-settings-v4', autoMerge: true, defaultIsolation: 'main', allowMainIsolation: true, requiredChecks: ['result'] };
+  const old = { ...defaultProjectWorkSettings('p'), schema: 'project-work-settings-v4', notifications: 'standard', autoMerge: true, defaultIsolation: 'main', allowMainIsolation: true, requiredChecks: ['result'] };
   for (const k of ['delivery', 'autoLand', 'landingChecks', 'smokeCheck', 'mergeCommitPaths', 'healthChecks', 'deploy', 'coordinatorHandoffAtPercent', 'pullRequestAutoMerge']) delete old[k as keyof typeof old];
   const migrated = StoredProjectWorkSettingsSchema.parse(old); expect(migrated).toMatchObject({ delivery: 'land', autoLand: true }); expect(migrated).not.toHaveProperty('requiredChecks');
   const index = ThreadIndexSchema.parse({ schema: 'project-thread-index-v1', revision: 0, id: 't', projectId: 'p', title: 'Old', state: 'running', isolation: 'worktree', ownerDeviceId: 'd', runtime: 'fake', modelLabel: 'Fixture', effort: 'medium', accountLabel: 'Work', turns: 1, createdAt: '2026-10-19T00:00:00Z', updatedAt: '2026-10-19T00:00:00Z' });
@@ -193,11 +193,17 @@ test('a night starting during integration fences the final main push', async () 
   const result = await start(f), thread = await done(f, result.threadId); expect(thread.landing).toBeUndefined(); expect(git(f.origin, 'rev-parse', 'main')).toBe(before); expect(thread.stateReason).toBe('Held for the nightly window.');
 }, 120_000);
 
-test.each([true, false])('a required job gate controls landing and forces a merge commit (passed %s)', async passed => {
+test.each([{ passed: true, expired: false }, { passed: false, expired: false }, { passed: true, expired: true }, { passed: true, expired: 'push' }, { passed: true, expired: 'cached' }])('a required job gate controls landing and forces a merge commit (passed $passed, expired $expired)', async ({ passed, expired }) => {
   const { ProjectJobRunSchema, ProjectWorkTaskSchema, writeDocument } = await import('../packages/core/dist/index.js');
   const { deliveryDirectory, PrivateJobDeliverySchema } = await import('../packages/projects/dist/job-deliveries.js');
-  const f = await setup(), commit = git(f.checkout, 'rev-parse', 'HEAD'), at = new Date().toISOString(), runId = 'gate_fixture';
-  const gate = { id: 'fixture_gate', protectedPaths: ['evals/'], timeoutMinutes: 1, command: `node -e 'const f=require("node:fs"),p=require("node:path");const rel=p.relative(process.env.JEVELLAN_JOB_WORKSPACE,process.env.JEVELLAN_GATE_INPUT);if(rel.startsWith("..")||p.isAbsolute(rel)||JSON.parse(f.readFileSync(process.env.JEVELLAN_GATE_INPUT)).schema!=="private-job-delivery-v1")process.exit(9);f.writeFileSync(process.env.JEVELLAN_GATE_RESULT,JSON.stringify({schema:"project-job-gate-result-v1",trustedCommit:process.env.JEVELLAN_JOB_COMMIT,candidateCommit:process.env.JEVELLAN_GATE_CANDIDATE_COMMIT,passed:${passed},checks:[{name:"Fixture measurement",passed:${passed}}]}))'` };
+  const f = await setup({ autoLand: expired !== 'cached' }), commit = git(f.checkout, 'rev-parse', 'HEAD'), at = new Date().toISOString(), runId = 'gate_fixture';
+  let gateNow = Date.now(); const validUntil = new Date(gateNow + 3600000).toISOString();
+  if (expired) {
+    f.app.projectWork.landings.o.now = () => gateNow;
+    const put = f.app.projectWork.landings.o.hub.putMergeDocument.bind(f.app.projectWork.landings.o.hub);
+    vi.spyOn(f.app.projectWork.landings.o.hub, 'putMergeDocument').mockImplementation(async (raw, revision) => { const saved = await put(raw, revision); if (expired !== 'cached' && raw.schema === 'landing-route-v1' && raw.state === (expired === 'push' ? 'landing' : 'waiting')) gateNow = Date.parse(validUntil) + 1000; return saved; });
+  }
+  const gate = { id: 'fixture_gate', protectedPaths: ['evals/'], timeoutMinutes: 1, command: `node -e 'const f=require("node:fs"),p=require("node:path");const rel=p.relative(process.env.JEVELLAN_JOB_WORKSPACE,process.env.JEVELLAN_GATE_INPUT);if(rel.startsWith("..")||p.isAbsolute(rel)||JSON.parse(f.readFileSync(process.env.JEVELLAN_GATE_INPUT)).schema!=="private-job-delivery-v1")process.exit(9);f.writeFileSync(process.env.JEVELLAN_GATE_RESULT,JSON.stringify({schema:"project-job-gate-result-v1",trustedCommit:process.env.JEVELLAN_JOB_COMMIT,candidateCommit:process.env.JEVELLAN_GATE_CANDIDATE_COMMIT,${expired ? `validUntil:"${validUntil}",` : ''}passed:${passed},checks:[{name:"Fixture measurement",passed:${passed}}]}))'` };
   f.app.hub.put('project-job-runs', runId, ProjectJobRunSchema, ProjectJobRunSchema.parse({ schema: 'project-job-run-v1', id: runId, projectId: 'project', revision: 1, jobId: 'night', taskId: 'night_task', deviceId: f.app.device.deviceId, commit, projectDay: at.slice(0, 10), startedAt: at, conclusion: 'passed', summary: 'Fixture measurement completed.', logTail: '', phase: 'finished', spec: { kind: 'command', command: 'true', timeoutMinutes: 1, deliveryGate: gate }, baseBranch: 'main', watchAfter: at,
     deliveries: [{ schema: 'project-job-delivery-v1', id: 'candidate', title: 'Candidate', brief: 'Dev fixture only.', type: 'feature', fromBranch: 'fixture', gate, inputSha256: 'a'.repeat(64) }] }), 0);
   writeDocument(join(deliveryDirectory(f.homes, 'project', runId), 'candidate.json'), PrivateJobDeliverySchema, { schema: 'private-job-delivery-v1', runId, deliveryId: 'candidate', trustedCommit: commit, sha256: 'a'.repeat(64), input: { schema: 'fixture-input-v1', private: 'Never included in the prompt.' } });
@@ -205,16 +211,22 @@ test.each([true, false])('a required job gate controls landing and forces a merg
     const threadId = turn.input.owner.id;
     f.app.hub.put('project-work-tasks', 'bound_candidate', ProjectWorkTaskSchema, ProjectWorkTaskSchema.parse({ schema: 'project-work-task-v1', id: 'bound_candidate', projectId: 'project', revision: 1, jobDelivery: { runId, deliveryId: 'candidate' }, title: 'Candidate', brief: 'Dev fixture only.', kind: 'session', type: 'feature', goalId: null, source: 'finding', state: 'active', rank: '8', ownerRanked: false, now: false, after: [], needs: [], dailyId: null, jobId: null, threadId, jobRunId: null, fixed: {}, createdAt: at, updatedAt: at }), 0);
     expect(turn.input.prompt).not.toContain('Never included in the prompt.');
-    return commitStep({ 'README.md': 'Measured change\n' }, { status: passed ? 'progress' : 'done', summary: 'Candidate ready.' })(turn);
+    return commitStep({ 'README.md': 'Measured change\n' }, { status: passed && !expired ? 'progress' : 'done', summary: 'Candidate ready.' })(turn);
   }, forThread());
   const started = await f.app.projectWork.createThread('project', { schema: 'thread-create-request-v1', clientRequestId: 'gated', title: 'Gated work', task: 'Make the measured change.', modelId: 'fixture', deviceId: f.app.device.deviceId, taskContext: { taskId: 'bound_candidate', type: 'feature', needs: [], goal: null } });
   let thread;
-  if (passed) {
+  if (passed && !expired) {
     await f.waitFor(() => f.thread(started.threadId), row => row.state === 'idle');
     f.fake.enqueueTurn(commitStep({ 'README.md': 'Measured change after restart\n' }, { status: 'done', summary: 'Restarted candidate ready.' }), forThread());
     const restarted = await f.app.projectWork.threads.restart('project', started.threadId, { schema: 'thread-override-request-v1', clientRequestId: 'gated_restart', mode: 'restart', modelId: 'fixture', deviceId: f.app.device.deviceId }, f.app.device.deviceId);
     thread = await done(f, restarted.newThreadId); expect(thread.taskContext?.taskId).toBe('bound_candidate');
   } else thread = await done(f, started.threadId);
-  if (passed) { expect(thread.landing?.method).toBe('merge-commit'); expect(thread.landing?.checks).toContainEqual(expect.objectContaining({ name: gate.id, passed: true })); expect(git(f.origin, 'show', '-s', '--format=%P', 'main').split(' ')).toHaveLength(2); }
-  else { expect(thread.landing).toBeUndefined(); expect(git(f.origin, 'rev-parse', 'main')).toBe(commit); expect(thread.stateReason).toContain('gate refused'); }
+  if (expired === 'cached') {
+    gateNow = Date.parse(validUntil) + 1000;
+    const route = (await routes(f, thread.id))[0]!;
+    const response = await f.request(`/api/projects/project/decisions/${route.decisionId}/answer`, 'POST', { schema: 'decision-answer-request-v1', clientRequestId: 'expired_owner_land', optionLabel: 'Land now' });
+    expect(response.status).toBe(202); await f.app.projectWork.idle(); thread = f.thread(thread.id);
+  }
+  if (passed && !expired) { expect(thread.landing?.method).toBe('merge-commit'); expect(thread.landing?.checks).toContainEqual(expect.objectContaining({ name: gate.id, passed: true })); expect(git(f.origin, 'show', '-s', '--format=%P', 'main').split(' ')).toHaveLength(2); }
+  else { expect(thread.landing).toBeUndefined(); expect(git(f.origin, 'rev-parse', 'main')).toBe(commit); expect(thread.stateReason).toContain(expired ? 'gate deadline expired' : 'gate refused'); }
 }, 120_000);

@@ -46,7 +46,7 @@ export const ThreadStartInputSchema = z.strictObject({
 export const ThreadMessageInputSchema = z.strictObject({ threadId: IdSchema, message: text.max(20000), interrupt: z.boolean().default(false) });
 export const ThreadReadInputSchema = z.strictObject({ threadId: IdSchema, detail: z.enum(['summary', 'transcript']).default('summary') });
 export const ThreadStopInputSchema = z.strictObject({ threadId: IdSchema, reason });
-export const AskUserInputSchema = z.strictObject({ question: text.max(2000), options: z.array(OptionSchema).max(4, ASK_USER_OPTIONS).optional(), threadId: IdSchema.optional(), ownerCommands: OwnerCommandsSchema.optional(), accountId: IdSchema.optional() })
+export const AskUserInputSchema = z.strictObject({ urgent: z.boolean().optional().describe('Only when production is broken.'), question: text.max(2000), options: z.array(OptionSchema).max(4, ASK_USER_OPTIONS).optional(), threadId: IdSchema.optional(), ownerCommands: OwnerCommandsSchema.optional(), accountId: IdSchema.optional() })
   .refine((input) => input.options?.length !== 1, { message: ASK_USER_OPTIONS, path: ['options'] });
 export const WithdrawQuestionInputSchema = z.strictObject({ decisionId: IdSchema, reason });
 export const AnswerQuestionInputSchema = z.strictObject({ questionId: IdSchema, optionLabel: text.max(120).optional(), text: text.max(2000).optional() })
@@ -207,7 +207,7 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
     jevellan_thread_message: 'Send a message to a thread. An idle or in-review thread starts a turn now; a running thread receives it as its next turn, or at once with interrupt: true. Threads that are attached, done, stopped or failed refuse messages.',
     jevellan_thread_read: 'Read a thread’s state, its last three reports and its pull request. detail: transcript adds the end of its assistant text.',
     jevellan_thread_stop: 'Stop a thread: end any running turn and mark it stopped. Its worktree and branch stay until the owner discards them.',
-    jevellan_ask_user: 'Ask the owner a question. Give no options or two to four short options, and name the thread when the question comes from one. When the question asks the owner to sign in to an account, pass that accountId: the question is withdrawn once the account is Ready. The answer arrives later as an event.',
+    jevellan_ask_user: 'Ask the owner a question. Set urgent only when production is broken; it bypasses quiet hours. Give no options or two to four short options, and name the thread when the question comes from one. When the question asks the owner to sign in to an account, pass that accountId: the question is withdrawn once the account is Ready. The answer arrives later as an event.',
     jevellan_answer_question: 'Record an answer the owner gave in chat, only during a turn carrying an owner message. Match the numbered question and its exact option label. Then send the answer to the responsible thread with jevellan_thread_message.',
     jevellan_github: 'Read this project’s GitHub workflows, runs and failed job logs, pull requests from any author, or recent commits. Results are cached for 60 seconds. Threads may read only their own pull request and runs and job logs on its current head commit.',
     jevellan_terminal_read: 'Read the owner’s open terminals and their recent commands or output when the owner refers to a terminal. Read-only: never type or run commands in an owner terminal.',

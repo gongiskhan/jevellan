@@ -136,6 +136,7 @@ export class MemberHubClient {
   async ekoa(input: unknown) {
     const request = EkoaRequestSchema.parse(input); this.options.redactor.add(request.ownerSession);
     if (request.operation === 'save' && request.input.token) this.options.redactor.add(request.input.token);
+    if (request.operation === 'oauth-complete' && request.input.code) this.options.redactor.add(request.input.code);
     return this.#request('ekoa', EkoaStateSchema, request, 65_000);
   }
   async projectMemory(input: unknown) {

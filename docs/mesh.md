@@ -157,3 +157,6 @@ Ekoa Settings operations relay to the hub with both device authentication and an
 
 
 GitHub credentials may be scoped to a registered project in the encrypted hub vault. Members request the project scope over the authenticated shared-state RPC; browser responses expose only masked summaries. Projects marked as requiring a project token never fall back to the legacy shared credential. Scope is included in request-id digests, so retries cannot cross projects.
+
+
+The installation control route for project messages uses loopback authorization and durable owner delivery. Reply queries read the hub journal and match the consuming turn within its source device ledger. OAuth sign-in operations use the existing owner-authenticated Ekoa relay; authorization codes and tokens are never public status. Registration, PKCE state and rotating tokens remain in one encrypted hub record. Quiet-hours holds and project summaries are durable at that same authority.

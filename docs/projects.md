@@ -125,7 +125,7 @@ Environment variables, secrets and copied files reach setup, threads, verificati
 
 Settings → Notifications enables this browser's web push subscription and offers a test, removal and a device list. HTTPS is required. On iPhone, install Jevellan from Safari to the Home Screen first. The owner verifies physical-phone delivery separately.
 
-Standard sends coordinator replies, questions and failures. Everything also sends thread turn reports; Only what needs me sends questions and failures. Off suppresses project notifications. Focused clients at the matching URL suppress duplicate notifications. Clicking a notification opens its deep link. Expired subscriptions are removed; bounded retries and seven-day retention limit delivery state. Ekoa mirroring remains independent.
+Standard sends coordinator replies, questions and failures. Everything also sends thread turn reports; Only what needs me sends questions and failures. Off suppresses ordinary project notifications; urgent production questions still arrive. Focused clients at the matching URL suppress duplicate notifications. Clicking a notification opens its deep link. Expired subscriptions are removed; bounded retries and seven-day retention limit delivery state. Ekoa mirroring remains independent.
 
 ## Usage
 
@@ -133,7 +133,7 @@ Project settings → Usage shows Today, 7 days or 30 days across devices, groupe
 
 ## Across devices
 
-The hub owns shared definitions, settings, task indexes, questions, library, memory and the encrypted vault. Each thread's owner device runs its session, git work and publication. Relay requests are scoped, versioned and idempotent; temporary outages retain queued work. An SSH connection for native conversations is distinct from a joined Projects member. All participating devices must run 0.5.0 before using the new schemas; independent installations are not upgraded by association.
+The hub owns shared definitions, settings, task indexes, questions, library, memory and the encrypted vault. Each thread's owner device runs its session, git work and publication. Relay requests are scoped, versioned and idempotent; temporary outages retain queued work. An SSH connection for native conversations is distinct from a joined Projects member. All participating devices must run 0.6.0 before using the new schemas; independent installations are not upgraded by association.
 
 ## Where state lives
 
@@ -144,3 +144,16 @@ The JSONL ledgers are authoritative local execution history. The hub holds share
 One repository per project; no project deletion, cloud-hosted Claude threads, coordinator shell, GitHub posting or dollar spend caps. Compatible endpoints use Claude only. Thread transcripts still poll every 1.5 seconds. Project status, daily starts, concurrency, device resource guards and permanent exclusions are enforced in backend operations, including fixed requests.
 
 The [parity run log](acceptance/projects-parity-2026-10/README.md) separates simulated checks, live journeys and missing credentials. [Projects history](acceptance/projects-history.md) preserves the former reference verbatim; dated claims there are historical, not current acceptance.
+
+
+The installed command can send an owner message without a browser session:
+
+```sh
+jevellan project send ekoa-code --from "Coordenador" --wait 600 -- "Which work needs my attention?"
+```
+
+It uses the installation control file, forwards to the assigned Coordinator, and records the source as “You, via Coordenador”. Text comes from stdin when omitted; `--id` preserves a caller-supplied message identity for retries. `--wait` defaults to 600 seconds and accepts up to 3,600. It prints the reply from the completed turn that consumed that message. `--json` emits `ok`, `projectId`, `turn`, `reply` and `at`; without waiting, turn and reply are null. A timeout exits 2 while the Coordinator continues working.
+
+An owner command can be a shell command or a Claude app prompt. Prompts say “Paste into the Claude app on {device}” and offer Copy. They cannot run in a terminal. Project notification settings contain a level and optional quiet hours, disabled by default from 23:00 to 08:00 Europe/Lisbon. Held updates survive a restart and become one project summary when quiet hours end or are disabled. An urgent production question bypasses quiet hours and the ordinary notification level.
+
+Settings → Ekoa offers Connect to Ekoa. The hub discovers OAuth metadata, registers a public client when supported, and uses authorization code with PKCE S256. Sign-in returns to the hub’s `/settings/ekoa/callback`. The vault holds the client, temporary verifier and rotating tokens. A rotated refresh token is saved before its access token can be used. A later settings save wins over a delayed callback. Ekoa mirror ownership markers keep Waiting items and deploy messages on their existing tasks.
