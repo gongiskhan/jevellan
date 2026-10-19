@@ -2414,3 +2414,8 @@ Suggested setup now reaches the coordinator on its eligible first turn or an exp
 The P0–P9 source checkpoints are pushed. P10 preserves the complete prior Projects/loop references in their history documents, rewrites the current references and saves reproduced closing regressions and their focused evidence. Source typecheck, lint and production build pass. Full verification remains failed or incomplete: LJ5 still fails concurrently, the focused Codex safety contract still ends interrupted, and the unchanged installed Pro0.3.6 hub has unstable readiness. Dedicated vision is not run. One bounded closing serious-issues review is recorded; no second review or new production edit follows it.
 
 This is not a0.5.0 release. No installation, real sandbox journey or owner's acceptance is claimed. Source remains0.4.1, rollback is retained privately, and the live clock has not started. The final run result and owner-first continuation are in projects-parity-2026-10/HANDOFF.md and phase-10/.
+
+
+## Release 0.5.1 installation resume, 19 October 2026
+
+Live: the owner authorized clearing the stale coordinator maintenance hold. After fresh process/activity checks, the named Madrid service stopped normally, both machines received fresh cold backups, and the verified published archives installed through the normal updater, Madrid first. Both devices now report healthy and Online on 0.5.1; doctor is 10/10 on each, account checks are refreshed, vault synchronization completed and the Devices UI check passes. Rollback to 0.5.0 remains. No product source, project settings or production changed. Prior live journeys and cleanups remain not run. See release-051-2026-10/HANDOFF.md.

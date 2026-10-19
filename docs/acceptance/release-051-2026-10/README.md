@@ -4,6 +4,8 @@ Run log for the 19 October 2026 brief: publish and install 0.5.1 on both machine
 
 The accepted product source is `c083ec8df17951e873433224ff9bf9217f13194a` (gate accepted in the [fix-051 run](../fix-051-2026-10/README.md)). The run started at `f955c88e`, which changes documentation only. No product source changes in this run.
 
+**Current state, authorized resume:** both machines are installed on 0.5.1. Confirmation passed at 2026-10-19T13:18:28.681Z. The original blocked run below remains as history.
+
 ## Clocks
 
 - Run started: 2026-10-19T11:06:11Z on dev-madrid, checkout clean on `main` at `f955c88e`.
@@ -128,3 +130,17 @@ All of it is private (dev-madrid, `~/.jevellan-build/`), and none of it changed 
 - **Confirmation.** `release-051/bin/confirm-assert.mjs` asserts every condition. `devices-ui.mjs` asserts Settings → Devices in the owner UI and takes a screenshot; its read-only dry run on 0.5.0 found both devices Online.
 - **Cleanup A.** In `tests/e2e/skeleton.spec.ts`, J8 (line 880) and J11 (line 967) would open `${target.url}/new` instead of `${target.url}/`. All their other steps and assertions stay as they are.
 - **Cleanup B.** Drafts are in `release-051/drafts/`: `scripts/release/` (build, pack, verify, publish, backup with its home copy, update, confirm, each with an argument check and a dry run where one applies) and `docs/release.md`.
+
+## Authorized installation resume, 19 October (live)
+
+The owner authorized bypassing the stale coordinator lifecycle hold after confirming the coordinator was no longer doing work. Fresh observations found no runtime behind the held coordinator operation, no active thread turn on the hub, and an empty member activity file. The named hub service was stopped normally at 13:10:07 UTC; no process was killed by name or pattern. No project settings or source code changed.
+
+- Fresh Madrid cold backup completed at 13:12:40 UTC: 11,093,708 KiB, 141,237 files with a SHA-256 manifest. The prior backup was moved aside and retained. The service stayed stopped until the update, preventing queued work from racing maintenance.
+- Fresh Pro cold backup: 13:13:13–13:13:57 UTC, 3,155,792 KiB and 83,099 files with a SHA-256 manifest. Its normal stop, APFS clone and restart completed successfully.
+- Archive checksums were checked again and match the published release. Madrid updated first, then the Pro, through the normal updater; both returned exit 0 and healthy 0.5.1. Rollback to 0.5.0 is retained by both installation records.
+- Initial confirmation found only stale account checks and pending vault synchronization. All three enabled accounts were refreshed through the normal owner Settings operations on each device, all reported Ready, and vault synchronization completed without error. This was operational refresh, not a source fix or weakened assertion.
+- Final confirmation: doctor 10/10 OK on both, both health endpoints on 0.5.1, both roster entries Online on 0.5.1, a completed vault sync after the updates with no pending work/error, and no open request classifications.
+- Playwright Settings → Devices check passed with both devices Online on 0.5.1. Private receipts, screenshot and exact service observations are in `~/.jevellan-build/release-051/resume-20261019/` on dev-madrid.
+- Existing project work resumed after the hub update. No project message, source change, merge, deploy or production operation was performed by this installation resume.
+
+The earlier live journeys and both cleanups remain **not run**. They are not claimed as acceptance. The installation prerequisite for the subsequent without-GitHub brief is now satisfied; this authorized resume closes the installation handoff rather than restarting the previous test time box.

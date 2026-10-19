@@ -1,3 +1,19 @@
+# Release 0.5.1: current installation handoff
+
+## Owner steps
+
+1. No installation action remains. Both dev-madrid and the MacBook Pro are healthy and Online on **0.5.1**, confirmed at 2026-10-19T13:18:28.681Z. Doctor reports **10/10 OK** on both. Vault sync and the Devices UI check pass.
+2. The without-GitHub brief may now proceed from its own orientation. The previous live journeys and cleanup phases were **not run**, not passed.
+
+## Backups and rollback (live)
+
+- Fresh hub backup: `~/.jevellan-build/fix-051/backup-madrid/` on dev-madrid. The earlier 11:16 backup remains in its timestamped `backup-madrid-before-resume-*` sibling.
+- Fresh member backup: `/Users/ggomes/.jevellan-build/fix-051/backup-pro/` on the Pro. Both backups have manifests and service/command copies.
+- Both normal updates retain **0.5.0** as their previous installed version. To roll back Jevellan itself, wait for turns to finish and run the installation's normal `jevellan rollback` command on the affected machine. Do not purge or restore an older data snapshot over newer work.
+- Private current receipts: `~/.jevellan-build/release-051/resume-20261019/` on dev-madrid. No product source changed.
+
+## Original blocked handoff (11:55 UTC, retained history)
+
 # Release 0.5.1: handoff
 
 ## Owner steps
