@@ -3,7 +3,6 @@ import type { AccountService } from '@jevellan/accounts';
 import { ThreadAttachViewSchema, ThreadDetachViewSchema, minimalEnvironment, resolvedPath, type Project, type ProjectHub, type Thread } from '@jevellan/core';
 import type { NativeJournal } from '@jevellan/mesh';
 import { ATTACH_RUNTIMES_ONLY, NO_SESSION_TO_ATTACH, THREAD_NOT_FOUND, threadRunsOn } from './copy.js';
-import type { MainCheckout } from './main-checkout.js';
 import type { DeviceRoster } from './placement.js';
 import type { CoordinatorStore, ThreadStore } from './stores.js';
 import type { ThreadRunner } from './thread-runner.js';
@@ -45,7 +44,6 @@ export type ThreadAttachOptions = {
   hub: Pick<ProjectHub, 'thread'>; roster(): Promise<DeviceRoster>;
   runner(threadId: string): Pick<ThreadRunner, 'attach' | 'detach'> | undefined;
   project(projectId: string): Promise<Project>;
-  main: Pick<MainCheckout, 'ready'>;
   accounts: Pick<AccountService, 'resolve'>;
   transcripts: Pick<ThreadTranscripts, 'sessions'>;
 };
@@ -77,7 +75,7 @@ export class ThreadAttach {
     const { thread, prepared } = await runner.attach(async (current) => {
       const runtime = current.placement.runtime;
       if (!attachRuntime(runtime)) throw refuse(ATTACH_RUNTIMES_ONLY, 409);
-      if (current.isolation === 'main' && !(await this.#o.main.ready(await this.#o.project(current.projectId), current))) throw refuse(NO_SESSION_TO_ATTACH, 409);
+      if (current.isolation === 'main') throw refuse(NO_SESSION_TO_ATTACH, 409);
       return { runtime, env: attachEnvironment(runtime, await this.#o.accounts.resolve(current.placement.accountId)) };
     });
     return ThreadAttachViewSchema.parse({ schema: 'thread-attach-v1', cwd: thread.cwd, runtime: prepared.runtime, nativeSessionId: thread.nativeSessionId,

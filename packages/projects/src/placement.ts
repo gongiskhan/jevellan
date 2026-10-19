@@ -145,16 +145,15 @@ export class Placement {
   async #packet(input: PlaceInput, devices: PlacementDevice[]): Promise<PlacementPacketInput> {
     const projectId = input.project.id;
     const type = input.taskContext?.type ?? 'feature';
-    const [remote, same, other, reservations] = await Promise.all([bestEffort(this.#indexes(projectId), []), bestEffort(this.#o.hub.recentOverrides(projectId, 8, { type, match: 'same' }), []),
-      bestEffort(this.#o.hub.recentOverrides(projectId, 4, { type, match: 'other' }), []), bestEffort(this.#o.hub.reservations(projectId), [])]);
+    const [remote, same, other] = await Promise.all([bestEffort(this.#indexes(projectId), []), bestEffort(this.#o.hub.recentOverrides(projectId, 8, { type, match: 'same' }), []),
+      bestEffort(this.#o.hub.recentOverrides(projectId, 4, { type, match: 'other' }), [])]);
     const overrides = [...new Map([...same, ...other].map(entry => [entry.id, entry])).values()];
     const indexes = new Map(remote.map((index) => [index.id, index]));
     for (const index of this.#o.local(projectId)) indexes.set(index.id, index);
     const device = (deviceId: string) => devices.find((entry) => entry.id === deviceId)?.name ?? deviceId;
-    const reserved = (threadId: string) => [...new Set(reservations.filter((entry) => entry.threadId === threadId).flatMap((entry) => entry.paths))];
     const activeThreads = [...indexes.values()].filter((index) => !isTerminal(index.state)).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
       .map((index): PlacementActiveThread => ({ title: index.title, isolation: index.isolation, device: device(index.ownerDeviceId), model: index.modelLabel, effort: index.effort,
-        reservedPaths: reserved(index.id) }));
+        reservedPaths: [] }));
     return { title: input.title, task: input.task, taskContext: input.taskContext, note: input.note, trouble: input.trouble, activeThreads,
       overrides: overrides.map((entry) => ({ mode: entry.mode, taskType: entry.taskType, changes: entry.changes, at: entry.at, title: indexes.get(entry.threadId)?.title ?? UNKNOWN_THREAD })) };
   }

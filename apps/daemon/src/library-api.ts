@@ -13,14 +13,17 @@ export async function handleLibrary(app: Application, request: IncomingMessage, 
   const projectId = IdSchema.parse(match[1]), tail = match[2] ?? '', method = request.method ?? 'GET';
   const owner = () => { if (!ownerSession) throw failure('Sign in to Jevellan.', 401); };
   if (!tail && method === 'GET') { json(response, await app.library.page(projectId, url.searchParams.get('after') ?? undefined)); return true; }
-  const upload = tail.match(/^(uploads|outputs\/([A-Za-z0-9_-]+))\/(.+)$/u);
+  const upload = tail.match(/^(uploads|outputs\/([A-Za-z0-9_-]+)|jobs\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+))\/(.+)$/u);
   if (upload && method === 'PUT') {
-    const threadId = upload[2]; if (!threadId) owner();
+    const threadId = upload[2], jobRunId = upload[3], artifactId = upload[4];
+    if (jobRunId) { const run = (await app.projectHub.jobRun(jobRunId))?.document; if (!deviceId || !run || run.projectId !== projectId || run.deviceId !== deviceId) throw failure('Only the executing device can upload job artifacts.', 403); }
+    else if (!threadId) owner();
     else { const thread = (await app.projectHub.thread(threadId))?.document; if (!thread || thread.projectId !== projectId || deviceId && thread.ownerDeviceId !== deviceId) throw failure(LIBRARY_THREAD_FORBIDDEN, 403); }
     const length = request.headers['content-length'], mime = request.headers['content-type'];
     if (!length || !/^\d+$/u.test(length) || typeof mime !== 'string') throw failure(LIBRARY_HEADERS_REQUIRED);
     const note = request.headers['x-jevellan-library-note'];
-    json(response, await app.library.upload(projectId, { name: decodeURIComponent(upload[3]!), mime, size: Number(length), source: threadId ? 'thread' : 'owner',
+    json(response, await app.library.upload(projectId, { name: decodeURIComponent(upload[5]!), mime, size: Number(length), source: jobRunId ? 'job' : threadId ? 'thread' : 'owner',
+      ...(jobRunId ? { jobRunId, artifactId } : {}),
       ...(threadId ? { threadId } : {}), ...(typeof note === 'string' ? { note: decodeURIComponent(note) } : {}), ...(ownerSession ? { ownerSession } : {}) }, request)); return true;
   }
   const content = tail.match(/^([A-Za-z0-9_-]+)\/content$/u);

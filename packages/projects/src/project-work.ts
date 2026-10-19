@@ -60,8 +60,6 @@ import { TurnLauncher } from './launch.js';
 import { ProjectJournals, type JournalOptions } from './journal.js';
 import { cacheRecords, sessionCacheSnapshot } from './session-cache.js';
 import { ProjectLedgers, type ProjectLedger } from './ledger.js';
-import { MailService } from './mail.js';
-import { MainCheckout } from './main-checkout.js';
 import { ProjectPaths } from './paths.js';
 import { Placement, type DeviceRoster } from './placement.js';
 import { GitHubAccess, ThreadPublication } from './publication.js';
@@ -153,7 +151,6 @@ export class ProjectWork {
   readonly disk: WorktreeDiskService;
   readonly cleanupInventory: ProjectCleanupInventory;
   /** Mail and reservations between main threads (brief 5.11, 7.2). */
-  readonly mail: MailService;
   readonly usage: ProjectUsage;
   readonly notifications: ProjectNotifications;
   /** The hub relay (D40): durable sends to other devices, and this device's pending envelopes. */
@@ -285,7 +282,6 @@ export class ProjectWork {
       repository: async project => parseGitHubRemote(await git.remoteUrl(worktrees.repository(project)) ?? '') });
     const publication = new ThreadPublication({ projectEnvironment, git, homes: o.homes, redactor: o.redactor, github, deviceId: o.deviceId, deviceName: o.deviceName, testTimeoutMs: timers.testTimeoutMs,
       leaseRetryMs: timers.mainLeaseRetryMs, now, ...(o.leases ? { leases: o.leases } : {}), ...(o.ownership ? { ownership: o.ownership } : {}) });
-    const main = new MainCheckout({ git, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName, ownership: o.ownership, outside: o.outside });
     this.coordinators = new CoordinatorService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: coordinatorStore, ledgers: this.ledgers, hub: o.hub,
       captureTurn: (project, session) => this.#capture(project, { scope: 'coordinator', runtime: session.runtime, model: session.model, accountId: session.accountId, sessionId: session.nativeSessionId }),
       ...(this.journal ? { handoffContext: (projectId: string) => this.journal!.handoffContext(projectId) } : {}),
@@ -319,7 +315,6 @@ export class ProjectWork {
       timers: { startMs: timers.coordinatorStartMs, retryMs: timers.coordinatorRetryMs, turnTimeoutMs: timers.coordinatorTurnTimeoutMs }, now });
     const delivery = new LocalDelivery({ deviceId: o.deviceId, coordinators: this.coordinators, store: this.store, outbox: () => this.outbox, now,
       command: (projectId, threadId, command) => this.threads.command(projectId, threadId, command) });
-    this.mail = new MailService({ hub: o.hub, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), local: (threadId) => this.store.get(threadId), now });
     this.tasks = new ProjectTasks({ hub: o.hub, deviceId: o.deviceId, redactor: o.redactor, now,
       settings: projectId => this.admission.settings(projectId), validateBranch: async (id, branch) => validateBranch(await this.#project(id), branch),
       validateGoal: (projectId, goalId, source, refillEventId) => this.goals.validate(projectId, goalId, source, refillEventId), projectDay: projectId => this.goals.day(projectId),
@@ -368,7 +363,7 @@ export class ProjectWork {
         reconsider: async (thread, reason, trouble, signal, minimumEffort) => placement.reconsider(await this.#project(thread.projectId), await this.admission.settings(thread.projectId), thread, reason, trouble, signal, minimumEffort),
       ...(this.journal ? { journalContents: (projectId: string, threadId: string) => this.journal!.contents(projectId, threadId) } : {}),
         deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, store: this.store, ledgers: this.ledgers, project: (projectId) => this.#project(projectId),
-        workSettings: (projectId) => this.admission.settings(projectId), worktrees, main, publication, launcher, accounts: o.accounts, admission: this.admission,
+        workSettings: (projectId) => this.admission.settings(projectId), worktrees, publication, launcher, accounts: o.accounts, admission: this.admission,
         endProcess: (process) => endTurnProcess(process),
         accountWait: (thread) => launcher.accountWait({ runtime: thread.placement.runtime, model: thread.placement.model,
           ...(thread.placement.fixed.includes('account') ? { requiredAccountId: thread.placement.accountId } : {}) }),
@@ -379,7 +374,7 @@ export class ProjectWork {
           const task = scope?.kind === 'thread' ? (await this.tasks.list(project.id)).find(task => task.threadId === scope.threadId) : undefined;
           return o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'thread', ...(scope?.kind === 'thread' ? { id: scope.threadId } : {}),
             ...(scope?.provenance ? { provenance: { ...scope.provenance, ...(task ? { taskId: task.id } : {}) } } : {}) });
-        }, mail: this.mail,
+        },
         githubTool: (scope, _name, input, signal) => this.#github.read(scope, input, signal),
         terminalRead: (scope, input) => { if (!o.terminalRead) throw new Error('Owner terminals are unavailable.'); return o.terminalRead(scope, input); },
         captureTurn: (project, thread) => this.#capture(project, { scope: thread.state === 'attached' ? 'attached' : 'thread', threadId: thread.id, runtime: thread.placement.runtime,
@@ -404,7 +399,7 @@ export class ProjectWork {
         },
         runtimeName: (runtime) => o.runtimes.get(runtime)?.displayName ?? runtime, enterOperation: o.enterOperation,
         timers: { threadTurnTimeoutMs: timers.threadTurnTimeoutMs, setupTimeoutMs: timers.setupTimeoutMs }, now } });
-    this.jobs = new ProjectJobRunner({ beforeDeployment: run => this.deploys.beforeJob(run), roster: o.roster, relay: async (projectId, deviceId, runId) => { this.outbox.enqueue(projectId, deviceId, { kind: 'job-run', runId, commandId: derivedId('jobcmd', runId, deviceId) }); await this.outbox.drain(); }, projectEnvironment, homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
+    this.jobs = new ProjectJobRunner({ library: o.library, beforeDeployment: run => this.deploys.beforeJob(run), roster: o.roster, relay: async (projectId, deviceId, runId) => { this.outbox.enqueue(projectId, deviceId, { kind: 'job-run', runId, commandId: derivedId('jobcmd', runId, deviceId) }); await this.outbox.drain(); }, projectEnvironment, homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
       project: id => this.#project(id), settings: id => this.admission.settings(id), baseBranch: repo => worktrees.baseBranch(repo), event: (id, event) => delivery.toCoordinator(id, event),
       windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
     this.daily = new ProjectDailyWork({ landing: (threadId, held) => { if (!this.store.get(threadId)) return; if (held) this.store.setIndexFields(threadId, { landing: 'held' }); else if (this.store.local(threadId).landing === 'held') this.store.setIndexFields(threadId, { landing: undefined }); }, fixCutoffMinutes: nightlyFixMinutes(o.homes), hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
@@ -422,7 +417,7 @@ export class ProjectWork {
       text: async task => {
         const goal = task.goalId ? await this.goals.read(task.projectId, task.goalId) : null;
         const brief = `${task.brief}${goal ? `\n\nGoal: ${goal.name}. Why it matters: ${goal.motivation}` : ''}\n\nTask type: ${task.type}.`;
-        return { brief, taskContext: { type: task.type, needs: task.needs, goal: goal ? { name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: brief };
+        return { brief, taskContext: { taskId: task.id, type: task.type, needs: task.needs, goal: goal ? { name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: brief };
       }, review: task => this.reviews.start(task), job: task => this.jobs.start(task), eligible: async (task, tasks) => await this.daily.eligible(task, tasks) && await this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
     this.deploys = new ProjectDeployService({ discoverBaseline: async id => {
       const repo = worktrees.repository(await this.#project(id)); if (!await git.remoteUrl(repo)) return null;
@@ -466,7 +461,7 @@ export class ProjectWork {
       threadCommand: (envelope) => this.#threadCommand(envelope),
     }, dropped: (lost) => this.#lostEnvelope(lost) });
     this.#attach = new ThreadAttach({ deviceId: o.deviceId, deviceName: o.deviceName, store: this.store, coordinators: coordinatorStore, hub: o.hub, roster: o.roster,
-      runner: (threadId) => this.threads.runner(threadId), project: (projectId) => this.#project(projectId), main, accounts: o.accounts, transcripts: this.transcripts });
+      runner: (threadId) => this.threads.runner(threadId), project: (projectId) => this.#project(projectId), accounts: o.accounts, transcripts: this.transcripts });
     this.views = new ProjectViews({ mergesHeld: async (id, tid) => await this.daily.mergesHeld(id) && !(await this.daily.allowedMergeThreads(id)).includes(tid), deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
       githubNotice: async projectId => { const budget = await (await github.open(projectId)).rateLimit(); return budget && budget.remaining / budget.limit < 0.2 && budget.resetAt > now() ? 'GitHub has less than 20% of its request budget remaining. Pull requests refresh every five minutes until it resets.' : undefined; },
       coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster, placement });
@@ -516,7 +511,7 @@ export class ProjectWork {
       },
       setupPropose: (id, trigger, input) => this.proposeSetup(id, trigger, input),
       settingsUpdate: (id, input, requestId) => this.coordinatorSettings(id, input, requestId),
-      library: this.#o.library, pullRequests: this.tracker, github: this.#github, terminalRead: this.#o.terminalRead, hub: this.#o.hub, ledgers: this.ledgers, mail: this.mail, roster: this.#o.roster, now: () => this.#timers.now(),
+      library: this.#o.library, pullRequests: this.tracker, github: this.#github, terminalRead: this.#o.terminalRead, hub: this.#o.hub, ledgers: this.ledgers, roster: this.#o.roster, now: () => this.#timers.now(),
       memory: async (projectId, scope) => this.#o.memory.project(await this.#project(projectId), this.#o.deviceId, () => { throw new Error(COORDINATOR_MEMORY_READ_ONLY); },
         { kind: 'coordinator', ...(scope?.provenance ? { provenance: scope.provenance } : {}) }) }),
       capture: async (scope, payload) => {
@@ -715,8 +710,8 @@ export class ProjectWork {
   async prepareDailyWork(projectId: string): Promise<void> { await this.#coordinatorHere(projectId); }
   async setupEkoaCode(projectId: string, raw: unknown) {
     const input = EkoaCodeSetupRequestSchema.parse(raw), project = await this.#project(projectId), repository = parseGitHubRemote(project.remoteUrl ?? '');
-    if (repository?.owner !== 'gongiskhan' || repository.repo !== 'ekoa-code' || project.githubTokenScope !== 'project' || project.testCommand !== EKOA_FAST_CHECKS || project.allowedDevices?.length !== 1 || project.allowedDevices[0] !== this.#o.deviceId)
-      throw refuse('Register the dedicated Ekoa Code clone on this device, with its project token, fast checks and this device as its only allowed device.', 409);
+    if (repository?.owner !== 'gongiskhan' || repository.repo !== 'ekoa-code' || project.githubTokenScope !== 'project' || project.testCommand !== EKOA_FAST_CHECKS || !project.allowedDevices?.includes(this.#o.deviceId) || project.allowedDevices.some(id => !project.paths[id]))
+      throw refuse('Register the dedicated Ekoa Code clones on the allowed devices, with the project token and fast checks.', 409);
     const entry = (await this.#o.settings()).menu.find(row => row.id === input.modelId && row.enabled && row.runtime === 'claude' && row.efforts.includes('high') && /opus\s*5\.5/iu.test(row.label));
     if (!entry) throw refuse('Choose the account-discovered Claude Opus 5.5 model with high effort before setting up Ekoa Code.', 409);
     await this.#coordinatorHere(projectId);
@@ -847,6 +842,7 @@ export class ProjectWork {
     }
     try {
       const saved = (await this.#o.hub.putSettings(settings, input.revision, ...(requestId === undefined ? [] : [requestId]))).document;
+      if (saved.revision < current.revision) return this.settingsView(projectId);
       const fields = ['maxRunningThreads', 'maxNewThreadsPerDay', 'startMode', 'prAutoFix.checks', 'prAutoFix.conflicts', 'prAutoFix.comments', 'instructions', 'placement.guidance'] as const;
       const changes = fields.filter(field => projectSettingValue(current, field) !== projectSettingValue(saved, field)).map(field => ({ field,
         from: settingText(projectSettingValue(current, field)), to: settingText(projectSettingValue(saved, field)) }));
@@ -1036,7 +1032,7 @@ export class ProjectWork {
         ...(await this.#o.projects.list()).flatMap(row => row.project.paths[this.#o.deviceId] ? [row.project.paths[this.#o.deviceId]!] : []),
         ...(roster.devices.find(row => row.device.id === this.#o.deviceId)?.device.protectedPaths ?? [])])] : [];
       const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
-      const safetyCommand = [process.execPath, join(applicationRoot(), 'runtimes', 'codex', 'dist', 'safety-hook.js'), stableJson({ cwd: thread.cwd, daemonPid: process.pid, profile: 'thread', protectedPaths })].map(quote).join(' ');
+      const safetyCommand = [process.execPath, join(applicationRoot(), 'runtimes', 'codex', 'dist', 'safety-hook.js'), stableJson({ cwd: thread.cwd, daemonPid: process.pid, profile: 'thread', protectedPaths, privatePaths: [this.#o.homes.at('project-work', project.id, 'job-cache'), this.#o.homes.at('project-work', project.id, 'job-workspaces')] })].map(quote).join(' ');
       return { ...view, env: minimalEnvironment(view.runtime, account.home, view.runtime === 'claude' ? Object.fromEntries(Object.entries(view.env).filter(([key]) => ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY'].includes(key))) : {},
         { JEVELLAN_STRETCH_TOKEN: grant.token, JEVELLAN_DAEMON_URL: this.daemonUrl, JEVELLAN_PROJECT_MEMORY_MODE: project.memory.mode }, {}),
         integration: { bridgeCommand: process.execPath, bridgeArgs: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], safetyCommand,

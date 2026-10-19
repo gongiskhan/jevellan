@@ -1,15 +1,11 @@
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { setTimeout as delay } from 'node:timers/promises';
 import {
-  GitHubClient, GitHubError, NOT_ON_MAIN, PUBLICATION_BUSY, PullRequestStateSchema, gitFailureMessage, mapMergeable, parseGitHubRemote, withPublicationLease,
-  type CheckoutOwnership, type GitHubPull, type GitWorkspace, type Homes, type Project, type PublicationLeaseService, type PullRequestState, type SecretRedactor, type Thread,
+  GitHubClient, GitHubError, PullRequestStateSchema, gitFailureMessage, mapMergeable, parseGitHubRemote,
+  type CheckoutOwnership, type GitHubPull, type Homes, type Project, type PublicationLeaseService, type PullRequestState, type SecretRedactor, type Thread,
   type ThreadLocal,
 } from '@jevellan/core';
-import { memoryConflictResolutions } from '@jevellan/memory';
 import {
-  BRANCH_PUSHED_NO_TOKEN, MAIN_CHANGED_THREE_TIMES, MAIN_LEASE_BUSY, MAIN_NO_REMOTE, MAIN_OPERATION_PENDING, NOT_GITHUB, NO_REMOTE, REMOTE_CREDENTIALS, VERIFICATION_HEAD_MOVED,
-  VERIFICATION_TREE_CHANGED, copiedFileCommitted, commandTimedOut, githubRefused, leftoverCommitSubject, mainCheckoutMessage, pullRequestBody,
+  BRANCH_PUSHED_NO_TOKEN, NOT_GITHUB, NO_REMOTE, REMOTE_CREDENTIALS, VERIFICATION_HEAD_MOVED,
+  VERIFICATION_TREE_CHANGED, copiedFileCommitted, commandTimedOut, githubRefused, leftoverCommitSubject, pullRequestBody,
 } from './copy.js';
 import { GIT_NETWORK_TIMEOUT_MS, tail, type ThreadGit } from './git.js';
 import type { ProjectLedger } from './ledger.js';
@@ -54,9 +50,6 @@ export type PublicationOutcome =
   /** Pushed, but no pull request: no token, or the remote is not on GitHub (D23, D58). */
   | { kind: 'branch-only'; reason: string; branch: string }
   | { kind: 'pr'; result: 'pr-opened' | 'pr-updated'; pr: PullRequestState }
-  | { kind: 'main-conflict'; files: string[] }
-  | { kind: 'main-published'; commit: string }
-  | { kind: 'checkout-completed' }
   /** A git or GitHub failure, redacted and at most 400 characters (a thread state reason). */
   | { kind: 'error'; reason: string };
 export type PublicationResult = { outcome: PublicationOutcome; pushedCommit?: string; verified?: VerificationResult };
@@ -68,16 +61,6 @@ export type WorktreePublication = {
   /** Called as soon as a push landed, so the next push leases against it even if the caller never sees the result (D27). */
   onPushed?(commit: string): void;
 };
-export type MainPublication = {
-  project: Project; thread: Thread; local: ThreadLocal; ledger: ProjectLedger;
-  /** The checkout as the thread's owned work (`MainCheckout.workspace`), claimed by this process. */
-  workspace: GitWorkspace;
-  signal?: AbortSignal | undefined;
-};
-/** A busy publication lease is tried again this many times (D45). */
-export const MAIN_LEASE_RETRIES = 3;
-/** Rejected pushes to main before publication gives up (main moved each time). */
-export const MAIN_PUSH_ATTEMPTS = 3;
 const reasonOf = (error: unknown, redactor: SecretRedactor) => redactor.text(error instanceof Error ? error.message : String(error)).replace(/\s+/g, ' ').trim().slice(0, 400);
 const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
@@ -89,7 +72,7 @@ const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(
  */
 export class ThreadPublication {
   readonly #git: ThreadGit; readonly #homes: Homes; readonly #redactor: SecretRedactor; readonly #github: GitHubAccess;
-  readonly #deviceId: string; readonly #deviceName: string; readonly #testTimeoutMs: number; readonly #leaseRetryMs: number; readonly #now: () => number;
+  readonly #deviceName: string; readonly #testTimeoutMs: number; readonly #now: () => number;
   /** Main isolation (phase 6) publishes under these; the worktree path needs neither. */
   readonly leases: PublicationLeaseService | undefined; readonly ownership: CheckoutOwnership | undefined;
   readonly #projectEnvironment: ((projectId: string) => Promise<Record<string, string>>) | undefined;
@@ -99,8 +82,8 @@ export class ThreadPublication {
     deviceId?: string;
     /** The wait before a busy publication lease is tried again (D45, 20 seconds in the daemon). */
     leaseRetryMs?: number }) {
-    this.#projectEnvironment = o.projectEnvironment; this.#git = o.git; this.#homes = o.homes; this.#redactor = o.redactor; this.#github = o.github; this.#deviceName = o.deviceName; this.#deviceId = o.deviceId ?? o.deviceName;
-    this.#testTimeoutMs = o.testTimeoutMs ?? TEST_TIMEOUT_MS; this.#leaseRetryMs = o.leaseRetryMs ?? 20_000; this.#now = o.now ?? Date.now; this.leases = o.leases; this.ownership = o.ownership;
+    this.#projectEnvironment = o.projectEnvironment; this.#git = o.git; this.#homes = o.homes; this.#redactor = o.redactor; this.#github = o.github; this.#deviceName = o.deviceName;
+    this.#testTimeoutMs = o.testTimeoutMs ?? TEST_TIMEOUT_MS; this.#now = o.now ?? Date.now; this.leases = o.leases; this.ownership = o.ownership;
   }
   async #head(cwd: string): Promise<string> { return (await this.#git.run(cwd, ['rev-parse', 'HEAD'])).stdout.trim(); }
   /**
@@ -210,91 +193,5 @@ export class ThreadPublication {
       if (signal?.aborted) throw error;
       return result({ kind: 'error', reason: reasonOf(error, this.#redactor) });
     }
-  }
-  /**
-   * Main isolation (brief 8.4 main, design 3.6): in the claimed checkout, leftovers are committed; without commits of its own (after the
-   * base and not on main as last fetched, D289) the thread concludes without changes; then the same three-attempt verification, and
-   * under the publication lease of the checkout's remote: fetch main, rebase onto it (memory notes merge as in conversations), and on a
-   * conflict list the files and abort, for the main-conflict prompt; after a rebase that brought upstream commits the head is verified
-   * again; then the head is pushed to main, at most three times while main keeps moving. A busy lease is tried again three times
-   * `leaseRetryMs` apart (D45). A rebase or merge the agent left unfinished is never committed, and neither is a checkout that is not on
-   * main (a branch the owner switched to holds the owner's files, P8 review TH-1). A Stop (`signal`) ends the publication at every step
-   * before the push, also without a test command (P8 review TH-2).
-   */
-  async publishMain(input: MainPublication): Promise<PublicationResult> {
-    const { project, thread, local, ledger, workspace: ws, signal } = input;
-    let verified: VerificationResult | undefined;
-    const result = (outcome: PublicationOutcome): PublicationResult => ({ outcome, ...(verified ? { verified } : {}) });
-    try {
-      if (thread.gitPolicy === 'external' || project.branchPolicy === 'external') {
-        await ws.ownership.assert(project, ws.owner);
-        if (await ws.branch() !== 'refs/heads/main') return result({ kind: 'error', reason: NOT_ON_MAIN });
-        signal?.throwIfAborted();
-        verified = await this.verify(project, thread, ledger, signal);
-        signal?.throwIfAborted();
-        return result(verified.status === 'failed' ? { kind: 'verification-failed', verification: verified } : { kind: 'checkout-completed' });
-      }
-      const leases = this.leases; if (!leases) throw new Error('Publication leases are not available on this device.');
-      await ws.ownership.assert(project, ws.owner);
-      const cwd = ws.path;
-      if (await this.#pending(cwd)) return result({ kind: 'error', reason: MAIN_OPERATION_PENDING });
-      if (await ws.branch() !== 'refs/heads/main') return result({ kind: 'error', reason: NOT_ON_MAIN });
-      if (await this.#git.remoteUrl(cwd) === null) return result({ kind: 'error', reason: MAIN_NO_REMOTE });
-      signal?.throwIfAborted();
-      await this.#git.commitAll(cwd, leftoverCommitSubject(thread.title, thread.lastReport?.summary ?? thread.title), local.gitIdentity);
-      if (!(await this.#ownCommits(cwd, thread.baseCommit))) return result({ kind: 'no-changes' });
-      signal?.throwIfAborted();
-      verified = await this.verify(project, thread, ledger, signal, true);
-      if (verified.status === 'failed') return result({ kind: 'verification-failed', verification: verified });
-      const key = await ws.publicationKey();
-      for (let retry = 0; ; retry += 1) {
-        try {
-          return result(await withPublicationLease(leases, key, thread.id, async (leased): Promise<PublicationOutcome> => {
-            // A Stop pressed while the lease was awaited or the rebase ran ends the publication before anything reaches main.
-            const assertLease = async () => { signal?.throwIfAborted(); await leased(); };
-            for (let attempt = 1; attempt <= MAIN_PUSH_ATTEMPTS; attempt += 1) {
-              signal?.throwIfAborted();
-              await ws.fetch(); const upstream = await ws.upstream();
-              if (!(await ws.contains(upstream))) {
-                const at = new Date(this.#now()).toISOString();
-                const rebased = await ws.rebase({ resolveConflicts: async (files) => memoryConflictResolutions(project, files, this.#deviceId, at) });
-                if (rebased === 'conflict') {
-                  // The files before the abort: afterwards nothing is unmerged.
-                  const files = await ws.integrationConflicts(); await ws.abortRebase();
-                  return { kind: 'main-conflict', files };
-                }
-                // The rebase brought upstream commits: the rebased head is what gets pushed, so it is what gets tested.
-                signal?.throwIfAborted();
-                verified = await this.verify(project, thread, ledger, signal, true);
-                if (verified.status === 'failed') return { kind: 'verification-failed', verification: verified };
-              }
-              signal?.throwIfAborted();
-              const head = await ws.head();
-              if (await ws.push(head, assertLease) === 'pushed') return { kind: 'main-published', commit: head };
-            }
-            return { kind: 'error', reason: MAIN_CHANGED_THREE_TIMES };
-          }));
-        } catch (error) {
-          if (!(error instanceof Error) || error.message !== PUBLICATION_BUSY) throw error;
-          if (retry >= MAIN_LEASE_RETRIES) return result({ kind: 'error', reason: MAIN_LEASE_BUSY });
-          await delay(this.#leaseRetryMs, undefined, signal ? { signal } : {});
-        }
-      }
-    } catch (error) {
-      if (signal?.aborted) throw error;
-      return result({ kind: 'error', reason: mainCheckoutMessage(reasonOf(error, this.#redactor), { projectName: project.name, deviceId: this.#deviceId, deviceName: this.#deviceName }) });
-    }
-  }
-  /** A rebase, merge, cherry-pick or revert the agent started and did not finish. */
-  async #pending(cwd: string): Promise<boolean> {
-    for (const name of ['rebase-merge', 'rebase-apply', 'MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD']) {
-      const path = (await this.#git.run(cwd, ['rev-parse', '--git-path', name])).stdout.trim();
-      if (existsSync(resolve(cwd, path))) return true;
-    }
-    return false;
-  }
-  /** Commits of the thread's own: after its base and not on main as last fetched (an agent's own rebase brings upstream commits in). */
-  async #ownCommits(cwd: string, base: string): Promise<number> {
-    return Number((await this.#git.run(cwd, ['rev-list', '--count', 'HEAD', '--not', base, 'refs/remotes/origin/main'])).stdout.trim());
   }
 }

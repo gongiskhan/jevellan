@@ -2,7 +2,7 @@
 
 The coordinator receives owner messages and durable project events. It answers readable questions in chat, routes follow-ups to existing threads and creates tasks for new work. Propose mode keeps owner-request tasks as drafts until approved. The Overview brings numbered questions, proposed tasks, running work and pull requests together.
 
-Concurrent refresh/event triggers share one in-flight task sweep, and shutdown drains it before closing services. The queue dispatcher applies task dependencies, ordering, Now, goal states, concurrency, daily start caps and device guards before dispatch. Jev chooses bounded placement and eligible accounts. Worktree isolation protects the registered checkout; Main uses checkout ownership, mail and reservations. The Mini remains apps-only.
+Concurrent refresh/event triggers share one in-flight task sweep, and shutdown drains it before closing services. The queue dispatcher applies task dependencies, ordering, Now, goal states, concurrency, daily start caps and device guards before dispatch. Jev chooses bounded placement and eligible accounts. Every thread uses a worktree outside the registered checkout. Admission enforces a shared hub limit across all projects and devices, including starts still being dispatched. The Mini remains apps-only.
 
 Threads use the project instruction snapshot and supported native setup, shared memory and fresh Project now state. Reports return progress, tests, changed files, questions and owner commands. Usage limits retain the pending turn and retry account admission. Long waits and repeated failures can ask Jev to choose another model or effort within owner constraints. No heuristic routing chooses meaning.
 

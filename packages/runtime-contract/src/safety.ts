@@ -10,7 +10,7 @@ export const ownerCommandDenial = (reason: string) => reason.endsWith(OWNER_COMM
 const READ_ONLY_REASON = 'This step is read-only. Use the read tools and return a handoff.';
 export type SafetyProfile = 'stretch' | 'coordinator' | 'thread' | 'verification' | 'review' | 'memory';
 // No profile means a stretch. Turns carry a profile and no action.
-export type SafetyContext = { cwd: string; daemonPid: number; action?: string | undefined; profile?: SafetyProfile | undefined; protectedPaths?: string[] | undefined; readOnlyDirectories?: string[] | undefined };
+export type SafetyContext = { cwd: string; daemonPid: number; action?: string | undefined; profile?: SafetyProfile | undefined; privatePaths?: string[] | undefined; protectedPaths?: string[] | undefined; readOnlyDirectories?: string[] | undefined };
 export function safetyReason(context: Pick<SafetyContext, 'profile'>): string {
   if (context.profile === 'verification') return 'Verification must not change, commit or push anything.';
   return context.profile === 'thread' ? THREAD_SAFETY_REASON : context.profile === 'coordinator' ? COORDINATOR_SAFETY_REASON : SAFETY_REASON;
@@ -37,8 +37,20 @@ export function shellWords(command: string): string[][] {
   return groups.filter((group) => group.length);
 }
 
+/** Private job inputs are neither candidate attachments nor readable tool targets. */
+export function privatePathDenial(path: string, context: SafetyContext): string | null {
+  if (!context.privatePaths?.length) return null;
+  const target = canonical(resolve(context.cwd, path));
+  return context.privatePaths.some(root => { const rel = relative(canonical(root), target); return !rel || rel !== '..' && !rel.startsWith('../') && !isAbsolute(rel); }) ? 'Private job and evaluation inputs are available only to the trusted landing gate.' : null;
+}
+export function fileReadDenial(input: unknown, context: SafetyContext): string | null {
+  if (!context.privatePaths?.length || !input || typeof input !== 'object') return null;
+  for (const key of ['file_path', 'path', 'filePath', 'directory', 'cwd']) { const path = (input as Record<string, unknown>)[key]; if (typeof path === 'string') { const denial = privatePathDenial(path, context); if (denial) return denial; } }
+  return null;
+}
 /** Existing and not-yet-created targets resolve through their nearest real ancestor. */
 export function protectedPathDenial(path: string, context: SafetyContext): string | null {
+  const hidden = privatePathDenial(path, context); if (hidden) return hidden;
   const readOnly = readOnlyPathDenial(path, context); if (readOnly) return readOnly;
   if (context.profile !== 'thread' || !context.protectedPaths?.length) return null;
   if (/[$`*?]/u.test(path)) return safetyReason(context);
@@ -82,6 +94,7 @@ export function safetyDenial(command: string, context: SafetyContext): string | 
   let cwd = context.cwd;
   for (const original of groups) {
     const location = { ...context, cwd };
+    for (const operand of original) { const denial = privatePathDenial(operand, location); if (denial) return denial; }
     for (let index = 0; index < original.length; index++) if (original[index] === '>' && original[index + 1] !== '>') {
       const path = original[index + 1]; if (path) { const denial = protectedPathDenial(path, location); if (denial) return denial; }
     }
@@ -148,7 +161,7 @@ export function claudePermissionHook(context: SafetyContext & { permissions: 're
   const allowed = context.bridgeTools ?? claudeReadOnlyBridgeTools(context.memoryWrite ?? false);
   return async (input: { tool_name?: string; tool_input?: unknown }) => {
     const tool = input.tool_name ?? '';
-    let reason: string | null = fileWriteDenial(tool, input.tool_input, context);
+    let reason: string | null = fileReadDenial(input.tool_input, context) ?? fileWriteDenial(tool, input.tool_input, context);
     if (context.profile === 'verification' && ['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(tool)) reason = 'Verification must not change, commit or push anything.';
     if (context.permissions === 'read-only') {
       // Discovery loads tool definitions; the discovered invocation still passes

@@ -1,3 +1,4 @@
+import { JobDeliveryGateSchema, JobDeliveryReceiptSchema } from './job-delivery-schemas.js';
 import { z } from 'zod';
 import { DeploymentJobSchema, ProjectDeployJobResultSchema } from './project-deploy-schemas.js';
 import { ProjectReviewReportSchema } from './project-review-schemas.js';
@@ -6,7 +7,7 @@ import { IdSchema, TimestampSchema } from './schemas.js';
 import { ProjectWorkTaskSchema, TaskTypeSchema } from './project-loop-schemas.js';
 const revision = z.number().int().nonnegative(), date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u), text = z.string().trim().min(1);
 export const JobRunSpecSchema = z.discriminatedUnion('kind', [
-  z.strictObject({ kind: z.literal('command'), command: text.max(2000), needs: z.array(z.string().regex(/^[a-z0-9-]{1,32}$/u)).max(8).default([]), cwd: z.enum(['checkout', 'workspace']).default('checkout'), timeoutMinutes: z.number().int().min(1).max(600) }),
+  z.strictObject({ kind: z.literal('command'), command: text.max(2000), needs: z.array(z.string().regex(/^[a-z0-9-]{1,32}$/u)).max(8).default([]), cwd: z.enum(['checkout', 'workspace']).default('checkout'), deliveryGate: JobDeliveryGateSchema.optional(), timeoutMinutes: z.number().int().min(1).max(600) }),
   z.strictObject({ kind: z.literal('github-workflow'), workflow: text.max(200), mode: z.enum(['watch', 'dispatch']), timeoutMinutes: z.number().int().min(5).max(600),
     inputs: WorkflowInputsSchema.optional(), commitInput: WorkflowInputNameSchema.optional(), dispatchAfterMerge: WorkflowDispatchHandoffSchema.optional(), schedulerSwitch: WorkflowSchedulerSwitchSchema.optional(), watchChain: WorkflowWatchChainSchema.optional(), pinCommitRef: z.boolean().optional(),
     // Explicit evidence requirements, for workflows whose successful scheduling jobs can skip the suite.
@@ -20,7 +21,7 @@ export const ProjectJobFindingsSchema = z.strictObject({ schema: z.literal('proj
 export const ProjectJobRunSchema = z.strictObject({ schema: z.literal('project-job-run-v1'), id: IdSchema, projectId: IdSchema, revision,
   jobId: IdSchema, taskId: IdSchema, deployment: DeploymentJobSchema.optional(), deploymentCommandStartedAt: TimestampSchema.optional(), deployResult: ProjectDeployJobResultSchema.optional(), commit: z.string().regex(/^[0-9a-f]{40}$/u), deviceId: IdSchema, projectDay: date,
   startedAt: TimestampSchema, endedAt: TimestampSchema.optional(), cleanedAt: TimestampSchema.optional(), conclusion: z.enum(['passed', 'failed', 'timed-out', 'cancelled', 'skipped']).nullable(),
-  summary: z.string().max(1200), findings: ProjectJobFindingsSchema.shape.findings.default([]), logTail: z.string().max(8000), url: z.url().optional(), workflowRunId: z.number().int().positive().optional(), workflowHeadBound: z.boolean().optional(),
+  summary: z.string().max(1200), deliveries: z.array(JobDeliveryReceiptSchema).max(20).default([]), findings: ProjectJobFindingsSchema.shape.findings.default([]), logTail: z.string().max(8000), url: z.url().optional(), workflowRunId: z.number().int().positive().optional(), workflowHeadBound: z.boolean().optional(),
   dispatchRef: z.string().max(200).optional(), gateRunId: IdSchema.optional(), requestedByDeviceId: IdSchema.optional(), waitingUntil: TimestampSchema.optional(), cancelRequestedAt: TimestampSchema.optional(), workspaceRetainedAt: TimestampSchema.optional(),
   phase: z.enum(['waiting', 'reserved', 'executing', 'watching', 'finished']), pollAfter: TimestampSchema.optional(),
   workflowHandoff: WorkflowHandoffStateSchema.optional(), workflowScheduler: WorkflowSchedulerStateSchema.optional(), nightlyWindowId: IdSchema.optional(), workflowCompletedAt: TimestampSchema.optional(), dispatchRefDeletedAt: TimestampSchema.optional(),

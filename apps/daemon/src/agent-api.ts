@@ -196,12 +196,6 @@ export class AgentApiAdapter implements AgentApi {
         case 'decision_answer': result = { schema: 'decision-answered-view-v1', ...await work.answerDecision(projectId!, String(input.decisionId), C.DecisionAnswerRequestSchema.parse({ schema: 'decision-answer-request-v1', ...pick(input, ['clientRequestId', 'optionLabel', 'text']) })) }; break;
         case 'notebook_read': result = await work.notebookView(projectId!); break;
         case 'notebook_write': result = await work.putNotebook(projectId!, C.NotebookRequestSchema.parse({ schema: 'notebook-request-v1', ...pick(input, ['expectedRevision', 'content']) })); break;
-        case 'mail_list': result = await this.app.agentAccess.mailList(projectId!, typeof input.after === 'string' ? input.after : undefined, this.authorization); break;
-        case 'mail_send': {
-          const sent = await this.app.agentAccess.sendMail(C.AgentMailSendSchema.parse({ schema: 'agent-mail-send-v1', ...pick(input, ['projectId', 'clientRequestId', 'to', 'subject', 'body']) }), this.authorization);
-          await work.mail.deliverExternal(sent.mail); result = sent; break;
-        }
-        case 'reservations_list': result = { schema: 'agent-reservations-v1', projectId, reservations: await this.app.projectHub.reservations(projectId!) }; break;
         case 'apps_list': result = { schema: 'project-apps-v1', apps: work.apps.list(projectId!) }; break;
         case 'app_start': {
           const project = await this.#project(projectId!); const local = work.store.get(threadId!); const directory = project.paths[this.app.device.deviceId];

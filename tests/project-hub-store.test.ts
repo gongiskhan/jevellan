@@ -17,7 +17,7 @@ test('stored v1 settings migrate explicitly without losing fixed coordinator cho
     coordinator: { runtimeId: 'claude', accountId: 'fixed', modelId: 'chosen', effort: 'high' }, setupCommand: 'npm ci', maxRunningThreads: 9, maxRunningPerDevice: 4, threadTurnCap: 30 });
   app.hub.put('project-work-settings', 'project', ProjectWorkSettingsSchemaV1, { ...legacy, revision: 1 }, 0);
   const left = await member('left'), migrated = await left.hub.settings('project');
-  expect(migrated?.document).toMatchObject({ schema: 'project-work-settings-v5', revision: 1, coordinator: legacy.coordinator, setupCommand: 'npm ci', maxRunningThreads: 9, autoLand: false, riskyAreas: '', allowMainIsolation: true, sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 } });
+  expect(migrated?.document).toMatchObject({ schema: 'project-work-settings-v5', revision: 1, coordinator: legacy.coordinator, setupCommand: 'npm ci', maxRunningThreads: 9, autoLand: false, riskyAreas: '', sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 } });
   expect((await left.hub.putSettings(migrated!.document, 1)).document).toEqual({ ...migrated!.document, revision: 2 });
 });
 beforeEach(async () => {
@@ -217,8 +217,8 @@ test('thread indexes are owner-bound, ordered by ledger event id and replayed on
 
 test('thread and question lists are filtered by project on the hub and paged at 100', async () => {
   const left = await member('left'); const store = new HubProjectStore(app.hub, 'left');
-  for (let n = 0; n < 205; n++) store.publishThread(index(`thread_${String(n).padStart(3, '0')}`), 1);
-  for (let n = 0; n < 7; n++) store.publishThread(index(`thread_${String(n).padStart(3, '0')}a`, { projectId: 'other' }), 1);
+  for (let n = 0; n < 205; n++) store.publishThread(index(`thread_${String(n).padStart(3, '0')}`, { state: 'idle' }), 1);
+  for (let n = 0; n < 7; n++) store.publishThread(index(`thread_${String(n).padStart(3, '0')}a`, { projectId: 'other', state: 'idle' }), 1);
   const first = await left.hub.threads('project'); expect(first.records).toHaveLength(100); expect(first.next).toBe('thread_099');
   const second = await left.hub.threads('project', first.next!); expect(second.records[0]!.id).toBe('thread_100'); expect(second.next).toBe('thread_199');
   const third = await left.hub.threads('project', second.next!); expect(third.records.map(row => row.id)).toEqual(['thread_200', 'thread_201', 'thread_202', 'thread_203', 'thread_204']); expect(third.next).toBeNull();

@@ -52,6 +52,9 @@ export type ReservationConflict = z.infer<typeof ReservationConflictSchema>;
 export const HeldCheckoutSchema = z.strictObject({ deviceId: IdSchema, ownerId: IdSchema, title: z.string().min(1).max(200) });
 export type HeldCheckout = z.infer<typeof HeldCheckoutSchema>;
 
+export const ThreadAdmissionSchema = z.strictObject({ schema: z.literal('thread-admission-v1'), admitted: z.boolean(), running: z.number().int().nonnegative(), limit: z.number().int().min(1).max(20) });
+export type ThreadAdmission = z.infer<typeof ThreadAdmissionSchema>;
+
 const request = { schema: z.literal('project-hub-request-v1') };
 const project = { projectId: IdSchema };
 const page = { projectId: IdSchema, after: IdSchema.optional() };
@@ -102,6 +105,7 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...request, operation: z.literal('coordinator-status-get'), ...project }),
   z.strictObject({ ...request, operation: z.literal('coordinator-status-put'), status: ProjectCoordinatorStatusSchema }),
   z.strictObject({ ...request, operation: z.literal('threads-list'), ...page }),
+  z.strictObject({ ...request, operation: z.literal('thread-admit'), ...project, threadId: IdSchema, deviceId: IdSchema, reserve: z.boolean().optional() }),
   z.strictObject({ ...request, operation: z.literal('thread-get'), threadId: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('thread-publish'), index: ThreadIndexSchema, eventId: z.number().int().positive() }),
   z.strictObject({ ...request, operation: z.literal('decisions-list'), ...page }),
@@ -145,7 +149,7 @@ const collections = {
   'tasks-list': 'tasks', 'task-get': 'tasks', 'task-put': 'tasks', 'task-history': 'tasks',
   'settings-get': 'settings', 'settings-put': 'settings',
   'coordinator-get': 'coordinators', 'coordinator-assign': 'coordinators', 'coordinator-status-get': 'coordinators', 'coordinator-status-put': 'coordinators',
-  'threads-list': 'threads', 'thread-get': 'threads', 'thread-publish': 'threads',
+  'thread-admit': 'threads', 'threads-list': 'threads', 'thread-get': 'threads', 'thread-publish': 'threads',
   'decisions-list': 'decisions', 'decision-get': 'decisions', 'decision-create': 'decisions', 'decision-withdraw': 'decisions', 'decision-answer': 'decisions',
   'notebook-get': 'notebooks', 'notebook-put': 'notebooks',
   'override-add': 'overrides', 'overrides-recent': 'overrides',
@@ -171,7 +175,7 @@ const access = {
   'tasks-list': 'read', 'task-get': 'read', 'task-put': 'write', 'task-history': 'read',
   'settings-get': 'read', 'settings-put': 'write',
   'coordinator-get': 'read', 'coordinator-assign': 'write', 'coordinator-status-get': 'read', 'coordinator-status-put': 'write',
-  'threads-list': 'read', 'thread-get': 'read', 'thread-publish': 'write',
+  'thread-admit': 'write', 'threads-list': 'read', 'thread-get': 'read', 'thread-publish': 'write',
   'decisions-list': 'read', 'decision-get': 'read', 'decision-create': 'write', 'decision-withdraw': 'write', 'decision-answer': 'write',
   'notebook-get': 'read', 'notebook-put': 'write',
   'override-add': 'write', 'overrides-recent': 'read',
@@ -237,6 +241,7 @@ export const ProjectHubResultSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...result, operation: z.literal('coordinator-status-get'), record: stored(ProjectCoordinatorStatusSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('coordinator-status-put'), record: stored(ProjectCoordinatorStatusSchema) }),
   z.strictObject({ ...result, operation: z.literal('threads-list'), ...records(ThreadIndexSchema) }),
+  z.strictObject({ ...result, operation: z.literal('thread-admit'), admission: ThreadAdmissionSchema }),
   z.strictObject({ ...result, operation: z.literal('thread-get'), record: stored(ThreadIndexSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('thread-publish'), threadId: IdSchema, eventId: z.number().int().positive() }),
   z.strictObject({ ...result, operation: z.literal('decisions-list'), ...records(ProjectDecisionSchema) }),

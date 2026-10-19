@@ -16,19 +16,20 @@ const threadId = 'thread_01K6NV2QZ8XKW3P7Q2K9M';
 const decisionId = 'decision_01K6NV2QZ8XKW3P7Q2K9M';
 const stretchTools: BridgeTool[] = ['jevellan_finding', 'jevellan_handoff', 'jevellan_conversation_search', 'jevellan_conversation_read', 'jevellan_integrate',
   'memory_search', 'memory_read', 'memory_write', 'memory_edit', 'memory_propose'];
-const mainTools = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'];
+
+const retiredTools = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'];
 const projectTools = [...new Set([...COORDINATOR_TOOLS, ...threadTools('main')])];
 const pr = { number: 7, url: 'https://github.com/owner/repo/pull/7', state: 'open', headSha: 'a'.repeat(40), checks: 'pending', mergeable: 'clean', updatedAt: at };
 const report = { schema: 'thread-report-v1', turn: 1, status: 'done', summary: 'Added the page.', changedFiles: ['a.txt'], synthesized: false };
 const issues = (result: { success: boolean; error?: { issues: Array<{ path: PropertyKey[]; message: string }> } }) => result.error?.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }));
 
-test('scope lists: mail and reservations only for main threads, mail for the coordinator', () => {
+test('scope lists keep retired communication tools out of every current scope', () => {
   expect(projectToolNames({ kind: 'thread', isolation: 'worktree' })).toEqual(['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
-  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
+  expect(projectToolNames({ kind: 'thread', isolation: 'main' })).toEqual(['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   expect(projectToolNames({ kind: 'coordinator' })).toEqual([...COORDINATOR_TOOLS]);
-  expect(COORDINATOR_TOOLS).toContain('jevellan_mail_send');
+  expect(COORDINATOR_TOOLS).not.toContain('jevellan_mail_send');
   expect(threadTools('worktree')).toEqual(['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
-  expect(threadTools('main')).toEqual(['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...mainTools]);
+  expect(threadTools('main')).toEqual(['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   // Each call returns a fresh array, so a caller cannot change another scope's list.
   const list = projectToolNames({ kind: 'coordinator' }); list.push('jevellan_handoff');
   expect(projectToolNames({ kind: 'coordinator' })).not.toContain('jevellan_handoff');
@@ -40,7 +41,7 @@ test('scope lists: mail and reservations only for main threads, mail for the coo
 test('project and memory tools extend the closed enum while preserving the stretch APIs and strict tool schemas', () => {
   const memorySessions = ['jevellan_memory_inbox_add', 'jevellan_memory_archive', 'jevellan_memory_dream_report'];
   expect(BridgeToolNameSchema.options.filter(name => stretchTools.includes(name))).toEqual(stretchTools);
-  expect([...BridgeToolNameSchema.options].sort()).toEqual([...new Set([...stretchTools, ...projectTools, ...memorySessions, 'jevellan_thread_start', 'jevellan_verification_report', 'jevellan_project_review_report'])].sort());
+  expect([...BridgeToolNameSchema.options].sort()).toEqual([...new Set([...stretchTools, ...projectTools, ...retiredTools, ...memorySessions, 'jevellan_thread_start', 'jevellan_verification_report', 'jevellan_project_review_report'])].sort());
   for (const name of ['jevellan_pr_review', 'jevellan_verification_report', 'jevellan_project_review_report']) expect(COORDINATOR_TOOLS).not.toContain(name);
   expect(Object.keys(BridgeToolSchemas)).toEqual(BridgeToolNameSchema.options);
   for (const scope of [{ kind: 'coordinator' }, { kind: 'thread', isolation: 'worktree' }, { kind: 'thread', isolation: 'main' }] as const) {
@@ -71,9 +72,9 @@ test('tool inputs are strict, bounded and fill their defaults', () => {
   expect(ThreadsListInputSchema.safeParse({ include: 'concluded' }).success).toBe(false);
   const start = { title: 'Add a greeting', task: 'Put a greeting on the home page.' };
   expect(ThreadStartInputSchema.parse(start)).toEqual(start);
-  expect(ThreadStartInputSchema.parse({ ...start, isolation: 'main', modelId: 'claude-opus', effort: 'high', deviceId: 'device_a', note: 'The owner asked for main.' })).toMatchObject({ isolation: 'main', effort: 'high' });
+  expect(ThreadStartInputSchema.parse({ ...start, isolation: 'worktree', modelId: 'claude-opus', effort: 'high', deviceId: 'device_a', note: 'The owner asked for main.' })).toMatchObject({ isolation: 'worktree', effort: 'high' });
   for (const invalid of [{ ...start, title: '' }, { ...start, title: 'x'.repeat(121) }, { ...start, task: 'x'.repeat(20001) }, { ...start, note: 'x'.repeat(601) },
-    { ...start, isolation: 'branch' }, { ...start, effort: 'extreme' }, { ...start, deviceId: '../device' }, { ...start, projectId: 'other' }]) {
+    { ...start, isolation: 'main' }, { ...start, isolation: 'branch' }, { ...start, effort: 'extreme' }, { ...start, deviceId: '../device' }, { ...start, projectId: 'other' }]) {
     expect(ThreadStartInputSchema.safeParse(invalid).success).toBe(false);
   }
   expect(ThreadStartInputSchema.safeParse({ ...start, title: 'x'.repeat(120), task: 'x'.repeat(20000), note: 'x'.repeat(600) }).success).toBe(true);
@@ -120,7 +121,7 @@ test('asking the owner takes no options or two to four', () => {
 });
 
 test('tool results are versioned documents and every project tool names its result schema', () => {
-  expect(Object.keys(ProjectToolResultSchemas).sort()).toEqual([...projectTools, 'memory_write', 'memory_edit'].sort());
+  expect(Object.keys(ProjectToolResultSchemas).sort()).toEqual([...projectTools, ...retiredTools, 'memory_write', 'memory_edit'].sort());
   expect(ProjectToolResultSchemas.memory_search).toBe(MemorySearchSchema); expect(ProjectToolResultSchemas.memory_read).toBe(MemoryNoteSchema);
   const thread = { id: threadId, title: 'Add a greeting', state: 'in-review', isolation: 'worktree', device: 'Studio', runtime: 'claude', modelLabel: 'Opus', effort: 'high', turns: 2 };
   expect(ThreadsListResultSchema.parse({ schema: 'threads-list-result-v1', threads: [thread, { ...thread, branch: 'jv/add-a-greeting-ABCDEF', pr: { number: 7, state: 'open', checks: 'passing' }, lastSummary: 'Added it.' }] }).threads).toHaveLength(2);

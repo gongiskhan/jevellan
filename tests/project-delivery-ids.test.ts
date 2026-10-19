@@ -7,10 +7,10 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  Homes, HubUnavailable, PlacementRecordSchema, ProjectDecisionSchema, SecretRedactor, ThreadSchema, type ProjectDecision, type ProjectMail, type Thread,
+  Homes, HubUnavailable, PlacementRecordSchema, ProjectDecisionSchema, SecretRedactor, ThreadSchema, type ProjectDecision, type Thread,
 } from '../packages/core/dist/index.js';
 import {
-  DecisionItems, MailService, Outbox, ProjectLedgers, ProjectPaths, ThreadIndexPublisher, ThreadStore, coordinatorToolHandlers, recoverProjects,
+  DecisionItems, Outbox, ProjectLedgers, ProjectPaths, ThreadIndexPublisher, ThreadStore, coordinatorToolHandlers, recoverProjects,
 } from '../packages/projects/dist/index.js';
 
 let root: string; let homes: Homes; let paths: ProjectPaths;
@@ -20,7 +20,7 @@ afterEach(async () => { for (const close of closers.splice(0)) await close(); rm
 const at = '2026-10-05T10:00:00.000Z';
 
 /** The coordinator tools of one device over in-memory decisions and mail, recording the ids they send. */
-function coordinatorOn(deviceId: string, shared: { decisions: Map<string, ProjectDecision>; mail: ProjectMail[]; messages: string[] }) {
+function coordinatorOn(deviceId: string, shared: { decisions: Map<string, ProjectDecision>; messages: string[] }) {
   const hub = {
     decisions: async () => [...shared.decisions.values()],
     decision: async (id: string) => { const document = shared.decisions.get(id); return document ? { document, revision: 1 } : null; },
@@ -32,33 +32,28 @@ function coordinatorOn(deviceId: string, shared: { decisions: Map<string, Projec
     withdrawDecision: async () => { throw new Error('Not used.'); }, answerDecision: async () => { throw new Error('Not used.'); },
   };
   const decisions = new DecisionItems({ hub: hub as never, toCoordinator: async () => undefined, threads: () => ({}) as never, now: () => Date.parse(at) });
-  const mail = new MailService({ hub: { thread: async () => ({ document: { projectId: 'project', title: 'Docs', isolation: 'main', state: 'idle' }, revision: 1 }),
-    sendMail: async (sent: ProjectMail) => { shared.mail.push(sent); return { document: sent, revision: 1 }; } } as never,
-  toCoordinator: async () => undefined, local: () => undefined, now: () => Date.parse(at) });
   const threads = { message: async (_projectId: string, _threadId: string, _from: string, _text: string, _interrupt: boolean, messageId: string) => {
     shared.messages.push(messageId); return { state: 'idle', delivery: 'queued' };
   } };
   return coordinatorToolHandlers({ deviceId, deviceName: deviceId, threads: threads as never, store: { get: () => undefined } as never, decisions, pullRequests: {} as never,
-    hub: {} as never, ledgers: {} as never, mail, roster: async () => ({ schema: 'device-roster-v1', currentDeviceId: deviceId, devices: [] }) as never,
+    hub: {} as never, ledgers: {} as never, roster: async () => ({ schema: 'device-roster-v1', currentDeviceId: deviceId, devices: [] }) as never,
     now: () => Date.parse(at), memory: async () => { throw new Error('Not used.'); } });
 }
 const scope = { kind: 'coordinator' as const, projectId: 'project', turn: 3 };
 const signal = new AbortController().signal;
 
-test('a thread message and a mail the coordinator sends at the same turn number from another device after a move get ids of their own', async () => {
-  const shared = { decisions: new Map<string, ProjectDecision>(), mail: [] as ProjectMail[], messages: [] as string[] };
+test('a thread message the coordinator sends at the same turn number from another device after a move get ids of their own', async () => {
+  const shared = { decisions: new Map<string, ProjectDecision>(), messages: [] as string[] };
   const before = coordinatorOn('dev_a', shared); const after = coordinatorOn('dev_b', shared);
   const input = { threadId: 'thread_x', message: 'Continue.', interrupt: false };
   await before.call(scope, 'jevellan_thread_message', input, signal); await before.call(scope, 'jevellan_thread_message', input, signal); await after.call(scope, 'jevellan_thread_message', input, signal);
   // A transport retry on one device repeats its id; the other device's id differs.
   expect(shared.messages[0]).toBe(shared.messages[1]); expect(shared.messages[2]).not.toBe(shared.messages[0]);
-  const mail = { to: 'thread_x', subject: 'Heads up', body: 'I moved the docs.' };
-  await before.call(scope, 'jevellan_mail_send', mail, signal); await before.call(scope, 'jevellan_mail_send', mail, signal); await after.call(scope, 'jevellan_mail_send', mail, signal);
-  expect(shared.mail[0]!.id).toBe(shared.mail[1]!.id); expect(shared.mail[2]!.id).not.toBe(shared.mail[0]!.id);
+
 });
 
 test('a question the transport asks twice in one turn is one question with one id; the same question at another turn is a new one', async () => {
-  const shared = { decisions: new Map<string, ProjectDecision>(), mail: [] as ProjectMail[], messages: [] as string[] };
+  const shared = { decisions: new Map<string, ProjectDecision>(), messages: [] as string[] };
   const tools = coordinatorOn('dev_a', shared);
   const input = { question: 'Which database?', options: [{ label: 'SQLite' }, { label: 'Postgres' }] };
   const first = await tools.call(scope, 'jevellan_ask_user', input, signal) as { decisionId: string };

@@ -62,13 +62,13 @@ export const ProjectWorkSettingsSchemaV4 = ProjectWorkSettingsSchemaV3.omit({ th
   environment: ProjectEnvironmentSchema.default({ variables: [], secrets: [], copyFiles: [] }),
   notifications: z.enum(['everything', 'standard', 'needs-you', 'off']).default('standard'),
 });
-export const ProjectWorkSettingsSchemaV5 = ProjectWorkSettingsSchemaV4.omit({ defaultIsolation: true, allowMainIsolation: true, autoMerge: true, requiredChecks: true }).extend({ schema: z.literal('project-work-settings-v5'), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).default(70), healthChecks: ProjectHealthChecksSchema, deploy: ProjectDeploySettingsSchema.default({ mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }), delivery: DeliverySchema.default('land'), autoLand: z.boolean().default(false), landingChecks: z.array(LandingCheckSchema).max(30).default([]), smokeCheck: z.string().max(2000).nullable().default(null), mergeCommitPaths: z.array(ProjectRelativePathSchema).max(20).default([]) });
+export const ProjectWorkSettingsSchemaV5 = ProjectWorkSettingsSchemaV4.omit({ defaultIsolation: true, allowMainIsolation: true, autoMerge: true, requiredChecks: true }).extend({ schema: z.literal('project-work-settings-v5'), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).default(70), healthChecks: ProjectHealthChecksSchema, deploy: ProjectDeploySettingsSchema.default({ mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }), delivery: DeliverySchema.default('land'), autoLand: z.boolean().default(false), pullRequestAutoMerge: z.boolean().default(false), landingChecks: z.array(LandingCheckSchema).max(30).default([]), smokeCheck: z.string().max(2000).nullable().default(null), mergeCommitPaths: z.array(ProjectRelativePathSchema).max(20).default([]) });
 export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV5;
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
-export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4, ProjectWorkSettingsSchemaV5.extend({ coordinatorHandoffAtPercent: z.number().int().min(50).max(90).optional() })])
+export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4, ProjectWorkSettingsSchemaV5.extend({ pullRequestAutoMerge: z.boolean().optional(), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).optional() })])
   .transform(value => {
     const { coordinatorReview: _retired, threadRules, defaultIsolation: _isolation, allowMainIsolation: _main, requiredChecks: _checks, autoMerge, ...fields } = { coordinatorReview: undefined, threadRules: undefined, defaultIsolation: undefined, allowMainIsolation: undefined, requiredChecks: undefined, autoMerge: undefined, ...value }; void _retired; void _isolation; void _main; void _checks;
-    return ProjectWorkSettingsSchemaV5.parse({ ...fields, coordinatorHandoffAtPercent: 'coordinatorHandoffAtPercent' in value ? value.coordinatorHandoffAtPercent ?? value.compactAtPercent : 'compactAtPercent' in value ? value.compactAtPercent : 70, autoLand: 'autoLand' in value ? value.autoLand : autoMerge ?? false, instructions: 'instructions' in value ? value.instructions : threadRules ?? '', schema: 'project-work-settings-v5' });
+    return ProjectWorkSettingsSchemaV5.parse({ ...fields, coordinatorHandoffAtPercent: 'coordinatorHandoffAtPercent' in value ? value.coordinatorHandoffAtPercent ?? value.compactAtPercent : 'compactAtPercent' in value ? value.compactAtPercent : 70, autoLand: 'autoLand' in value ? value.autoLand : autoMerge ?? false, pullRequestAutoMerge: 'pullRequestAutoMerge' in value ? value.pullRequestAutoMerge ?? ('autoLand' in value ? value.autoLand : false) : autoMerge ?? false, instructions: 'instructions' in value ? value.instructions : threadRules ?? '', schema: 'project-work-settings-v5' });
   });
 export const ProjectRequestOutcomeSchema = z.strictObject({ schema: z.literal('project-request-outcome-v1'), projectId: IdSchema, eventId: IdSchema,
   goal: z.enum(['answer', 'change', 'run-app', 'verify', 'other']).nullable(), source: z.enum(['jev', 'unavailable']),
@@ -540,7 +540,7 @@ export const CoordinatorMessageRequestSchema = z.strictObject({ schema: z.litera
 export const ThreadCreateRequestSchema = z.strictObject({ schema: z.literal('thread-create-request-v1'), clientRequestId: IdSchema,
   title: z.string().min(1).max(120), task: z.string().min(1).max(32768),
   taskContext: TaskPlacementContextSchema.optional(), fromBranch: z.string().min(1).max(200).optional(),
-  isolation: IsolationSchema.optional(), runtimeId: IdSchema.optional(), accountId: IdSchema.optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional(), deviceId: IdSchema.optional(),
+  isolation: z.literal('worktree').optional(), runtimeId: IdSchema.optional(), accountId: IdSchema.optional(), modelId: IdSchema.optional(), effort: EffortSchema.optional(), deviceId: IdSchema.optional(),
   // A restart's owner note for placement, sent by the thread's device to the coordinator device (D266); the New thread form sends none.
   note: z.string().max(400).optional() });
 export const ThreadActionRequestSchema = z.strictObject({ schema: z.literal('thread-action-request-v1'), clientRequestId: IdSchema,
@@ -551,7 +551,7 @@ export const ThreadMessageRequestSchema = z.strictObject({ schema: z.literal('th
   clientMessageId: IdSchema, text: z.string().min(1).max(20000), interrupt: z.boolean() });
 export const ThreadStopRequestSchema = z.strictObject({ schema: z.literal('thread-stop-request-v1'), reason: z.string().max(400).optional() });
 export const ThreadOverrideRequestSchema = z.strictObject({ schema: z.literal('thread-override-request-v1'), clientRequestId: IdSchema,
-  mode: PlacementOverrideSchema.shape.mode, isolation: IsolationSchema.optional(), runtimeId: IdSchema.nullable().optional(), accountId: IdSchema.nullable().optional(), modelId: IdSchema.nullable().optional(),
+  mode: PlacementOverrideSchema.shape.mode, isolation: z.literal('worktree').optional(), runtimeId: IdSchema.nullable().optional(), accountId: IdSchema.nullable().optional(), modelId: IdSchema.nullable().optional(),
   effort: EffortSchema.nullable().optional(), deviceId: IdSchema.optional(), note: z.string().max(400).optional() });
 export const DecisionAnswerRequestSchema = z.strictObject({ schema: z.literal('decision-answer-request-v1'), clientRequestId: IdSchema, expectedRevision: revision.optional(),
   ...DecisionAnswerFieldsSchema.shape }).refine(answerPresent, DECISION_ANSWER_REQUIRED);

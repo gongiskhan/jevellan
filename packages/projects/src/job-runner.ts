@@ -1,3 +1,4 @@
+import { importJobDeliveries, LegalLandingReceiptsSchema } from './job-deliveries.js';
 import { placeCommandJob } from './job-placement.js';
 import type { DeviceView, ThreadIndex } from '@jevellan/core';
 import { existsSync, rmSync, symlinkSync } from 'node:fs';
@@ -19,7 +20,7 @@ export class ProjectJobRunner {
   readonly #running = new Map<string, { id: string; controller: AbortController; promise: Promise<void> }>();
   readonly #starting = new Set<string>();
   #closed = false;
-  constructor(readonly o: { beforeDeployment?(run: ProjectJobRun): Promise<void>; projectEnvironment?(projectId: string): Promise<Record<string, string>>; homes: Homes; hub: ProjectHub; tasks: ProjectTasks; git: ThreadGit; github: GitHubAccess; deviceId: string; deviceName: string; redactor: SecretRedactor;
+  constructor(readonly o: { library?: import('@jevellan/core').ProjectLibrary | undefined; beforeDeployment?(run: ProjectJobRun): Promise<void>; projectEnvironment?(projectId: string): Promise<Record<string, string>>; homes: Homes; hub: ProjectHub; tasks: ProjectTasks; git: ThreadGit; github: GitHubAccess; deviceId: string; deviceName: string; redactor: SecretRedactor;
     roster?(): Promise<{ devices: DeviceView[] }>; relay?(projectId: string, deviceId: string, runId: string): Promise<void>;
     now(): number; settings(projectId: string): Promise<ProjectWorkSettings>; project(projectId: string): Promise<Project>; baseBranch(repo: string): Promise<string>; event(projectId: string, event: CoordinatorEvent): Promise<void>;
     windowOpened(projectId: string): Promise<string | undefined>; day(projectId: string): Promise<string>; dayStart(projectId: string, day: string): Promise<number>; changed(): void; facts?(): DeviceFacts }) {}
@@ -54,6 +55,9 @@ export class ProjectJobRunner {
     const job = (await this.o.hub.job(run.jobId))?.document;
     if ((await this.o.hub.coordinator(run.projectId))?.document.deviceId === this.o.deviceId) for (const [index, finding] of (run.findings ?? []).entries()) {
       await this.o.tasks.create(run.projectId, { schema: 'task-create-request-v1', clientRequestId: derivedId('job_finding', run.id, String(index)), ...finding, type: 'finding', goalId: job?.goalId ?? null, now: false, after: [], needs: [], fixed: {} }, 'finding');
+    }
+    if ((await this.o.hub.coordinator(run.projectId))?.document.deviceId === this.o.deviceId) for (const delivery of run.deliveries ?? []) {
+      await this.o.tasks.create(run.projectId, { schema: 'task-create-request-v1', clientRequestId: derivedId('job_delivery', run.id, delivery.id), title: delivery.title, brief: delivery.brief, fromBranch: delivery.fromBranch, type: delivery.type, goalId: job?.goalId ?? null, now: false, after: [], needs: [], fixed: delivery.gate ? { deviceId: run.deviceId } : {} }, 'finding', { jobDelivery: { runId: run.id, deliveryId: delivery.id } });
     }
     await this.o.event(run.projectId, { schema: 'coordinator-event-v1', kind: 'job-finished', id: derivedId('cev', 'job-finished', run.id), at: run.endedAt!,
       jobId: run.jobId, runId: run.id, taskId: run.taskId, name: job?.name ?? 'Job', conclusion: run.conclusion, commit: run.commit, summary: run.summary });
@@ -160,7 +164,7 @@ export class ProjectJobRunner {
     if (run.conclusion) return this.#sync(run);
     if (run.deployment?.mode === 'deploy' && (await this.o.hub.deploy(run.deployment.deployId))?.document.healthBeforeJobRunId !== run.id) return;
     if (run.phase === 'reserved' && (await this.o.settings(run.projectId)).status !== 'active') return;
-    if (run.phase === 'executing') { await this.#stopRecordedProcess(run); await this.#finish(run, 'failed', 'The daemon restarted during execution. The operation was not repeated. Run it again explicitly.'); return; }
+    if (run.phase === 'executing') { await this.#stopRecordedProcess(run); run = await this.#recoverDeliveries(run); await this.#finish(run, 'failed', 'The daemon restarted during execution. The operation was not repeated. Run it again explicitly.'); return; }
     try {
       const project = await this.o.project(run.projectId), repo = resolveProjectPath(project, this.o.deviceId, this.o.deviceName);
       if (run.spec.kind === 'command') {
@@ -188,6 +192,17 @@ export class ProjectJobRunner {
           }
           const identity = await this.o.git.identity(repo);
           const gitEnv = { ...await this.o.github.turnGitEnvironment(run.projectId, await this.o.git.remoteUrl(repo) ?? ''), ...(identity ? { GIT_AUTHOR_NAME: identity.name, GIT_AUTHOR_EMAIL: identity.email, GIT_COMMITTER_NAME: identity.name, GIT_COMMITTER_EMAIL: identity.email } : {}) };
+          if (commandSpec.deliveryGate) {
+            const merges = [];
+            for (const task of await this.o.tasks.list(run.projectId)) {
+              if (!task.jobDelivery || !task.threadId) continue;
+              const source = (await this.o.hub.jobRun(task.jobDelivery.runId))?.document;
+              const delivery = source?.deliveries?.find(row => row.id === task.jobDelivery!.deliveryId);
+              const thread = (await this.o.hub.thread(task.threadId))?.document;
+              if (delivery?.gate?.id === commandSpec.deliveryGate.id && thread?.landing?.method === 'merge-commit' && thread.landing.checks.some(check => check.name === delivery.gate!.id && check.passed)) merges.push({ taskId: task.id, pr: task.id, runId: source!.id, deliveryId: delivery.id, title: task.title, mergedAt: thread.landing.at, mergeSha: thread.landing.commit, gate: delivery.gate.id, mergeStrategy: 'merge' as const, gatePassed: true as const, date: thread.landing.at.slice(0, 10) });
+            }
+            writeDocument(join(this.o.homes.ensure('project-work', run.projectId, 'job-cache', run.projectId, 'legal-loop'), 'landing-receipts.json'), LegalLandingReceiptsSchema, { schema: 'jevellan-legal-landings-v1', merges: merges.sort((a, b) => a.date.localeCompare(b.date) || a.taskId.localeCompare(b.taskId)).slice(-1000), reverts: [] });
+          }
           const setupCommand = run.setupCommand;
           const onProcess = (native: NativeProcess) => { writeDocument(this.#processPath(run), JobProcessSchema, { ...native, schema: 'project-job-process-v1', turn: 1, startedAt: new Date(this.o.now()).toISOString() }); };
           const setup = setupCommand ? await runThreadCommand(path, setupCommand, { homes: this.o.homes, workId: run.id, timeoutMs: SETUP_TIMEOUT_MS, redactor: this.o.redactor, projectEnv: await this.o.projectEnvironment?.(run.projectId) ?? {}, signal, minimal: true, environmentScope: 'command', gitEnv, jobContext: { schema: 'project-job-context-v1', workspace, commandCheckout, runId: run.id, projectId: run.projectId, jobId: run.jobId, commit: run.commit, ...(run.deployment ? { deployment: run.deployment } : {}) }, onProcess }) : null;
@@ -197,6 +212,7 @@ export class ProjectJobRunner {
             if (run.deployment) run = await this.#save({ ...run, deploymentCommandStartedAt: new Date(this.o.now()).toISOString() });
             const result = await runThreadCommand(path, commandSpec.command, { homes: this.o.homes, workId: run.id, timeoutMs: commandSpec.timeoutMinutes * 60_000, redactor: this.o.redactor, projectEnv: await this.o.projectEnvironment?.(run.projectId) ?? {}, signal, minimal: true, environmentScope: 'command', gitEnv, jobContext: { schema: 'project-job-context-v1', workspace, commandCheckout, runId: run.id, projectId: run.projectId, jobId: run.jobId, commit: run.commit, ...(run.deployment ? { deployment: run.deployment } : {}) }, onProcess });
           outcome = { conclusion: signal.aborted ? 'cancelled' : result.timedOut ? 'timed-out' : result.code === 0 ? 'passed' : 'failed', summary: result.code === 0 ? 'Command passed.' : result.timedOut ? 'Command timed out.' : `Command exited with ${result.code}.`, logTail: outputTail(result, 8000) }; }
+          run = await this.#save({ ...run, deliveries: await importJobDeliveries({ homes: this.o.homes, run, workspace, repo, git: this.o.git, gitEnv, library: this.o.library, redactor: this.o.redactor }) });
           const deployFile = join(workspace, 'project-deploy-job-result.json');
           if (run.deployment && existsSync(deployFile)) {
             const result = ProjectDeployJobResultSchema.parse(this.o.redactor.document(readDocument(deployFile, ProjectDeployJobResultSchema)));
@@ -215,9 +231,17 @@ export class ProjectJobRunner {
         await this.#finish(commandSpec.cwd === 'workspace' ? { ...run, workspaceRetainedAt: new Date(this.o.now()).toISOString() } : run, outcome.conclusion, outcome.summary, outcome.logTail);
       }
     } catch (error) {
-      run = { ...((await this.o.hub.jobRun(run.id))?.document ?? run), ...(run.deployResult ? { deployResult: run.deployResult } : {}) };
+      run = { ...((await this.o.hub.jobRun(run.id))?.document ?? run), ...(run.deployResult ? { deployResult: run.deployResult } : {}), ...(run.deliveries?.length ? { deliveries: run.deliveries } : {}) };
       if (!run.conclusion) await this.#finish(run, signal.aborted ? 'cancelled' : 'failed', error instanceof Error ? error.message : 'Job execution failed.');
     }
+  }
+  async #recoverDeliveries(run: ProjectJobRun): Promise<ProjectJobRun> {
+    const workspace = this.o.homes.at('project-work', run.projectId, 'job-workspaces', run.id);
+    if (run.deliveries?.length || !existsSync(join(workspace, 'project-job-deliveries.json'))) return run;
+    const project = await this.o.project(run.projectId), repo = resolveProjectPath(project, this.o.deviceId, this.o.deviceName);
+    const gitEnv = await this.o.github.turnGitEnvironment(run.projectId, await this.o.git.remoteUrl(repo) ?? '');
+    const deliveries = await importJobDeliveries({ homes: this.o.homes, run, workspace, repo, git: this.o.git, gitEnv, library: this.o.library, redactor: this.o.redactor });
+    return this.#save({ ...run, deliveries, workspaceRetainedAt: new Date(this.o.now()).toISOString() });
   }
   async sweep(projectId: string): Promise<void> {
     if (this.#closed || !deviceAllowsWork(this.o.homes)) return;

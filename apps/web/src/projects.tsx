@@ -33,6 +33,7 @@ import {
 
 type ProjectView = z.infer<typeof ProjectViewSchema>;
 export function ProjectsPage(props: PageProps & { embedded?: boolean }) {
+  const [globalLimit, setGlobalLimit] = useState(props.data.config.configuration['x-jevellan'].maxRunningThreadsAll), globalSave = useTask(props.onError);
   const [projects, setProjects] = useState<ProjectView[]>([]);
   const [visibility, setVisibility] = useState<Record<string, z.infer<typeof ProjectVisibilitySchema>>>({});
   const [editing, setEditing] = useState<ProjectView | 'new'>();
@@ -88,6 +89,7 @@ export function ProjectsPage(props: PageProps & { embedded?: boolean }) {
           </p>
         </>
       )}
+      {!props.embedded && <section className="card"><h2>Running threads across all projects</h2><form onSubmit={event => { event.preventDefault(); void globalSave.run(async signal => { const config = props.data.config.configuration; await props.saveConfig({ ...config, 'x-jevellan': { ...config['x-jevellan'], maxRunningThreadsAll: globalLimit } }, signal); }); }}><label>Maximum running threads<input type="number" min={1} max={20} required value={globalLimit} onChange={event => setGlobalLimit(Number(event.target.value))} /></label><p className="small-text">One limit shared by every project and device. Threads wait for a free slot.</p><button disabled={globalSave.busy}>Save thread limit</button></form></section>}
       {vault && !props.embedded && <VaultStatus vault={vault} />}
       {!projects.length && <p className="empty-inline">Add a checked-out project to start a conversation.</p>}
       <div className="project-list">

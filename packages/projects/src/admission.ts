@@ -10,7 +10,7 @@ export type AdmissionCounts = {
   limits: { project: number; device: number; perDevice?: Record<string, number> };
 };
 export type AdmissionRefusal = {
-  ok: false; scope: 'project' | 'device'; limit: number;
+  ok: false; scope: 'project' | 'device' | 'all'; limit: number;
   /** Device name for a device limit, null for the project limit. */
   device: string | null;
   /** `Waiting for a free slot: ...` (a turn from a non-live state). */
@@ -37,7 +37,7 @@ export class Admission {
   readonly #pending = new Map<symbol, Live>();
   readonly #dispatched = new Map<string, Live & { until: number }>();
   #admissions: Promise<unknown> = Promise.resolve();
-  readonly #hub: Pick<ProjectHub, 'threads' | 'settings'>; readonly #deviceId: string; readonly #deviceName: string;
+  readonly #hub: Pick<ProjectHub, 'threads' | 'settings'> & Partial<Pick<ProjectHub, 'admitThread'>>; readonly #deviceId: string; readonly #deviceName: string;
   readonly #localLive: (projectId: string) => Iterable<string>;
   readonly #names: ((deviceId: string) => Promise<string | undefined>) | undefined;
   readonly #now: () => number;
@@ -45,7 +45,7 @@ export class Admission {
   readonly #created: ((projectId: string) => Iterable<Pick<ThreadIndex, 'id' | 'createdAt' | 'restartedAs'>>) | undefined;
   readonly #defaultDelivery: 'land' | 'pull-request';
   readonly #guard: ((projectId: string, deviceId: string, threadId: string) => Promise<string | undefined>) | undefined;
-  constructor(o: { defaultDelivery?: 'land' | 'pull-request'; hub: Pick<ProjectHub, 'threads' | 'settings'>; deviceId: string; deviceName: string;
+  constructor(o: { defaultDelivery?: 'land' | 'pull-request'; hub: Pick<ProjectHub, 'threads' | 'settings'> & Partial<Pick<ProjectHub, 'admitThread'>>; deviceId: string; deviceName: string;
     /** Local threads of the project in a live step, from the runners' memory. */
     localLive(projectId: string): Iterable<string>;
     /** Names for the device-limit text; this device's name is known. */
@@ -138,10 +138,24 @@ export class Admission {
     this.#admissions = result.then(() => undefined, () => undefined);
     return result;
   }
+  async #global(projectId: string, deviceId: string, threadId: string, reserve: boolean): Promise<AdmissionRefusal | undefined> {
+    if (this.#hub.admitThread) {
+      try {
+        const claim = await this.#hub.admitThread(projectId, threadId, deviceId, reserve);
+        if (!claim.admitted) { const reason = `Waiting for a free slot: ${claim.running} threads are running across all projects (limit ${claim.limit}).`; return { ok: false, scope: 'all', limit: claim.limit, device: null, reason, queued: reason }; }
+      } catch (error) {
+        if (!(error instanceof HubUnavailable)) throw error;
+        const reason = 'Waiting for the hub to confirm a free thread slot.';
+        return { ok: false, scope: 'all', limit: 0, device: null, reason, queued: reason };
+      }
+    }
+    return undefined;
+  }
   async #admit(projectId: string, deviceId: string, threadId: string): Promise<AdmissionResult> {
     if ((await this.settings(projectId)).status !== 'active') return { ok: false, scope: 'project', limit: 0, device: null, reason: PROJECT_PAUSED, queued: PROJECT_PAUSED };
     const resource = (deviceId === this.#deviceId ? deviceResourceRefusal(this.#deviceName, this.#facts?.()) : undefined) ?? await this.#guard?.(projectId, deviceId, threadId);
     if (resource) return { ok: false, scope: 'device', limit: 0, device: this.#deviceName, reason: waitingForResourceReason(resource), queued: resource };
+    const global = await this.#global(projectId, deviceId, threadId, false); if (global) return global;
     const counts = await this.counts(projectId, threadId);
     const refuse = async (scope: 'project' | 'device', limit: number): Promise<AdmissionRefusal> => {
       const device = scope === 'project' ? null : await this.#name(deviceId);
@@ -150,6 +164,7 @@ export class Admission {
     if (counts.project >= counts.limits.project) return refuse('project', counts.limits.project);
     const deviceLimit = counts.limits.perDevice?.[deviceId] ?? counts.limits.device;
     if ((counts.devices.get(deviceId) ?? 0) >= deviceLimit) return refuse('device', deviceLimit);
+    const claim = await this.#global(projectId, deviceId, threadId, true); if (claim) return claim;
     return { ok: true, release: this.hold(projectId, deviceId, threadId) };
   }
 }

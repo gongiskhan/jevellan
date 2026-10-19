@@ -134,7 +134,7 @@ const turnSession = (input: TurnInput, daemonPid: number, executable?: string): 
   const bridgeTools = input.owner.kind === 'coordinator' ? claudeBridgeToolNames(projectToolNames({ kind: 'coordinator', ...(env.JEVELLAN_PROJECT_MEMORY_MODE === 'hub' ? { memoryMode: 'hub' } : {}) }))
     : input.owner.kind === 'review' ? claudeBridgeToolNames(['jevellan_project_review_report', 'memory_search', 'memory_read'])
     : input.owner.kind === 'memory' ? claudeBridgeToolNames(['memory_search', 'memory_read', 'memory_write', 'memory_edit', 'jevellan_memory_inbox_add', 'jevellan_memory_archive', 'jevellan_memory_dream_report']) : undefined;
-  const hook = claudePermissionHook({ cwd: input.cwd, daemonPid, profile: input.safetyProfile, permissions: input.permissions, ...(input.protectedPaths ? { protectedPaths: input.protectedPaths } : {}), ...(input.readOnlyDirectories ? { readOnlyDirectories: input.readOnlyDirectories } : {}), ...(bridgeTools ? { bridgeTools } : {}) });
+  const hook = claudePermissionHook({ cwd: input.cwd, daemonPid, profile: input.safetyProfile, permissions: input.permissions, ...(input.privatePaths ? { privatePaths: input.privatePaths } : {}), ...(input.protectedPaths ? { protectedPaths: input.protectedPaths } : {}), ...(input.readOnlyDirectories ? { readOnlyDirectories: input.readOnlyDirectories } : {}), ...(bridgeTools ? { bridgeTools } : {}) });
   return {
     async interrupt() { control.interrupted = true; await control.current?.interrupt(); },
     run: (message, timeoutMs, emit, session) => execute(control, message, timeoutMs, {

@@ -40,7 +40,7 @@ const reason = text.max(400);
 export const ASK_USER_OPTIONS = 'Give no options or two to four options.';
 export const ThreadsListInputSchema = z.strictObject({ include: z.enum(['active', 'all']).default('active') });
 export const ThreadStartInputSchema = z.strictObject({
-  title: text.max(120), task: text.max(20000), isolation: IsolationSchema.optional(), runtimeId: IdSchema.optional(), accountId: IdSchema.optional(), modelId: IdSchema.optional(),
+  title: text.max(120), task: text.max(20000), isolation: z.literal('worktree').optional(), runtimeId: IdSchema.optional(), accountId: IdSchema.optional(), modelId: IdSchema.optional(),
   effort: EffortSchema.optional(), deviceId: IdSchema.optional(), note: z.string().max(600).optional(),
 });
 export const ThreadMessageInputSchema = z.strictObject({ threadId: IdSchema, message: text.max(20000), interrupt: z.boolean().default(false) });
@@ -233,11 +233,12 @@ export function bridgeTools(names: BridgeTool[]): z.infer<typeof BridgeToolsSche
 // Project scopes (D104). The coordinator's read-only Claude allow list and the bridge's scope lists both derive from
 // projectToolNames, never a copy.
 export const COORDINATOR_TOOLS = ['jevellan_handoff_write', 'jevellan_setup_propose', 'jevellan_library_list', 'jevellan_library_get', 'jevellan_review_followup', 'jevellan_jobs_list', 'jevellan_job_run', 'jevellan_job_runs', 'jevellan_daily_list', 'jevellan_goals_list', 'jevellan_tasks_list', 'jevellan_task_create', 'jevellan_tasks_start', 'jevellan_settings_update', 'jevellan_task_update', 'jevellan_task_cancel', 'jevellan_threads_list', 'jevellan_thread_message', 'jevellan_thread_read', 'jevellan_thread_stop',
-  'jevellan_ask_user', 'jevellan_answer_question', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_pr_diff', 'jevellan_mail_send', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
-const MAIN_THREAD_TOOLS = ['jevellan_mail_send', 'jevellan_mail_inbox', 'jevellan_reserve', 'jevellan_release'] as const satisfies readonly BridgeTool[];
-export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | typeof MAIN_THREAD_TOOLS[number] | 'jevellan_library_add' | 'jevellan_thread_report' | 'jevellan_app_start' | 'jevellan_app_stop' | 'jevellan_apps_list' | 'memory_write' | 'memory_edit';
+  'jevellan_ask_user', 'jevellan_answer_question', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_withdraw_question', 'jevellan_notebook_read', 'jevellan_notebook_write', 'jevellan_pr_status', 'jevellan_pr_diff', 'memory_search', 'memory_read'] as const satisfies readonly BridgeTool[];
+type RetiredProjectTool = 'jevellan_mail_send' | 'jevellan_mail_inbox' | 'jevellan_reserve' | 'jevellan_release';
+export type ProjectToolName = typeof COORDINATOR_TOOLS[number] | RetiredProjectTool | 'jevellan_library_add' | 'jevellan_thread_report' | 'jevellan_app_start' | 'jevellan_app_stop' | 'jevellan_apps_list' | 'memory_write' | 'memory_edit';
 export function threadTools(isolation: 'worktree' | 'main'): BridgeTool[] {
-  return ['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read', ...(isolation === 'main' ? MAIN_THREAD_TOOLS : [])];
+  void isolation; // Historical callers keep their stored isolation; current scopes have the same tools.
+  return ['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read'];
 }
 /** The tools a scope lists: the coordinator's, or a thread's by isolation (mail and reservations only on main, brief 7.2). A fresh array each call. */
 export function projectToolNames(scope: ({ kind: 'coordinator' } | { kind: 'thread'; isolation: 'worktree' | 'main' }) & { memoryMode?: 'hub' | 'repo' | 'device' }): BridgeTool[] {

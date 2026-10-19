@@ -453,16 +453,11 @@ test('PJ3 a running thread shows its transcript, report card and accepts an inte
   // The scripted thread keeps working on a task marked `PJ3 long` until it is released or interrupted.
   await dialog.getByRole('textbox', { name: 'Brief', exact: true }).fill('PJ3 long: read the project files, then wait for my message.');
   await dialog.locator('summary').filter({ hasText: 'Choose where it runs' }).click();
-  for (const name of ['Isolation', 'Model', 'Effort', 'Device']) {
+  for (const name of ['Model', 'Effort', 'Device']) {
     const select = dialog.getByRole('combobox', { name, exact: true });
     await expect(select).toHaveValue(''); await expect(select.locator('option').first()).toHaveText('Automatic');
   }
-  const isolation = dialog.getByRole('combobox', { name: 'Isolation', exact: true });
-  // Main isolation exists since phase 6: on this main-policy project Main is offered, with no note under the field.
-  await expect(isolation.locator('option')).toHaveText(['Automatic', 'Worktree', 'Main']);
-  await expect(isolation.locator('option[value="main"]')).toHaveJSProperty('disabled', false);
-  await expect(isolation).not.toHaveAttribute('aria-describedby');
-  await expect(dialog.getByText('Main isolation is not available yet.', { exact: true })).toHaveCount(0);
+  await expect(dialog.getByRole('combobox', { name: 'Isolation', exact: true })).toHaveCount(0);
   // Every device of the mesh is offered in roster order (D281); one no thread can run on stays listed, disabled, with placement's reason.
   const roster = DeviceRosterSchema.parse(await read(page, '/hub/devices/roster'));
   const device = dialog.getByRole('combobox', { name: 'Device', exact: true });
@@ -657,45 +652,18 @@ test('PJ3 the notebook can be edited', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('PJ3 Leave git to me offers Main and preserves the manual git policy', async ({ page }, info) => {
-  const errors = await begin(page);
-  await openProject(page, 'Projects external');
+test('PJ3 Leave git to me keeps worktree isolation and preserves the manual git policy', async ({ page }, info) => {
+  const errors = await begin(page); await openProject(page, 'Projects external');
   let dialog = await openSettings(page);
-  const main = dialog.getByRole('radio', { name: 'Main', exact: true });
-  await expect(dialog.getByRole('radio', { name: 'Worktree and pull request', exact: true })).toBeChecked();
-  await expect(main).toBeEnabled();
-  await expect(main).not.toHaveAttribute('aria-describedby');
-  await expect(dialog).toContainText('Commits and pushes stay with you.');
-  const model = dialog.getByRole('combobox', { name: 'Coordinator model', exact: true });
-  await expect(model).toHaveValue(''); await expect(model.locator('option').first()).toHaveText('Automatic: first available');
-  await expect(dialog.getByRole('combobox', { name: 'Coordinator effort', exact: true })).toHaveValue('medium');
-  await expect(dialog.getByRole('textbox', { name: 'Worktree setup command', exact: true })).toHaveAttribute('placeholder', 'npm ci');
-  const limits = { 'Max running threads': '6', 'Max per device': '4', 'Turn limit per thread': '30' };
-  for (const [name, value] of Object.entries(limits)) await expect(dialog.getByRole('spinbutton', { name, exact: true })).toHaveValue(value);
-  await main.check();
-  await page.screenshot({ path: `/tmp/jevellan-manual-settings-${info.project.name}.png`, fullPage: true });
+  await expect(dialog.getByRole('radio', { name: 'Main', exact: true })).toHaveCount(0);
+  await expect(dialog.getByRole('combobox', { name: 'Delivery', exact: true })).toBeVisible();
   await dialog.getByRole('spinbutton', { name: 'Max running threads', exact: true }).fill('3');
-  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole('status').filter({ hasText: 'Project settings saved.' })).toBeVisible();
-  dialog = await openSettings(page);
-  await expect(dialog.getByRole('radio', { name: 'Main', exact: true })).toBeChecked();
-  await expect(dialog.getByRole('spinbutton', { name: 'Max running threads', exact: true })).toHaveValue('3');
+  await page.screenshot({ path: info.outputPath(`worktree-settings-${layout(info)}.png`), fullPage: true });
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click(); await expect(dialog).toBeHidden();
+  dialog = await openSettings(page); await expect(dialog.getByRole('spinbutton', { name: 'Max running threads', exact: true })).toHaveValue('3');
   expect(ProjectWorkViewSchema.parse(await read(page, '/api/projects/projects_external/work')).project.branchPolicy).toBe('external');
-  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click(); await expect(dialog).toHaveCount(0);
-
-  // A project that may use main offers it since phase 6 (D88): the radio is enabled, without a note, and can be chosen (not saved here).
-  await openProject(page, 'Projects fixture');
-  dialog = await openSettings(page);
-  const offered = dialog.getByRole('radio', { name: 'Main', exact: true });
-  await expect(offered).toBeEnabled(); await expect(offered).not.toHaveAttribute('aria-describedby');
-  await expect(dialog.getByText('Main isolation is not available yet.', { exact: true })).toHaveCount(0);
-  await offered.check(); await expect(offered).toBeChecked();
-  await expect(dialog.getByRole('radio', { name: 'Worktree and pull request', exact: true })).not.toBeChecked();
-  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click(); await expect(dialog).toHaveCount(0);
-  expect(errors).toEqual([]);
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click(); expect(errors).toEqual([]);
 });
-
 test('PJ3 the GitHub token card saves, replaces and removes the token', async ({ page }) => {
   const errors = await begin(page);
   // The fixture token goes first so the card starts from Not set, and comes back whatever happens.
@@ -783,11 +751,9 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   const section = (name: string) => panel.locator('.why-section').filter({ has: page.locator('h3', { hasText: new RegExp(`^${name}(?:\\s|$)`) }) });
   await expect(section('Placement').locator('h3')).toHaveText('Placement Jev');
   await expect(section('Placement').locator('.why-line')).toHaveText('Fixed: none');
-  // Main is allowed on this project since phase 6, so Jev was asked the isolation too and kept the worktree.
-  await expect(section('Isolation').locator('h3')).toHaveText('Isolation Jev');
-  await expect(section('Isolation').locator('.why-option > span:first-child')).toHaveText(['Worktree', 'Main']);
-  await expect(section('Isolation').locator('.why-option > span:last-child')).toHaveText(['0.80', '0.20']);
-  await expect(section('Isolation').locator('.why-option.win > span:first-child')).toHaveText('Worktree');
+  await expect(section('Isolation').locator('h3')).toHaveText('Isolation only option');
+  await expect(section('Isolation').locator('.why-line')).toHaveText('Worktree');
+  await expect(section('Isolation').locator('.why-option')).toHaveCount(0);
   await expect(section('Model').locator('h3')).toHaveText('Model Jev');
   await expect(section('Model').locator('.why-option > span:first-child')).toHaveText([`${claude} Fable`, `${claude} Opus`, `${codex} GPT`]);
   await expect(section('Model').locator('.why-option > span:last-child')).toHaveText(['0.70', '0.15', '0.15']);
@@ -883,9 +849,7 @@ test('PJ4b the Why panel explains placement and overrides apply', async ({ page 
   await tap(page, button('Override'));
   dialog = page.getByRole('dialog', { name: 'Override', exact: true });
   await dialog.getByRole('radio', { name: 'Restart with these choices', exact: true }).check();
-  const isolation = dialog.getByRole('combobox', { name: 'Isolation', exact: true });
-  await expect(isolation).toHaveValue('worktree'); await expect(isolation).not.toHaveAttribute('aria-describedby');
-  await expect(isolation.locator('option[value="main"]')).toHaveJSProperty('disabled', false);
+  await expect(dialog.getByRole('combobox', { name: 'Isolation', exact: true })).toHaveCount(0);
   await expect(dialog.getByRole('combobox', { name: 'Device', exact: true })).toHaveValue(placed.thread.ownerDeviceId);
   await expect(model.locator('option')).toHaveText(['Automatic', `${claude} Fable`, `${claude} Opus`, `${codex} GPT`]);
   await expect(model).toHaveValue('claude-opus'); await expect(effort).toHaveValue('low');
@@ -2562,4 +2526,14 @@ test('WG7 cleanup settings and per-device Clean now receipt', async ({ page }, i
   }, { timeout: 60000, intervals: [1000, 2000, 3000] }).toBe(1);
   await expect(local.getByText(/^Last run: freed /)).toBeVisible(LONG); await expect(local.getByText(/^1 removed/)).toBeVisible();
   await local.scrollIntoViewIfNeeded(); await page.screenshot({ path: info.outputPath(`cleanup-last-run-${layout(info)}.png`) }); expect(errors).toEqual([]);
+});
+
+test('WG8 the shared thread limit is editable in Settings Projects', async ({ page }, info) => {
+  const errors = await begin(page); await page.goto('/settings/projects');
+  await expect(page.getByRole('heading', { name: 'Running threads across all projects', exact: true })).toBeVisible();
+  const limit = page.getByRole('spinbutton', { name: 'Maximum running threads', exact: true }); await expect(limit).toHaveValue('6');
+  await limit.fill('7'); await page.getByRole('button', { name: 'Save thread limit', exact: true }).click();
+  await expect(page.getByText('Settings saved.', { exact: true })).toBeVisible(); await page.reload(); await expect(limit).toHaveValue('7');
+  await page.screenshot({ path: info.outputPath(`global-thread-limit-${layout(info)}.png`), fullPage: true });
+  await limit.fill('6'); await page.getByRole('button', { name: 'Save thread limit', exact: true }).click(); expect(errors).toEqual([]);
 });

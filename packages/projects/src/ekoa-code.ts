@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { EkoaCodeSetupReceiptSchema, EkoaCodeSetupRequestSchema, ProjectWorkSettingsSchema, readDocument, writeDocument, type ProjectGoal, type ProjectWorkSettings } from '@jevellan/core';
+import { EkoaCodeSetupReceiptSchema, EkoaCodeSetupRequestSchema, ProjectWorkSettingsSchema, readDocument, writeDocument, stableJson, type ProjectGoal, type ProjectWorkSettings } from '@jevellan/core';
 import type { ProjectWork } from './project-work.js';
 import { derivedId } from './decision-items.js';
 import { dailyNamed, goalNamed, jobNamed } from './vault-definition.js';
@@ -21,33 +21,169 @@ export const EKOA_GOALS = [
   { name: 'API and MCP', state: 'paused', motivation: 'The Cortex API and the Ekoa MCP are robust and valuable for daily work.', health: 'Errors and gaps met in daily use are few and get fixed quickly.' },
   { name: 'Security', state: 'paused', motivation: 'No cross-user exposure, no leaked secrets, ready for the pentest. Findings will come from the Ekoa Security project.', health: 'Findings from Ekoa Security are triaged and closed.' },
 ] as const;
+export const EKOA_LANDING_CHECKS = [
+  {
+    "name": "security",
+    "paths": [
+      "api/src/auth/",
+      "api/src/security/",
+      "api/src/billing/",
+      "api/src/memvault/",
+      "api/src/routes/",
+      "api/src/llm/",
+      "shared/",
+      "web/app/login/",
+      "web/app/activate/",
+      "web/app/change-password/"
+    ],
+    "command": "npm run test:suite -- security"
+  },
+  {
+    "name": "platform",
+    "paths": [
+      "shared/",
+      "api/src/data/",
+      "api/src/events/",
+      "api/src/journal/",
+      "api/src/services/",
+      "api/src/config.ts",
+      "deploy/",
+      "scripts/",
+      "package.json",
+      "package-lock.json",
+      "api/package.json"
+    ],
+    "command": "npm run test:suite -- platform"
+  },
+  {
+    "name": "chat",
+    "paths": [
+      "api/src/agents/",
+      "api/src/apps/",
+      "api/src/approvals/",
+      "api/src/llm/",
+      "api/src/judge/",
+      "api/src/memory/",
+      "api/src/voice/",
+      "api/src/voice-spike/",
+      "api/src/streaming/",
+      "web/app/(dashboard)/t/",
+      "web/app/(dashboard)/aprovacoes/"
+    ],
+    "command": "npm run test:suite -- chat"
+  },
+  {
+    "name": "caixa",
+    "paths": [
+      "api/src/arrivals/",
+      "api/src/inbox/",
+      "api/src/whatsapp/",
+      "api/src/notifications/",
+      "web/app/(dashboard)/caixa/"
+    ],
+    "command": "npm run test:suite -- caixa"
+  },
+  {
+    "name": "tarefas",
+    "paths": [
+      "api/src/tasks/",
+      "api/src/calendar/",
+      "api/src/schedules/",
+      "web/app/(dashboard)/tarefas/",
+      "web/app/(dashboard)/calendario/"
+    ],
+    "command": "npm run test:suite -- tarefas"
+  },
+  {
+    "name": "arquivo",
+    "paths": [
+      "api/src/archive/",
+      "api/src/documents/",
+      "api/src/knowledge/",
+      "api/src/uploads/",
+      "api/src/extraction/",
+      "api/src/content/",
+      "api/src/search/",
+      "web/app/(dashboard)/arquivo/",
+      "web/app/(dashboard)/documentos/",
+      "web/app/(dashboard)/conhecimento/"
+    ],
+    "command": "npm run test:suite -- arquivo"
+  },
+  {
+    "name": "clientes",
+    "paths": [
+      "api/src/clients/",
+      "api/src/legal/",
+      "api/src/legal-index/",
+      "api/src/kyc/",
+      "api/src/proposals/",
+      "api/src/register-lint/",
+      "web/app/(dashboard)/clientes/"
+    ],
+    "command": "npm run test:suite -- clientes"
+  },
+  {
+    "name": "integracoes",
+    "paths": [
+      "api/src/integrations/",
+      "api/src/automation/",
+      "api/src/cofre/",
+      "api/src/connector/",
+      "api/src/bridge/",
+      "api/src/local-drivers/",
+      "bridge/",
+      "desktop/",
+      "cli/",
+      "mcp/",
+      "web/app/(dashboard)/integracoes/",
+      "web/app/(dashboard)/ligacoes/"
+    ],
+    "command": "npm run test:suite -- integracoes"
+  },
+  {
+    "name": "shell",
+    "paths": [
+      "web/"
+    ],
+    "command": "npm run test:suite -- shell"
+  }
+];
+export const EKOA_MERGE_COMMIT_PATHS = ["evals/", "api/src/legal/", "api/src/legal-index/", "scripts/legal-quality/", "docs/legal-quality/"];
+async function ekoaCommand(work: ProjectWork, projectId: string, name: string, goalId: string | null, command: string, needs: string[], key: string, legal = false) {
+  const run = { kind: 'command' as const, command, needs, cwd: 'workspace' as const, timeoutMinutes: 600, ...(legal ? { deliveryGate: { id: 'ekoa-legal-promotion-v1', command: 'node "$JEVELLAN_JOB_COMMAND_CHECKOUT/scripts/jevellan/legal-gate.mjs"', timeoutMinutes: 120, protectedPaths: ['evals/', '.github/', 'scripts/jevellan/', 'scripts/legal-quality/'] } } : {}) };
+  let job = await jobNamed(work, projectId, { schema: 'job-create-request-v1', name, goalId, enabled: true, gate: null, run }, key);
+  if (stableJson(job.run) !== stableJson(run) || !job.enabled || job.goalId !== goalId) job = await work.daily.updateJob(projectId, job.id, { schema: 'job-update-request-v1', expectedRevision: job.revision, name, goalId, enabled: true, gate: null, run });
+  return job;
+}
 /** Owner-only, repeatable setup. Stable create IDs preserve later owner edits and avoid duplicate goals/jobs. */
 export async function applyEkoaCodeSetup(work: ProjectWork, projectId: string, raw: unknown, path: string, current: ProjectWorkSettings) {
   const input = EkoaCodeSetupRequestSchema.parse(raw);
   let receipt = existsSync(path) ? readDocument(path, EkoaCodeSetupReceiptSchema) : null;
   if (receipt && (receipt.projectId !== projectId || receipt.modelId !== input.modelId || receipt.workflowPull !== input.workflowPull)) throw Object.assign(new Error('Ekoa Code setup already has a different receipt.'), { status: 409 });
-  if (receipt?.completed) {
-    if (receipt.presetVersion === 1) {
-      const { schema: _schema, projectId: _project, revision, ...settings } = current; void _schema; void _project;
-      const saved = await work.putSettings(projectId, { schema: 'project-work-settings-request-v1', revision, clientRequestId: derivedId('ekoa_setup', projectId, 'hub_memory'), settings: { ...settings, memory: { mode: 'hub', capture: true, dreamMode: 'apply' } } });
-      await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', name: 'Memory dream', goalId: null, order: 0, enabled: true, target: { kind: 'memory-dream' } }, 'shared_memory_dream');
-      receipt = { ...receipt, presetVersion: 2, settings: saved.settings }; writeDocument(path, EkoaCodeSetupReceiptSchema, receipt);
-    }
-    return receipt;
-  }
+  if (receipt?.completed && receipt.presetVersion === 3) return receipt;
   if (!receipt) {
-    receipt = EkoaCodeSetupReceiptSchema.parse({ ...input, schema: 'ekoa-code-setup-receipt-v1', projectId, completed: false, presetVersion: 2, settings: ProjectWorkSettingsSchema.parse({ ...current,
-      delivery: 'land', autoLand: false, riskyAreas: EKOA_RISKY_AREAS, landingChecks: [], smokeCheck: EKOA_FAST_CHECKS, setupCommand: 'npm ci', instructions: EKOA_THREAD_RULES, memory: { mode: 'hub', capture: true, dreamMode: 'apply' },
-      maxRunningThreads: 8, maxRunningPerDevice: 6, coordinator: { modelId: input.modelId, runtimeId: 'claude', accountId: null, effort: 'high' }, refill: { enabled: true, minIntervalMinutes: 30 }, nightlyWindow: { enabled: true, time: '01:00', timezone: 'Europe/Lisbon' } }) });
+    receipt = EkoaCodeSetupReceiptSchema.parse({ ...input, schema: 'ekoa-code-setup-receipt-v1', projectId, completed: false, presetVersion: 3, settings: current });
     writeDocument(path, EkoaCodeSetupReceiptSchema, receipt);
   }
   const goals: ProjectGoal[] = [];
   // Matched by name as well as by request id: a project restored from the vault already has these goals, jobs and dailies.
   for (const [index, goal] of EKOA_GOALS.entries()) goals.push(await goalNamed(work, projectId, { schema: 'goal-create-request-v1', ...goal, autonomy: 'propose', dailyRefillCap: 3, openPrCap: 2 }, `ekoa_setup_goal_${index}`));
   await configureEkoaNights(work, projectId);
-  const { schema: _schema, projectId: _project, revision, ...settings } = receipt.settings; void _schema; void _project;
-  await work.putSettings(projectId, { schema: 'project-work-settings-request-v1', revision, clientRequestId: derivedId('ekoa_setup', projectId), settings });
-  receipt = { ...receipt, completed: true }; writeDocument(path, EkoaCodeSetupReceiptSchema, receipt); return receipt;
+  const jobs = await work.daily.jobs(projectId);
+  const deploy = await ekoaCommand(work, projectId, 'Deploy', null, 'node "$JEVELLAN_JOB_COMMAND_CHECKOUT/scripts/jevellan/deploy.mjs"', ['prod-access'], 'ekoa_deploy_command_v3');
+  const desktop = await ekoaCommand(work, projectId, 'Desktop build', null, 'node "$JEVELLAN_JOB_COMMAND_CHECKOUT/scripts/jevellan/desktop.mjs"', ['mac', 'residential'], 'ekoa_desktop_command_v3');
+  if (!receipt.settingsPrepared || receipt.presetVersion !== 3) {
+    const planned = ProjectWorkSettingsSchema.parse({ ...current,
+    delivery: 'land', autoLand: true, maxRunningThreads: 6, riskyAreas: current.riskyAreas || EKOA_RISKY_AREAS, landingChecks: EKOA_LANDING_CHECKS, smokeCheck: EKOA_FAST_CHECKS, mergeCommitPaths: EKOA_MERGE_COMMIT_PATHS,
+    setupCommand: current.setupCommand ?? 'npm ci', memory: { mode: 'hub', capture: true, dreamMode: 'apply' }, deploy: { mode: 'approve', jobId: deploy.id, desktopJobId: desktop.id, suiteJobId: jobs.find(row => row.name === 'Full suite')!.id },
+    nightlyWindow: { enabled: true, time: '01:00', timezone: 'Europe/Lisbon' } });
+    receipt = { ...receipt, presetVersion: 3, settingsPrepared: true, completed: false, settings: planned };
+    writeDocument(path, EkoaCodeSetupReceiptSchema, receipt);
+  }
+  const { schema: _savedSchema, projectId: _savedProject, revision: plannedRevision, ...plannedSettings } = receipt.settings; void _savedSchema; void _savedProject;
+  const saved = await work.putSettings(projectId, { schema: 'project-work-settings-request-v1', revision: plannedRevision, clientRequestId: derivedId('ekoa_setup_v3', projectId, String(plannedRevision)), settings: plannedSettings });
+  receipt = { ...receipt, completed: true, presetVersion: 3, settings: saved.settings }; writeDocument(path, EkoaCodeSetupReceiptSchema, receipt); return receipt;
 }
 
 /** Revision-checked migration: keep identifiers and history while replacing the retired nights. */
@@ -65,8 +201,8 @@ export async function configureEkoaNights(work: ProjectWork, projectId: string) 
   const resilience = goals.find(goal => goal.name === 'Resilience')!, legalGoal = goals.find(goal => goal.name === 'Legal analysis quality')!;
   if (!resilience || !legalGoal) throw new Error('The night programme needs its Resilience and Legal analysis quality goals.');
   for (const job of await work.daily.jobs(projectId)) if (job.run.kind === 'github-workflow' && job.enabled) await work.daily.updateJob(projectId, job.id, { schema: 'job-update-request-v1', expectedRevision: job.revision, name: job.name, goalId: job.goalId, enabled: false, gate: job.gate, run: job.run });
-  const legal = await jobNamed(work, projectId, { schema: 'job-create-request-v1', name: 'Legal programme night', goalId: legalGoal.id, enabled: true, gate: null, run: { kind: 'command', command: 'node scripts/jevellan/legal-night.mjs', needs: ['prod-access'], cwd: 'workspace', timeoutMinutes: 240 } }, 'ekoa_legal_command_v3');
-  const full = await jobNamed(work, projectId, { schema: 'job-create-request-v1', name: 'Full suite', goalId: resilience.id, enabled: true, gate: null, run: { kind: 'command', command: 'node scripts/jevellan/full-suite.mjs', needs: ['linux'], cwd: 'workspace', timeoutMinutes: 240 } }, 'ekoa_full_command_v3');
+  const legal = await ekoaCommand(work, projectId, 'Legal programme night', legalGoal.id, 'node scripts/jevellan/legal-night.mjs', ['linux'], 'ekoa_legal_command_v3', true);
+  const full = await ekoaCommand(work, projectId, 'Full suite', resilience.id, 'node scripts/jevellan/full-suite.mjs', ['linux'], 'ekoa_full_command_v3');
   const dailies = await work.daily.dailies(projectId);
   const definitions = [
     { name: 'Memory dream', goalId: null, order: 0, target: { kind: 'memory-dream' } },

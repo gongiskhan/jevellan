@@ -92,7 +92,7 @@ test('9.4 thread system append and turn prompts', () => {
   expect(worktree).toContain('never push or open one yourself'); expect(worktree).toContain('Run only surgical tests');
   expect(worktree).toContain('jv/fix-login-abc123'); expect(worktree).toContain('a nightly review covers everything that merges');
   const main = copy.threadSystemAppend({ projectName: 'Shop', cwd: '/p/shop', isolation: 'main', baseBranch: 'main', deviceName: 'Mac mini' });
-  expect(main).toContain('jevellan_reserve'); expect(main).toContain('jevellan_mail_inbox'); expect(main).toContain('jevellan_mail_send');
+  expect(main).toContain('Main isolation has been retired');
   expect(copy.taskPrompt('Fix login', 'The redirect loops.')).toBe('Task: Fix login\n\nThe redirect loops.');
   expect(copy.messagesPrompt([{ from: 'owner', text: 'Also log it.' }])).toBe('Also log it.');
   expect(copy.messagesPrompt([{ from: 'coordinator', text: 'Use the new API.' }, { from: 'owner', text: 'Also log it.' }])).toBe('From the coordinator:\nUse the new API.\n\n---\n\nFrom the owner:\nAlso log it.');

@@ -1,3 +1,4 @@
+import { JobDeliveryBindingSchema } from './job-delivery-schemas.js';
 import { z } from 'zod';
 import { DeploymentJobSchema } from './project-deploy-schemas.js';
 import { ProjectReviewRunSchema } from './project-review-schemas.js';
@@ -10,18 +11,19 @@ export { TaskTypeSchema } from './task-types.js';
 export const TaskKindSchema = z.enum(['session', 'job']);
 export const TaskStateSchema = z.enum(['draft', 'queued', 'active', 'in-review', 'done', 'failed', 'cancelled']);
 export const TaskSourceSchema = z.enum(['owner', 'owner-request', 'refill', 'finding', 'daily', 'ekoa']);
-export const TaskFixedSchema = z.strictObject({ isolation: IsolationSchema.optional(), runtimeId: IdSchema.optional(), accountId: IdSchema.optional(),
+const StoredTaskFixedSchema = z.strictObject({ isolation: IsolationSchema.optional(), runtimeId: IdSchema.optional(), accountId: IdSchema.optional(),
   modelId: IdSchema.optional(), effort: EffortSchema.optional(), deviceId: IdSchema.optional() });
+export const TaskFixedSchema = StoredTaskFixedSchema.extend({ isolation: z.literal('worktree').optional() });
 const title = z.string().trim().min(1).max(120), brief = z.string().trim().min(1).max(20000);
 const needs = z.array(z.string().regex(/^[a-z0-9-]{1,32}$/u)).max(8), after = z.array(IdSchema).max(10);
 /** Separate from the legacy Improver ProjectTaskSchema and namespace (decision 636). */
-export const ProjectWorkTaskSchema = z.strictObject({ schema: z.literal('project-work-task-v1'), deployment: DeploymentJobSchema.optional(), id: IdSchema, projectId: IdSchema, revision: z.number().int().nonnegative(),
+export const ProjectWorkTaskSchema = z.strictObject({ schema: z.literal('project-work-task-v1'), jobDelivery: JobDeliveryBindingSchema.optional(), deployment: DeploymentJobSchema.optional(), id: IdSchema, projectId: IdSchema, revision: z.number().int().nonnegative(),
   title, brief, kind: TaskKindSchema, type: TaskTypeSchema, goalId: IdSchema.nullable(), source: TaskSourceSchema, state: TaskStateSchema,
   rank: z.string().min(1).max(64), ownerRanked: z.boolean(), now: z.boolean(), after, needs,
   fromBranch: z.string().min(1).max(200).optional(),
   // Queued but not started until the owner, or the coordinator on the owner's word, releases it.
   held: z.boolean().optional(),
-  dailyId: IdSchema.nullable(), jobId: IdSchema.nullable(), threadId: IdSchema.nullable(), jobRunId: IdSchema.nullable(), fixed: TaskFixedSchema,
+  dailyId: IdSchema.nullable(), jobId: IdSchema.nullable(), threadId: IdSchema.nullable(), jobRunId: IdSchema.nullable(), fixed: StoredTaskFixedSchema,
   workflowHandoff: WorkflowHandoffStateSchema.optional(), workflowScheduler: WorkflowSchedulerStateSchema.optional(), nightlyReview: z.boolean().optional(), reviewRun: ProjectReviewRunSchema.optional(), nightlyWindowId: IdSchema.optional(), nightlyFixFor: IdSchema.optional(), refillEventId: IdSchema.optional(), projectDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).optional(), placementNote: z.string().max(400).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema, dispatchedAt: TimestampSchema.optional(), endedAt: TimestampSchema.optional(), endNote: z.string().max(400).optional(),
   // Frozen before the first start. A lost response/restart repeats identical start input.
   dispatchText: z.string().min(1).max(32768).optional(), dispatchBrief: z.string().min(1).max(32768).optional(), dispatchContext: TaskPlacementContextSchema.optional(), requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional() });

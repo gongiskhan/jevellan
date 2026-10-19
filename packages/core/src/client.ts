@@ -71,3 +71,5 @@ export * from './project-deploy-schemas.js';
 
 export * from './cleanup-settings-schemas.js';
 export * from './cleanup-schemas.js';
+
+export * from './job-delivery-schemas.js';

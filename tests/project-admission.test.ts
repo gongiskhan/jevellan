@@ -265,7 +265,7 @@ test('placement asks Jev with the packet: active threads oldest first with this 
   const packet = PlacementStateSchema.parse(JSON.parse(requests[0]!.state));
   expect(packet.thread).toEqual({ title: 'Fix login', task: 'The redirect loops.', coordinatorNote: 'The owner asked for speed.' });
   expect(packet.activeThreads).toEqual([{ title: 'Auth', isolation: 'worktree', device: 'Mac mini', model: 'Swift', effort: 'high', reservedPaths: [] },
-    { title: 'Billing', isolation: 'worktree', device: 'Studio', model: 'Swift', effort: 'medium', reservedPaths: ['src/billing/', 'docs/'] }]);
+    { title: 'Billing', isolation: 'worktree', device: 'Studio', model: 'Swift', effort: 'medium', reservedPaths: [] }]);
   expect(packet.rules.recentOverrides).toEqual(["model changed from deep to swift for a feature task 'Old' (restart)", "effort changed from max to low for a feature task '(unknown thread)' (next-turn)"]);
   expect(reads.overrides).toBe(2);
   // During a hub outage the packet keeps what this device knows.
@@ -305,4 +305,11 @@ test('a resource-blocked follow-up remains eligible for the waiting sweep and st
   const ready = await value.admit('proj_app', 'dev_mini', 'thread_waiting');
   expect(ready.ok).toBe(true);
   if (ready.ok) ready.release();
+});
+
+test('the global full-slot reason takes priority when a project limit is reached too', async () => {
+  const admission = new Admission({ deviceId: 'dev', deviceName: 'Fixture', localLive: () => ['a', 'b', 'c', 'd', 'e', 'f'], hub: {
+    settings: async () => null, threads: async () => ({ records: [], next: null }), admitThread: async () => ({ schema: 'thread-admission-v1', admitted: false, running: 6, limit: 6 }),
+  } });
+  expect(await admission.admit('project', 'dev', 'seventh')).toMatchObject({ ok: false, scope: 'all', reason: 'Waiting for a free slot: 6 threads are running across all projects (limit 6).' });
 });

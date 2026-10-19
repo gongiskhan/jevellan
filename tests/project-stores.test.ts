@@ -169,7 +169,7 @@ test('a permanently refused index is dropped so other threads still publish', as
 test('threadIndex keeps owner-local fields out and uses the given labels and time', () => {
   const index = threadIndex(thread({ cwd: '/w/t', nativeSessionId: 's', endedAt: at, state: 'done' }), labels, '2026-10-03T11:00:00.000Z');
   expect(index).toEqual({ schema: 'project-thread-index-v1', revision: 0, id: 'thread_01K6ABCDEF', projectId: 'proj_a', title: 'Fix login', state: 'done', isolation: 'worktree',
-    ownerDeviceId: 'dev_a', runtime: 'codex', modelLabel: 'Swift', effort: 'medium', accountLabel: 'Work', turns: 0, createdAt: at, updatedAt: '2026-10-03T11:00:00.000Z', endedAt: at,
+    ownerDeviceId: 'dev_a', runtime: 'codex', modelLabel: 'Swift', effort: 'medium', accountLabel: 'Work', delivery: 'pull-request', turns: 0, createdAt: at, updatedAt: '2026-10-03T11:00:00.000Z', endedAt: at,
     cacheSessionKey: sessionCacheKey({ kind: 'thread', id: 'thread_01K6ABCDEF' }, 'codex', 'acc_a', 's') });
   const { threads } = stores(); const created = threads.create(thread({ id: 'thread_nolabels' }), labels);
   rmSync(paths.threadLocal('proj_a', created.id)); const fresh = stores();
@@ -209,10 +209,20 @@ test('coordinator store and start receipts persist owner-local documents', () =>
 test('landing projection changes get new immutable event ids and survive a store restart', async () => {
   const { threads, publisher, ledgers } = stores(); const t = threads.create(thread({ state: 'in-review' }), labels); await publisher.flush();
   const initial = threads.current(t.id)!; threads.setIndexFields(t.id, { landing: 'verifying' }); const verifying = threads.current(t.id)!;
-  expect(verifying.eventId).toBeGreaterThan(initial.eventId); expect(verifying.index.landing).toBe('verifying');
+  expect(verifying.eventId).toBeGreaterThan(initial.eventId); expect(verifying.index.landingStage).toBe('verifying');
   threads.setIndexFields(t.id, { landing: 'verifying' }); expect(threads.current(t.id)!.eventId).toBe(verifying.eventId);
-  await publisher.flush(); const restarted = new ThreadStore(paths, ledgers, publisher); expect(restarted.current(t.id)!.index.landing).toBe('verifying');
+  await publisher.flush(); const restarted = new ThreadStore(paths, ledgers, publisher); expect(restarted.current(t.id)!.index.landingStage).toBe('verifying');
   restarted.setIndexFields(t.id, { landing: undefined }); await publisher.flush();
   expect((await new HubProjectAccess(db, 'dev_a').thread(t.id))!.document.landing).toBeUndefined();
-  expect(initial.index.landing).toBeUndefined(); expect(verifying.index.landing).toBe('verifying'); publisher.close();
+  expect(initial.index.landing).toBeUndefined(); expect(verifying.index.landingStage).toBe('verifying'); publisher.close();
+});
+
+test('a stale or refused live-index acknowledgement never authorizes native work', async () => {
+  let mode: 'stale' | 'refused' | 'ok' = 'stale';
+  const publisher = new ThreadIndexPublisher({ publishThread: async (_index, eventId) => { if (mode === 'refused') throw Object.assign(new Error('All slots are occupied.'), { status: 423 }); return { eventId: mode === 'stale' ? eventId + 1 : eventId }; } });
+  const index = threadIndex(thread(), labels, at);
+  publisher.enqueue(index, 1); expect(await publisher.confirmLive(index.id, index.ownerDeviceId)).toBe(false);
+  mode = 'refused'; publisher.enqueue(index, 2); expect(await publisher.confirmLive(index.id, index.ownerDeviceId)).toBe(false);
+  mode = 'ok'; publisher.enqueue(index, 3); expect(await publisher.confirmLive(index.id, index.ownerDeviceId)).toBe(true);
+  publisher.enqueue({ ...index, state: 'idle' }, 4); expect(await publisher.confirmLive(index.id, index.ownerDeviceId)).toBe(false); await publisher.close();
 });

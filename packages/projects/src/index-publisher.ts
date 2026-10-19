@@ -1,4 +1,4 @@
-import { ThreadIndexSchema, stableJson, type ProjectHub, type ThreadIndex } from '@jevellan/core';
+import { ThreadIndexSchema, liveWork, stableJson, type ProjectHub, type ThreadIndex } from '@jevellan/core';
 
 export type IndexUpdate = { index: ThreadIndex; eventId: number };
 const status = (error: unknown) => (error as { status?: unknown } | undefined)?.status;
@@ -11,6 +11,7 @@ const status = (error: unknown) => (error as { status?: unknown } | undefined)?.
  * update so the index can move forward; other refusals except 401, 408 and 429 drop the update (D139).
  */
 export class ThreadIndexPublisher {
+  readonly #confirmed = new Map<string, ThreadIndex>();
   readonly #pending = new Map<string, IndexUpdate>();
   #conflict: ((threadId: string) => IndexUpdate | undefined) | undefined;
   #running: Promise<void> | undefined;
@@ -25,8 +26,14 @@ export class ThreadIndexPublisher {
     if (!Number.isSafeInteger(eventId) || eventId < 1) throw new Error('Invalid thread index event.');
     const pending = this.#pending.get(update.index.id);
     if (pending && (pending.eventId > eventId || stableJson(pending) === stableJson(update))) return;
+    this.#confirmed.delete(update.index.id);
     this.#pending.set(update.index.id, update);
     queueMicrotask(() => { if (!this.#closed && !this.#timer) void this.flush().catch(() => undefined); });
+  }
+  async confirmLive(threadId: string, deviceId: string): Promise<boolean> {
+    try { await this.flush(); if (this.#pending.has(threadId) && !this.#timer) await this.flush(); } catch { return false; }
+    const index = this.#confirmed.get(threadId);
+    return !!index && index.ownerDeviceId === deviceId && liveWork(index.state) && !this.#pending.has(threadId);
   }
   flush(): Promise<void> {
     if (this.#closed) return Promise.resolve();
@@ -55,6 +62,8 @@ export class ThreadIndexPublisher {
         if (typeof code === 'number' && code >= 400 && code < 500 && ![401, 408, 429].includes(code)) { if (current) this.#pending.delete(threadId); continue; }
         throw error;
       }
+      if (receipt.eventId === update.eventId) this.#confirmed.set(threadId, update.index);
+      else this.#confirmed.delete(threadId);
       if (receipt.eventId < update.eventId) throw new Error('The hub did not acknowledge this thread index.');
       if (this.#pending.get(threadId) === update) this.#pending.delete(threadId);
     }

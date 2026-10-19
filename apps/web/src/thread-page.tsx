@@ -16,7 +16,7 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip, lineParts, mainIsolationBlock, nearestEffort,
+  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip, lineParts, nearestEffort,
   mergeThreadToolTurns, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, pullRequestBadges, reportBadge, threadActions, threadActivity, threadLiveText,
   threadPollDelay, threadReason, threadStarting, transcriptNotice, whyFields, withoutEchoedSummaries, withoutReportCalls, type OverrideForm, type OverrideMode,
 } from './project-work-model.js';
@@ -632,7 +632,7 @@ function OverrideDialog({ props, view, projectId, close, applied }: { props: Pag
   const ids = useClientIds('override');
   const [form, setForm] = useState<OverrideForm>(() => overrideForm(view));
   const [work, setWork] = useState<ProjectWorkView>();
-  const nextNote = useId(); const restartNote = useId(); const isolationNote = useId(); const deviceNote = useId();
+  const nextNote = useId(); const restartNote = useId(); const deviceNote = useId();
   useEffect(() => {
     const controller = new AbortController();
     api(`/api/projects/${projectId}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true })
@@ -648,7 +648,6 @@ function OverrideDialog({ props, view, projectId, close, applied }: { props: Pag
   const efforts = effortChoices(menu.find((entry) => entry.id === form.modelId)?.efforts, current.effortRequested);
   const here = data.devices.currentDeviceId;
   const devices = deviceChoices(work, data.roster.devices, here, form.deviceId);
-  const mainBlock = work ? mainIsolationBlock(work) : null;
   const remoteBlock = work ? devices.map((choice) => deviceBlock(work, choice.id, here)).find((reason) => reason !== null) ?? null : null;
   const change = (fields: Partial<OverrideForm>) => setForm((previous) => ({ ...previous, ...fields }));
   // An effort the chosen model neither offers nor the thread requested moves to the model's nearest one.
@@ -694,25 +693,11 @@ function OverrideDialog({ props, view, projectId, close, applied }: { props: Pag
               onChange={() => mode('restart')} />{copy.RESTART_WITH_CHOICES}
           </label>
           <p className={`pw-field-note pw-radio-note${view.canOverride.restart ? '' : ' pw-refused'}`} id={restartNote}>
-            {view.canOverride.restart ? view.thread.isolation === 'main' ? view.thread.gitPolicy === 'external' ? copy.RESTART_HELP_MANUAL : copy.RESTART_HELP_MAIN : copy.RESTART_HELP : view.canOverride.restartReason}
+            {view.canOverride.restart ? copy.RESTART_HELP : view.canOverride.restartReason}
           </p>
         </fieldset>
         <fieldset className="pw-fields" disabled={restart && !work}>
           <div className="form-grid pw-override-fields">
-            {restart && (
-              <div className="pw-field">
-                <label>{copy.ISOLATION}
-                  <select value={form.isolation} aria-describedby={mainBlock ? isolationNote : undefined}
-                    onChange={(event) => change({ isolation: event.target.value as OverrideForm['isolation'] })}>
-                    <option value="">{copy.AUTOMATIC}</option>
-                    <option value="worktree">{copy.WORKTREE}</option>
-                    <option value="main" disabled={!!mainBlock}>{copy.MAIN}</option>
-                  </select>
-                </label>
-                {mainBlock && <p className="pw-field-note" id={isolationNote}>{mainBlock}</p>}
-                {!mainBlock && work?.project.branchPolicy === 'external' && <p className="pw-field-note">{copy.MANUAL_MAIN_HELP}</p>}
-              </div>
-            )}
             <label>{copy.MODEL}
               <select value={form.modelId} onChange={(event) => model(event.target.value)}>
                 {restart && <option value="">{copy.AUTOMATIC}</option>}

@@ -428,7 +428,7 @@ export class ThreadService {
     }
     else {
       if (!remote) throw refuse(COORDINATOR_ELSEWHERE, 409);
-      const created = await remote(projectId, coordinatorDeviceId, { schema: 'thread-create-request-v1', clientRequestId, title: thread.title, task: brief, ...(thread.taskContext ? { taskContext: thread.taskContext } : {}), ...fixed, ...(note ? { note } : {}) });
+      const created = await remote(projectId, coordinatorDeviceId, { schema: 'thread-create-request-v1', clientRequestId, title: thread.title, task: brief, ...(thread.taskContext ? { taskContext: thread.taskContext } : {}), ...fixed, isolation: 'worktree', ...(note ? { note } : {}) });
       this.#o.receipts.put(projectId, clientRequestId, { title: thread.title, task: brief, ...(thread.taskContext ? { taskContext: thread.taskContext } : {}), ...fixed }, created.threadId, this.#summaryOf(created));
       started = created;
     }
@@ -671,13 +671,7 @@ export class ThreadService {
    * Ended main threads here whose checkout claim was kept (D291) settle it again, at every sweep until it is released (phase 8). Each
    * runs on its thread's chain; a failure stays on the thread (its notice and the thread page line), never in the sweep.
    */
-  async settleCheckouts(): Promise<void> {
-    for (const thread of this.#o.store.all()) {
-      if (this.#closed) return;
-      if (!isTerminal(thread.state) || !this.#o.store.local(thread.id).unsettledCheckout) continue;
-      await this.runner(thread.id)?.settleCheckout().catch(() => undefined);
-    }
-  }
+  async settleCheckouts(): Promise<void> { /* Historical Main receipts are read-only. */ }
   /** A local thread waits on a needs-decision report whose question this device has not asked the owner itself. */
   #unasked(thread: Thread): boolean {
     return thread.state === 'waiting-for-you' && thread.lastReport?.status === 'needs-decision' && this.#o.store.local(thread.id).decisionReport?.asked === false;

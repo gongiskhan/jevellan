@@ -33,7 +33,7 @@ const queue = (f: ProjectFixture): CoordinatorEvent[] => f.coordinatorState().qu
 const reports = (f: ProjectFixture) => queue(f).flatMap((event) => event.kind === 'thread-report' ? [`${event.threadId} ${event.report.summary}`] : []);
 async function settings(f: ProjectFixture, over: Partial<ProjectWorkSettings>): Promise<void> {
   const current = await f.app.projectHub.settings('project');
-  await f.app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...(current?.document ?? defaultProjectWorkSettings('project')), ...over }), current?.revision ?? 0);
+  await f.app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...(current?.document ?? { ...defaultProjectWorkSettings('project'), delivery: 'pull-request' }), ...over }), current?.revision ?? 0);
 }
 /** A member turn that says `text` (the transcript shows it) and reports progress with the same summary. */
 const sayStep = (text: string): FakeTurnStep => async (turn) => {
@@ -220,7 +220,7 @@ test('from the member, coordinator requests and its chat reach the hub coordinat
   expect(m.thread(created.threadId)).toMatchObject({ state: 'stopped', stateReason: restartedReason(newThreadId) });
   expect(existsSync(m.thread(created.threadId).cwd)).toBe(false);
   await f.waitFor(() => f.app.projectWork.store.get(newThreadId)?.turns ?? 0, (count) => count === 1); await f.app.projectWork.idle();
-  expect(f.thread(newThreadId)).toMatchObject({ title: 'Fix login', ownerDeviceId: hubId, placement: { fixed: ['device'], deviceId: hubId } });
+  expect(f.thread(newThreadId)).toMatchObject({ title: 'Fix login', ownerDeviceId: hubId, placement: { fixed: ['isolation', 'device'], deviceId: hubId } });
   expect((await f.app.projectHub.recentOverrides(pid, 8))[0]).toMatchObject({ threadId: created.threadId, mode: 'restart', note: 'Run it on the hub.',
     changes: [{ field: 'device', from: m.deviceId, to: hubId }] });
   await f.waitFor(() => queue(f).flatMap((event) => event.kind === 'placement-override' ? [event.summary] : []), (summaries) => summaries.some((summary) => summary.includes(restartedReason(newThreadId))));
@@ -235,7 +235,7 @@ test('the coordinator acts on member threads through commands, reads them with t
   const hubId = f.app.device.deviceId; const pid = 'project'; const work = f.app.projectWork;
   expect(await work.coordinators.ensureAssigned(pid)).toBe(hubId);
   const tools = coordinatorToolHandlers({ deviceId: hubId, deviceName: f.deviceName, threads: work.threads, store: work.store, decisions: work.decisions, pullRequests: work.tracker,
-    hub: f.app.projectHub, ledgers: work.ledgers, mail: work.mail, roster: () => f.app.roster(), now: Date.now, memory: async () => { throw new Error('No memory in this test.'); } });
+    hub: f.app.projectHub, ledgers: work.ledgers, roster: () => f.app.roster(), now: Date.now, memory: async () => { throw new Error('No memory in this test.'); } });
   const tool = <T extends keyof typeof BridgeToolSchemas>(name: T, input: unknown, turn = 1) => tools.call({ kind: 'coordinator', projectId: pid, turn }, name as never,
     BridgeToolSchemas[name].parse(input), new AbortController().signal) as Promise<Record<string, unknown>>;
   const startOnMember = (title: string) => f.json(`/api/projects/${pid}/threads`, ThreadCreatedViewSchema, 'POST', createBody(title, { deviceId: m.deviceId }));
@@ -352,7 +352,7 @@ test('automatic-fix limit answers reach the member once and resume its pending P
   const { f, m } = await setup(); await settings(f, { prAutoFix: { checks: true, conflicts: true, comments: true, maxRounds: 1 } });
   m.fake.enqueueTurn(commitStep({ 'greeting.txt': 'Remote greeting.\n' }, { status: 'done', summary: 'Added the greeting.' }), forThread());
   const created = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', createBody('Remote automatic fix', { deviceId: m.deviceId }));
-  await turns(f, m, created.threadId, 1); const n = m.thread(created.threadId).pr!.number;
+  await turns(f, m, created.threadId, 1); const initial = m.thread(created.threadId); expect({ state: initial.state, reason: initial.stateReason, hasPr: !!initial.pr }).toMatchObject({ state: 'in-review', hasPr: true }); const n = initial.pr!.number;
   m.fake.enqueueTurn(commitStep({ 'greeting.txt': 'First repair.\n' }, { status: 'done', summary: 'Fixed the greeting.' }), forThread());
   f.github.setChecks(n, 'failing'); await m.app.projectWork.tracker.poll(); await m.app.projectWork.idle(); await m.app.projectWork.tracker.poll(); await round(f, m);
   const question = (await f.app.projectHub.decisions(f.project.id)).find(q => q.automaticFix)!; expect(question).toBeDefined();

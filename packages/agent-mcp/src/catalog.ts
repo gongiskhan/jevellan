@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EffortSchema, IdSchema, IsolationSchema, TaskTypeSchema, TaskUpdateRequestSchema, GoalCreateRequestSchema, GoalUpdateRequestSchema, JobCreateRequestSchema, JobUpdateRequestSchema, DailyCreateRequestSchema, DailyUpdateRequestSchema } from '@jevellan/core';
+import { EffortSchema, IdSchema, TaskTypeSchema, TaskUpdateRequestSchema, GoalCreateRequestSchema, GoalUpdateRequestSchema, JobCreateRequestSchema, JobUpdateRequestSchema, DailyCreateRequestSchema, DailyUpdateRequestSchema } from '@jevellan/core';
 import { AgentWatchRequestSchema } from './schemas.js';
 
 const autoId = z.union([z.literal('auto'), IdSchema]);
@@ -10,7 +10,7 @@ const choice = {
   modelId: autoId.optional().describe('Stable model menu ID from discovery, or auto.'),
   effort: z.union([z.literal('auto'), EffortSchema]).optional(),
 };
-const placement = { ...choice, isolation: z.union([z.literal('auto'), IsolationSchema]).optional(), deviceId: autoId.optional() };
+const placement = { ...choice, isolation: z.enum(['auto', 'worktree']).optional(), deviceId: autoId.optional() };
 const project = { projectId: IdSchema };
 const resourceDevice = { deviceId: autoId.optional().describe('Device ID from discovery. Omit or use auto for the connected device.') };
 const thread = { ...project, threadId: IdSchema };
@@ -55,7 +55,7 @@ export const AGENT_OPERATIONS: readonly AgentOperation[] = [
   operation('thread_read', 'Read project job', 'Read one thread, placement explanation, reports, output and available controls. Native sessions and authentication never leave the owner.', z.strictObject(thread), true),
   operation('thread_send', 'Message project job', 'Send a correction or a queued next-turn message to this thread. interrupt=true requests interruption using its normal guard.', z.strictObject({ ...thread, clientMessageId: IdSchema, text, interrupt: z.boolean().default(false) }), false, { idempotent: true }),
   operation('thread_stop', 'Stop project job', 'Stop a thread through normal process termination and checkout settlement. Manual git projects keep edits; automatic worktrees follow their normal cleanup policy.', z.strictObject({ ...thread, reason: z.string().max(400).optional() }), false, { destructive: true }),
-  operation('thread_override', 'Override next project turn', 'Apply choices to the next turn where supported. Changing runtime/isolation/device requires restart; account and effort eligibility are still enforced.', z.strictObject({ ...thread, ...requestId, ...placement, note: z.string().max(400).optional() }), false, { idempotent: true }),
+  operation('thread_override', 'Override next project turn', 'Apply choices to the next turn where supported. Changing runtime/device requires restart; account and effort eligibility are still enforced.', z.strictObject({ ...thread, ...requestId, ...placement, note: z.string().max(400).optional() }), false, { idempotent: true }),
   operation('thread_restart', 'Restart project job', 'Stop and restart this task with chosen placement. This uses the same restart and cleanup behavior as the app; inspect thread_read before using it.', z.strictObject({ ...thread, ...requestId, ...placement, note: z.string().max(400).optional() }), false, { destructive: true, idempotent: true }),
   operation('thread_discard', 'Discard project worktree', 'Discard a concluded worktree through the normal guarded control. Refused when cleanup is unsafe.', z.strictObject(thread), false, { destructive: true }),
   operation('thread_allow_turns', 'Allow more job turns', 'Grant the same additional turn allowance offered in the app after a turn limit.', z.strictObject(thread), false),
@@ -75,9 +75,6 @@ export const AGENT_OPERATIONS: readonly AgentOperation[] = [
   operation('decision_answer', 'Answer project decision', 'Answer an open decision by option label and/or text using the normal decision guard.', z.strictObject({ ...project, ...requestId, decisionId: IdSchema, optionLabel: z.string().max(120).optional(), text: z.string().max(4000).optional() }).refine(v => Boolean(v.optionLabel?.trim() || v.text?.trim()), 'Provide an option or answer.'), false, { idempotent: true }),
   operation('notebook_read', 'Read project notebook', 'Read the project notebook and its revision.', z.strictObject(project), true),
   operation('notebook_write', 'Update project notebook', 'Write the notebook with an expected revision. A concurrent coordinator update is refused instead of overwritten.', z.strictObject({ ...project, expectedRevision: z.number().int().nonnegative(), content: z.string().max(65_536) }), false),
-  operation('mail_list', 'Read project mail', 'Read project mail without marking another worker inbox read.', z.strictObject({ ...project, after: IdSchema.optional() }), true),
-  operation('mail_send', 'Send project mail', 'Send a project coordination message as this external connection to a main thread or coordinator; no worker impersonation. Reuse the request ID on retries.', z.strictObject({ ...project, ...requestId, to: IdSchema, subject: z.string().min(1).max(200), body: z.string().min(1).max(8000) }), false, { idempotent: true }),
-  operation('reservations_list', 'Read file reservations', 'Read active file/folder reservations and their owner threads. Reservations are held by actual jobs, not by external callers.', z.strictObject(project), true),
   operation('apps_list', 'List managed apps', 'Read running project app URLs and stop instructions on the connected device by default, or the explicit deviceId. Apps can stay alive after their thread concludes.', z.strictObject({ ...project, ...resourceDevice }), true),
   operation('app_start', 'Start managed project app', 'Serve a static app inside a project thread or its registered checkout. Returns a verified browser URL. Executable commands are not available through external connections.', z.strictObject({ ...thread, ...requestId, kind: z.literal('static').default('static'), directory: z.string().min(1).max(4096).default('.'), label: z.string().max(120).optional() }), false, { idempotent: true }),
   operation('app_stop', 'Stop managed project app', 'Stop the named managed app for this project on the connected device by default, or the explicit deviceId. Does not stop or restart Jevellan.', z.strictObject({ ...project, ...resourceDevice, appId: IdSchema }), false, { destructive: true }),

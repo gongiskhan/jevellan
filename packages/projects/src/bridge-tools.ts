@@ -14,7 +14,6 @@ import {
 } from './copy.js';
 import { derivedId, type DecisionItems } from './decision-items.js';
 import type { ProjectLedger, ProjectLedgers } from './ledger.js';
-import type { MailService } from './mail.js';
 import type { DeviceRoster } from './placement.js';
 import type { PullRequestTracker } from './pull-requests.js';
 import type { ThreadStore } from './stores.js';
@@ -150,7 +149,6 @@ export type CoordinatorToolsOptions = {
   hub: Pick<ProjectHub, 'thread' | 'notebook' | 'putNotebook'> & Partial<Pick<ProjectHub, 'decisions'>>;
   ledgers: Pick<ProjectLedgers, 'coordinator'>;
   /** Mail to the threads that work on main (brief 7.1). */
-  mail: Pick<MailService, 'coordinatorSend'>;
   roster(): Promise<DeviceRoster>;
   /** Read-only project memory on this device. */
   memory(projectId: string, scope?: ProjectScope): Promise<ProjectMemoryReader>;
@@ -339,7 +337,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
         if (heads.size > 256) heads.clear(); heads.set(`${projectId}:${turn}:${input.threadId}`, result.commit);
         return result;
       }
-      case 'jevellan_mail_send': return o.mail.coordinatorSend(projectId, turn, raw as Input<typeof name>, o.deviceId);
+      case 'jevellan_mail_send': throw failure('Mail and reservations have been retired.', 410);
       // The thread tools (report, inbox and reservations) are not the coordinator's.
       default: throw failure(TOOL_NOT_IN_TURN, 403);
     }

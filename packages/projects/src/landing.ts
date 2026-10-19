@@ -1,3 +1,6 @@
+import { deliveryDirectory, JobGateResultSchema, PrivateJobDeliverySchema } from './job-deliveries.js';
+import { readDocument, writeDocument } from '@jevellan/core';
+import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { decideLandingRoute, type DecisionSource } from '@jevellan/decisions';
@@ -72,6 +75,40 @@ export class ThreadLandingService {
     const changes = new Map(stats.map(row => { const [a, d, ...name] = row.split('\t'); return [name.join('\t'), { additions: Number(a) || 0, deletions: Number(d) || 0 }]; }));
     return Promise.all(paths.map(async path => ({ path, ...(changes.get(path) ?? { additions: 0, deletions: 0 }), bytes: Number((await this.o.git.run(thread.cwd, ['cat-file', '-s', `HEAD:${path}`], { permitted: [1, 128] })).stdout.trim()) || 0 })));
   }
+  async #delivery(thread: Thread) {
+    const bound = async (task: import('@jevellan/core').ProjectWorkTask) => {
+      if (!task.jobDelivery) return null;
+      const run = (await this.o.hub.jobRun(task.jobDelivery.runId))?.document, delivery = run?.deliveries?.find(row => row.id === task.jobDelivery!.deliveryId);
+      if (!run || run.projectId !== thread.projectId || !delivery) throw new Error('The job delivery receipt is unavailable.');
+      return { run, delivery };
+    };
+    if (thread.taskContext?.taskId) {
+      const task = (await this.o.hub.task(thread.taskContext.taskId))?.document;
+      if (!task || task.projectId !== thread.projectId) throw new Error('The originating task is unavailable.');
+      return bound(task);
+    }
+    let after: string | undefined;
+    do { const page = await this.o.hub.tasks(thread.projectId, after); const task = page.records.find(row => row.threadId === thread.id && row.jobDelivery); if (task) return bound(task); after = page.next ?? undefined; } while (after);
+    return null;
+  }
+  async #gate(thread: Thread, base: string, head: string, files: string[], signal?: AbortSignal) {
+    const bound = await this.#delivery(thread); if (!bound?.delivery.gate) return null;
+    const { run, delivery } = bound, gate = delivery.gate!;
+    if (run.deviceId !== this.o.deviceId) throw new Error('This landing needs the device holding its private job input.');
+    if (files.some(file => gate.protectedPaths.some(path => pathMatches(file, path)))) throw new Error('The candidate changed a protected evaluation path.');
+    const directory = deliveryDirectory(this.o.homes, thread.projectId, run.id), inputFile = join(directory, `${delivery.id}.json`), input = readDocument(inputFile, PrivateJobDeliverySchema);
+    if (input.sha256 !== delivery.inputSha256 || input.trustedCommit !== run.commit || input.runId !== run.id || input.deliveryId !== delivery.id) throw new Error('The private gate input does not match its job receipt.');
+    const workspace = this.o.homes.ensure('project-work', thread.projectId, 'job-cache', 'gates', thread.id, head), trusted = join(workspace, 'trusted');
+    if (!existsSync(trusted)) await this.o.git.run(thread.cwd, ['worktree', 'add', '--detach', trusted, run.commit]);
+    if (await this.o.git.resolve(trusted, 'HEAD') !== run.commit || (await this.o.git.run(trusted, ['status', '--porcelain=v1', '--untracked-files=all'])).stdout.trim()) throw new Error('The trusted gate checkout changed.');
+    const resultFile = join(workspace, 'project-job-gate-result.json'), gateInput = join(workspace, 'private-input.json');
+    writeDocument(gateInput, PrivateJobDeliverySchema, input);
+    const result = await runThreadCommand(trusted, gate.command, { homes: this.o.homes, workId: thread.id, redactor: this.o.redactor, environmentScope: 'command', timeoutMs: gate.timeoutMinutes * 60000, ...(signal ? { signal } : {}), projectEnv: await this.o.projectEnvironment?.(thread.projectId) ?? {}, gitEnv: { JEVELLAN_GATE_INPUT: gateInput, JEVELLAN_GATE_CANDIDATE: thread.cwd, JEVELLAN_GATE_CANDIDATE_COMMIT: head, JEVELLAN_GATE_BASE_COMMIT: base, JEVELLAN_GATE_RESULT: resultFile }, jobContext: { schema: 'project-job-context-v1', projectId: run.projectId, runId: run.id, jobId: run.jobId, workspace, commandCheckout: trusted, commit: run.commit } });
+    if (result.code !== 0 || result.timedOut || !existsSync(resultFile)) throw new Error(`The trusted job gate did not pass: ${outputTail(result, 2000)}`);
+    const receipt = readDocument(resultFile, JobGateResultSchema);
+    if (!receipt.passed || receipt.checks.some(row => !row.passed) || receipt.trustedCommit !== run.commit || receipt.candidateCommit !== head || await this.o.git.resolve(thread.cwd, 'HEAD') !== head) throw new Error('The trusted job gate refused this candidate.');
+    return { name: gate.id, passed: true, at: new Date(this.o.now()).toISOString() };
+  }
   async #prepare(thread: Thread, settings: ProjectWorkSettings, base: string, signal?: AbortSignal) {
     const rebase = await this.o.git.run(thread.cwd, ['rebase', base], { permitted: [1], ...(signal ? { signal } : {}) });
     if (rebase.code !== 0) {
@@ -90,7 +127,9 @@ export class ThreadLandingService {
       if (!passed) { const tail = this.o.redactor.text(outputTail(result, 4000) || 'The check changed the worktree or its commit.'); return { kind: 'fix' as const, reason: 'verification' as const, tail,
         body: `Landing checks failed (attempt ${thread.verificationAttempts + 1} of 3). ${check.name}: ${tail}. Fix the cause, run the relevant tests and report done.` }; }
     }
-    return { kind: 'checked' as const, files, checks, head: (await this.o.git.resolve(thread.cwd, 'HEAD'))! };
+    const head = (await this.o.git.resolve(thread.cwd, 'HEAD'))!;
+    const gate = await this.#gate(thread, base, head, files.map(file => file.path), signal); if (gate) checks.push(gate);
+    return { kind: 'checked' as const, files, checks, head };
   }
   async publish(project: Project, thread: Thread, signal?: AbortSignal, priorState = thread.state): Promise<LandingOutcome> {
     try {
@@ -160,7 +199,7 @@ export class ThreadLandingService {
           if (existsSync(path)) await this.o.git.run(thread.cwd, ['worktree', 'remove', '--force', path]);
           await this.o.git.run(thread.cwd, ['worktree', 'add', '--detach', path, base]);
           try {
-            const merge = checked.files.some(file => current.mergeCommitPaths.some(prefix => pathMatches(file.path, prefix)));
+            const merge = !!(await this.#delivery(thread))?.delivery.gate || checked.files.some(file => current.mergeCommitPaths.some(prefix => pathMatches(file.path, prefix)));
             const message = merge ? `Land "${thread.title}" (${thread.id})` : `${thread.title}\n\n${(thread.lastReport?.summary ?? '').split(/\n\s*\n/u)[0]!.slice(0, 500)}\n\nThread: ${thread.id}`;
             const identity = local.gitIdentity ?? await this.o.git.identity(thread.cwd), env = identity ? { GIT_AUTHOR_NAME: identity.name, GIT_AUTHOR_EMAIL: identity.email, GIT_COMMITTER_NAME: identity.name, GIT_COMMITTER_EMAIL: identity.email } : {};
             if (merge) await this.o.git.run(path, ['merge', '--no-ff', checked.head, '-m', message], { env });

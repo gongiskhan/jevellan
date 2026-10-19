@@ -5,7 +5,7 @@ import type { ProjectJob, ProjectDaily, ProjectJobRun, ProjectWindow } from './p
 import type {
   DecisionAnswer, FileReservation, PlacementOverride, ProjectCoordinator, ProjectCoordinatorStatus, ProjectDecision, ProjectEnvelope, ProjectMail, ProjectNotebook, ProjectWorkSettings, ThreadIndex,
 } from './project-schemas.js';
-import type { HeldCheckout, ProjectWorkSummary, ReservationConflict, ReservationRequest } from './project-hub-schemas.js';
+import type { ThreadAdmission, HeldCheckout, ProjectWorkSummary, ReservationConflict, ReservationRequest } from './project-hub-schemas.js';
 import type { Stored } from './store.js';
 import type { ProjectWorkTask, TaskHistoryEvent } from './project-loop-schemas.js';
 import type { ProjectSessionCache } from './session-cache-schemas.js';
@@ -28,6 +28,7 @@ export type ReserveOutcome = { granted: true; reservation: Stored<FileReservatio
  * Phase 6 adds mail, reservations and held checkouts.
  */
 export interface ProjectHub {
+  admitThread(projectId: string, threadId: string, deviceId: string, reserve?: boolean): Promise<ThreadAdmission>;
   deploys(projectId: string, after?: string): Promise<{ records: ProjectDeploy[]; next: string | null }>;
   deploy(id: string): Promise<Stored<ProjectDeploy> | null>;
   putDeploy(document: ProjectDeploy, expectedRevision: number): Promise<Stored<ProjectDeploy>>;

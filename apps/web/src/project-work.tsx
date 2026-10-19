@@ -26,7 +26,7 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  PROJECT_WORK_UPDATED, chatItems, chatProposalGroups, checksBadge, coordinatorChip, decisionSource, defaultTab, deviceBlock, deviceChoices, mainIsolationBlock, mergeBlock,
+  PROJECT_WORK_UPDATED, chatItems, chatProposalGroups, checksBadge, coordinatorChip, decisionSource, defaultTab, deviceBlock, deviceChoices, mergeBlock,
   nearestEffort, openPullRequests, projectDot, projectRoute, rowClockMs, sentText, showSent, sidebarProjects, threadCreateRequest,
   toolIcon, withdrawals, working, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
 } from './project-work-model.js';
@@ -907,13 +907,12 @@ function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: Pa
   const [now, setNow] = useState(false), [after, setAfter] = useState<string[]>([]), [needs, setNeeds] = useState('');
   const [fromBranch, setFromBranch] = useState('');
   const change = (fields: Partial<ThreadForm>) => setForm((previous) => ({ ...previous, ...fields }));
-  const isolationNote = useId(); const deviceNote = useId();
+   const deviceNote = useId();
   const runtimeName = runtimeNames(data);
   const models = data.config.configuration['x-jevellan'].menu.filter((entry) => entry.enabled);
   const efforts = models.find((entry) => entry.id === form.modelId)?.efforts ?? EffortSchema.options;
   const here = data.devices.currentDeviceId;
   const devices = deviceChoices(view, data.roster.devices, here, form.deviceId);
-  const mainBlock = mainIsolationBlock(view);
   const remoteBlock = devices.map((choice) => deviceBlock(view, choice.id, here)).find((reason) => reason !== null) ?? null;
   const offline = view.coordinator.state === 'offline';
   const coordinatorDevice = view.coordinator.deviceName ?? deviceNames(data)(view.coordinator.deviceId ?? '');
@@ -946,18 +945,6 @@ function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: Pa
         <details className="pw-placement" onToggle={event => { if (event.currentTarget.open) event.currentTarget.querySelector('.pw-placement-fields')?.scrollIntoView({ block: 'nearest' }); }}>
           <summary>Choose where it runs</summary>
           <div className="form-grid pw-placement-fields">
-            <div className="pw-field">
-              <label>{copy.ISOLATION}
-                <select value={form.isolation} aria-describedby={mainBlock ? isolationNote : undefined}
-                  onChange={(event) => change({ isolation: event.target.value as ThreadForm['isolation'] })}>
-                  <option value="">{copy.AUTOMATIC}</option>
-                  <option value="worktree">{copy.WORKTREE}</option>
-                  <option value="main" disabled={!!mainBlock}>{copy.MAIN}</option>
-                </select>
-              </label>
-              {mainBlock && <p className="pw-field-note" id={isolationNote}>{mainBlock}</p>}
-              {!mainBlock && view.project.branchPolicy === 'external' && <p className="pw-field-note">{copy.MANUAL_MAIN_HELP}</p>}
-            </div>
             <label>{copy.MODEL}
               <select value={form.modelId} onChange={(event) => {
                 const next = models.find((entry) => entry.id === event.target.value);

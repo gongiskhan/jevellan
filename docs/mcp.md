@@ -44,7 +44,7 @@ Start with `jevellan_discover`. It reports the available tools, providers, accou
 - `jevellan_thread_start` creates a project job with placement choices.
 - `jevellan_coordinator_send` gives work to a project coordinator, which can delegate it to threads.
 - Read, message, stop and override controls expose the same work continuity and resource gates as the app.
-- Project tools cover decisions, the revisioned notebook, mail, file reservations, managed app links and pull request controls. Memory tools read Jevellan's isolated project memory.
+- Project tools cover decisions, the revisioned notebook, managed app links and pull request controls. Memory tools read Jevellan's isolated project memory.
 
 Each selection accepts `"auto"` or an explicit value: `providerId` (also called `runtimeId`), `accountId`, `modelId` and `effort`. Project jobs also expose isolation and device. Automatic choices pass through the existing decision system; explicit choices must still satisfy enabled providers, account authentication, usage ceilings, paid-use rules, device availability and project limits. Provider and runtime aliases must agree when both specify explicit IDs.
 
@@ -67,7 +67,7 @@ The server currently exposes these 47 tools. Discovery and the MCP tool list pro
 | Project threads | `jevellan_threads_list`, `jevellan_thread_start`, `jevellan_thread_read`, `jevellan_thread_send`, `jevellan_thread_stop`, `jevellan_thread_override`, `jevellan_thread_restart`, `jevellan_thread_discard`, `jevellan_thread_allow_turns` |
 | Conversation jobs | `jevellan_jobs_list`, `jevellan_job_start`, `jevellan_job_read`, `jevellan_job_send`, `jevellan_job_cancel`, `jevellan_job_override`, `jevellan_job_manual`, `jevellan_job_resume`, `jevellan_job_approve_plan`, `jevellan_job_close_work`, `jevellan_job_changes`, `jevellan_job_read_pointer` |
 | Decisions | `jevellan_decisions_list`, `jevellan_decision_answer` |
-| Notebook, mail and reservations | `jevellan_notebook_read`, `jevellan_notebook_write`, `jevellan_mail_list`, `jevellan_mail_send`, `jevellan_reservations_list` |
+| Notebook | `jevellan_notebook_read`, `jevellan_notebook_write` |
 | Managed apps | `jevellan_apps_list`, `jevellan_app_start`, `jevellan_app_stop` |
 | Pull requests | `jevellan_pull_requests_list`, `jevellan_pull_request_refresh`, `jevellan_pull_request_merge` |
 | Project memory | `jevellan_memory_search`, `jevellan_memory_read` |

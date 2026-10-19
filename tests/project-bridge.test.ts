@@ -60,7 +60,7 @@ test('thread and coordinator scopes answer through the actual stdio MCP command 
   expect((await threadClient!.listTools()).tools.map((tool) => tool.name)).toEqual(['jevellan_library_list', 'jevellan_library_get', 'jevellan_library_add', 'jevellan_thread_report', 'jevellan_github', 'jevellan_terminal_read', 'jevellan_app_start', 'jevellan_app_stop', 'jevellan_apps_list', 'memory_search', 'memory_read']);
   const coordinatorTools = (await coordinatorClient!.listTools()).tools.map((tool) => tool.name);
   expect(coordinatorTools).toEqual(projectToolNames({ kind: 'coordinator' }));
-  expect(coordinatorTools).not.toContain('jevellan_thread_report'); expect(coordinatorTools).toContain('jevellan_mail_send'); expect(coordinatorTools).not.toContain('jevellan_mail_inbox');
+  expect(coordinatorTools).not.toContain('jevellan_thread_report'); expect(coordinatorTools).not.toContain('jevellan_mail_send'); expect(coordinatorTools).not.toContain('jevellan_mail_inbox');
 
   // Memory reads stay in each scope's project.
   expect(JSON.stringify(result(await call(threadClient!, 'memory_search', { query: 'memory' })))).toContain('Memory of proj_a');

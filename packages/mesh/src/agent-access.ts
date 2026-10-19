@@ -1,9 +1,9 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { AgentAccessCreateSchema, AgentAccessCreatedSchema, AgentAccessGrantSchema, AgentAccessHubRequestSchema, AgentAccessHubResultSchema, AgentAccessRecordSchema, AgentConnectionSchema, IdSchema, newId, stableJson, type AgentAccessGrant, type AgentConnection } from '@jevellan/core';
 import type { HubDatabase } from './database.js';
 import type { MemberHubClient } from './client.js';
 import type { UiAuth } from './auth.js';
-import { AgentMailSendSchema, AgentMailSentSchema, AgentMailListSchema, ProjectMailSchema, ProjectSchema, ThreadIndexSchema, isTerminal, mailReaches, withHubRevision, type ProjectMail } from '@jevellan/core';
+import { AgentMailSendSchema, AgentMailSentSchema, AgentMailListSchema, ProjectSchema } from '@jevellan/core';
 
 const namespace = 'agent-access';
 const failure = (message: string, status: number) => Object.assign(new Error(message), { status });
@@ -66,46 +66,13 @@ export class HubAgentAccess {
     if (!this.hub.get('projects', projectId, ProjectSchema)) throw failure('Project not found.', 404);
     return grant;
   }
-  sendMail(raw: unknown, authorization: string) {
-    const input = AgentMailSendSchema.parse(raw);
-    return this.hub.transaction(() => {
-      const grant = this.#mailProject(input.projectId, authorization);
-      const threads = this.hub.listByField('project-threads', 'projectId', input.projectId, ThreadIndexSchema).map(row => row.document);
-      const id = `mail_${createHash('sha256').update(stableJson([grant.connectionId, input.projectId, input.clientRequestId])).digest('hex').slice(0, 32)}`;
-      const mail = ProjectMailSchema.parse({ schema: 'project-mail-v1', revision: 0, id, projectId: input.projectId,
-        from: grant.connectionId, fromTitle: `External agent: ${grant.label}`, to: input.to, subject: input.subject, body: input.body,
-        at: new Date(this.now()).toISOString(), readBy: [] });
-      const existing = this.hub.get('project-mail', id, ProjectMailSchema)?.document;
-      const identity = (value: ProjectMail) => stableJson({ ...value, at: '', revision: 0, readBy: [] });
-      if (existing) {
-        if (identity(existing) !== identity(mail)) throw failure('This mail request was already used for another message.', 409);
-        return AgentMailSentSchema.parse({ schema: 'agent-mail-sent-v1', mail: existing, repeated: true });
-      }
-      if (input.to !== 'coordinator') {
-        const eligible = threads.filter(thread => thread.isolation === 'main' && !isTerminal(thread.state));
-        if (input.to === 'all' ? !eligible.length : !eligible.some(thread => thread.id === input.to)) {
-          throw failure('Mail requires an active Main thread in this project or the coordinator.', 409);
-        }
-      }
-      for (const row of this.hub.listByField('project-mail', 'projectId', input.projectId, ProjectMailSchema)) {
-        const value = row.document;
-        if (this.now() - Date.parse(value.at) > 14 * 86_400_000 && threads.filter(thread => mailReaches(value, thread)).every(thread => isTerminal(thread.state) || value.readBy.includes(thread.id))) this.hub.delete('project-mail', value.id);
-      }
-      const stored = this.hub.put('project-mail', id, ProjectMailSchema, withHubRevision(mail, 0), 0);
-      return AgentMailSentSchema.parse({ schema: 'agent-mail-sent-v1', mail: stored.document, repeated: false });
-    });
+  sendMail(raw: unknown, authorization: string): ReturnType<typeof AgentMailSentSchema.parse> {
+    const input = AgentMailSendSchema.parse(raw); this.#mailProject(input.projectId, authorization);
+    throw failure('Mail and reservations have been retired.', 410);
   }
-  mailList(projectId: string, after: string | undefined, authorization: string) {
+  mailList(projectId: string, after: string | undefined, authorization: string): ReturnType<typeof AgentMailListSchema.parse> {
     this.#mailProject(projectId, authorization); if (after !== undefined) IdSchema.parse(after);
-    const all = this.hub.listByField('project-mail', 'projectId', projectId, ProjectMailSchema).map(row => row.document)
-      .filter(mail => after === undefined || mail.id > after).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
-    const mail: ProjectMail[] = []; let bytes = 0;
-    for (const entry of all) {
-      const size = Buffer.byteLength(JSON.stringify(entry));
-      if (mail.length === 100 || (mail.length && bytes + size > 1_048_576)) break;
-      mail.push(entry); bytes += size;
-    }
-    return AgentMailListSchema.parse({ schema: 'agent-mail-list-v1', mail, next: mail.length < all.length ? mail.at(-1)!.id : null });
+    throw failure('Mail and reservations have been retired.', 410);
   }
   request(input: unknown, deviceId: string, auth: UiAuth) {
     const request = AgentAccessHubRequestSchema.parse(input);

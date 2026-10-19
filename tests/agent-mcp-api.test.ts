@@ -98,28 +98,15 @@ test('tool starts pass explicit provider/account choices and leave automatic fie
   const conflict = await external.callTool({ name: 'jevellan_thread_start', arguments: { projectId: 'allowed', clientRequestId: 'conflicting_choices', title: 'Fixture job', task: 'Work', providerId: 'fake', runtimeId: 'other' } });
   expect(conflict.isError).toBe(true); expect(launch).not.toHaveBeenCalled();
 });
-test('external mail identifies the connection and reads without marking worker inboxes', async () => {
-  const created = await connection(['allowed']); const external = await client(created.token);
-  const input = { projectId: 'allowed', clientRequestId: 'send_external_mail', to: 'coordinator', subject: 'Progress update', body: 'Please tell me when the job has a link.' };
-  const sent = await external.callTool({ name: 'jevellan_mail_send', arguments: input }); expect(sent.isError).not.toBe(true);
-  const data = (sent.structuredContent as { data: { mail: { from: string; fromTitle?: string; readBy: string[] }; repeated: boolean } }).data;
-  expect(data.mail.from).toBe(created.connection.id); expect(data.mail.fromTitle).toContain('Other coding agent'); expect(data.mail.readBy).toEqual([]); expect(data.repeated).toBe(false);
-  const repeated = await external.callTool({ name: 'jevellan_mail_send', arguments: input }); expect((repeated.structuredContent as { data: { repeated: boolean } }).data.repeated).toBe(true);
-  const listed = await external.callTool({ name: 'jevellan_mail_list', arguments: { projectId: 'allowed' } }); expect(listed.isError).not.toBe(true); expect(JSON.stringify(listed)).toContain('Progress update');
-  expect((await app.agentAccess.mailList('allowed', undefined, `Bearer ${created.token}`)).mail[0]?.readBy).toEqual([]);
-  const coordinatorEvents = app.projectWork.coordinatorLedger('allowed').events().filter(event => event.type === 'coordinator-event');
-  expect(coordinatorEvents.filter(event => JSON.stringify(app.projectWork.coordinatorLedger('allowed').payload(event)).includes('Progress update'))).toHaveLength(1);
-  expect((await external.callTool({ name: 'jevellan_mail_send', arguments: { ...input, projectId: 'denied', clientRequestId: 'forbidden_mail' } })).isError).toBe(true);
+test('retired mail and reservation tools are absent from external connections', async () => {
+  const created = await connection(['allowed']), external = await client(created.token);
+  const tools = (await external.listTools()).tools.map(tool => tool.name);
+  for (const name of ['jevellan_mail_send', 'jevellan_mail_list', 'jevellan_reservations_list']) expect(tools).not.toContain(name);
 });
-test('completed mail, names and lifecycle records retain ordinary text ending in a registered credential prefix', async () => {
+test('completed historical mail, names and lifecycle records retain ordinary text ending in a registered credential prefix', async () => {
   const fixtureSecret = ['e', 'mail-completed-fixture-credential'].join(''); app.redactor.add(fixtureSecret);
   const created = await connection(['allowed']); const external = await client(created.token);
   const subject = 'Progress update'; const body = 'Ready to serve';
-  const sent = await external.callTool({ name: 'jevellan_mail_send', arguments: { projectId: 'allowed', clientRequestId: 'complete_content', to: 'coordinator', subject, body } });
-  expect(sent.isError).not.toBe(true);
-  expect(sent.structuredContent).toMatchObject({ data: { mail: { subject, body } } });
-  const listed = await external.callTool({ name: 'jevellan_mail_list', arguments: { projectId: 'allowed' } });
-  expect(listed.structuredContent).toMatchObject({ data: { mail: [{ subject, body }] } });
   const discovery = await external.callTool({ name: 'jevellan_discover', arguments: {} });
   expect(discovery.structuredContent).toMatchObject({ data: { providers: [{ label: app.runtimes.get('fake')!.displayName }] } });
   const project = app.hub.get('projects', 'allowed', ProjectSchema)!;
@@ -134,20 +121,18 @@ test('completed mail, names and lifecycle records retain ordinary text ending in
   ledger.append({ type: 'notice', data: { schema: 'project-notice-v1', kind: 'info', text: 'Ready to serve' } });
   const watched = await external.callTool({ name: 'jevellan_watch', arguments: { target: { kind: 'project', projectId: 'allowed' }, limit: 200 } });
   expect(watched.isError).not.toBe(true); const output = AgentWatchResultSchema.parse((watched.structuredContent as { data: unknown }).data);
-  expect(JSON.stringify(output.events)).toContain(subject); expect(JSON.stringify(output.events)).toContain(body);
+  expect(JSON.stringify(output.events)).toContain(body);
   expect(output.events.find(event => event.kind === 'notice')?.text).toBe('Ready to serve');
-  const all = await app.agentAccess.mailList('allowed', undefined, `Bearer ${created.token}`);
+  const historicalMail = { schema: 'project-mail-v1', id: 'historical', projectId: 'allowed', revision: 1, at: '2026-10-09T12:00:00Z', from: 'coordinator', to: 'thread', readBy: [], subject, body };
   const records = reconcileAgentJournal(emptyAgentJournal(), { redactor: app.redactor, ledger: [
-    { id: 1, type: 'mail', data: all.mail[0] },
+    { id: 1, type: 'mail', data: historicalMail },
     { id: 2, type: 'thread-report', data: ThreadReportSchema.parse({ schema: 'thread-report-v1', turn: 1, status: 'done', summary: subject, synthesized: false }) },
     { id: 3, type: 'thread-state', data: ThreadStateChangeSchema.parse({ schema: 'thread-state-v1', from: 'running', to: 'done', reason: body, changed: [] }) },
   ] });
   expect(records.events.map(event => event.kind)).toEqual(['mail', 'report', 'status']);
   expect(records.events[0]?.data).toMatchObject({ subject, body });
   expect(records.events[1]?.text).toBe(subject); expect(records.events[2]?.text).toBe(body);
-  vi.spyOn(app.agentAccess, 'mailList').mockResolvedValue({ ...all, mail: all.mail.map(mail => ({ ...mail, body: `Complete ${fixtureSecret} value` })) });
-  const secret = await external.callTool({ name: 'jevellan_mail_list', arguments: { projectId: 'allowed' } });
-  expect(JSON.stringify(secret)).not.toContain(fixtureSecret); expect(JSON.stringify(secret)).toContain('[redacted]');
+
 });
 test('coordinator override preserves unrelated limits and explicit auto clears saved provider/account/model choices', async () => {
   const created = await connection(['allowed']); const external = await client(created.token);

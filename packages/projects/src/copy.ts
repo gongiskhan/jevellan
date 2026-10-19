@@ -166,7 +166,7 @@ export function threadSystemAppend(input: { copiedFiles?: string[] | undefined; 
   const manual = input.isolation === 'main' && input.gitPolicy === 'external';
   const isolation = input.isolation === 'worktree'
     ? `Isolation: your own git worktree on branch ${input.branch ?? ''}, based on ${input.baseBranch}. Other threads work elsewhere. Commit your work on this branch.`
-    : `Isolation: you work directly on main in the project checkout of ${input.deviceName}. Other main threads may work on other devices at the same time. Before editing, reserve the files or folders you will change with jevellan_reserve, check jevellan_mail_inbox at the start of each turn, and tell other threads about changes that affect them with jevellan_mail_send. Release reservations when done.`;
+    : 'Main isolation has been retired. This historical thread must be restarted in a worktree.';
   return `You are working on one task for this project's coordinator. Work the way you normally would, in the project "${input.projectName}" at ${input.cwd}.
 
 ${isolation}

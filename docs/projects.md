@@ -24,7 +24,14 @@ First use of an empty project, or Suggest setup in the project menu, asks the co
 
 A thread carries one task through turns, reports, verification and publication. A new thread snapshots the project's instructions; later edits reach the coordinator as an event and apply to future threads. Codex reads root AGENTS.md, falling back to CLAUDE.md only when AGENTS.md is absent. Invalid existing instruction files fail explicitly. Supported native setup is read without modifying the owner's native homes.
 
-Worktree isolation creates a separate branch and worktree. Main isolation uses the registered checkout under the existing ownership, mail, reservation and publication guards. The Mini is apps-only and cannot be selected for project work, including fixed overrides.
+Every thread uses a separate branch and worktree. The registered checkout stays outside thread work. The Mini is apps-only and cannot be selected for project work, including fixed overrides.
+
+Settings → Projects sets the maximum number of running threads across every project and device (6 by default, 1–20). The hub counts live indexes and short claims for starts being dispatched. A disconnected device finishes its current turn; new work waits for an acknowledged hub slot. Per-project and per-device limits still apply. Lowering the limit never terminates a running turn.
+
+A project switching to landing retains the previous automatic-merge policy for its existing pull requests. `autoLand` governs new landing work; it does not convert existing threads or authorize their pull requests.
+
+Command jobs may publish a bounded `project-job-deliveries-v1` data manifest. The daemon uploads declared dev files to Library, creates base-only managed branches and imports ordinary goal-linked tasks idempotently. A configured trusted gate runs from the pinned job checkout before landing and after every rebase; private gate input stays outside Library and agent tool targets. Gated tasks run on the device holding that private input and use merge commits. Missing input or a failed gate blocks landing. Only actual landing indexes with a passing gate produce scheduler-owned landing receipts.
+
 
 Thread reports include status, summary, tests, changed files and optional owner commands. Finished, stopped and failed threads remain available for continuation; follow-ups pass through Jev's placement rules. Active tools and thinking expand, while completed tool blocks collapse. Images can open in the session image viewer.
 

@@ -19,7 +19,7 @@ export async function handleAgentAccessApi(app: Application, request: IncomingMe
   if (path === '/api/agent-access/capabilities' && method === 'GET') {
     json(response, AgentAccessCapabilitiesSchema.parse({ schema: 'agent-access-capabilities-v1', mcpUrl, authentication: 'bearer', tokenShownOnce: true,
       stdioCommand: 'jevellan mcp-server', environment: { url: 'JEVELLAN_MCP_URL', token: 'JEVELLAN_MCP_TOKEN' },
-      supports: ['projects', 'conversations', 'threads', 'coordinators', 'messages', 'decisions', 'notebooks', 'mail', 'pull-requests', 'apps', 'resumable-output'] })); return true;
+      supports: ['projects', 'conversations', 'threads', 'coordinators', 'messages', 'decisions', 'notebooks', 'pull-requests', 'apps', 'resumable-output'] })); return true;
   }
   const revoke = path.match(/^\/api\/agent-access\/([A-Za-z0-9_-]+)\/revoke$/);
   if (revoke && method === 'POST') { EmptySchema.parse(await requestBody(request)); json(response, app.redactor.document(await app.agentAccess.revoke(IdSchema.parse(revoke[1]), ownerSession))); return true; }

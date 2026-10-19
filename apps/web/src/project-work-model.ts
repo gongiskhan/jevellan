@@ -387,7 +387,7 @@ export type OverrideMode = 'next-turn' | 'restart';
 export type OverrideForm = { mode: OverrideMode; isolation: '' | Isolation; modelId: string; effort: '' | Effort; deviceId: string; note: string };
 /** The modal opens on the thread's current choices (the requested effort), on From the next turn while the thread takes turns. */
 export function overrideForm(view: Pick<ThreadView, 'thread' | 'placement' | 'canOverride'>): OverrideForm {
-  return { mode: view.canOverride.nextTurn ? 'next-turn' : 'restart', isolation: view.thread.isolation, modelId: view.placement.modelId,
+  return { mode: view.canOverride.nextTurn ? 'next-turn' : 'restart', isolation: 'worktree', modelId: view.placement.modelId,
     effort: view.placement.effortRequested, deviceId: view.thread.ownerDeviceId, note: '' };
 }
 /**

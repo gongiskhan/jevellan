@@ -218,6 +218,7 @@ export class TurnLauncher {
         ...((journal || libraryDirectory) ? { readOnlyDirectories: [...(journal ? [journal] : []), ...(libraryDirectory ? [libraryDirectory] : [])] } : {}),
         launch: { ...(['thread', 'verification'].includes(request.owner.kind) ? { projectEnv: await this.#o.projectEnvironment?.(request.owner.projectId) ?? {} } : {}), useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env: { ...env, ...gitEnv }, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
         safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs, compaction: { thresholdPercent: percent, ...(contextWindow ? { contextWindow } : {}) },
+        ...(['thread', 'coordinator'].includes(request.owner.kind) ? { privatePaths: [this.#o.homes.at('project-work', request.owner.projectId, 'job-cache'), this.#o.homes.at('project-work', request.owner.projectId, 'job-workspaces')] } : {}),
         ...(request.owner.kind === 'thread' && request.isolation === 'worktree' ? { protectedPaths: await this.#o.protectedPaths?.() ?? [] } : {}),
       });
       const rawRun = adapter.startTurn(input);

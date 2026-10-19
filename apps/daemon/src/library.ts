@@ -48,34 +48,40 @@ export class ProjectLibraryService implements ProjectLibrary {
     this.app.hub.put('project-library', item.id, ProjectLibraryItemSchema, { ...item, revision: item.revision + 1, deletedAt: new Date().toISOString() }, item.revision);
     rmSync(join(this.directory(projectId), item.path), { force: true });
   }
-  async upload(projectId: string, input: { name: string; mime: string; size: number; source: 'owner' | 'thread'; threadId?: string; note?: string; ownerSession?: string }, stream: Readable): Promise<ProjectLibraryItem> {
+  async upload(projectId: string, input: { name: string; mime: string; size: number; source: 'owner' | 'thread' | 'job'; threadId?: string; jobRunId?: string; artifactId?: string; note?: string; ownerSession?: string }, stream: Readable): Promise<ProjectLibraryItem> {
     await this.#project(projectId);
     if (!Number.isSafeInteger(input.size) || input.size < 0 || input.size > LIBRARY_FILE_LIMIT) throw failure(LIBRARY_TOO_LARGE, 413);
     if (!input.mime || input.mime.length > 100 || /[\r\n]/u.test(input.mime)) throw failure(LIBRARY_CONTENT_TYPE);
+    if (input.source === 'job' && (!input.jobRunId || !input.artifactId)) throw failure('A job artifact needs its run and artifact identity.');
     if (input.source === 'thread' && !input.threadId) throw failure(LIBRARY_THREAD_REQUIRED);
     if (this.app.member) {
-      const part = input.source === 'thread' ? `outputs/${IdSchema.parse(input.threadId)}` : 'uploads';
+      const part = input.source === 'job' ? `jobs/${IdSchema.parse(input.jobRunId)}/${IdSchema.parse(input.artifactId)}` : input.source === 'thread' ? `outputs/${IdSchema.parse(input.threadId)}` : 'uploads';
       const response = await this.app.member.libraryFetch(`${projectId}/${part}/${encodeURIComponent(input.name)}`, { method: 'PUT', body: stream, mime: input.mime, size: input.size, note: input.note, ownerSession: input.ownerSession });
       const item = ProjectLibraryItemSchema.parse(await response.json());
-      if (item.projectId !== projectId || item.source !== input.source || item.threadId !== input.threadId || item.size !== input.size) throw failure(LIBRARY_INVALID_FILE, 502);
+      if (item.projectId !== projectId || item.source !== input.source || item.threadId !== input.threadId || item.jobRunId !== input.jobRunId || item.artifactId !== input.artifactId || item.size !== input.size) throw failure(LIBRARY_INVALID_FILE, 502);
       return item;
     }
     const previous = this.#pending.get(projectId) ?? Promise.resolve();
     const pending = previous.catch(() => undefined).then(async () => {
-      const occupied = this.#rows(projectId, true), rows = occupied.filter(item => !item.deletedAt); if (rows.reduce((sum, row) => sum + row.size, 0) + input.size > LIBRARY_QUOTA) throw failure(LIBRARY_FULL, 413);
-      const folder = input.source === 'thread' ? `outputs/${IdSchema.parse(input.threadId)}` : `uploads/${new Date().toISOString().slice(0, 10)}`;
+      const occupied = this.#rows(projectId, true), rows = occupied.filter(item => !item.deletedAt);
+      const prior = input.source === 'job' ? occupied.find(item => item.jobRunId === input.jobRunId && item.artifactId === input.artifactId) : undefined;
+      if (!prior && rows.reduce((sum, row) => sum + row.size, 0) + input.size > LIBRARY_QUOTA) throw failure(LIBRARY_FULL, 413);
+      const folder = input.source === 'job' ? `jobs/${IdSchema.parse(input.jobRunId)}` : input.source === 'thread' ? `outputs/${IdSchema.parse(input.threadId)}` : `uploads/${new Date().toISOString().slice(0, 10)}`;
       const directory = join(this.directory(projectId), folder); mkdirSync(directory, { recursive: true, mode: 0o700 });
       let name = input.name.replace(/[^A-Za-z0-9._ -]/gu, '-').slice(0, 200); if (!name || name === '.' || name === '..') name = 'file';
+      if (input.source === 'job') name = `${IdSchema.parse(input.artifactId)}-${name}`.slice(0, 200);
       const original = name, extension = extname(name), stem = name.slice(0, name.length - extension.length); let suffix = 1;
-      while (occupied.some(item => item.path === `${folder}/${name}`) || existsSync(join(directory, name))) { const tail = ` (${++suffix})${extension}`; name = `${stem.slice(0, 200 - tail.length)}${tail}`; }
+      while (!prior && (occupied.some(item => item.path === `${folder}/${name}`) || existsSync(join(directory, name)))) { const tail = ` (${++suffix})${extension}`; name = `${stem.slice(0, 200 - tail.length)}${tail}`; }
       if (original.length > 200 || name.length > 200) throw failure(LIBRARY_SHORT_NAME);
       const temporary = join(directory, `.${newId('upload')}.tmp`), handle = await open(temporary, 'wx', 0o600), hash = createHash('sha256'); let size = 0, promoted = false;
       try {
         for await (const chunk of stream) { const bytes = Buffer.from(chunk as Uint8Array); size += bytes.length; if (size > input.size || size > LIBRARY_FILE_LIMIT) throw failure(LIBRARY_TOO_LARGE, 413); hash.update(bytes); await handle.writeFile(bytes); }
         if (size !== input.size) throw failure(LIBRARY_INCOMPLETE);
         await handle.sync(); await handle.close();
+        const contentHash = hash.digest('hex');
+        if (prior) { if (prior.deletedAt || prior.sha256 !== contentHash || prior.size !== size) throw failure('This job artifact already has different content.', 409); return prior; }
         const item = ProjectLibraryItemSchema.parse({ schema: 'project-library-item-v1', revision: 1, id: newId('file'), projectId, path: `${folder}/${name}`, name, size, mime: input.mime,
-          sha256: hash.digest('hex'), source: input.source, ...(input.threadId ? { threadId: input.threadId } : {}), ...(input.note ? { note: input.note } : {}), createdAt: new Date().toISOString() });
+          sha256: contentHash, source: input.source, ...(input.threadId ? { threadId: input.threadId } : {}), ...(input.jobRunId ? { jobRunId: input.jobRunId, artifactId: input.artifactId } : {}), ...(input.note ? { note: input.note } : {}), createdAt: new Date().toISOString() });
         renameSync(temporary, join(directory, name)); promoted = true;
         try { this.app.hub.put('project-library', item.id, ProjectLibraryItemSchema, item, 0); } catch (error) { rmSync(join(directory, name), { force: true }); throw error; }
         return item;
@@ -102,6 +108,13 @@ export class ProjectLibraryService implements ProjectLibrary {
     } finally { await handle.close().catch(() => undefined); rmSync(temporary, { force: true }); }
   }
   async prepare(projectId: string, prompt: string) { if (!prompt.includes('library/')) return; for (const item of await this.list(projectId)) if (prompt.includes(`library/${item.path}`)) await this.get(projectId, item.id); }
+  async addJob(projectId: string, jobRunId: string, artifactId: string, cwd: string, raw: unknown) {
+    const run = (await this.app.projectHub.jobRun(IdSchema.parse(jobRunId)))?.document;
+    if (!run || run.projectId !== projectId || run.deviceId !== this.app.device.deviceId) throw failure('Only the executing device can upload job artifacts.', 403);
+    const input = LibraryAddInputSchema.parse(raw), opened = await openProjectOutput(cwd, input.path, LIBRARY_FILE_LIMIT, LIBRARY_TOO_LARGE);
+    try { const name = input.name ?? basename(opened.path); return await this.upload(projectId, { source: 'job', jobRunId, artifactId, name, size: opened.size, mime: mimeOf(name) }, opened.handle.createReadStream({ autoClose: false })); }
+    finally { await opened.handle.close(); }
+  }
   async add(projectId: string, threadId: string, cwd: string, raw: unknown) {
     const input = LibraryAddInputSchema.parse(raw), opened = await openProjectOutput(cwd, input.path, LIBRARY_FILE_LIMIT, LIBRARY_TOO_LARGE);
     try { const name = input.name ?? basename(opened.path); return await this.upload(projectId, { source: 'thread', threadId, name, size: opened.size, mime: mimeOf(name), ...(input.note ? { note: input.note } : {}) }, opened.handle.createReadStream({ autoClose: false })); }

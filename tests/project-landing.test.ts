@@ -33,7 +33,7 @@ test('checks use path boundaries, empty paths and an unconditional smoke check',
 });
 test('old threads default to pull-request delivery and old settings migrate to land without retired fields', () => {
   const old = { ...defaultProjectWorkSettings('p'), schema: 'project-work-settings-v4', autoMerge: true, defaultIsolation: 'main', allowMainIsolation: true, requiredChecks: ['result'] };
-  for (const k of ['delivery', 'autoLand', 'landingChecks', 'smokeCheck', 'mergeCommitPaths', 'healthChecks', 'deploy']) delete old[k as keyof typeof old];
+  for (const k of ['delivery', 'autoLand', 'landingChecks', 'smokeCheck', 'mergeCommitPaths', 'healthChecks', 'deploy', 'coordinatorHandoffAtPercent', 'pullRequestAutoMerge']) delete old[k as keyof typeof old];
   const migrated = StoredProjectWorkSettingsSchema.parse(old); expect(migrated).toMatchObject({ delivery: 'land', autoLand: true }); expect(migrated).not.toHaveProperty('requiredChecks');
   const index = ThreadIndexSchema.parse({ schema: 'project-thread-index-v1', revision: 0, id: 't', projectId: 'p', title: 'Old', state: 'running', isolation: 'worktree', ownerDeviceId: 'd', runtime: 'fake', modelLabel: 'Fixture', effort: 'medium', accountLabel: 'Work', turns: 1, createdAt: '2026-10-19T00:00:00Z', updatedAt: '2026-10-19T00:00:00Z' });
   expect(index.delivery).toBe('pull-request');
@@ -100,8 +100,8 @@ test('a different author’s open pull request refuses continuation and remains 
 test('Land instead closes only a Jevellan-opened own pull request and retains its work', async () => {
   const f = await setup({ delivery: 'pull-request', autoLand: false });
   f.fake.enqueueTurn(commitStep({ 'README.md': 'Transition\n' }, { status: 'done', summary: 'Transition work.' }), forThread());
-  const result = await start(f), thread = await done(f, result.threadId); expect(thread.delivery).toBe('pull-request'); expect(thread.pr?.state).toBe('open');
-  await settings(f); expect(f.thread(thread.id).delivery).toBe('pull-request');
+  const result = await start(f), thread = await done(f, result.threadId); expect(thread.delivery).toBe('pull-request'); expect({ state: thread.state, reason: thread.stateReason, pr: thread.pr }).toMatchObject({ state: 'in-review', pr: { state: 'open' } });
+  await settings(f); expect(f.thread(thread.id).delivery).toBe('pull-request'); expect((await f.app.projectHub.settings('project'))!.document.pullRequestAutoMerge).toBe(false);
   const response = await f.request(`/api/projects/project/threads/${thread.id}/actions`, 'POST', { schema: 'thread-action-request-v1', clientRequestId: 'convert', action: 'land-instead' }); expect(response.status).toBe(200);
   await f.waitFor(() => f.thread(thread.id), t => !!t.landing); expect(f.github.pulls[0]?.state).toBe('closed'); expect(f.thread(thread.id).delivery).toBe('land'); expect(f.thread(thread.id).turns).toBe(1);
   expect(git(f.origin, 'show', 'main:README.md')).toBe('Transition');
@@ -191,4 +191,30 @@ test('a night starting during integration fences the final main push', async () 
   const before = git(f.origin, 'rev-parse', 'main');
   f.fake.enqueueTurn(commitStep({ 'README.md': 'Held at push\n' }, { status: 'done', summary: 'Done.' }), forThread());
   const result = await start(f), thread = await done(f, result.threadId); expect(thread.landing).toBeUndefined(); expect(git(f.origin, 'rev-parse', 'main')).toBe(before); expect(thread.stateReason).toBe('Held for the nightly window.');
+}, 120_000);
+
+test.each([true, false])('a required job gate controls landing and forces a merge commit (passed %s)', async passed => {
+  const { ProjectJobRunSchema, ProjectWorkTaskSchema, writeDocument } = await import('../packages/core/dist/index.js');
+  const { deliveryDirectory, PrivateJobDeliverySchema } = await import('../packages/projects/dist/job-deliveries.js');
+  const f = await setup(), commit = git(f.checkout, 'rev-parse', 'HEAD'), at = new Date().toISOString(), runId = 'gate_fixture';
+  const gate = { id: 'fixture_gate', protectedPaths: ['evals/'], timeoutMinutes: 1, command: `node -e 'const f=require("node:fs"),p=require("node:path");const rel=p.relative(process.env.JEVELLAN_JOB_WORKSPACE,process.env.JEVELLAN_GATE_INPUT);if(rel.startsWith("..")||p.isAbsolute(rel)||JSON.parse(f.readFileSync(process.env.JEVELLAN_GATE_INPUT)).schema!=="private-job-delivery-v1")process.exit(9);f.writeFileSync(process.env.JEVELLAN_GATE_RESULT,JSON.stringify({schema:"project-job-gate-result-v1",trustedCommit:process.env.JEVELLAN_JOB_COMMIT,candidateCommit:process.env.JEVELLAN_GATE_CANDIDATE_COMMIT,passed:${passed},checks:[{name:"Fixture measurement",passed:${passed}}]}))'` };
+  f.app.hub.put('project-job-runs', runId, ProjectJobRunSchema, ProjectJobRunSchema.parse({ schema: 'project-job-run-v1', id: runId, projectId: 'project', revision: 1, jobId: 'night', taskId: 'night_task', deviceId: f.app.device.deviceId, commit, projectDay: at.slice(0, 10), startedAt: at, conclusion: 'passed', summary: 'Fixture measurement completed.', logTail: '', phase: 'finished', spec: { kind: 'command', command: 'true', timeoutMinutes: 1, deliveryGate: gate }, baseBranch: 'main', watchAfter: at,
+    deliveries: [{ schema: 'project-job-delivery-v1', id: 'candidate', title: 'Candidate', brief: 'Dev fixture only.', type: 'feature', fromBranch: 'fixture', gate, inputSha256: 'a'.repeat(64) }] }), 0);
+  writeDocument(join(deliveryDirectory(f.homes, 'project', runId), 'candidate.json'), PrivateJobDeliverySchema, { schema: 'private-job-delivery-v1', runId, deliveryId: 'candidate', trustedCommit: commit, sha256: 'a'.repeat(64), input: { schema: 'fixture-input-v1', private: 'Never included in the prompt.' } });
+  f.fake.enqueueTurn(async turn => {
+    const threadId = turn.input.owner.id;
+    f.app.hub.put('project-work-tasks', 'bound_candidate', ProjectWorkTaskSchema, ProjectWorkTaskSchema.parse({ schema: 'project-work-task-v1', id: 'bound_candidate', projectId: 'project', revision: 1, jobDelivery: { runId, deliveryId: 'candidate' }, title: 'Candidate', brief: 'Dev fixture only.', kind: 'session', type: 'feature', goalId: null, source: 'finding', state: 'active', rank: '8', ownerRanked: false, now: false, after: [], needs: [], dailyId: null, jobId: null, threadId, jobRunId: null, fixed: {}, createdAt: at, updatedAt: at }), 0);
+    expect(turn.input.prompt).not.toContain('Never included in the prompt.');
+    return commitStep({ 'README.md': 'Measured change\n' }, { status: passed ? 'progress' : 'done', summary: 'Candidate ready.' })(turn);
+  }, forThread());
+  const started = await f.app.projectWork.createThread('project', { schema: 'thread-create-request-v1', clientRequestId: 'gated', title: 'Gated work', task: 'Make the measured change.', modelId: 'fixture', deviceId: f.app.device.deviceId, taskContext: { taskId: 'bound_candidate', type: 'feature', needs: [], goal: null } });
+  let thread;
+  if (passed) {
+    await f.waitFor(() => f.thread(started.threadId), row => row.state === 'idle');
+    f.fake.enqueueTurn(commitStep({ 'README.md': 'Measured change after restart\n' }, { status: 'done', summary: 'Restarted candidate ready.' }), forThread());
+    const restarted = await f.app.projectWork.threads.restart('project', started.threadId, { schema: 'thread-override-request-v1', clientRequestId: 'gated_restart', mode: 'restart', modelId: 'fixture', deviceId: f.app.device.deviceId }, f.app.device.deviceId);
+    thread = await done(f, restarted.newThreadId); expect(thread.taskContext?.taskId).toBe('bound_candidate');
+  } else thread = await done(f, started.threadId);
+  if (passed) { expect(thread.landing?.method).toBe('merge-commit'); expect(thread.landing?.checks).toContainEqual(expect.objectContaining({ name: gate.id, passed: true })); expect(git(f.origin, 'show', '-s', '--format=%P', 'main').split(' ')).toHaveLength(2); }
+  else { expect(thread.landing).toBeUndefined(); expect(git(f.origin, 'rev-parse', 'main')).toBe(commit); expect(thread.stateReason).toContain('gate refused'); }
 }, 120_000);

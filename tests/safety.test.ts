@@ -106,7 +106,7 @@ test('PJ1f thread profile allows rebase and keeps every other denial', async () 
 test('the coordinator hook is read-only and allows exactly its scope tools', async () => {
   const bridgeTools = claudeBridgeToolNames(projectToolNames({ kind: 'coordinator' }));
   expect(bridgeTools).toContain('mcp__jevellan__jevellan_task_create');
-  expect(bridgeTools).toContain('mcp__jevellan__jevellan_mail_send');
+  expect(bridgeTools).not.toContain('mcp__jevellan__jevellan_mail_send');
   expect(bridgeTools).not.toContain('mcp__jevellan__jevellan_reserve');
   const hook = claudePermissionHook({ cwd: context.cwd, daemonPid: context.daemonPid, profile: 'coordinator', permissions: 'read-only', bridgeTools });
   for (const tool of bridgeTools) expect(await hook({ tool_name: tool })).toEqual({});
@@ -121,4 +121,14 @@ test('nightly reviews only read and report through their exact tool scope', asyn
   const hook = claudePermissionHook({ cwd: context.cwd, daemonPid: context.daemonPid, profile: 'review', permissions: 'read-only', bridgeTools: claudeBridgeToolNames(['jevellan_project_review_report']) });
   for (const tool_name of ['Read', 'Grep', 'mcp__jevellan__jevellan_project_review_report']) expect(await hook({ tool_name })).toEqual({});
   for (const tool_name of ['Bash', 'Write', 'Edit', 'mcp__jevellan__jevellan_task_create']) expect(await hook({ tool_name })).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny' } });
+});
+
+
+test('private job inputs stay out of candidate read tools and ordinary shell reads', async () => {
+  const privateContext = { cwd: '/tmp/fixture/worktree', daemonPid: 41999, profile: 'thread' as const, privatePaths: ['/tmp/fixture/job-cache', '/tmp/fixture/job-workspaces'] };
+  const hook = claudePermissionHook({ ...privateContext, permissions: 'write' });
+  expect(await hook({ tool_name: 'Read', tool_input: { file_path: '/tmp/fixture/job-cache/private.json' } })).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny' } });
+  expect(await hook({ tool_name: 'Read', tool_input: { file_path: '/tmp/fixture/library/dev.json' } })).toEqual({});
+  expect(safetyDenial('cat ../job-workspaces/run/private.json', privateContext)).toContain('Private job');
+  expect(safetyDenial('cat ../library/dev.json', privateContext)).toBeNull();
 });

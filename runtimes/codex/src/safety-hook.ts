@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { ActionSchema } from '@jevellan/core';
-import { safetyDenial, fileWriteDenial, ownerCommandDenial, safetyReason, SAFETY_REASON, type SafetyContext } from '@jevellan/runtime-contract';
+import { safetyDenial, fileReadDenial, fileWriteDenial, ownerCommandDenial, safetyReason, SAFETY_REASON, type SafetyContext } from '@jevellan/runtime-contract';
 
 // Stretches send their action; turns send their profile and no action.
-const Context = z.strictObject({ cwd: z.string(), daemonPid: z.number().int().positive(), action: ActionSchema.optional(), profile: z.enum(['stretch', 'coordinator', 'thread', 'verification', 'review', 'memory']).optional(), protectedPaths: z.array(z.string()).optional(), readOnlyDirectories: z.array(z.string()).optional() });
+const Context = z.strictObject({ cwd: z.string(), daemonPid: z.number().int().positive(), action: ActionSchema.optional(), profile: z.enum(['stretch', 'coordinator', 'thread', 'verification', 'review', 'memory']).optional(), privatePaths: z.array(z.string()).optional(), protectedPaths: z.array(z.string()).optional(), readOnlyDirectories: z.array(z.string()).optional() });
 const Event = z.object({ hook_event_name: z.literal('PreToolUse'), tool_name: z.string(), tool_input: z.unknown() });
 let context: SafetyContext | undefined;
 try {
@@ -11,8 +11,8 @@ try {
   let input = '';
   for await (const chunk of process.stdin) { input += String(chunk); if (input.length > 2 * 1024 * 1024) throw new Error('Too large.'); }
   const event = Event.parse(JSON.parse(input));
-  let reason: string | null = fileWriteDenial(event.tool_name, event.tool_input, context);
-  if (event.tool_name === 'Bash') {
+  let reason: string | null = fileReadDenial(event.tool_input, context) ?? fileWriteDenial(event.tool_name, event.tool_input, context);
+  if (event.tool_name === 'Bash' && !reason) {
     const command = z.object({ command: z.string() }).safeParse(event.tool_input);
     reason = command.success ? safetyDenial(command.data.command, context) : safetyReason(context);
   }

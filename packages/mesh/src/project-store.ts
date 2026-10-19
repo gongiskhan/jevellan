@@ -15,7 +15,7 @@ import {
   ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectHubRequestSchema, ProjectHubResultSchema, ProjectMailSchema, ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema, StoredProjectWorkSettingsSchema,
   ProjectWorkSummarySchema, ReservationRequestSchema, ThreadIndexCursorSchema, ThreadIndexSchema, TimestampSchema, checkHubRevision, collectionOf, compareEnvelopes, coordinatorMovable,
   ProjectWorkTaskSchema, TaskHistoryEventSchema, type ProjectWorkTask,
-  coordinatorWorking, isTerminal, mailReaches, pathsOverlap, reservationActive, stableJson, withHubRevision, workCounts,
+  coordinatorWorking, isTerminal, liveWork, mailReaches, pathsOverlap, reservationActive, stableJson, withHubRevision, workCounts,
   type DecisionAnswer, type DeviceView, type DocumentSchema, type FileReservation, type HeldCheckout, type PlacementOverride, type ProjectCoordinator, type ProjectCoordinatorStatus, type ProjectDecision,
   type ProjectEnvelope, type ProjectHub, type ProjectHubOperation, type ProjectHubResult, type ProjectHubResultOf, type ProjectMail, type ProjectNotebook, type ProjectWorkSettings,
   type ProjectWorkSummary, type ReservationConflict, type ReservationRequest, type ReserveOutcome, type Stored, type ThreadIndex,
@@ -24,6 +24,8 @@ import type { HubDatabase } from './database.js';
 import { HubProtocolError, type MemberHubClient } from './client.js';
 import { settingsMutation } from './settings-mutation.js';
 
+const CLAIMS = 'project-thread-admissions';
+const ThreadClaimSchema = z.strictObject({ schema: z.literal('thread-claim-v1'), id: IdSchema, projectId: IdSchema, deviceId: IdSchema, expiresAt: TimestampSchema });
 const SETTINGS = 'project-work-settings'; const COORDINATORS = 'project-coordinators'; const STATUS = 'project-coordinator-status';
 const THREADS = 'project-threads'; const CURSORS = 'project-thread-cursors'; const DECISIONS = 'project-decisions'; const NOTEBOOKS = 'project-notebooks';
 const OVERRIDES = 'project-placement-overrides'; const ENVELOPES = 'project-envelopes'; const MAIL = 'project-mail'; const RESERVATIONS = 'project-reservations';
@@ -303,7 +305,8 @@ export class HubProjectStore {
   }
   /** Compare-and-swap on the row revision; a repeated clientRequestId returns the first result. */
   putSettings(raw: ProjectWorkSettings, expectedRevision: number, clientRequestId?: string): Stored<ProjectWorkSettings> {
-    const settings = ProjectWorkSettingsSchema.parse(raw);
+    const parsed = ProjectWorkSettingsSchema.parse(raw);
+    const settings = parsed.delivery === 'pull-request' ? { ...parsed, pullRequestAutoMerge: parsed.autoLand } : parsed;
     return settingsMutation(this.hub, this.deviceId, 'project-work-settings-put', { settings, expectedRevision }, clientRequestId, StoredSettingsSchema, () => {
       this.#project(settings.projectId); return this.#put(SETTINGS, settings.projectId, StoredProjectWorkSettingsSchema, settings, expectedRevision);
     });
@@ -349,6 +352,31 @@ export class HubProjectStore {
     });
   }
 
+  #threadClaims() {
+    const claims = this.hub.list(CLAIMS, ThreadClaimSchema);
+    for (const row of claims) if (Date.parse(row.document.expiresAt) <= this.now()) this.hub.delete(CLAIMS, row.document.id);
+    return claims.filter(row => Date.parse(row.document.expiresAt) > this.now());
+  }
+  #runningThreads() {
+    const ids = new Set(this.hub.list(THREADS, ThreadIndexSchema).filter(row => liveWork(row.document.state)).map(row => row.document.id));
+    for (const row of this.#threadClaims()) ids.add(row.document.id);
+    return ids;
+  }
+  #threadLimit() { return this.hub.configuration.current()?.configuration['x-jevellan'].maxRunningThreadsAll ?? 6; }
+  admitThread(projectId: string, threadId: string, deviceId: string, reserve = true) {
+    IdSchema.parse(threadId); IdSchema.parse(deviceId); this.#project(projectId);
+    return this.hub.transaction(() => {
+      const old = this.thread(threadId)?.document;
+      const claim = this.#threadClaims().find(row => row.document.id === threadId);
+      if (old && (old.projectId !== projectId || old.ownerDeviceId !== deviceId) || claim && (claim.document.projectId !== projectId || claim.document.deviceId !== deviceId)) refuse('This thread belongs to another device or project.', 403);
+      if (this.coordinator(projectId)?.document.deviceId !== this.deviceId && (deviceId !== this.deviceId || !old && !claim)) refuse('Only its coordinator or assigned device can admit a thread.', 403);
+      const ids = this.#runningThreads(), running = ids.size, limit = this.#threadLimit();
+      const admitted = ids.has(threadId) || running < limit;
+      if (reserve && admitted && (!old || !liveWork(old.state))) this.hub.put(CLAIMS, threadId, ThreadClaimSchema, { schema: 'thread-claim-v1', id: threadId, projectId, deviceId, expiresAt: new Date(this.now() + 120000).toISOString() }, claim?.revision ?? 0);
+      return { schema: 'thread-admission-v1' as const, admitted, running, limit };
+    });
+  }
+
   threads(projectId: string, after?: string): Page<ThreadIndex> { return this.#page(THREADS, ThreadIndexSchema, projectId, after, () => true); }
   thread(threadId: string): Stored<ThreadIndex> | null { return this.#get(THREADS, threadId, ThreadIndexSchema); }
   /** Owner-bound and ordered by the thread's ledger event id: older events are ignored, a replayed event must carry the same index. */
@@ -364,6 +392,13 @@ export class HubProjectStore {
         if (eventId === cursor.document.eventId && digest !== cursor.document.digest) refuse('This thread event already published a different index.');
         return { eventId: cursor.document.eventId };
       }
+      if (liveWork(index.state) && (!previous || !liveWork(previous.document.state))) {
+        const ids = this.#runningThreads(), limit = this.#threadLimit();
+        const claim = this.hub.get(CLAIMS, index.id, ThreadClaimSchema)?.document;
+        if (claim && (claim.deviceId !== this.deviceId || claim.projectId !== index.projectId)) refuse('This admission belongs to another device or project.', 403);
+        if (!ids.has(index.id) && ids.size >= limit) refuse(`Waiting for a free slot: ${ids.size} threads are running across all projects (limit ${limit}).`, 423);
+      }
+      this.hub.delete(CLAIMS, index.id);
       if (!previous || indexDigest(previous.document) !== digest) this.#put(THREADS, index.id, ThreadIndexSchema, index, previous?.revision ?? 0);
       this.hub.put(CURSORS, index.id, ThreadIndexCursorSchema, { schema: 'project-thread-cursor-v1', threadId: index.id, deviceId: this.deviceId, eventId, digest }, cursor?.revision ?? 0);
       return { eventId };
@@ -692,7 +727,8 @@ export class HubProjectStore {
 
   /** `/hub/mesh/projects/<collection>`: the route has already matched the collection to the operation. */
   request(raw: unknown): ProjectHubResult {
-    const request = ProjectHubRequestSchema.parse(raw); const base = { schema: 'project-hub-result-v1', operation: request.operation };
+    const request = ProjectHubRequestSchema.parse(raw);
+    if (['mail-send', 'mail-inbox', 'mail-read', 'reserve', 'release', 'reservations-list', 'checkouts-held'].includes(request.operation)) refuse('Mail, reservations and Main isolation have been retired.', 410); const base = { schema: 'project-hub-result-v1', operation: request.operation };
     let result: unknown;
     switch (request.operation) {
       case 'deploys-list': result = { ...base, ...this.deploys(request.projectId, request.after) }; break;
@@ -737,6 +773,7 @@ export class HubProjectStore {
       case 'session-cache-put': this.putSessionCache(request.snapshot); result = base; break;
       case 'coordinator-status-put': result = { ...base, record: this.putCoordinatorStatus(request.status) }; break;
       case 'threads-list': result = { ...base, ...this.threads(request.projectId, request.after) }; break;
+      case 'thread-admit': result = { ...base, admission: this.admitThread(request.projectId, request.threadId, request.deviceId, request.reserve) }; break;
       case 'thread-get': result = { ...base, record: this.thread(request.threadId) }; break;
       case 'thread-publish': result = { ...base, threadId: request.index.id, ...this.publishThread(request.index, request.eventId) }; break;
       case 'merge-documents': result = { ...base, ...this.mergeDocuments(request.projectId, request.after, request.threadId) }; break;
@@ -817,6 +854,7 @@ export class HubProjectAccess implements ProjectHub {
   async putCoordinatorStatus(status: ProjectCoordinatorStatus) { this.#store.putCoordinatorStatus(status); }
   async threads(projectId: string, after?: string) { return this.#store.threads(projectId, after); }
   async thread(threadId: string) { return this.#store.thread(threadId); }
+  async admitThread(projectId: string, threadId: string, deviceId: string, reserve = true) { return this.#store.admitThread(projectId, threadId, deviceId, reserve); }
   async publishThread(index: ThreadIndex, eventId: number) { return this.#store.publishThread(index, eventId); }
   async mergeDocuments(projectId: string, after?: string, threadId?: string) { return this.#store.mergeDocuments(projectId, after, threadId); }
   async mergeDocument(id: string) { return this.#store.mergeDocument(id); }
@@ -930,6 +968,7 @@ export class MemberProjectStore implements ProjectHub {
   async mergeDocuments(projectId: string, after?: string, threadId?: string) { const page = this.#page(await this.#call('merge-documents', { projectId, ...(after ? { after } : {}), ...(threadId ? { threadId } : {}) }), projectId, after); if (threadId && page.records.some(row => row.threadId !== threadId)) throw new HubProtocolError(); return page; }
   async mergeDocument(id: string) { return this.#check((await this.#call('merge-document-get', { id })).record, row => !row || row.document.id === id); }
   async putMergeDocument(document: MergeDocument, expectedRevision: number) { return this.#check((await this.#call('merge-document-put', { document, expectedRevision })).record, row => row.document.id === document.id && (row.revision === expectedRevision + 1 || (document.schema === 'merge-correction-v1' || document.schema === 'landing-correction-v1') && stableJson({ ...row.document, revision: 0, at: '', receivedOrder: 0 }) === stableJson({ ...document, revision: 0, at: '', receivedOrder: 0 }))); }
+  async admitThread(projectId: string, threadId: string, deviceId: string, reserve = true) { return (await this.#call('thread-admit', { projectId, threadId, deviceId, ...(reserve ? {} : { reserve: false }) })).admission; }
   async publishThread(index: ThreadIndex, eventId: number) {
     const result = this.#check(await this.#call('thread-publish', { index, eventId }), (value) => value.threadId === index.id && value.eventId >= eventId);
     return { eventId: result.eventId };
