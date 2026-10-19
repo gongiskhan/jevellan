@@ -15,10 +15,10 @@ Last updated: 2026-10-15. On 2026-09-26 the user resumed the build on a second m
 19 October, release-051 run (live, from 11:06:11 UTC): 0.5.1 is published but not installed.
 - The Linux archive was built and verified from `c083ec8d`: 574,661,509 bytes, SHA-256 `17c2c83b…2e33181a`.
 - `v0.5.1` is tagged at `c083ec8d`, and the GitHub release carries both archives. Their digests match the checksums.
-- dev-madrid's cold backup was taken at 11:16. The Pro's backup and both updates were then blocked. From 11:34, ekoa-code's coordinator held dev-madrid's lifecycle gate: its turn 128 never ended, its session ended at 11:50:09, and no runtime worker ran on either machine.
-- That state is not the interpreting-only case the brief allows stopping for. By the owner's decision, the run stopped at 11:55 without stopping any service, and the cause is not established.
+- dev-madrid's cold backup was taken at 11:16. The Pro's backup and both updates were then blocked. From 11:34, ekoa-code's coordinator held dev-madrid's lifecycle gate: its turn 128 never ended, its session ended at 11:50:09, and no runtime worker was running on either machine at the checks from 11:50 to 11:54.
+- That state is not the interpreting-only case the brief allows stopping for. Under the brief's stop rule, the run stopped at 11:55 without stopping any service, and the cause is not established.
 - Both machines remain on 0.5.0, healthy and online.
-- Not run: the confirmation, the live journeys (E1 was not sent) and both cleanups. Their harness and drafts are prepared privately.
+- Not run: the confirmation, the live journeys E1, LP1–LP5, LP9 and LP10 (E1 was not sent), and both cleanups. Their harness and drafts are prepared privately.
 - See the [run log](release-051-2026-10/README.md) and [handoff](release-051-2026-10/HANDOFF.md).
 
 ### Release notes: 0.5.1

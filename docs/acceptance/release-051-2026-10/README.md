@@ -25,7 +25,7 @@ The accepted product source is `c083ec8df17951e873433224ff9bf9217f13194a` (gate 
 | 1 Release | Complete, 11:07:39–11:15:21 (live publication) | Below |
 | 2 Backups and updates | Blocked. dev-madrid's cold backup was taken 11:16:07–11:19:07 (live). The Pro backup and both updates were not run: from 11:34, ekoa-code's coordinator held dev-madrid's lifecycle gate with no runtime behind it | Below |
 | 3 Confirmation | Not run (blocked by step 2) | |
-| 4 Live journeys | Not run (blocked: 0.5.1 not installed). E1 was not sent | |
+| 4 Live journeys | Not run (blocked: 0.5.1 not installed): E1, LP1, LP2, LP3, LP4, LP5, LP9 and LP10. E1 was not sent | |
 | 5 Cleanup A | Not run (blocked); drafted privately | Below |
 | 6 Cleanup B | Not run (blocked); drafted privately | Below |
 | 7 Handoff | Complete | [HANDOFF.md](HANDOFF.md) |
@@ -91,19 +91,19 @@ Read-only observations from the owner API, the coordinator ledger (event types a
 
 - ekoa-code's coordinator turn 128 started at 11:33:54 on dev-madrid. Its session recorded a turn-cache entry at 11:36:24, then a session-turn-cache entry for turn 1 at 11:50:08 and a session end at 11:50:09. Turn 128 has no turn end.
 - From 11:34 on, the work view reads the coordinator as running, and dev-madrid's activity file holds `Coordinator: ekoa-code` (kind `conversation`), which keeps the lifecycle gate busy.
-- Since about 11:45 no runtime worker has run under dev-madrid's daemon (workers appear there as `runtime-claude` and `runtime-codex` processes, as at 11:19 and 11:34), and the Pro's daemon has no children and an empty activity file.
+- No runtime worker was running under dev-madrid's daemon at the checks at about 11:50, 11:53 and 11:54:29. Workers appear there as `runtime-claude` and `runtime-codex` processes, as at 11:19 and 11:34. At about 11:51 the Pro's daemon had no children and an empty activity file. These are sampled observations, not proof of a continuous absence.
 - Events keep queueing for the coordinator (pull request updates and automatic fixes, the last at 11:44:53), and no coordinator turn has started since.
 
 This is the owner's coordinator on 0.5.0. It is not an open "Interpreting a project request" operation, so the brief's stop exception does not apply: this run stops nothing and waits. The cause is not established here.
 
 ### Stopped at the blocker (11:54–11:55)
 
-- **11:54:29, one fresh check, as the owner's supervision asked.**
+- **11:54:29, one fresh check.**
   - Turn 128 still had no turn end, and the session end at 11:50:09 was still the latest session event.
   - A new pull request update at 11:54:02 had started no coordinator turn.
   - The work view still read the coordinator as running, and the gate activity was still held.
   - No runtime worker ran on either machine.
-- **The owner's decision.** The owner judged this a different blocking condition from the authorized interpreting-only case. They asked the run to stop, record it and hand off, without stopping any service or owner work and without further diagnosis.
+- **The brief's stop rule.** This is a blocking condition different from the interpreting-only case the brief's stop exception covers. Under the brief's rule (a defect means stop, record it and hand off), the run stopped here, without stopping any service or owner work and without further diagnosis.
 - **What this run stopped.** Only its own queued runner (`act-when-clear.sh`, PID 1211115, started 11:38:31, parent the runner's shell), at 11:54:49, after checking its parent, start time and command. It had not run its step 2 chain. None of this run's runners remains.
 - **11:55:08, the services.**
   - Both machines are healthy on 0.5.0 and online in the roster.

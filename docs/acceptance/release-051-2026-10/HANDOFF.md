@@ -9,13 +9,17 @@
    - Since 11:34 it reads as running, but its turn 128 never ended and its session ended at 11:50:09.
    - Pull request updates and automatic fixes keep queueing behind it.
    - This run did not stop, message or change it. Whether to stop the service is your call: the brief's stop exception covers only an open "Interpreting a project request" operation, and this is a different state.
-3. **To finish the release once the gate is free,** with no turn running on either machine:
-   1. Take the Pro's cold backup with `~/.jevellan-build/fix-051/bin/backup-pro.sh` on the Pro.
-   2. Update dev-madrid with `~/.jevellan-build/fix-051/bin/update-madrid.sh ~/.jevellan-build/fix-051/phase2/release-0.5.1-linux/out/jevellan-0.5.1-linux-x64.tgz`.
-   3. Update the Pro with `~/.jevellan-build/fix-051/bin/update-pro.sh ~/.jevellan-build/fix-051/release-0.5.1-darwin/out/jevellan-0.5.1-darwin-arm64.tgz` on the Pro.
-   4. Confirm with `node ~/.jevellan-build/release-051/bin/confirm-assert.mjs 0.5.1 <update start> <out.json>` and `~/.jevellan-build/release-051/bin/devices-ui.mjs`. Run the Devices check from the checkout, with the whole `.env` loaded.
-   - dev-madrid's 11:16 backup is a cold copy as of 11:16, and its home has kept changing since. Take a fresh one right before the update. `backup-madrid.sh` refuses an existing folder, so move the old one aside first.
-   - `~/.jevellan-build/release-051/bin/step2-chain.sh` runs the backup and both updates in order, started by `act-when-clear.sh` at a clear moment.
+3. **To finish the release once the gate is free,** with no turn running on either machine, in this order:
+   1. **Fresh dev-madrid backup.** The 11:16 backup is a cold copy as of 11:16, and the home has kept changing since. Move `~/.jevellan-build/fix-051/backup-madrid` aside (`backup-madrid.sh` refuses an existing folder), then run `~/.jevellan-build/fix-051/bin/backup-madrid.sh` on dev-madrid.
+   2. **Pro backup.** Run `~/.jevellan-build/fix-051/bin/backup-pro.sh` on the Pro.
+   3. **Update dev-madrid:** `~/.jevellan-build/fix-051/bin/update-madrid.sh ~/.jevellan-build/fix-051/phase2/release-0.5.1-linux/out/jevellan-0.5.1-linux-x64.tgz`.
+   4. **Update the Pro**, on the Pro: `~/.jevellan-build/fix-051/bin/update-pro.sh ~/.jevellan-build/fix-051/release-0.5.1-darwin/out/jevellan-0.5.1-darwin-arm64.tgz`.
+   5. **Confirm** on dev-madrid, from the checkout, with the whole `.env` loaded (`set -a; . ./.env; set +a`). Use `N=/home/ggomes/.nvm/versions/node/v22.23.2/bin/node`.
+      - `$N ~/.jevellan-build/release-051/bin/confirm-assert.mjs 0.5.1 <update start, ISO> <out.json>`;
+      - `$N ~/.jevellan-build/release-051/bin/devices-ui.mjs 0.5.1 <screenshot.png> <record.json>`.
+
+      Both must exit 0.
+   - The private `~/.jevellan-build/release-051/bin/step2-chain.sh` covers only sub-steps 2 to 4: the Pro backup and both updates. It does **not** take the fresh dev-madrid backup, so it is not a complete resume command by itself. Run sub-step 1 first.
 4. **Then run the live journeys** with `~/.jevellan-build/fix-051/live/run.sh <journey>`, one journey at a time. Set the 150-minute deadline in `~/.jevellan-build/release-051/private/live-config.json` first; it is now a past placeholder, so every journey would record "not run".
 5. **Sandbox pull requests #22 and #23** are still open, with passing checks, as LP1 and LP4 need them. ekoa-code got no message from this run: E1 was not sent. Its settings, goals and `autoMerge` (off) are unchanged, and `NIGHTLY_SCHEDULER` was not set.
 
@@ -43,10 +47,10 @@ The product source is unchanged since `c083ec8d`. This run committed documentati
 - **Install (steps 2 and 3):** blocked by ekoa-code's coordinator, observed but not diagnosed.
   - Its turn 128 started at 11:33:54 and has no turn end. Its session ended at 11:50:09.
   - dev-madrid's activity file still holds `Coordinator: ekoa-code`, so the lifecycle gate stays busy.
-  - Neither machine has run a runtime worker since about 11:45.
+  - No runtime worker was running on dev-madrid at the checks at about 11:50, 11:53 and 11:54:29, nor on the Pro at about 11:51. These are sampled observations, not proof of a continuous absence.
   - New events (the last at 11:54:02) start no coordinator turn.
-  - Following the owner's supervision, this run stopped only its own queued runner at 11:54:49, after verifying its PID, parent and start time; that runner had run nothing. It stopped no service and no owner process.
-- **Live journeys:** not run, blocked by the install. E1 and LP1 to LP10 have no receipts.
+  - Following the brief's stop rule, this run stopped only its own queued runner at 11:54:49, after verifying its PID, parent and start time; that runner had run nothing. It stopped no service and no owner process.
+- **Live journeys:** not run, blocked by the install. E1, LP1, LP2, LP3, LP4, LP5, LP9 and LP10 have no receipts.
 - **Cleanups A and B:** not run, blocked by the install. The J8 and J11 change and the release scripts are drafted privately, not committed.
   - J8 and J11: the change is to open `${target.url}/new` instead of `${target.url}/` before the Project picker, at `tests/e2e/skeleton.spec.ts:880` and `:967`.
   - The release script drafts and `docs/release.md` are in `~/.jevellan-build/release-051/drafts/`.
