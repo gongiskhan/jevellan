@@ -56,12 +56,17 @@ test('concurrent identical reads share a request, expire at 60 seconds, retry er
   await reader.read(coordinator, { action: 'runs' }, signal); expect(github.requests).toHaveLength(5);
 });
 
-test('thread scope refuses lists and other pulls before any request, and never downloads logs on another head', async () => {
-  for (const input of [{ action: 'runs' }, { action: 'pulls', state: 'open' }, { action: 'commits' }, { action: 'pull', number: 2 }])
+test('thread scope refuses other lists and other pulls before any request, lists only runs on its own head, and never downloads logs on another head', async () => {
+  for (const input of [{ action: 'pulls', state: 'open' }, { action: 'commits' }, { action: 'pull', number: 2 }])
     await expect(reader.read(thread, input, signal)).rejects.toMatchObject({ status: 403 });
   expect(github.requests).toHaveLength(0);
   const own = github.addWorkflow({ head_sha: current.pr!.headSha, jobs: [{ id: 101, name: 'result', status: 'completed', conclusion: 'failure', logs: 'own failure' }] });
   const other = github.addWorkflow({ head_sha: 'a'.repeat(40), jobs: [{ id: 102, name: 'result', status: 'completed', conclusion: 'failure', logs: 'other failure' }] });
+  // fix-051: a thread lists runs, but only those on its pull request's current head, asked of GitHub by that head.
+  const listed = await reader.read(thread, { action: 'runs' }, signal) as { runs: Array<{ id: number; headSha: string }> };
+  expect(listed.runs.map(run => run.id)).toEqual([own.id]); expect(listed.runs.every(run => run.headSha === current.pr!.headSha)).toBe(true);
+  const listings = github.requests.filter(request => request.path.endsWith('/actions/runs'));
+  expect(listings.length).toBeGreaterThan(0); expect(listings.every(request => request.query.head_sha === current.pr!.headSha)).toBe(true);
   await expect(reader.read(thread, { action: 'run', runId: other.id }, signal)).rejects.toMatchObject({ status: 403 });
   await expect(reader.read(thread, { action: 'job_log', jobId: 102 }, signal)).rejects.toMatchObject({ status: 403 });
   expect(github.requests.some(request => request.path.endsWith('/102/logs') || request.path.endsWith(`/${other.id}/jobs`))).toBe(false);

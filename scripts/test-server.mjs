@@ -786,7 +786,7 @@ const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-con
 const dailyMarker = join(root, 'daily-result');
 const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-change-v1'), checks: z.enum(['none', 'pending', 'passing', 'passing-status', 'failing']).optional(),
   mergeable: z.enum(['clean', 'dirty', 'unknown', 'unstable']).optional(), merged: z.literal(true).optional(), closed: z.literal(true).optional() });
-const ControlAutomaticFixSchema = z.strictObject({ schema: z.literal('fixture-automatic-fix-v1'), action: z.enum(['prepare', 'fail']) });
+const ControlAutomaticFixSchema = z.strictObject({ schema: z.literal('fixture-automatic-fix-v1'), action: z.enum(['prepare', 'owner-commit', 'fail']) });
 const ControlNotificationsSchema = z.strictObject({ schema: z.literal('fixture-notifications-v1'), action: z.enum(['sweep', 'question']) });
 const ControlUsageSchema = z.strictObject({ schema: z.literal('fixture-usage-v1'), action: z.literal('prepare') });
 const UsageReceiptSchema = z.strictObject({ schema: z.literal('fixture-usage-receipt-v1'), threadId: z.string().min(1) });
@@ -840,6 +840,12 @@ async function projectControl(request, response) {
         if (Date.now() > deadline) throw new Error(`The automatic-fix fixture did not publish its first pull request: ${application.projectWork.store.get(automaticFixThread)?.state}; ${application.projectWork.store.get(automaticFixThread)?.stateReason ?? ''}; ${application.projectWork.store.get(automaticFixThread)?.lastReport?.summary ?? ''}`);
         await new Promise(resolve => setTimeout(resolve, 20));
       }
+    } else if (input.action === 'owner-commit') {
+      // The owner pushes to the pull request branch from their own clone, so the next fix starts behind its head (fix-051).
+      const branch = application.projectWork.store.get(automaticFixThread).branch, owner = mkdtempSync(join(root, 'par4-owner-'));
+      git(root, 'clone', '--quiet', projectsOrigin, owner); git(owner, 'checkout', '--quiet', branch);
+      writeFileSync(join(owner, 'owner.txt'), 'Owner change.\n'); git(owner, 'add', 'owner.txt');
+      git(owner, '-c', 'user.name=Owner', '-c', 'user.email=owner@example.invalid', 'commit', '--quiet', '-m', 'Owner change'); git(owner, 'push', '--quiet', 'origin', branch);
     } else {
       github.setChecks(application.projectWork.store.get(automaticFixThread).pr.number, 'failing'); await application.projectWork.tracker.poll();
       const deadline = Date.now() + 60_000;

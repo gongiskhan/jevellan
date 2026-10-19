@@ -1,0 +1,18 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR4 automatic fix labels, round limit and an owner-requested fix",
+  "layout": "desktop-light",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-owner-request-desktop-light.png",
+  "expected": "the Jevellan web app \"PAR4 owner request\" screen at desktop-light, rendered completely and legibly (one of several screens captured during \"PAR4 automatic fix labels, round limit and an owner-requested fix\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The thread is scrolled, so the top of the first card ('Greeting version 1 is ready.') sits under the sticky Merge/Open on GitHub header and its top edge and badge are cut off. This is normal scrolling.",
+      "Sidebar session titles and subtitles are cut short with ellipses (e.g. 'Context · Mesh journey fixt…', 'Context · Shared memory fi…').",
+      "The 'Automatic fix: failing checks' and 'Requested by you' labels appear twice per turn: once as a section heading and again inside the report card."
+    ]
+  }
+}

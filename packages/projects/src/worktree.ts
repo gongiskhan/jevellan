@@ -3,12 +3,14 @@ import { dirname, isAbsolute, join } from 'node:path';
 import { ProjectRelativePathSchema, inside, resolveProjectPath, resolvedPath, threadBranch, type Homes, type Project, type SecretRedactor, type Thread } from '@jevellan/core';
 import { ProjectContext } from '@jevellan/memory';
 import { commandTimedOut, contextLinkSkipped, contextUnreadable, exitCodeLine, skippedCopyFile, unsafeCopyFile, worktreeSetupFailed } from './copy.js';
-import { THREAD_REF_PREFIX, firstLine, threadBaseRef, type ThreadGit } from './git.js';
+import { THREAD_REF_PREFIX, firstLine, threadBaseRef, threadPullHeadRef, type ThreadGit } from './git.js';
 import type { ProjectLedger } from './ledger.js';
 import type { ProjectPaths } from './paths.js';
 import { SETUP_TIMEOUT_MS, runThreadCommand } from './verification.js';
 
 export type WorktreeEntry = { path: string; head?: string; branch?: string; prunable: boolean };
+/** What `syncPullHead` did before a fix turn: nothing, moved the branch to (or merged) the pull request head, or left a conflicted merge. */
+export type PullHeadSync = { kind: 'current' } | { kind: 'updated'; head: string } | { kind: 'conflict'; head: string; files: string[] };
 /** `git worktree list --porcelain -z`: NUL-terminated fields, an empty field ends each entry. */
 export function parseWorktrees(output: string): WorktreeEntry[] {
   const entries: WorktreeEntry[] = []; let current: WorktreeEntry | undefined;
@@ -140,6 +142,30 @@ export class ThreadWorktree {
     if (result.code === 0 && !result.timedOut) return { ok: true, outputRef };
     const line = result.timedOut ? commandTimedOut(timeoutMs) : firstLine(result.stderr) || firstLine(result.stdout) || exitCodeLine(result.code);
     return { ok: false, reason: worktreeSetupFailed(line), outputRef, timedOut: result.timedOut };
+  }
+  /**
+   * Before a fix turn (fix-051): fetches the pull request's current head into the thread's private ref space. A head ahead of the
+   * worktree branch is fast-forwarded when the branch has nothing unpushed, and merged (never rebased) when both sides have commits;
+   * a merge that conflicts is left in progress for the turn to resolve.
+   */
+  async syncPullHead(project: Project, thread: Thread, signal?: AbortSignal): Promise<PullHeadSync> {
+    if (thread.isolation !== 'worktree' || !thread.cwd || thread.pr?.state !== 'open') return { kind: 'current' };
+    const repo = this.repository(project), cwd = thread.cwd, n = thread.pr.number;
+    const head = await this.#git.fetchPullHead(repo, n, threadPullHeadRef(thread.id), signal);
+    const count = async (range: string) => Number((await this.#git.run(cwd, ['rev-list', '--count', range])).stdout.trim());
+    if (await this.#git.resolve(cwd, 'MERGE_HEAD') === head) return { kind: 'conflict', head, files: await this.#unmerged(cwd) };
+    if (!await count(`HEAD..${head}`)) return { kind: 'current' };
+    if (!await count(`${head}..HEAD`)) { await this.#git.run(cwd, ['merge', '--ff-only', head]); return { kind: 'updated', head }; }
+    const identity = await this.#git.identity(repo);
+    const merged = await this.#git.run(cwd, ['merge', '--no-ff', '--no-edit', '-m', `Merge pull request #${n}'s head ${head.slice(0, 7)}`, head], { permitted: [1],
+      ...(identity ? { env: { GIT_AUTHOR_NAME: identity.name, GIT_AUTHOR_EMAIL: identity.email, GIT_COMMITTER_NAME: identity.name, GIT_COMMITTER_EMAIL: identity.email } } : {}) });
+    if (merged.code === 0) return { kind: 'updated', head };
+    const files = await this.#unmerged(cwd);
+    if (!files.length) throw new Error(`Git merge failed: ${merged.stderr.trim().slice(0, 500)}`);
+    return { kind: 'conflict', head, files };
+  }
+  async #unmerged(cwd: string): Promise<string[]> {
+    return (await this.#git.run(cwd, ['diff', '--name-only', '--diff-filter=U'])).stdout.split('\n').map(line => line.trim()).filter(Boolean).slice(0, 200);
   }
   async hasCommits(thread: Thread): Promise<boolean> {
     if (!thread.cwd || !thread.baseCommit || !existsSync(thread.cwd)) return false;

@@ -588,8 +588,16 @@ export const ACTION_RESOLVE_OPEN_PR = 'Merge or close the open pull request befo
 export const ACTION_NOT_RESOLVABLE = 'Only an idle, waiting or failed thread can be resolved.';
 export const ACTION_NOT_REOPENABLE = 'Only a resolved idle or failed thread can be reopened.';
 export const PUBLISH_REQUESTED = 'Publish the saved work through managed verification and publication.';
-export function checksFixPrompt(n: number, sha: string, names: string[]): string {
-  return `Checks failed on pull request #${n} at ${sha.slice(0, 7)}: ${names.slice(0, 10).join(', ')}.\nRead the failing jobs and their logs with jevellan_github, find the cause, fix it in this worktree, run the relevant tests and report done.\nIf the failure is not caused by this pull request (for example an outage, or a flaky test you can show is unrelated), report blocked and say why.`;
+/** The failing runs and jobs are named by id (fix-051), so the thread asks for exactly those with jevellan_github. */
+export function checksFixPrompt(n: number, sha: string, names: string[], jobs: ReadonlyArray<{ runId: number; jobId: number; name: string }> = []): string {
+  const failing = jobs.length ? `\nFailing jobs on this head: ${jobs.slice(0, 10).map(job => `${job.name} (run ${job.runId}, job ${job.jobId})`).join('; ')}. Read each with jevellan_github: action "run" with its runId, then "job_log" with its jobId.` : '';
+  return `Checks failed on pull request #${n} at ${sha.slice(0, 7)}: ${names.slice(0, 10).join(', ')}.${failing}\nRead the failing jobs and their logs with jevellan_github, find the cause, fix it in this worktree, run the relevant tests and report done.\nIf the failure is not caused by this pull request (for example an outage, or a flaky test you can show is unrelated), report blocked and say why.`;
+}
+/** The thread notice and ledger line when a fix turn first moves its worktree to the pull request's current head (fix-051). */
+export const pullHeadUpdated = (n: number, sha: string) => `Updated the worktree to pull request #${n}'s head ${sha.slice(0, 7)} before this fix.`;
+export const pullHeadUpdateFailed = (n: number, message: string) => `Could not update the worktree to pull request #${n}'s head before this fix: ${message}`;
+export function pullHeadConflictPrompt(n: number, sha: string, files: string[]): string {
+  return `Someone else pushed to pull request #${n}. Its head ${sha.slice(0, 7)} is being merged into this branch (not rebased) and the merge stopped on conflicts in: ${files.slice(0, 30).join(', ')}${files.length > 30 ? ', …' : ''}.\nResolve them keeping the intent of both sides, commit the merge, then continue with the request below.`;
 }
 export function conflictFixPrompt(n: number, base: string): string {
   return `Pull request #${n} conflicts with ${base}. Fetch origin, merge origin/${base} into this branch (do not rebase), resolve the conflicts keeping the intent of both sides, run the relevant tests and report done.`;

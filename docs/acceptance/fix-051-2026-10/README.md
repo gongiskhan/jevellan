@@ -13,7 +13,7 @@ Run log for the 19 October 2026 brief: diagnose the coordinator hang live, fix i
 | Phase | Status | Evidence |
 | --- | --- | --- |
 | 0 Diagnose the hang | Complete, 01:41–02:00 (live). Root cause not established | Below; private records in `~/.jevellan-build/fix-051/diagnosis/` on dev-madrid |
-| 1 Fixes | Not started | |
+| 1 Fixes | Complete, 02:08–03:35 (simulated): failing-first tests red, then green; affected tests, PAR4 with vision in four layouts, typecheck and lint pass | Below; red and green logs in `~/.jevellan-build/fix-051/phase1/` |
 | 2 Release 0.5.1 | Not started | |
 | 3 Live journeys | Not started | |
 | 4 Closing | Not started | |
@@ -92,3 +92,100 @@ All four answered, each well within the 30-second client timeout.
 - **For phase 1:**
   - The decision deadline races the whole decision against a timer the shared helper owns, so the caller settles even when an inner promise never settles and ignores its abort. A guard test uses exactly such a fetch.
   - Stop, Fresh session, Move and shutdown settle the outcome wait themselves and release the operation.
+
+## Phase 1: fixes, each with a test that failed first (simulated)
+
+Phase 0 established no root cause beyond the missing deadline, so Fix A is a guard. It does not claim to fix a deadlock. The decisions are 925 to 927 in `docs/decisions.md`.
+
+### Fix A: one overall deadline per Jev decision
+
+- **The deadline.** One shared helper in `@jevellan/decisions` (`withDecisionDeadline`, `runDecision`, `deadlineClient`) owns a timer of 2 × `timeoutMs` + 1 s + 5 s.
+  - It races the whole decision, so a decision settles with `JevError('timeout')` even when an inner promise never settles and ignores its abort.
+  - An abort settles it at once with `JevError('cancelled')`.
+- **The daemon's source.** The daemon's `decisionClient` is a decision source. Each decision obtains its client (the configuration read) inside the deadline, and the key read and every HTTP attempt run inside it too. The deadline length comes from the last configuration read.
+- **Every call site uses it:**
+  - the request outcome;
+  - placement p-v1 and the account choice a-v1;
+  - follow-up routing;
+  - the merge route m-v1;
+  - conversation q-v2;
+  - memory selection and memory care;
+  - the routing improver.
+- **Settings reads.** The request outcome's model read (`project-work.ts`) moved inside the deadline, as did those of follow-up routing and the merge route.
+- **The coordinator prompt** now carries "Jev could not interpret this request" for an unavailable outcome.
+- **Abandoning a classification.** Fresh session, Stop, Move coordinator and shutdown abandon an in-flight classification and release its operation. Fresh runs the next turn at once.
+
+| Test (red first, then green) | Red | Green |
+| --- | --- | --- |
+| Configuration read never settles: the coordinator turn starts within the deadline with the instruction | Failed: no turn in 6.5 s | 2.1 s |
+| Key read never settles | Failed: no turn | 2.0 s |
+| Settings read for the decision model never settles | Failed: no turn | 2.0 s |
+| HTTP attempt never settles and ignores its abort | Failed: no turn | Passed |
+| Fresh session during a hung classification: operation released, next turn runs fresh | Failed: no turn in 5 s | 0.6 s |
+| Stop during a hung classification: released at once, owner message stays queued | Failed: Stop hung past 30 s | 0.2 s |
+| Move coordinator during a hung classification hands the queue over | Failed: hung past 30 s | 0.2 s |
+| Shutdown during a hung classification completes | Failed: close hung | 0.2 s |
+| Maintenance gate requested during a hung classification is granted within the deadline | Failed: not granted in 6.5 s | 1.9 s |
+| m-v1 route request that never settles: ask-owner within the deadline (daemon path) | Failed: test timed out at 90 s | 18.2 s |
+| Placement p-v1 falls back (timeout) within the deadline (daemon path) | Failed: test timed out at 90 s | 15.5 s |
+| Owner message gets its coordinator turn within the deadline (daemon path) | Failed on the unmodified v0.5.0 build: no turn in 24 s, then the fixture's close hung | 15.1 s |
+
+- **Timings.** The coordinator cases use a 1.5 s test deadline. The daemon-path cases use the configured 4 s timeout, so a 14 s deadline.
+- **The daemon-path outcome test.** Its first red run does not count: its fixture had no coordinator-capable model. The corrected test was rerun against a private copy of the unmodified v0.5.0 build tree.
+- **Helper unit tests.** `tests/decision-deadline.test.ts` covers the helper itself: the formula, a never-settling and abort-ignoring fetch through `JevClient`, cancellation, and pass-through.
+
+### Fix B: fix turns start from the pull request's current head
+
+- **Catching up the worktree.** Before a `checks`, `conflict` or `comments` turn on a worktree thread with an open pull request, the thread first fetches `refs/pull/<n>/head` into `refs/jevellan/threads/<tid>/pull-head`. This applies to automatic fixes and to the Fix checks, Resolve conflicts and Address comments buttons.
+  - With nothing unpushed, it fast-forwards to that head.
+  - Otherwise it merges, never rebases. A conflicted merge goes to the turn, whose prompt names the conflicted files first.
+  - The thread notice reads "Updated the worktree to pull request #{n}'s head {short sha} before this fix.", and the next push leases on that head.
+- **Scoped GitHub reads.** Thread-scoped `jevellan_github` reads use the pull request head as this device's tracker last read it. A thread may list runs, but only those on that head.
+- **The checks prompt** names the failing runs and jobs by id.
+
+| Test, against the fake GitHub (red first, then green) | Red | Green |
+| --- | --- | --- |
+| Owner commit, then failing checks: worktree at the new head, the failing job log readable in thread scope, runs on the head listed, run and job ids in the prompt, and the fix publishes on top | Failed: worktree at the old head | Passed |
+| Fix checks button after an owner commit | Failed | Passed |
+| Review comment on top of an owner commit | Failed | Passed |
+| Conflict turn after an owner commit | Failed | Passed |
+| Local unpushed commit plus a conflicting owner commit: a merge (two parents, never a rebase) and a turn that resolves the conflict | Failed | Passed |
+
+The first case also showed that a fix turn which caught up could not publish: its push still leased on the thread's own earlier push. The fix leases on the fetched head.
+
+### Affected existing tests (simulated)
+
+These are the 33 existing files that exercise the changed code: the coordinator, follow-ups, runner, automatic fixes, placement, merge gate, shared memory, bridge, conversations, lifecycle, doctor, GitHub reads, the improvers and memory care. The full suites run once in phase 2.
+
+| Run | Files | Tests | Passed | Failed | Notes |
+| --- | --- | --- | --- | --- | --- |
+| affected-1 (02:33–03:01) | 33 | 505 | 498 | 7 | All 7 are intended contract changes, none a product regression |
+| affected-2 (03:09–03:17): the 3 updated files and every new regression file | 8 | 91 | 90 | 1 | PJ2d ran an assertion from before its update finished |
+| affected-3 (03:18): `projects-coordinator` | 1 | 8 | 8 | 0 | |
+
+The seven intended contract changes, each with its expectation updated to assert the new behaviour explicitly rather than loosened:
+- **Six exact coordinator prompts** in `project-coordinator-loop` (2) and `projects-coordinator` (4, one of them PJ2d with three prompt checks):
+  - Their fixtures save no Jev key, so each owner request is now uninterpreted, and the prompt carries the new required line "Requested result for … (unavailable): Jev could not interpret this request. …" (Decision 925).
+  - The expectations now require that line, through `uninterpretedBlock` and `withEventIds` in the shared test helper.
+- **The thread scope's blanket refusal of `runs`** in `project-github-awareness`:
+  - The expectation now requires that a thread lists only the runs on its own pull request head, asked of GitHub with `head_sha`.
+  - The refusals of other lists, other pulls and another head's run and log are unchanged.
+
+### Browser journey with vision (simulated product, live vision judge)
+
+- **What changed.** The PAR4 automatic-fix journey now has the owner push a commit to the pull request branch first, through the new fixture action `owner-commit`, before the failing checks. The journey checks that the thread shows "Updated the worktree to pull request #1's head {short sha} before this fix." under Session notices.
+- **The run.** It ran in the four layouts with `JEVELLAN_VISION_EVIDENCE_DIR=docs/acceptance/fix-051-2026-10/vision`, from 03:27:48 to 03:31:45, with load average 14 to 23 from other users' CI on the machine. All 4 passed.
+- **Vision.** 16 live vision receipts, with 0 blocking and 67 cosmetic findings, recorded only.
+- **Where the images are.**
+  - The new screens are in [screenshots/](screenshots/).
+  - The journey's other judged images are in [screenshots/par4-judged/](screenshots/par4-judged/). The journey writes them into the 17 October parity folder, so they were copied here byte for byte, and that folder's tracked images were restored.
+  - [vision/manifest.json](vision/manifest.json) pairs each receipt with its image and SHA-256.
+- **Two earlier attempts failed in the harness, not the product:**
+  - The fixture's first thread could not start because the shell's `apm` was the system 0.24.0. The previous run's scripts put the pinned APM 0.10.0 first on PATH, and this run's scripts now do the same.
+  - The notice locator anchored the start of the text, but the notice line has a time before it.
+
+### Verification
+
+- `npm run typecheck` and `npm run lint` pass (03:32–03:33).
+- The targeted and affected tests are as above.
+- The full backend and browser suites run once in phase 2.

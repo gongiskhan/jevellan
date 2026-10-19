@@ -2120,6 +2120,8 @@ test('PAR4 automatic fix labels, round limit and an owner-requested fix', async 
   const errors = await begin(page); await page.goto('about:blank');
   const prepared = await control('/projects/automatic-fix', { schema: 'fixture-automatic-fix-v1', action: 'prepare' }) as { threadId: string; prNumber: number };
   const project = '/api/projects/projects_autofix', path = '/projects/projects_autofix';
+  // Someone else pushes to the pull request first: the automatic fix starts from its head and says so (fix-051).
+  await control('/projects/automatic-fix', { schema: 'fixture-automatic-fix-v1', action: 'owner-commit' });
   await control('/projects/automatic-fix', { schema: 'fixture-automatic-fix-v1', action: 'fail' });
   await page.goto(path); await expect(page.getByRole('heading', { name: 'Projects automatic fixes', exact: true })).toBeVisible(LONG);
   await sectionTab(page, info, 'Threads');
@@ -2132,6 +2134,14 @@ test('PAR4 automatic fix labels, round limit and an owner-requested fix', async 
   await page.goto(`${path}/threads/${prepared.threadId}`);
   await expect(page.getByText('Automatic fix: failing checks', { exact: true })).toHaveCount(2, LONG);
   await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-automatic-${layout(info)}.png`, fullPage: false });
+  await sessionDetails(page);
+  const sessionNotices = page.locator('details').filter({ has: page.locator('summary').filter({ hasText: 'Session notices' }) });
+  if (await sessionNotices.getAttribute('open') === null) await sessionNotices.locator('summary').click();
+  const updated = page.getByText(new RegExp(`Updated the worktree to pull request #${prepared.prNumber}'s head [0-9a-f]{7} before this fix\\.$`, 'u'));
+  await expect(updated).toBeVisible(LONG); await updated.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `docs/acceptance/fix-051-2026-10/screenshots/PAR4-head-updated-${layout(info)}.png`, fullPage: false });
+  const session = page.getByRole('button', { name: 'Session information', exact: true });
+  if (await session.getAttribute('aria-expanded') === 'true') await session.click();
   const previousHead = ThreadViewSchema.parse(await read(page, `${project}/threads/${prepared.threadId}`)).thread.pr!.headSha;
   await page.getByRole('button', { name: 'Fix checks', exact: true }).click();
   await expect(page.getByText('Requested by you', { exact: true })).toHaveCount(2, LONG);

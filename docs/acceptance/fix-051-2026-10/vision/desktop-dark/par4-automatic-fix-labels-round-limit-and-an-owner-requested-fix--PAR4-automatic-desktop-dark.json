@@ -1,0 +1,19 @@
+{
+  "schema": "vision-check-v1",
+  "label": "live",
+  "model": "claude-opus-5-5",
+  "test": "PAR4 automatic fix labels, round limit and an owner-requested fix",
+  "layout": "desktop-dark",
+  "screenshot": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-automatic-desktop-dark.png",
+  "expected": "the Jevellan web app \"PAR4 automatic\" screen at desktop-dark, rendered completely and legibly (one of several screens captured during \"PAR4 automatic fix labels, round limit and an owner-requested fix\"; the other steps are judged in their own screenshots)",
+  "result": {
+    "ok": true,
+    "blocking": [],
+    "cosmetic": [
+      "The sidebar thread titles are cut off with ellipses (e.g. 'Context · J11 memory journ…', 'Context · Shared memory fi…'), and so is their metadata ('dev-ma…', 'de…'). This looks like intentional truncation.",
+      "The label 'Automatic fix: failing checks' appears twice in a row: once as a section heading and again inside the Turn 2 report card.",
+      "The 'Merge' button has lower contrast than the 'Fix checks' and 'Open on GitHub' buttons, so it may be styled as disabled.",
+      "The 'Project now (04:29):' prompt summary ends with a colon and shows nothing after it until expanded."
+    ]
+  }
+}

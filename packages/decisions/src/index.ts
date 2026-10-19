@@ -1,5 +1,6 @@
 export * from './contract.js';
 export * from './client.js';
+export * from './deadline.js';
 export * from './selection.js';
 export * from './state.js';
 export * from './memory.js';

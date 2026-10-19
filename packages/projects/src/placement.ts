@@ -6,7 +6,7 @@ import {
   type DeviceFacts, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex, type Thread, type Effort,
 } from '@jevellan/core';
 import {
-  JevError, decidePlacement, fixedPlacementFields, placementCandidates, placementDeviceSetup, type DecisionClient, type PlacementActiveThread, type PlacementDevice, type PlacementFixed,
+  deadlineClient, decidePlacement, fixedPlacementFields, placementCandidates, placementDeviceSetup, type DecisionSource, type PlacementActiveThread, type PlacementDevice, type PlacementFixed,
   type PlacementGates, type PlacementInput, type PlacementPacketInput,
 } from '@jevellan/decisions';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
@@ -43,12 +43,11 @@ export type PlacementOptions = {
   /** Main threads started from here on other devices whose index has not reached the hub yet. */
   pendingMain?(projectId: string): Promise<PendingMain[]>;
   /** Jev; without one every question falls back as when no key is saved. */
-  decisionClient?(): Promise<DecisionClient>;
+  decisionClient?: DecisionSource;
   redactor: Pick<SecretRedactor, 'document'>;
   now?(): number; gates?: PlacementGates;
   facts?(): DeviceFacts;
 };
-const NO_KEY: DecisionClient = { decide: async () => { throw new JevError('no-key'); } };
 /** Packet reads are best effort: during a hub outage Jev still places the thread with what this device knows. */
 const bestEffort = <T>(read: Promise<T>, fallback: T): Promise<T> => read.catch((error: unknown) => { if (error instanceof HubUnavailable) return fallback; throw error; });
 
@@ -166,7 +165,7 @@ export class Placement {
     // All four fields fixed asks nothing, so the packet is not gathered.
     const fields = fixedPlacementFields(input.fixed);
     const packet = ['isolation', 'model', 'effort', 'device'].every((field) => fields.includes(field as typeof fields[number])) ? { title: input.title, task: input.task, taskContext: input.taskContext, trouble: input.trouble, activeThreads: [], overrides: [] } : await this.#packet(input, decision.devices);
-    const client = this.#o.decisionClient ? await this.#o.decisionClient() : NO_KEY;
+    const client = deadlineClient(this.#o.decisionClient);
     const placed = await decidePlacement(client, { ...decision, jevModel: decision.settings.decisions.model, packet, redactor: this.#o.redactor },
       input.signal ?? new AbortController().signal);
     if (placed.kind === 'refused') return placed;

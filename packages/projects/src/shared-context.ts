@@ -1,16 +1,18 @@
 import { MemoryRecallSchema, type MemoryNote, type MemoryRecall, type ThreadIndex } from '@jevellan/core';
-import { JevError, selectMemory, type DecisionClient } from '@jevellan/decisions';
+import { JevError, deadlineClient, selectMemory, type DecisionSource } from '@jevellan/decisions';
 import { HUB_MEMORY_OFFLINE, splitMemoryText, type ProjectMemoryPort } from '@jevellan/memory';
 
 export async function projectRecall(source: ProjectMemoryPort | (() => ProjectMemoryPort), task: { title: string; brief: string },
-  jev: { client?(): Promise<DecisionClient>; model: string }, signal: AbortSignal): Promise<MemoryRecall> {
+  jev: { client?: DecisionSource; model: string }, signal: AbortSignal): Promise<MemoryRecall> {
   try {
     const memory = typeof source === 'function' ? source() : source;
     const brief = await memory.findTitle('Project brief', signal);
     const words = [...new Set((`${task.title} ${task.brief}`.toLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? []).slice(0, 64))];
     const candidates = words.length ? (await memory.search(words.join(' OR '), signal)).notes.filter(note => note.permalink !== brief?.permalink).slice(0, 12) : [];
-    const client = await jev.client?.().catch(() => undefined);
-    const { selection } = await selectMemory(client ?? { decide: async () => { throw new JevError('no-key'); } },
+    // A client that cannot be obtained ranks by search order, as without a key; the decision keeps the shared deadline (fix-051).
+    const jevSource = jev.client, keyless = { decide: async () => { throw new JevError('no-key'); } };
+    const client = deadlineClient(jevSource && Object.assign(async () => { try { return await jevSource(); } catch { return keyless; } }, jevSource.deadlineMs ? { deadlineMs: () => jevSource.deadlineMs!() } : {}));
+    const { selection } = await selectMemory(client,
       { notes: candidates, action: 'implement', state: JSON.stringify({ title: task.title, brief: task.brief }), model: jev.model }, signal);
     const selected = selection.chosen.flatMap(ref => candidates.filter(note => note.permalink === ref));
     const body = (note: MemoryNote, max: number) => splitMemoryText(note.content).body.trim().slice(0, max);

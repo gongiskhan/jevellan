@@ -13,7 +13,7 @@ import { StretchBridges } from '../packages/conversations/dist/index.js';
 import { HubDatabase, HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, forCoordinator, type FakeTurnStep, type TurnInput } from '../packages/runtime-contract/dist/index.js';
 import { DEFAULT_PROJECT_TIMERS, ProjectWork, coordinatorSystemAppend, derivedId } from '../packages/projects/dist/index.js';
-import { withoutLiveAccounts } from './helpers/project-fixture.js';
+import { uninterpretedBlock, withEventIds, withoutLiveAccounts } from './helpers/project-fixture.js';
 
 // The coordinator turn loop (brief 8.1, 8.6; design 3.2) in-process: the real hub store, FakeRuntime coordinator turns
 // through a small bridge server, and injected timers. Thread events are enqueued directly (threads are covered elsewhere).
@@ -138,7 +138,9 @@ test('one turn at a time: events during a turn arrive batched in the next, which
     model: 'scripted-model', effort: 'medium', timeoutMs: 1_200_000, systemAppend: coordinatorSystemAppend('Shop') });
   expect(first!.resume).toBeUndefined();
   expect(first!.prompt).toContain(`${SETUP_PROMPT}\n\nEvents since your last turn:`);
-  expect(withoutLiveAccounts(first!.prompt).replace(`${SETUP_PROMPT}\n\n`, '')).toMatch(/^Project notebook:\n\(empty\)\n\nActive threads:\n\(none\)\n\nOpen questions to the owner \(numbered as the owner sees them\):\n\(none\)\n\nRecent conversation with the owner:\n\(none\)\n\nProject memory:\nProject memory is unavailable for this turn\.\n\nEvents since your last turn:\n\[owner \d{2}:\d{2}\] add A and fix B$/);
+  // Without a Jev key the owner's request is uninterpreted, and the turn says so (fix-051).
+  const firstPrompt = withEventIds(withoutLiveAccounts(first!.prompt).replace(`${SETUP_PROMPT}\n\n`, ''));
+  expect(firstPrompt.replace(/\[owner \d{2}:\d{2}\]/u, '[owner HH:MM]')).toBe(`Project notebook:\n(empty)\n\nActive threads:\n(none)\n\nOpen questions to the owner (numbered as the owner sees them):\n(none)\n\nRecent conversation with the owner:\n(none)\n\nProject memory:\nProject memory is unavailable for this turn.\n\nEvents since your last turn:\n[owner HH:MM] add A and fix B${uninterpretedBlock(1)}`);
   expect(second).toMatchObject({ turn: 2, resume: { sessionId: work.coordinators.get('proj_a').state().session!.nativeSessionId } });
   expect(withoutLiveAccounts(second!.prompt)).toBe('Events since your last turn:\n[thread "Add A" (thread_a)] Pull request #1 opened.\n[thread "(unknown thread)" (thread_b)] Pull request #2 opened.');
   const state = work.coordinators.get('proj_a').state();
@@ -315,7 +317,7 @@ test('without a coordinator model or account the coordinator is unavailable with
   await work.pulse(); await work.idle('proj_a');
   expect(turns()).toHaveLength(1);
   const prompt = withoutLiveAccounts(turns()[0]!.prompt);
-  expect(prompt.slice(prompt.lastIndexOf('Events since your last turn:')).replace(/\[owner \d{2}:\d{2}\]/gu, '[owner HH:MM]')).toBe(`Events since your last turn:\n[owner HH:MM] first\n[owner HH:MM] second\n[thread "(unknown thread)" (thread_x) reported needs-decision] Need a database choice.\nQuestion: Which database?\nOptions: SQLite; Postgres (Jevellan asked the owner directly.)\n[owner HH:MM] third\n\nOpen questions to the owner (numbered as the owner sees them):\n1. [(unknown thread)] Which database? Options: SQLite, Postgres. (questionId ${derivedId('pdec', 'fallback', 'cev_q')})`);
+  expect(withEventIds(prompt.slice(prompt.lastIndexOf('Events since your last turn:'))).replace(/\[owner \d{2}:\d{2}\]/gu, '[owner HH:MM]')).toBe(`Events since your last turn:\n[owner HH:MM] first\n[owner HH:MM] second\n[thread "(unknown thread)" (thread_x) reported needs-decision] Need a database choice.\nQuestion: Which database?\nOptions: SQLite; Postgres (Jevellan asked the owner directly.)\n[owner HH:MM] third\n\nOpen questions to the owner (numbered as the owner sees them):\n1. [(unknown thread)] Which database? Options: SQLite, Postgres. (questionId ${derivedId('pdec', 'fallback', 'cev_q')})${uninterpretedBlock(3)}`);
   expect(work.coordinators.get('proj_a').state()).toMatchObject({ state: 'idle', queue: [] });
   expect('unavailableReason' in work.coordinators.get('proj_a').state()).toBe(false);
   expect(notices(work)).toHaveLength(2);

@@ -13,6 +13,9 @@ export type ProjectGithubOptions = { github: GitHubAccess; redactor: SecretRedac
   repository?(project: Project): Promise<GitHubRepository | null> };
 
 /** The project bridge's GitHub reader: no mutations; a shared 60-second request cache, including concurrent requests and scope checks on cache hits. */
+/** A failed job on a pull request head (fix-051). */
+export type FailedJob = { runId: number; jobId: number; name: string };
+const FAILED = new Set(['failure', 'timed_out', 'startup_failure']);
 export class ProjectGithub {
   readonly #cache = new Map<string, CacheEntry>();
   constructor(private readonly o: ProjectGithubOptions) {}
@@ -40,19 +43,38 @@ export class ProjectGithub {
     const entry = { value, until: this.o.now() + 60_000 }; this.#cache.set(key, entry);
     try { return await value; } catch (error) { if (this.#cache.get(key) === entry) this.#cache.delete(key); throw error; }
   }
+  /** The failed jobs of the workflow runs on a pull request's head, by run and job id, for the checks fix prompt (fix-051). */
+  async failedJobs(thread: Thread, head: string): Promise<FailedJob[]> {
+    const repository = thread.pr && parseGitHubPullUrl(thread.pr.url); if (!repository) return [];
+    const token = await this.o.github.token(thread.projectId), client = this.o.github.client(token ?? '');
+    if (token) this.o.redactor.add(token);
+    const runs = (await client.recentWorkflowRuns(repository, { action: 'runs', limit: 20 }, head)).filter(run => run.head_sha === head && FAILED.has(run.conclusion ?? ''));
+    const failed: FailedJob[] = [];
+    for (const run of runs.slice(0, 5)) {
+      for (const job of await client.workflowJobs(repository, run.id)) if (FAILED.has(job.conclusion ?? '')) failed.push({ runId: run.id, jobId: job.id, name: this.o.redactor.text(job.name).slice(0, 200) });
+    }
+    return failed.slice(0, 10);
+  }
   async read(scope: ProjectScope, raw: unknown, signal: AbortSignal): Promise<GithubResult> {
     signal.throwIfAborted(); const input = GithubInputSchema.parse(raw);
     const project = await this.o.project(scope.projectId), repository = this.o.repository ? await this.o.repository(project) : parseGitHubRemote(project.remoteUrl ?? '');
     if (!repository) throw new Error('This project has no GitHub repository.');
     const thread = scope.kind === 'thread' ? await this.o.thread(scope.threadId) : undefined;
     if (scope.kind === 'thread' && (!thread || thread.projectId !== scope.projectId || !thread.pr
-      || !['pull', 'run', 'job_log'].includes(input.action) || (input.action === 'pull' && input.number !== thread.pr.number))) throw refused();
+      || !['pull', 'runs', 'run', 'job_log'].includes(input.action) || (input.action === 'pull' && input.number !== thread.pr.number))) throw refused();
     const token = await this.o.github.token(scope.projectId), client = this.o.github.client(token ?? '');
     if (token) this.o.redactor.add(token);
     // Token rotation invalidates previous results; no token is kept in a cache key or output.
     const root = `${scope.projectId}:${repository.owner}/${repository.repo}:${createHash('sha256').update(token ?? '').digest('hex')}:`;
     const cached = <T>(key: string, load: () => Promise<T>) => this.#cached(root + key, load);
     if (scope.kind === 'thread') {
+      // A thread lists only the runs on its pull request's current head, as the tracker last read it (fix-051).
+      if (input.action === 'runs') {
+        const head = thread!.pr!.headSha;
+        const runs = await cached(`runs:${head}:${stableJson(input)}`, () => client.recentWorkflowRuns(repository, input, head));
+        signal.throwIfAborted();
+        return GithubResultSchema.parse(this.o.redactor.document({ schema: 'github-runs-v1', runs: runs.filter(run => run.head_sha === head).map(runView) }));
+      }
       const runId = input.action === 'run' ? input.runId : input.action === 'job_log'
         ? (await cached(`job:${input.jobId}`, () => client.workflowJob(repository, input.jobId))).run_id : undefined;
       if (runId !== undefined) {

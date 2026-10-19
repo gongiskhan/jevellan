@@ -128,7 +128,8 @@ export function coordinatorFreshContext(input: CoordinatorPromptInput): string {
 }
 /** The turn prompt (brief 8.1): a session that is not resumed gets the fresh context first, then the event block. */
 export function coordinatorPrompt(input: CoordinatorPromptInput, resumed: boolean): string {
-  const goals = input.outcomes?.filter(outcome => outcome.source === 'jev').map(outcome => `Requested result for ${outcome.eventId} (${outcome.source}): ${projectOutcomeInstruction(outcome)}\n${outcome.goal === 'answer' ? COORDINATOR_ANSWER_IN_CHAT : COORDINATOR_CARRY_RESULT}`).join('\n');
+  // An uninterpreted request (Jev unavailable or past its deadline) says so, and the coordinator decides its intended result itself.
+  const goals = input.outcomes?.map(outcome => `Requested result for ${outcome.eventId} (${outcome.source}): ${projectOutcomeInstruction(outcome)}${outcome.source === 'jev' ? `\n${outcome.goal === 'answer' ? COORDINATOR_ANSWER_IN_CHAT : COORDINATOR_CARRY_RESULT}` : ''}`).join('\n');
   const block = (input.setupTriggerId ? `${SETUP_PROMPT}\n\n` : '') + coordinatorEventBlock(input) + (goals ? `\n\n${goals}` : '')
     + (input.accounts?.length ? `\n\n${ACCOUNTS_NOW}\n${input.accounts.join('\n')}` : '');
   return resumed ? block : `${coordinatorFreshContext(input)}\n\n${block}`;
@@ -357,9 +358,9 @@ export class Coordinator {
     await this.#execution?.stop().catch(() => undefined);
     await running;
   }
-  /** Fresh coordinator session: the next turn starts without resuming (brief 8.1, D77). */
+  /** Fresh coordinator session: the next turn starts without resuming (brief 8.1, D77). An outcome being classified is abandoned (fix-051). */
   fresh(): void {
-    this.#generation += 1;
+    this.#generation += 1; this.#outcomeAbort.abort();
     this.c.store.update(this.projectId, (state) => ({ ...state, session: null }));
     if (this.#started) this.#publish();
   }
@@ -388,7 +389,7 @@ export class Coordinator {
     this.#moved = true;
     if (this.#timer) { clearTimeout(this.#timer); this.#timer = undefined; }
     const running = this.#running;
-    if (running) { this.#stopping = true; await this.#execution?.stop().catch(() => undefined); await running; }
+    if (running) { this.#stopping = true; this.#outcomeAbort.abort(); await this.#execution?.stop().catch(() => undefined); await running; }
     this.#drop(extra, assignment);
   }
   /**
@@ -458,7 +459,9 @@ export class Coordinator {
     let prepared: Prepared;
     try { prepared = await this.#prepare(events); }
     catch (error) {
-      if (this.#closed || this.#stopping) return 'wait';
+      if (this.#closed || this.#stopping || this.#moved) return 'wait';
+      // Fresh during the preparation abandoned its classification: the next turn starts at once, in the fresh session.
+      if (generation !== this.#generation) return 'continue';
       if (error instanceof HubUnavailable) return 'postpone';
       return this.#failed(this.#nextTurn(), messageOf(error), 'failed');
     }

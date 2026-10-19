@@ -400,4 +400,10 @@ export function withoutLiveAccounts(prompt: string): string {
 }
 
 /** An owner follow-up carries Jev's requested result and the previous report after the owner's words; this is the prompt without them. */
+/** The coordinator's required line for an owner request Jev did not interpret (fix-051); fixtures without a saved Jev key always get it. */
+export const UNINTERPRETED_REQUEST = 'Jev could not interpret this request. Preserve the owner’s full request and decide its intended result yourself; do not reduce requested work to a test report.';
+/** The block after the events of a batch with `count` uninterpreted owner messages, with each event id written as EVENT (see `withEventIds`). */
+export const uninterpretedBlock = (count: number): string => `\n\n${Array.from({ length: count }, () => `Requested result for EVENT (unavailable): ${UNINTERPRETED_REQUEST}`).join('\n')}`;
+/** Writes the event ids of requested-result lines as EVENT, so a whole prompt can be compared. */
+export const withEventIds = (prompt: string): string => prompt.replace(/^Requested result for cev_[A-Za-z0-9_-]+ /gmu, 'Requested result for EVENT ');
 export function withoutFollowupRoute(prompt: string): string { return prompt.replace(/\n\nRequested result \(Jev\): [\s\S]*$/u, ''); }

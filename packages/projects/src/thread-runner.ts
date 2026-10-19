@@ -19,6 +19,7 @@ import {
   TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WAITING_FOR_MAIN, WORKTREE_DISCARDED, accountMovedNotice, alreadyAttached,
   attachedRefusal, cleanupFailed, commitsSavedReason, isRestarted, mainCheckoutKept, mainConflictPrompt, messagesNotDelivered, messagesPrompt, ownerWorkedLine, savedCommitsRef,
   AUTOMATIC_FIX_CANCELLED, recoveryContext, accountEligibilityWait, movedModelNotice, escalatedModelNotice, unavailableModelAccount, USAGE_LIMIT_CONTINUE, usageLimitWait, usageLimitContinue, preparationRetrying, preparationTaskFailed, sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
+  pullHeadConflictPrompt, pullHeadUpdateFailed, pullHeadUpdated,
 } from './copy.js';
 import type { DecisionItems } from './decision-items.js';
 import { firstLine } from './git.js';
@@ -31,7 +32,7 @@ import type { PlacementResult } from './placement.js';
 import type { ThreadEvent, ThreadStore } from './stores.js';
 import { contextEvent, sessionContext } from './session-context.js';
 import { TurnExecution, type TurnOutcome } from './turn-execution.js';
-import type { ThreadWorktree } from './worktree.js';
+import type { PullHeadSync, ThreadWorktree } from './worktree.js';
 
 const refuse = (message: string, status: number) => Object.assign(new Error(message), { status });
 type EventBody = CoordinatorEvent extends infer E ? E extends CoordinatorEvent ? Omit<E, 'schema' | 'id' | 'at'> : never : never;
@@ -113,6 +114,8 @@ export function restartRefusal(thread: Pick<Thread, 'id' | 'state' | 'pr' | 'iso
 }
 /** The turns a thread keeps when it waits for its account; message turns keep their messages in the queue instead (phase 8). */
 const KEPT_TURNS: readonly ThreadTurnReason[] = ['task', 'verification', 'conflict', 'checks', 'comments', 'continue', 'publish'];
+/** Pull request fix turns, which start from the pull request's current head (fix-051). */
+const FIX_REASONS: readonly ThreadTurnReason[] = ['checks', 'conflict', 'comments'];
 const PENDING_TURN_LIMIT = 40_000;
 const digest = (text: string) => createHash('sha256').update(text).digest('hex');
 const SEEN_MESSAGES = 200;
@@ -129,7 +132,7 @@ export type ThreadRunnerContext = {
   project(projectId: string): Promise<Project>;
   /** Work settings (the hub copy, or the last good one during an outage). */
   workSettings(projectId: string): Promise<ProjectWorkSettings>;
-  worktrees: Pick<ThreadWorktree, 'create' | 'setup' | 'exists' | 'remove' | 'repository'> & Partial<Pick<ThreadWorktree, 'hasCommits' | 'copyFiles'>>;
+  worktrees: Pick<ThreadWorktree, 'create' | 'setup' | 'exists' | 'remove' | 'repository'> & Partial<Pick<ThreadWorktree, 'hasCommits' | 'copyFiles' | 'syncPullHead'>>;
   /** Main isolation (brief 8.2 step 4 main, D29): the claimed project checkout. */
   main: Pick<MainCheckout, 'prepare' | 'ready' | 'onMain' | 'workspace' | 'release' | 'stop' | 'settle'>;
   /** Ends a turn process recorded earlier whose end was not confirmed; rejects while it still cannot be (recovery's rule). */
@@ -202,6 +205,21 @@ export class ThreadRunner {
   isCurrent(turn: number): boolean { return this.#turn === turn; }
   #thread(): Thread { const thread = this.#c.store.get(this.threadId); if (!thread) throw refuse(THREAD_NOT_FOUND, 404); return thread; }
   #at(): string { return new Date(this.#c.now()).toISOString(); }
+  /**
+   * A fix turn starts from the pull request's current head (fix-051): someone else may have pushed to it. A moved worktree is noted on
+   * the thread (its ledger), and a merge that stopped on conflicts gives the turn those conflicts first.
+   */
+  async #catchUp(project: Project, thread: Thread, next: NextTurn): Promise<NextTurn> {
+    if (!this.#c.worktrees.syncPullHead) return next;
+    const n = thread.pr!.number; let synced: PullHeadSync;
+    try { synced = await this.#c.worktrees.syncPullHead(project, thread, this.#abort.signal); }
+    catch (error) { if (!this.#halted()) this.#notice(thread, pullHeadUpdateFailed(n, this.#message(error)), 'error'); return next; }
+    if (synced.kind === 'current') return next;
+    // The branch now holds the head fetched from GitHub, so the next push leases on it rather than on this thread's last push.
+    const head = synced.head; this.#c.store.updateLocal(thread.id, local => ({ ...local, pushedCommit: head }));
+    this.#notice(thread, pullHeadUpdated(n, head), 'info');
+    return synced.kind === 'conflict' ? { ...next, body: `${pullHeadConflictPrompt(n, synced.head, synced.files)}\n\n${next.body}` } : next;
+  }
   #message(error: unknown): string { return this.#c.redactor.text(error instanceof Error ? error.message : String(error)).replace(/\s+/g, ' ').trim(); }
   /** Stopping, concluding (a merge or close), or shutting down: no further step starts. */
   #halted(): boolean { return this.#closed || this.#stopping !== undefined || this.#concluding > 0; }
@@ -463,6 +481,9 @@ export class ThreadRunner {
     // The claimed checkout is the owner's too: no turn runs while it is off main (a branch the owner switched to, P8 review TH-1). The
     // thread rests with its messages, like a turn that waits for its account, and the sweeps start the turn once main is back.
     if (thread.isolation === 'main' && !(await this.#c.main.onMain(project, thread))) { if (!this.#halted()) this.#rest(next, WAITING_FOR_MAIN); return null; }
+    if (FIX_REASONS.includes(next.reason) && thread.isolation === 'worktree' && thread.pr?.state === 'open') {
+      next = await this.#catchUp(project, thread, next); if (this.#halted()) return null; thread = this.#thread();
+    }
     const turn = thread.turns + 1; const ledger = this.#c.ledgers.thread(thread.projectId, thread.id);
     const release = this.#c.enterOperation(this.threadId, thread.title);
     let ran: Ran;

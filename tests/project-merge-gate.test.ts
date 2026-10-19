@@ -12,12 +12,12 @@ const author: ModelOption = { id: 'author', runtime: 'fake', model: 'scripted-mo
 const verifier: ModelOption = { ...author, id: 'verify', runtime: 'fake2', label: 'Verifier' };
 const packet = { schema: 'merge-route-state-v1' as const, title: 'Fix greeting', task: { type: 'fix' as const, needs: [], goal: null }, summary: 'The greeting handles empty names.', riskyAreas: 'Stored data.', files: [{ path: 'greeting.txt', additions: 2, deletions: 1 }], totalSize: 3, corrections: [] };
 function transport(route: string) {
-  const state = { route, fail: false, calls: [] as Array<{ state: string; questions: JevQuestions }> };
+  const state = { route, fail: false, hang: false, calls: [] as Array<{ state: string; questions: JevQuestions }> };
   const fetcher: typeof fetch = async (_url, init) => {
     if ((init?.method ?? 'GET') === 'GET') return Response.json({ models: [{ name: 'jev-latest', description: 'Fixture.', release_date: '2026-01-01' }] });
     const body = JSON.parse(String(init?.body)) as { state: string; questions: JevQuestions };
     const input = JSON.parse(body.state) as { schema: string };
-    if (input.schema === 'merge-route-state-v1') { state.calls.push(body); if (state.fail) return new Response('Unavailable', { status: 503 }); }
+    if (input.schema === 'merge-route-state-v1') { state.calls.push(body); if (state.fail) return new Response('Unavailable', { status: 503 }); if (state.hang) return new Promise<Response>(() => undefined); }
     const answers = Object.fromEntries(Object.entries(body.questions).map(([id, question]) => {
       const keys = question.type === 'choice' ? Object.keys(question.criteria) : [], choice = id === 'merge_route' ? state.route : keys[0]!;
       return [id, { type: 'choice', choice, confidence: 1, probabilities: Object.fromEntries(keys.map(key => [key, key === choice ? 1 : 0])) }];
@@ -115,6 +115,13 @@ test('Jev failure creates an exact-head owner item and the owner can close it', 
   const route = (await routes(f, thread.id))[0]!; expect(route).toMatchObject({ route: 'ask-owner', source: 'unavailable', state: 'asked' });
   const decision = (await f.app.projectHub.decision(route.decisionId!))!.document; expect(decision.options.map(option => option.label)).toEqual(['Merge', 'Send back with a note', 'Close']); expect(decision.merge?.commit).toBe(thread.pr!.headSha);
   const answer = await f.request(`/api/projects/project/decisions/${decision.id}/answer`, 'POST', { schema: 'decision-answer-request-v1', clientRequestId: 'owner_close', optionLabel: 'Close' }); expect(answer.status).toBe(202); expect(f.thread(thread.id).pr?.state).toBe('closed');
+}, 90_000);
+test('a Jev route request that never settles and ignores its abort asks the owner within the decision deadline (fix-051)', async () => {
+  const { f, jev } = await setup(); jev.state.hang = true; const thread = await published(f); await settings(f);
+  const started = Date.now(); await gate(f);
+  expect(Date.now() - started).toBeLessThan(2 * 4000 + 1000 + 5000 + 5000);
+  const route = (await routes(f, thread.id))[0]!; expect(route).toMatchObject({ route: 'ask-owner', source: 'unavailable', state: 'asked' });
+  expect(jev.state.calls).toHaveLength(1);
 }, 90_000);
 test('a changed head refuses its old owner decision and creates a new route', async () => {
   const { f, jev } = await setup('ask-owner'), thread = await published(f); await settings(f); await gate(f); const route = (await routes(f, thread.id))[0]!;

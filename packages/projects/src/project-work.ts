@@ -37,7 +37,7 @@ import {
 import type { StretchBridges, BridgeScopeTools } from '@jevellan/conversations';
 import { bridgeTools, applicationRoot, minimalEnvironment, resolvedPath, stableJson } from '@jevellan/core';
 import { ProjectTools } from './bridge-tools.js';
-import { decideAccount, decideProjectOutcome, JevError, type DecisionClient } from '@jevellan/decisions';
+import { deadlineClient, decideAccount, decideProjectOutcome, type DecisionSource } from '@jevellan/decisions';
 import type { BasicMemory } from '@jevellan/memory';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
 import { Admission } from './admission.js';
@@ -114,7 +114,7 @@ export type ProjectWorkOptions = {
   switchMemory?(projectId: string, mode: Project['memory']['mode'], requestId: string): Promise<Project>;
   settings(): Promise<Configuration['x-jevellan']>; riggingItems(runtime: string, projectId?: string): Promise<RiggingItem[]>;
   /** Jev placement (phase 4). */
-  decisionClient?(): Promise<DecisionClient>;
+  decisionClient?: DecisionSource;
   roster(): Promise<DeviceRoster>;
   enterOperation(id: string, title: string): () => void;
   timers?: Partial<ProjectTimers> | undefined;
@@ -197,7 +197,7 @@ export class ProjectWork {
       chooseAccount: async (request, ranking) => {
         const settings = await o.settings();
         const thread = request.owner.kind === 'thread' ? this.store.get(request.owner.id) : undefined;
-        return decideAccount(o.decisionClient ? await o.decisionClient() : { decide: async () => { throw new JevError('no-key'); } }, {
+        return decideAccount(deadlineClient(o.decisionClient), {
           ranking, model: settings.decisions.model, now: now(), redactor: o.redactor,
           state: JSON.stringify(o.redactor.document({ schema: 'account-route-state-v1', runtime: request.runtime, model: request.model,
             owner: request.owner.kind, title: thread?.title ?? request.modelLabel, task: thread?.task.slice(0, 6000), routingProfile: settings.routingProfile })),
@@ -257,7 +257,9 @@ export class ProjectWork {
     } });
     const worktrees = new ThreadWorktree({ projectEnvironment, git, homes: o.homes, paths: this.paths, redactor: o.redactor, deviceId: o.deviceId, deviceName: o.deviceName });
     this.#github = new ProjectGithub({ github, redactor: o.redactor, now, project: id => this.#project(id),
-      thread: async id => (await o.hub.thread(id))?.document, baseBranch: async project => worktrees.baseBranch(worktrees.repository(project)),
+      // The thread's pull request as this device's tracker last read it from GitHub, which can be newer than the hub's index (fix-051).
+      thread: async id => { const index = (await o.hub.thread(id))?.document, pr = this.store.get(id)?.pr; return index && pr ? { ...index, pr } : index; },
+      baseBranch: async project => worktrees.baseBranch(worktrees.repository(project)),
       repository: async project => parseGitHubRemote(await git.remoteUrl(worktrees.repository(project)) ?? '') });
     const publication = new ThreadPublication({ projectEnvironment, git, homes: o.homes, redactor: o.redactor, github, deviceId: o.deviceId, deviceName: o.deviceName, testTimeoutMs: timers.testTimeoutMs,
       leaseRetryMs: timers.mainLeaseRetryMs, now, ...(o.leases ? { leases: o.leases } : {}), ...(o.ownership ? { ownership: o.ownership } : {}) });
@@ -283,7 +285,8 @@ export class ProjectWork {
         }
         const release = o.enterOperation(`project_request_${event.id}`, 'Interpreting a project request');
         try {
-          const result = await decideProjectOutcome(o.decisionClient, { projectId, eventId: event.id, request: event.text, history, model: (await o.settings()).decisions.model }, signal);
+          // The model read is part of the decision and its deadline (fix-051).
+          const result = await decideProjectOutcome(o.decisionClient, { projectId, eventId: event.id, request: event.text, history, model: async () => (await o.settings()).decisions.model }, signal);
           return writeDocument(file, ProjectRequestOutcomeSchema, result);
         } finally { release(); }
       },
@@ -314,7 +317,7 @@ export class ProjectWork {
       workSettings: id => this.admission.settings(id), client: o.decisionClient });
     this.threads = new ThreadService({ deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, ...(o.workRefusal ? { workRefusal: o.workRefusal } : {}), store: this.store, ledgers: this.ledgers, receipts, hub: o.hub,
       projects: o.projects, admission: this.admission, placement, accounts: o.accounts, transcripts: this.transcripts, delivery, settings: o.settings, now,
-      roster: o.roster, decisions: this.decisions, fallbackCheckMs: timers.fallbackCheckMs, managedQueue: true,
+      roster: o.roster, decisions: this.decisions, fallbackCheckMs: timers.fallbackCheckMs, managedQueue: true, failedJobs: (thread, head) => this.#github.failedJobs(thread, head),
       pullRequestChanged: () => { void this.tracker.poll(); },
       refreshLanding: (projectId, threadId) => this.daily.assertMerge(projectId, threadId),
       queueChanged: projectId => { void this.dispatcher.sweep(projectId).catch(() => undefined); },

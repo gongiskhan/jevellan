@@ -92,7 +92,7 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
     }
     if (((match = /^\/actions\/workflows\/([^/]+)\/runs$/.exec(rest)) || rest === '/actions/runs') && method === 'GET') {
       const runs = workflows.filter(run => run.repo === repo && (!match || run.workflow === decodeURIComponent(match[1]))
-        && ['branch', 'event', 'status'].every(key => !url.searchParams.has(key) || run[key === 'branch' ? 'head_branch' : key] === url.searchParams.get(key))).sort((a, b) => b.id - a.id);
+        && ['branch', 'event', 'status', 'head_sha'].every(key => !url.searchParams.has(key) || run[key === 'branch' ? 'head_branch' : key] === url.searchParams.get(key))).sort((a, b) => b.id - a.id);
       const page = Number(url.searchParams.get('page') ?? '1'), size = Number(url.searchParams.get('per_page') ?? '100');
       return send(response, 200, { workflow_runs: runs.slice((page - 1) * size, page * size).map(workflowView) });
     }

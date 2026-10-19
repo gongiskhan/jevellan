@@ -5,12 +5,12 @@ import {
   type BackgroundDraftRequest, type BackgroundDraftResult, type ImproverJob, type ImproverRequest, type ImproverResult, type ImproverState, type ImproverJobScope, type RoutingGroup, type RoutingImproverLog, type RoutingSuggestionRow,
 } from '@jevellan/core';
 import { HubDatabase, HubIndexes, ImproverJobs, RoutingSuggestions, dueImproverDate } from '@jevellan/mesh';
-import { compareDecisionCases, decisionCaseManifest, judgeRoutingGroup, routingGroups, savedDecisionCases, validateRoutingDraft, type DecisionClient } from '@jevellan/decisions';
+import { deadlineClient, compareDecisionCases, decisionCaseManifest, judgeRoutingGroup, routingGroups, savedDecisionCases, validateRoutingDraft, type DecisionSource } from '@jevellan/decisions';
 import { RoutingRevisions } from './routing-revisions.js';
 import { routingCard, sortCards } from './improver-cards.js';
 
 export type RoutingImproverOptions = {
-  hub: HubDatabase; deviceId: string; ready: Promise<void>; client(): DecisionClient | Promise<DecisionClient>;
+  hub: HubDatabase; deviceId: string; ready: Promise<void>; client: DecisionSource;
   draft(request: BackgroundDraftRequest, signal: AbortSignal): Promise<BackgroundDraftResult>;
   enterOperation(id: string, title: string): () => void;
   evidence: 'live' | 'simulated';
@@ -129,7 +129,7 @@ export class RoutingImprover {
       for (const group of groups) {
         this.#current(job, operation);
         if (pending.has(group.id)) continue;
-        const client = await this.options.client(); this.#current(job, operation);
+        const client = deadlineClient(this.options.client); this.#current(job, operation);
         const snapshot = this.options.hub.configuration.current()!;
         const preference = await judgeRoutingGroup(client, group, snapshot.configuration['x-jevellan'].decisions.model, operation.abort.signal); this.#current(job, operation);
         this.#note(job, { groupId: group.id, stage: 'judged', probability: preference.probability, runId: null, suggestionId: null, note: 'Checked whether the corrections express a consistent preference.' });

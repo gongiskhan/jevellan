@@ -14,7 +14,7 @@ import type { ContextOperations } from './context-operations.js';
 import { ProjectSaves } from './project-saves.js';
 import { rankAccounts, type AccountService } from '@jevellan/accounts';
 import { BasicMemory, ProjectContext } from '@jevellan/memory';
-import { buildDecisionState, decideNext, JevError, jevMetadata, manualFallback, modelCandidates, selectMemory, type DecisionClient } from '@jevellan/decisions';
+import { buildDecisionState, deadlineClient, decideNext, JevError, jevMetadata, manualFallback, modelCandidates, selectMemory, type DecisionClient, type DecisionSource } from '@jevellan/decisions';
 import type { RuntimeAdapter, StretchInput } from '@jevellan/runtime-contract';
 import { actionContract, actionPermissions } from './actions.js';
 import { StretchBridges } from './bridge.js';
@@ -48,7 +48,7 @@ export type ConversationServiceOptions = {
   bridges: StretchBridges; memory: BasicMemory; redactor: SecretRedactor; settings(): Settings | Promise<Settings>;
   riggingItems(runtime: string, projectId?: string): RiggingItem[] | Promise<RiggingItem[]>;
   coordination: CoordinationStore; leases: PublicationLeaseService; indexes: SharedIndexes;
-  decisionClient?(): DecisionClient | Promise<DecisionClient>; jevAvailable?(): boolean | Promise<boolean>; deviceLabel?: string;
+  decisionClient?: DecisionSource; jevAvailable?(): boolean | Promise<boolean>; deviceLabel?: string;
   externalSessions?: ExternalActivityOptions['read'];
   enterOperation?: (id: string, title: string) => () => void;
   accountRuns?: Set<string>;
@@ -772,7 +772,8 @@ export class ConversationService {
   }
   async #choose(work: ConversationWork, workspace: GitWorkspace, operation: Operation, trigger: DecisionRecord['trigger'], forcedAction?: 'integrate'): Promise<PreparedDecision | undefined> {
     const generation = work.load().conversation.generation; const started = Date.now(); const config = (await this.options.settings()); this.#current(work, generation, operation);
-    const calls: JevCall[] = []; const client = (await this.options.decisionClient!()); this.#current(work, generation, operation);
+    // Every Jev call of this decision obtains its client and runs under the shared overall deadline (fix-051).
+    const calls: JevCall[] = []; const client = deadlineClient(this.options.decisionClient!); this.#current(work, generation, operation);
     operation.decisionAbort = new AbortController(); const signal = AbortSignal.any([operation.abort.signal, operation.decisionAbort.signal]);
     try {
       const packet = await this.#decisionState(work, workspace, !!forcedAction); this.#current(work, generation, operation);
@@ -1376,7 +1377,7 @@ export class ConversationService {
         try { packet = (await this.#decisionState(work, workspace, action === 'integrate')).state; }
         catch (error) { if (!(error instanceof JevError)) throw error; }
       }
-      const client = prepared?.client ?? (packet ? (await this.options.decisionClient?.()) : undefined);
+      const client = prepared?.client ?? (packet && this.options.decisionClient ? deadlineClient(this.options.decisionClient) : undefined);
       this.#progress(work, 'memory');
       const recalled = await selectMemory(client ?? { decide: async () => { throw new JevError('no-key'); } }, { notes, action, state: packet ?? '{}', model: config.decisions.model }, operation.decisionAbort ? AbortSignal.any([operation.abort.signal, operation.decisionAbort.signal]) : operation.abort.signal);
       this.#current(work, generation, operation); const recall = recalled.selection;

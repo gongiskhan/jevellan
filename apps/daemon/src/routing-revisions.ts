@@ -5,7 +5,7 @@ import {
   applyRoutingField, exportConfiguration, routingFieldText, stableJson, validateRoutingDraft,
   type BackgroundDraftRequest, type BackgroundDraftResult, type RoutingRevisionRecord, type RoutingRevisionRequest,
 } from '@jevellan/core';
-import { compareDecisionCases, savedDecisionCases, type DecisionClient } from '@jevellan/decisions';
+import { deadlineClient, compareDecisionCases, savedDecisionCases, type DecisionSource } from '@jevellan/decisions';
 import type { HubDatabase, RoutingSuggestions } from '@jevellan/mesh';
 
 const namespace = 'routing-revision-requests';
@@ -13,7 +13,7 @@ const hash = (value: unknown) => createHash('sha256').update(stableJson(value)).
 function conflict(message = 'This suggestion changed. Reload it before revising it.'): never { throw Object.assign(new Error(message), { status: 409 }); }
 type Options = {
   hub: HubDatabase; suggestions: RoutingSuggestions; ready: Promise<void>; evidence: 'live' | 'simulated';
-  client(): DecisionClient | Promise<DecisionClient>;
+  client: DecisionSource;
   draft(request: BackgroundDraftRequest, signal: AbortSignal): Promise<BackgroundDraftResult>;
   enterOperation(id: string, title: string): () => void;
 };
@@ -98,7 +98,7 @@ export class RoutingRevisions {
         draft = validateRoutingDraft(typeof result.content === 'string' ? JSON.parse(result.content) : result.content, configuration, suggestion.group);
         if (stableJson(draft.field) !== stableJson(suggestion.draft.field)) conflict('The revised draft must change the same field.');
       }
-      const client = await this.options.client(); this.#current(record, signal);
+      const client = deadlineClient(this.options.client); this.#current(record, signal);
       const comparison = await compareDecisionCases(client, savedDecisionCases(), configuration,
         applyRoutingField(configuration, draft.field, draft.before, draft.after), this.options.evidence, signal);
       this.#current(record, signal);

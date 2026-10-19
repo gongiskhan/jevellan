@@ -10,7 +10,7 @@ import {
   type MemoryCareState, type MemoryNoteRef, type Project, type ProjectPatch, type ProjectSuggestionInput, type ProjectTask, type ProjectTaskResult, type PublicationLeaseService, type SecretRedactor,
 } from '@jevellan/core';
 import { ConversationLedger, publishWorkspace } from '@jevellan/conversations';
-import { SAME_NOTE_THRESHOLD, STILL_USEFUL_THRESHOLD, WORKING_RULE_THRESHOLD, judgeContextRules, judgeMemoryCare, type DecisionClient } from '@jevellan/decisions';
+import { deadlineClient, SAME_NOTE_THRESHOLD, STILL_USEFUL_THRESHOLD, WORKING_RULE_THRESHOLD, judgeContextRules, judgeMemoryCare, type DecisionSource } from '@jevellan/decisions';
 import {
   careInvolved, careKey, collectMemoryCandidates, mergeClusters, memoryCareCommit, memoryCarePatch, memoryCareResult, noteRef, patchFile, projectPatch, readMemoryFiles, searchOverlapPairs, sha256,
   type ConfirmedCare, type MemoryFile,
@@ -26,7 +26,7 @@ type Options = {
   ownership: CheckoutOwnership; leases: PublicationLeaseService;
   assertOutsideIdle(project: Project, path: string): Promise<void>;
   memory(project: Project): MemoryPort;
-  client(): DecisionClient | Promise<DecisionClient>; jevModel(): Promise<string>;
+  client: DecisionSource; jevModel(): Promise<string>;
   draft(request: BackgroundDraftRequest, signal: AbortSignal): Promise<BackgroundDraftResult>;
   handoffs(projectId: string): string[];
   enterOperation(id: string, title: string): () => void;
@@ -209,7 +209,7 @@ export class ProjectImprover {
     await log('collected', `${candidates.notes.length} notes: ${candidates.pairs.length} possible duplicates, ${candidates.unresolved.length} unresolved, ${candidates.stale.length} stale, ${candidates.brokenLinks.length} broken links.`);
     if (!candidates.pairs.length && !candidates.unresolved.length && !candidates.stale.length && !candidates.brokenLinks.length) return 'Nothing to tidy.';
     const notes = new Map(files.map(file => [file.path, { title: file.title, content: file.content }]));
-    const judgment = await judgeMemoryCare(await this.options.client(), { candidates, notes, project: project.name, handoffs: this.options.handoffs(project.id), model: await this.options.jevModel() }, this.#abort.signal);
+    const judgment = await judgeMemoryCare(deadlineClient(this.options.client), { candidates, notes, project: project.name, handoffs: this.options.handoffs(project.id), model: await this.options.jevModel() }, this.#abort.signal);
     const confirmed: ConfirmedCare = { pairs: judgment.pairs.filter(pair => pair.probability >= SAME_NOTE_THRESHOLD).map(pair => [pair.a, pair.b]),
       stale: judgment.stale.filter(note => note.probability <= STILL_USEFUL_THRESHOLD).map(note => note.path), unresolved: candidates.unresolved, brokenLinks: candidates.brokenLinks };
     await log('judged', `Jev confirmed ${confirmed.pairs.length} duplicate pair${confirmed.pairs.length === 1 ? '' : 's'} and ${confirmed.stale.length} stale note${confirmed.stale.length === 1 ? '' : 's'}.`);
@@ -310,7 +310,7 @@ export class ProjectImprover {
     groups = groups.filter(group => group.length >= 2 && !known.includes(careKey('context', files, group)));
     if (!groups.length) return 'No working rules to suggest.';
     const notes = new Map(files.map(file => [file.path, { title: file.title, content: file.content }]));
-    const judgment = await judgeContextRules(await this.options.client(), { groups, notes, project: project.name, instructions: instruction.content ?? '', model: await this.options.jevModel() }, this.#abort.signal);
+    const judgment = await judgeContextRules(deadlineClient(this.options.client), { groups, notes, project: project.name, instructions: instruction.content ?? '', model: await this.options.jevModel() }, this.#abort.signal);
     const confirmed = judgment.groups.filter(group => group.probability >= WORKING_RULE_THRESHOLD).map(group => group.paths);
     await log('judged', `Jev confirmed ${confirmed.length} working rule${confirmed.length === 1 ? '' : 's'}.`);
     const suggestions: ProjectSuggestionInput[] = [];

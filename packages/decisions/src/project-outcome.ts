@@ -1,6 +1,7 @@
 import { ProjectRequestOutcomeSchema, type ProjectRequestOutcome, type JevCall } from '@jevellan/core';
 import { askJev, type DecisionClient } from './engine.js';
 import { JevError } from './contract.js';
+import { runDecision, type DecisionSource } from './deadline.js';
 
 export const PROJECT_OUTCOMES = {
   answer: 'An explanation or answer is the requested result.',
@@ -10,17 +11,18 @@ export const PROJECT_OUTCOMES = {
   other: 'Another outcome is requested. Preserve the full request and carry it through.',
 } as const;
 
-/** Semantic interpretation belongs to Jev; no keyword routing or inferred command in code. */
-export async function decideProjectOutcome(client: DecisionClient | (() => Promise<DecisionClient>) | undefined, input: { projectId: string; eventId: string; request: string; history: string; model: string }, signal: AbortSignal): Promise<ProjectRequestOutcome> {
+/**
+ * Semantic interpretation belongs to Jev; no keyword routing or inferred command in code. The request outcome is one decision under one overall deadline (fix-051): obtaining the client, the model read, the key and every
+ * attempt. Expiry or any Jev failure leaves meaning to the coordinator (`unavailable`); cancellation propagates.
+ */
+export async function decideProjectOutcome(client: DecisionSource | DecisionClient | undefined, input: { projectId: string; eventId: string; request: string; history: string; model: string | (() => Promise<string>) }, signal: AbortSignal): Promise<ProjectRequestOutcome> {
   const calls: JevCall[] = [];
   const base = { schema: 'project-request-outcome-v1', projectId: input.projectId, eventId: input.eventId, calls, at: new Date().toISOString() };
   try {
-    const ready = typeof client === 'function' ? await client() : client;
-    if (!ready) throw new JevError('no-key');
-    const response = await askJev(ready, { model: input.model, kind: 'action', calls,
+    const response = await runDecision(client, signal, async (ready, inner) => askJev(ready, { model: typeof input.model === 'string' ? input.model : await input.model(), kind: 'action', calls,
       state: JSON.stringify({ rules: { instruction: 'Identify the result the owner expects, using the conversation to resolve references. Preserve their intent. A usable app and passed tests are different outcomes.' },
         conversation: { latestUserMessage: input.request, recent: input.history.slice(-8000) } }),
-      questions: { outcome: { type: 'choice', instructions: 'What result does the owner expect from this request?', criteria: PROJECT_OUTCOMES } } }, signal);
+      questions: { outcome: { type: 'choice', instructions: 'What result does the owner expect from this request?', criteria: PROJECT_OUTCOMES } } }, inner));
     const answer = response?.answers.outcome;
     if (answer?.type !== 'choice') throw new JevError('invalid-response');
     const options = Object.keys(PROJECT_OUTCOMES) as Array<keyof typeof PROJECT_OUTCOMES>;

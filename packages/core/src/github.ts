@@ -131,9 +131,11 @@ export class GitHubClient {
     return this.#arrayPages(page => this.#request('GET', `${repo(repository)}/issues/${pullNumber(number)}/comments?since=${encodeURIComponent(since)}&per_page=100&page=${page}`, shape));
   }
   /** Read-only coordinator awareness. These use the same request path and per-token rate budget as publication and polling. */
-  async recentWorkflowRuns(repository: GitHubRepository, input: Extract<GithubInput, { action: 'runs' }>) {
+  /** `headSha` limits the runs to one commit (a thread's pull request head, fix-051). */
+  async recentWorkflowRuns(repository: GitHubRepository, input: Extract<GithubInput, { action: 'runs' }>, headSha?: string) {
     const query = new URLSearchParams({ per_page: String(input.limit) });
     for (const key of ['branch', 'event', 'status'] as const) if (input[key]) query.set(key, input[key]);
+    if (headSha !== undefined) { if (!sha.test(headSha)) throw new Error('Invalid commit id.'); query.set('head_sha', headSha); }
     const path = input.workflow ? `/actions/workflows/${encodeURIComponent(input.workflow)}/runs` : '/actions/runs';
     return (await this.#request('GET', `${repo(repository)}${path}?${query}`, GitHubWorkflowRunsSchema)).workflow_runs.slice(0, input.limit);
   }

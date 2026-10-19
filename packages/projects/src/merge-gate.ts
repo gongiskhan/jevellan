@@ -1,4 +1,4 @@
-import { decideMergeRoute, type DecisionClient } from '@jevellan/decisions';
+import { decideMergeRoute, type DecisionSource } from '@jevellan/decisions';
 import { MergeCorrectionInputSchema, MergeCorrectionSchema, MergeDocumentsViewSchema, MergeRouteSchema, ProjectDecisionSchema, parseGitHubPullUrl,
   type Configuration, type CoordinatorEvent, type DecisionAnswer, type MergeDocument, type MergeRoute, type Project, type ProjectDecision, type ProjectHub, type ProjectWorkSettings, type SecretRedactor, type Thread } from '@jevellan/core';
 import type { ThreadStore } from './stores.js';
@@ -17,7 +17,7 @@ export class ProjectMergeGate {
   readonly #abort = new AbortController();
   #closed = false;
   constructor(readonly o: { hub: ProjectHub; store: Pick<ThreadStore, 'all' | 'get'> & Partial<Pick<ThreadStore, 'setIndexFields' | 'local'>>; tracker: PullRequestTracker; github: GitHubAccess; verification: PullRequestVerification; deviceId: string; redactor: SecretRedactor; now(): number;
-    settings(projectId: string): Promise<ProjectWorkSettings>; configuration(): Promise<Configuration['x-jevellan']>; decisionClient?(): Promise<DecisionClient>;
+    settings(projectId: string): Promise<ProjectWorkSettings>; configuration(): Promise<Configuration['x-jevellan']>; decisionClient?: DecisionSource;
     project(projectId: string): Promise<Project>; repository(project: Project): string; event(projectId: string, event: CoordinatorEvent): Promise<void>;
     message(projectId: string, threadId: string, text: string, messageId: string): Promise<unknown>; assertMerge(projectId: string, threadId: string): Promise<void> }) {}
   busy() { return this.#active.size > 0 || this.o.verification.busy(); }
@@ -109,8 +109,8 @@ export class ProjectMergeGate {
         files: diff.files.map(({ path, additions, deletions }) => ({ path, additions, deletions })), totalSize: diff.files.reduce((sum, file) => sum + file.additions + file.deletions, 0), corrections };
       const moved = records.filter((row): row is MergeRoute => row.schema === 'merge-route-v1' && row.headMoved === true);
       const failures = Math.min(3, records.filter(row => row.schema === 'verification-run-v1' && row.state === 'failed' && row.report?.result === 'failed' && !row.note).length);
-      let client: DecisionClient | undefined; try { client = await this.o.decisionClient?.(); } catch { /* The documented fallback is ask-owner. */ }
-      const config = await this.o.configuration(), result = await decideMergeRoute(client, packet, config.decisions.model, this.o.redactor, AbortSignal.any([this.#abort.signal, AbortSignal.timeout(config.decisions.timeoutMs)]));
+      // One decision under the shared deadline: the client, the configuration read for the model, the key and every attempt (fix-051).
+      const result = await decideMergeRoute(this.o.decisionClient, packet, async () => (await this.o.configuration()).decisions.model, this.o.redactor, this.#abort.signal);
       if (this.#closed) return;
       route = await this.#save(MergeRouteSchema.parse({ ...result, schema: 'merge-route-v1', id, projectId: thread.projectId, threadId, deviceId: this.o.deviceId, revision: 0, commit, at: new Date(this.o.now()).toISOString(), prNumber: thread.pr.number,
         questionSet: 'm-v1', state: 'waiting', failures, verificationRetries: moved.length ? 1 : 0, decisionId: null, verificationId: null,

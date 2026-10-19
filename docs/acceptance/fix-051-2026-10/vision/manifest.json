@@ -1,0 +1,183 @@
+{
+ "schema": "fix051-vision-manifest-v1",
+ "run": "PAR4 four layouts, vision on, 2026-10-19T03:27:48Z to 03:31:45Z (live judge; simulated product fixture)",
+ "note": "Images captured into the projects-parity phase-4 folder were copied here byte for byte before those tracked files were restored.",
+ "images": [
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/desktop-dark/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-automatic-desktop-dark.json",
+   "capturedAs": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-automatic-desktop-dark.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/par4-judged/PAR4-automatic-desktop-dark.png",
+   "sha256": "19622aa07d48c17c8abb413f1d5276c18ba244e13480d90f786b09ffd80ca305",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 4
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/desktop-dark/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-head-updated-desktop-dark.json",
+   "capturedAs": "docs/acceptance/fix-051-2026-10/screenshots/PAR4-head-updated-desktop-dark.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/PAR4-head-updated-desktop-dark.png",
+   "sha256": "bdd4354fcbdd6eaf29512fa25fe7393afe1da301185dae74b49b3a9228f59bba",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 5
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/desktop-dark/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-limit-desktop-dark.json",
+   "capturedAs": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-limit-desktop-dark.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/par4-judged/PAR4-limit-desktop-dark.png",
+   "sha256": "6f0418a0941d92d00f78ed5c9624fec852f8c44900c47d749c8be95099c42526",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 6
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/desktop-dark/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-owner-request-desktop-dark.json",
+   "capturedAs": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-owner-request-desktop-dark.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/par4-judged/PAR4-owner-request-desktop-dark.png",
+   "sha256": "ba7a3d0fb228f1a84af6de056ff166df6dbe8e71c6f105dbae11a499e9242fad",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 4
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/desktop-light/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-automatic-desktop-light.json",
+   "capturedAs": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-automatic-desktop-light.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/par4-judged/PAR4-automatic-desktop-light.png",
+   "sha256": "500df7dfb8b0be7b91e027a092321ad0a05b3c72d0a508c984e160a97fe65b45",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 3
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/desktop-light/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-head-updated-desktop-light.json",
+   "capturedAs": "docs/acceptance/fix-051-2026-10/screenshots/PAR4-head-updated-desktop-light.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/PAR4-head-updated-desktop-light.png",
+   "sha256": "67fdc5b1d564b93629bee8552bbcb197ae2ff9fca32f7c02487e8a0b3170344a",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 5
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/desktop-light/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-limit-desktop-light.json",
+   "capturedAs": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-limit-desktop-light.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/par4-judged/PAR4-limit-desktop-light.png",
+   "sha256": "e973233785e1fb6b9f8ea7117a9c6bbb60f61ea7bf51b167d3116c298c83c4b9",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 7
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/desktop-light/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-owner-request-desktop-light.json",
+   "capturedAs": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-owner-request-desktop-light.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/par4-judged/PAR4-owner-request-desktop-light.png",
+   "sha256": "a05af7dc5eeae8d5bebc82542414c12bdc3bfbf2c7952b0afe9b8e5634a70d9c",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 3
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/phone-dark/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-automatic-phone-dark.json",
+   "capturedAs": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-automatic-phone-dark.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/par4-judged/PAR4-automatic-phone-dark.png",
+   "sha256": "051540b249dd060a1dd7ce80cfb33b3ef40b9c6de139d0c3a7fe0ce78e526a30",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 2
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/phone-dark/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-head-updated-phone-dark.json",
+   "capturedAs": "docs/acceptance/fix-051-2026-10/screenshots/PAR4-head-updated-phone-dark.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/PAR4-head-updated-phone-dark.png",
+   "sha256": "2afb12d1627535ed77c70ba717e3d35d0ea69852d3198d7c1bf2363796c02933",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 4
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/phone-dark/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-limit-phone-dark.json",
+   "capturedAs": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-limit-phone-dark.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/par4-judged/PAR4-limit-phone-dark.png",
+   "sha256": "3256bfae8fad2af40f7bdc2c3b2584ae6068b4685d2f034c64aa2a260ab9d249",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 6
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/phone-dark/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-owner-request-phone-dark.json",
+   "capturedAs": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-owner-request-phone-dark.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/par4-judged/PAR4-owner-request-phone-dark.png",
+   "sha256": "f08f6c6646545d3b3c913ee662880e860b93275d0c399226183192e948bbe632",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 3
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/phone-light/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-automatic-phone-light.json",
+   "capturedAs": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-automatic-phone-light.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/par4-judged/PAR4-automatic-phone-light.png",
+   "sha256": "8e9d636bf82a1656ef9eccbbc5194fd4e023d0047be37dd8223ef4da7025dd02",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 3
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/phone-light/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-head-updated-phone-light.json",
+   "capturedAs": "docs/acceptance/fix-051-2026-10/screenshots/PAR4-head-updated-phone-light.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/PAR4-head-updated-phone-light.png",
+   "sha256": "e21c60707e286998cb462fd882457ce039f3e9409af4c33c15b6738a4e3da995",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 3
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/phone-light/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-limit-phone-light.json",
+   "capturedAs": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-limit-phone-light.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/par4-judged/PAR4-limit-phone-light.png",
+   "sha256": "49d5854b67770b20e0e0d245e59236e1a390cdaedc4666a4fe5d2c3a2933e191",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 5
+  },
+  {
+   "receipt": "docs/acceptance/fix-051-2026-10/vision/phone-light/par4-automatic-fix-labels-round-limit-and-an-owner-requested-fix--PAR4-owner-request-phone-light.json",
+   "capturedAs": "docs/acceptance/projects-parity-2026-10/phase-4/screenshots/PAR4-owner-request-phone-light.png",
+   "judgedImage": "docs/acceptance/fix-051-2026-10/screenshots/par4-judged/PAR4-owner-request-phone-light.png",
+   "sha256": "6d008442b1eb7382eb0fddc8f5ac42e0b9d4af0ec03850fb2a9877f1965680af",
+   "label": "live",
+   "model": "claude-opus-5-5",
+   "ok": true,
+   "blocking": 0,
+   "cosmetic": 4
+  }
+ ]
+}

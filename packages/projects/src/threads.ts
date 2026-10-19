@@ -116,6 +116,8 @@ export type ThreadServiceOptions = {
   roster(): Promise<DeviceRoster>; decisions: Pick<DecisionItems, 'fallbackFromReports' | 'withdrawThread'> & Partial<Pick<DecisionItems, 'automaticFixLimit' | 'withdraw'>>;
   /** The sweeps check a project's waiting questions at most this often (a new needs-decision report checks at once). */
   fallbackCheckMs: number;
+  /** The failed jobs on a pull request head by run and job id, for the checks fix prompt (fix-051); none when GitHub cannot say. */
+  failedJobs?(thread: Thread, head: string): Promise<ReadonlyArray<{ runId: number; jobId: number; name: string }>>;
   now(): number;
   managedQueue?: boolean;
   queueChanged?(projectId: string): void;
@@ -600,11 +602,16 @@ export class ThreadService {
         if (questionId) await this.#o.decisions.withdraw?.(projectId, questionId);
         const reason = input.action === 'publish' ? 'publish' : input.action === 'fix-checks' ? 'checks' : input.action === 'resolve-conflicts' ? 'conflict' : 'comments';
         const comments = reason === 'comments' ? this.#o.store.local(thread.id).prComments?.items.slice(0, 15) ?? [] : [];
-        const body = reason === 'comments' ? commentsFixPrompt(thread.pr!.number, comments) : reason === 'publish' ? PUBLISH_REQUESTED : reason === 'checks' ? checksFixPrompt(thread.pr!.number, thread.pr!.headSha, thread.pr!.failedChecks ?? []) : conflictFixPrompt(thread.pr!.number, thread.baseBranch);
+        const jobs = reason === 'checks' ? await this.#failedJobs(thread) : [];
+        const body = reason === 'comments' ? commentsFixPrompt(thread.pr!.number, comments) : reason === 'publish' ? PUBLISH_REQUESTED : reason === 'checks' ? checksFixPrompt(thread.pr!.number, thread.pr!.headSha, thread.pr!.failedChecks ?? [], jobs) : conflictFixPrompt(thread.pr!.number, thread.baseBranch);
         await runner.requestTurn(reason, body, comments.map(row => row.id), { id: input.clientRequestId, digest });
       }
       writeDocument(path, ThreadActionReceiptSchema, { ...receipt, applied: true });
     });
+  }
+  async #failedJobs(thread: Thread): Promise<ReadonlyArray<{ runId: number; jobId: number; name: string }>> {
+    if (!thread.pr || !this.#o.failedJobs) return [];
+    try { return await this.#o.failedJobs(thread, thread.pr.headSha); } catch { return []; }
   }
   async automaticFix(threadId: string, kind: PrAutoFixKind): Promise<boolean> {
     const projectId = this.#o.store.get(threadId)!.projectId;
@@ -615,7 +622,8 @@ export class ThreadService {
       const comments = kind === 'comments' ? local.prComments?.items.slice(0, 15) ?? [] : [];
       if (kind === 'checks' && (thread.pr.checks !== 'failing' || state.handledHead.checks === thread.pr.headSha) || kind === 'conflicts' && (thread.pr.mergeable !== 'conflict' || state.handledHead.conflict === thread.pr.headSha) || kind === 'comments' && (!comments.length || this.#o.now() - Math.max(...(local.prComments?.items ?? []).map(row => Date.parse(row.at))) < 120_000)) return false;
       const reason = kind === 'conflicts' ? 'conflict' : kind;
-      const body = kind === 'comments' ? commentsFixPrompt(thread.pr.number, comments) : kind === 'checks' ? checksFixPrompt(thread.pr.number, thread.pr.headSha, thread.pr.failedChecks ?? []) : conflictFixPrompt(thread.pr.number, thread.baseBranch);
+      const jobs = kind === 'checks' ? await this.#failedJobs(thread) : [];
+      const body = kind === 'comments' ? commentsFixPrompt(thread.pr.number, comments) : kind === 'checks' ? checksFixPrompt(thread.pr.number, thread.pr.headSha, thread.pr.failedChecks ?? [], jobs) : conflictFixPrompt(thread.pr.number, thread.baseBranch);
       await runner.requestTurn(reason, body, comments.map(row => row.id), undefined,
         { by: 'automatic', id: newId('pfix', this.#o.now()), kind, round: state.rounds + 1, maxRounds: settings.prAutoFix.maxRounds });
       return true;

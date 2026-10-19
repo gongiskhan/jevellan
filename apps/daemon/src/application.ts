@@ -19,7 +19,7 @@ import { migrateContextOperations } from './context-migration.js';
 import { BasicMemory, HubMemoryStore, ProjectVault, remoteHubMemory, vaultFolder, type VaultRemote } from '@jevellan/memory';
 import { ProjectMemoryRequestSchema, type ProjectMemoryRequest } from '@jevellan/core';
 import { memoryImportBatches } from '@jevellan/memory';
-import { JevClient, JevError } from '@jevellan/decisions';
+import { DEFAULT_DECISION_TIMEOUT_MS, JevClient, JevError, decisionDeadlineMs } from '@jevellan/decisions';
 import { createRuntime as createClaude } from '@jevellan/runtime-claude';
 import { createRuntime as createCodex, prepareApiKey } from '@jevellan/runtime-codex';
 import type { RuntimeAdapter, RuntimeContext } from '@jevellan/runtime-contract';
@@ -42,6 +42,7 @@ export type ApplicationOptions = { pushSend?: PushSend; homes?: Homes; port?: nu
 export class Application {
   #closing: Promise<void> | undefined;
   #configurationRevision = 0;
+  #decisionTimeoutMs = DEFAULT_DECISION_TIMEOUT_MS;
   #riggingQueue: Promise<unknown> = Promise.resolve();
   readonly #ownership: DaemonOwnership;
   readonly lifecycle: LifecycleGate;
@@ -69,7 +70,7 @@ export class Application {
   readonly projectVisibility: ProjectVisibility;
   readonly state: HubState | MemberState;
   readonly riggingDisk: RiggingDisk;
-  readonly decisionClient: () => Promise<JevClient>;
+  readonly decisionClient: (() => Promise<JevClient>) & { deadlineMs(): number };
   readonly runtimes: ReadonlyMap<string, RuntimeAdapter>;
   readonly sessions: ExternalSessionSensor;
   readonly cursor: CursorSessions;
@@ -153,7 +154,10 @@ export class Application {
         ...(!options.runtimes ? { prepare: async (account) => { if (account.account.runtime === 'codex' && account.account.kind === 'api-key') await prepareApiKey(account, context); } } : {}),
         ...(options.timers === undefined ? {} : { timers: options.timers }),
       });
-      this.decisionClient = async () => new JevClient({ key: () => this.state.jev.credential(), timeoutMs: (await this.configuration()).configuration['x-jevellan'].decisions.timeoutMs, ...(options.decisionFetch ? { fetch: options.decisionFetch } : {}) });
+      // Decisions read the configuration (the per-attempt timeout) and the key when they ask; the overall deadline uses the last timeout
+      // read, so a configuration read that never settles is bounded too (fix-051).
+      this.decisionClient = Object.assign(async () => new JevClient({ key: () => this.state.jev.credential(), timeoutMs: (await this.configuration()).configuration['x-jevellan'].decisions.timeoutMs, ...(options.decisionFetch ? { fetch: options.decisionFetch } : {}) }),
+        { deadlineMs: () => decisionDeadlineMs(this.#decisionTimeoutMs) });
       const accountRuns = new Set<string>();
       const leases = this.member ? new MemberPublicationLeases(this.member) : new HubPublicationLeases(this.hub, this.device.deviceId);
       this.conversations = new ConversationService({ homes: this.homes, contexts, projects: this.state.projects, deviceId: this.device.deviceId, accounts: this.accounts, runtimes: this.runtimes,
@@ -322,7 +326,8 @@ export class Application {
       const revision = await this.state.configuration.current();
       if (this.#closing) throw Object.assign(new Error('Jevellan is stopping.'), { status: 503 });
       if (revision.revision < this.#configurationRevision) continue;
-      const materialised = materialiseConfiguration(this.homes, revision); this.#configurationRevision = revision.revision; return materialised;
+      const materialised = materialiseConfiguration(this.homes, revision); this.#configurationRevision = revision.revision;
+      this.#decisionTimeoutMs = materialised.configuration['x-jevellan'].decisions.timeoutMs; return materialised;
     }
     throw Object.assign(new Error('Settings changed while loading. Reload the latest version.'), { status: 409 });
   }

@@ -8,6 +8,8 @@ export const firstLine = (text: string): string => text.split('\n').find((line) 
 export const GIT_NETWORK_TIMEOUT_MS = 120_000;
 export const THREAD_REF_PREFIX = 'refs/jevellan/threads/';
 export const threadBaseRef = (threadId: string): string => `${THREAD_REF_PREFIX}${threadId}/base`;
+/** The pull request head as last fetched for a fix turn (fix-051). */
+export const threadPullHeadRef = (threadId: string): string => `${THREAD_REF_PREFIX}${threadId}/pull-head`;
 
 /**
  * Git for thread worktrees and publication. Mirrors `GitWorkspace.#git` (no pager, the device Git settings environment
@@ -62,6 +64,14 @@ export class ThreadGit {
     await this.run(repo, ['fetch', '--refmap=', '--no-write-fetch-head', '--no-tags', 'origin', `refs/heads/${base}:${ref}`], { timeoutMs: GIT_NETWORK_TIMEOUT_MS, ...(signal ? { signal } : {}) });
     const sha = await this.resolve(repo, ref);
     if (!sha) throw new Error('The fetched base branch could not be read.');
+    return sha;
+  }
+  /** A pull request's current head on GitHub (`refs/pull/<n>/head`), into a private thread ref like `fetchPrivate`. */
+  async fetchPullHead(repo: string, number: number, ref: string, signal?: AbortSignal): Promise<string> {
+    if (!ref.startsWith(THREAD_REF_PREFIX) || !Number.isSafeInteger(number) || number < 1) throw new Error('Thread fetches write only private thread refs.');
+    await this.run(repo, ['fetch', '--refmap=', '--no-write-fetch-head', '--no-tags', 'origin', `+refs/pull/${number}/head:${ref}`], { timeoutMs: GIT_NETWORK_TIMEOUT_MS, ...(signal ? { signal } : {}) });
+    const sha = await this.resolve(repo, ref);
+    if (!sha) throw new Error('The fetched pull request head could not be read.');
     return sha;
   }
 }
