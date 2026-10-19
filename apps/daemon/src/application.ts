@@ -1,3 +1,4 @@
+import { CleanupService } from '@jevellan/core';
 import { ProjectHealthRequestSchema, ProjectHealthRunSchema, ProjectHealthViewSchema, type ProjectHealthRequest, type ProjectHealthRun } from '@jevellan/core';
 import { runHealthCheck } from '@jevellan/projects';
 import { ProjectLibraryService } from './library.js';
@@ -67,7 +68,7 @@ export class Application {
   readonly ekoa: EkoaMirrorService | undefined;
   readonly library: ProjectLibraryService;
   readonly notifications: HubNotifications | undefined;
-  readonly projectWork: ProjectWork; readonly projectHub: ProjectHub;
+  readonly cleanup: CleanupService; readonly projectWork: ProjectWork; readonly projectHub: ProjectHub;
   readonly terminals: TerminalService;
   readonly projectVisibility: ProjectVisibility;
   readonly state: HubState | MemberState;
@@ -192,6 +193,10 @@ export class Application {
         decisionClient: this.decisionClient, roster: () => this.roster(),
         enterOperation: (id, title) => this.lifecycle.enter({ kind: 'conversation', id, title }),
         timers: { periodic: options.timers !== false, ...options.projectTimers } });
+      this.cleanup = new CleanupService({ homes: this.homes, deviceId: this.device.deviceId,
+        settings: async () => (await this.configuration()).configuration['x-jevellan'].cleanup, inventory: () => this.projectWork.cleanupInventory.items(),
+        protectedPaths: async () => (await this.roster()).devices.find(row => row.device.id === this.device.deviceId)?.device.protectedPaths ?? [],
+        maintenance: () => this.projectWork.jobs.busy() ? null : this.lifecycle.tryMaintenance(), ...(options.deviceFacts ? { freeBytes: () => options.deviceFacts!().freeDiskBytes } : {}) });
       this.terminals = new TerminalService(this, { ...options.terminalOptions, timers: options.timers !== false });
       this.notifications = this.#hub ? new HubNotifications(this.hub, () => this.device.url, options.pushSend) : undefined;
       this.ekoa = this.#hub ? new EkoaMirrorService(this.hub, () => this.device.url, options.ekoaConnector) : undefined;
@@ -214,7 +219,7 @@ export class Application {
         client: this.decisionClient, jevModel: async () => (await this.configuration()).configuration['x-jevellan'].decisions.model,
         draft: (request, signal) => this.backgroundDrafts.run(request, signal), handoffs: projectId => this.conversations.recentHandoffSummaries(projectId),
         enterOperation: (id, title) => this.lifecycle.enter({ kind: 'settings', id, title }), pollMs: this.member ? 15_000 : 60_000 });
-      this.presence = new DevicePresence({ deviceId: this.device.deviceId, version: this.version, sensor: this.sessions,
+      this.presence = new DevicePresence({ cleanup: () => { const run = this.cleanup.state().lastRun; return run ? { schema: 'cleanup-summary-v1', endedAt: run.endedAt, freedBytes: run.freedBytes, removed: run.removed, protected: run.protected, freeBytes: run.freeBytes, state: run.state, ...(run.reason ? { reason: run.reason } : {}) } : null; }, deviceId: this.device.deviceId, version: this.version, sensor: this.sessions,
         facts: () => options.deviceFacts?.() ?? collectDeviceFacts(this.homes, this.projectWork.runningThreads(), this.projectWork.jobs.runningIds()),
         workPolicy: () => ({ schema: 'device-work-policy-v1', mode: deviceAllowsWork(this.homes) ? 'work' : 'apps-only' }),
         projects: async () => (await this.state.projects.list()).map(row => row.project), running: () => this.conversations.localRunning(),
@@ -276,7 +281,7 @@ export class Application {
   bindDaemonUrl(url: string): void {
     this.conversations.daemonUrl = url; this.backgroundDrafts.daemonUrl = url;
     // Thread turns need the bridge URL; queued work may start from here. Its periodic loops follow `timers` on their own.
-    if (this.#improverTimers) { this.ekoa?.start(); this.notifications?.start(); }
+    if (this.#improverTimers) { this.ekoa?.start(); this.notifications?.start(); this.cleanup.start(); }
     this.projectWork.daemonUrl = url; this.projectWork.start();
     if (this.#improverTimers) { this.routingImprover?.start(); this.projectImprover.start(); }
   }
@@ -411,6 +416,7 @@ export class Application {
   }
   close(): Promise<void> { return this.#closing ??= (async () => {
     const failures: unknown[] = [];
+    try { await this.cleanup.close(); } catch (error) { failures.push(error); }
     try { await this.settingsSync.close(); await this.#riggingQueue.catch(() => undefined); } catch (error) { failures.push(error); }
     try { await this.notifications?.close(); } catch (error) { failures.push(error); }
     try { await this.ekoa?.close(); } catch (error) { failures.push(error); }

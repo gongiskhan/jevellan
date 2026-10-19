@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  ConfigurationSchema, Homes, ImproverSettingsSchema, LegacyConfigurationSchema, defaultImproverSettings,
+  defaultCleanupSettings, ConfigurationSchema, Homes, ImproverSettingsSchema, LegacyConfigurationSchema, defaultImproverSettings,
   exportConfiguration, parseConfiguration, seedConfiguration, stableJson,
 } from '../packages/core/dist/index.js';
 import { HubDatabase } from '../packages/mesh/dist/index.js';
@@ -19,7 +19,7 @@ afterEach(() => { hub.close(); rmSync(root, { recursive: true, force: true }); }
 
 function legacyConfiguration() {
   const current = seedConfiguration(); const settings: Record<string, unknown> = { ...current['x-jevellan'], schema: 1 };
-  delete settings.improver;
+  delete settings.improver; delete settings.cleanup;
   return LegacyConfigurationSchema.parse({ ...current, 'x-jevellan': settings });
 }
 function saveLegacy() {
@@ -36,7 +36,7 @@ test('version one gains only versioned improver defaults and cannot silently con
   const legacy = legacyConfiguration(); legacy['x-jevellan'].guards.pauseAfterPlan = false;
   legacy['x-jevellan'].menu[0]!.description = 'Keep this model description.';
   const upgraded = ConfigurationSchema.parse(legacy);
-  expect(upgraded).toEqual({ ...legacy, 'x-jevellan': { ...legacy['x-jevellan'], schema: 2, improver: defaultImproverSettings() } });
+  expect(upgraded).toEqual({ ...legacy, 'x-jevellan': { ...legacy['x-jevellan'], schema: 2, cleanup: defaultCleanupSettings(), improver: defaultImproverSettings() } });
   expect(upgraded['x-jevellan'].improver).toMatchObject({ schedule: { enabled: true, time: '03:00' }, routing: { mode: 'suggest' }, context: { mode: 'suggest' }, memory: { mode: 'apply-and-tell', projects: {} } });
   expect(ConfigurationSchema.safeParse({ ...legacy, 'x-jevellan': { ...legacy['x-jevellan'], improver: defaultImproverSettings() } }).success).toBe(false);
   const independent = defaultImproverSettings(); independent.memory.projects.project = false;
@@ -91,4 +91,18 @@ test('a mismatched legacy receipt is not treated as a successfully saved request
   hub.db.prepare('UPDATE configuration_requests SET document=?').run(JSON.stringify({ ...receipt, fingerprint: '0'.repeat(64) }));
   expect(() => hub.configuration.put(configuration, 0, author, undefined, receipt.id)).toThrow('Settings changed elsewhere');
   expect(hub.configuration.history()).toHaveLength(1);
+});
+
+test('a lost pre-cleanup version-two save reply recovers after defaults are added', () => {
+  const current = seedConfiguration(), { cleanup: _cleanup, ...settings } = current['x-jevellan']; void _cleanup;
+  const configuration = { ...current, 'x-jevellan': settings };
+  const revision = { schema: 'config-revision-v1', revision: 1, configuration, changedBy: author, at: '2026-10-18T12:00:00.000Z' };
+  const receipt = { schema: 'configuration-request-v1', id: 'before_cleanup', deviceId: author.deviceId,
+    fingerprint: createHash('sha256').update(stableJson({ configuration, expectedRevision: 0, changedBy: author })).digest('hex'), revision: 1 };
+  hub.db.prepare('INSERT INTO configuration_revisions(revision,document) VALUES(?,?)').run(1, JSON.stringify(revision));
+  hub.db.prepare('INSERT INTO configuration_requests(device_id,request_id,document) VALUES(?,?,?)').run(author.deviceId, receipt.id, JSON.stringify(receipt));
+  const recovered = hub.configuration.put(configuration, 0, author, undefined, receipt.id);
+  expect(recovered.revision).toBe(1); expect(recovered.configuration['x-jevellan'].cleanup.freeDiskFloorGb).toBe(50);
+  expect(hub.configuration.history()).toHaveLength(1);
+  expect(() => hub.configuration.put({ ...configuration, 'x-jevellan': { ...settings, cleanup: { ...recovered.configuration['x-jevellan'].cleanup, freeDiskFloorGb: 51 } } }, 0, author, undefined, receipt.id)).toThrow('Settings changed elsewhere');
 });

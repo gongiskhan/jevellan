@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { DeviceRosterSchema, MergeDocumentsViewSchema, ProjectJobRunListViewSchema, ProjectDeployViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
+import { CleanupStateSchema, DeviceRosterSchema, MergeDocumentsViewSchema, ProjectJobRunListViewSchema, ProjectDeployViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
@@ -2544,4 +2544,22 @@ test('WG6 coordinator session settings and durable save', async ({ page }, info)
   await expect(page.getByText('I saved the current work for the next session.', { exact: true })).toBeVisible(LONG);
   await page.screenshot({ path: info.outputPath(`coordinator-saved-work-${layout(info)}.png`) });
   expect(errors).toEqual([]);
+});
+
+test('WG7 cleanup settings and per-device Clean now receipt', async ({ page }, info) => {
+  const errors = await begin(page); const seed = await control('/projects/cleanup-seed', { schema: 'fixture-cleanup-seed-v1' }) as { deviceName: string; deviceId: string };
+  await page.goto('/settings/cleanup'); await expect(page.getByRole('heading', { name: 'Cleanup', exact: true })).toBeVisible();
+  const keep = page.getByRole('spinbutton', { name: 'Job logs and daemon logs: Keep for (days)', exact: true }); await keep.fill('15');
+  await page.getByRole('button', { name: 'Save cleanup settings', exact: true }).click(); await expect(page.getByText('Settings saved.', { exact: true })).toBeVisible(); await page.reload(); await expect(keep).toHaveValue('15');
+  await expect(page.getByRole('spinbutton', { name: 'Keep at least (GB) free', exact: true })).toHaveValue('50');
+  await page.screenshot({ path: info.outputPath(`cleanup-settings-${layout(info)}.png`), fullPage: true });
+  const local = page.locator('section.card').filter({ has: page.getByRole('heading', { name: seed.deviceName, exact: true }) });
+  const clean = local.getByRole('button', { name: 'Clean now', exact: true });
+  await expect.poll(async () => {
+    await clean.click(); await expect(clean).toBeEnabled();
+    const state = CleanupStateSchema.parse(await read(page, `/api/devices/${seed.deviceId}/cleanup`));
+    return state.lastRun?.state === 'completed' ? state.lastRun.removed : -1;
+  }, { timeout: 60000, intervals: [1000, 2000, 3000] }).toBe(1);
+  await expect(local.getByText(/^Last run: freed /)).toBeVisible(LONG); await expect(local.getByText(/^1 removed/)).toBeVisible();
+  await local.scrollIntoViewIfNeeded(); await page.screenshot({ path: info.outputPath(`cleanup-last-run-${layout(info)}.png`) }); expect(errors).toEqual([]);
 });

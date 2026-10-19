@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { cpus, freemem } from 'node:os';
-import { HeartbeatSchema, gitEnvironment, resolveProjectPath, type Heartbeat, type Project, type DeviceFacts } from '@jevellan/core';
+import { HeartbeatSchema, gitEnvironment, resolveProjectPath, type CleanupSummary, type Heartbeat, type Project, type DeviceFacts } from '@jevellan/core';
 import type { ExternalSessionSensor } from './sessions.js';
 import { HEARTBEAT_INTERVAL_MS } from './devices.js';
 
@@ -36,6 +36,7 @@ export type DevicePresenceOptions = {
   projects(): Promise<Project[]>; running(): string[]; report(heartbeat: Heartbeat): Promise<unknown> | unknown;
   ready?: Promise<void>; timers?: boolean; now?: () => number;
   workPolicy?(): NonNullable<Heartbeat['workPolicy']>;
+  cleanup?(): CleanupSummary | null;
   facts?(): DeviceFacts;
 };
 /** Failure to report presence cannot stop a runtime. There is one in-flight
@@ -65,8 +66,9 @@ export class DevicePresence {
       checkouts.push(...batch.filter((value): value is Heartbeat['projects'][number] => !!value)); if (this.#closed) return null;
     }
     const cpu = cpuTimes(); const total = cpu.total - this.#cpu.total; const idle = cpu.idle - this.#cpu.idle; this.#cpu = cpu;
+    const cleanup = this.options.cleanup?.();
     const heartbeat = HeartbeatSchema.parse({ schema: 'heartbeat-v1', deviceId: this.options.deviceId, version: this.options.version, at: new Date((this.options.now ?? Date.now)()).toISOString(),
-      runningConversations: this.options.running(), projects: checkouts, externalSessions: sessions.sessions,
+      ...(cleanup ? { lastCleanup: cleanup } : {}), runningConversations: this.options.running(), projects: checkouts, externalSessions: sessions.sessions,
       ...(this.options.workPolicy ? { workPolicy: this.options.workPolicy() } : {}),
       ...(this.options.facts ? { facts: this.options.facts() } : {}),
       load: { cpuPct: total > 0 ? Math.max(0, Math.min(100, 100 * (1 - idle / total))) : 0, memFreeMb: freemem() / 1024 / 1024 } });

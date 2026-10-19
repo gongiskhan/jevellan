@@ -1,3 +1,4 @@
+import { CleanupPage } from './cleanup.js';
 import { NotificationsPage } from './notifications.js';
 import { NOTIFICATIONS_TITLE } from './project-work-copy.js';
 import { EkoaPage } from './ekoa.js';
@@ -57,6 +58,7 @@ const settingsPages = [
   ['git', 'Git', 'git'],
   ['ekoa', 'Ekoa', 'projects'],
   ['agents', 'Agents', 'agents'],
+  ['cleanup', 'Cleanup', 'configuration'],
   ['configuration', 'Configuration', 'configuration'],
   ['about', 'About', 'about'],
 ] as const satisfies ReadonlyArray<readonly [string, string, IconName]>;
@@ -399,6 +401,8 @@ function App() {
       <DecisionsPage {...props} key={data.config.revision} />
     ) : currentPage === 'improver' ? (
       <ImproverPage {...props} monitor={improver} />
+    ) : currentPage === 'cleanup' ? (
+      <CleanupPage {...props} key={data.config.revision} />
     ) : currentPage === 'devices' ? (
       <DevicesPage {...props} />
     ) : currentPage === 'configuration' ? (

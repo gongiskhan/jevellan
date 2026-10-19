@@ -1,3 +1,4 @@
+import { DEVICE_CLEANUP_ROUTE, handleDeviceCleanup } from './device-cleanup-api.js';
 import { ProjectEnvImportRequestSchema } from '@jevellan/core';
 import { healthRefusal } from '@jevellan/core';
 import { handleLibrary } from './library-api.js';
@@ -63,7 +64,8 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     const secureCookies = options.secureCookies ?? secureRequest;
     const path = url.pathname; const method = request.method ?? 'GET'; const token = sessionFromCookie(request.headers.cookie);
     // Project hub requests enter the gate in their route once the operation is known: reads are admitted like GET (D247).
-    if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path) && !DEVICE_WORKTREES_ROUTE.test(path) && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
+    if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path) && !DEVICE_WORKTREES_ROUTE.test(path) && !DEVICE_CLEANUP_ROUTE.test(path) && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
+    if (path.startsWith('/api/mesh/devices/') && await handleDeviceCleanup(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/devices/') && await handleDeviceWorktrees(app, request, response, url)) return;
     if (path === '/api/agent-peer') { await handleAgentPeer(app, request, response); return; }
     if (await handleOwnerRequest(app, request, response, url)) return;
@@ -93,6 +95,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       if (await handleNotificationsApi(app, request, response, url, token!)) return;
     }
     if (await handleTerminalApi(app, request, response, url, token!)) return;
+    if (await handleDeviceCleanup(app, request, response, url, token)) return;
     if (await handleDeviceWorktrees(app, request, response, url, token)) return;
     retryable = method === 'GET' && !path.startsWith('/api/logins/');
     if (method === 'POST' && ['/hub/devices/invitations', '/api/devices/switch'].includes(path)) retryable = true;

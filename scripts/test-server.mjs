@@ -803,6 +803,7 @@ const correction = (group, n, action, from, to) => {
 };
 for (const n of [1, 2, 3]) { correction('implement', n, 'implement', 'claude-fable', 'codex-gpt'); correction('review', n, 'review', 'claude-fable', 'claude-opus'); }
 // Projects control (design 5.5 item 9), on the same listener: POST routes; every body is a versioned fixture document (pulse has none).
+const ControlCleanupSchema = z.strictObject({ schema: z.literal('fixture-cleanup-seed-v1') });
 const ControlClockSchema = z.strictObject({ schema: z.literal('fixture-project-clock-v1'), advanceMinutes: z.number().int().min(0).max(1440), reset: z.boolean().default(false) });
 const ControlEkoaSchema = z.strictObject({ schema: z.literal('fixture-ekoa-loop-v1'), action: z.enum(['prepare', 'answer', 'approve', 'ask-owner', 'merge', 'tick', 'list']) });
 const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-control-v1'), action: z.enum(['prepare', 'prepare-late', 'reset', 'open', 'pass', 'fail', 'retired']) });
@@ -830,7 +831,11 @@ async function projectControl(request, response) {
   const parse = (schema) => { const parsed = schema.safeParse(body); if (!parsed.success) send(400, { message: parsed.error.issues.map((issue) => issue.message).join(' ') }); return parsed.success ? parsed.data : undefined; };
   const pull = /^\/projects\/github\/(\d+)$/.exec(request.url);
   let input;
-  if (request.url === '/projects/notifications' && (input = parse(ControlNotificationsSchema))) {
+  if (request.url === '/projects/cleanup-seed' && (input = parse(ControlCleanupSchema))) {
+    const file = join(application.homes.ensure('logs'), 'expired-cleanup.log'); writeFileSync(file, 'Expired fixture log.\n'.repeat(100));
+    const old = new Date(Date.now() - 20 * 86400000); utimesSync(file, old, old);
+    send(200, { schema: 'fixture-cleanup-seeded-v1', deviceId: application.device.deviceId, deviceName: application.device.name });
+  } else if (request.url === '/projects/notifications' && (input = parse(ControlNotificationsSchema))) {
     if (input.action === 'question') await application.projectWork.decisions.ask('projects_fixture', { question: 'Which screenshot should we keep?', options: [{ label: 'Desktop' }, { label: 'Phone' }] }, 'coordinator', 'par6_question');
     await application.notifications.sweep(); send(200, { schema: 'fixture-notifications-receipt-v1', sent: pushedNotifications }); return;
   }

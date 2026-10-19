@@ -21,7 +21,7 @@ function inspect(path: string) {
 /** Cleanup is called with the daemon's exclusive maintenance lock, so no admitted work can start between recheck and removal. */
 export class WorktreeDiskService {
   constructor(readonly o: { homes: Homes; git: ThreadGit; deviceId: string; ownership(): Promise<Ownership[]>; now?(): number; activePaths?(): Promise<string[]> }) {}
-  async #activePaths() {
+  async activePaths() {
     if (this.o.activePaths) return this.o.activePaths();
     // Read cwd only, never process arguments or environments. A failed probe cannot prove a tree idle.
     const result = await runOwnedCommand('lsof', ['-F', 'pn', '-d', 'cwd'], { cwd: this.o.homes.root, env: { PATH: process.env.PATH ?? '/usr/bin:/bin:/usr/sbin' }, timeoutMs: 10_000, outputLimitBytes: 8 * 1024 * 1024 });
@@ -83,7 +83,7 @@ export class WorktreeDiskService {
       return row;
     });
     const owners = await this.o.ownership();
-    const active = await this.#activePaths();
+    const active = await this.activePaths();
     for (const row of selected) {
       const owner = owners.find(owner => owner.project.id === row.projectId);
       if (!owner || owner.retained.has(`${row.kind}:${row.id}`) || this.#processReceipts(row.projectId)) throw fail('Work now retains this worktree. Inspect again before removing it.');

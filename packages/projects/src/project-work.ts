@@ -1,3 +1,4 @@
+import { ProjectCleanupInventory } from './cleanup.js';
 import { ProjectDeployService } from './deploy.js';
 import { setupProposalId } from './setup.js';
 import { SETUP_ALREADY_PROPOSED } from './copy.js';
@@ -150,6 +151,7 @@ export class ProjectWork {
   readonly deploys: ProjectDeployService;
   readonly mergeGate: ProjectMergeGate; readonly landings: ThreadLandingService;
   readonly disk: WorktreeDiskService;
+  readonly cleanupInventory: ProjectCleanupInventory;
   /** Mail and reservations between main threads (brief 5.11, 7.2). */
   readonly mail: MailService;
   readonly usage: ProjectUsage;
@@ -261,6 +263,8 @@ export class ProjectWork {
       }
       return owners;
     } });
+    this.cleanupInventory = new ProjectCleanupInventory({ homes: o.homes, deviceId: o.deviceId, git, hub: o.hub,
+      projects: async () => (await o.projects.list()).map(row => row.project), threads: () => this.paths.projectIds().flatMap(id => this.store.list(id)), thread: id => this.store.get(id), local: id => this.store.local(id), activePaths: () => this.disk.activePaths() });
     const validateBranch = async (project: Project, branch: string) => {
       const repo = resolveProjectPath(project, o.deviceId, o.deviceName);
       const valid = await git.run(repo, ['check-ref-format', '--branch', branch], { permitted: [1, 128] });

@@ -66,3 +66,5 @@ export * from './environment-inventory.js';
 export * from './landing.js';
 
 export * from './deploy.js';
+
+export * from './cleanup.js';

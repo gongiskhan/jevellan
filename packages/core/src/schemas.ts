@@ -1,3 +1,4 @@
+import { CleanupSettingsSchema, defaultCleanupSettings } from './cleanup-settings-schemas.js';
 import { z } from 'zod';
 import { RiggingBundleSchema } from './rigging-bundle-schemas.js';
 
@@ -51,9 +52,8 @@ const SettingsFields = {
   menu: ModelMenuSchema, effortGuide: z.record(EffortSchema, text), routingProfile: text, guards: GuardsSchema,
 };
 export const LegacyConfigurationSchema = z.strictObject({ ...ConfigurationFields, 'x-jevellan': z.strictObject({ schema: z.literal(1), ...SettingsFields }) });
-const CurrentConfigurationSchema = z.strictObject({
-  ...ConfigurationFields, 'x-jevellan': z.strictObject({ schema: z.literal(2), ...SettingsFields, improver: ImproverSettingsSchema }),
-}).superRefine((value, ctx) => {
+export const PreCleanupConfigurationSchema = z.strictObject({ ...ConfigurationFields, 'x-jevellan': z.strictObject({ schema: z.literal(2), ...SettingsFields, improver: ImproverSettingsSchema }) });
+const CurrentConfigurationSchema = PreCleanupConfigurationSchema.extend({ 'x-jevellan': PreCleanupConfigurationSchema.shape['x-jevellan'].extend({ cleanup: CleanupSettingsSchema.default(defaultCleanupSettings) }) }).superRefine((value, ctx) => {
   const ids = value['x-jevellan'].menu.map((model) => model.id);
   if (new Set(ids).size !== ids.length) ctx.addIssue({ code: 'custom', message: 'Model menu ids must be unique.', path: ['x-jevellan', 'menu'] });
 });
@@ -151,10 +151,13 @@ export const ExternalSessionsSchema = z.strictObject({
   unavailable: z.array(z.enum(['claude', 'codex', 'cursor', 'gemini'])),
 });
 export type ExternalSessions = z.infer<typeof ExternalSessionsSchema>;
+export const CleanupSummarySchema = z.strictObject({ schema: z.literal('cleanup-summary-v1'), endedAt: TimestampSchema, freedBytes: count, removed: count, protected: count, freeBytes: count, state: z.enum(['completed', 'deferred']), reason: z.string().max(500).optional() });
+export type CleanupSummary = z.infer<typeof CleanupSummarySchema>;
 export const HeartbeatSchema = z.strictObject({
   schema: z.literal('heartbeat-v1'), deviceId: IdSchema, at: TimestampSchema, version: text,
   runningConversations: z.array(IdSchema), projects: z.array(z.strictObject({ projectId: IdSchema, path: text, branch: text, head: text, dirty: z.boolean(), ahead: count, behind: count })),
   externalSessions: z.array(ExternalSessionSchema), load: z.strictObject({ cpuPct: percentage, memFreeMb: z.number().nonnegative() }),
+  lastCleanup: CleanupSummarySchema.optional(),
   workPolicy: DeviceWorkPolicySchema.optional(),
   facts: DeviceFactsSchema.optional(),
 });

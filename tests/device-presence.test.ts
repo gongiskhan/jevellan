@@ -60,3 +60,9 @@ test('recovery readiness must settle before the first presence report', async ()
   const ready = deferred(); const { pump, sent } = create({ ready: ready.promise }); const pending = pump.pulse(); await Promise.resolve(); expect(sent).toEqual([]);
   ready.resolve(); await pending; expect(sent).toHaveLength(1);
 });
+
+test('a heartbeat carries bounded cleanup metadata so the last receipt survives an offline device', async () => {
+  const cleanup = { schema: 'cleanup-summary-v1' as const, endedAt: '2026-10-19T12:00:00Z', freedBytes: 1024, removed: 1, protected: 2, freeBytes: 80e9, state: 'completed' as const };
+  const { pump, sent } = create({ cleanup: () => cleanup }); await pump.pulse(); expect(sent[0]?.lastCleanup).toEqual(cleanup);
+  expect(JSON.stringify(sent[0]?.lastCleanup)).not.toMatch(/path|command|token/u);
+});

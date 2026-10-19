@@ -1,3 +1,5 @@
+import { ProjectJobLogSchema, readDocument, writeDocument } from '@jevellan/core';
+import { existsSync } from 'node:fs';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { ProjectJobContextSchema, type ProjectJobContext } from '@jevellan/core';
@@ -20,7 +22,15 @@ export async function runThreadCommand(cwd: string, command: string, o: { homes:
     env.HOME = join(workspace, 'home'); env.TMPDIR = join(env.HOME, 'tmp'); mkdirSync(env.TMPDIR, { recursive: true, mode: 0o700 });
     Object.assign(env, { JEVELLAN_JOB_COMMIT: context.commit, JEVELLAN_JOB_RUN_ID: context.runId, JEVELLAN_JOB_PROJECT_ID: context.projectId, JEVELLAN_JOB_ID: context.jobId, ...(context.deployment ? { JEVELLAN_JOB_MODE: context.deployment.mode, JEVELLAN_DEPLOY_ID: context.deployment.deployId, JEVELLAN_DEPLOY_PREVIOUS_COMMIT: context.deployment.previousCommit ?? '' } : {}), JEVELLAN_JOB_WORKSPACE: workspace, JEVELLAN_JOB_COMMAND_CHECKOUT: context.commandCheckout ?? cwd, JEVELLAN_JOB_CACHE: o.homes.ensure('project-work', context.projectId, 'job-cache') });
   }
-  return runOwnedCommand('/bin/sh', ['-c', command], { cwd, env, timeoutMs: o.timeoutMs, redactor: o.redactor, ...(o.minimal ? { outputLimitBytes: 64 * 1024 } : {}), ...(o.signal ? { signal: o.signal } : {}), ...(o.onProcess ? { onProcess: o.onProcess } : {}) });
+  const result = await runOwnedCommand('/bin/sh', ['-c', command], { cwd, env, timeoutMs: o.timeoutMs, redactor: o.redactor, ...(o.minimal ? { outputLimitBytes: 64 * 1024 } : {}), ...(o.signal ? { signal: o.signal } : {}), ...(o.onProcess ? { onProcess: o.onProcess } : {}) });
+  if (o.jobContext) {
+    const context = o.jobContext, file = o.homes.at('project-work', context.projectId, 'job-logs', `${context.runId}.json`);
+    try {
+      const prior = existsSync(file) ? readDocument(file, ProjectJobLogSchema).sections : [];
+      writeDocument(file, ProjectJobLogSchema, { schema: 'project-job-log-v1', runId: context.runId, projectId: context.projectId, sections: [...prior, { at: new Date().toISOString(), text: o.redactor.text(`${result.stdout}\n${result.stderr}`).slice(-131072) }].slice(-10) });
+    } catch { /* The durable job receipt still retains its redacted tail if the optional local archive is unavailable. */ }
+  }
+  return result;
 }
 /** The last 4,000 characters of redacted stdout followed by stderr (D49). */
 export const outputTail = (result: Pick<CommandResult, 'stdout' | 'stderr'>, max = 4000): string =>

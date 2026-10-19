@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, expect, test } from 'vitest';
 import { ProjectDeploySchema, ProjectWorkTaskSchema, DeviceViewSchema, DeviceSchema, ProjectJobRunSchema, ProjectJobSchema, ProjectSchema, minimalEnvironment, projectEnvironment } from '../packages/core/dist/index.js';
 import { placeCommandJob, workflowEnvironmentReferences } from '../packages/projects/dist/index.js';
@@ -54,6 +55,8 @@ test('a command runs through the member relay, has the executing device on the h
   await f.app.projectWork.jobs.sweep('project');
   const run = (await f.app.projectWork.jobs.runs('project')).find(run => run.taskId === receipt.taskId)!;
   expect(run.deviceId).toBe(member.deviceId); expect(run.logTail).not.toContain('disposable relay credential'); expect(run.logTail).toContain('[redacted]');
+  const archive = readFileSync(member.app.homes.at('project-work', 'project', 'job-logs', `${run.id}.json`), 'utf8');
+  expect(archive).toContain('project-job-log-v1'); expect(archive).toContain('[redacted]'); expect(archive).not.toContain('disposable relay credential');
   expect((await f.app.projectWork.tasks.read('project', receipt.taskId)).state).toBe('done');
   expect(ProjectJobRunSchema.parse(run).phase).toBe('finished');
 });

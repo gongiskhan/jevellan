@@ -3,7 +3,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { parseDocument, stringify } from 'yaml';
-import { ConfigRevisionSchema, ConfigurationSchema, IdSchema, LegacyConfigurationSchema, defaultImproverSettings, type Configuration, type ConfigRevision } from './schemas.js';
+import { ConfigRevisionSchema, ConfigurationSchema, IdSchema, PreCleanupConfigurationSchema, LegacyConfigurationSchema, defaultImproverSettings, type Configuration, type ConfigRevision } from './schemas.js';
 import { atomicWrite, stableJson } from './files.js';
 import type { Homes } from './homes.js';
 import { existsSync, readFileSync } from 'node:fs';
@@ -16,7 +16,7 @@ const ConfigurationRequestSchema = z.strictObject({
   schema: z.literal('configuration-request-v1'), id: IdSchema, deviceId: IdSchema,
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/), revision: z.number().int().positive(),
 });
-const LegacyConfigRevisionSchema = ConfigRevisionSchema.extend({ configuration: LegacyConfigurationSchema });
+const LegacyConfigRevisionSchema = ConfigRevisionSchema.extend({ configuration: z.union([LegacyConfigurationSchema, PreCleanupConfigurationSchema]) });
 function requestFingerprint(configuration: unknown, expectedRevision: number, changedBy: ConfigRevision['changedBy']): string {
   return createHash('sha256').update(stableJson({ configuration, expectedRevision, changedBy })).digest('hex');
 }
