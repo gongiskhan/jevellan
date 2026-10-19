@@ -57,3 +57,75 @@ Live check: a session started with only a long-lived `claude setup-token` creden
 Time zone: every tool prints times in the project's configured time zone (the nightly window's), Europe/Lisbon by default, formatted with an explicit time zone so output never depends on the machine.
 
 Push transport: `channel` by default. Its start dialogs are answered by `jevellan bridge` through tmux; if the session does not reach its prompt in time, the bridge falls back to `inject` and records it. The bridge behaviour eval runs headless (`-p`), where channels are ignored, so its push utterance is delivered as a message starting `[Jevellan push]`, which rule 6 of the bridge prompt covers.
+
+## P1 engine map
+
+`docs/surface-map.md` lists 69 capabilities, 310 pieces of UI logic with the phase that moves each, 159 settings fields mapped to `config` keys, 14 Jev question sets and prompts, and 36 scheduled things. Written from a read of every file in `apps/web/src`; the "Moves to" column names proposed engine services where none exists yet. Tests: not run (documentation).
+
+## P2 engine views and plumbing
+
+Built: short display ids per project on the state point (`owner-short-ids`, never reused, objects that existed before get theirs in creation order); the status view (`project-status-view-v1`) with run and waiting-item views, ordering and the goal filter computed by the engine; run states derived from the Overview's own board group so both agree; the tool route `POST /api/local/tools/:name` with the twelve-tool catalog (exact descriptions, actions tagged read or write, zod inputs) and a handler registry; the caller log (30 days, JSONL on the state point); the owner event stream (`GET /api/local/events`, SSE with a monotonic `seq` from the clock at start-up, resumable); the status line route; project resolution (argument, session project, working folder, the only project); the recursion guard (`JEVELLAN_ROLE` on every coordinator, thread, verification and attach launch, and in all five environment allow-lists).
+
+UI logic moved: the Overview's thread groups and their order now come from the engine (`board` in the work view); the page only pages Resolved by age. Other overview and thread-list rows stay with the later pass (see the surface map).
+
+Deferred within P2: decision-record fields for placements (`rawChoice`, `inputsRef`) are added for the landing route in P8; placement decisions keep their existing record.
+
+Simulated: golden files for the six scripted states (idle, busy, waiting, held, landing, crashed) plus the goal filter, and route, event-stream and recursion-guard tests on the simulated runtime, passed. Browser journeys of the rewired Overview: not run (the parallel run was in its release gate; this run runs no browser suites then).
+
+## P3 plugin and core tools
+
+Built: the forwarder `jevellan mcp` (lists the twelve tools; zero tools and no channel with `JEVELLAN_ROLE`; channel capability only in the bridge), `jevellan call`, `statusline` (with `--wrap` and `install`), `watch`, `attach`, `plugin build|install`, `hook session-start`, a plugin line in `doctor` that never changes its ten checks, and the README's two-command install. The plugin is generated from the tracked neutral `plugin/` folder into the installation's data folder; nothing named after Claude is tracked. Tools: `status`, `activity` (digest, events, decisions), `ask_coordinator`, `work`, `respond`, `thread` (say and stop), `config` (get and the sections that exist), `login` (status).
+
+Decision: `ask_coordinator ask` uses the specification's fallback for every runtime in this version: the question goes to the coordinator as the owner's message with "Answer only, do not act", the tool waits up to `wait_seconds` for the reply, and a later reply is pushed. The fork (S8) works for Claude coordinators; wiring it into the coordinator's runtime adapter is left to the later pass.
+
+Decision: tools run on the state point. On a member device the tool route answers that the tools run on the state point; forwarding member calls to the hub is left to the later pass.
+
+Simulated: contract tests through the official MCP client (exact twelve tools and descriptions, action enums, read and write tags in the caller log, zero tools with a role set, the bridge's channel capability, the not-running sentence), CLI tests (call, status line within its budget and with `--wrap`, plugin build and install into a temporary Claude config folder, the session-start hook, status line install), and tool action tests. Journey A: not run yet (real models; waits for the parallel run's gate).
+
+## P4 bridge and push
+
+Built: `jevellan bridge [--project p] [--restart] [--stop] [--claude-config-dir dir]` (tmux `jv-bridge-<project>`, Sonnet at medium effort, remote control named "Jevellan · {project}", the plugin by `--plugin-dir`, the development channel, the appended system prompt, only the Jevellan tools allowed, Bash, Edit, Write and NotebookEdit disallowed, `--continue` when a session exists, the start-up dialogs answered through tmux, a minute check that starts a wanted bridge again); the push queue with acks on the state point, fed from open decision items and the hub's notification documents (deploys, rollbacks, coordinator outages), coordinator replies and answers, failed job runs, exhausted budgets and a stalled coordinator; quiet hours held durably with one summary when they end and urgent pushes at once; more than three at a time as one message; every unacked push again on reconnect; the `inject` transport for an idle bridge.
+
+Decision: the bridge refuses to start without an interactive Claude login in the account's folder (remote control needs it) and names `jevellan login <account> --interactive`.
+
+Simulated: a waiting item reaching a bridge forwarder as a channel notification with its exact text and meta, acked and not sent again; quiet hours, urgent bypass, summary and batching on a controlled clock; the bridge start script's flags, the interactive-login refusal and the restart with `--continue`. Journey B and the bridge behaviour eval: not run yet (real models).
+
+## P5 takeover
+
+Built: `thread open` interrupts a working thread at its next safe point (a steer with nothing queued, so the turn ends and the thread rests), then runs the installed `jevellan thread attach <id> [--remote-control "T31 · title"]` in tmux `jv-T31`; the existing attach marks the thread attached, which already keeps the coordinator, landing and cleanup away and holds its account. Remote control is used when the account folder has an interactive login; otherwise the copy says it is terminal only. `return` (resume, done, stop) ends the interactive session through tmux, waiting up to ten minutes for a turn in progress; resume sends the steering line, done sends the thread to landing, stop stops it. Hold rules: a warning item and push after two hours idle, keep restarts the timer, an automatic return fifteen minutes later, never mid-turn; after a restart a hold whose tmux session is gone is returned. Every steering act is recorded and reaches the coordinator as a line at its next turn.
+
+Simulated: open on a running thread, held status, refusals while held, return with the steering line in the next turn, the idle warning, keep, and the automatic return. Journey E with a real Claude thread: not run yet. Codex takeover: simulated only (S5).
+
+## P6 jobs, nights, deploy switch
+
+Built: the `jobs` tool (list, show, history, night, deploy, health, run, pause, resume, schedule with window start, order, days or an interval, health_run, rollback with confirm); paused command jobs and interval schedules (new optional fields on the job, no misses); missed nights: a window more than its seven hours late opens as a catch-up within `night.catchUpHours` (default 4) and is recorded as missed, later it is recorded as missed and skipped, one `night_missed` push per night; the optional heartbeat; the three-position deploy switch with `deploy.paused`: in nightly and automatic modes the open deploy message is approved through the owner's own answer path once the night's suite passed on its commit (automatic also after the landing debounce), a deploy that changes the database waits and says so, and an automatic deploy that fails or is rolled back pauses deploys.
+
+Decision: in nightly and automatic modes the deploy message stays open (the owner can still deploy earlier) instead of being closed as expired; Jevellan approves it at the right moment. This keeps one deploy record and one item everywhere.
+
+Not built: the intake of external pull requests. Landing a contributor's head with `--no-ff` needs a landing path for a branch that no thread owns; it is left to the later pass, with the rest of the copy specified.
+
+Simulated: the jobs tool on real stores, missed and caught-up nights on a controlled clock, interval due times, and the deploy switch's approval, database hold and pause. Journey C: not run as a whole (no intake; the parts above are covered by tests).
+
+## P7 goals and labels
+
+Built: the `goals` tool (list, show, create, edit, pause, resume, done); a paused or done goal refuses tasks from the coordinator with `G1 is paused.`; done cancels queued tasks; labels and due in status come from the engine. Simulated: the full goal lifecycle with the specified copy. Journey D through the bridge: not run yet.
+
+## P8 Jev control
+
+Built for l-v1, the landing route: the active prompt version is what Jev is asked; the last eight enabled landing lessons replace the old corrections in its packet; the owner's rules are applied after Jev's answer and before the hard guards (project beats global, more `when` fields beat fewer, then the more careful route); the route records `rawChoice`, `rulesApplied`, the prompt version and the lessons. Prompt versions are imported from the code as v1 (l-v1, p-v1, m-v1); proposals take the full text or exact edits, show a diff and replay the last 20 decisions with their stored packets; apply and roll back keep history; a changed code default becomes a proposal. Rules show their effect on the last 30 decisions with no model calls. Lessons are listed, edited and removed; the earlier landing and merge corrections migrate into lessons. `override` covers placements (undo restarts the thread on the owner's choice; only records the lesson) and landing routes (before landing the owner's route is applied; after landing a revert task and a redo task are queued).
+
+Decision: p-v1 and m-v1 are versioned and listed but the engine still reads their code text in this version; placement rules are stored and measured but not yet applied inside placement. Both are left to the later pass.
+
+Simulated: rules, proposals with edits, apply, rollback, history, the rule hook, lessons and overrides. Journey F with real calls: not run yet.
+
+## P9 accounts, logins, secrets
+
+Built: `config add_account`, `remove_account` (disables; accounts are never deleted), `accounts.<label>.budgetPercent` and `.enabled`, `config secrets` (names only) and `set_secret`, `login start` (the account's token login, or `interactive` for the `claude auth login` that remote control needs), `complete`, `status` (with remote-control readiness), the `login_done` push, `jevellan login <account> [--interactive]` and `jevellan secret set NAME` with hidden prompts.
+
+Simulated: Journey G with a stand-in `claude auth login` (link captured, code completes, push sent) and the account and secret actions; secret values never appear in tool output.
+
+## P11 remote MCP
+
+Built: the same twelve tools over Streamable HTTP at `/remote/mcp`, answered only for the configured hostname (the tunnel's Host), with OAuth: protected-resource and authorization-server metadata, dynamic client registration, PKCE S256, short-lived access tokens and rotated refresh tokens stored hashed, identity from a GitHub-compatible upstream sign-in with exactly one allowed login. Off by default; with writes off only reads and `respond` run; deploys and rollbacks are refused remotely even with writes on; every remote call is in the caller log; disabling refuses everything at once; `jevellan remote revoke` deletes every token; `jevellan remote setup` writes the cloudflared configuration and lists the owner's steps.
+
+Simulated: Journey H with a fake identity provider and the official MCP client, including the wrong identity, the disabled endpoint, revocation, refresh rotation and the host check.
