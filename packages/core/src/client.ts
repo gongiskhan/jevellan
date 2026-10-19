@@ -62,3 +62,5 @@ export * from './notification-schemas.js';
 export * from './library-schemas.js';
 
 export * from './project-setup-schemas.js';
+
+export * from './project-health-schemas.js';

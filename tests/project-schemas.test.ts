@@ -139,8 +139,8 @@ test('nested documents are strict too', () => {
 });
 
 test('defaults match the brief and fill optional collections', () => {
-  expect(settings).toEqual({ schema: 'project-work-settings-v4', projectId: 'project', revision: 0, defaultIsolation: 'worktree', coordinator: { modelId: null, effort: 'medium' }, setupCommand: null, maxRunningThreads: 6, maxRunningPerDevice: 4, threadTurnCap: 30,
-    status: 'active', startMode: 'start', maxNewThreadsPerDay: 100, placement: { allowedModelIds: null, minEffort: null, guidance: '' }, prAutoFix: { checks: true, conflicts: true, comments: true, maxRounds: 3 }, environment: { variables: [], secrets: [], copyFiles: [] }, notifications: 'standard', perDeviceLimits: {}, allowMainIsolation: true, instructions: '', autoMerge: false, riskyAreas: '', requiredChecks: [], compactAtPercent: 70, sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 }, memory: { mode: 'hub', capture: true, dreamMode: 'apply' },
+  expect(settings).toEqual({ schema: 'project-work-settings-v5', projectId: 'project', revision: 0, defaultIsolation: 'worktree', coordinator: { modelId: null, effort: 'medium' }, setupCommand: null, maxRunningThreads: 6, maxRunningPerDevice: 4, threadTurnCap: 30,
+    healthChecks: [], status: 'active', startMode: 'start', maxNewThreadsPerDay: 100, placement: { allowedModelIds: null, minEffort: null, guidance: '' }, prAutoFix: { checks: true, conflicts: true, comments: true, maxRounds: 3 }, environment: { variables: [], secrets: [], copyFiles: [] }, notifications: 'standard', perDeviceLimits: {}, allowMainIsolation: true, instructions: '', autoMerge: false, riskyAreas: '', requiredChecks: [], compactAtPercent: 70, sessionCheckpoints: { enabled: false, checkpointMinTokens: 40000 }, memory: { mode: 'hub', capture: true, dreamMode: 'apply' },
     nightlyWindow: { enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }, refill: { enabled: true, minIntervalMinutes: 30 } });
   expect(() => defaultProjectWorkSettings('../escape')).toThrow();
   expect(ThreadReportSchema.parse(without(report, 'changedFiles')).changedFiles).toEqual([]);

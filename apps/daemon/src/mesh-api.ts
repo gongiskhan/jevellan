@@ -1,3 +1,4 @@
+import { ProjectHealthRequestSchema } from '@jevellan/core';
 import { handleLibrary } from './library-api.js';
 import { NotificationOwnerRequestSchema } from '@jevellan/core';
 import { EkoaRequestSchema } from '@jevellan/core';
@@ -35,6 +36,11 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
     if (session && (typeof session !== 'string' || !app.hubAuth.verify(session, device.id))) throw Object.assign(new Error('Sign in to Jevellan.'), { status: 401 });
     if (typeof session === 'string') app.redactor.add(session);
     return handleLibrary(app, request, response, url, typeof session === 'string' ? session : undefined, device.id);
+  }
+  if (path === '/hub/mesh/health' && method === 'POST') {
+    const release = app.lifecycle.enter({ kind: 'request' });
+    try { const result = await app.projectHealthRequest(ProjectHealthRequestSchema.parse(await requestBody(request))); app.devices.authenticate(authorization!.slice(7)); send(result); return true; }
+    finally { release(); }
   }
   if (path === '/hub/mesh/journal' && method === 'POST') {
     if (!app.projectWork.journal) throw Object.assign(new Error('The project journal is unavailable.'), { status: 503 });

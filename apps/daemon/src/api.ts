@@ -1,3 +1,4 @@
+import { healthRefusal } from '@jevellan/core';
 import { handleLibrary } from './library-api.js';
 import { handleNotificationsApi } from './notifications-api.js';
 import { EnvNameSchema, ProjectEnvSecretSummarySchema } from '@jevellan/core';
@@ -259,6 +260,6 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
   } catch (error) {
     const candidate = error as { status?: unknown; message?: unknown };
     const status = typeof candidate?.status === 'number' && candidate.status >= 400 && candidate.status <= 599 ? candidate.status : 400;
-    send(ErrorDocumentSchema.parse({ schema: 'error-v1', code: error instanceof HubUnavailable ? 'hub-unavailable' : status === 409 ? 'conflict' : status === 401 ? 'unauthenticated' : status === 404 ? 'not-found' : 'request-failed', ...(error instanceof HubUnavailable ? { retryable } : {}), message: error instanceof z.ZodError ? 'Check the submitted fields.' : typeof candidate?.message === 'string' ? app.redactor.text(candidate.message) : 'The request could not complete.' }), status);
+    send(ErrorDocumentSchema.parse({ schema: 'error-v1', code: error instanceof HubUnavailable ? 'hub-unavailable' : status === 409 ? 'conflict' : status === 401 ? 'unauthenticated' : status === 404 ? 'not-found' : 'request-failed', ...(error instanceof HubUnavailable ? { retryable } : {}), message: healthRefusal(error) ?? (error instanceof z.ZodError ? 'Check the submitted fields.' : typeof candidate?.message === 'string' ? app.redactor.text(candidate.message) : 'The request could not complete.') }), status);
   } finally { release?.(); }
 }

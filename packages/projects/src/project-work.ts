@@ -768,7 +768,7 @@ export class ProjectWork {
   async putSettings(projectId: string, input: z.infer<typeof ProjectWorkSettingsRequestSchema>, clientRequestId?: string, by: 'owner' | 'coordinator' = 'owner'): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
     let project = await this.#project(projectId);
     const current = (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId);
-    const settings = ProjectWorkSettingsSchema.parse({ ...current, ...input.settings, schema: 'project-work-settings-v4', projectId, revision: input.revision });
+    const settings = ProjectWorkSettingsSchema.parse({ ...current, ...input.settings, schema: 'project-work-settings-v5', projectId, revision: input.revision });
     const requestId = input.clientRequestId ?? clientRequestId;
     if (input.settings.memory && input.settings.memory.mode !== project.memory.mode && this.#o.switchMemory) {
       if (current.revision !== input.revision) throw refuse(SETTINGS_CHANGED, 409);

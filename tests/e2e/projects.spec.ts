@@ -2463,3 +2463,36 @@ test('PAR9 suggested setup lets the owner edit, choose, apply and dismiss withou
   expect((await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision, settings: { ...fields, instructions: original.instructions, environment: original.environment } } })).ok()).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('WG1 Health checks can be edited, disabled and run with step results', async ({ page }, info) => {
+  const { createServer } = await import('node:http');
+  let healthy = true;
+  const server = createServer((_, response) => { response.writeHead(healthy ? 200 : 500); response.end('sandbox page'); });
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  const port = (server.address() as { port: number }).port;
+  try {
+    const errors = await begin(page);
+    await page.goto('/projects/projects_fixture/settings');
+    await page.getByRole('button', { name: 'Add health check', exact: true }).click();
+    const health = page.locator('#project-settings-health');
+    await health.getByLabel('Check name', { exact: true }).fill('Sandbox app');
+    await health.getByLabel('URL', { exact: true }).fill(`http://127.0.0.1:${port}/`);
+    await health.getByLabel('Expected text (optional)', { exact: true }).fill('sandbox page');
+    await health.getByRole('button', { name: 'Run now', exact: true }).click();
+    await expect(health.getByText('Passed', { exact: true })).toBeVisible();
+    healthy = false;
+    await health.getByRole('button', { name: 'Run now', exact: true }).click();
+    await expect(health.getByText(/status 500, expected \[200\]/)).toBeVisible();
+    await health.getByText(/status 500, expected \[200\]/).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: info.outputPath(`health-results-${layout(info)}.png`) });
+    await health.getByLabel('Enabled', { exact: true }).uncheck();
+    await page.screenshot({ path: info.outputPath(`health-checks-${layout(info)}.png`) });
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page).toHaveURL('/projects/projects_fixture');
+    const saved = (await work(page)).settings.healthChecks.find(check => check.name === 'Sandbox app');
+    expect(saved).toMatchObject({ enabled: false, steps: [{ expectBody: 'sandbox page' }] });
+    await page.goto('/projects/projects_fixture/settings');
+    await expect(page.locator('#project-settings-health').getByText(/status 500, expected \[200\]/)).toBeVisible();
+    expect(errors).toEqual([]);
+  } finally { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); }
+});

@@ -2424,3 +2424,8 @@ Live: the owner authorized clearing the stale coordinator maintenance hold. Afte
 ## Without GitHub run: P0
 
 Live orientation and private continuity snapshot completed. Both active devices are Online on 0.5.1. No implementation or live project settings changed. Required references were read; private source-location provenance and refused branch-protection read are preserved in `snapshot.md`. The run follows the separate clocks and does not reopen the old release run. See [run log](without-github-2026-10/README.md). Routine choices will be recorded there. Tests not run for this documentation-only phase.
+
+
+## Without GitHub run: P1
+
+Health definitions and run receipts, settings v5 migration, state-point execution, member forwarding, the project editor and CLI are implemented. Simulated: 145 backend checks and four browser layouts passed. Live: eight vision checks and the ERP check passed; private files are named in the [run log](without-github-2026-10/README.md). No live project settings changed. Typecheck, lint and build passed. The editor's explicit draft run and five-receipt view are routine choices; URL credentials and duplicate check ids are refused. Health polling remains absent. Deploy integration belongs to P5.

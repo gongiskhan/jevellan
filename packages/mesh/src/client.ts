@@ -114,6 +114,10 @@ export class MemberHubClient {
     const version = response.headers.get('x-jevellan-version'); if (version && VERSION_PATTERN.test(version)) this.#transport.hubVersion = version;
     return response;
   }
+  async projectHealth(input: unknown) {
+    const { ProjectHealthRequestSchema, ProjectHealthViewSchema } = await import('@jevellan/core');
+    return this.#request('health', ProjectHealthViewSchema, ProjectHealthRequestSchema.parse(input), 1_600_000);
+  }
   async projectJournal(input: unknown) {
     const { ProjectJournalRequestSchema, ProjectJournalResultSchema } = await import('@jevellan/core');
     return this.#request('journal', ProjectJournalResultSchema, ProjectJournalRequestSchema.parse(input), 30000);

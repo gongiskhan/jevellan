@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ProjectHealthChecksSchema } from './project-health-schemas.js';
 import { ThreadUsageTotalSchema } from './project-usage-schemas.js';
 import { PlacementConstraintsSchema, ProjectEnvironmentSchema, ProjectPlacementSettingsSchema, ProjectPrAutoFixSettingsSchema, ProjectSettingsChangeSchema } from './project-parity-schemas.js';
 import { SessionCheckpointSettingsSchema, SessionCheckpointedSchema, SessionHistorySchema, SessionHistoryLinkSchema } from './checkpoint-schemas.js';
@@ -58,12 +59,13 @@ export const ProjectWorkSettingsSchemaV4 = ProjectWorkSettingsSchemaV3.omit({ th
   environment: ProjectEnvironmentSchema.default({ variables: [], secrets: [], copyFiles: [] }),
   notifications: z.enum(['everything', 'standard', 'needs-you', 'off']).default('standard'),
 });
-export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV4;
+export const ProjectWorkSettingsSchemaV5 = ProjectWorkSettingsSchemaV4.extend({ schema: z.literal('project-work-settings-v5'), healthChecks: ProjectHealthChecksSchema });
+export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV5;
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
-export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4])
+export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4, ProjectWorkSettingsSchemaV5])
   .transform(value => {
     const { coordinatorReview: _retired, threadRules, ...fields } = { coordinatorReview: undefined, threadRules: undefined, ...value }; void _retired;
-    return ProjectWorkSettingsSchemaV4.parse({ ...fields, instructions: 'instructions' in value ? value.instructions : threadRules ?? '', schema: 'project-work-settings-v4' });
+    return ProjectWorkSettingsSchemaV5.parse({ ...fields, instructions: 'instructions' in value ? value.instructions : threadRules ?? '', schema: 'project-work-settings-v5' });
   });
 export const ProjectRequestOutcomeSchema = z.strictObject({ schema: z.literal('project-request-outcome-v1'), projectId: IdSchema, eventId: IdSchema,
   goal: z.enum(['answer', 'change', 'run-app', 'verify', 'other']).nullable(), source: z.enum(['jev', 'unavailable']),
@@ -79,7 +81,7 @@ export const ProjectAppSchema = z.strictObject({ schema: z.literal('project-app-
   startedAt: TimestampSchema, stoppedAt: TimestampSchema.optional() });
 export type ProjectApp = z.infer<typeof ProjectAppSchema>;
 export function defaultProjectWorkSettings(projectId: string): ProjectWorkSettings {
-  return ProjectWorkSettingsSchema.parse({ schema: 'project-work-settings-v4', projectId, revision: 0, defaultIsolation: 'worktree',
+  return ProjectWorkSettingsSchema.parse({ schema: 'project-work-settings-v5', projectId, revision: 0, defaultIsolation: 'worktree',
     coordinator: { modelId: null, effort: 'medium' }, setupCommand: null, maxRunningThreads: 6, maxRunningPerDevice: 4, threadTurnCap: 30 });
 }
 
@@ -553,6 +555,7 @@ export const ProjectWorkSettingsRequestSchema = z.strictObject({ schema: z.liter
     placement: ProjectWorkSettingsSchema.shape.placement.removeDefault().optional(),
     prAutoFix: ProjectWorkSettingsSchema.shape.prAutoFix.removeDefault().optional(),
     environment: ProjectWorkSettingsSchema.shape.environment.removeDefault().optional(),
+    healthChecks: ProjectWorkSettingsSchema.shape.healthChecks.removeDefault().optional(),
     notifications: ProjectWorkSettingsSchema.shape.notifications.removeDefault().optional(),
   }), clientRequestId: IdSchema.optional() });
 export const NotebookRequestSchema = z.strictObject({ schema: z.literal('notebook-request-v1'), expectedRevision: revision,

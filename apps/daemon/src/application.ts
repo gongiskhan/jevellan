@@ -1,3 +1,5 @@
+import { ProjectHealthRequestSchema, ProjectHealthRunSchema, ProjectHealthViewSchema, type ProjectHealthRequest, type ProjectHealthRun } from '@jevellan/core';
+import { runHealthCheck } from '@jevellan/projects';
 import { ProjectLibraryService } from './library.js';
 import { HubNotifications, type PushSend } from './notifications.js';
 import { NotificationOwnerRequestSchema } from '@jevellan/core';
@@ -282,6 +284,34 @@ export class Application {
   async ekoaRequest(raw: unknown, ownerSession: string) {
     const request = EkoaRequestSchema.parse({ ...(raw as object), ownerSession });
     return this.member ? this.member.ekoa(request) : this.ekoa!.request(request, this.device.deviceId);
+  }
+  /** Health checks always execute at the state point, including local commands issued on a member. */
+  async projectHealthRequest(raw: ProjectHealthRequest) {
+    const input = ProjectHealthRequestSchema.parse(raw);
+    if (this.member) return this.member.projectHealth(input);
+    const projects = (await this.state.projects.list()).map(row => row.project);
+    const matches = projects.filter(project => project.id === input.project || project.name === input.project);
+    if (matches.length !== 1) throw Object.assign(new Error(matches.length ? 'More than one project has that name. Use its id.' : 'Project not found.'), { status: matches.length ? 409 : 404 });
+    const projectId = matches[0]!.id;
+    if (input.operation === 'list') return ProjectHealthViewSchema.parse({ schema: 'project-health-view-v1', projectId,
+      runs: this.hub.listByField('project-health', 'projectId', projectId, ProjectHealthRunSchema).map(row => row.document).sort((a, b) => b.at.localeCompare(a.at)) });
+    return ProjectHealthViewSchema.parse({ schema: 'project-health-view-v1', projectId, runs: await this.runProjectHealth(projectId, 'manual', undefined, input) });
+  }
+  async runProjectHealth(projectId: string, trigger: ProjectHealthRun['trigger'], deployId?: string, input?: Pick<ProjectHealthRequest, 'check' | 'definition'>): Promise<ProjectHealthRun[]> {
+    if (this.member) throw new Error('Health checks run at the state point.');
+    const checks = input?.definition ? [input.definition] : (await this.projectWork.settingsView(projectId)).settings.healthChecks.filter(check => check.enabled && (!input?.check || check.id === input.check || check.name === input.check));
+    if (input?.check && !checks.length) throw Object.assign(new Error('Health check not found.'), { status: 404 });
+    const runs: ProjectHealthRun[] = [];
+    for (const check of checks) {
+      const run = await runHealthCheck(projectId, check, trigger, deployId);
+      this.hub.transaction(() => {
+        this.hub.put('project-health', run.id, ProjectHealthRunSchema, run, 0);
+        const old = this.hub.listByField('project-health', 'checkId', check.id, ProjectHealthRunSchema).map(row => row.document).filter(row => row.projectId === projectId).sort((a, b) => b.at.localeCompare(a.at) || b.id.localeCompare(a.id));
+        for (const row of old.slice(500)) this.hub.delete('project-health', row.id);
+      });
+      runs.push(run);
+    }
+    return runs;
   }
   async projectMemoryRequest(raw: unknown, deviceId: string) {
     const request = ProjectMemoryRequestSchema.parse(raw), project = (await this.state.projects.get(request.projectId))?.project;

@@ -1,3 +1,4 @@
+import { ProjectHealthEditor } from './project-health.js';
 import { browserPushId } from './notifications.js';
 import { NotificationsViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
@@ -12,7 +13,7 @@ import { ProjectUsageSection } from './project-usage.js';
 
 const sections = [['general', copy.SETTINGS_GENERAL], ['instructions', copy.SETTINGS_INSTRUCTIONS], ['placement', copy.SETTINGS_PLACEMENT],
   ['limits', copy.SETTINGS_LIMITS], ['pull-requests', copy.PULL_REQUESTS], ['environment', copy.SETTINGS_ENVIRONMENT], ['routines', copy.SETTINGS_ROUTINES],
-  ['notifications', copy.SETTINGS_NOTIFICATIONS], ['usage', copy.SETTINGS_USAGE]] as const;
+  ['health', 'Health checks'], ['notifications', copy.SETTINGS_NOTIFICATIONS], ['usage', copy.SETTINGS_USAGE]] as const;
 const fields = (settings: ProjectWorkSettings) => {
   const { schema: _schema, projectId: _projectId, revision: _revision, ...value } = settings; void _schema; void _projectId; void _revision;
   return value;
@@ -151,6 +152,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
             <label className="checkbox"><input type="checkbox" checked={draft.refill.enabled} onChange={event => change({ refill: { ...draft.refill, enabled: event.target.checked } })} />{copy.REFILL_ENABLED}</label>
             {number(copy.REFILL_INTERVAL, draft.refill.minIntervalMinutes, 10, 1440, minIntervalMinutes => change({ refill: { ...draft.refill, minIntervalMinutes } }))}<p className="pw-field-note">{copy.ROUTINES_EDIT_HELP}</p>
           </>)}
+          {section('health', <ProjectHealthEditor projectId={id} checks={draft.healthChecks} change={healthChecks => change({ healthChecks })} fail={local.fail} />)}
           {section('notifications', <fieldset><legend>{copy.PROJECT_NOTIFICATIONS}</legend>{(Object.entries(copy.NOTIFICATION_LEVELS) as Array<[ProjectWorkSettings['notifications'], readonly [string, string]]>).map(([level, [label, help]]) => <label className="pw-notification-level" key={level}><span className="checkbox"><input type="radio" name="notification-level" checked={draft.notifications === level} onChange={() => change({ notifications: level })} />{label}</span>{help && <span className="pw-field-note">{help}</span>}</label>)}<>{!pushEnabled && <p className="pw-field-note">{copy.NOTIFICATION_DEVICE_HELP}</p>}</></fieldset>)}
           {section('usage', <ProjectUsageSection projectId={id} />)}
         </fieldset>

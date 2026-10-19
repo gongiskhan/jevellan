@@ -10,7 +10,7 @@ test.each([1, 2, 3])('settings v%s migrate to v4 without losing owner choices', 
   const before = { ...legacy, schema: `project-work-settings-v${version}`, ...(version > 1 ? { threadRules: 'Keep these instructions.', nightlyWindow } : {}),
     ...(version === 2 ? { coordinatorReview: false } : {}), ...(version === 3 ? { autoMerge: true, requiredChecks: ['result'], perDeviceLimits: { madrid: 8 } } : {}) };
   const after = StoredProjectWorkSettingsSchema.parse(before);
-  expect(after).toMatchObject({ ...legacy, schema: 'project-work-settings-v4', instructions: version > 1 ? 'Keep these instructions.' : '', status: 'active', startMode: 'start', maxNewThreadsPerDay: 100 });
+  expect(after).toMatchObject({ ...legacy, schema: 'project-work-settings-v5', instructions: version > 1 ? 'Keep these instructions.' : '', status: 'active', startMode: 'start', maxNewThreadsPerDay: 100 });
   expect(after).not.toHaveProperty('threadRules'); expect(after).not.toHaveProperty('coordinatorReview');
   if (version > 1) expect(after.nightlyWindow).toEqual(nightlyWindow);
   if (version === 3) expect(after).toMatchObject({ autoMerge: true, requiredChecks: ['result'], perDeviceLimits: { madrid: 8 } });
@@ -19,7 +19,7 @@ test.each([1, 2, 3])('settings v%s migrate to v4 without losing owner choices', 
 
 test('v4 defaults, optional request fields and sixteen-thousand-character instructions round trip', () => {
   const value = defaultProjectWorkSettings('parity');
-  expect(value).toMatchObject({ schema: 'project-work-settings-v4', placement: { allowedModelIds: null, minEffort: null, guidance: '' },
+  expect(value).toMatchObject({ schema: 'project-work-settings-v5', placement: { allowedModelIds: null, minEffort: null, guidance: '' },
     prAutoFix: { checks: true, conflicts: true, comments: true, maxRounds: 3 }, environment: { variables: [], secrets: [], copyFiles: [] }, notifications: 'standard' });
   expect(ProjectWorkSettingsSchema.parse({ ...value, instructions: 'i'.repeat(16000) })).toHaveProperty('instructions', 'i'.repeat(16000));
   expect(ProjectWorkSettingsSchema.safeParse({ ...value, instructions: 'i'.repeat(16001) }).success).toBe(false);

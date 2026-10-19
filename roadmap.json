@@ -932,8 +932,8 @@
   {
     "id": "wg-health",
     "title": "Health checks after deploys",
-    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
-    "status": "planned"
+    "why": "Health settings v5, state-point HTTP checks, 500-run retention, editor and CLI implemented. 145 backend checks and four browser layouts passed; eight live vision checks passed. The ERP check passed privately. Deploy integration follows in wg-deploy.",
+    "status": "complete"
   },
   {
     "id": "wg-secrets",

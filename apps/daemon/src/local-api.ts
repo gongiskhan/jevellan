@@ -1,3 +1,5 @@
+import { healthRefusal } from '@jevellan/core';
+import { ProjectHealthRequestSchema } from '@jevellan/core';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { z } from 'zod';
 import { EmptySchema, ErrorDocumentSchema, HubUnavailable, IdSchema, ThreadAttachRequestSchema, ThreadDetachRequestSchema } from '@jevellan/core';
@@ -30,6 +32,11 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
   if (!app || !control?.authorized(request)) { json(response, ErrorDocumentSchema.parse({ schema: 'error-v1', code: 'unauthenticated', message: 'Local commands require the installation control file.' }), 401); return; }
   let release: (() => void) | undefined;
   try {
+    if (path === '/api/local/health') {
+      if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
+      const input = ProjectHealthRequestSchema.parse(await requestBody(request)); release = app.lifecycle.enter({ kind: 'request' });
+      json(response, app.redactor.document(await app.projectHealthRequest(input))); return;
+    }
     if (path === '/api/local/journal/rebuild') {
       if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
       const input = JournalRebuildInputSchema.parse(await requestBody(request)), projects = (await app.state.projects.list()).map(row => row.project);
@@ -59,6 +66,6 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
     const status = typeof candidate?.status === 'number' && candidate.status >= 400 && candidate.status <= 599 ? candidate.status : 400;
     json(response, app.redactor.document(ErrorDocumentSchema.parse({ schema: 'error-v1',
       code: error instanceof HubUnavailable ? 'hub-unavailable' : status === 409 ? 'conflict' : status === 404 ? 'not-found' : 'request-failed', ...(error instanceof HubUnavailable ? { retryable: true } : {}),
-      message: error instanceof z.ZodError ? 'Check the submitted fields.' : typeof candidate?.message === 'string' ? app.redactor.text(candidate.message) : 'The request could not complete.' })), status);
+      message: healthRefusal(error) ?? (error instanceof z.ZodError ? 'Check the submitted fields.' : typeof candidate?.message === 'string' ? app.redactor.text(candidate.message) : 'The request could not complete.') })), status);
   } finally { release?.(); }
 }

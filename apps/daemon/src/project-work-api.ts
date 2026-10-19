@@ -1,3 +1,4 @@
+import { ProjectHealthRequestSchema } from '@jevellan/core';
 import { SetupActionRequestSchema } from '@jevellan/core';
 import { parseReply, EkoaCodeSetupRequestSchema, JobCreateRequestSchema, JobUpdateRequestSchema, DailyCreateRequestSchema, DailyUpdateRequestSchema, ProjectRunRequestSchema } from '@jevellan/core';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -17,7 +18,7 @@ import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 import { readProjectImage } from '@jevellan/conversations';
 
-export type ProjectWorkRouteName = 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'health-list' | 'health-run' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -39,6 +40,8 @@ const rows: readonly Row[] = [
   { name: 'job-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs$/, methods: ['POST'], target: 'coordinator' },
   { name: 'job-update', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/edit$/, methods: ['POST'], target: 'any', ids: ['projectId', 'jobId'] },
   { name: 'job-run', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/run$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'jobId'] },
+  { name: 'health-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/health$/, methods: ['GET'], target: 'any' },
+  { name: 'health-run', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/health\/run$/, methods: ['POST'], target: 'any' },
   { name: 'daily-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies$/, methods: ['GET'], target: 'any' },
   { name: 'daily-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies$/, methods: ['POST'], target: 'coordinator' },
   { name: 'daily-update', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies\/([A-Za-z0-9_-]+)\/edit$/, methods: ['POST'], target: 'any', ids: ['projectId', 'dailyId'] },
@@ -232,6 +235,8 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'usage': send(await work.usage.view(projectId, url.searchParams.get('range') ?? 'today')); return true;
     case 'session-history': send(await work.sessionTranscript(projectId, url.searchParams.get('session') ?? '')); return true;
     case 'ekoa-code-setup': send(await work.setupEkoaCode(projectId, EkoaCodeSetupRequestSchema.parse(await requestBody(request)))); return true;
+    case 'health-list': send(await app.projectHealthRequest({ schema: 'project-health-request-v1', project: projectId, operation: 'list' })); return true;
+    case 'health-run': { const input = ProjectHealthRequestSchema.parse(await requestBody(request)); send(await app.projectHealthRequest({ ...input, project: projectId, operation: 'run' })); return true; }
     case 'job-list': send({ schema: 'project-job-list-view-v1', projectId, jobs: await work.daily.jobs(projectId) }); return true;
     case 'job-create': send(await work.daily.createJob(projectId, JobCreateRequestSchema.parse(await requestBody(request))), 201); return true;
     case 'job-update': send(await work.daily.updateJob(projectId, route.jobId!, JobUpdateRequestSchema.parse(await requestBody(request)))); return true;
