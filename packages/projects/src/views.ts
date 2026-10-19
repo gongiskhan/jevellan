@@ -1,4 +1,7 @@
 import { overviewBoard } from './owner-status.js';
+/** Sidebar order: by name without regard to case, so rows never move while their counts change. */
+export function sidebarOrder<T extends { name: string; projectId: string }>(rows: readonly T[]): T[] { return [...rows].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.projectId.localeCompare(b.projectId)); }
+import { boardGroup } from '@jevellan/core';
 import type { AccountService } from '@jevellan/accounts';
 import {
   ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, clipRedacted, defaultProjectWorkSettings, deviceAway, isTerminal, openQuestions, projectPathProblem, type AccountView, type Configuration, type CoordinatorState,
@@ -59,7 +62,7 @@ export function effectiveSettings(settings: ProjectWorkSettings, project: Pick<P
 
 export type ProjectViewsOptions = {
   deviceId: string; deviceName: string;
-  hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook' | 'workSummaries' | 'sessionCaches'>;
+  hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook' | 'workSummaries' | 'sessionCaches' | 'tasks'>;
   projects: Pick<SharedProjects, 'get' | 'list'>;
   store: Pick<ThreadStore, 'get' | 'labels' | 'local' | 'index'>; ledgers: ProjectLedgers; coordinators: Pick<CoordinatorService, 'get'>;
   transcripts: Pick<ThreadTranscripts, 'read'>; worktrees: Pick<ThreadWorktree, 'repository' | 'baseBranch'>;
@@ -157,9 +160,12 @@ export class ProjectViews {
    */
   async list(): Promise<ProjectWorkListView> {
     const summaries = await this.#o.hub.workSummaries();
-    return ProjectWorkListViewSchema.parse({ schema: 'project-work-list-view-v1', projects: summaries.map((summary) => ({ projectId: summary.projectId, name: summary.name, ...(summary.status ? { status: summary.status } : {}),
-      waiting: summary.waiting, running: summary.running, inReview: summary.inReview, coordinator: this.#summaryState(summary) })) });
+    // Sidebar order is by name so rows never move while their counts change; the dot is the coordinator working, then open questions.
+    const rows = summaries.map((summary) => { const coordinator = this.#summaryState(summary); return { projectId: summary.projectId, name: summary.name, ...(summary.status ? { status: summary.status } : {}),
+      waiting: summary.waiting, running: summary.running, inReview: summary.inReview, coordinator, attention: coordinator.state === 'running' ? 'running' as const : summary.waiting ? 'waiting-for-you' as const : 'idle' as const }; })
+    return ProjectWorkListViewSchema.parse({ schema: 'project-work-list-view-v1', projects: sidebarOrder(rows) });
   }
+  async #drafts(projectId: string): Promise<number> { try { const page = await this.#o.hub.tasks(projectId); return page.records.filter(task => task.state === 'draft').length; } catch { return 0; } }
   /** `GET /api/projects/:id/work`: the project page. */
   async project(projectId: string): Promise<ProjectWorkView> {
     const project = await this.#project(projectId);
@@ -182,7 +188,7 @@ export class ProjectViews {
     return ProjectWorkViewSchema.parse({ schema: 'project-work-view-v1', project: { id: project.id, name: project.name, branchPolicy: project.branchPolicy, baseBranch },
       sessionCache: cacheRows,
       settings: shown.settings, ...(githubNotice ? { githubNotice } : {}), ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator, threads,
-      decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES, devices, board: overviewBoard(threads) });
+      decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES, devices, board: overviewBoard(threads), needsOwner: decisionLists(decisions).open.length + threads.filter(thread => boardGroup(thread) === 'waiting').length + await this.#drafts(projectId) });
   }
   /** `GET /api/projects/:id/threads/:tid` for a thread this device owns (D81 `canMessage`; overrides as the API allows them, D252). */
   async thread(projectId: string, threadId: string): Promise<ThreadView> {
