@@ -14,7 +14,7 @@ import { serveAgentMcp } from './agent-mcp.js';
 import { hubCommand } from './hub-command.js';
 import { journalCommand } from './journal-command.js';
 import { serveOwnerMcp } from './owner-mcp.js';
-import { attachCommand, callCommand, hookCommand, pluginCommand, pluginDoctorLine, statuslineCommand, watchCommand } from './owner-commands.js';
+import { attachCommand, bridgeCommand, callCommand, hookCommand, pluginCommand, pluginDoctorLine, statuslineCommand, watchCommand } from './owner-commands.js';
 
 function printInstallation(result: Awaited<ReturnType<Installer['install']>>) {
   if (result.changedPort) console.log(`The default port was occupied. Jevellan uses ${result.port}.`);
@@ -64,6 +64,7 @@ export async function main(args: string[], options: { installer?: () => Installe
   if (args[0] === 'attach') { process.exitCode = attachCommand(args.slice(1)); return; }
   if (args[0] === 'plugin') { process.exitCode = pluginCommand(args.slice(1)); return; }
   if (args[0] === 'hook') { process.exitCode = await hookCommand(args.slice(1)); return; }
+  if (args[0] === 'bridge') { process.exitCode = await bridgeCommand(args.slice(1)); return; }
   if (args[0] === 'mcp-bridge') { await serveMcpBridge(); return; }
   if (args[0] === 'mcp-server') { if (args.length !== 1) throw new Error('Usage: jevellan mcp-server (connection details come from the environment).'); await (options.mcpServer ?? serveAgentMcp)(); return; }
   if (args[0] === 'memory-hook') { await serveMemoryHook(); return; }

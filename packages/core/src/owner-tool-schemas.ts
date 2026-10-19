@@ -100,3 +100,16 @@ export const defaultOwnerProjectSettings = (projectId: string): OwnerProjectSett
   push: { kinds: {}, batchSeconds: 60, transport: 'channel' }, bridge: { account: 'main', wanted: false }, deploy: { paused: false, debounceMinutes: 10 }, night: { catchUpHours: 4 } });
 export const defaultOwnerInstallationSettings = (): OwnerInstallationSettings => ({ schema: 'owner-installation-settings-v1',
   remote: { enabled: false, writeEnabled: false, hostname: null, identityProvider: 'github', allowedIdentity: null }, heartbeat: { url: null, intervalMinutes: 5 } });
+
+// state point hub namespace owner-pushes: one push per event for a project's bridge, acked by the bridge's forwarder
+export const OwnerPushSchema = z.strictObject({ schema: z.literal('owner-push-v1'), id: IdSchema, projectId: IdSchema, kind: PushKindSchema, text: z.string().min(1).max(4000), urgent: z.boolean(),
+  ref: z.string().max(40).optional(), createdAt: TimestampSchema, heldAt: TimestampSchema.optional(), ackedAt: TimestampSchema.optional(), droppedAt: TimestampSchema.optional() });
+export type OwnerPush = z.infer<typeof OwnerPushSchema>;
+/** What the forwarder sends into the bridge: one or several pushes, with the ids it acks after sending. */
+export const OwnerPushMessageSchema = z.strictObject({ schema: z.literal('owner-push-message-v1'), id: IdSchema, projectId: IdSchema, pushIds: z.array(IdSchema).min(1).max(200),
+  kind: z.union([PushKindSchema, z.literal('batch'), z.literal('quiet_summary')]), ref: z.string().max(40).optional(), text: z.string().min(1).max(12000) });
+export type OwnerPushMessage = z.infer<typeof OwnerPushMessageSchema>;
+export const OwnerPushAckSchema = z.strictObject({ schema: z.literal('owner-push-ack-v1'), project: z.string().min(1).max(200), pushIds: z.array(IdSchema).min(1).max(200) });
+export const OwnerBridgeRequestSchema = z.strictObject({ schema: z.literal('owner-bridge-request-v1'), operation: z.enum(['start', 'restart', 'stop']), project: z.string().max(200).optional(),
+  cwd: z.string().max(4096).optional(), claudeConfigDir: z.string().startsWith('/').max(4096).optional() });
+export const OwnerBridgeResultSchema = z.strictObject({ schema: z.literal('owner-bridge-result-v1'), ok: z.boolean(), text: z.string().max(2000) });

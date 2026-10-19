@@ -5,7 +5,8 @@ import { z } from 'zod';
 import { EmptySchema, ErrorDocumentSchema, HubUnavailable, IdSchema, ThreadAttachRequestSchema, ThreadDetachRequestSchema } from '@jevellan/core';
 import { JournalRebuildInputSchema, JournalRebuildReceiptSchema } from '@jevellan/core';
 import { ProjectSendRequestSchema, ProjectSendResultSchema } from '@jevellan/core';
-import { OwnerToolRequestSchema, StatusLineRequestSchema, StatusLineViewSchema } from '@jevellan/core';
+import { OwnerBridgeRequestSchema, OwnerPushAckSchema, OwnerToolRequestSchema, StatusLineRequestSchema, StatusLineViewSchema } from '@jevellan/core';
+import { OwnerRefusal } from './owner-tools.js';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { Application } from './application.js';
 import { diagnoseApplication, type LocalDiagnostics } from './diagnostics.js';
@@ -62,6 +63,31 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
       const after = Number(request.headers['last-event-id'] ?? url.searchParams.get('after') ?? 0); const project = url.searchParams.get('project');
       const projectId = project ? (await app.ownerTools.resolveProject({ project })).id : undefined;
       app.ownerEvents.stream(response, Number.isFinite(after) && after > 0 ? after : 0, projectId); return;
+    }
+    if (path === '/api/local/pushes') {
+      // The bridge forwarder's push feed: every unacked message for its project, then new ones as they appear.
+      if (request.method !== 'GET') throw failure('This operation does not support that method.', 405);
+      const project = await app.ownerTools.resolveProject({ project: url.searchParams.get('project') ?? '' });
+      response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
+      const sent = new Set<string>();
+      const tick = () => { for (const message of app.ownerPushes.messages(project.id)) if (!sent.has(message.id)) { sent.add(message.id); response.write(`id: ${message.id}\nevent: push\ndata: ${JSON.stringify(message)}\n\n`); } };
+      tick(); const timer = setInterval(() => { try { tick(); } catch { /* the next tick retries */ } }, 1000); const keepAlive = setInterval(() => response.write(': keep-alive\n\n'), 15_000);
+      response.on('close', () => { clearInterval(timer); clearInterval(keepAlive); }); return;
+    }
+    if (path === '/api/local/pushes/ack') {
+      if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
+      const input = OwnerPushAckSchema.parse(await requestBody(request)); const project = await app.ownerTools.resolveProject({ project: input.project });
+      json(response, { schema: 'owner-push-acked-v1', acked: app.ownerPushes.ack(project.id, input.pushIds) }); return;
+    }
+    if (path === '/api/local/bridge') {
+      if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
+      const input = OwnerBridgeRequestSchema.parse(await requestBody(request)); const project = await app.ownerTools.resolveProject({ project: input.project ?? '', ...(input.cwd ? { cwd: input.cwd } : {}) });
+      release = app.lifecycle.enter({ kind: 'request' });
+      try {
+        const text = input.operation === 'stop' ? app.ownerBridges.stopBridge(project) : await app.ownerBridges.startBridge(project, { restart: input.operation === 'restart', ...(input.claudeConfigDir ? { claudeConfigDir: input.claudeConfigDir } : {}) });
+        json(response, { schema: 'owner-bridge-result-v1', ok: true, text });
+      } catch (error) { if (error instanceof OwnerRefusal) { json(response, { schema: 'owner-bridge-result-v1', ok: false, text: error.message }); return; } throw error; }
+      return;
     }
     const tool = path.match(/^\/api\/local\/tools\/([a-z_]{1,40})$/u);
     if (tool) {

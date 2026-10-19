@@ -16,9 +16,9 @@ export class OwnerRefusal extends Error {
 export type OwnerContext = { app: Application; tools: OwnerTools; project: Project; request: OwnerToolRequest; action: string; args: Record<string, unknown>; now: Date };
 /** Takeover arrives with its phase; until then `thread open` and `return` say so. */
 export class OwnerTakeoverPending {
-  async open(_context: OwnerContext, id: string, _thread: unknown): Promise<{ text: string }> { throw new OwnerRefusal(`Taking over ${id} is not available in this version yet.`, 'not_available', 501); }
-  async return(_context: OwnerContext, id: string, _thread: unknown, _as: 'resume' | 'done' | 'stop', _note?: string): Promise<{ text: string }> { throw new OwnerRefusal(`${id} is not held.`, 'not_held', 409); }
-  async stop(_context: OwnerContext, id: string, _thread: unknown, _reason?: string): Promise<{ text: string }> { throw new OwnerRefusal(`${id} is not held.`, 'not_held', 409); }
+  async open(...input: [OwnerContext, string, unknown]): Promise<{ text: string }> { throw new OwnerRefusal(`Taking over ${input[1]} is not available in this version yet.`, 'not_available', 501); }
+  async return(...input: [OwnerContext, string, unknown, 'resume' | 'done' | 'stop', string?]): Promise<{ text: string }> { throw new OwnerRefusal(`${input[1]} is not held.`, 'not_held', 409); }
+  async stop(...input: [OwnerContext, string, unknown, string?]): Promise<{ text: string }> { throw new OwnerRefusal(`${input[1]} is not held.`, 'not_held', 409); }
 }
 export type OwnerHandler = (context: OwnerContext) => Promise<{ text: string; data?: unknown }>;
 
@@ -133,7 +133,8 @@ export class OwnerTools {
       return { at: handoff.at, text: [handoff.inFlight, handoff.pendingAsks, handoff.decisions].filter(Boolean).join(' ').replace(/\s+/gu, ' ') };
     } catch { return null; }
   }
-  async missedSince(_projectId: string, _since: string): Promise<string> { return 'none'; }
+  /** Missed nights arrive with phase 6. */
+  async missedSince(...input: [string, string]): Promise<string> { void input; return 'none'; }
   async overridesSince(projectId: string, since: string): Promise<number> {
     try { return (await this.app.projectHub.recentOverrides(projectId, 200)).filter(row => row.at >= since).length; } catch { return 0; }
   }

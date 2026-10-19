@@ -124,3 +124,4 @@ export * from './job-delivery-schemas.js';
 export * from './project-send-schemas.js';
 
 export * from './ekoa-oauth-schemas.js';
+export * from './owner-plugin.js';
