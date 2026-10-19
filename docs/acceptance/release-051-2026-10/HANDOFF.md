@@ -49,7 +49,7 @@ The product source is unchanged since `c083ec8d`. This run committed documentati
   - dev-madrid's activity file still holds `Coordinator: ekoa-code`, so the lifecycle gate stays busy.
   - No runtime worker was running on dev-madrid at the checks at about 11:50, 11:53 and 11:54:29, nor on the Pro at about 11:51. These are sampled observations, not proof of a continuous absence.
   - New events (the last at 11:54:02) start no coordinator turn.
-  - Following the brief's stop rule, this run stopped only its own queued runner at 11:54:49, after verifying its PID, parent and start time; that runner had run nothing. It stopped no service and no owner process.
+  - Following the brief's stop rule, this run stopped only its own queued runner at 11:54:49, after verifying its PID, parent and start time; that runner had run nothing. No additional service stop was performed during blocker closeout; the earlier authorized backup stop/restart is recorded below.
 - **Live journeys:** not run, blocked by the install. E1, LP1, LP2, LP3, LP4, LP5, LP9 and LP10 have no receipts.
 - **Cleanups A and B:** not run, blocked by the install. The J8 and J11 change and the release scripts are drafted privately, not committed.
   - J8 and J11: the change is to open `${target.url}/new` instead of `${target.url}/` before the Project picker, at `tests/e2e/skeleton.spec.ts:880` and `:967`.
