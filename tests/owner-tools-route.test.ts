@@ -56,3 +56,24 @@ test('the recursion guard: every session Jevellan starts carries its role, so th
   expect(coordinatorTurn?.launch.env.JEVELLAN_ROLE).toBe('coordinator');
   expect(coordinatorTurn?.launch.mcpServers?.jevellan?.env?.JEVELLAN_ROLE).toBe('coordinator');
 });
+
+test('the event stream numbers coordinator events and resumes after a seq', async () => {
+  const { forCoordinator } = await import('../packages/runtime-contract/dist/index.js');
+  f = await projectFixture({ control: true, coordinator: true });
+  f.fake.enqueueTurn(async turn => { turn.say('Working on it.'); return { status: 'completed' }; }, forCoordinator);
+  const control = readDocument(doctorControlPath(f.homes), DoctorControlSchema);
+  await fetch(`${control.origin}/api/local/projects/project/coordinator/messages`, { method: 'POST', headers: { Authorization: `Bearer ${control.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ schema: 'project-send-request-v1', clientMessageId: 'events_one', text: 'Status?', waitSeconds: 30 }) });
+  const events = f.app.ownerEvents.since(0, 'project');
+  expect(events.map(event => [event.source, event.kind])).toContainEqual(['C', 'text']);
+  expect(events.find(event => event.kind === 'text')?.text).toBe('Working on it.');
+  expect(events.every((event, index) => index === 0 || event.seq > events[index - 1]!.seq)).toBe(true);
+  const controller = new AbortController();
+  const said = events.find(event => event.kind === 'text')!; const before = events.filter(event => event.seq < said.seq);
+  const response = await fetch(`${control.origin}/api/local/events?project=project&after=${said.seq - 1}`, { headers: { Authorization: `Bearer ${control.token}` }, signal: controller.signal });
+  expect(response.headers.get('content-type')).toBe('text/event-stream');
+  const reader = response.body!.getReader(); let text = '';
+  while (!text.includes('Working on it.')) text += new TextDecoder().decode((await reader.read()).value);
+  for (const event of before) expect(text).not.toContain(`id: ${event.seq}\n`);
+  controller.abort();
+});

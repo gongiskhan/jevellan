@@ -104,10 +104,12 @@ export class OwnerTools {
       const used = usage ? Math.max(usage.weeklyPct ?? 0, usage.fiveHourPct ?? 0) : null;
       return { label: row.account.label, usedPercent: usage && (usage.weeklyPct !== undefined || usage.fiveHourPct !== undefined) ? used : null, budgetPercent: row.account.ceilingPct ?? 90 };
     });
-    return projectStatus({ project: { id: projectId, name: project.name }, now: this.now(), settings: view.settings, coordinator: view.coordinator, coordinatorStalled: false,
+    const view_ = projectStatus({ project: { id: projectId, name: project.name }, now: this.now(), settings: view.settings, coordinator: view.coordinator, coordinatorStalled: false,
       threads: view.threads, tasks: tasks.tasks, goals: goals.goals.map(row => row.goal), decisions: view.decisions.open, jobs: daily.jobs, dailies: daily.dailies, runs: daily.runs,
       windows: daily.window ? [daily.window] : [], deploys: deploys.records,
       budgets, deviceName: id => names.get(id) ?? id, deployPaused: false, ...(goal ? { goalFilter: goal } : {}) }, this.ids);
+    for (const run of [...view_.running, ...view_.queued, ...view_.landed, ...view_.finished]) if (run.kind === 'thread') this.app.ownerEvents.noteSource(run.internalId, run.id);
+    return view_;
   }
   async statusText(project: Project, options: { goal?: string; section?: 'waiting' | 'running' | 'queued' | 'landed' | 'finished'; detail?: boolean }): Promise<string> {
     return renderStatus(await this.status(project, options.goal), options);

@@ -6,6 +6,7 @@ import { HubNotifications, type PushSend } from './notifications.js';
 import { NotificationOwnerRequestSchema } from '@jevellan/core';
 import { EkoaMirrorService } from './ekoa-mirror.js';
 import { OwnerTools } from './owner-tools.js';
+import { OwnerEvents } from './owner-events.js';
 import type { EkoaConnector } from './ekoa-client.js';
 import { collectDeviceFacts, EkoaRequestSchema, DeviceSettingsInputSchema, DeviceTagsInputSchema, type DeviceFacts } from '@jevellan/core';
 import { existsSync } from 'node:fs';
@@ -72,6 +73,8 @@ export class Application {
   readonly cleanup: CleanupService; readonly projectWork: ProjectWork; readonly projectHub: ProjectHub;
   /** The owner tools (bridge): only the state point serves them. */
   #ownerTools: OwnerTools | undefined;
+  #ownerEvents: OwnerEvents | undefined;
+  get ownerEvents(): OwnerEvents { if (!this.#ownerEvents) throw Object.assign(new Error('Jevellan tools run on the state point. Use them on the device that holds the hub.'), { status: 409 }); return this.#ownerEvents; }
   get ownerTools(): OwnerTools { if (!this.#hub) throw Object.assign(new Error('Jevellan tools run on the state point. Use them on the device that holds the hub.'), { status: 409 }); return this.#ownerTools ??= new OwnerTools(this); }
   readonly terminals: TerminalService;
   readonly projectVisibility: ProjectVisibility;
@@ -204,6 +207,8 @@ export class Application {
       this.terminals = new TerminalService(this, { ...options.terminalOptions, timers: options.timers !== false });
       this.notifications = this.#hub ? new HubNotifications(this.hub, () => this.device.url, options.pushSend) : undefined;
       this.ekoa = this.#hub ? new EkoaMirrorService(this.hub, () => this.device.url, options.ekoaConnector) : undefined;
+      // The owner event stream listens from the start so watch and pushes see everything after start-up (bridge).
+      if (this.#hub) this.#ownerEvents = new OwnerEvents(this);
       const improverReady = Promise.all([this.conversations.ready, this.backgroundDrafts.ready]).then(() => undefined);
       const hub = this.#hub; const mesh = this.#mesh;
       this.improver = hub && mesh ? new Improver({ hub, deviceId: this.device.deviceId, ready: improverReady,

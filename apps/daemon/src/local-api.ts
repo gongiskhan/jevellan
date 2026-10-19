@@ -57,6 +57,12 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
       if (!response.destroyed) json(response, ProjectSendResultSchema.parse({ schema: 'project-send-result-v1', projectId, turn: null, reply: null, at: new Date().toISOString() }));
       return;
     }
+    if (path === '/api/local/events') {
+      if (request.method !== 'GET') throw failure('This operation does not support that method.', 405);
+      const after = Number(request.headers['last-event-id'] ?? url.searchParams.get('after') ?? 0); const project = url.searchParams.get('project');
+      const projectId = project ? (await app.ownerTools.resolveProject({ project })).id : undefined;
+      app.ownerEvents.stream(response, Number.isFinite(after) && after > 0 ? after : 0, projectId); return;
+    }
     const tool = path.match(/^\/api\/local\/tools\/([a-z_]{1,40})$/u);
     if (tool) {
       if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
