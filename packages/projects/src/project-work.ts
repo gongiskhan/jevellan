@@ -97,6 +97,8 @@ export const DEFAULT_PROJECT_TIMERS: ProjectTimers = {
   mainLeaseRetryMs: 20_000, fallbackCheckMs: 60_000, now: Date.now,
 };
 export type ProjectWorkOptions = {
+  /** The owner's display id of an object (bridge short ids), for refusals he reads. */
+  displayId?(projectId: string, prefix: 'G' | 'T', internalId: string): string | undefined;
   /** Missed nights (bridge): decides whether a window this late still opens as a catch-up. */
   nightGuard?(projectId: string, date: string, latenessMs: number, items: readonly string[]): Promise<{ open: true } | { open: false; outcome: string }>;
   /** Why this device may not start new work now (B5: it runs a newer version than its hub). */
@@ -325,7 +327,7 @@ export class ProjectWork {
       cancelThread: (task, reason, owner) => this.threads.stop(task.projectId, task.threadId!, reason, owner),
       reviewed: async (task, outcome, note) => delivery.toCoordinator(task.projectId, { schema: 'coordinator-event-v1', kind: 'task-reviewed', taskId: task.id, title: task.title, outcome, ...(note ? { note } : {}),
         id: `cev_${task.id}_${task.revision}`, at: task.updatedAt }) });
-    this.goals = new ProjectGoals({ hub: o.hub, tasks: this.tasks, redactor: o.redactor, now, settings: projectId => this.admission.settings(projectId),
+    this.goals = new ProjectGoals({ hub: o.hub, tasks: this.tasks, redactor: o.redactor, now, settings: projectId => this.admission.settings(projectId), ...(o.displayId ? { displayId: (projectId, goalId) => o.displayId!(projectId, 'G', goalId) } : {}),
       event: (projectId, event) => delivery.toCoordinator(projectId, event), changed: () => { void this.#sweepTasks(true).catch(() => undefined); },
       windowOpen: projectId => this.daily.mergesHeld(projectId),
       available: async projectId => {

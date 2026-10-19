@@ -9,11 +9,12 @@ import { thread } from './thread.js';
 import { config } from './config.js';
 import { login } from './login.js';
 import { jobs } from './jobs.js';
+import { goals } from './goals.js';
 
 const later = (name: string): OwnerHandler => async () => { throw new OwnerRefusal(`${name} is not available in this version yet.`, 'not_available', 501); };
 
 /** One handler per owner tool (bridge specification, "Tool handlers"): each only calls services and renders text. */
 export const OWNER_HANDLERS: Record<OwnerToolName, OwnerHandler> = {
-  status, activity, ask_coordinator: askCoordinator, work, goals: later('goals'), jobs, thread,
+  status, activity, ask_coordinator: askCoordinator, work, goals, jobs, thread,
   respond, override: later('override'), jev: later('jev'), config, login,
 };
