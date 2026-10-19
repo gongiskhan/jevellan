@@ -117,9 +117,7 @@ export class ProjectMergeGate {
         ...(moved.some(row => row.verificationRetries >= 1) ? { route: 'ask-owner', source: 'guard', reason: 'The pull request head moved during verification again after one retry.' } : {}),
         ...(failures >= 3 ? { route: 'ask-owner', source: 'guard', reason: 'Three verification reports failed on this pull request.' } : {}) }));
     }
-    let handoff = false, after: string | undefined;
-    do { const page = await this.o.hub.jobs(thread.projectId, after); handoff ||= page.records.some(job => job.run.kind === 'github-workflow' && (job.run.dispatchAfterMerge?.pull === thread!.pr!.number || job.run.schedulerSwitch?.ownerMergePull === thread!.pr!.number)); after = page.next ?? undefined; } while (after);
-    const reason = handoff ? 'The workflow handoff always needs the owner’s merge decision.' : ['stopped', 'failed'].includes(thread.state) ? 'The original thread has stopped or failed.' : route.packet.riskyAreas !== settings.riskyAreas ? 'The project’s risky areas changed after this routing decision.' : null;
+    const reason = ['stopped', 'failed'].includes(thread.state) ? 'The original thread has stopped or failed.' : route.packet.riskyAreas !== settings.riskyAreas ? 'The project’s risky areas changed after this routing decision.' : null;
     if (reason && (route.route !== 'ask-owner' || route.reason !== reason)) route = await this.#save({ ...route, route: 'ask-owner', source: 'guard', reason });
     // Shadow routes explain Jev's choice without performing the route's actions.
     if (!settings.autoMerge) return;

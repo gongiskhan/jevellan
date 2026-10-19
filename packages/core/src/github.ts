@@ -1,4 +1,4 @@
-import { GitHubWorkflowRunSchema, GitHubWorkflowRunsSchema, GitHubWorkflowJobsSchema, GitHubWorkflowDispatchSchema } from './github-actions.js';
+import { GitHubWorkflowRunSchema, GitHubWorkflowJobsSchema, GitHubWorkflowRunsSchema } from './github-actions.js';
 import { z } from 'zod';
 import { createHash } from 'node:crypto';
 const budgets = new Map<string, { remaining: number; limit: number; resetAt: number }>();
@@ -166,28 +166,9 @@ export class GitHubClient {
     return { merged: result.merged, ...(result.sha === undefined ? {} : { sha: result.sha }), message: this.#text(result.message) };
   }
 
-  async workflowRuns(repository: GitHubRepository, workflow: string, branch: string, since: string) {
-    const runs: z.infer<typeof GitHubWorkflowRunSchema>[] = [];
-    for (let page = 1; page <= 10; page++) {
-      void since; // The caller filters started time; a queued run may have been created before the day.
-      const query = new URLSearchParams({ branch, per_page: '100', page: String(page) });
-      const next = await this.#request('GET', `${repo(repository)}/actions/workflows/${encodeURIComponent(workflow)}/runs?${query}`, GitHubWorkflowRunsSchema);
-      runs.push(...next.workflow_runs); if (next.workflow_runs.length < 100) break;
-    }
-    return runs;
-  }
   async workflowRun(repository: GitHubRepository, runId: number) { return this.#request('GET', `${repo(repository)}/actions/runs/${pullNumber(runId)}`, GitHubWorkflowRunSchema); }
   async workflowJobs(repository: GitHubRepository, runId: number) {
     return this.#pages(page => this.#request('GET', `${repo(repository)}/actions/runs/${pullNumber(runId)}/jobs?per_page=100&page=${page}`, GitHubWorkflowJobsSchema), value => value.jobs);
-  }
-  async pinWorkflowRef(repository: GitHubRepository, branch: string, commit: string): Promise<void> {
-    if (!sha.test(commit) || !/^jv\/jobs\/[A-Za-z0-9_-]+$/u.test(branch)) throw new Error('Invalid workflow dispatch ref.');
-    await this.#request('POST', `${repo(repository)}/git/refs`, z.object({ ref: z.string(), object: z.object({ sha: z.string() }) }), { ref: `refs/heads/${branch}`, sha: commit });
-  }
-  async dispatchWorkflow(repository: GitHubRepository, workflow: string, ref: string, inputs?: Record<string, string>) {
-    // This API version can return the actual run; never infer identity from a generic latest run.
-    return this.#request('POST', `${repo(repository)}/actions/workflows/${encodeURIComponent(workflow)}/dispatches`, GitHubWorkflowDispatchSchema,
-      { ref, return_run_details: true, ...(inputs ? { inputs } : {}) }, { version: '2026-03-10' });
   }
   async workflowJobLog(repository: GitHubRepository, jobId: number): Promise<string> {
     const jobPath = `${repo(repository)}/actions/jobs/${pullNumber(jobId)}`;
@@ -218,22 +199,6 @@ export class GitHubClient {
     } else lines.push('No check annotations are available.');
     return this.#redactor.text(lines.join('\n')).slice(0, 8000);
   }
-  async actionsVariable(repository: GitHubRepository, variable: string): Promise<string> {
-    if (!/^[A-Za-z0-9_]{1,64}$/u.test(variable)) throw new Error('Invalid Actions variable name.');
-    return (await this.#request('GET', `${repo(repository)}/actions/variables/${encodeURIComponent(variable)}`, z.object({ name: z.string(), value: z.string().max(48000) }))).value;
-  }
-  async workflowRefs(repository: GitHubRepository) {
-    return this.#request('GET', `${repo(repository)}/git/matching-refs/heads/jv/jobs/`, z.array(z.object({ ref: z.string(), object: z.object({ sha: z.string().regex(sha) }) })).max(1000));
-  }
-  async deleteWorkflowRef(repository: GitHubRepository, branch: string): Promise<void> {
-    if (!/^jv\/jobs\/[A-Za-z0-9_-]+$/u.test(branch)) throw new Error('Invalid workflow dispatch ref.');
-    try { await this.#request('DELETE', `${repo(repository)}/git/refs/heads/${branch}`, z.null(), undefined, { noContent: true }); }
-    catch (error) {
-      // Recover a crash between successful deletion and its local receipt. Never hide permissions or validation failures on an existing ref.
-      if (!(error instanceof GitHubError) || ![404, 422].includes(error.status ?? 0) || (await this.workflowRefs(repository)).some(ref => ref.ref === `refs/heads/${branch}`)) throw error;
-    }
-  }
-
   async #arrayPages<T>(load: (page: number) => Promise<T[]>): Promise<T[]> {
     const all: T[] = [];
     for (let page = 1; page <= PAGE_LIMIT; page++) { const rows = await load(page); all.push(...rows); if (rows.length < 100) return all; }

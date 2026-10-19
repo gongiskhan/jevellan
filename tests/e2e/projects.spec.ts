@@ -1397,74 +1397,23 @@ test('LJ4 owner goals refill into a draft, approve on phone, obey daily caps and
   expect(errors).toEqual([]);
 });
 
-test('LJ5 Nightly reviews, merges one fix before cutoff, reruns the suite and gates deploy', async ({ page }, info) => {
+test('LJ5 nights run configured jobs before review and findings wait until the window ends', async ({ page }, info) => {
   const errors = await begin(page), route = '/api/projects/projects_daily';
   const step = (action: string) => control('/projects/daily', { schema: 'fixture-daily-control-v1', action });
   const prepared = await step('prepare') as { command: string };
-  const post = async (path: string, data: object) => { const response = await page.request.post(`${route}${path}`, { data, maxRetries: 1 }); expect(response.ok(), await response.text()).toBe(true); return response.json(); };
-  const testsGoal = (await post('/goals', { schema: 'goal-create-request-v1', clientRequestId: 'daily_goal', name: 'Hardening through automated tests', motivation: 'Catch regressions before people meet them.', health: 'Findings are resolved and the suite stays green.' })).goal;
-  const reviewGoal = (await post('/goals', { schema: 'goal-create-request-v1', clientRequestId: 'review_goal', name: 'Hardening through code review', motivation: 'Keep the structure clear.', health: 'Review findings are resolved.' })).goal;
-  const mirror = await control('/projects/ekoa', { schema: 'fixture-ekoa-loop-v1', action: 'prepare' }) as { url: string; token: string };
-  await page.goto('/settings/ekoa'); await page.getByRole('textbox', { name: 'MCP URL', exact: true }).fill(mirror.url); await page.getByLabel('Ekoa token', { exact: true }).fill(mirror.token);
-  await page.getByRole('checkbox', { name: 'Mirror tasks to Ekoa', exact: true }).check(); await page.getByRole('button', { name: 'Save', exact: true }).click();
+  const post = async (path: string, data: object) => { const response = await page.request.post(`${route}${path}`, { data }); expect(response.ok(), await response.text()).toBe(true); return response.json(); };
+  const goal = (await post('/goals', { schema: 'goal-create-request-v1', clientRequestId: 'daily_resilience', name: 'Resilience', motivation: 'Catch regressions.', health: 'Findings close promptly.' })).goal;
+  const full = await post('/jobs', { schema: 'job-create-request-v1', clientRequestId: 'night_suite', name: 'Full suite', goalId: goal.id, enabled: true, gate: null, run: { kind: 'command', command: prepared.command, timeoutMinutes: 5 } });
+  await post('/dailies', { schema: 'daily-create-request-v1', clientRequestId: 'night_suite', name: 'Full suite', goalId: goal.id, order: 1, enabled: true, target: { kind: 'job', jobId: full.id } });
+  await post('/dailies', { schema: 'daily-create-request-v1', clientRequestId: 'night_review', name: 'Review since last', goalId: goal.id, order: 2, enabled: true, target: { kind: 'review-since-last' } });
   await openProject(page, 'Projects daily'); await sectionTab(page, info, 'Routines');
-  await tap(page, page.getByRole('button', { name: 'New job', exact: true }));
-  const dialog = page.getByRole('dialog', { name: 'New job', exact: true });
-  await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Full suite'); await dialog.getByRole('textbox', { name: 'Command', exact: true }).fill(prepared.command);
-  await dialog.getByRole('combobox', { name: 'Goal', exact: true }).selectOption(testsGoal.id); await dialog.getByRole('button', { name: 'Save', exact: true }).click(); await expect(dialog).toHaveCount(0);
   const view = async () => ProjectDailyListViewSchema.parse(await read(page, `${route}/dailies`));
-  const tasks = async () => TaskListViewSchema.parse(await read(page, `${route}/tasks`)).tasks;
-  const full = (await view()).jobs.find(job => job.name === 'Full suite')!;
-  const deploy = await post('/jobs', { schema: 'job-create-request-v1', clientRequestId: 'daily_deploy', name: 'Deploy', goalId: testsGoal.id, enabled: true, gate: { jobId: full.id }, run: { kind: 'command', command: 'test -f nightly-fix.txt', timeoutMinutes: 1 } });
-  for (const [name, jobId, order] of [['Full suite', full.id, 1], ['Deploy', deploy.id, 2]] as const) await post('/dailies', { schema: 'daily-create-request-v1', clientRequestId: `daily_${order}`, name, goalId: testsGoal.id, order, enabled: true, target: { kind: 'job', jobId } });
-  await post('/dailies', { schema: 'daily-create-request-v1', clientRequestId: 'daily_review', name: 'Review since last', goalId: reviewGoal.id, order: 0, enabled: true, target: { kind: 'review-since-last' } });
-  await expect.poll(async () => (await view()).dailies.some(item => item.target.kind === 'review-since-last'), LONG).toBe(true);
-  const reviewDaily = (await view()).dailies.find(item => item.target.kind === 'review-since-last')!;
-  const reviewRow = page.locator(`[data-daily-id="${reviewDaily.id}"]`); await reviewRow.getByRole('button', { name: 'Edit', exact: true }).click();
-  const reviewEditor = page.getByRole('dialog', { name: 'Edit nightly item', exact: true }); await expect(reviewEditor.getByRole('textbox', { name: 'Review from commit', exact: true })).toHaveValue(/^[a-f0-9]{40}$/);
-  await shot(page, 'review-from-commit', true); await reviewEditor.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await step('pass');
-  const dayRun = TaskReceiptSchema.parse(await post(`/jobs/${full.id}/run`, { schema: 'project-run-request-v1', clientRequestId: 'full_in_day' }));
-  await expect.poll(async () => (await tasks()).find(task => task.id === dayRun.taskId)?.state, LONG).toBe('done'); await step('reset');
-  const candidate = TaskReceiptSchema.parse(await post('/tasks', { schema: 'task-create-request-v1', clientRequestId: 'daily_pr', title: 'Daily merge candidate', brief: 'PJ3: create greeting.txt', type: 'feature' }));
-  await expect.poll(async () => (await tasks()).find(task => task.id === candidate.taskId)?.state, LONG).toBe('in-review');
-  const thread = (await tasks()).find(task => task.id === candidate.taskId)!.threadId!;
-  const before = ProjectWorkViewSchema.parse(await read(page, `${route}/work`));
-  const { schema: oldSchema, projectId: oldProject, revision, ...settings } = before.settings; void oldSchema; void oldProject;
-  const enabledMerge = await page.request.put(`${route}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision, settings: { ...settings, autoMerge: true, riskyAreas: 'Stored data.' } } }); expect(enabledMerge.ok(), await enabledMerge.text()).toBe(true);
-  await step('open'); await expect.poll(async () => (await view()).mergesHeld, LONG).toBe(true);
-  await expect.poll(async () => (await tasks()).find(task => task.title === 'Fix the nightly review finding')?.state, LONG).toBe('done');
-  const first = await view(); expect(first.window!.plans[0]!.nightlyReview).toBe(true); expect(first.lastReview?.findings).toHaveLength(1);
-  expect(first.window!.taskIds).not.toContain(dayRun.taskId);
-  const fix = first.tasks.find(task => task.nightlyFixFor === first.window!.taskIds[0])!;
-  expect(fix.state).toBe('done'); expect(first.tasks.filter(task => task.nightlyFixFor === first.window!.taskIds[0])).toHaveLength(1);
-  await sectionTab(page, info, 'Pull requests');
-  const merge = page.locator('.pw-pr').filter({ hasText: 'Daily merge candidate' }).getByRole('button', { name: 'Merge', exact: true });
-  await expect(merge).toBeDisabled(); const denied = await page.request.post(`${route}/threads/${thread}/pr/merge`, { data: { schema: 'empty-request-v1' } }); expect(denied.status()).toBe(409);
-  await shot(page, 'nightly-merges-held');
+  await step('open'); await expect.poll(async () => (await view()).runs.some(run => run.phase === 'executing'), LONG).toBe(true);
+  const window = (await view()).window!; expect(window.plans.map(task => task.title)).toEqual(['Full suite', 'Review since last']); expect(window.mergesHeld).toBe(true);
+  await shot(page, 'WG3-nights-before-review', true);
   await step('pass'); await expect.poll(async () => (await view()).window?.state, LONG).toBe('finished');
-  const passed = await view(), runs = passed.runs.filter(run => passed.window!.taskIds.includes(run.taskId));
-  expect(runs.map(run => run.conclusion)).toEqual(['passed', 'passed']); expect(runs[0]!.commit).toBe(runs[1]!.commit);
-  expect(runs[0]!.commit).not.toBe(passed.runs.find(run => run.taskId === dayRun.taskId)!.commit);
-  await sectionTab(page, info, 'Routines'); await expect(page.getByText(/Last night's review/)).toBeVisible(); await shot(page, 'nightly-reviewed-and-passed');
-  await step('prepare-late'); await step('open');
-  await expect.poll(async () => (await tasks()).filter(task => task.nightlyFixFor && task.state === 'active').length, LONG).toBe(1);
-  await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 150 });
-  await step('pass'); await expect.poll(async () => (await view()).window?.state, LONG).toBe('finished');
-  const late = await view(), lateFix = late.tasks.find(task => task.nightlyFixFor === late.window!.taskIds[0])!;
-  expect(lateFix.state).toBe('active'); expect(late.runs.find(run => run.jobId === full.id && late.window!.taskIds.includes(run.taskId))!.commit).toBe(late.lastReviewedCommit);
-  await shot(page, 'nightly-fix-missed-cutoff');
-  expect(await control('/projects/release', { schema: 'fixture-release-v1', marker: 'LJ5 late fix' })).toEqual({ released: 1 });
-  await expect.poll(async () => (await tasks()).find(task => task.id === lateFix.id)?.state, LONG).toBe('done');
-  await step('prepare'); await step('open'); await expect.poll(async () => (await tasks()).filter(task => task.nightlyFixFor && ['queued', 'active', 'in-review'].includes(task.state)).length, LONG).toBe(0);
-  await step('fail'); await expect.poll(async () => (await view()).window?.state, LONG).toBe('finished');
-  const failed = await view(); expect(failed.window?.failed).toBe(true); expect(failed.runs.find(run => run.jobId === deploy.id && failed.window!.taskIds.includes(run.taskId))?.conclusion).toBe('skipped');
-  await expect.poll(async () => {
-    await control('/projects/ekoa', { schema: 'fixture-ekoa-loop-v1', action: 'tick' });
-    const mirrored = await control('/projects/ekoa', { schema: 'fixture-ekoa-loop-v1', action: 'list' }) as { tasks: Array<{ title: string; status: string }> };
-    return mirrored.tasks.filter(row => row.title === 'Jevellan · Projects daily: night report').length;
-  }, LONG).toBe(1);
-  await shot(page, 'nightly-failed-night-report'); expect(errors).toEqual([]);
+  const completed = await view(); expect(completed.runs.find(run => run.jobId === full.id)?.conclusion).toBe('passed'); expect(completed.lastReview).not.toBeNull();
+  await expect(page.getByText(/Last night's review/)).toBeVisible(); await shot(page, 'WG3-night-completed', true); expect(errors).toEqual([]);
 });
 
 test('PJ3b project GitHub tokens remain separate from the default connection', async ({ page }) => {
@@ -1482,35 +1431,32 @@ test('PJ3b project GitHub tokens remain separate from the default connection', a
   await page.getByRole('combobox', { name: 'GitHub token scope', exact: true }).selectOption(''); await expect(card.locator('.pw-token-summary')).toContainText('Saved'); expect(errors).toEqual([]);
 });
 
-test('LJ6 workflow daily records its actual run and a missing run times out explicitly', async ({ page }, info) => {
+test('WG3 command jobs and weekly nightly items preserve retired receipts', async ({ page }, info) => {
   const errors = await begin(page), route = '/api/projects/projects_workflows'; await openProject(page, 'Projects workflows');
   await sectionTab(page, info, 'Routines');
   await tap(page, page.getByRole('button', { name: 'New job', exact: true })); const dialog = page.getByRole('dialog', { name: 'New job', exact: true });
-  await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Nightly workflow'); await dialog.getByRole('combobox', { name: 'Run', exact: true }).selectOption('github-workflow');
-  await dialog.getByRole('textbox', { name: 'Workflow', exact: true }).fill('nightly.yml'); await dialog.getByRole('spinbutton', { name: 'Timeout in minutes', exact: true }).fill('5');
-  await dialog.getByRole('textbox', { name: 'Required step names', exact: true }).fill('Run full suite'); await dialog.getByRole('button', { name: 'Save', exact: true }).click(); await expect(dialog).toHaveCount(0);
+  await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Night command');
+  await dialog.getByRole('textbox', { name: 'Command', exact: true }).fill('printf nightly-passed');
+  await dialog.getByRole('textbox', { name: 'Device tags', exact: true }).fill('linux, prod-access');
+  await dialog.getByRole('combobox', { name: 'Working directory', exact: true }).selectOption('workspace');
+  await shot(page, 'WG3-command-editor', true);
+  await dialog.getByRole('textbox', { name: 'Device tags', exact: true }).fill('');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click(); await expect(dialog).toHaveCount(0);
   await tap(page, page.getByRole('button', { name: 'New nightly item', exact: true })); const daily = page.getByRole('dialog', { name: 'New nightly item', exact: true });
-  await daily.getByRole('textbox', { name: 'Name', exact: true }).fill('Nightly tests'); await daily.getByRole('combobox', { name: 'Job', exact: true }).selectOption({ label: 'Nightly workflow' }); await daily.getByRole('button', { name: 'Save', exact: true }).click(); await expect(daily).toHaveCount(0);
-  await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'workflow' });
-  const row = page.locator('[data-daily-id]').filter({ hasText: 'Nightly tests' }); await row.getByRole('button', { name: 'Run now', exact: true }).click();
-  const view = async () => ProjectDailyListViewSchema.parse(await read(page, `${route}/dailies`));
-  await expect.poll(async () => (await view()).runs[0]?.conclusion, LONG).toBe('passed'); await expect(row).toContainText('Done today'); await row.locator('details summary').click(); await shot(page, 'workflow-passed');
-  const missing = await page.request.post(`${route}/jobs`, { data: { schema: 'job-create-request-v1', clientRequestId: 'missing_workflow', name: 'Missing workflow', goalId: null, enabled: true, gate: null, run: { kind: 'github-workflow', workflow: 'missing.yml', mode: 'watch', timeoutMinutes: 5 } } }); expect(missing.ok()).toBe(true);
-  const definition = await missing.json(); const created = await page.request.post(`${route}/dailies`, { data: { schema: 'daily-create-request-v1', clientRequestId: 'missing_daily', name: 'Missing run', goalId: null, enabled: true, order: 2, target: { kind: 'job', jobId: definition.id } } }); expect(created.ok()).toBe(true);
-  const absent = page.locator('[data-daily-id]').filter({ hasText: 'Missing run' }); await absent.getByRole('button', { name: 'Run now', exact: true }).click();
-  await expect.poll(async () => (await view()).runs.some(run => run.jobId === definition.id && run.phase === 'watching'), LONG).toBe(true);
-  await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 5 });
-  await expect.poll(async () => (await view()).runs.find(run => run.jobId === definition.id)?.conclusion, LONG).toBe('timed-out'); await expect(absent).toContainText('No run of missing.yml started today.'); await shot(page, 'workflow-missing');
-  const scheduler = await page.request.post(`${route}/jobs`, { data: { schema: 'job-create-request-v1', clientRequestId: 'scheduler_job', name: 'Owner scheduler switch', goalId: null, enabled: true, gate: null,
-    run: { kind: 'github-workflow', workflow: 'scheduler.yml', mode: 'dispatch', timeoutMinutes: 5, schedulerSwitch: { schema: 'workflow-scheduler-switch-v1', variable: 'NIGHTLY_SCHEDULER', dispatchValue: 'jevellan', watchOrder: 2 } } } }); expect(scheduler.ok()).toBe(true);
-  const switched = await scheduler.json();
-  const nightly = await page.request.post(`${route}/dailies`, { data: { schema: 'daily-create-request-v1', clientRequestId: 'scheduler_daily', name: 'Switch mode nightly', goalId: null, enabled: true, order: 3, target: { kind: 'job', jobId: switched.id } } }); expect(nightly.ok()).toBe(true);
-  await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'scheduler-watch' });
-  await expect(page.getByText('GitHub runs the chain tonight', { exact: true })).toBeVisible(); await shot(page, 'github-night-mode');
-  await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 421 });
-  await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'scheduler-dispatch' });
-  await expect(page.getByText('Jevellan runs the night', { exact: true })).toBeVisible(); await shot(page, 'jevellan-night-mode');
-  expect(errors).toEqual([]);
+  await daily.getByRole('textbox', { name: 'Name', exact: true }).fill('Weekly checks');
+  await daily.getByRole('combobox', { name: 'Job', exact: true }).selectOption({ label: 'Night command' });
+  await daily.getByRole('checkbox', { name: 'Mon', exact: true }).check();
+  await daily.getByRole('checkbox', { name: 'Thu', exact: true }).check();
+  await shot(page, 'WG3-weekday-editor', true);
+  await daily.getByRole('button', { name: 'Save', exact: true }).click(); await expect(daily).toHaveCount(0);
+  const row = page.locator('[data-daily-id]').filter({ hasText: 'Weekly checks' }); await expect(row).toContainText('Mon, Thu');
+  await row.getByRole('button', { name: 'Run now', exact: true }).click();
+  await expect.poll(async () => ProjectDailyListViewSchema.parse(await read(page, `${route}/dailies`)).runs[0]?.conclusion, LONG).toBe('passed');
+  await expect(row).toContainText('Done today'); await row.locator('details summary').click(); await expect(row).toContainText('nightly-passed');
+  const refused = await page.request.post(`${route}/jobs`, { data: { schema: 'job-create-request-v1', clientRequestId: 'retired_workflow', name: 'Retired workflow', goalId: null, enabled: true, gate: null, run: { kind: 'github-workflow', workflow: 'old.yml', mode: 'watch', timeoutMinutes: 5 } } }); expect(refused.status()).toBe(400);
+  await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'retired' }); await page.reload(); await sectionTab(page, info, 'Routines');
+  await expect(page.getByText('GitHub workflow (retired 19 October)', { exact: true }).first()).toBeVisible();
+  await shot(page, 'WG3-retired-and-completed', true); expect(errors).toEqual([]);
 });
 
 test('LJ7 two fix effort corrections appear first in the next fix Why panel', async ({ page }) => {

@@ -82,7 +82,7 @@ test('a night job with no device skips at the night window end', async () => {
   const receipt = await quiet.runJob('project', job.id, { schema: 'project-run-request-v1', clientRequestId: 'night_wait_run' });
   let task = await work.tasks.read('project', receipt.taskId);
   const openedAt = new Date(now).toISOString();
-  await f.app.projectHub.putWindow({ schema: 'project-window-v1', id: 'night_wait_window', projectId: 'project', revision: 0, date: openedAt.slice(0, 10), closingProjectDay: task.projectDay!, state: 'open', mergesHeld: true, openedAt, taskIds: [], plans: [] }, 0);
+  await f.app.projectHub.putWindow({ schema: 'project-window-v1', id: 'night_wait_window', projectId: 'project', revision: 0, date: openedAt.slice(0, 10), closingProjectDay: task.projectDay!, state: 'open', memoryDreamPending: false, mergesHeld: true, openedAt, taskIds: [], plans: [] }, 0);
   task = await work.tasks.save({ ...task, nightlyWindowId: 'night_wait_window' }); await work.jobs.start(task);
   let run = (await work.jobs.runs('project'))[0]!; expect(run.phase).toBe('waiting');
   now += 7 * 3600000; await work.jobs.sweep('project');
@@ -136,4 +136,17 @@ test('a reserved receipt blocks a second job on the same device or project', asy
   const otherJob = await quiet.createJob('other_project', { schema: 'job-create-request-v1', clientRequestId: 'other_job', name: 'Other job', goalId: null, enabled: true, run: { kind: 'command', command: 'true', needs: [], cwd: 'checkout', timeoutMinutes: 1 }, gate: null });
   const otherTask = await quiet.runJob('other_project', otherJob.id, { schema: 'project-run-request-v1', clientRequestId: 'other_job_run' });
   await expect(f.app.projectHub.putJobRun({ ...right, id: 'other_slot', revision: 0, projectId: 'other_project', jobId: otherJob.id, taskId: otherTask.taskId, spec: otherJob.run, phase: 'reserved' }, 0)).rejects.toThrow('One job runs per project and per device at a time.');
+});
+
+test('the coordinator can cancel a command executing on a member without repeating it', async () => {
+  const f = fixture = await projectFixture(), work = f.app.projectWork, member = await projectMember(f);
+  const row = f.app.hub.get('devices', member.deviceId, DeviceSchema)!; f.app.hub.put('devices', member.deviceId, DeviceSchema, { ...row.document, tags: ['remote-cancel'] }, row.revision);
+  const job = await command(f, 'cancel_remote', ['remote-cancel'], 'sleep 60');
+  const receipt = await work.daily.runJob('project', job.id, { schema: 'project-run-request-v1', clientRequestId: 'cancel_remote_run' });
+  await work.dispatcher.sweep('project'); await member.app.projectWork.inbox.poll();
+  await f.waitFor(() => work.jobs.runs('project'), runs => runs.some(run => run.taskId === receipt.taskId && run.phase === 'executing'));
+  await work.jobs.cancel('project'); await member.app.projectWork.jobs.sweep('project');
+  const run = await f.waitFor(async () => (await work.jobs.runs('project')).find(run => run.taskId === receipt.taskId)!, run => run.conclusion === 'cancelled');
+  expect(run.deviceId).toBe(member.deviceId); expect(run.cancelRequestedAt).toBeDefined();
+  await member.app.projectWork.jobs.sweep('project'); expect((await work.jobs.runs('project')).filter(row => row.taskId === receipt.taskId)).toHaveLength(1);
 });

@@ -38,15 +38,15 @@ test('per-device admission serializes the last overridden slot and survives lega
   const c = await admission.admit(projectId, deviceId, 'two'); expect(c.ok).toBe(true); if (c.ok) c.release();
   const disk = await f.json(`/api/devices/${deviceId}/worktrees`, WorktreeDiskSchema); expect(disk.deviceId).toBe(deviceId);
 });
-test('a queued workflow job waits on fresh worker resources without a run receipt or dispatch', async () => {
+test('a queued command job waits on fresh worker resources without starting execution', async () => {
   let facts = healthy(); f = await projectFixture({ deviceFacts: () => facts }); const work = f.app.projectWork;
   await work.prepareDailyWork(f.project.id);
-  const job = await work.daily.createJob(f.project.id, { schema: 'job-create-request-v1', clientRequestId: 'job', name: 'Workflow', goalId: null, enabled: true, gate: null, run: { kind: 'github-workflow', workflow: 'nightly.yml', mode: 'dispatch', timeoutMinutes: 5 } });
+  const job = await work.daily.createJob(f.project.id, { schema: 'job-create-request-v1', clientRequestId: 'job', name: 'Command', goalId: null, enabled: true, gate: null, run: { kind: 'command', command: 'true', timeoutMinutes: 1 } });
   facts = { ...facts, freeDiskBytes: 19e9 };
   const receipt = await work.daily.runJob(f.project.id, job.id, { schema: 'project-run-request-v1', clientRequestId: 'run' });
   await work.pulse(); expect((await work.tasks.read(f.project.id, receipt.taskId)).state).toBe('queued');
-  expect(await work.jobs.runs(f.project.id)).toEqual([]); expect(f.github.requests.some(row => row.path.endsWith('/dispatches'))).toBe(false);
+  expect(await work.jobs.runs(f.project.id)).toMatchObject([{ phase: 'waiting', conclusion: null }]); expect(f.github.requests.some(row => row.path.endsWith('/dispatches'))).toBe(false);
   facts = healthy(); await work.pulse();
-  await f.waitFor(() => f!.github.requests.some(row => row.path.endsWith('/dispatches')));
+  await f.waitFor(() => work.jobs.runs('project'), runs => runs.some(run => run.taskId === receipt.taskId && run.conclusion === 'passed'));
   expect((await work.jobs.runs(f.project.id)).filter(run => run.taskId === receipt.taskId)).toHaveLength(1);
 });

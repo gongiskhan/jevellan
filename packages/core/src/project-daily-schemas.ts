@@ -15,24 +15,25 @@ export const ProjectJobSchema = z.strictObject({ schema: z.literal('project-job-
   name: text.max(80), goalId: IdSchema.nullable(), run: JobRunSpecSchema, gate: z.strictObject({ jobId: IdSchema }).nullable(), enabled: z.boolean(),
   requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema });
 export type ProjectJob = z.infer<typeof ProjectJobSchema>;
+export const ProjectJobFindingsSchema = z.strictObject({ schema: z.literal('project-job-findings-v1'), findings: z.array(z.strictObject({ title: text.max(120), brief: text.max(20000) })).max(20) });
 export const ProjectJobRunSchema = z.strictObject({ schema: z.literal('project-job-run-v1'), id: IdSchema, projectId: IdSchema, revision,
   jobId: IdSchema, taskId: IdSchema, commit: z.string().regex(/^[0-9a-f]{40}$/u), deviceId: IdSchema, projectDay: date,
   startedAt: TimestampSchema, endedAt: TimestampSchema.optional(), cleanedAt: TimestampSchema.optional(), conclusion: z.enum(['passed', 'failed', 'timed-out', 'cancelled', 'skipped']).nullable(),
-  summary: z.string().max(1200), logTail: z.string().max(8000), url: z.url().optional(), workflowRunId: z.number().int().positive().optional(), workflowHeadBound: z.boolean().optional(),
-  dispatchRef: z.string().max(200).optional(), gateRunId: IdSchema.optional(), requestedByDeviceId: IdSchema.optional(), waitingUntil: TimestampSchema.optional(), workspaceRetainedAt: TimestampSchema.optional(),
+  summary: z.string().max(1200), findings: ProjectJobFindingsSchema.shape.findings.default([]), logTail: z.string().max(8000), url: z.url().optional(), workflowRunId: z.number().int().positive().optional(), workflowHeadBound: z.boolean().optional(),
+  dispatchRef: z.string().max(200).optional(), gateRunId: IdSchema.optional(), requestedByDeviceId: IdSchema.optional(), waitingUntil: TimestampSchema.optional(), cancelRequestedAt: TimestampSchema.optional(), workspaceRetainedAt: TimestampSchema.optional(),
   phase: z.enum(['waiting', 'reserved', 'executing', 'watching', 'finished']), pollAfter: TimestampSchema.optional(),
   workflowHandoff: WorkflowHandoffStateSchema.optional(), workflowScheduler: WorkflowSchedulerStateSchema.optional(), nightlyWindowId: IdSchema.optional(), workflowCompletedAt: TimestampSchema.optional(), dispatchRefDeletedAt: TimestampSchema.optional(),
   // Snapshot before execution: an edit never changes an already reserved job.
   spec: JobRunSpecSchema, setupCommand: z.string().max(500).nullable().default(null), baseBranch: z.string().min(1).max(200), watchAfter: TimestampSchema });
 export type ProjectJobRun = z.infer<typeof ProjectJobRunSchema>;
 export const ProjectDailySchema = z.strictObject({ schema: z.literal('project-daily-v1'), id: IdSchema, projectId: IdSchema, revision,
-  name: text.max(80), goalId: IdSchema.nullable(), order: z.number().int().min(0).max(100),
+  name: text.max(80), goalId: IdSchema.nullable(), days: z.array(z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])).min(1).max(7).optional(), order: z.number().int().min(0).max(100),
   target: z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('memory-dream') }), z.strictObject({ kind: z.literal('job'), jobId: IdSchema }), z.strictObject({ kind: z.literal('review-since-last'), reviewFromCommit: z.string().regex(/^[0-9a-f]{40}$/u).optional() }), z.strictObject({ kind: z.literal('session'), title: text.max(120), brief: text.max(20000), type: TaskTypeSchema })]),
   reviewFromVersion: revision.default(0), reviewFromOwner: z.boolean().default(false), enabledSince: TimestampSchema.optional(),
   enabled: z.boolean(), requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema });
 export type ProjectDaily = z.infer<typeof ProjectDailySchema>;
 export const ProjectWindowSchema = z.strictObject({ schema: z.literal('project-window-v1'), id: IdSchema, projectId: IdSchema, revision, date, closingProjectDay: date,
-  state: z.enum(['open', 'finished']), mergesHeld: z.boolean(), openedAt: TimestampSchema, jobPhaseStartedAt: TimestampSchema.optional(), scheduledAt: TimestampSchema.optional(), openedLateReason: z.string().max(400).optional(), finishedAt: TimestampSchema.optional(), taskIds: z.array(IdSchema).max(50),
+  state: z.enum(['open', 'finished']), memoryDreamPending: z.boolean().default(false), mergesHeld: z.boolean(), openedAt: TimestampSchema, jobPhaseStartedAt: TimestampSchema.optional(), scheduledAt: TimestampSchema.optional(), openedLateReason: z.string().max(400).optional(), finishedAt: TimestampSchema.optional(), taskIds: z.array(IdSchema).max(50),
   plans: z.array(ProjectWorkTaskSchema).max(50), workflowScheduler: WorkflowSchedulerStateSchema.optional(), outcome: z.string().max(8000).optional(), failed: z.boolean().optional() });
 export type ProjectWindow = z.infer<typeof ProjectWindowSchema>;
 const jobFields = ProjectJobSchema.omit({ schema: true, id: true, projectId: true, revision: true, createdAt: true, updatedAt: true, requestDigest: true }).shape;

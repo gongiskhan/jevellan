@@ -25,7 +25,7 @@ export const VaultProjectSchemaV1 = z.strictObject({
   goals: z.array(z.strictObject({ name: z.string().trim().min(1).max(80), state: GoalStateSchema, motivation: z.string().trim().min(1).max(4000), health: z.string().max(1000),
     autonomy: GoalAutonomySchema, dailyRefillCap: z.number().int().min(0).max(20), openPrCap: z.number().int().min(1).max(10) })).max(100),
   jobs: z.array(z.strictObject({ name: z.string().min(1).max(80), goal: z.string().max(80).nullable(), run: JobRunSpecSchema, gate: z.string().max(80).nullable(), enabled: z.boolean() })).max(100),
-  dailies: z.array(z.strictObject({ name: z.string().min(1).max(80), goal: z.string().max(80).nullable(), order: z.number().int().min(0).max(100), enabled: z.boolean(),
+  dailies: z.array(z.strictObject({ name: z.string().min(1).max(80), goal: z.string().max(80).nullable(), days: z.array(z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])).min(1).max(7).optional(), order: z.number().int().min(0).max(100), enabled: z.boolean(),
     target: z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('memory-dream') }), z.strictObject({ kind: z.literal('job'), job: z.string().min(1).max(80) }),
       z.strictObject({ kind: z.literal('review-since-last') }), z.strictObject({ kind: z.literal('session'), title: z.string().min(1).max(120), brief: z.string().min(1).max(20000), type: TaskTypeSchema })]) })).max(100),
 });

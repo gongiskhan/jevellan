@@ -45,3 +45,17 @@ The required project task for nightly script entrypoints was created through Jev
 Simulated: **75 backend checks in five files passed**. They cover local and member execution, project/device admission, guards, waiting and expiry, paused projects, retained workspaces, inventory parsing and summary-only credential copying. Typecheck and lint passed. The self-admission, paused-project and credential-name defects each had a failing regression before correction. No screen changed in this phase; the job editor follows in P3. Release and live clocks remain unstarted.
 
 Live repair verification: doctor returned **10/10 on both devices**, each still on 0.5.1. Normal account checks succeeded; the first refresh helper used the wrong empty-request schema and was corrected. Private doctor receipts are `staging-doctor-madrid.txt` and `staging-doctor-pro.txt`.
+
+## P3 nightly command programme
+
+Configured order now governs the nightly window. A scheduled Memory dream finishes or reports its blocker before command jobs start; jobs precede the review in the replacement programme. Review fix tasks use the ordinary queue and never bypass the publication hold. Command jobs pin their main commit at reservation and continue after a prior nightly failure. Weekly items can select weekdays; no selection means every night.
+
+New GitHub workflow jobs and explicit runs are refused. The scheduler-variable switch, watch chains and dispatch operations were removed from execution. Historical schemas remain readable and the UI labels them “GitHub workflow (retired 19 October)”. Existing unfinished workflow receipts conclude skipped without contacting Actions. Command editors expose device tags and retained workspaces; nightly editors expose weekdays.
+
+A command can return `project-job-findings-v1` in `project-job-findings.json`. The coordinator records its bounded, redacted findings on the receipt and creates goal-linked fix tasks with stable request ids. Remote cancellation is durable and observed by the executing device. These use the existing task autonomy and goal rules.
+
+The revision-checked programme migration preserves goal and daily identifiers, moves the review under Resilience, marks the prior review goal done, activates the legal goal, keeps Security paused, disables old workflow jobs and adds the disabled Monday model check. It does not recreate a nightly deploy. The full workflow translation and area map are private `workflows.md` and `area-map.json`. Live configuration and manual night results remain pending the release switch and the required project script task.
+
+Simulated: the affected backend sets passed for command pinning, ordering, weekdays and clearing them, findings, remote cancellation, shared memory, preserved goal/daily identifiers, retired history and all 39 legacy merge cases. The obsolete workflow merge hold first failed its new regression, then passed after removal. The device test was updated to expect the required waiting receipt. Typecheck, lint and build passed.
+
+Simulated browser journeys: **eight passed**, two journeys in all four layouts. Live vision: **20 checks passed** through the dedicated vision credential. Evidence is private in `p3-vision`, `p3-screenshots`, `p3-screenshots.json` and the `p3-*.log` receipts. This is affected verification; the full release gate remains P10.

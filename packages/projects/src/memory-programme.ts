@@ -22,7 +22,7 @@ export const dreamAppend = (project: string, commit: string) => `You are consoli
 5. Project brief: rewrite the note "Project brief" in at most 2,000 characters: what the project is, how to build, run and test it, its conventions, its current areas of work and its known gotchas.
 Never edit notes whose source is owner; link to them instead. Never delete; archive. End with exactly one jevellan_memory_dream_report.`;
 
-/** Memory work uses Projects placement, launch, accounting, Git and sweep services. It never joins the ordered nightly tasks. */
+/** Memory work uses Projects placement, launch, accounting, Git and sweep services. Its nightly dream finishes before the ordered command jobs start. */
 export class ProjectMemoryProgramme {
   readonly dream: MemoryDream; readonly #active = new Map<string, { promise: Promise<void>; execution?: TurnExecution }>(); #closed = false;
   constructor(readonly o: { sessionEnd?(evidence: SessionEvidence): void; store: HubMemoryStore; captures: ProjectCaptureQueue; hub: ProjectHub; launcher: TurnLauncher; placement: Placement;
@@ -95,7 +95,7 @@ export class ProjectMemoryProgramme {
     const local = new Date(this.o.now()), day = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2,'0')}-${String(local.getDate()).padStart(2,'0')}`;
     const prior = dream ? new Date(dream.startedAt) : null;
     const alreadyToday = prior && `${prior.getFullYear()}-${String(prior.getMonth()+1).padStart(2,'0')}-${String(prior.getDate()).padStart(2,'0')}` === day;
-    const due = settings.nightlyWindow.enabled ? !!window && nightlyItem?.enabled && (!dream || Date.parse(dream.startedAt) < Date.parse(window.openedAt))
+    const due = settings.nightlyWindow.enabled ? !!window && window.state === 'open' && window.memoryDreamPending && nightlyItem?.enabled && (!dream || Date.parse(dream.startedAt) < Date.parse(window.openedAt))
       : local.getHours() >= 3 && !alreadyToday;
     if (this.busy(project.id)) return;
     const previous = this.session(project.id, 'extraction'), input = this.o.captures.extractionInput(project.id);

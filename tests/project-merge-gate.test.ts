@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from 'vitest';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { AccountSchema, GitHubClient, MergeDocumentsViewSchema, ProjectWorkSettingsSchema, SecretRedactor, VerificationReportSchema, defaultProjectWorkSettings, type MergeRoute, type ModelOption } from '../packages/core/dist/index.js';
+import { ProjectJobSchema, AccountSchema, GitHubClient, MergeDocumentsViewSchema, ProjectWorkSettingsSchema, SecretRedactor, VerificationReportSchema, defaultProjectWorkSettings, type MergeRoute, type ModelOption } from '../packages/core/dist/index.js';
 import { decideMergeRoute, type DecisionClient, type JevQuestions } from '../packages/decisions/dist/index.js';
 import { FakeRuntime, forThread } from '../packages/runtime-contract/dist/index.js';
 import { VERIFICATION_APPEND, VerificationTools, derivedId } from '../packages/projects/dist/index.js';
@@ -84,12 +84,12 @@ test.each(['paused', 'archived'] as const)('%s keeps pull request polling and ow
   expect(response.status).toBe(200);
   expect(f.thread(thread.id).pr?.state).toBe('merged');
 }, 90_000);
-test('a workflow handoff is always ask-owner even when Jev chooses merge', async () => {
-  const { f } = await setup(), thread = await published(f);
-  await f.app.projectWork.daily.createJob('project', { schema: 'job-create-request-v1', clientRequestId: 'handoff', name: 'Nightly', goalId: null, enabled: true, gate: null,
-    run: { kind: 'github-workflow', workflow: 'nightly.yml', mode: 'dispatch', timeoutMinutes: 5, dispatchAfterMerge: { schema: 'workflow-dispatch-handoff-v1', pull: thread.pr!.number, watchOrder: 1 } } });
-  await settings(f); await gate(f); expect(f.thread(thread.id).pr?.state).toBe('open'); expect((await routes(f, thread.id))[0]).toMatchObject({ route: 'ask-owner', source: 'guard', reason: 'The workflow handoff always needs the owner’s merge decision.' });
-  expect(f.github.requests.some(row => row.method === 'PUT' && row.path.endsWith('/merge'))).toBe(false);
+test('a retired workflow hint cannot hold the legacy pull-request route', async () => {
+  const { f } = await setup(), thread = await published(f), at = f.app.projectWork.tasks.at();
+  f.app.hub.put('project-jobs', 'retired_handoff', ProjectJobSchema, { schema: 'project-job-v1', id: 'retired_handoff', projectId: 'project', revision: 1, name: 'Historical nightly', goalId: null, enabled: false, gate: null,
+    run: { kind: 'github-workflow', workflow: 'nightly.yml', mode: 'dispatch', timeoutMinutes: 5, dispatchAfterMerge: { schema: 'workflow-dispatch-handoff-v1', pull: thread.pr!.number, watchOrder: 1 } }, createdAt: at, updatedAt: at }, 0);
+  await settings(f); await gate(f); expect(f.thread(thread.id).pr?.state).toBe('merged'); expect((await routes(f, thread.id))[0]).toMatchObject({ route: 'merge', source: 'jev' });
+  expect(f.github.requests.some(row => row.method === 'PUT' && row.path.endsWith('/merge'))).toBe(true);
 }, 90_000);
 test('automatic merging waits for publication and routes the newly pushed head', async () => {
   const { f, jev } = await setup(), thread = await published(f); await settings(f);

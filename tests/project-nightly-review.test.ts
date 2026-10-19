@@ -46,7 +46,7 @@ test('read-only high-effort review includes direct pushes, advances its durable 
   const next = TaskReceiptSchema.parse(await work.daily.runDaily('project', daily.id, { schema: 'project-run-request-v1', clientRequestId: 'next' })); await f.waitFor(() => work.tasks.read('project', next.taskId), task => task.state === 'done');
   expect((await work.daily.view('project')).lastReview?.fromCommit).toBe(first.commit); expect(f.git(f.checkout, 'status', '--porcelain=v1')).toBe(checkout);
 }, 90_000);
-test('the window allows only its single fix before 150 minutes, then runs jobs and releases at seven hours', async () => {
+test('review fixes continue outside the nightly window and never bypass its landing hold', async () => {
   const { f, second, daily, clock } = await setup(), work = f.app.projectWork;
   second.enqueueTurn(async turn => { await turn.bridge('jevellan_project_review_report', body); return { status: 'completed' }; }, input => input.owner.kind === 'review');
   clock(1); await work.pulse(); const window = (await work.daily.window('project'))!; const reviewTask = window.plans.find(task => task.dailyId === daily.id)!;
@@ -54,8 +54,10 @@ test('the window allows only its single fix before 150 minutes, then runs jobs a
   const follow = await work.daily.followup('project', { reviewTaskId: reviewTask.id, task: { title: 'Combined fix', brief: 'Fix all findings.' } });
   // A synthetic linked thread identity exercises the shared merge guard; no merge is claimed.
   const fix = await work.tasks.read('project', follow.taskId!); await work.tasks.save({ ...fix, threadId: 'fix_thread', state: 'active' });
-  await expect(work.daily.assertMerge('project', 'fix_thread')).resolves.toBeUndefined(); await expect(work.daily.assertMerge('project', 'other_thread')).rejects.toThrow('Merges are held');
-  clock(150); await expect(work.daily.assertMerge('project', 'fix_thread')).rejects.toThrow('Merges are held'); await work.daily.sweep('project');
+  expect(fix.nightlyWindowId).toBeUndefined();
+  await work.daily.sweep('project');
+  await expect(work.daily.assertMerge('project', 'fix_thread')).resolves.toBeUndefined();
+  clock(150);
   expect((await work.daily.view('project')).window?.state).toBe('finished'); expect((await work.tasks.read('project', fix.id)).state).toBe('active');
   clock(24 * 60 - 150); await work.daily.sweep('project'); expect(await work.daily.mergesHeld('project')).toBe(true); clock(7 * 60); await work.daily.sweep('project'); expect(await work.daily.mergesHeld('project')).toBe(false);
   expect((await work.daily.view('project')).window?.failed).toBe(true);
@@ -141,19 +143,19 @@ test('jobs continue after a failed review and its reason appears in the night re
   const view = await work.daily.view('project'); expect(view.runs[0]?.conclusion).toBe('passed'); expect(view.window?.outcome).toContain('Provider temporarily refused');
 });
 
-test('the job phase starts twenty minutes after a report without a chosen fix, with a queued Propose-tasks fix continuing normally', async () => {
+test('a completed review never delays the next configured job while a finding continues normally', async () => {
   const { f, second, daily, clock } = await setup(), work = f.app.projectWork;
   const job = await work.daily.createJob('project', { schema: 'job-create-request-v1', clientRequestId: 'wait_job', name: 'Full suite', goalId: null, enabled: true, gate: null, run: { kind: 'command', command: 'true', timeoutMinutes: 1 } });
   await work.daily.createDaily('project', { schema: 'daily-create-request-v1', clientRequestId: 'wait_job_daily', name: 'Full suite', goalId: null, order: 1, enabled: true, target: { kind: 'job', jobId: job.id } });
   second.enqueueTurn(async turn => { await turn.bridge('jevellan_project_review_report', body); return { status: 'completed' }; }, input => input.owner.kind === 'review');
   clock(1); await work.pulse(); const window = (await work.daily.window('project'))!, review = window.plans.find(row => row.dailyId === daily.id)!, suite = window.plans.find(row => row.jobId === job.id)!;
   await f.waitFor(() => work.tasks.read('project', review.id), row => row.state === 'done');
-  expect(await work.daily.eligible(suite, await work.tasks.list('project'))).toBe(false);
+  expect(await work.daily.eligible(suite, await work.tasks.list('project'))).toBe(true);
   clock(20); expect(await work.daily.eligible(suite, await work.tasks.list('project'))).toBe(true);
   const changed = work.daily.o.changed; work.daily.o.changed = () => {};
   const chosen = await work.daily.followup('project', { reviewTaskId: review.id, task: { title: 'Combined review finding', brief: 'Fix every worthwhile finding.' } }); work.daily.o.changed = changed;
   expect((await work.tasks.read('project', chosen.taskId!)).state).toBe('queued');
-  // Once the twenty-minute waiting phase ended, a late coordinator response cannot re-hold the job phase.
+  // A coordinator follow-up cannot hold the configured jobs.
   expect(await work.daily.eligible(suite, await work.tasks.list('project'))).toBe(true);
 });
 

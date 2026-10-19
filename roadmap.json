@@ -944,8 +944,8 @@
   {
     "id": "wg-nights",
     "title": "Command jobs and nightly routines",
-    "why": "Without-GitHub run; orientation complete. Implementation and checks not run.",
-    "status": "planned"
+    "why": "Source complete: ordered command nights, memory fence, weekday selection, goal/daily migration, findings and retired Actions execution. Affected backend sets, eight browser journeys and 20 live vision checks passed; typecheck/lint/build passed. Project script publication and live activation/results remain pending the release switch.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "wg-landing",

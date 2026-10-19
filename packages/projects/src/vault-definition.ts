@@ -18,7 +18,7 @@ export function vaultDefinition(project: Project, settings: ProjectWorkSettings,
       coordinator: { runtimeId: settings.coordinator.runtimeId ?? null, modelId: settings.coordinator.modelId, effort: settings.coordinator.effort } },
     goals: byName(goals.map(goal => ({ name: goal.name, state: goal.state, motivation: goal.motivation, health: goal.health, autonomy: goal.autonomy, dailyRefillCap: goal.dailyRefillCap, openPrCap: goal.openPrCap }))),
     jobs: byName(jobs.map(job => ({ name: job.name, goal: goalName(job.goalId), run: job.run, gate: jobName(job.gate?.jobId), enabled: job.enabled }))),
-    dailies: byName(dailies.map(daily => ({ name: daily.name, goal: goalName(daily.goalId), order: daily.order, enabled: daily.enabled,
+    dailies: byName(dailies.map(daily => ({ name: daily.name, goal: goalName(daily.goalId), order: daily.order, ...(daily.days ? { days: daily.days } : {}), enabled: daily.enabled,
       target: daily.target.kind === 'job' ? { kind: 'job', job: jobName(daily.target.jobId) ?? daily.name } : daily.target.kind === 'review-since-last' ? { kind: 'review-since-last' } : daily.target }))),
   });
 }
@@ -66,7 +66,7 @@ export async function restoreFromVault(work: ProjectWork, projectId: string, fol
   for (const daily of definition.dailies) {
     const target = daily.target.kind === 'job' ? jobs.get(daily.target.job) : undefined;
     if (daily.target.kind === 'job' && !target) continue;
-    await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', name: daily.name, goalId: goalId(daily.goal), order: daily.order, enabled: daily.enabled,
+    await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', name: daily.name, goalId: goalId(daily.goal), order: daily.order, ...(daily.days ? { days: daily.days } : {}), enabled: daily.enabled,
       target: daily.target.kind === 'job' ? { kind: 'job', jobId: target!.id } : daily.target }, id('daily', daily.name));
   }
   const stored = await work.notebookView(projectId);

@@ -1,5 +1,5 @@
 import { startEkoaFixture } from '../tests/fixtures/ekoa-server.mjs';
-import { DeviceSchema, DeviceFactsSchema, ProjectDecisionSchema, ProjectWorkTaskSchema, ThreadIndexSchema, defaultProjectWorkSettings } from '../packages/core/dist/index.js';
+import { ProjectJobSchema, ProjectDailySchema, DeviceSchema, DeviceFactsSchema, ProjectDecisionSchema, ProjectWorkTaskSchema, ThreadIndexSchema, defaultProjectWorkSettings } from '../packages/core/dist/index.js';
 import { chmodSync, lstatSync, readdirSync, existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { execFileSync, spawn } from 'node:child_process';
@@ -782,7 +782,7 @@ for (const n of [1, 2, 3]) { correction('implement', n, 'implement', 'claude-fab
 // Projects control (design 5.5 item 9), on the same listener: POST routes; every body is a versioned fixture document (pulse has none).
 const ControlClockSchema = z.strictObject({ schema: z.literal('fixture-project-clock-v1'), advanceMinutes: z.number().int().min(0).max(1440), reset: z.boolean().default(false) });
 const ControlEkoaSchema = z.strictObject({ schema: z.literal('fixture-ekoa-loop-v1'), action: z.enum(['prepare', 'answer', 'approve', 'ask-owner', 'merge', 'tick', 'list']) });
-const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-control-v1'), action: z.enum(['prepare', 'prepare-late', 'reset', 'open', 'pass', 'fail', 'workflow', 'scheduler-watch', 'scheduler-dispatch']) });
+const ControlDailySchema = z.strictObject({ schema: z.literal('fixture-daily-control-v1'), action: z.enum(['prepare', 'prepare-late', 'reset', 'open', 'pass', 'fail', 'retired']) });
 const dailyMarker = join(root, 'daily-result');
 const ControlPullSchema = z.strictObject({ schema: z.literal('fixture-pull-change-v1'), checks: z.enum(['none', 'pending', 'passing', 'passing-status', 'failing']).optional(),
   mergeable: z.enum(['clean', 'dirty', 'unknown', 'unstable']).optional(), merged: z.literal(true).optional(), closed: z.literal(true).optional() });
@@ -950,14 +950,7 @@ async function projectControl(request, response) {
     if (frozenProjectClock === undefined) projectClockOffset += input.advanceMinutes * 60_000; else frozenProjectClock += input.advanceMinutes * 60_000;
     await application.projectWork.pulse(); send(200, { schema: 'fixture-project-clock-result-v1', advancedMinutes: input.advanceMinutes });
   } else if (request.url === '/projects/daily' && (input = parse(ControlDailySchema))) {
-    if (input.action.startsWith('scheduler-')) {
-      github.setVariable('NIGHTLY_SCHEDULER', input.action === 'scheduler-dispatch' ? 'jevellan' : 'github');
-      frozenProjectClock = frozenProjectClock === undefined ? Date.parse('2026-10-12T00:00:00Z') : Date.parse(`${new Date(frozenProjectClock + 24 * 3_600_000).toISOString().slice(0, 10)}T00:00:00Z`);
-      await application.projectWork.prepareDailyWork('projects_workflows');
-      const settings = await application.projectWork.admission.settings('projects_workflows');
-      await application.projectHub.putSettings({ ...settings, nightlyWindow: { enabled: true, time: '01:00', timezone: 'Europe/Lisbon' } }, settings.revision);
-      await application.projectWork.pulse(); send(200, { schema: 'fixture-scheduler-opened-v1' });
-    } else if (['prepare', 'prepare-late'].includes(input.action)) {
+    if (['prepare', 'prepare-late'].includes(input.action)) {
       nightlyLateFix = input.action === 'prepare-late';
       frozenProjectClock = frozenProjectClock === undefined ? Date.parse('2026-10-12T00:59:00Z') : Date.parse(`${new Date(frozenProjectClock + 24 * 3_600_000).toISOString().slice(0, 10)}T00:59:00Z`);
       rmSync(dailyMarker, { force: true });
@@ -968,10 +961,11 @@ async function projectControl(request, response) {
     } else if (input.action === 'reset') { rmSync(dailyMarker, { force: true }); send(200, { schema: 'fixture-daily-reset-v1' });
     } else if (input.action === 'open') {
       frozenProjectClock += 60_000; await application.projectWork.pulse(); send(200, { schema: 'fixture-daily-opened-v1' });
-    } else if (input.action === 'workflow') {
-      const at = new Date(frozenProjectClock ?? Date.now() + projectClockOffset).toISOString();
-      github.addWorkflow({ created_at: at, run_started_at: at, jobs: [{ id: 701, name: 'Suite', status: 'completed', conclusion: 'success', steps: [{ name: 'Run full suite', status: 'completed', conclusion: 'success' }] }] });
-      send(200, { schema: 'fixture-workflow-added-v1' });
+    } else if (input.action === 'retired') {
+      const projectId = 'projects_workflows', at = new Date(frozenProjectClock ?? Date.now()).toISOString();
+      application.hub.put('project-jobs', 'retired_browser_job', ProjectJobSchema, { schema: 'project-job-v1', id: 'retired_browser_job', projectId, revision: 1, name: 'Old workflow', goalId: null, enabled: false, gate: null, run: { kind: 'github-workflow', workflow: 'old.yml', mode: 'watch', timeoutMinutes: 5 }, createdAt: at, updatedAt: at }, 0);
+      application.hub.put('project-dailies', 'retired_browser_daily', ProjectDailySchema, { schema: 'project-daily-v1', id: 'retired_browser_daily', projectId, revision: 1, name: 'Historical nightly item', goalId: null, order: 9, enabled: false, target: { kind: 'job', jobId: 'retired_browser_job' }, createdAt: at, updatedAt: at }, 0);
+      send(200, { schema: 'fixture-retired-job-v1' });
     } else { writeFileSync(dailyMarker, input.action); send(200, { schema: 'fixture-daily-released-v1' }); }
   } else if (request.url === '/projects/pulse') {
     await Promise.all([application.projectWork.pulse(), member.projectWork.pulse()]); send(200, { pulsed: true });

@@ -10,13 +10,13 @@ export const EKOA_THREAD_RULES = `Ekoa Code rules:
 - Never edit evals/ or anything that defines how the legal programme is measured.
 - Never touch production (go.ekoa.io) or deploy; never run token-spending tests.
 - Test accounts only in the office named "(APAGAR)". Ekoa never sends WhatsApp messages.
-- Secrets live only in GitHub secrets; never add one to the repository.
+- Secrets live only in the Jevellan vault, never in the repository.
 - Check user-facing changes at 390 px width as well as desktop.
 - When you add to docs/decisions.md or docs/findings.md, add new entries at the end only.`;
 export const EKOA_GOALS = [
-  { name: 'Hardening through automated tests', state: 'active', motivation: 'Nothing in Ekoa should break without a test noticing. Every finding ends in a test or a written dismissal, and the nightly suite stays green.', health: 'The nightly suite is green; open CI findings trend to zero; no regressions reach production.' },
-  { name: 'Hardening through code review', state: 'active', motivation: 'The code stays clear and consistent while agents write most of it. A daily review of what merged catches structure problems, duplication and rule breaks early.', health: 'Open review findings are few and get fixed within days; the architecture rules in the repository hold.' },
-  { name: 'Legal analysis quality', state: 'paused', motivation: 'Ekoa gives lawyers better and deeper analysis than a raw model, with every statement of law cited or marked unverified.', health: 'The legal gates in evals/legal/gates.json hold.' },
+  { name: 'Resilience', state: 'active', motivation: 'Nothing breaks without a test noticing, and what lands stays clear and consistent: the nightly full suite and the nightly review, with every finding fixed or dismissed in writing.', health: 'The nightly full suite is green; review findings are few and closed within days.' },
+  { name: 'Hardening through code review', state: 'done', motivation: 'The code stays clear and consistent while agents write most of it. A daily review of what merged catches structure problems, duplication and rule breaks early.', health: 'Open review findings are few and get fixed within days; the architecture rules in the repository hold.' },
+  { name: 'Legal analysis quality', state: 'active', motivation: 'Ekoa gives lawyers better and deeper analysis than a raw model, with every statement of law cited or marked unverified.', health: 'The legal gates in evals/legal/gates.json hold.' },
   { name: 'Integrations and automations', state: 'paused', motivation: 'Integrations work in daily use for real offices, Citius and Finanças first.', health: 'Integration actions succeed in daily use and in the Mac runs.' },
   { name: 'API and MCP', state: 'paused', motivation: 'The Cortex API and the Ekoa MCP are robust and valuable for daily work.', health: 'Errors and gaps met in daily use are few and get fixed quickly.' },
   { name: 'Security', state: 'paused', motivation: 'No cross-user exposure, no leaked secrets, ready for the pentest. Findings will come from the Ekoa Security project.', health: 'Findings from Ekoa Security are triaged and closed.' },
@@ -44,18 +44,47 @@ export async function applyEkoaCodeSetup(work: ProjectWork, projectId: string, r
   const goals: ProjectGoal[] = [];
   // Matched by name as well as by request id: a project restored from the vault already has these goals, jobs and dailies.
   for (const [index, goal] of EKOA_GOALS.entries()) goals.push(await goalNamed(work, projectId, { schema: 'goal-create-request-v1', ...goal, autonomy: 'propose', dailyRefillCap: 3, openPrCap: 2 }, `ekoa_setup_goal_${index}`));
-  const workflow = (name: string, file: string, goalIndex: number | null, watchOrder: number, extras = {}) => ({ schema: 'job-create-request-v1', clientRequestId: `ekoa_setup_${file.replaceAll('.', '_')}`, name, goalId: goalIndex === null ? null : goals[goalIndex]!.id, enabled: true, gate: null,
-    run: { kind: 'github-workflow', workflow: file, mode: 'dispatch', timeoutMinutes: 420, pinCommitRef: false, schedulerSwitch: { schema: 'workflow-scheduler-switch-v1', variable: 'NIGHTLY_SCHEDULER', dispatchValue: 'jevellan', ownerMergePull: input.workflowPull, watchOrder }, ...extras } });
-  const namedJob = (input: Record<string, unknown> & { name: string; clientRequestId: string }) => { const { clientRequestId, ...fields } = input; return jobNamed(work, projectId, fields, clientRequestId); };
-  const chain = (event: 'schedule' | 'workflow_run', afterWorkflow?: string) => ({ schema: 'workflow-watch-chain-v1', event, excludeTitle: '(not in the chain)', ...(afterWorkflow ? { afterWorkflow } : { titleSuffix: ' night' }) });
-  const legal = await namedJob(workflow('Legal programme', 'nightly-legal-programme.yml', 2, 1, { inputs: { mode: 'night', dry_run: 'false', test_mode: 'false' }, watchChain: chain('schedule') }));
-  const full = await namedJob(workflow('Full suite with the expensive tests', 'nightly-all-tests.yml', 0, 3, { commitInput: 'sha', watchChain: chain('workflow_run', 'nightly-deploy.yml'), inputs: { expensive: 'true' }, requiredJobs: ['suite', 'expensive'], requiredSteps: ['every sub-suite, the browser estate and the phone-width specs', 'the expensive tests'] }));
-  const deploy = await namedJob({ ...workflow('Deploy', 'nightly-deploy.yml', null, 2, { commitInput: 'sha', watchChain: chain('workflow_run', 'nightly-legal-programme.yml') }), gate: { jobId: full.id } });
-  const definitions = [{ name: 'Review since last', goalId: goals[1]!.id, enabled: true, target: { kind: 'review-since-last' } }, ...[legal, full, deploy].map(job => ({ name: job.name, goalId: job.goalId, enabled: job.enabled, target: { kind: 'job', jobId: job.id } })),
-    { name: 'Security', goalId: goals[5]!.id, enabled: false, target: { kind: 'session', title: 'Security programme', brief: 'Security is parked until the owner provides the Ekoa Security programme. Report that this input is required.', type: 'ops' } }];
-  for (const [order, definition] of definitions.entries()) await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', order, ...definition }, `ekoa_setup_nightly_${order}`);
-  await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', name: 'Memory dream', goalId: null, order: 0, enabled: true, target: { kind: 'memory-dream' } }, 'shared_memory_dream');
+  await configureEkoaNights(work, projectId);
   const { schema: _schema, projectId: _project, revision, ...settings } = receipt.settings; void _schema; void _project;
   await work.putSettings(projectId, { schema: 'project-work-settings-request-v1', revision, clientRequestId: derivedId('ekoa_setup', projectId), settings });
   receipt = { ...receipt, completed: true }; writeDocument(path, EkoaCodeSetupReceiptSchema, receipt); return receipt;
+}
+
+/** Revision-checked migration: keep identifiers and history while replacing the retired nights. */
+export async function configureEkoaNights(work: ProjectWork, projectId: string) {
+  let goals = await work.goals.list(projectId);
+  const old = goals.find(goal => goal.name === 'Hardening through automated tests');
+  if (old) await work.goals.update(projectId, old.id, { schema: 'goal-update-request-v1', expectedRevision: old.revision, name: 'Resilience',
+    motivation: 'Nothing breaks without a test noticing, and what lands stays clear and consistent: the nightly full suite and the nightly review, with every finding fixed or dismissed in writing.',
+    health: 'The nightly full suite is green; review findings are few and closed within days.' });
+  goals = await work.goals.list(projectId);
+  for (const goal of goals) {
+    const state = goal.name === 'Legal analysis quality' ? 'active' : goal.name === 'Hardening through code review' ? 'done' : goal.name === 'Security' ? 'paused' : goal.state;
+    if (state !== goal.state) await work.goals.update(projectId, goal.id, { schema: 'goal-update-request-v1', expectedRevision: goal.revision, state });
+  }
+  const resilience = goals.find(goal => goal.name === 'Resilience')!, legalGoal = goals.find(goal => goal.name === 'Legal analysis quality')!;
+  if (!resilience || !legalGoal) throw new Error('The night programme needs its Resilience and Legal analysis quality goals.');
+  for (const job of await work.daily.jobs(projectId)) if (job.run.kind === 'github-workflow' && job.enabled) await work.daily.updateJob(projectId, job.id, { schema: 'job-update-request-v1', expectedRevision: job.revision, name: job.name, goalId: job.goalId, enabled: false, gate: job.gate, run: job.run });
+  const legal = await jobNamed(work, projectId, { schema: 'job-create-request-v1', name: 'Legal programme night', goalId: legalGoal.id, enabled: true, gate: null, run: { kind: 'command', command: 'node scripts/jevellan/legal-night.mjs', needs: ['prod-access'], cwd: 'workspace', timeoutMinutes: 240 } }, 'ekoa_legal_command_v3');
+  const full = await jobNamed(work, projectId, { schema: 'job-create-request-v1', name: 'Full suite', goalId: resilience.id, enabled: true, gate: null, run: { kind: 'command', command: 'node scripts/jevellan/full-suite.mjs', needs: ['linux'], cwd: 'workspace', timeoutMinutes: 240 } }, 'ekoa_full_command_v3');
+  const dailies = await work.daily.dailies(projectId);
+  const definitions = [
+    { name: 'Memory dream', goalId: null, order: 0, target: { kind: 'memory-dream' } },
+    { name: 'Legal programme night', goalId: legalGoal.id, order: 1, target: { kind: 'job', jobId: legal.id } },
+    { name: 'Full suite', goalId: resilience.id, order: 2, target: { kind: 'job', jobId: full.id } },
+    { name: 'Review since last', goalId: resilience.id, order: 3, target: { kind: 'review-since-last' } },
+  ];
+  const replaced = new Set<string>();
+  for (const definition of definitions) {
+    const existing = dailies.find(daily => daily.name === definition.name || definition.target.kind === 'memory-dream' && daily.target.kind === 'memory-dream' || definition.target.kind === 'review-since-last' && daily.target.kind === 'review-since-last' || definition.name === 'Full suite' && daily.name === 'Full suite with the expensive tests' || definition.name === 'Legal programme night' && daily.name === 'Legal programme');
+    if (existing) replaced.add(existing.id);
+    if (existing) await work.daily.updateDaily(projectId, existing.id, { schema: 'daily-update-request-v1', expectedRevision: existing.revision, ...definition, enabled: true });
+    else await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', ...definition, enabled: true }, `ekoa_night_v3_${definition.order}`);
+  }
+  for (const daily of dailies) if (!replaced.has(daily.id) && daily.target.kind === 'job' && ![legal.id, full.id].includes(daily.target.jobId) && daily.enabled) {
+    const oldJob = (await work.daily.jobs(projectId)).find(job => job.id === (daily.target.kind === 'job' ? daily.target.jobId : ''));
+    if (oldJob?.run.kind === 'github-workflow') await work.daily.o.hub.putDaily({ ...daily, enabled: false, updatedAt: work.tasks.at() }, daily.revision);
+  }
+  await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', name: 'Latest Anthropic models', goalId: null, order: 4, enabled: false, days: ['mon'], target: { kind: 'session', title: 'Latest Anthropic models', brief: "Check Anthropic's current models and open the model-update work the repository's process describes, if there is a newer one.", type: 'ops' } }, 'ekoa_models_monday_v3');
+  return { legal, full };
 }

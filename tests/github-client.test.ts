@@ -216,14 +216,6 @@ test('a missing or malformed token stops before any request, and the token joins
   await expect(client.getPull(repository, 0)).rejects.toThrow('Invalid pull request number.');
 });
 
-test('ref cleanup recovers a deletion whose receipt was lost without hiding failures on a surviving ref', async () => {
-  const ref = 'jv/jobs/1791792000000-recovery'; let present = false;
-  const cleanup = new GitHubClient({ token: async () => token, fetch: async (_url, input) => input?.method === 'DELETE' ? json({ message: 'Reference does not exist' }, 422) : json(present ? [{ ref: `refs/heads/${ref}`, object: { sha: 'a'.repeat(40) } }] : []) });
-  await expect(cleanup.deleteWorkflowRef(repository, ref)).resolves.toBeUndefined();
-  present = true; await expect(cleanup.deleteWorkflowRef(repository, ref)).rejects.toMatchObject({ status: 422 });
-  await expect(cleanup.deleteWorkflowRef(repository, 'main')).rejects.toThrow('Invalid workflow dispatch ref');
-});
-
 test('request budgets follow the token across clients and remain isolated from other tokens', async () => {
   const fetcher: typeof fetch = async () => Response.json({ total_count: 0, check_runs: [] }, { headers: { 'x-ratelimit-remaining': '900', 'x-ratelimit-limit': '5000', 'x-ratelimit-reset': '2000000000' } });
   const first = new GitHubClient({ token: async () => 'fixture-budget-a', fetch: fetcher });

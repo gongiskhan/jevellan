@@ -7,6 +7,7 @@ import { projectBoundary, projectDay, shiftProjectDate } from './project-day.js'
 import { taskRankBetween, type ProjectTasks } from './tasks.js';
 import { PROJECT_PAUSED } from './copy.js';
 const refuse = (message: string, status = 409): never => { throw Object.assign(new Error(message), { status }); };
+export const dailyDueOn = (daily: Pick<ProjectDaily, 'days'>, date: string): boolean => !daily.days || daily.days.includes((['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const)[new Date(date + 'T12:00:00Z').getUTCDay()]!);
 export const NIGHTLY_MERGE_HOLD = 'Merges are held while the nightly window runs.';
 const ended = (task: ProjectWorkTask) => ['done', 'failed', 'cancelled', 'in-review'].includes(task.state);
 export class ProjectDailyWork {
@@ -23,7 +24,7 @@ export class ProjectDailyWork {
   async dailies(projectId: string): Promise<ProjectDaily[]> {
     const rows: ProjectDaily[] = []; let after: string | undefined;
     do { const page = await this.o.hub.dailies(projectId, after); rows.push(...page.records); after = page.next ?? undefined; } while (after);
-    return rows.sort((a, b) => Number(b.target.kind === 'review-since-last') - Number(a.target.kind === 'review-since-last') || a.order - b.order || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+    return rows.sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
   }
   async windows(projectId: string): Promise<ProjectWindow[]> {
     const rows: ProjectWindow[] = []; let after: string | undefined;
@@ -38,7 +39,7 @@ export class ProjectDailyWork {
       const before = (window.outcome ?? '').replace(/(?:\n\n)?Memory dream:[\s\S]*$/u, '');
       const outcome = `${before.slice(0, Math.max(0, 7998 - line.length))}${before ? '\n\n' : ''}${line.slice(0, 8000)}`;
       if (outcome === window.outcome && (!failed || window.failed)) return;
-      const saved = (await this.o.hub.putWindow({ ...window, outcome, failed: failed || window.failed }, window.revision)).document;
+      const saved = (await this.o.hub.putWindow({ ...window, outcome, memoryDreamPending: false, failed: failed || window.failed }, window.revision)).document;
       if (saved.state === 'finished') await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-finished', id: derivedId('cev', windowId, 'memory', outcome), at: this.o.tasks.at(), outcome });
       this.o.changed();
     });
@@ -50,34 +51,16 @@ export class ProjectDailyWork {
     const date = await this.day(projectId), boundary = await this.dayStart(projectId, date);
     return this.o.now() >= boundary && !(await this.o.hub.window(derivedId('window', projectId, date))) && (await this.dailies(projectId)).some(row => row.enabled && Date.parse(row.enabledSince ?? row.createdAt) <= boundary);
   }
-  async allowedMergeThreads(projectId: string, tasks?: readonly ProjectWorkTask[]): Promise<string[]> {
-    const window = await this.window(projectId); if (!window || this.o.now() >= Date.parse(window.openedAt) + (this.o.fixCutoffMinutes ?? 150) * 60_000) return [];
-    const rows = tasks ?? await this.o.tasks.list(projectId), review = rows.find(row => window.taskIds.includes(row.id) && row.nightlyReview);
-    const fix = review?.reviewRun?.fixTaskId ? rows.find(row => row.id === review.reviewRun!.fixTaskId && row.nightlyFixFor === review.id) : null;
-    return fix?.threadId && await this.#next(window, rows) === fix.id ? [fix.threadId] : [];
-  }
+  async allowedMergeThreads(_projectId: string, _tasks?: readonly ProjectWorkTask[]): Promise<string[]> { void _projectId; void _tasks; return []; }
   async assertMerge(projectId: string, threadId?: string): Promise<void> {
     const held = await this.mergesHeld(projectId) && (!threadId || !(await this.allowedMergeThreads(projectId)).includes(threadId));
     if (threadId) this.o.landing?.(threadId, held);
     if (held) refuse(NIGHTLY_MERGE_HOLD);
   }
   async #next(window: ProjectWindow, tasks: readonly ProjectWorkTask[]): Promise<string | undefined> {
+    if (window.memoryDreamPending) return 'memory-dream';
     for (const plan of window.plans) {
       const task = tasks.find(row => row.id === plan.id); if (!task || !ended(task)) return plan.id;
-      if (!window.jobPhaseStartedAt && task.nightlyReview && task.reviewRun?.state === 'completed' && this.o.now() < Date.parse(window.openedAt) + (this.o.fixCutoffMinutes ?? 150) * 60_000) {
-        if (!task.reviewRun.followupChosen) {
-          if (this.o.now() < Date.parse(task.reviewRun.completedAt!) + 20 * 60_000) return 'awaiting-review-followup';
-          continue;
-        }
-        if (task.reviewRun.fixTaskId) {
-          const fix = tasks.find(row => row.id === task.reviewRun!.fixTaskId);
-          if (fix && fix.nightlyWindowId !== window.id) continue;
-          const thread = fix?.threadId ? (await this.o.hub.thread(fix.threadId))?.document : null;
-          const route = thread?.pr ? (await this.o.hub.mergeDocument(derivedId('mroute', thread.id, thread.pr.headSha)))?.document : null;
-          if (route?.schema === 'merge-route-v1' && route.route === 'ask-owner') continue;
-          if (!fix || !['done', 'failed', 'cancelled'].includes(fix.state)) return task.reviewRun.fixTaskId;
-        }
-      }
     }
     return undefined;
   }
@@ -88,17 +71,15 @@ export class ProjectDailyWork {
       const review = await this.o.tasks.read(projectId, input.reviewTaskId), run = review.reviewRun;
       if (!review.nightlyReview || !run || run.state !== 'completed') return refuse('Choose a follow-up only for a completed nightly review.');
       if (run.followupChosen) return { schema: 'review-followup-receipt-v1' as const, taskId: run.fixTaskId, repeated: true };
-      const window = review.nightlyWindowId ? (await this.o.hub.window(review.nightlyWindowId))?.document : null;
-      const inWindow = window?.state === 'open' && this.o.now() < Date.parse(window.openedAt) + (this.o.fixCutoffMinutes ?? 150) * 60_000 && !window.jobPhaseStartedAt && this.o.now() < Date.parse(run.completedAt!) + 20 * 60_000;
       let fixTaskId: string | null = null;
       if (input.task) {
         const goal = review.goalId ? (await this.o.hub.goal(review.goalId))?.document : null;
-        if (goal?.name !== 'Hardening through code review') return refuse('The review fix needs the Hardening through code review goal.');
+        if (!['Resilience', 'Hardening through code review'].includes(goal?.name ?? '')) return refuse('The review fix needs the Resilience goal.');
         fixTaskId = derivedId('task', 'review-fix', review.id);
         if (!(await this.o.hub.task(fixTaskId))) await this.o.tasks.save(ProjectWorkTaskSchema.parse(this.o.redactor.document({ schema: 'project-work-task-v1', id: fixTaskId, projectId, revision: 0,
           ...input.task, kind: 'session', type: 'finding', goalId: review.goalId, source: 'finding', state: 'queued', rank: taskRankBetween(null, (await this.o.tasks.list(projectId)).map(row => row.rank).sort()[0] ?? null), ownerRanked: false, now: true,
           after: [], needs: [], dailyId: null, jobId: null, threadId: null, jobRunId: null, fixed: { isolation: 'worktree' }, nightlyFixFor: review.id,
-          ...(inWindow ? { nightlyWindowId: window.id } : {}), projectDay: review.projectDay, createdAt: this.o.tasks.at(), updatedAt: this.o.tasks.at() })));
+           projectDay: review.projectDay, createdAt: this.o.tasks.at(), updatedAt: this.o.tasks.at() })));
       }
       await this.o.tasks.save({ ...review, reviewRun: { ...run, followupChosen: true, fixTaskId } }); this.o.changed();
       return { schema: 'review-followup-receipt-v1' as const, taskId: fixTaskId, repeated: false };
@@ -116,7 +97,9 @@ export class ProjectDailyWork {
       mergesHeld: await this.mergesHeld(projectId) });
   }
   async createJob(projectId: string, raw: unknown): Promise<ProjectJob> {
-    const input = JobCreateRequestSchema.parse(raw), id = derivedId('pjob', projectId, input.clientRequestId), requestDigest = createHash('sha256').update(stableJson(input)).digest('hex');
+    const input = JobCreateRequestSchema.parse(raw);
+    if (input.run.kind === 'github-workflow') return refuse('GitHub workflow jobs retired on 19 October. Use a command job.', 400);
+    const id = derivedId('pjob', projectId, input.clientRequestId), requestDigest = createHash('sha256').update(stableJson(input)).digest('hex');
     const current = (await this.o.hub.job(id))?.document; if (current) { if (current.projectId !== projectId || current.requestDigest !== requestDigest) return refuse('This request ID already created a different job.'); return current; }
     await this.o.validateGoal(projectId, input.goalId); await this.#gate(projectId, id, input.gate?.jobId);
     const { schema: _schema, clientRequestId: _request, ...fields } = input; void _schema; void _request;
@@ -125,6 +108,7 @@ export class ProjectDailyWork {
   async updateJob(projectId: string, id: string, raw: unknown): Promise<ProjectJob> {
     const input = JobUpdateRequestSchema.parse(raw), current = (await this.o.hub.job(id))?.document;
     if (!current || current.projectId !== projectId) return refuse('Job not found.', 404);
+    if (input.run.kind === 'github-workflow' && (input.enabled || current.run.kind !== 'github-workflow')) return refuse('GitHub workflow jobs retired on 19 October. Use a command job.', 400);
     await this.o.validateGoal(projectId, input.goalId); await this.#gate(projectId, id, input.gate?.jobId);
     const { schema: _schema, expectedRevision, ...fields } = input; void _schema;
     const job = (await this.o.hub.putJob(ProjectJobSchema.parse(this.o.redactor.document({ ...current, ...fields, updatedAt: this.o.tasks.at() })), expectedRevision)).document; this.o.changed(); return job;
@@ -146,7 +130,7 @@ export class ProjectDailyWork {
     if (!current || current.projectId !== projectId) return refuse('Daily item not found.', 404);
     await this.#dailyTarget(projectId, input); const { schema: _schema, expectedRevision, ...fields } = input; void _schema;
     const baseline = await this.#reviewBaseline(projectId, fields, current);
-    const daily = (await this.o.hub.putDaily(ProjectDailySchema.parse(this.o.redactor.document({ ...current, ...fields, ...baseline, ...(!current.enabled && fields.enabled ? { enabledSince: this.o.tasks.at() } : {}), updatedAt: this.o.tasks.at() })), expectedRevision)).document; this.o.changed(); return daily;
+    const daily = (await this.o.hub.putDaily(ProjectDailySchema.parse(this.o.redactor.document({ ...current, ...fields, days: fields.days, ...baseline, ...(!current.enabled && fields.enabled ? { enabledSince: this.o.tasks.at() } : {}), updatedAt: this.o.tasks.at() })), expectedRevision)).document; this.o.changed(); return daily;
   }
   async #reviewBaseline(projectId: string, input: Pick<ProjectDaily, 'target' | 'enabled'>, current?: ProjectDaily) {
     if (input.target.kind !== 'review-since-last') return {};
@@ -158,18 +142,16 @@ export class ProjectDailyWork {
   }
   async #dailyTarget(projectId: string, daily: Pick<ProjectDaily, 'goalId' | 'target'>): Promise<void> {
     await this.o.validateGoal(projectId, daily.goalId);
-    if (daily.target.kind === 'review-since-last' && daily.goalId && (await this.o.hub.goal(daily.goalId))?.document.name !== 'Hardening through code review') return refuse('Review since last uses the Hardening through code review goal.', 400);
+    if (daily.target.kind === 'review-since-last' && daily.goalId && !['Resilience', 'Hardening through code review'].includes((await this.o.hub.goal(daily.goalId))?.document.name ?? '')) return refuse('Review since last uses the Resilience goal.', 400);
+    if (daily.target.kind === 'job' && (await this.o.hub.job(daily.target.jobId))?.document.run.kind === 'github-workflow') return refuse('GitHub workflow jobs retired on 19 October. Use a command job.', 400);
     if (daily.target.kind === 'job' && (await this.o.hub.job(daily.target.jobId))?.document.projectId !== projectId) return refuse('A daily job must belong to this project.', 400);
   }
-  async #plan(projectId: string, id: string, day: string, daily: ProjectDaily | null, job: ProjectJob | null, rank: string, handoff?: ProjectWorkTask['workflowHandoff'], scheduler?: ProjectWorkTask['workflowScheduler']): Promise<ProjectWorkTask> {
+  async #plan(projectId: string, id: string, day: string, daily: ProjectDaily | null, job: ProjectJob | null, rank: string): Promise<ProjectWorkTask> {
     const target = daily?.target, at = this.o.tasks.at(), review = target?.kind === 'review-since-last', session = target?.kind === 'session' ? target : null;
-    const workflowScheduler = scheduler ?? (job ? await this.o.runner.scheduler(projectId, job) : undefined);
-    const workflowHandoff = workflowScheduler ? undefined : handoff ?? (job ? await this.o.runner.handoff(projectId, job) : undefined);
     return ProjectWorkTaskSchema.parse({ schema: 'project-work-task-v1', id, projectId, revision: 0, title: session?.title ?? daily?.name ?? job!.name,
       brief: session?.brief ?? (review ? 'Review every commit reaching main since the last completed review, including direct pushes.' : `Run the configured job "${job!.name}" and record its result.`), ...(review ? { nightlyReview: true } : {}), kind: session || review ? 'session' : 'job', type: session?.type ?? (review ? 'review' : 'ops'), goalId: daily?.goalId ?? job?.goalId ?? null,
       source: daily ? 'daily' : 'owner', state: 'queued', rank, ownerRanked: false, now: false, after: [], needs: [], dailyId: daily?.id ?? null,
-      jobId: target?.kind === 'job' ? target.jobId : job?.id ?? null, threadId: null, jobRunId: null, fixed: {}, projectDay: day, createdAt: at, updatedAt: at,
-      ...(workflowHandoff ? { workflowHandoff } : {}), ...(workflowScheduler ? { workflowScheduler } : {}) });
+      jobId: target?.kind === 'job' ? target.jobId : job?.id ?? null, threadId: null, jobRunId: null, fixed: {}, projectDay: day, createdAt: at, updatedAt: at });
   }
   async runDaily(projectId: string, id: string, raw: unknown) {
     const { clientRequestId } = ProjectRunRequestSchema.parse(raw);
@@ -198,6 +180,7 @@ export class ProjectDailyWork {
       await this.o.tasks.assertWriter(projectId); const taskId = derivedId('task', 'job-now', projectId, id, clientRequestId), existing = (await this.o.hub.task(taskId))?.document;
       if (existing) return { schema: 'task-receipt-v1' as const, taskId, state: existing.state, repeated: true };
       const job = (await this.o.hub.job(id))?.document; if (!job || job.projectId !== projectId || !job.enabled) return refuse('This job is unavailable or disabled.');
+      if (job.run.kind === 'github-workflow') return refuse('GitHub workflow jobs retired on 19 October. Use a command job.', 400);
       const tasks = await this.o.tasks.list(projectId), pending = tasks.find(task => task.jobId === id && ['queued', 'active'].includes(task.state));
       if (pending) return { schema: 'task-receipt-v1' as const, taskId: pending.id, state: pending.state, repeated: true };
       const task = await this.o.tasks.save(await this.#plan(projectId, taskId, await this.day(projectId), null, job, taskRankBetween(tasks.map(task => task.rank).sort().at(-1) ?? null, null))); this.o.changed();
@@ -226,7 +209,7 @@ export class ProjectDailyWork {
             const saved = await this.o.tasks.save({ ...task, state: 'cancelled', endedAt: this.o.tasks.at(), endNote: 'The seven-hour nightly window ended before this task started.' });
             tasks[tasks.findIndex(row => row.id === saved.id)] = saved;
           }
-          if (expired) this.o.runner.cancel(projectId);
+          if (expired) await this.o.runner.cancel(projectId);
           const review = tasks.find(row => window!.taskIds.includes(row.id) && row.nightlyReview), fix = tasks.find(row => row.id === review?.reviewRun?.fixTaskId);
           const failed = expired || !!window.failed || window.taskIds.some(id => tasks.some(row => row.id === id && ['failed', 'cancelled'].includes(row.state))) || !!fix && ['failed', 'cancelled'].includes(fix.state);
           const runs = await this.o.runner.runs(projectId), lines = [];
@@ -265,34 +248,20 @@ export class ProjectDailyWork {
         if (previous.state === 'finished') await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-finished', id: derivedId('cev', 'window-finished', previous.id), at: previous.finishedAt!, outcome: previous.outcome ?? '' });
         return;
       }
-      const closingProjectDay = shiftProjectDate(date, -1), enabled = (await this.dailies(projectId)).filter(daily => daily.enabled && Date.parse(daily.enabledSince ?? daily.createdAt) <= boundary);
+      const closingProjectDay = shiftProjectDate(date, -1), enabled = (await this.dailies(projectId)).filter(daily => daily.enabled && dailyDueOn(daily, date) && Date.parse(daily.enabledSince ?? daily.createdAt) <= boundary);
       if (!enabled.length) return;
       const pending = enabled.filter(daily => daily.target.kind !== 'memory-dream');
-      const jobs = new Map((await this.jobs(projectId)).map(job => [job.id, job])), handoffs = new Map<number, ProjectWorkTask['workflowHandoff']>(), schedulers = new Map<string, ProjectWorkTask['workflowScheduler']>();
-      for (const daily of pending) {
-        const job = daily.target.kind === 'job' ? jobs.get(daily.target.jobId) : null, spec = job?.run;
-        if (spec?.kind === 'github-workflow' && spec.schedulerSwitch && !schedulers.has(spec.schedulerSwitch.variable)) schedulers.set(spec.schedulerSwitch.variable, await this.o.runner.scheduler(projectId, job!));
-        else if (spec?.kind === 'github-workflow' && !spec.schedulerSwitch && spec.dispatchAfterMerge && !handoffs.has(spec.dispatchAfterMerge.pull)) handoffs.set(spec.dispatchAfterMerge.pull, await this.o.runner.handoff(projectId, job!));
-      }
-      if (pending.some(daily => daily.target.kind === 'job' && jobs.get(daily.target.jobId)?.run.kind === 'github-workflow')) await this.o.runner.cleanupWorkflowRefs(projectId).catch(() => undefined);
-      const order = (daily: ProjectDaily) => {
-        const spec = daily.target.kind === 'job' ? jobs.get(daily.target.jobId)?.run : null;
-        if (spec?.kind === 'github-workflow' && spec.schedulerSwitch) return schedulers.get(spec.schedulerSwitch.variable)?.mode === 'watch' ? spec.schedulerSwitch.watchOrder : daily.order;
-        return spec?.kind === 'github-workflow' && spec.dispatchAfterMerge && handoffs.get(spec.dispatchAfterMerge.pull)?.state !== 'merged' ? spec.dispatchAfterMerge.watchOrder : daily.order;
-      };
-      pending.sort((a, b) => Number(b.target.kind === 'review-since-last') - Number(a.target.kind === 'review-since-last') || order(a) - order(b) || a.id.localeCompare(b.id));
+      const jobs = new Map((await this.jobs(projectId)).map(job => [job.id, job]));
+      pending.sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
       const plans: ProjectWorkTask[] = []; let rank = taskRankBetween(null, tasks.map(task => task.rank).sort()[0] ?? null);
       // Build in reverse to keep daily order ahead of all ordinary tasks, including Now.
       for (const daily of [...pending].reverse()) {
         const job = daily.target.kind === 'job' ? jobs.get(daily.target.jobId) ?? null : null;
         if (daily.target.kind === 'job' && !job) return refuse('A daily job definition is missing.');
-        const spec = job?.run, handoff = spec?.kind === 'github-workflow' && spec.dispatchAfterMerge ? handoffs.get(spec.dispatchAfterMerge.pull) : undefined;
-        const scheduler = spec?.kind === 'github-workflow' && spec.schedulerSwitch ? schedulers.get(spec.schedulerSwitch.variable) : undefined;
-        plans.unshift({ ...await this.#plan(projectId, derivedId('task', 'window', id, daily.id), closingProjectDay, daily, job, rank, handoff, scheduler), nightlyWindowId: id }); rank = taskRankBetween(null, rank);
+        plans.unshift({ ...await this.#plan(projectId, derivedId('task', 'window', id, daily.id), closingProjectDay, daily, job, rank), nightlyWindowId: id }); rank = taskRankBetween(null, rank);
       }
       const openedAt = this.o.tasks.at(), scheduledAt = new Date(boundary).toISOString(), openedLateReason = this.o.now() - boundary > 60_000 ? `The hub did not process this boundary on time (${Math.floor((this.o.now() - boundary) / 60_000)} minutes late).` : undefined;
-      const scheduler = [...schedulers.values()][0];
-      window = (await this.o.hub.putWindow(ProjectWindowSchema.parse({ schema: 'project-window-v1', id, projectId, revision: 0, date, closingProjectDay, state: 'open', mergesHeld: true, openedAt, scheduledAt, ...(openedLateReason ? { openedLateReason } : {}), taskIds: plans.map(plan => plan.id), plans, ...(scheduler ? { workflowScheduler: scheduler } : {}) }), 0)).document;
+      window = (await this.o.hub.putWindow(ProjectWindowSchema.parse({ schema: 'project-window-v1', id, projectId, revision: 0, date, closingProjectDay, state: 'open', mergesHeld: true, openedAt, scheduledAt, ...(openedLateReason ? { openedLateReason } : {}), taskIds: plans.map(plan => plan.id), plans, memoryDreamPending: enabled.some(daily => daily.target.kind === 'memory-dream') }), 0)).document;
       for (const plan of plans) await this.o.tasks.save(plan);
       await this.o.event(projectId, { schema: 'coordinator-event-v1', kind: 'window-opened', id: derivedId('cev', 'window-opened', id), at: openedAt, pending: plans.length }); this.o.changed();
     });
