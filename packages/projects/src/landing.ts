@@ -3,7 +3,7 @@ import { readDocument, writeDocument } from '@jevellan/core';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { decideLandingRoute, type DecisionSource } from '@jevellan/decisions';
+import { decideLandingRoute, type DecisionSource, type LandingPrompt } from '@jevellan/decisions';
 import { LandingRouteSchema, LandingCorrectionInputSchema, LandingCorrectionSchema, MergeDocumentsViewSchema, ProjectDecisionSchema, PUBLICATION_BUSY, stableJson, withPublicationLease,
   type Configuration, type DecisionAnswer, type Homes, type LandingRoute, type Project, type ProjectDecision, type ProjectHub,
   type ProjectWorkSettings, type MergeDocument, type PublicationLeaseService, type SecretRedactor, type Thread, type ThreadLanding } from '@jevellan/core';
@@ -24,12 +24,16 @@ export type LandingOutcome = { kind: 'landed'; landing: ThreadLanding; routeId: 
 const failure = (error: unknown, redactor: SecretRedactor) => redactor.text(error instanceof Error ? error.message : 'Landing failed.').slice(0, 1200);
 
 /** Checked code reaches main under the hub's renewable publication lease. No agent performs this operation. */
+export type LandingJev = { version: number; prompt: LandingPrompt; lessons: { ids: string[]; texts: string[] };
+  apply(route: 'land' | 'verify-then-land' | 'ask-owner', thread: Thread): { route: 'land' | 'verify-then-land' | 'ask-owner'; rulesApplied: string[]; reason: string } };
 export class ThreadLandingService {
   constructor(readonly o: { homes: Homes; git: ThreadGit; github: GitHubAccess; publication: ThreadPublication; hub: ProjectHub; store: ThreadStore;
     verification: PullRequestVerification; leases?: PublicationLeaseService; deviceId: string; redactor: SecretRedactor; now(): number;
     settings(projectId: string): Promise<ProjectWorkSettings>; configuration(): Promise<Configuration['x-jevellan']>; decisionClient?: DecisionSource;
     projectEnvironment?(projectId: string): Promise<Record<string, string>>; assertLanding(projectId: string, threadId: string): Promise<void>;
-    retry(projectId: string, threadId: string): Promise<void> }) {}
+    retry(projectId: string, threadId: string): Promise<void>;
+    /** Jev control (bridge): the active l-v1 prompt, the lessons Jev reads, and the owner's rules applied after its answer. */
+    jev?(projectId: string): Promise<LandingJev | undefined> }) {}
   async records(projectId: string, threadId?: string) {
     const rows: MergeDocument[] = []; let after: string | undefined;
     do { const page = await this.o.hub.mergeDocuments(projectId, after, threadId); rows.push(...page.records); after = page.next ?? undefined; } while (after);
@@ -61,6 +65,15 @@ export class ThreadLandingService {
     if (answer.optionLabel === 'Leave it') { this.o.store.update(decision.threadId, current => ({ ...current, state: 'idle', stateReason: 'Landing left by the owner.' })); return true; }
     await this.#save({ ...route, route: 'land', source: 'owner', state: 'waiting', reason: 'The owner chose Land now.' });
     await this.o.retry(decision.projectId, decision.threadId); return true;
+  }
+  /** The owner overrides Jev's route before landing (bridge `override`): the latest route takes the owner's choice and landing retries. */
+  async ownerRoute(projectId: string, threadId: string, choice: 'land' | 'verify-then-land' | 'ask-owner'): Promise<boolean> {
+    const rows = (await this.records(projectId, threadId)).filter((row): row is LandingRoute => row.schema === 'landing-route-v1').sort((a, b) => b.at.localeCompare(a.at));
+    const route = rows[0]; if (!route || route.state === 'landed') return false;
+    if (route.decisionId) { const item = (await this.o.hub.decision(route.decisionId))?.document; if (item && !item.answer && !item.withdrawnAt) await this.o.hub.withdrawDecision(item.id, new Date(this.o.now()).toISOString()); }
+    await this.#save({ ...route, source: 'owner', route: choice, state: 'waiting', reason: `The owner chose ${choice}.` });
+    if (this.o.store.get(threadId)) await this.o.retry(projectId, threadId);
+    return true;
   }
   async override(thread: Thread) {
     const rows = (await this.records(thread.projectId, thread.id)).filter((row): row is LandingRoute => row.schema === 'landing-route-v1').sort((a, b) => b.at.localeCompare(a.at));
@@ -170,7 +183,12 @@ export class ThreadLandingService {
           .sort((a, b) => b.at.localeCompare(a.at) || (('receivedOrder' in b ? b.receivedOrder : 0) ?? 0) - (('receivedOrder' in a ? a.receivedOrder : 0) ?? 0)).slice(0, 8)
           .map(row => 'correction' in row ? `For “${row.title}”, the owner said: ${row.correction === 'should-have-asked' ? 'Should have asked me' : "Didn't need asking"}.` : '');
         const packet = { schema: 'landing-route-state-v1' as const, title: thread.title, task: thread.taskContext ?? { type: 'feature' as const, needs: [], goal: null }, summary: (thread.lastReport?.summary ?? '').slice(0, 4000), files: ready.files, checks: ready.checks, riskyAreas: settings.riskyAreas, corrections };
-        const result = await decideLandingRoute(this.o.decisionClient, packet, async () => (await this.o.configuration()).decisions.model, this.o.redactor, signal ?? new AbortController().signal);
+        const jev = await this.o.jev?.(project.id).catch(() => undefined);
+        const asked = jev?.lessons ? { ...packet, corrections: jev.lessons.texts.slice(0, 8) } : packet;
+        const answered = await decideLandingRoute(this.o.decisionClient, asked, async () => (await this.o.configuration()).decisions.model, this.o.redactor, signal ?? new AbortController().signal, jev?.prompt);
+        const ruled = answered.source === 'jev' && jev ? jev.apply(answered.route, thread) : undefined;
+        const result = { ...answered, ...(answered.source === 'jev' ? { rawChoice: answered.route } : {}), ...(ruled && ruled.rulesApplied.length ? { route: ruled.route, reason: ruled.reason, rulesApplied: ruled.rulesApplied } : {}),
+          ...(jev ? { promptVersion: jev.version, lessons: jev.lessons.ids.slice(0, 8) } : {}) };
         route = await this.#save(LandingRouteSchema.parse({ ...result, schema: 'landing-route-v1', id, projectId: project.id, threadId: thread.id, deviceId: this.o.deviceId,
           revision: 0, settingsDigest, gateValidUntil: ready.gateValidUntil, commit: ready.head, checkedCommit: ready.head, baseCommit: base, at: new Date(this.o.now()).toISOString(), questionSet: 'l-v1', state: 'waiting' }));
       }

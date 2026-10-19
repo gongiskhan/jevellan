@@ -97,6 +97,8 @@ export const DEFAULT_PROJECT_TIMERS: ProjectTimers = {
   mainLeaseRetryMs: 20_000, fallbackCheckMs: 60_000, now: Date.now,
 };
 export type ProjectWorkOptions = {
+  /** Jev control (bridge) for the l-v1 landing route. */
+  landingJev?(projectId: string): Promise<import('./landing.js').LandingJev | undefined>;
   /** The owner's display id of an object (bridge short ids), for refusals he reads. */
   displayId?(projectId: string, prefix: 'G' | 'T', internalId: string): string | undefined;
   /** Missed nights (bridge): decides whether a window this late still opens as a catch-up. */
@@ -443,7 +445,7 @@ export class ProjectWork {
     const verification = new PullRequestVerification({ projectEnvironment, sessionEnd: evidence => this.ledgers.sessionEnd(evidence), hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, facts, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs,
       memory: project => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'verification' }) });
     publication.bindBackup(id => this.store.local(id), (id, pushedCommit) => this.store.updateLocal(id, local => ({ ...local, pushedCommit })));
-    this.landings = new ThreadLandingService({ homes: o.homes, git, github, publication, hub: o.hub, store: this.store, verification,
+    this.landings = new ThreadLandingService({ ...(o.landingJev ? { jev: o.landingJev } : {}),  homes: o.homes, git, github, publication, hub: o.hub, store: this.store, verification,
       ...(o.leases ? { leases: o.leases } : {}), deviceId: o.deviceId, redactor: o.redactor, now, settings: id => this.admission.settings(id), configuration: o.settings,
       ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}), projectEnvironment, assertLanding: (id, tid) => this.daily.assertMerge(id, tid),
       retry: async (_projectId, threadId) => { const runner = this.threads.runner(threadId); if (runner && !runner.busy) await runner.requestTurn('publish', 'Retry the checked landing.'); } });

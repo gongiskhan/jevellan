@@ -10,6 +10,7 @@ import { OwnerEvents } from './owner-events.js';
 import { OwnerPushes } from './owner-pushes.js';
 import { OwnerBridges } from './owner-bridge.js';
 import { OwnerSchedules } from './owner-schedules.js';
+import { OwnerJev } from './owner-jev.js';
 import type { EkoaConnector } from './ekoa-client.js';
 import { collectDeviceFacts, EkoaRequestSchema, DeviceSettingsInputSchema, DeviceTagsInputSchema, type DeviceFacts } from '@jevellan/core';
 import { existsSync } from 'node:fs';
@@ -80,6 +81,8 @@ export class Application {
   #ownerPushes: OwnerPushes | undefined;
   #ownerBridges: OwnerBridges | undefined;
   #ownerSchedules: OwnerSchedules | undefined;
+  #ownerJev: OwnerJev | undefined;
+  get ownerJev(): OwnerJev { if (!this.#hub) throw Object.assign(new Error('Jev control runs on the state point.'), { status: 409 }); return this.#ownerJev ??= new OwnerJev(this); }
   get ownerSchedules(): OwnerSchedules { if (!this.#ownerSchedules) throw Object.assign(new Error('Jevellan tools run on the state point. Use them on the device that holds the hub.'), { status: 409 }); return this.#ownerSchedules; }
   get ownerPushes(): OwnerPushes { if (!this.#ownerPushes) throw Object.assign(new Error('Jevellan tools run on the state point. Use them on the device that holds the hub.'), { status: 409 }); return this.#ownerPushes; }
   get ownerBridges(): OwnerBridges { if (!this.#ownerBridges) throw Object.assign(new Error('The bridge runs on the state point. Start it on the device that holds the hub.'), { status: 409 }); return this.#ownerBridges; }
@@ -190,7 +193,7 @@ export class Application {
       // Projects share the account serialization, checkout ownership, leases, bridge registry and memory with conversations.
       this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId, undefined, () => this.devices.list());
       this.library = new ProjectLibraryService(this);
-      this.projectWork = new ProjectWork({ displayId: (projectId, prefix, internalId) => this.#hub ? this.ownerTools.ids.one(projectId, prefix, internalId) : undefined, nightGuard: (projectId, date, lateness, items) => this.#ownerSchedules ? this.#ownerSchedules.nightGuard(projectId, date, lateness, items) : Promise.resolve({ open: true as const }), deployHealth: async (id, checks, trigger, deployId) => { const runs: ProjectHealthRun[] = []; for (const definition of checks) { const view = await this.projectHealthRequest({ schema: 'project-health-request-v1', project: id, operation: 'run', trigger, deployId, definition }); runs.push(...view.runs); } return runs; }, library: this.library, homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor, workRefusal: () => this.versionRefusal(),
+      this.projectWork = new ProjectWork({ landingJev: async (projectId) => this.#hub ? this.ownerJev.landingHook(projectId) : undefined, displayId: (projectId, prefix, internalId) => this.#hub ? this.ownerTools.ids.one(projectId, prefix, internalId) : undefined, nightGuard: (projectId, date, lateness, items) => this.#ownerSchedules ? this.#ownerSchedules.nightGuard(projectId, date, lateness, items) : Promise.resolve({ open: true as const }), deployHealth: async (id, checks, trigger, deployId) => { const runs: ProjectHealthRun[] = []; for (const definition of checks) { const view = await this.projectHealthRequest({ schema: 'project-health-request-v1', project: id, operation: 'run', trigger, deployId, definition }); runs.push(...view.runs); } return runs; }, library: this.library, homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor, workRefusal: () => this.versionRefusal(),
         journal: { isHub: !this.member, ...(this.member ? { request: input => this.member!.projectJournal(input) } : {}) },
         terminalRead: (scope, input) => this.terminals.read(scope.kind === 'thread' ? { kind: 'thread', projectId: scope.projectId, threadId: scope.threadId }
           : { kind: 'coordinator', projectId: scope.projectId }, input),

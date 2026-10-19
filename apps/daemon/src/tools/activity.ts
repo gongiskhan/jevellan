@@ -47,7 +47,11 @@ export const activity: OwnerHandler = async (context) => {
     const threads = target === 'ALL' ? view.threads : [(await resolveTask(context, target)).thread].flatMap(row => row ? [row] : []);
     const recent = threads.filter(row => row.createdAt >= sinceIso || target !== 'ALL').sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-limit);
     const ids = tools.ids.assign(projectId, 'D', recent.map(row => `placement-${row.id}`.slice(0, 128)));
-    for (const row of recent) lines.push(`${ids.get(`placement-${row.id}`.slice(0, 128))} ${clock(row.createdAt)} Jev · ${tools.ids.shortOf(projectId, row.id) ?? row.title} on ${row.modelLabel} ${row.effort}, account ${row.accountLabel} · can override: undo, only`);
+    const routes = (await engine.landings.records(projectId)).filter((row): row is import('@jevellan/core').LandingRoute => row.schema === 'landing-route-v1' && recent.some(thread => thread.id === row.threadId));
+    const rows = [...recent.map(row => ({ at: row.createdAt, line: `${ids.get(`placement-${row.id}`.slice(0, 128))} ${clock(row.createdAt)} Jev · ${tools.ids.shortOf(projectId, row.id) ?? row.title} on ${row.modelLabel} ${row.effort}, account ${row.accountLabel} · can override: undo, only` })),
+      ...routes.map(route => ({ at: route.at, line: `${tools.ids.one(projectId, 'D', route.id)} ${clock(route.at)} ${route.source === 'jev' ? 'Jev' : route.source === 'owner' ? 'You' : 'Jevellan'} · landing route ${route.route}${route.rulesApplied?.length ? ` (Jev said ${route.rawChoice})` : ''} · ${(route.reason ?? '').slice(0, 160)} · can override: ${route.state === 'landed' ? 'undo (revert), only' : 'undo, only'}` }))]
+      .sort((a, b) => a.at.localeCompare(b.at));
+    for (const row of rows) lines.push(row.line);
     if (lines.length === 1) lines.push('No decisions in this period.');
     return { text: capLines(lines, detail) };
   }
