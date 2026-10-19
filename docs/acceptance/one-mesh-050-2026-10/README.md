@@ -338,3 +338,41 @@ Both machines reported 0.5.0 at 00:01:40 UTC, which starts the live clock.
 **ekoa-code on the Pro (live, Decision 924).** At 00:03 the normal project write added the Pro's path (`/Users/ggomes/jevellan-projects/ekoa-code`) and allowed the Pro, while the five owner-held threads were still open. Result: 200; the existing path, Git policy and every other field are unchanged. ekoa-code's nightly window had started its own work at 00:00 (three threads running at 00:03); none of it was touched.
 
 Phase 2 finished at about 00:05 UTC, within its clock.
+
+### Phase 3: live journeys (live clock 00:01:40 to 03:01:40 UTC)
+
+These ran on `jevellan-live-sandbox` with real Claude and Codex accounts, real Jev and real GitHub, against the published 0.5.0. The harness is driven through the owner UI, with the dedicated owner state on the HTTPS address. A read-only preflight confirmed the 0.5.0 contracts:
+- settings v4, start mode Start, at most 6 running threads, autoMerge off;
+- the sandbox test command contains `TZ=UTC` and `SANDBOX_DATA_DIR`;
+- no open sandbox threads, and no endpoint account.
+
+Receipts are in [live/](live/). Every changed setting was restored and is listed in its receipt.
+
+| Id | Result | Evidence |
+| --- | --- | --- |
+| LP1 Chat and cards | **Failed** | The owner message was sent through the composer at 00:08:28. No card appeared within 3 minutes: the sandbox coordinator never started a turn (see below). Ready for review and the test-command question were not run. |
+| LP2 Propose mode | Blocked | Needs a coordinator turn; not sent. |
+| LP3 Settings from chat | Blocked | Needs a coordinator turn; not sent. |
+| LP4 Automatic fixes | Blocked | Needs LP1's pull requests and coordinator turns. |
+| LP5 Limits | **Blocked / failed** | First check blocked: the other Claude account, Ekoa, was over its weekly ceiling (91% against 90) and so not eligible. Second check, rerun alone with both Claude ceilings at 1: Jev placed the automatic-model task directly on Codex (gpt-6-astra, reason `start`) with no wait and no "Moved from…" notice, so the required transition was not observed. That task opened [sandbox #21](https://github.com/gongiskhan/jevellan-live-sandbox/pull/21), whose checks pass. Ceilings were restored to 90 and re-read. |
+| LP6 Library | **Passed** | A PNG uploaded through the Overview Library, then attached to a message to a thread fixed to the Pro (Claude Fable). The report described it exactly (400×200, left half red, right half blue). The attached file is mirrored on the Pro with mode 400 and the same SHA-256. |
+| LP7 Notifications | Not run | The one automated context tried, installed Chrome headless on dev-madrid, could not subscribe to the real push service: "Registration failed - permission denied". The physical iPhone check is the owner's. |
+| LP8 Compatible endpoint | Blocked | No endpoint account exists in Settings; no credential was given. |
+| LP9 First run | Blocked | Suggest setup is answered by a coordinator turn. |
+| LP10 Two devices | Blocked | Needs a coordinator turn. |
+
+**The coordinator stall (live, 0.5.0, unexplained).** After LP1's owner message at 00:08:28, the state point entered its lifecycle activity "Interpreting a project request" for that event at about 00:08:31. It was still there at 00:51.
+- Before that step, the turn's memory context returned: the activity is entered only after it.
+- No outcome file was written. On 0.4.1 such files appeared within seconds.
+- No `coordinator-turn-start` followed.
+- The Jev request in that step is bounded (two attempts of 4 seconds), so the wait sits elsewhere in it, in settings, configuration or credential retrieval. Which one was not identified without intrusive debugging.
+- Meanwhile Jev answered placement decisions normally (LP5, LP6), ekoa-code's coordinator ran turns, and doctor reported Jev reachable.
+- One owner-UI Fresh session at 00:35:34 did not clear it. There was no daemon restart, hot patch or internal write.
+- ekoa-code's nightly window ran heavy Codex work on Madrid from 00:00. A causal link is not established.
+
+Other live notes:
+- The harness was stopped twice by this run, each time its own process group verified by PID, parent and start time:
+  - after LP1's failure was established, so later journeys would not queue behind the stall;
+  - during LP5's first attempt, once its precondition had failed, so the shared ceilings could be restored at once.
+- Thread `thread_01M58SA1R0VMBK3JSMYH06E9KG` ("Add a README line about Node 22", Gmail) started after the ceiling was restored. It now waits for the owner with a question, because the sandbox targets Node 20. It is left for the owner.
+- No live journey changed ekoa-code. Its ceilings were lowered only during LP5, while it had no running work. Ekoa Codex was never changed.

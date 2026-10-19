@@ -1,0 +1,30 @@
+{
+  "schema": "live-parity-receipt-v2",
+  "journey": "LP2",
+  "label": "blocked",
+  "passed": false,
+  "startedAt": "2026-10-19T00:50:51.000Z",
+  "endedAt": "2026-10-19T00:50:51.000Z",
+  "steps": [
+    {
+      "id": "blocked",
+      "assertion": "Propose mode: two Proposed cards; the coordinator starts one with jevellan_tasks_start; Start all starts the other",
+      "verdict": "blocked",
+      "at": "2026-10-19T00:50:51.000Z",
+      "reason": "Blocked: the sandbox coordinator never started a turn after LP1's owner message (00:08:28Z). The state point stayed in \"Interpreting a project request\" for that event from about 00:08:31Z onwards, and the one owner-UI Fresh session at 00:35:34Z did not clear it. Every message of this journey needs a coordinator turn, so none was sent.",
+      "evidence": {
+        "event": "cev_01M58QSZCGR0CZ2T5268FBB7SS",
+        "activity": "Interpreting a project request",
+        "since": "2026-10-19T00:08:31Z"
+      }
+    }
+  ],
+  "messages": [],
+  "pullRequests": [],
+  "restored": [
+    "no settings were changed"
+  ],
+  "cleanupErrors": [],
+  "notes": [],
+  "screenshots": []
+}

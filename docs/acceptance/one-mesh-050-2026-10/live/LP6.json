@@ -1,0 +1,69 @@
+{
+  "schema": "live-parity-receipt-v2",
+  "journey": "LP6",
+  "label": "live",
+  "passed": true,
+  "startedAt": "2026-10-19T00:24:48.821Z",
+  "endedAt": "2026-10-19T00:26:24.205Z",
+  "steps": [
+    {
+      "id": "upload",
+      "assertion": "The PNG is uploaded through the Overview Library",
+      "verdict": "passed",
+      "at": "2026-10-19T00:24:53.691Z",
+      "evidence": {
+        "name": "LP6 red and blue 1792369490113.png",
+        "sha256": "1e5ad3e13e20b79d9508e786c35db4747b710188beb0419b43428485a93dc715",
+        "item": {
+          "id": "file_01M58RR10PP0MJY18AHZVB19RQ",
+          "path": "uploads/2026-10-19/LP6 red and blue 1792369490113.png",
+          "size": 2451
+        },
+        "screenshot": "docs/acceptance/one-mesh-050-2026-10/live/screenshots/LP6-library.png"
+      }
+    },
+    {
+      "id": "describe",
+      "assertion": "The report describes the image (red left half, blue right half) from a thread on the Pro",
+      "verdict": "passed",
+      "at": "2026-10-19T00:26:22.987Z",
+      "evidence": {
+        "threadId": "thread_01M58RR2PZ3XA6YV95WFVMSSS0",
+        "device": "dev_01M58AS8YEE2SGNR88Q1HNJ7YQ",
+        "report": "{\"schema\":\"thread-report-v1\",\"turn\":2,\"status\":\"done\",\"summary\":\"Image described.\\n\\nThe attached PNG (400x200 pixels, landscape) is a simple two-colour test image. It is split vertically down the exact middle into two equal rectangles: the left half is solid pure red (#FF0000) and the right half is solid pure blue (#0000FF). There is no text, no gradient, no border, no shapes or other content; the two colours meet at a hard edge with no blending. The tiny file size (2.4 KB) is consistent with a flat two-colour image.\\n\\nNo code was changed and no tests were run, since the task only asked for a description.\",\"changedFiles\":[],\"synthesized\":false}",
+        "screenshot": "docs/acceptance/one-mesh-050-2026-10/live/screenshots/LP6-report.png"
+      }
+    },
+    {
+      "id": "mirror",
+      "assertion": "The file is mirrored read-only on the Pro",
+      "verdict": "passed",
+      "at": "2026-10-19T00:26:24.148Z",
+      "evidence": {
+        "checks": [
+          {
+            "path": "uploads/2026-10-19/LP6 red and blue 1792369490113 (2).png",
+            "sha256": "1e5ad3e13e20b79d9508e786c35db4747b710188beb0419b43428485a93dc715",
+            "mode": "400"
+          },
+          {
+            "path": "uploads/2026-10-19/LP6 red and blue 1792369490113.png",
+            "sha256": null,
+            "mode": null
+          }
+        ]
+      }
+    }
+  ],
+  "messages": [],
+  "pullRequests": [],
+  "restored": [],
+  "cleanupErrors": [],
+  "notes": [
+    "Library items: file_01M58RR10PP0MJY18AHZVB19RQ \"LP6 red and blue 1792369490113.png\" (00:24:53Z) is the Overview Library upload; file_01M58RSD37B866FNAXZQM9FX6T \"... (2).png\" (00:25:38Z) is the same bytes attached through the thread composer with the message \"Describe the attached image in your report.\" The Pro mirrored the attached item on use (uploads/2026-10-19/LP6 red and blue 1792369490113 (2).png, mode 400, SHA-256 matches); the unused Overview upload is not mirrored on the Pro, as mirroring happens on demand."
+  ],
+  "screenshots": [
+    "docs/acceptance/one-mesh-050-2026-10/live/screenshots/LP6-library.png",
+    "docs/acceptance/one-mesh-050-2026-10/live/screenshots/LP6-report.png"
+  ]
+}

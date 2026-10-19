@@ -1,0 +1,64 @@
+{
+  "schema": "live-parity-receipt-v2",
+  "journey": "LP5",
+  "label": "live",
+  "passed": false,
+  "startedAt": "2026-10-19T00:40:03.306Z",
+  "endedAt": "2026-10-19T00:50:07.236Z",
+  "steps": [
+    {
+      "id": "moved-to-codex",
+      "assertion": "With both Claude accounts at ceilingPct 1, a task with an automatic model waits, then moves to a Codex model with the \"Moved from\u2026\" notice, and Why shows model-unavailable",
+      "verdict": "failed",
+      "at": "2026-10-19T00:50:07.236Z",
+      "reason": "The required transition was not observed: no wait and no \"Moved from\u2026\" notice. Jev placed the task directly on a Codex model at its start (thread_01M58SKWYQYCBRWM8BF6E8GCZY created 00:40:06Z, runtime codex, model gpt-6-astra, account Ekoa Codex, dev-madrid, placement reason \"start\"). That is a useful real behavior, but it is not the brief's wait-then-move. The thread opened sandbox pull request #21 with its result check passing.",
+      "evidence": {
+        "threadId": "thread_01M58SKWYQYCBRWM8BF6E8GCZY",
+        "result": {
+          "state": "in-review",
+          "stateReason": "",
+          "runtime": "codex",
+          "model": "gpt-6-astra",
+          "reason": "start",
+          "account": "acc_01M4Z8H9KR8D7WC33H7ERBN0FM",
+          "device": "dev_01M4Z8FH6B7BEWVA9HTQM6Q305",
+          "notice": null,
+          "at": "2026-10-19T00:50:02.177Z"
+        },
+        "pullRequest": "https://github.com/gongiskhan/jevellan-live-sandbox/pull/21",
+        "why": {
+          "source": "jev",
+          "fixed": [],
+          "runtime": "codex",
+          "model": "gpt-6-astra",
+          "effortRequested": "medium",
+          "effortEffective": "medium",
+          "deviceId": "dev_01M4Z8FH6B7BEWVA9HTQM6Q305",
+          "accountId": "acc_01M4Z8H9KR8D7WC33H7ERBN0FM",
+          "accountChoice": null,
+          "reason": "start",
+          "pr": 21,
+          "checks": "passing"
+        }
+      }
+    }
+  ],
+  "messages": [],
+  "pullRequests": [
+    21
+  ],
+  "restored": [
+    "ceilingPct acc_01M4Z8H24SFH071Y65FP3XZKX6 90",
+    "ceilingPct acc_01M4Z8H5MZDEZPADRKEJ3Y75Q1 90"
+  ],
+  "cleanupErrors": [],
+  "notes": [
+    "Ceilings set to 1 at 2026-10-19T00:40:03.517Z for Gmail, Ekoa.",
+    "Task task_70073f03c62a3b3955084d180965ee4fab4973ec created 2026-10-19T00:40:03.597Z with no fixed fields.",
+    "Ceilings after restore at 2026-10-19T00:50:07.236Z: [[\"Gmail\",90],[\"Ekoa\",90],[\"Ekoa Codex\",90]].",
+    "Attempt 2 of LP5, second check only; the first check stays blocked (attempt 1, LP5.json): Ekoa is above its weekly ceiling until 2026-10-20.",
+    "Both Claude ceilings were at 1 from 00:40:03Z to 00:46:54Z, about 7 minutes. This script waited for the specified transition instead of restoring as soon as the direct Codex placement was visible. The parent agent restored both to 90 at 00:46:54Z through the revision-checked PATCH and verified all three at 90. This script's finally block then wrote the same values again at 00:50:07Z. ekoa-code had no running work during the window.",
+    "Positive evidence, separate from the failed transition: with both Claude accounts at ceiling 1, Jev placed the automatic-model task (source jev, nothing fixed) on Codex gpt-6-astra, effort medium, on the only eligible account (Ekoa Codex) on dev-madrid, at its start. It opened sandbox pull request #21 with passing checks."
+  ],
+  "screenshots": []
+}

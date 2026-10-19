@@ -1,0 +1,24 @@
+{
+  "schema": "live-parity-receipt-v2",
+  "journey": "LP8",
+  "label": "blocked",
+  "passed": false,
+  "startedAt": "2026-10-19T00:24:48.430Z",
+  "endedAt": "2026-10-19T00:24:48.817Z",
+  "steps": [
+    {
+      "id": "endpoint",
+      "assertion": "The pull request opens and Why shows the endpoint account",
+      "verdict": "blocked",
+      "at": "2026-10-19T00:24:48.790Z",
+      "reason": "No compatible endpoint account exists in Settings; no credential was given.",
+      "evidence": {}
+    }
+  ],
+  "messages": [],
+  "pullRequests": [],
+  "restored": [],
+  "cleanupErrors": [],
+  "notes": [],
+  "screenshots": []
+}

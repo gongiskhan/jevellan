@@ -1,0 +1,27 @@
+{
+  "schema": "live-parity-receipt-v2",
+  "journey": "LP7",
+  "label": "live",
+  "passed": false,
+  "startedAt": "2026-10-19T00:29:39.304Z",
+  "endedAt": "2026-10-19T00:29:41.368Z",
+  "steps": [
+    {
+      "id": "push",
+      "assertion": "A browser here subscribes, a decision item arrives as a notification with its deep link",
+      "verdict": "not run",
+      "at": "2026-10-19T00:29:41.247Z",
+      "reason": "Not run: the one automated context tried could not subscribe to the real push service. It was installed Google Chrome (Playwright channel \"chrome\", headless) on dev-madrid at the HTTPS address, with the notifications permission granted and the hub push key from /api/notifications/subscriptions. pushManager.subscribe failed with \"AbortError: Registration failed - permission denied\". No subscription was created, so the decision-item notification and its deep link could not be checked. No other browser was tried. The physical iPhone check is the owner's.",
+      "evidence": {
+        "ok": false,
+        "reason": "Subscribe failed: AbortError: Registration failed - permission denied"
+      }
+    }
+  ],
+  "messages": [],
+  "pullRequests": [],
+  "restored": [],
+  "cleanupErrors": [],
+  "notes": [],
+  "screenshots": []
+}

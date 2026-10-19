@@ -1,0 +1,61 @@
+{
+  "schema": "live-parity-receipt-v2",
+  "journey": "LP1",
+  "label": "live",
+  "passed": false,
+  "startedAt": "2026-10-19T00:08:11.000Z",
+  "endedAt": "2026-10-19T00:24:40.000Z",
+  "steps": [
+    {
+      "id": "cards",
+      "assertion": "Two thread cards appear under the reply within 3 minutes of the owner message",
+      "verdict": "failed",
+      "at": "2026-10-19T00:11:28.000Z",
+      "reason": "No coordinator turn started: the owner message was recorded at 00:08:28.304Z, and the state point stayed in its lifecycle activity \"Interpreting a project request\" for that event from about 00:08:31Z through at least 00:24Z. No coordinator-turn-start was written, no task was created, and no card appeared.",
+      "evidence": {
+        "sentAt": "2026-10-19T00:08:28.304Z",
+        "event": "cev_01M58QSZCGR0CZ2T5268FBB7SS",
+        "newCards": 0,
+        "newTasks": 0,
+        "screenshot": "docs/acceptance/one-mesh-050-2026-10/live/screenshots/LP1-cards.png",
+        "activity": "Interpreting a project request (project_request_cev_01M58QSZCGR0CZ2T5268FBB7SS)",
+        "observedUntil": "2026-10-19T00:24:00Z"
+      }
+    },
+    {
+      "id": "ready",
+      "assertion": "Both reach Ready for review with pull requests and passing checks",
+      "verdict": "not run",
+      "at": "2026-10-19T00:24:40.000Z",
+      "reason": "Blocked: no task or thread was created, because the coordinator turn never started.",
+      "evidence": {}
+    },
+    {
+      "id": "answer",
+      "assertion": "Answered in chat with the configured test command, and no task is created",
+      "verdict": "not run",
+      "at": "2026-10-19T00:24:40.000Z",
+      "reason": "Not sent: the coordinator had not answered the first message, and further owner messages would queue behind the stalled interpretation.",
+      "evidence": {}
+    }
+  ],
+  "messages": [
+    {
+      "owner": "Add a short Contributing section to the README, and add a unit test for invoice total rounding.",
+      "sentAt": "2026-10-19T00:08:28.304Z",
+      "reply": "",
+      "turn": 0
+    }
+  ],
+  "pullRequests": [],
+  "restored": [
+    "no settings were changed"
+  ],
+  "cleanupErrors": [],
+  "notes": [
+    "The harness process was stopped at about 00:24Z after the failure was established, so that later journeys would not queue behind the stall. This receipt was written from the recorded evidence: the ledger event, the lifecycle activity file and the screenshot taken at the three-minute bound."
+  ],
+  "screenshots": [
+    "docs/acceptance/one-mesh-050-2026-10/live/screenshots/LP1-cards.png"
+  ]
+}

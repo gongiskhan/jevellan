@@ -1,0 +1,55 @@
+{
+  "schema": "live-parity-receipt-v2",
+  "journey": "LP5",
+  "label": "blocked",
+  "passed": false,
+  "startedAt": "2026-10-19T00:33:02.000Z",
+  "endedAt": "2026-10-19T00:35:17.000Z",
+  "steps": [
+    {
+      "id": "precondition",
+      "assertion": "ekoa-code has no running thread",
+      "verdict": "passed",
+      "at": "2026-10-19T00:33:02.000Z",
+      "evidence": {
+        "ekoaRunningThreads": 0,
+        "checkedAt": "2026-10-19T00:32:51Z"
+      }
+    },
+    {
+      "id": "other-account",
+      "assertion": "With the Claude account Jev would choose at ceilingPct 1 while the other Claude account is eligible, a small Claude task runs on the other Claude account",
+      "verdict": "blocked",
+      "at": "2026-10-19T00:34:38.000Z",
+      "reason": "Precondition not met: the other Claude account (Ekoa) was not eligible, because its weekly usage was 91% against its 90% ceiling (probe 00:02Z). With Gmail at 1% from 00:33Z, the Claude-fixed task stayed queued with no thread, as expected when no Claude account is eligible. The journey was then stopped and Gmail restored to 90 at 00:34:38Z. The task started on Gmail 5 seconds later (thread_01M58SA1R0VMBK3JSMYH06E9KG, Claude Opus 5.5, dev-madrid). That is not evidence for this step.",
+      "evidence": {
+        "chosenAtCeiling1": "Gmail (most recent automatic Claude placement)",
+        "otherAccount": "Ekoa, weekly usage 91% above its ceiling 90",
+        "task": "task_69cc8e27f41e11cdb791e71c38c8d836eb596762",
+        "threadAfterRestore": "thread_01M58SA1R0VMBK3JSMYH06E9KG",
+        "threadCreatedAt": "2026-10-19T00:34:43.584Z"
+      }
+    },
+    {
+      "id": "moved-to-codex",
+      "assertion": "With both Claude accounts at ceilingPct 1, a task with an automatic model waits, then moves to a Codex model with the \"Moved from\u2026\" notice, and Why shows model-unavailable",
+      "verdict": "not run",
+      "at": "2026-10-19T00:35:17.000Z",
+      "reason": "Not run: the journey was stopped so the shared ceilings could be restored at once, once the first step's precondition had failed.",
+      "evidence": {}
+    }
+  ],
+  "messages": [],
+  "pullRequests": [],
+  "restored": [
+    "ceilingPct Gmail 90 (restored 00:34:38Z through PATCH /hub/accounts; all three ceilings verified at 90)"
+  ],
+  "cleanupErrors": [],
+  "notes": [
+    "The harness was stopped (this run's own process group, verified by PID, parent and start time) before its finally block, so the ceiling was restored by hand through the normal account API.",
+    "The Claude-fixed test task could not be cancelled once started (\"Use the thread controls for a task that has started\"); its thread was left to finish rather than interrupt a provider turn.",
+    "The harness wrote its own LP5 receipt when it was stopped at about 00:34:20Z: an error step \"Target page, context or browser has been closed\" and two cleanupErrors (its two finally-block ceiling restores, attempted through the browser context that the stop had just closed). That receipt was a consequence of this run stopping its own harness, not a product account-routing result. It was replaced by this evidence-based receipt. The restoration proof is independent: PATCH /hub/accounts for Gmail returned 200 with ceilingPct 90 at 00:34:38Z, and a fresh GET /hub/accounts showed Gmail 90, Ekoa 90 and Ekoa Codex 90.",
+    "Queued-task state while Gmail was at 1%: task_69cc8e27f41e11cdb791e71c38c8d836eb596762 (runtime fixed to claude) was \"queued\" with no thread at 00:34:10Z; it became \"active\" with thread_01M58SA1R0VMBK3JSMYH06E9KG created 00:34:43.584Z, after the restore."
+  ],
+  "screenshots": []
+}
