@@ -1,8 +1,10 @@
 # Bridge Codex pass
 
-Current owner plan: 0.6.0 by 08:30 UTC, 0.7.0 by 10:30 UTC, daily use goal 11:00 UTC on 20 October. Decisions 11–15 supersede the earlier clocks, classification, integration procedure and review timing.
+Current checkpoint, 20 October 2026: 0.6.0 was released and installed before bridge integration; 0.7.0 was released and installed on both devices; essential 0.7.1 is published from `498701ab` and installed on both with doctor **10/10 each**, verified at **10:47:15 UTC**. Its full backend selected 2,604: **2,589 passed, zero failed, 15 not run**. Managed bridge authentication remains externally blocked; status/push and owner acceptance are unpassed. The 11:00 daily-use goal was not fully met. Optional UI/intake/parity/engine work remains planned.
 
-Fresh run on 20 October 2026. Main starts at c1248ab2; origin/bridge is ac98492f. Neither 0.6.0 nor 0.7.0 is released or installed. Both active devices are reported on 0.5.1; fresh installation checks follow. The full required authority documents and the complete bridge surface map were read before implementation. PRD.md, PLANING.md and TASKS.md are absent.
+The latest owner plan and Decision 25 supersede the earlier clocks, classification, integration procedure and review timing. Essential 0.7.1 has no 10:30 hard cutoff. Entries below preserve chronological checkpoints; their older pending states and superseded deadlines are historical.
+
+Initial orientation (historical): main started at c1248ab2 and origin/bridge was ac98492f. Neither release was published at that checkpoint and both devices were on 0.5.1; current verified versions are recorded above. The full required authority documents and the complete bridge surface map were read before implementation. PRD.md, PLANING.md and TASKS.md are absent.
 
 ## Numbered decisions
 
@@ -18,7 +20,7 @@ Fresh run on 20 October 2026. Main starts at c1248ab2; origin/bridge is ac98492f
 9. Journal durability stays intact for changed records. Idle sweeps avoid rewriting identical state and yield between projects so HTTP can progress.
 10. Background heartbeat checkout discovery uses asynchronous Git with the existing root/path guards; it does not fetch or change a checkout.
 
-## Stage 2.1: finish 0.6.0
+## Stage 2.1: initial checkpoint (historical)
 
 In progress: first reproduce the fixture's periodic event-loop starvation, then fix its cause with a failing-first regression before trusting browser gates. Historical full results remain backend 2,501 passed/32 failed/1 skipped and browser 96 passed/100 failed/208 skipped. The fresh stage has not yet accepted a gate. Versioning, archives, publication, cold backups, installation, switch and live checks are not run.
 
@@ -116,3 +118,19 @@ Managed bridge authentication is **externally blocked** by first-party browser v
 ### Essential 0.7.1 release gate
 
 The complete current-source backend gate passes: **2,589 passed, zero failed, 15 not run**, exactly2,604 selected with six workers and no reruns. The15 not-run cases retain their documented opt-in/runtime constraints; they are not passes. Typecheck, lint, build and89 affected cases also pass. All three repairs have failing-first evidence. The five core desktop-light smokes passed for0.7.0; these repairs introduce no web screen. The single scoped closing review is complete, with no second review. Exact-source packaging, publication and safe installation follow; installed versions are still0.7.0 at this checkpoint. Authentication remains externally blocked.
+
+
+### 0.7.1 published and installed
+
+Source `498701ab6b703afec7371354d85fd89ac66be9f3` was [published as 0.7.1](https://github.com/gongiskhan/jevellan/releases/tag/v0.7.1) at **10:35:59 UTC**. Both published asset digests match the verified archives. Linux was built from the exact committed source. Darwin contains the current common build with unchanged official 0.5.1 external dependencies: all 444 lock entries and dependency edges, external bytes, current owned bytes, source files and Node ABI 127 matched. The actual extracted Pro CLI and native PTY passed. This is dependency-cache reuse, not a new Darwin native build. Both extracted archives also passed scanning against the loaded sensitive environment values.
+
+Both active devices now run **0.7.1**, with doctor **10/10 each**, Online status, vault sync and no open project-request classification verified at **10:47:15 UTC**. Fresh cold backups and prior applications are retained. All 19 saved legacy thread/PR references and their pull-request delivery were preserved.
+
+27. **Maintenance and recovery:** the expired temporary login form and its parent-owned forward were closed after identity proof; no code or human completion existed. Only the verified owned pending managed login was ended for the essential daemon update. The company browser state remains held. A controller PATH mistake selected older system Git on the member, so the normal updater refused before changing the installation. The first cold backup was retained, the verified service PATH restored, and the original fresh idle/held guards and a new cold backup passed before retrying the normal update. No guard was weakened, native configuration changed or peer process stopped. Initial stale account observations cleared through normal managed-account status checks; they do not prove interactive bridge authentication.
+
+The complete 0.7.1 gate is **2,589 passed, zero failed, 15 not run** from exactly 2,604 selected, six workers and no reruns. The not-run cases are 13 opt-in model evaluations, one opt-in journey and the unavailable Node 20 fixture. Typecheck, lint, build and 89 affected cases pass; each repair was failing-first. The five core desktop-light smokes passed for 0.7.0 and these repairs change no web screen. Exactly one scoped closing review of released 0.7.0 is complete; no second review was run.
+
+Managed bridge authentication remains externally blocked. No status reply, fresh transcript push, remote-control readiness or owner acceptance is claimed. The configured bridge account already matches the intended account; no owner configuration chore remains. Native plugin/statusline actions are optional owner actions, not prerequisites for basic bridge use. Exact owner steps and project-specific live receipts remain private. Optional UI migration/parity, intake, remaining engine work and expanded live/browser coverage remain planned after the essential repair release.
+
+
+11:00 UTC goal record: the essential patch was published and both installations passed doctor before the daily-use target. The full goal remains unmet because actual bridge authentication/status/push are blocked; no owner acceptance is inferred. Authorized scoped verification continues without interrupting valid checks, and detailed project receipts remain private. No optional feature phase was started.
