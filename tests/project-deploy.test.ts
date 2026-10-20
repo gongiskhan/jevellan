@@ -34,6 +34,38 @@ function setup(options: { before?: boolean; database?: boolean; rollbackAvailabl
 async function running(f: ReturnType<typeof setup>) { await f.service.sweep('project'); await f.answer(); await f.service.sweep('project'); const row = f.record(); await f.service.beforeJob({ id: row.jobRunId!, projectId: 'project', commit: row.commit, deployment: { deployId: row.id } } as never); return f.record(); }
 async function released(f: ReturnType<typeof setup>) { const row = await running(f); f.finish(row); await f.service.sweep('project'); return f.record(); }
 async function healthy(f: ReturnType<typeof setup>) { await released(f); f.advance(60_000); await f.service.sweep('project'); f.advance(240_000); await f.service.sweep('project'); return f.record(); }
+test.each(['approved', 'running'] as const)('owner rollback refuses a competing %s deploy before queuing work', async state => {
+  const f = setup(), old = await healthy(f);
+  f.main(c); f.indexes.push({ id: 'thread_b', title: 'Later landing', landing: { commit: c }, state: 'done' } as ThreadIndex);
+  await f.service.sweep('project'); const next = f.record();
+  await f.answer(`Deploy ${c.slice(0, 7)}`, 'next_deploy', next.decisionId);
+  if (state === 'running') await f.service.sweep('project');
+  expect(f.deploys.get(next.id)?.state).toBe(state);
+  const current = f.deploys.get(old.id)!, count = f.tasks.size;
+  await expect(f.service.rollback('project', old.id, current.revision)).rejects.toThrow('already running');
+  expect(f.deploys.get(old.id)).toEqual(current); expect(f.tasks.size).toBe(count);
+});
+test('owner rollback can interrupt its own health monitoring when no other deploy is active', async () => {
+  const f = setup(), row = await released(f);
+  expect(row.monitor).toBeDefined();
+  await f.service.rollback('project', row.id, row.revision);
+  expect(f.deploys.get(row.id)?.rollbackPending?.reason).toBe('owner');
+});
+test.each(['rollback', 'retry'] as const)('an answered %s deploy decision refuses a new action before modifying work', async action => {
+  const f = setup({ database: true }); let decisionId: string;
+  if (action === 'rollback') {
+    await released(f); f.health(false); f.advance(60_000); await f.service.sweep('project');
+    f.advance(30_000); await f.service.sweep('project'); decisionId = f.record().rollbackDecisionId!;
+  } else {
+    const row = await running(f); f.finish(row, 'deploy', 'failed', false); await f.service.sweep('project');
+    decisionId = f.record().failureDecisionId!;
+  }
+  await f.answer('Leave it', 'leave_it', decisionId);
+  const before = structuredClone(f.record()), tasks = f.tasks.size;
+  await expect(f.answer(action === 'rollback' ? 'Roll back to aaaaaaa' : 'Try again', 'late_choice', decisionId))
+    .rejects.toThrow('no longer waiting');
+  expect(f.record()).toEqual(before); expect(f.tasks.size).toBe(tasks);
+});
 test('landings open one message and update its commit, threads, health and suite in place', async () => {
   const f = setup(); await f.service.sweep('project'); const first = f.record(); expect(f.decisions.get(first.decisionId)?.question).toContain('Sandbox app: passed at 13:00');
   f.main(c); f.indexes.push({ id: 'thread_b', title: 'Another fix', landing: { commit: c }, state: 'done' } as ThreadIndex); await f.service.sweep('project');

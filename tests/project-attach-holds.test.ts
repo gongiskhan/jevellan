@@ -54,27 +54,28 @@ const notices = (f: ProjectFixture, threadId: string) => f.ledgerText(threadId).
 test('an attached thread refuses Stop, Restart and Discard from the owner and the coordinator with one sentence, and works again after detach', { timeout: 120_000 }, async () => {
   const claude = named(); const f = await setup(claude);
   await account(f, 'acc_claude', 'Claude');
-  // A main thread holds the project checkout: a stop under the owner's terminal would save its commits and reset main.
+  // Attached Worktree turns preserve the terminal's files and account without claiming the project checkout.
   claude.enqueueTurn(commitStep({ 'copy.txt': 'copy\n' }, { status: 'progress', summary: 'Drafted the copy.' }), forThread());
-  const threadId = await start(f, 'Edit copy', { isolation: 'main' });
+  const threadId = await start(f, 'Edit copy', { isolation: 'worktree' });
   await rest(f, threadId);
   await f.app.projectWork.attach(threadId);
-  const head = f.git(f.checkout, 'rev-parse', 'HEAD'); const status = f.git(f.checkout, 'status', '--porcelain=v1');
+  const cwd = f.thread(threadId).cwd;
+  const head = f.git(cwd, 'rev-parse', 'HEAD'); const status = f.git(cwd, 'status', '--porcelain=v1');
   const claim = await f.app.conversations.ownership.current(f.project);
-  expect(claim).toMatchObject({ held: true, conversationId: threadId });
+  expect(claim).toBeNull();
   const refusal = attachedRefusal(threadId);
 
   // The owner's Stop, Restart and Discard, then the coordinator's stop: each refused with the sentence, nothing changes.
   await refusedWith(await f.request(`/api/projects/project/threads/${threadId}/stop`, 'POST', { schema: 'thread-stop-request-v1' }), refusal);
   await refusedWith(await f.request(`/api/projects/project/threads/${threadId}/override`, 'POST',
-    { schema: 'thread-override-request-v1', clientRequestId: `ovr_${randomUUID()}`, mode: 'restart', isolation: 'main', modelId: 'claude_fixture', effort: 'high', deviceId: f.app.device.deviceId }), refusal);
+    { schema: 'thread-override-request-v1', clientRequestId: `ovr_${randomUUID()}`, mode: 'restart', isolation: 'worktree', modelId: 'claude_fixture', effort: 'high', deviceId: f.app.device.deviceId }), refusal);
   await refusedWith(await f.request(`/api/projects/project/threads/${threadId}/discard`, 'POST', { schema: 'empty-request-v1' }), refusal);
   await expect(f.app.projectWork.threads.stop('project', threadId, 'No longer needed.', false)).rejects.toMatchObject({ status: 409, message: refusal });
   expect(f.thread(threadId)).toMatchObject({ state: 'attached' });
   expect(f.app.projectWork.store.list('project').map((thread) => thread.id)).toEqual([threadId]);
   expect(await f.app.projectHub.recentOverrides('project', 10)).toEqual([]);
-  expect(f.git(f.checkout, 'rev-parse', 'HEAD')).toBe(head); expect(f.git(f.checkout, 'status', '--porcelain=v1')).toBe(status);
-  expect(f.git(f.checkout, 'for-each-ref', '--format=%(refname)', `refs/jevellan/discard/${threadId}`)).toBe('');
+  expect(f.git(cwd, 'rev-parse', 'HEAD')).toBe(head); expect(f.git(cwd, 'status', '--porcelain=v1')).toBe(status);
+  expect(f.git(cwd, 'for-each-ref', '--format=%(refname)', `refs/jevellan/discard/${threadId}`)).toBe('');
   expect(await f.app.conversations.ownership.current(f.project)).toEqual(claim);
 
   // The page says why: Stop and the Restart choice are disabled with the sentence.
@@ -90,7 +91,9 @@ test('an attached thread refuses Stop, Restart and Discard from the owner and th
   expect(withoutFollowupRoute(threadRequestText(threadTurns(claude).at(-1)!.prompt))).toBe('Check the copy.');
   expect((await f.json(`/api/projects/project/threads/${threadId}`, ThreadViewSchema)).stopRefusal).toBeUndefined();
   expect((await f.request(`/api/projects/project/threads/${threadId}/stop`, 'POST', { schema: 'thread-stop-request-v1' })).status).toBe(202);
-  expect((await f.waitFor(() => f.thread(threadId), (thread) => thread.state === 'stopped')).stateReason).toMatch(/^Stopped by you\. Its unpublished commits were saved at /);
+  expect((await f.waitFor(() => f.thread(threadId), (thread) => thread.state === 'stopped')).stateReason).toMatch(/^Stopped by you\./u);
+  expect(f.git(cwd, 'rev-parse', 'HEAD')).toBe(head);
+  expect(f.git(cwd, 'show', 'HEAD:copy.txt')).toBe('copy');
 });
 
 test('the turn-limit Stop answer and a coordinator stop for another device wait for the terminal session too, and the question stays open', { timeout: 120_000 }, async () => {

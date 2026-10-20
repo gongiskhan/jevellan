@@ -117,7 +117,9 @@ test('Move coordinator here is refused while the coordinator works and allowed o
   expect((await f.request(MESSAGES, 'POST', message('Now add filters.'))).status).toBe(202);
   await f.waitFor(() => coordinatorTurns(m.fake).length, (count) => count === 1); await m.app.projectWork.idle();
   const fresh = coordinatorTurns(m.fake)[0]!;
-  expect(fresh.resume).toBeUndefined(); expect(fresh.prompt.startsWith('Project notebook:\nShip the search page first.')).toBe(true);
+  expect(fresh.resume).toBeUndefined(); expect(fresh.prompt).toContain('Project notebook:\nShip the search page first.');
+  expect(fresh.prompt).toContain('Waiting on you:');
+  expect(fresh.prompt.indexOf('Waiting on you:')).toBeLessThan(fresh.prompt.indexOf('Project notebook:'));
   expect(fresh.prompt).toContain('Now add filters.'); expect(fresh.prompt).not.toContain('Plan the search page.');
   expect(coordinatorTurns(f.fake)).toHaveLength(hubTurns);
 

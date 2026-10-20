@@ -14,7 +14,7 @@ import { StretchBridges } from '../packages/conversations/dist/index.js';
 import { HubDatabase, HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { FakeRuntime, forThread, groupAlive, processIdentity, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
 import {
-  ALLOW_MORE_TURNS, DISCARD_REFUSED, LEAVE_GIT_SETTING, LocalDelivery, MAIN_NOT_AVAILABLE, NO_CHANGES, NO_RELAY, OWNER_STOPPED_THREAD, ProjectWork, RESTARTED, RESTART_UNCONFIRMED,
+  ALLOW_MORE_TURNS, DISCARD_REFUSED, LocalDelivery, NO_CHANGES, NO_RELAY, OWNER_STOPPED_THREAD, ProjectWork, RESTARTED, RESTART_UNCONFIRMED,
   START_REQUEST_REUSED, STOP_THE_THREAD, THREAD_ENDED, TURN_FAILED, TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, WORKTREE_DISCARDED, atTurnLimit,
   coordinatorPlan, decisionLists, deliveryRoute, derivedId, discardedReason, effectiveSettings, isDiscarded, isTurnLimitItem, isWaitingForSlot, messagesTurn,
   ownerStartedLine, pullRequestEntries, queuedReason, synthesizedReport, turnEndAction, turnLimitQuestion, waitingForSlotReason, withState, workCounts,
@@ -72,7 +72,7 @@ const decision = (over: Partial<ProjectDecision>): ProjectDecision => ({ schema:
 const index = (id: string, state: ThreadIndex['state'], over: Partial<ThreadIndex> = {}): ThreadIndex => ({ schema: 'project-thread-index-v1', delivery: 'pull-request', revision: 1, id, projectId: 'proj_a', title: id,
   state, isolation: 'worktree', ownerDeviceId: 'dev_a', runtime: 'fake', modelLabel: 'Fixture', effort: 'high', accountLabel: 'Work', turns: 1, createdAt: at, updatedAt: at, ...over });
 
-test('views count work, list pull requests and questions, coerce a Leave git default, and the coordinator plan follows the null rule (D91, D97)', () => {
+test('views count work, list pull requests and questions, preserve Worktree defaults, and the coordinator plan follows the null rule (D91, D97)', () => {
   const limit = decision({ id: 'pdec_limit', options: [{ label: ALLOW_MORE_TURNS }, { label: STOP_THE_THREAD }] });
   expect(isTurnLimitItem(limit)).toBe(true);
   expect(isTurnLimitItem({ ...limit, from: 'coordinator' })).toBe(false); expect(isTurnLimitItem({ ...limit, options: [{ label: STOP_THE_THREAD }, { label: ALLOW_MORE_TURNS }] })).toBe(false);
@@ -86,13 +86,9 @@ test('views count work, list pull requests and questions, coerce a Leave git def
   expect(workCounts([index('thread_p', 'preparing'), index('thread_u', 'publishing'), index('thread_q', 'queued'), index('thread_a', 'attached')], [])).toEqual({ waiting: 0, running: 2, inReview: 0 });
   expect(pullRequestEntries(threads)).toEqual([{ threadId: 'thread_3', title: 'thread_3', branch: 'jv/x-1', pr: threads[2]!.pr },
     { threadId: 'thread_4', title: 'thread_4', branch: 'jv/y-2', reason: 'Branch pushed. Add a GitHub token in Settings → Git to open pull requests.' }]);
-  const main = ProjectWorkSettingsSchema.parse({ ...defaultProjectWorkSettings('proj_a'), defaultIsolation: 'main' });
-  expect(effectiveSettings(main, { branchPolicy: 'external' })).toEqual({ settings: main, notice: LEAVE_GIT_SETTING });
-  // A closed main gate (D88) reads a main default as worktree with the phase text; Leave git still wins above. Phase 6 opened it.
-  expect(effectiveSettings(main, { branchPolicy: 'main' }, { mainIsolation: false })).toEqual({ settings: { ...main, defaultIsolation: 'worktree' }, notice: MAIN_NOT_AVAILABLE });
-  expect(effectiveSettings(main, { branchPolicy: 'main' })).toEqual({ settings: main });
-  expect(effectiveSettings(main, { branchPolicy: 'external' }, { mainIsolation: true })).toEqual({ settings: main, notice: LEAVE_GIT_SETTING });
-  expect(effectiveSettings(main, { branchPolicy: 'main' }, { mainIsolation: true })).toEqual({ settings: main });
+  const worktree = defaultProjectWorkSettings('proj_a');
+  for (const branchPolicy of ['main', 'external'] as const) for (const mainIsolation of [false, true])
+    expect(effectiveSettings(worktree, { branchPolicy }, { mainIsolation })).toEqual({ settings: worktree });
   expect(effectiveSettings(defaultProjectWorkSettings('proj_a'), { branchPolicy: 'external' })).toEqual({ settings: defaultProjectWorkSettings('proj_a') });
 
   const config = { ...seedConfiguration()['x-jevellan'], menu: [
@@ -263,6 +259,7 @@ beforeEach(async () => {
   project = ProjectSchema.parse({ schema: 'project-v1', id: 'proj_a', name: 'Shop', paths: { dev_a: checkout }, branchPolicy: 'main', testCommand: 'test -f greeting.txt',
     memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } });
   hub = new HubDatabase(homes, 'hub'); hub.put('projects', 'proj_a', ProjectSchema, project, 0);
+  await settings({ delivery: 'pull-request', autoLand: false, pullRequestAutoMerge: false });
   token = `fixture-${randomUUID()}`; github = await startGitHubFixture({ token, repositories: { 'fixture/repo': origin } });
   fake = new FakeRuntime(); bridges = new StretchBridges(redactor);
   server = createServer((request, response) => {

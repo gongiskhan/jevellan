@@ -229,7 +229,7 @@ export function showSent(sent: { known: readonly string[] } | undefined, open: r
 
 const TOOL_ICONS: Record<string, IconName> = {
   jevellan_setup_propose: 'settings', jevellan_library_list: 'search', jevellan_library_get: 'file',
-  jevellan_settings_update: 'settings', jevellan_tasks_start: 'plus', jevellan_review_followup: 'pull-request',
+  jevellan_settings_update: 'settings', jevellan_tasks_start: 'plus', jevellan_review_followup: 'pull-request', jevellan_handoff_write: 'file',
   jevellan_jobs_list: 'search', jevellan_job_runs: 'search', jevellan_daily_list: 'search', jevellan_job_run: 'plus', jevellan_goals_list: 'search', jevellan_tasks_list: 'thread', jevellan_task_create: 'plus', jevellan_task_update: 'settings', jevellan_task_cancel: 'stop', jevellan_threads_list: 'thread', jevellan_thread_start: 'plus', jevellan_thread_message: 'message', jevellan_thread_read: 'search',
   jevellan_thread_stop: 'stop', jevellan_ask_user: 'why', jevellan_answer_question: 'check', jevellan_github: 'search', jevellan_terminal_read: 'file', jevellan_withdraw_question: 'close', jevellan_notebook_read: 'file',
   jevellan_notebook_write: 'file', jevellan_pr_status: 'pull-request', jevellan_pr_diff: 'file', jevellan_mail_send: 'message', memory_search: 'search', memory_read: 'file',

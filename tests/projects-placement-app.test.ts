@@ -122,7 +122,7 @@ test('PJ4 Jev places threads with recorded probabilities and falls back on failu
     branchPolicy: 'external', memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } }) });
   deep.enqueueTurn(reportStep({ status: 'progress', summary: 'Outlined the guide.' }), forThread());
   const external = await start(f, 'Write a guide', 'Write the setup guide.', 'docs');
-  expect(Object.keys(transport.state.calls[1]!.questions)).toEqual(['isolation', 'pick_model', 'effort']);
+  expect(Object.keys(transport.state.calls[1]!.questions)).toEqual(['pick_model', 'effort']);
   expect(transport.state.calls[1]!.packet).toMatchObject({ project: { name: 'Docs', defaultIsolation: 'worktree' }, activeThreads: [] });
   await f.waitFor(() => f.app.projectWork.store.get(external.threadId)?.turns, (turns) => turns === 1); await f.app.projectWork.idle();
 
@@ -289,10 +289,9 @@ test('PJ4b overrides change the next launch and restarts feed the packet', { tim
   const replacement = f.thread(newId);
   expect(replacement).toMatchObject({ title: 'Add search', task: 'Add a search box to the catalog page.', createdBy: 'owner',
     placement: { source: 'jev', fixed: ['model'], modelId: 'swift', runtime: 'fake', accountId: 'acc_fixture' } });
-  // The restart's own placement asked the isolation (main is allowed since phase 6) and the effort, with the owner's note and the earlier
-  // overrides in its packet; Jev kept the worktree.
+  // The restart asks effort, preserving Worktree placement and the owner's note and earlier overrides.
   const restartCall = transport.state.calls.at(-1)!;
-  expect(Object.keys(restartCall.questions)).toEqual(['isolation', 'effort']);
+  expect(Object.keys(restartCall.questions)).toEqual(['effort']);
   expect(replacement.isolation).toBe('worktree');
   expect(restartCall.packet.thread).toEqual({ title: 'Add search', task: 'Add a search box to the catalog page.', coordinatorNote: 'Swift is enough for this.' });
   expect(restartCall.packet.rules.recentOverrides).toEqual(["model changed from deep to deep-lite for a feature task 'Add search' (next-turn)", "effort changed from max to low for a feature task 'Add search' (next-turn)"]);

@@ -14,7 +14,7 @@ Tests: not run for this documentation-only phase. The previous release's live jo
 
 ## Clocks
 
-P0–P9 build: 18 hours from the first new commit. Its exact time and deadline are recorded before that commit below and in private `clocks.json`. Release/install has a separate three-hour clock; live checks have three hours from both devices reporting 0.6.0. Neither later clock has started.
+P0–P9 build: 18 hours from the first new commit. Its exact time and deadline are recorded before that commit below and in private `clocks.json`. Release/install has a separate three-hour clock; live checks have three hours from both devices reporting 0.6.0. The release clock started at `2026-10-19T21:32:57.724Z` and ends at `2026-10-20T00:32:57.724Z`. The live clock has not started.
 
 First new commit time: `2026-10-19T13:43:10Z`. P0–P9 deadline: `2026-10-20T07:43:10Z`.
 
@@ -141,3 +141,36 @@ Integration choice: a successful job gate can return an absolute expiry. Routing
 Simulated: **216 distinct affected backend cases passed** in the final sets across 14 files; typecheck, lint and build passed. These include actual local-command HTTP/coordinator waiting, arguments/JSON/timeout, idempotency, source labels, prompt refusals, quiet summaries/disable/urgent/DST, migrations, per-project defaults, fake OAuth discovery/registration/PKCE, concurrent rotating refresh, failed vault writes, callback retries and settings races. The portable policy and shared-default regressions first failed. Earlier fixture/default expectations and invalid fake session/id failures remain recorded. Evidence: `p9-final-backend.log`, `p9-deadline-green.log`, `p9-*-red.log` and earlier receipts.
 
 Simulated browser journey: **four layouts passed**, with **16 live vision checks** and preserved screenshots in `p9-screenshots`, `p9-screenshots.json` and `p9-vision-settings`. The initial journey incorrectly reloaded the project page after Save; it was corrected to reopen Settings. Live OAuth metadata discovery succeeded. Actual registration, owner sign-in and live mirror updates are **not run**, pending installation and the sole owner step in `owner-step.md`. A private task diagnostic incident and its corrected test environment are recorded in `diagnostic-incident.md`; no diagnostic value is published here. Installed devices remain 0.5.1, and release/live clocks are unstarted.
+
+
+## P10 release gate unfinished at the clock limit
+
+P0–P9 source was pushed at `eb7855ae`; build completion and release-clock start are `2026-10-19T21:32:57.724Z`. The deadline remains `2026-10-20T00:32:57.724Z`. Both active installations remain 0.5.1. Publication, installation, the project switch, OAuth sign-in and live journeys are not run.
+
+Simulated full backend: **2,501 passed, 32 failed, 1 skipped of 2,534 tests**, across 230 files (212 passed, 17 failed, 1 skipped). It took 4,008.49 seconds. Typecheck and lint passed. This run used the repository’s default two workers; the preceding release gate used six. That execution choice consumed release time. The original failures remain failures pending classification; no baseline claim or accepted gate is made.
+
+Simulated full browser: **96 passed, 100 failed, 208 skipped of 404 tests**, in 3,929.19 seconds. Live vision produced **66 judgements, all ok, zero blocking findings**. Their JSON receipts and 44 matching image copies remain; 22 temporary images were cleared between runs. This is incomplete full-run visual evidence and does not cover skipped journeys. Failures remain unclassified. The original failing source, compiled files and private dependencies are preserved for the required three isolated runs on main and three on v0.5.1.
+
+Focused fixes: final typecheck, lint and build passed. **278 distinct affected backend cases passed across 22 files**, counting the latest result for each case. The broader first set had 197 passes and one member-recovery timeout; the isolated test reproduced a hub-slot wait that the retry sweep did not recognize. The fix passed the 22-case recovery/admission set. Five deterministic APM sidecar cases first recorded four failures and one pass, then all five passed. Real APM integration cases also passed.
+
+The handoff icon, native-conversation and default Projects coordinator journeys passed in **12 distinct tests across the four layouts**. Their **40 live vision judgements and 40 matching images** are retained, all ok with zero blocking findings. The handoff journey was repeated to preserve its images after the first capture was cleared; later files at the same paths are not substituted for earlier evidence. No full-suite rerun substitutes for the required isolated comparisons.
+
+Two permitted closing serious-issues reviews are complete. The first found manual rollback overlapping a newer approved/running deploy; two regressions failed before the fix, which preserves interruption of the current deploy's own health monitor. The follow-up found answered deploy decisions could modify work before a different answer was refused; two more regressions failed before the guard. The final 59-case deploy set passed. No third review ran. These are simulated checks; no production deployment, restart or modification occurred.
+
+The initial isolated-capture harness failed to reopen stdout through a Node socket. Those attempts have no usable result and are not passes or baseline evidence. Corrected comparisons use an ordinary shell pipe and filtered capture. All four APM failures now have three valid failing runs on the original main revision and three on v0.5.1, establishing them as pre-existing. The remaining comparisons were incomplete when the clock ended; the gate is unaccepted.
+
+Live APM output in simulated fixture homes: 272 generated hook sidecars matched native settings after removing their ownership markers. APM documents this as reconciliation metadata kept beside the native configuration. [APM package authoring](https://github.com/microsoft/apm/blob/main/packages/apm-guide/.apm/skills/apm-usage/package-authoring.md). The correction validates that exact relationship and keeps the sidecar in staging; unrelated files remain refused. The focused deterministic and real-APM backend checks passed. This does not classify every browser failure or establish a passed gate.
+
+## Closing outcome
+
+The release clock ended at 2026-10-20T00:32:57.724Z. Verified owned test teardown completed at 2026-10-20T00:32:33.694Z, before that deadline. No implementation or tests continued after the cutoff. The gate is **unaccepted**.
+
+Backend comparisons: 29/32 failures have six valid isolated results: 4 pre-existing and 25 original-main test failures with passing released counterparts. All 32 original failures have passing focused current cases. 9 released-counterpart attempts selected no test and are not passes. Browser comparisons: 0/100 complete, 0 usable isolated results; unfinished attempts remain incomplete.
+
+The single full-backend skip is the opt-in Node 20 sandbox check: JEVELLAN_TEST_NODE20 was absent. It was not passed. Initial Node-socket reporter attempts and the first no-test targeted selector are invalid evidence, retained privately and excluded from the counts.
+
+Not run: version bump, platform archives, tag/release publication, fresh release backups, installation, doctor checks for 0.6.0, project switch, owner OAuth sign-in and LW1–LW13/LE1–LE3. Both active devices still reported 0.5.1 with fresh heartbeats in the final read; the live clock never started. The remaining release, installation, switch and live work is planned in roadmap.json. No production deployment, restart or modification occurred. The previous release-051 journeys and cleanups remain closed and not run.
+
+Closing documentation, the mandatory scans and the source checkpoint push follow the stopped release work. No owner acceptance is claimed.
+
+Private owner steps and live evidence: `~/.jevellan-build/without-github/HANDOFF.md` on dev-madrid.

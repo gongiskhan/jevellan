@@ -6,7 +6,7 @@ One project is one repository. Talk to its Coordinator to ask a question, plan w
 
 ## The coordinator
 
-The coordinator reads the repository, project instructions, notebook, shared memory, thread reports, GitHub and owner terminals. It has no shell, write tools or merge tool. It answers quick questions itself and creates queued tasks for changes, runs and long investigations. Independent worktree tasks can run together; a real dependency or shared Main checkout constrains ordering.
+The coordinator reads the repository, project instructions, notebook, shared memory, thread reports, GitHub and owner terminals. It has no shell, repository write tools or merge tool. It answers quick questions itself and creates queued tasks for changes, runs and long investigations. Independent worktree tasks can run together; dependencies and project/device limits constrain ordering.
 
 Each task created or started in chat has a live card. A follow-up shows the existing thread's card with “Sent a message”. In Propose mode owner-request tasks are drafts until Start, Start all or an owner-authorized `jevellan_tasks_start` call. Routing lines say where each item went.
 
@@ -14,7 +14,7 @@ The coordinator's model and effort are owner settings. Jev chooses thread placem
 
 Open questions are numbered oldest first, identically in chat and Waiting for you. The owner can answer cards or several numbered questions in one chat message. The coordinator records chat answers and delivers them to the correct thread.
 
-A coordinator retains its session across turns and compaction. A model, runtime, effort or account change, missing session, device move or Fresh session starts a new one. Context use, compaction and cache summaries are visible. An unavailable account leaves work waiting for admission; queued events remain durable. A failed turn retries once before resting with its reason.
+A coordinator retains its session across ordinary turns. At the configured context threshold or nightly reset, it writes a handoff accounting for every owner message before starting a fresh session. A missing owner message refuses the reset. The new session receives the handoff, Waiting items, current threads and deploy message, memory and transcript paths. Native compaction remains a last resort at 95%. A model, runtime, effort or account change, missing session, device move or Fresh session starts a new one. An unavailable account leaves work waiting for admission; queued events remain durable. A failed turn retries once before resting with its reason.
 
 Before a turn, Jev interprets each new owner message: an answer, a change, a running app, verification or something else. That interpretation is one Jev decision, and every Jev decision (placement, account choice, follow-up routing, merge route, conversation steps, memory selection and memory care) has one overall deadline of twice the configured per-attempt timeout plus six seconds. With the default 4-second timeout, that is 14 seconds. The deadline covers obtaining the client, reading the configuration and key, any settings read the decision needs, and every attempt. When it passes, the decision takes its usual fallback, and an uninterpreted owner message reaches the coordinator as "Jev could not interpret this request", leaving the coordinator to decide the intended result. Fresh session, Stop, Move coordinator and shutdown abandon an interpretation still in progress, so it never holds the coordinator or a restart.
 
@@ -35,7 +35,13 @@ Command jobs may publish a bounded `project-job-deliveries-v1` data manifest. Th
 
 Thread reports include status, summary, tests, changed files and optional owner commands. Finished, stopped and failed threads remain available for continuation; follow-ups pass through Jev's placement rules. Active tools and thinking expand, while completed tool blocks collapse. Images can open in the session image viewer.
 
-The session information area holds runtime, model, effort, account, device, branch, usage, Why, overrides and takeover controls. Open terminal here and Take over in browser use the thread's actual device and worktree. Owner commands show their full text, purpose and location with Copy and Run in Terminal. Shell integration returns the result automatically to the requesting session. Agents can read owner terminals but never type into them.
+The session information area holds runtime, model, effort, account, device, branch, usage, Why, overrides and takeover controls. Open terminal here and Take over in browser use the thread's actual device and worktree. Owner shell commands show their full text, purpose and location with Copy and Run in Terminal. Prompt commands offer Copy and the named device's Claude app instructions; they cannot run in a terminal. Shell integration returns the result automatically to the requesting session. Agents can read owner terminals but never type into them.
+
+## Landing and deploy messages
+
+New projects default to land delivery, with automatic landing off. A finished thread rebases onto current main, runs the path-selected landing checks and optional smoke check, and asks Jev to choose land, detached verification or an owner decision. A failed check returns a repair turn, up to three attempts. The publication lease serializes the exact push. Ordinary changes squash into one commit with a Thread line; configured paths and required job gates preserve commits. The remote backup branch is removed after a confirmed landing. Land now uses the same checks. Land instead converts an existing pull-request thread only after verifying its publication and pull-request ownership.
+
+Each newer landing updates the project's deploy message. Approval pins its exact commit; it never approves a later landing. Deploy jobs run on an eligible tagged device. Enabled health checks run before the job, then one and five minutes after success. A failed after-run is repeated thirty seconds later. A confirmed failure of a check that passed before the deploy triggers rollback to a verified earlier deployment. Changed database migrations require an urgent owner decision instead. A first deployment without a verified baseline has no automatic rollback. Production approval remains the owner's action.
 
 ## The Overview
 
@@ -54,7 +60,7 @@ Resolve is available for idle, waiting and failed work without an open pull requ
 
 ## Pull requests and automatic fixes
 
-Agents never push or open pull requests. After a done report, Jevellan commits leftovers, verifies the exact commit, pushes with lease and opens or updates the pull request. Failed publication verification returns a repair turn, with up to three attempts. Publish uses this same path.
+Existing pull-request threads retain that delivery when a project switches to landing. Agents never push or open pull requests. For pull-request delivery, Jevellan commits leftovers, verifies the exact commit, pushes with lease and opens or updates the pull request. Failed publication verification returns a repair turn, with up to three attempts. Publish uses this same path.
 
 Cards and thread headers show applicable Fix checks, Resolve conflicts, Address comments, Merge, Open on GitHub, Publish, Resolve and Reopen controls. Requests route to the owner device with retry receipts. Working or terminal-attached threads refuse conflicting actions.
 
@@ -62,11 +68,11 @@ Automatic fixes are enabled by default for failing checks, conflicts and review 
 
 Someone else may push to a thread's pull request. Before a fix turn (automatic, or from Fix checks, Resolve conflicts or Address comments), a worktree thread fetches the pull request's current head into its private ref space. When its branch has nothing unpushed, it fast-forwards to that head; otherwise it merges the head (never rebases), and a merge that stops on conflicts goes to the turn to resolve first. The thread says "Updated the worktree to pull request #n's head … before this fix.", and its next push leases on that head. A thread's GitHub reads cover only its own pull request: the pull request itself, and the runs, jobs and logs on its current head as Jevellan last read it. The failing-checks request names the failing runs and jobs by id.
 
-The merge gate records Jev's route and Why for each eligible head: merge, test then merge, or ask the owner. Required checks must exist and pass; without required checks, no-check heads have a five-minute grace. With autoMerge off, shadow mode records the route without merging or starting verification. With it on, verification uses the other eligible provider where possible, in a fresh read-only worktree. Head changes, pending coordinator messages, stopped threads and nightly holds prevent unsafe automatic merges. Owner Merge remains available with its existing checks and confirmation. Jevellan posts no GitHub comments, replies or reviews.
+The legacy pull-request merge gate records Jev's route and Why for each eligible head: merge, test then merge, or ask the owner. It retains the saved pull-request automatic-merge policy independently of automatic landing. Verification uses another eligible provider where possible, in a fresh read-only worktree. Head changes, pending coordinator messages, stopped threads and nightly holds prevent automatic merges. Owner Merge retains its checks and confirmation. The retired required-check editor is removed. Jevellan posts no GitHub comments, replies or reviews.
 
 ## Placement, accounts and limits
 
-Jev's p-v1 choice selects isolation, model, effort and device within code-enforced resources, project constraints and owner-fixed choices. The a-v1 account choice uses eligible accounts and their usage rules; it never substitutes a machine login for an available managed account. Why records choices, constraints, corrections, exclusions and escalation history.
+Jev's p-v1 choice selects model, effort and device within code-enforced resources, project constraints and owner-fixed choices. Project work uses Worktrees only. The a-v1 account choice uses eligible accounts and their usage rules; it never substitutes a machine login for an available managed account. Why records choices, constraints, corrections, exclusions and escalation history.
 
 Allowed models, minimum effort and Guidance for Jev apply to automatic placement and follow-ups. Owner-fixed fields win. A thread with no account waits without consuming its pending turn. A usage limit cools that account and continues on another eligible account, or waits. When an unfixed model has a long or unknown wait, Jev can move it once to another eligible model on the same device. Two failed verifications or an agent-written blocked report can trigger Jev escalation without lowering effort.
 
@@ -81,7 +87,7 @@ Project settings is a page at `/projects/{id}/settings`, with one revision-check
 | Status | Active; active, paused or archived |
 | Coordinator runtime/account | Automatic eligible choice; optional fixed runtime/account |
 | Coordinator model / effort | Automatic: first available / Medium; enabled menu model and supported effort |
-| Default isolation / allow Main | Worktree / on |
+| Delivery / automatic landing | Land / off; pull-request delivery remains available |
 | Project instructions | Empty; at most 16,000 characters |
 | Start mode | Start threads right away; or Propose threads and wait for me |
 | Max running threads | 6; 1–20 |
@@ -89,29 +95,33 @@ Project settings is a page at `/projects/{id}/settings`, with one revision-check
 | Per-device limits | Empty overrides; each 1–10 |
 | New threads per day | 100; 1–500, counted in the project time zone; restarts do not count |
 | Turn limit per thread | 30; 5–200 |
-| Compact at percent | 70; 50–90 |
-| Checkpoint large cold sessions | Off |
-| Checkpoint minimum context tokens | 40,000; 20,000–200,000 |
+| Coordinator handoff at percent | 70; 50–90; native compaction at 95 |
+| Thread compaction at percent | 70; 50–90 |
+| Checkpoint large cold thread sessions | Off |
+| Thread checkpoint minimum context tokens | 40,000; 20,000–200,000 |
 | Models threads may use | All enabled models; otherwise at most 19 model ids |
 | Lowest effort for threads | No minimum; Low through Max |
 | Guidance for Jev | Empty; at most 2,000 characters |
 | Automatic checks / conflicts / comments | All on |
 | Automatic fixes per pull request | 3; 1–10 |
-| Merge automatically after checks | Off |
-| Required checks | Empty; at most 50 names of at most 200 characters |
+| Landing checks | Empty; at most 30 path-selected commands |
+| Smoke check | None; at most 2,000 characters |
+| Preserve commits for paths | Empty; at most 20 relative paths |
 | Risky areas | Empty; at most 2,000 characters |
 | Worktree setup command | None; at most 500 characters |
-| Variables | Empty; at most 50, each value at most 4,000 characters |
-| Secrets | Empty; at most 50 names, values only in the encrypted hub vault |
+| Variables | Empty; at most 200, each value at most 4,000 characters |
+| Secrets | Empty; at most 100 names, values only in the encrypted hub vault |
 | Copy files | Empty; at most 20 project-relative paths, each at most 300 characters |
 | Memory mode / capture / dream | Hub / on / Apply and tell me; repo and device modes remain supported |
 | Nightly window | Off; 02:00, Europe/Lisbon, supported IANA time zone |
 | Goal refill | On; every 30 minutes, allowed interval 10–1,440 |
-| Notifications | Standard; Everything, Standard, Only what needs me, Off |
+| Notifications | Standard; Everything, Standard, Only what needs me, Off; optional quiet hours |
+
+Settings also contains health definitions and Run now receipts, deploy job selection, and Connect to Ekoa. Cleanup limits live in Settings → Projects, with per-device usage, last result and Clean now. Cleanup protects unfinished work and durable history; it waits when authoritative inventory or an idle-device reservation is unavailable.
 
 Environment names use capital letters, digits and underscores. PATH, HOME, USER, SHELL, TERM, LANG, TMPDIR and runtime, authentication, Jevellan and Git prefixes are reserved. Secret APIs never return values to the owner browser. Members fetch configured launch secrets through the authenticated hub route, then register them for redaction.
 
-Goals, nightly items and jobs are edited in Routines. Goals support paused/done states, autonomy, refill limits and open-pull-request caps. The ordered queue supports Now, dependencies, drafts, holding and owner ordering. The nightly window opens every night even after a daytime run; it reviews since a watermark, may run one fix before the cutoff, then runs ordered jobs and exact-commit deploy gates. Its seven-hour limit and restart receipts preserve progress. The merge hold applies to other merges, not ordinary task starts. See [the loop](loop.md).
+Goals, nightly items and jobs are edited in Routines. Goals support paused/done states, autonomy, refill limits and open-pull-request caps. The ordered queue supports Now, dependencies, drafts, holding and owner ordering. The nightly window opens every night even after a daytime run. Memory dream precedes ordered command jobs; review follows those jobs and covers landings since its watermark. Fix findings become ordinary tasks, held from publication until the window ends. Weekdays restrict weekly items. Its seven-hour limit and restart receipts preserve progress. Historical GitHub workflow jobs remain readable but cannot dispatch or watch. See [the loop](loop.md).
 
 ## Library and attachments
 
@@ -126,6 +136,8 @@ Environment variables, secrets and copied files reach setup, threads, verificati
 Settings → Notifications enables this browser's web push subscription and offers a test, removal and a device list. HTTPS is required. On iPhone, install Jevellan from Safari to the Home Screen first. The owner verifies physical-phone delivery separately.
 
 Standard sends coordinator replies, questions and failures. Everything also sends thread turn reports; Only what needs me sends questions and failures. Off suppresses ordinary project notifications; urgent production questions still arrive. Focused clients at the matching URL suppress duplicate notifications. Clicking a notification opens its deep link. Expired subscriptions are removed; bounded retries and seven-day retention limit delivery state. Ekoa mirroring remains independent.
+
+Quiet hours durably hold ordinary notifications and send one project summary when the hours end or are disabled. Urgent production questions bypass the hold. Connect to Ekoa opens the owner sign-in flow; the encrypted hub vault stores registration and rotating tokens. The browser status never exposes them. Waiting items and deploy messages update their existing mirrored tasks.
 
 ## Usage
 

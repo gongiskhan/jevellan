@@ -22,7 +22,7 @@ test('Overview groups use the first matching rule for every state and landing va
   for (const state of ['failed', 'waiting-for-you']) expect(group({ state })).toBe('waiting');
   for (const state of ['queued', 'preparing', 'running', 'publishing', 'attached']) expect(group({ state })).toBe('working');
   expect(group({ state: 'idle' })).toBe('idle'); expect(group({ state: 'in-review' })).toBe('review');
-  for (const landing of ['verifying', 'merging', 'held']) expect(group({ state: 'in-review', landing })).toBe('landing');
+  for (const landingStage of ['verifying', 'merging', 'held']) expect(group({ state: 'in-review', landingStage })).toBe('landing');
   expect(group({ state: 'failed', resolution: { by: 'owner', at: '2026-10-17T00:00:00Z' } })).toBe('resolved');
 });
 test('Resolve withdraws only open thread questions, preserves files, repeats safely and Reopen clears it', async () => {

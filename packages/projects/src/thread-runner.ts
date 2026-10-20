@@ -16,7 +16,7 @@ import { ProjectTools } from './bridge-tools.js';
 import {
   PROJECT_PAUSED, DISCARD_REFUSED, MESSAGE_ID_REUSED, MORE_TURNS, NO_CHANGES, NO_SESSION_TO_ATTACH, OWNER_STOPPED_THREAD, PROCESS_UNCONFIRMED, RESTART_OPEN_PULL_REQUEST,
   RESTART_PUBLISHED_TO_MAIN, SESSION_REPLACED, TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, THREAD_WORKING, TOOL_NOT_IN_TURN, TURN_FAILED,
-  TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WORKTREE_DISCARDED, accountMovedNotice, alreadyAttached,
+  TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WAITING_FOR_HUB_SLOT, WORKTREE_DISCARDED, accountMovedNotice, alreadyAttached,
   attachedRefusal, cleanupFailed, commitsSavedReason, isRestarted, messagesNotDelivered, messagesPrompt, ownerWorkedLine, savedCommitsRef,
   AUTOMATIC_FIX_CANCELLED, recoveryContext, accountEligibilityWait, movedModelNotice, escalatedModelNotice, unavailableModelAccount, USAGE_LIMIT_CONTINUE, usageLimitWait, usageLimitContinue, preparationRetrying, preparationTaskFailed, sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
   pullHeadConflictPrompt, pullHeadUpdateFailed, pullHeadUpdated,
@@ -722,7 +722,7 @@ export class ThreadRunner {
   }
   async #confirmLive(thread: Thread, next?: NextTurn): Promise<boolean> {
     if (await this.#c.store.publisher.confirmLive(thread.id, thread.ownerDeviceId)) return true;
-    this.#rest(next ?? { reason: 'task', body: taskPrompt(thread.title, thread.task), messages: [] }, 'Waiting for the hub to confirm a free thread slot.');
+    this.#rest(next ?? { reason: 'task', body: taskPrompt(thread.title, thread.task), messages: [] }, WAITING_FOR_HUB_SLOT);
     return false;
   }
   /** Publication of a done report (brief 8.4, 2.6.9 #publish); returns the verification fix turn when there is one. */
