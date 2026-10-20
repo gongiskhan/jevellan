@@ -1,15 +1,15 @@
-import { afterEach, beforeEach, expect, test } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, realpathSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { AccountSchema, AccountStatusSchema, BridgeToolsSchema, Homes, SecretRedactor, defaultProjectWorkSettings, projectToolNames, type Account, type AccountStatus } from '../packages/core/dist/index.js';
+import { AccountSchema, AccountStatusSchema, BridgeToolsSchema, Homes, IN_PLACE_RIGGING_REASON, PROJECT_MEMORY_ID, RiggingItemSchema, SecretRedactor, defaultProjectWorkSettings, projectToolNames, type Account, type AccountStatus } from '../packages/core/dist/index.js';
 import { accountChoice } from '../packages/decisions/dist/index.js';
 import { StretchBridges } from '../packages/conversations/dist/index.js';
-import { FakeRuntime, forThread, groupAlive, type FakeTurnStep, type NativeProcess } from '../packages/runtime-contract/dist/index.js';
+import { FakeRuntime, forThread, groupAlive, type FakeTurnStep, type NativeProcess, type RuntimeAdapter } from '../packages/runtime-contract/dist/index.js';
 import {
-  ACCOUNT_BUSY, ProjectLedgers, ProjectPaths, ProjectTools, REPORT_ALREADY_SENT, TOOL_NOT_IN_TURN, TURN_ENDED, TurnExecution, TurnLauncher, cacheRecords, cannotRunHere, noTurnAccount,
+  ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, ProjectLedgers, ProjectPaths, ProjectTools, REPORT_ALREADY_SENT, TOOL_NOT_IN_TURN, TURN_ENDED, TurnExecution, TurnLauncher, cacheRecords, cannotRunHere, noTurnAccount,
   type LaunchRequest, type ProjectScope, type ProjectToolHandlers, type TurnLauncherOptions,
 } from '../packages/projects/dist/index.js';
 
@@ -298,6 +298,36 @@ test('the launcher refuses with a reason before any process: capability, account
   expect(accountRuns.size).toBe(0);
   await expect(launcher([status('acc_work')], '').launcher.launch(request())).rejects.toThrow('Project turns start after the daemon is listening.');
   expect(fake.turnStarts).toHaveLength(1);
+});
+
+test('a launch needs the project memory hook delivered to an ordinary account, and goes ahead when the account runs in place', async () => {
+  const memory = RiggingItemSchema.parse({ schema: 'rigging-item-v1', id: PROJECT_MEMORY_ID, runtime: 'fake', name: 'Project memory', kind: 'hook', state: 'owned', enabled: true, builtIn: true, content: '{}', updatedAt: '2026-10-20T00:00:00Z' });
+  const mutable = fake as { riggingKinds: typeof fake.riggingKinds };
+  const delivery = vi.spyOn(fake as RuntimeAdapter, 'materialiseRigging');
+  const { launcher: value, used, accountRuns } = launcher([status('acc_work')], 'http://127.0.0.1:4100', { riggingItems: async () => [memory] });
+  mutable.riggingKinds = ['hook'];
+  try {
+    delivery.mockResolvedValue([{ itemId: PROJECT_MEMORY_ID, applied: false, reason: 'The hook could not be written.' }]);
+    expect(await value.launch(request())).toEqual({ kind: 'unavailable', reason: MEMORY_HOOKS_UNDELIVERED });
+    expect(MEMORY_HOOKS_UNDELIVERED).toBe('Project memory hooks could not be delivered to this account.');
+    expect(fake.turnStarts).toEqual([]); expect(used).toEqual([]); expect(accountRuns.size).toBe(0);
+    delivery.mockResolvedValue([]);
+    expect(await value.launch(request())).toEqual({ kind: 'unavailable', reason: MEMORY_HOOKS_UNDELIVERED });
+    expect(fake.turnStarts).toEqual([]);
+    delivery.mockResolvedValue([{ itemId: PROJECT_MEMORY_ID, applied: true }]);
+    fake.enqueueTurn(done, forThread());
+    const applied = await value.launch(request());
+    if (applied.kind !== 'started') throw new Error(applied.reason);
+    await applied.run.done; await applied.release();
+    // An in-place account is never given Rigging: every item comes back unapplied with the in-place reason, and the launch proceeds.
+    delivery.mockResolvedValue([{ itemId: PROJECT_MEMORY_ID, applied: false, reason: IN_PLACE_RIGGING_REASON }]);
+    fake.enqueueTurn(done, forThread());
+    const inPlace = await value.launch(request());
+    if (inPlace.kind !== 'started') throw new Error(inPlace.reason);
+    expect(inPlace).toMatchObject({ kind: 'started', accountId: 'acc_work' });
+    await inPlace.run.done; await inPlace.release();
+    expect(fake.turnStarts).toHaveLength(2); expect(accountRuns.size).toBe(0);
+  } finally { mutable.riggingKinds = []; delivery.mockRestore(); }
 });
 
 function execution(step: FakeTurnStep, over: { timeoutMs?: number } = {}) {

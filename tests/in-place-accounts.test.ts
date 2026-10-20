@@ -139,3 +139,14 @@ test('A bridge command is found by its full path on the given PATH', async () =>
   expect(executableOnPath('missing', `${first}:${second}`)).toBe('missing');
   expect(executableOnPath('/opt/tool', `${first}`)).toBe('/opt/tool');
 });
+
+test('An in-place Claude session on macOS keeps the owner HOME for the keychain; an owned home stays isolated', async () => {
+  const { minimalEnvironment } = await import('../packages/core/dist/index.js');
+  const { homedir } = await import('node:os');
+  homes.registerInPlace('claude', 'acc_one', folder);
+  const own = minimalEnvironment('claude', folder, {}, {}, { PATH: '/usr/bin', JEVELLAN_HOME: homes.root });
+  expect(own.CLAUDE_CONFIG_DIR).toBe(folder);
+  expect(own.HOME).toBe(process.platform === 'darwin' ? homedir() : folder);
+  const owned = homes.account('claude', 'acc_two');
+  expect(minimalEnvironment('claude', owned, {}, {}, { PATH: '/usr/bin', JEVELLAN_HOME: homes.root }).HOME).toBe(owned);
+});
