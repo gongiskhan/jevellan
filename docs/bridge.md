@@ -14,3 +14,7 @@ Jevellan can be driven from Claude Code. The engine owns every decision; the web
 ## Display ids
 
 The owner says ids out loud, so every object gets a short id per project, never reused: `C` the coordinator, `T` tasks and their threads, `J` job runs, `W` waiting items, `D` decisions, `G` goals, `R` Jev rules, `L` lessons, `P` prompt proposals, `H` health checks. Every tool accepts the short id or the internal one.
+
+## Shared thread controls
+
+Source after 0.7.2 adds `thread actions`, which returns the same versioned action model the UI uses, and `thread act`, which accepts `operation` and a retry-stable `clientRequestId`. The eight operations are fix-checks, resolve-conflicts, address-comments, publish, land-now, land-instead, resolve and reopen. Read the model first for eligibility and consequences; a resolve with unpublished commits needs `confirm: true`. `thread merge` always requires confirmation. Execution uses the existing action receipts, publication checks and merge guards. Member work stays on its owning device through the normal authenticated owner route. These additions do not add a thirteenth tool and are not yet installed.

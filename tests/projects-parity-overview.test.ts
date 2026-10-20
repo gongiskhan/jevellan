@@ -16,6 +16,14 @@ async function start(f: ProjectFixture, title = 'Overview task') {
   return f.json('/api/projects/project/threads', core.ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: `req_${randomUUID()}`, title, task: title });
 }
 const action = (f: ProjectFixture, id: string, action: string, clientRequestId = `req_${randomUUID()}`) => f.request(`/api/projects/project/threads/${id}/actions`, 'POST', { schema: 'thread-action-request-v1', clientRequestId, action });
+const actionFor = (transport: 'ui' | 'tool'): typeof action => async (f, id, operation, clientRequestId = `req_${randomUUID()}`) => {
+  if (transport === 'ui') return action(f, id, operation, clientRequestId);
+  const result = await f.app.ownerTools.call('thread', { schema: 'owner-tool-request-v1', caller: 'cli', action: 'act',
+    args: { project: 'project', thread: id, operation, clientRequestId, confirm: true } });
+  if (result.ok) return Response.json(result.data);
+  expect(result.error.code).toBe('refused');
+  return Response.json({ message: result.error.text }, { status: 409 });
+};
 test('Overview groups use the first matching rule for every state and landing value', () => {
   const group = (core as unknown as { boardGroup(t: object): string }).boardGroup;
   for (const state of ['done', 'stopped']) expect(group({ state })).toBe('resolved');
@@ -25,7 +33,8 @@ test('Overview groups use the first matching rule for every state and landing va
   for (const landingStage of ['verifying', 'merging', 'held']) expect(group({ state: 'in-review', landingStage })).toBe('landing');
   expect(group({ state: 'failed', resolution: { by: 'owner', at: '2026-10-17T00:00:00Z' } })).toBe('resolved');
 });
-test('Resolve withdraws only open thread questions, preserves files, repeats safely and Reopen clears it', async () => {
+test.each(['ui', 'tool'] as const)('Resolve withdraws only open thread questions, preserves files, repeats safely and Reopen clears it (%s)', async transport => {
+  const action = actionFor(transport);
   const f = await setup(); f.fake.enqueueTurn(reportStep({ status: 'needs-decision', summary: 'Choose a colour.', question: 'Colour?', options: [{ label: 'Blue' }, { label: 'Red' }] }), forThread());
   const { threadId } = await start(f); await f.waitFor(() => f.thread(threadId), t => t.state === 'waiting-for-you'); await f.app.projectWork.pulse();
   const id = await f.app.projectWork.decisions.ask('project', { question: 'Colour?', options: [{ label: 'Blue' }], threadId }, 'thread');
@@ -42,7 +51,8 @@ test('Resolve withdraws only open thread questions, preserves files, repeats saf
   await f.app.projectWork.threads.message('project', threadId, 'coordinator', 'Continue.', false, 'msg_reopen');
   await f.waitFor(() => f.thread(threadId), t => t.turns === 2); expect(f.thread(threadId).resolution).toBeUndefined();
 });
-test('Publish reuses managed verification and publication without another agent turn; actions refuse invalid states', async () => {
+test.each(['ui', 'tool'] as const)('Publish reuses managed verification and publication without another agent turn; actions refuse invalid states (%s)', async transport => {
+  const action = actionFor(transport);
   const f = await setup(); f.fake.enqueueTurn(commitStep({ 'publish.txt': 'ready\n' }, { status: 'progress', summary: 'Saved for publishing.' }), forThread());
   const { threadId } = await start(f); await f.waitFor(() => f.thread(threadId), t => t.state === 'idle'); await f.app.projectWork.pulse();
   expect((await f.index(threadId))?.fixable?.publish).toBe(true);
@@ -66,7 +76,8 @@ test('Automatic resolution uses seven days of index activity, keeps open PRs, an
   expect(f.coordinatorState().queue).toContainEqual(expect.objectContaining({ kind: 'thread-resolved', threadId, by: 'inactivity' }));
 });
 
-test('Owner check, conflict and comment actions run the right prompt once and update the existing PR', { timeout: 120_000 }, async () => {
+test.each(['ui', 'tool'] as const)('Owner check, conflict and comment actions run the right prompt once and update the existing PR (%s)', { timeout: 120_000 }, async transport => {
+  const action = actionFor(transport);
   let now = Date.now(); const f = await setup({ projectTimers: { now: () => now } });
   f.fake.enqueueTurn(commitStep({ 'fix.txt': 'before\n' }, { status: 'done', summary: 'Initial change.' }), forThread());
   const { threadId } = await start(f); await f.waitFor(() => f.thread(threadId), t => t.state === 'in-review');
@@ -96,7 +107,8 @@ test('A comment arriving within the request cache window is still discovered aft
   expect((await f.index(threadId))?.fixable?.comments).toBe(1);
 });
 
-test('An accepted Publish repeats after restart even when its HTTP receipt was not marked applied', async () => {
+test.each(['ui', 'tool'] as const)('An accepted Publish repeats after restart even when its HTTP receipt was not marked applied (%s)', async transport => {
+  const action = actionFor(transport);
   const f = await setup(); f.fake.enqueueTurn(commitStep({ 'saved.txt': 'ready\n' }, { status: 'progress', summary: 'Ready to publish.' }), forThread());
   const { threadId } = await start(f); await f.waitFor(() => f.thread(threadId), t => t.state === 'idle');
   const id = `req_${randomUUID()}`; expect((await action(f, threadId, 'publish', id)).status).toBe(200);
@@ -114,7 +126,8 @@ test('A review-comment read failure does not suppress the checks-failed event', 
   await f.app.projectWork.pulse(); expect(f.coordinatorState().queue).toContainEqual(expect.objectContaining({ kind: 'pr-update', threadId, change: 'checks-failed' }));
 });
 
-test('Working and attached actions are refused, and resolving cannot reuse another action id', async () => {
+test.each(['ui', 'tool'] as const)('Working and attached actions are refused, and resolving cannot reuse another action id (%s)', async transport => {
+  const action = actionFor(transport);
   const f = await setup(); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Resting.' }), forThread());
   const { threadId } = await start(f); await f.waitFor(() => f.thread(threadId), t => t.state === 'idle');
   let response = await action(f, threadId, 'publish'); expect(response.status).toBe(409); expect(await response.json()).toMatchObject({ message: 'This thread has no commits to publish.' });

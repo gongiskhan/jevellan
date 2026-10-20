@@ -1,5 +1,7 @@
 import { OwnerRefusal, type OwnerHandler } from '../owner-tools.js';
 import { clientId, resolveTask } from './common.js';
+import { ProjectThreadActionsViewSchema, ThreadActionRequestSchema } from '@jevellan/core';
+import { ownerThreadOperation } from '../project-work-api.js';
 
 /** `thread`: steer a running thread (bridge specification, "Threads: say, takeover, hold rules"). */
 export const thread: OwnerHandler = async (context) => {
@@ -8,6 +10,26 @@ export const thread: OwnerHandler = async (context) => {
   if (token.toUpperCase() === 'C') throw new OwnerRefusal("The coordinator can't be taken over. Ask it something or tell it what to do instead.", 'coordinator', 409);
   const target = await resolveTask(context, token); const id = target.id; const row = target.thread;
   switch (context.action) {
+    case 'actions': {
+      if (!row) throw new OwnerRefusal(`${id} has no thread yet.`, 'not_running', 409);
+      const view = ProjectThreadActionsViewSchema.parse(await ownerThreadOperation(app, project.id, row.id, 'actions'));
+      return { text: view.items.map(item => `${item.label}${item.enabled ? '' : ` (unavailable${item.refusal ? `: ${item.refusal}` : ''})`}${item.kind === 'link' ? `: ${item.href}` : item.confirmation ? ` — ${item.confirmation.body}` : ''}`).join('\n') || 'No actions are available.', data: view };
+    }
+    case 'act': {
+      if (!row) throw new OwnerRefusal(`${id} has no thread yet.`, 'not_running', 409);
+      const input = ThreadActionRequestSchema.parse({ schema: 'thread-action-request-v1', action: args.operation, clientRequestId: args.clientRequestId });
+      const view = ProjectThreadActionsViewSchema.parse(await ownerThreadOperation(app, project.id, row.id, 'actions'));
+      const item = view.items.find(item => item.kind === 'mutation' && item.id === input.action);
+      if (item?.kind === 'mutation' && item.confirmation && args.confirm !== true) throw new OwnerRefusal(`${item.confirmation.body} Call again with confirm: true to continue.`, 'confirmation_required', 409);
+      // The canonical writer checks current resources and its durable retry receipt, even if the action disappeared after success.
+      return { text: `${id}: ${item?.label ?? input.action}.`, data: await ownerThreadOperation(app, project.id, row.id, 'act', input) };
+    }
+    case 'merge': {
+      if (!row) throw new OwnerRefusal(`${id} has no thread yet.`, 'not_running', 409);
+      const view = ProjectThreadActionsViewSchema.parse(await ownerThreadOperation(app, project.id, row.id, 'actions'));
+      if (args.confirm !== true) throw new OwnerRefusal(`${view.mergeConfirmation?.body ?? 'Merge this thread’s pull request?'} Call again with confirm: true to continue.`, 'confirmation_required', 409);
+      return { text: `Merged ${id}.`, data: await ownerThreadOperation(app, project.id, row.id, 'merge') };
+    }
     case 'say': {
       const text = String(args.text); const now = args.now === true;
       const fresh = !row && target.task ? (await engine.taskView(project.id, target.task.id)).task : null;
@@ -34,5 +56,5 @@ export const thread: OwnerHandler = async (context) => {
     case 'open': return tools.takeover.open(context, id, row);
     case 'return': return tools.takeover.return(context, id, row, (args.as as 'resume' | 'done' | 'stop' | undefined) ?? 'resume', typeof args.note === 'string' ? args.note : undefined);
   }
-  throw new OwnerRefusal('thread takes say, open, return, stop.', 'unknown_action');
+  throw new OwnerRefusal('thread takes say, open, return, stop, actions, act, merge.', 'unknown_action');
 };

@@ -14,13 +14,15 @@ import {
 } from '@jevellan/core';
 import {
   COORDINATOR_DEVICE_REDIRECT, COORDINATOR_NOT_HERE, EVENT_CURSOR_AHEAD, EVENT_CURSOR_INVALID, PROJECT_OPERATION_NOT_FOUND, THREAD_DEVICE_GONE, THREAD_NOT_FOUND, coordinatorOfflineNotice,
-  coordinatorUnreachable, publicProjectData, threadDeviceOffline, type ProjectLedger, type RemoteStart,
+  coordinatorUnreachable, publicProjectData, threadDeviceOffline, threadDeviceUnreachable, THREAD_DEVICE_REDIRECT, type ProjectLedger, type RemoteStart,
 } from '@jevellan/projects';
 import type { Application } from './application.js';
 import { streamLedger, type LedgerStreamFrame } from './conversation-events.js';
 import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 import { readProjectImage } from '@jevellan/conversations';
+import { UiAuth } from '@jevellan/mesh';
+import { ProjectThreadActionsViewSchema, ThreadViewSchema, type ThreadActionRequest } from '@jevellan/core';
 
 export type ProjectWorkRouteName = 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
@@ -149,6 +151,42 @@ async function target(app: Application, deviceId: string, purpose: 'thread' | 'c
   if (!row || row.revoked) throw failure(THREAD_DEVICE_GONE, 409);
   if (row.status === 'offline') throw failure(threadDeviceOffline(row.device.name), 409);
   return row;
+}
+
+/** Authenticated owner tools reuse the browser's typed owner routes; work never moves to the state point. */
+export async function ownerThreadOperation(app: Application, projectId: string, threadId: string,
+  operation: 'actions' | 'act' | 'merge', input?: ThreadActionRequest) {
+  const work = app.projectWork, owner = await work.threadOwner(projectId, threadId);
+  if (owner === null) throw failure(THREAD_NOT_FOUND, 404);
+  if (owner === app.device.deviceId) {
+    if (operation === 'actions') return work.views.actions(projectId, threadId);
+    if (operation === 'act') return work.threadAction(projectId, threadId, ThreadActionRequestSchema.parse(input));
+    return work.mergePullRequest(projectId, threadId);
+  }
+  const row = await target(app, owner, 'thread'), auth = app.auth;
+  if (!(auth instanceof UiAuth)) throw failure('Owner tools must run on the state point.', 409);
+  const upstream = new URL(DeviceOriginSchema.parse(row.device.url));
+  upstream.pathname = `${PEER_PREFIX}${projectId}/threads/${threadId}/${operation === 'actions' ? 'actions-view' : operation === 'act' ? 'actions' : 'pr/merge'}`;
+  // This authenticated owner call holds the same authority as the UI. The peer session stays in memory,
+  // is never returned, and is revoked afterward; the receiver retains its owner/lifecycle/guard checks.
+  const token = auth.issue(); app.redactor.add(token);
+  try {
+    let answer: Response;
+    try {
+      answer = await fetch(upstream, { method: operation === 'actions' ? 'GET' : 'POST', redirect: 'manual', signal: AbortSignal.timeout(OWNER_REQUEST_TIMEOUT_MS),
+        headers: { Authorization: `Bearer ${token}`, 'X-Jevellan-Source-Device': app.device.deviceId, Accept: 'application/json', ...(operation === 'actions' ? {} : { 'Content-Type': 'application/json' }) },
+        ...(operation === 'actions' ? {} : { body: JSON.stringify(operation === 'act' ? ThreadActionRequestSchema.parse(input) : EmptySchema.parse({ schema: 'empty-request-v1' })) }) });
+    } catch { throw failure(threadDeviceUnreachable(row.device.name), 502); }
+    if (answer.status >= 300 && answer.status < 400) { await answer.body?.cancel(); throw failure(THREAD_DEVICE_REDIRECT, 502); }
+    const value: unknown = await answer.json().catch(() => null);
+    if (!answer.ok) {
+      const refusal = ErrorDocumentSchema.safeParse(value);
+      throw refusal.success ? failure(refusal.data.message, answer.status) : failure(threadDeviceUnreachable(row.device.name), 502);
+    }
+    if (operation === 'actions') return parseReply(ProjectThreadActionsViewSchema, value);
+    if (operation === 'act') return parseReply(ThreadViewSchema, value);
+    return parseReply(MergeResultViewSchema, value);
+  } finally { auth.logout(token); }
 }
 /** Sends the request to the device that runs it (2.10): the thread's owner or the coordinator device, with the owner's session. */
 async function proxy(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, route: ProjectWorkRoute, deviceId: string, caller: Caller): Promise<void> {

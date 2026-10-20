@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { IdSchema } from './schemas.js';
+import { ThreadMutationActionSchema } from './project-card-schemas.js';
 import type { OwnerToolName } from './owner-tool-schemas.js';
 
 /**
@@ -46,9 +48,12 @@ export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
         order: z.array(z.string().min(1).max(120)).min(1).max(30).optional(), everyMinutes: z.number().int().min(5).max(1440).optional(), between: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/u).optional(),
         text: text(400).describe("The owner's words.") }),
       write('health_run', { check: z.string().min(1).max(120).optional() }), write('rollback', { confirm: z.boolean().optional() })] },
-  { name: 'thread', description: "Steer a running thread: say something to it, take it over in the Claude app or a terminal (open), hand it back (return), or stop it. The coordinator can't be taken over.",
+  { name: 'thread', description: "Steer a thread, inspect its current actions, publish or fix its work, resolve/reopen it, or merge its pull request. Read actions first for eligibility and confirmation text. Reuse clientRequestId when retrying act. A consequential resolve and every merge require confirm. Open takes over in the Claude app or a terminal; return hands it back. The coordinator can't be taken over.",
     actions: [write('say', { thread: id('Thread id (T31).'), text: text(20000), now: z.boolean().optional() }), write('open', { thread: id('Thread id (T31).') }),
-      write('return', { thread: id('Thread id (T31).'), as: z.enum(['resume', 'done', 'stop']).optional(), note: text(4000).optional() }), write('stop', { thread: id('Thread id (T31).'), reason: text(400).optional() })] },
+      write('return', { thread: id('Thread id (T31).'), as: z.enum(['resume', 'done', 'stop']).optional(), note: text(4000).optional() }), write('stop', { thread: id('Thread id (T31).'), reason: text(400).optional() }),
+      read('actions', { thread: id('Thread id (T31).') }),
+      write('act', { thread: id('Thread id (T31).'), operation: ThreadMutationActionSchema, clientRequestId: IdSchema, confirm: z.boolean().optional() }),
+      write('merge', { thread: id('Thread id (T31).'), confirm: z.boolean().optional() })] },
   { name: 'respond', single: true, description: 'Answer something waiting on the owner: a question, a decision, a deploy message, a failed deploy, a rollback question, an external pull request, a login. Use one of the options the item lists; questions take free text.',
     actions: [write('respond', { item: id('Waiting item id (W12).'), answer: text(20000), note: text(4000).optional() })] },
   { name: 'override', single: true, description: "Override a decision made by Jev, the coordinator or Jevellan. override_undo undoes what followed the decision and redoes it the owner's way; override_only keeps what happened and records the lesson for next time. A reason is required: it becomes the lesson.",

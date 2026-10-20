@@ -97,12 +97,16 @@ test('a different author’s open pull request refuses continuation and remains 
   await expect(start(f, 'other', 'other-work')).rejects.toThrow(`Branch other-work belongs to #${pull.number} by another-owner; only your own work can be continued.`);
   expect(f.github.requests.slice(before).every(r => r.method === 'GET')).toBe(true); expect(f.app.projectWork.store.all()).toHaveLength(0);
 });
-test('Land instead closes only a Jevellan-opened own pull request and retains its work', async () => {
+test.each(['ui', 'tool'] as const)('Land instead closes only a Jevellan-opened own pull request and retains its work (%s)', async transport => {
   const f = await setup({ delivery: 'pull-request', autoLand: false });
   f.fake.enqueueTurn(commitStep({ 'README.md': 'Transition\n' }, { status: 'done', summary: 'Transition work.' }), forThread());
   const result = await start(f), thread = await done(f, result.threadId); expect(thread.delivery).toBe('pull-request'); expect({ state: thread.state, reason: thread.stateReason, pr: thread.pr }).toMatchObject({ state: 'in-review', pr: { state: 'open' } });
   await settings(f); expect(f.thread(thread.id).delivery).toBe('pull-request'); expect((await f.app.projectHub.settings('project'))!.document.pullRequestAutoMerge).toBe(false);
-  const response = await f.request(`/api/projects/project/threads/${thread.id}/actions`, 'POST', { schema: 'thread-action-request-v1', clientRequestId: 'convert', action: 'land-instead' }); expect(response.status).toBe(200);
+  if (transport === 'ui') {
+    const response = await f.request(`/api/projects/project/threads/${thread.id}/actions`, 'POST', { schema: 'thread-action-request-v1', clientRequestId: 'convert', action: 'land-instead' }); expect(response.status).toBe(200);
+  } else expect(await f.app.ownerTools.call('thread', { schema: 'owner-tool-request-v1', caller: 'cli', action: 'act', args: {
+    project: 'project', thread: thread.id, operation: 'land-instead', clientRequestId: 'convert',
+  } })).toMatchObject({ ok: true });
   await f.waitFor(() => f.thread(thread.id), t => !!t.landing); expect(f.github.pulls[0]?.state).toBe('closed'); expect(f.thread(thread.id).delivery).toBe('land'); expect(f.thread(thread.id).turns).toBe(1);
   expect(git(f.origin, 'show', 'main:README.md')).toBe('Transition');
 }, 120_000);
@@ -131,10 +135,15 @@ test('continuing a landed thread publishes its new work rather than reusing its 
   await f.waitFor(() => f.thread(first.id), t => t.turns === 2 && t.state === 'done'); expect(git(f.origin, 'show', 'main:README.md')).toBe('Second'); expect(f.thread(first.id).landing?.commit).not.toBe(first.landing!.commit);
 }, 120_000);
 
-test('the owner route override withdraws the superseded landing question', async () => {
+test.each(['ui', 'tool'] as const)('the owner route override withdraws the superseded landing question (%s)', async transport => {
   const f = await setup({ autoLand: false }); f.fake.enqueueTurn(commitStep({ 'README.md': 'Override\n' }, { status: 'done', summary: 'Done.' }), forThread()); const result = await start(f), thread = await done(f, result.threadId);
   const question = (await routes(f, thread.id))[0]!.decisionId!;
-  await f.app.projectWork.threadAction('project', thread.id, { schema: 'thread-action-request-v1', clientRequestId: 'override_route', action: 'land-now' });
+  if (transport === 'ui') {
+    const response = await f.request(`/api/projects/project/threads/${thread.id}/actions`, 'POST', { schema: 'thread-action-request-v1', clientRequestId: 'override_route', action: 'land-now' });
+    expect(response.status).toBe(200);
+  } else expect(await f.app.ownerTools.call('thread', { schema: 'owner-tool-request-v1', caller: 'cli', action: 'act', args: {
+    project: 'project', thread: thread.id, operation: 'land-now', clientRequestId: 'override_route',
+  } })).toMatchObject({ ok: true });
   await f.waitFor(() => f.thread(thread.id), t => !!t.landing); await f.app.projectWork.idle(); expect((await f.app.projectHub.decision(question))?.document.withdrawnAt).toBeDefined();
 }, 120_000);
 

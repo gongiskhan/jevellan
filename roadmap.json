@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Area1a–1d:17Overview/sidebar/coordinator/card-action/waiting rows migrated/refined. Static pass,103affected backend pass,3desktop-light waiting/numbering/deploy main actions pass once. Canonical answer guards and UI/tool answer-state parity retained. Shared thread owner-tool parity next before closing area1; then ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1noncore twicefailed obsolete Settings selector remains deferred. No further release.",
+    "why": "Area1a–1e:18Overview/sidebar/coordinator/card-action/waiting rows migrated/refined. Shared thread tools retain canonical guards and member ownership; UI/tool action-state behavior variants pass. Static pass,97affected backend cases in13files6workers pass; desktop-light publish/merge passes once. Next jobs/nightly/deploy, remaining ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1noncore twicefailed obsolete Settings selector remains recorded for Settings. No further release.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Area1a–1d:17Overview/sidebar/coordinator/card-action/waiting rows migrated/refined. Static pass,103affected backend pass,3desktop-light waiting/numbering/deploy main actions pass once. Canonical answer guards and UI/tool answer-state parity retained. Shared thread owner-tool parity next before closing area1; then ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1noncore twicefailed obsolete Settings selector remains deferred. No further release.",
+    "why": "Area1a–1e:18Overview/sidebar/coordinator/card-action/waiting rows migrated/refined. Shared thread tools retain canonical guards and member ownership; UI/tool action-state behavior variants pass. Static pass,97affected backend cases in13files6workers pass; desktop-light publish/merge passes once. Next jobs/nightly/deploy, remaining ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1noncore twicefailed obsolete Settings selector remains recorded for Settings. No further release.",
     "status": "in-progress"
   },
   {
@@ -1160,7 +1160,7 @@
   {
     "id": "br-thread-owner-action-parity",
     "title": "Complete owner-tool parity for shared thread actions",
-    "why": "Card/HTTP action models and UI controls are migrated; the existing twelve-tool surface still needs guarded access and resulting-state parity for all shared thread controls. Required to complete area1, before moving to the next UI area. Preserve ownership forwarding, confirmation, idempotence, production refusal and existing resource guards.",
-    "status": "planned"
+    "why": "Source-only shared thread actions/act/merge added inside existing twelve-tool catalog; canonical retry receipts, confirmation, checks and landing guards retained. Existing authenticated peer routes preserve member ownership with in-memory/revoked per-request sessions. Failing-first3integration cases; final static pass,97affected backend cases including UI/tool variants pass and desktop-light publish/merge passes once. No live bridge/authentication or release operation.",
+    "status": "complete"
   }
 ]
