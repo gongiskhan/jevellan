@@ -66,7 +66,9 @@ export const CallerLogEntrySchema = z.strictObject({ schema: z.literal('caller-l
 export type CallerLogEntry = z.infer<typeof CallerLogEntrySchema>;
 
 export const OwnerToolRequestSchema = z.strictObject({ schema: z.literal('owner-tool-request-v1'), action: z.string().min(1).max(60).optional(),
-  args: z.record(z.string(), z.unknown()).default({}), caller: OwnerCallerSchema, cwd: z.string().max(4096).optional(), project: z.string().max(200).optional() });
+  args: z.record(z.string(), z.unknown()).default({}), caller: OwnerCallerSchema, cwd: z.string().max(4096).optional(), project: z.string().max(200).optional(),
+  // Set by the hub for a call a member device forwarded: the folder in `cwd` is on that device.
+  deviceId: IdSchema.optional() });
 export type OwnerToolRequest = z.infer<typeof OwnerToolRequestSchema>;
 export const OwnerToolResultSchema = z.discriminatedUnion('ok', [
   z.strictObject({ schema: z.literal('owner-tool-result-v1'), ok: z.literal(true), text: z.string().max(20000), data: z.unknown().optional() }),
@@ -132,3 +134,5 @@ export const JevLessonSchema = z.strictObject({ schema: z.literal('jev-lesson-v1
 export type JevLesson = z.infer<typeof JevLessonSchema>;
 export const OwnerRemoteRequestSchema = z.strictObject({ schema: z.literal('owner-remote-request-v1'), operation: z.enum(['setup', 'revoke']), port: z.number().int().min(1).max(65535),
   clientId: z.string().min(1).max(200).optional(), clientSecret: z.string().min(1).max(400).optional() });
+/** A member device forwards an owner tool call to the state point (the tools run there). */
+export const OwnerToolForwardSchema = z.strictObject({ schema: z.literal('owner-tool-forward-v1'), name: z.string().min(1).max(40), request: OwnerToolRequestSchema });

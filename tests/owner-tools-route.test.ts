@@ -77,3 +77,13 @@ test('the event stream numbers coordinator events and resumes after a seq', asyn
   for (const event of before) expect(text).not.toContain(`id: ${event.seq}\n`);
   controller.abort();
 });
+
+test('a member device forwards owner tool calls to the state point, which resolves folders on that device', async () => {
+  const { projectMember } = await import('./helpers/project-fixture.js');
+  f = await projectFixture();
+  const member = await projectMember(f);
+  const result = await member.app.member!.ownerTool({ schema: 'owner-tool-forward-v1', name: 'status', request: { schema: 'owner-tool-request-v1', caller: 'cli', args: {}, cwd: member.checkout } });
+  expect(result).toMatchObject({ ok: true }); expect(result.ok && result.text).toMatch(/^\S+ · coordinator /u);
+  expect(f.app.ownerTools.callerLog().at(-1)).toMatchObject({ tool: 'status', ok: true, caller: 'cli' });
+
+});

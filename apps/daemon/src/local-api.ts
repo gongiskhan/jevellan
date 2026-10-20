@@ -5,8 +5,9 @@ import { z } from 'zod';
 import { EmptySchema, ErrorDocumentSchema, HubUnavailable, IdSchema, ThreadAttachRequestSchema, ThreadDetachRequestSchema } from '@jevellan/core';
 import { JournalRebuildInputSchema, JournalRebuildReceiptSchema } from '@jevellan/core';
 import { ProjectSendRequestSchema, ProjectSendResultSchema } from '@jevellan/core';
-import { OwnerBridgeRequestSchema, OwnerPushAckSchema, OwnerRemoteRequestSchema, OwnerToolRequestSchema, StatusLineRequestSchema, StatusLineViewSchema } from '@jevellan/core';
+import { ProjectStatusViewSchema, OwnerBridgeRequestSchema, OwnerPushAckSchema, OwnerRemoteRequestSchema, OwnerToolRequestSchema, StatusLineRequestSchema, StatusLineViewSchema } from '@jevellan/core';
 import { OwnerRefusal } from './owner-tools.js';
+import { renderStatusLine } from '@jevellan/projects';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { Application } from './application.js';
 import { diagnoseApplication, type LocalDiagnostics } from './diagnostics.js';
@@ -103,11 +104,18 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
       if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
       const input = OwnerToolRequestSchema.parse(await requestBody(request));
       release = app.lifecycle.enter({ kind: 'request' });
+      // A member forwards to the state point, where the tools run; the hub fills in this device for folder lookups.
+      if (app.member) { json(response, app.redactor.document(await app.member.ownerTool({ schema: 'owner-tool-forward-v1', name: tool[1]!, request: input }))); return; }
       json(response, app.redactor.document(await app.ownerTools.call(tool[1]!, input))); return;
     }
     if (path === '/api/local/statusline') {
       if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
       const input = StatusLineRequestSchema.parse(await requestBody(request));
+      if (app.member) {
+        const result = await app.member.ownerTool({ schema: 'owner-tool-forward-v1', name: 'status', request: { schema: 'owner-tool-request-v1', caller: 'cli', args: {}, ...(input.cwd ? { cwd: input.cwd } : {}), ...(input.project ? { project: input.project } : {}) } });
+        const view = result.ok ? ProjectStatusViewSchema.safeParse(result.data) : undefined;
+        json(response, StatusLineViewSchema.parse({ schema: 'status-line-view-v1', text: view?.success ? renderStatusLine(view.data) : 'Jevellan · no project here' })); return;
+      }
       json(response, StatusLineViewSchema.parse({ schema: 'status-line-view-v1', text: await app.ownerTools.statusLine(input) })); return;
     }
     if (path === '/api/local/health') {

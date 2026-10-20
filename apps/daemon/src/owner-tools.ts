@@ -33,7 +33,7 @@ export class OwnerTools {
 
   async projects(): Promise<Project[]> { return (await this.app.state.projects.list()).map(row => row.project); }
   /** Bridge specification, "Project resolution": the argument, the session's project, the project holding the working folder, the only project. */
-  async resolveProject(request: Pick<OwnerToolRequest, 'project' | 'cwd'>, argument?: unknown): Promise<Project> {
+  async resolveProject(request: Pick<OwnerToolRequest, 'project' | 'cwd' | 'deviceId'>, argument?: unknown): Promise<Project> {
     const projects = await this.projects(); const wanted = typeof argument === 'string' && argument ? argument : request.project;
     if (wanted) {
       const found = projects.filter(project => project.id === wanted || project.name.toLowerCase() === wanted.toLowerCase());
@@ -42,7 +42,8 @@ export class OwnerTools {
     }
     if (request.cwd) {
       const cwd = resolve(request.cwd);
-      const here = projects.filter(project => { const path = project.paths[this.app.device.deviceId]; return path && (cwd === resolve(path) || cwd.startsWith(resolve(path) + sep)); });
+      const device = request.deviceId ?? this.app.device.deviceId;
+      const here = projects.filter(project => { const path = project.paths[device]; return path && (cwd === resolve(path) || cwd.startsWith(resolve(path) + sep)); });
       if (here.length === 1) return here[0]!;
     }
     if (projects.length === 1) return projects[0]!;
