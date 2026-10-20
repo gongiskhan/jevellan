@@ -228,7 +228,7 @@ test('Projects routes need the session, answer versioned documents, run a thread
 
   const before = { head: git(checkout, 'rev-parse', 'HEAD'), status: git(checkout, 'status', '--porcelain=v1') };
   expect(ProjectWorkListViewSchema.parse(await call('/api/project-work', 'GET', undefined, 200)).projects)
-    .toEqual([{ projectId: 'project', name: 'Shop', status: 'active', waiting: 0, running: 0, inReview: 0, coordinator: { deviceId: null, state: 'none' } }]);
+    .toEqual([{ projectId: 'project', name: 'Shop', status: 'active', waiting: 0, running: 0, inReview: 0, coordinator: { deviceId: null, state: 'none' }, attention: 'idle' }]);
   expect(ProjectWorkViewSchema.parse(await call('/api/projects/project/work', 'GET', undefined, 200))).toMatchObject({ project: { id: 'project', name: 'Shop', baseBranch: 'main' }, threads: [] });
   expect(await call('/api/projects/missing/work', 'GET', undefined, 404)).toEqual(refused('not-found', PROJECT_NOT_FOUND));
   expect(await call('/api/projects/project/threads', 'GET', undefined, 405)).toEqual(refused('request-failed', METHOD));

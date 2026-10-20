@@ -196,7 +196,7 @@ test('from the member, coordinator requests and its chat reach the hub coordinat
   const list = await m.json('/api/project-work', ProjectWorkListViewSchema);
   expect(m.hubCalls.filter((call) => !call.endsWith('/auth/check'))).toEqual(['/hub/mesh/projects/work work-summaries']);
   expect(list).toEqual(await f.json('/api/project-work', ProjectWorkListViewSchema));
-  expect(list.projects).toEqual([{ projectId: pid, name: 'Shop', status: 'active', waiting: 0, running: 0, inReview: 0, coordinator: { deviceId: hubId, state: f.coordinatorState().state } }]);
+  expect(list.projects).toEqual([{ projectId: pid, name: 'Shop', status: 'active', waiting: 0, running: 0, inReview: 0, coordinator: { deviceId: hubId, state: f.coordinatorState().state }, attention: f.coordinatorState().state === 'running' ? 'running' : 'idle' }]);
   const page = await m.json(`/api/projects/${pid}/work`, ProjectWorkViewSchema);
   const status = (await f.app.projectHub.coordinatorStatus(pid))!.document;
   expect(page.coordinator).toMatchObject({ deviceId: hubId, deviceName: f.deviceName, online: true, state: status.state });
