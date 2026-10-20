@@ -108,3 +108,22 @@ test('a rollback finding belongs to Resilience even when the project has no goal
 test('runtime image proof upgrades an initially unverified rollback image', async () => { const f = setup({ rollbackAvailable: false }); await released(f); expect(f.record().rollbackAvailable).toBe(true); });
 test('a fresh preflight attestation unblocks retry after an uncertain release', async () => { const f = setup({ database: true }); const old = await running(f); f.finish(old, 'deploy', 'failed', false); const run = f.runs.get(old.jobRunId!)!; delete run.deployResult; Object.assign(run, { deploymentCommandStartedAt: at }); await f.service.sweep('project'); f.advance(60_000); await f.service.sweep('project'); f.advance(240_000); await f.service.sweep('project'); f.baseline.commit = b; f.baseline.updatedAt = '2026-10-19T12:05:00.000Z'; const question = f.record().failureDecisionId!; await f.answer('Try again', 'recovered_retry', question); expect(f.record().state).toBe('approved'); expect(f.record().previousCommit).toBe(b); expect(f.record().migrationChanged).toBe(false); });
 test('an old failure question cannot retry an attempt that has already rolled back', async () => { const f = setup(); const old = await running(f); f.finish(old, 'deploy', 'failed', true); await f.service.sweep('project'); const question = f.record().failureDecisionId!; f.health(false); f.advance(60_000); await f.service.sweep('project'); f.advance(30_000); await f.service.sweep('project'); f.finish(f.deploys.get(old.id)!, 'rollback', 'failed', false); await f.service.sweep('project'); await expect(f.answer('Try again', 'old_retry', question)).rejects.toThrow('no longer'); });
+
+
+test('a saved approval accepts a fresh acknowledgement request without another release', async () => {
+  const f = setup(); await f.service.sweep('project');
+  const original = f.service.o.hub.answerDecision;
+  f.service.o.hub.answerDecision = async (...args) => {
+    if (args[3] === 'reused_request') throw new Error('Request ID already used for another answer');
+    return original(...args);
+  };
+  await expect(f.answer('Deploy bbbbbbb', 'reused_request')).rejects.toThrow('already used');
+  const approved = structuredClone(f.record()); expect(approved.state).toBe('approved');
+  await expect(f.answer('Deploy bbbbbbb', 'fresh_request')).resolves.toEqual({ repeated: true, closed: true });
+  expect(f.record()).toEqual(approved); expect(f.tasks.size).toBe(0);
+  await f.service.sweep('project');
+  expect(f.decisions.get(approved.decisionId)?.answer?.optionLabel).toBe('Deploy bbbbbbb');
+  expect(f.tasks.size).toBe(1);
+  await f.answer('Deploy bbbbbbb', 'fresh_request'); expect(f.tasks.size).toBe(1);
+  await expect(f.answer('Not now', 'different_answer')).rejects.toThrow('no longer waiting');
+});

@@ -1028,79 +1028,79 @@
   {
     "id": "br-tools",
     "title": "Owner tool parity",
-    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
-    "status": "in-progress"
+    "why": "The frozen working source is published as0.7.0 and installed on both devices with doctor10/10each. Actual managed bridge status/push is externally authentication-blocked. Expanded component/tool parity, intake and remaining engine/live coverage remain planned after the essential0.7.1 repairs; no complete parity claim.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-plugin",
     "title": "Generated plugin and terminal clients",
-    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
-    "status": "in-progress"
+    "why": "The frozen working source is published as0.7.0 and installed on both devices with doctor10/10each. Actual managed bridge status/push is externally authentication-blocked. Expanded component/tool parity, intake and remaining engine/live coverage remain planned after the essential0.7.1 repairs; no complete parity claim.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-bridge",
     "title": "Bridge and durable push",
-    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
-    "status": "in-progress"
+    "why": "Frozen bridge source is published as0.7.0 and installed on both devices with doctor10/10each. Managed authentication is externally blocked by first-party browser verification; actual bridge status/push remain unpassed. Optional UI parity, intake and remaining engine work stay planned.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-jobs",
     "title": "Jobs, missed nights and external intake",
-    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
-    "status": "in-progress"
+    "why": "The frozen working source is published as0.7.0 and installed on both devices with doctor10/10each. Actual managed bridge status/push is externally authentication-blocked. Expanded component/tool parity, intake and remaining engine/live coverage remain planned after the essential0.7.1 repairs; no complete parity claim.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-goals",
     "title": "Goals and labels",
-    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
-    "status": "in-progress"
+    "why": "The frozen working source is published as0.7.0 and installed on both devices with doctor10/10each. Actual managed bridge status/push is externally authentication-blocked. Expanded component/tool parity, intake and remaining engine/live coverage remain planned after the essential0.7.1 repairs; no complete parity claim.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-takeover",
     "title": "Thread takeover and hold continuity",
-    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
-    "status": "in-progress"
+    "why": "The frozen working source is published as0.7.0 and installed on both devices with doctor10/10each. Actual managed bridge status/push is externally authentication-blocked. Expanded component/tool parity, intake and remaining engine/live coverage remain planned after the essential0.7.1 repairs; no complete parity claim.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-jev",
     "title": "Complete Jev rules, prompts and replay",
-    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
-    "status": "in-progress"
+    "why": "The frozen working source is published as0.7.0 and installed on both devices with doctor10/10each. Actual managed bridge status/push is externally authentication-blocked. Expanded component/tool parity, intake and remaining engine/live coverage remain planned after the essential0.7.1 repairs; no complete parity claim.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-accounts",
     "title": "Managed account login and secrets",
-    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
-    "status": "in-progress"
+    "why": "The frozen working source is published as0.7.0 and installed on both devices with doctor10/10each. Actual managed bridge status/push is externally authentication-blocked. Expanded component/tool parity, intake and remaining engine/live coverage remain planned after the essential0.7.1 repairs; no complete parity claim.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-remote",
     "title": "Remote MCP",
-    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
-    "status": "in-progress"
+    "why": "The frozen working source is published as0.7.0 and installed on both devices with doctor10/10each. Actual managed bridge status/push is externally authentication-blocked. Expanded component/tool parity, intake and remaining engine/live coverage remain planned after the essential0.7.1 repairs; no complete parity claim.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-release",
     "title": "Bridge gate, 0.7.0 and installation",
-    "why": "Frozenac98492f merged into main;0.7.0typecheck/lint/build and5desktop-light core smokes pass. Full backend2602selected:2584initial passes,3harness-induced permission/recovery failures cleared by exact once-reruns,15notrun. Original counts retained; publication/install/managed bridge proof pending.",
-    "status": "in-progress"
+    "why": "Frozenac98492f merged into main once;0.7.0 published fromba983982 at09:13:25UTC and installed both with doctor10/10/Online/vault sync09:24:41UTC. All five desktop-light core smokes pass. Backend2602selected:2584initial passes,3harness-induced failures cleared by exact once-reruns,15notrun. Bridge status/push remain externally authentication-blocked. One scoped closing review is complete; three essential repairs are gated for0.7.1.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Owner plan defers remaining UI logic migration, all component-row parity and expanded layout/vision coverage to 0.7.1.",
+    "why": "Remaining UI logic migration, all component-row parity and expanded layout/vision coverage stay planned after the essential0.7.1 repair release.",
     "status": "planned"
   },
   {
     "id": "br-intake-071",
     "title": "External pull request intake",
-    "why": "Planned after the working 0.7.0 bridge release; no external contributor pull requests are inspected by this run.",
+    "why": "Planned after essential daily-use repairs; no external contributor pull requests are inspected by this run.",
     "status": "planned"
   },
   {
     "id": "br-engine-071",
     "title": "Remaining engine and remote features",
-    "why": "Plan p-v1/m-v1 wiring, placement rule execution, coordinator ask fork, member event/push forwarding and additional remote MCP features after 0.7.0.",
+    "why": "Plan p-v1/m-v1 wiring, placement rule execution, coordinator ask fork, member event/push forwarding and additional remote MCP features after the essential daily-use repairs.",
     "status": "planned"
   },
   {
@@ -1126,5 +1126,23 @@
     "title": "Expand journal reconnect and projection recovery coverage",
     "why": "Exercise delayed member records and mixed-version reconnect against append-only canonical ledgers and read-only projections. The installed journal rebuild command is the recovery path; never erase earlier ledger records.",
     "status": "planned"
+  },
+  {
+    "id": "br-runtime-env-071",
+    "title": "Filter command-only project provider variables before native launch validation",
+    "why": "Essential0.7.1 repair candidate applies the existing runtime filter before native launch validation. Failing-first evidence and36 affected checks pass; complete gate passed. All three essential repairs pass typecheck/lint/build,89 affected cases and full backend2589pass/0fail/15notrun of2604selected with six workers and no reruns. Exact-source publication and safe installation follow; no second review.",
+    "status": "in-progress"
+  },
+  {
+    "id": "br-approval-recovery-071",
+    "title": "Recover acknowledgement of an already saved pinned deployment answer",
+    "why": "A permanent acknowledgement conflict left an approved record without a job. A fresh identical answer can acknowledge the saved receipt without another transition or duplicate release. Failing-first regression and affected checks pass; complete gate passed. All three essential repairs pass typecheck/lint/build,89 affected cases and full backend2589pass/0fail/15notrun of2604selected with six workers and no reruns. Exact-source publication and safe installation follow; no second review.",
+    "status": "in-progress"
+  },
+  {
+    "id": "br-remote-deploy-071",
+    "title": "Refuse deployment responses through remote MCP",
+    "why": "The single closing review found that remote respond reached deployment decisions. Refuse typed deploy/retry/rollback decisions before any answer, even with remote writes enabled. Failing-first authenticated MCP regression; complete gate passed. All three essential repairs pass typecheck/lint/build,89 affected cases and full backend2589pass/0fail/15notrun of2604selected with six workers and no reruns. Exact-source publication and safe installation follow; no second review.",
+    "status": "in-progress"
   }
 ]

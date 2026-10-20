@@ -89,4 +89,30 @@ Simulated gate: typecheck, lint and the production web build pass. The complete 
 
 Desktop-light rewired-screen smokes: **5 selected, 5 passed, zero skipped**, covering Overview, thread list, thread page, deploy message and settings save. Five isolated fixture projects ran with five workers after the backend job; screenshot bytes were retained immediately. Only two existing web views changed, with no new screen, so the owner plan requires no new-screen vision check. The four-layout matrix and expanded parity remain planned0.7.1.
 
-Publication, installation and managed interactive bridge authentication are pending for0.7.0. The single closing review remains after readiness.
+Live publication: `v0.7.0` was published at **2026-10-20T09:13:25Z** from `ba983982d21c0ec40a8b64310e67f73a9fe2c28c`. Both GitHub asset digests match the verified archives. Both archives match 3,676 tracked source files, with zero source mismatches. Linux CLI/native PTY checks pass. Darwin external dependency metadata and file bytes match the official 0.5.1 cache, Node ABI is127 on both devices, and the actual extracted Pro CLI/native PTY smoke passed at09:07:53Z. No new Darwin native build is claimed. Cold backups, installation and managed interactive bridge authentication are proceeding. The single closing review remains after readiness.
+
+
+### 0.7.0 installed on both devices
+
+Live: both devices run0.7.0 and pass doctor **10/10**, are Online, have synced the vault after installation and have no open project-request classification (verified2026-10-20T09:24:41Z). Fresh cold backups and retained earlier applications are available. A transient process-table child initially stopped the Madrid backup guard; a fresh proof passed without changing the guard. The initial account freshness warnings cleared through normal managed-account checks.
+
+24. **Isolated runtime availability:** the member's existing native Codex launcher became unavailable during the update window. Its native home and launcher were left untouched. The same0.153.4 public package was installed under Jevellan's isolated runtime-tools directory and linked only into its existing managed tool path. Normal account checks and doctor then passed; no peer process was stopped.
+
+The normal managed bridge start reported missing interactive authentication. A normal installed account login was started in an owned hidden prompt. The supervisor's existing browser SSO attempt uses a temporary private loopback password form that forwards only the code in memory to the existing account-login API. The form has a one-use nonce and same-origin checks, stores no code and logs no request bodies. It has no terminal-control or arbitrary-command capability. Authentication and actual bridge status/push proof remain pending; token checks are not remote-control acceptance.
+
+A live launch attempt exposed a provider-variable boundary defect before runtime execution. A failing-first regression reproduces it: project provider variables intended for command jobs reached the stricter native-runtime input schema. Launch preparation now applies the existing runtime environment filter before validation; command jobs retain their original project environment. Typecheck, lint, build and36 affected cases pass. This repair is source-only while its full backend gate runs; the installed0.7.0 release does not contain it.
+
+
+25. **Clock clarification:** the10:30UTC deadline applies to the published/installed0.7.0 milestone. The essential0.7.1 blocker repairs have no10:30 hard cutoff. Their daily-use target is11:00UTC; a miss must be reported honestly. Optional UI/intake/engine work remains planned. Old cutoff helpers do not govern these repairs.
+
+26. **Single closing review:** one scoped crucial-issues review of immutable released0.7.0 is complete, before0.7.1 publication. External first-party browser verification blocks managed bridge authentication; it does not block this authorized repair work. No second review is run. The review records three serious issues: provider variables blocking runtime launch; an already saved deployment approval unable to acknowledge under a fresh request; and remote MCP deployment responses reaching the normal engine despite the remote prohibition. Each repair has a failing-first regression. The latter covers approve, retry and rollback with remote writes both off and on. Source-only repairs remain subject to the complete current-source backend gate before publication. No real production action was exercised.
+
+
+Essential0.7.1 candidate: typecheck, lint, build and **89 affected simulated cases pass**. All three exact regressions failed before their fixes. The full gate now selects2,604 cases with six workers; two earlier incomplete repair gates were superseded when additional serious source fixes became necessary. Their owned processes were stopped only after PID, parent, start and process-group proof, and neither incomplete run is a pass. The current complete gate runs without the superseded10:30 cutoff.
+
+Managed bridge authentication is **externally blocked** by first-party browser verification. The normal company email path was attempted through the private in-memory helper, with no personal-account switch or challenge bypass. No OAuth code or completed interactive login was obtained. Bridge status, a fresh transcript push and remote-control readiness remain unpassed. Installation health is a separate verified result.
+
+
+### Essential 0.7.1 release gate
+
+The complete current-source backend gate passes: **2,589 passed, zero failed, 15 not run**, exactly2,604 selected with six workers and no reruns. The15 not-run cases retain their documented opt-in/runtime constraints; they are not passes. Typecheck, lint, build and89 affected cases also pass. All three repairs have failing-first evidence. The five core desktop-light smokes passed for0.7.0; these repairs introduce no web screen. The single scoped closing review is complete, with no second review. Exact-source packaging, publication and safe installation follow; installed versions are still0.7.0 at this checkpoint. Authentication remains externally blocked.

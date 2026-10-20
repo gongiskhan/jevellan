@@ -103,7 +103,8 @@ export class ProjectDeployService {
     return this.#exclusive(decision.projectId, async () => {
       await this.#writer(decision.projectId);
       let row = (await this.o.hub.deploy(decision.deploy!.deployId))?.document; if (!row || row.projectId !== decision.projectId) return refuse('Deploy not found.', 404);
-      const digest = createHash('sha256').update(stableJson({ decisionId: decision.id, answer })).digest('hex'), old = row.answers.find(item => item.id === request.clientRequestId);
+      const digest = createHash('sha256').update(stableJson({ decisionId: decision.id, answer })).digest('hex'), old = row.answers.find(item => item.id === request.clientRequestId)
+        ?? row.answers.find(item => item.closed && item.decisionId === decision.id && item.digest === digest);
       if (old) { if (old.digest !== digest) refuse('This request ID already answered differently.'); if (old.closed) await this.o.hub.answerDecision(decision.id, answer, this.#at(), request.clientRequestId); else await this.#message(row); return { repeated: true, closed: old.closed }; }
       const latest = (await this.o.hub.decision(decision.id))?.document;
       if (!latest || latest.revision !== request.expectedRevision) refuse('The deploy message changed. Read it again before choosing.');

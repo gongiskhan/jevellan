@@ -384,7 +384,7 @@ test.each([
 
 test('project environment reaches thread and verification launches, never the coordinator or memory', async () => {
   const calls: string[] = []; fake.capabilities.readOnlyEnforced = true;
-  const { launcher: value } = launcher([status('acc_work')], undefined, { projectEnvironment: async id => { calls.push(id); return { TZ: 'UTC', TEST_SECRET: 'ephemeral fixture' }; } });
+  const { launcher: value } = launcher([status('acc_work')], undefined, { projectEnvironment: async id => { calls.push(id); return { TZ: 'UTC', TEST_SECRET: 'ephemeral fixture', OPENAI_API_KEY: 'ephemeral project provider', ANTHROPIC_BASE_URL: 'https://project.fixture.invalid' }; } });
   for (const kind of ['thread', 'verification', 'coordinator', 'memory'] as const) {
     fake.enqueueTurn(done); const result = await value.launch(request({ owner: { kind, projectId: 'proj_a', id: kind === 'coordinator' ? 'proj_a' : `${kind}_a` }, permissions: ['coordinator', 'memory'].includes(kind) ? 'read-only' : 'write', safetyProfile: kind }));
     if (result.kind !== 'started') throw new Error(result.reason);

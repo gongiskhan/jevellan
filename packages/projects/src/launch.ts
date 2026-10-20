@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { rankAccounts } from '@jevellan/accounts';
 import type { AccountService } from '@jevellan/accounts';
 import { ACCOUNT_REASON_TEXT } from '@jevellan/decisions';
-import { PROJECT_MEMORY_ID, applicationRoot, deviceAllowsWork, type PlacementAccountChoice, type AccountStatus, type Effort, type Homes, type RiggingItem, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
+import { PROJECT_MEMORY_ID, applicationRoot, deviceAllowsWork, projectEnvironment, type PlacementAccountChoice, type AccountStatus, type Effort, type Homes, type RiggingItem, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
 import type { BridgeScopeTools, StretchBridges } from '@jevellan/conversations';
 import { TurnInputSchema, type RuntimeAdapter, type StretchRun, type TurnInput } from '@jevellan/runtime-contract';
 import { ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, accountInTerminal, libraryInstructions, cannotRunHere, noTurnAccount, waitingForAccountReason } from './copy.js';
@@ -217,7 +217,7 @@ export class TurnLauncher {
         schema: 'turn-input-v1', owner: request.owner, turn: request.turn, cwd: request.cwd, permissions: request.permissions, model: request.model, effort: request.effort,
         account: resolved, systemAppend: (libraryDirectory ? `${libraryInstructions(libraryDirectory, request.owner.kind === 'thread')}\n\n` : '') + (journal ? `- The project journal at ${journal} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.\n\n` : '') + request.systemAppend, prompt, ...(resumed ? { resume: { sessionId: request.resume } } : {}),
         ...((journal || libraryDirectory) ? { readOnlyDirectories: [...(journal ? [journal] : []), ...(libraryDirectory ? [libraryDirectory] : [])] } : {}),
-        launch: { ...(['thread', 'verification'].includes(request.owner.kind) ? { projectEnv: await this.#o.projectEnvironment?.(request.owner.projectId) ?? {} } : {}), useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env: { ...env, ...gitEnv }, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
+        launch: { ...(['thread', 'verification'].includes(request.owner.kind) ? { projectEnv: projectEnvironment(await this.#o.projectEnvironment?.(request.owner.projectId) ?? {}) } : {}), useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env: { ...env, ...gitEnv }, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
         safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs, compaction: { thresholdPercent: percent, ...(contextWindow ? { contextWindow } : {}) },
         ...(['thread', 'coordinator'].includes(request.owner.kind) ? { privatePaths: [this.#o.homes.at('project-work', request.owner.projectId, 'job-cache'), this.#o.homes.at('project-work', request.owner.projectId, 'job-workspaces')] } : {}),
         ...(request.owner.kind === 'thread' && request.isolation === 'worktree' ? { protectedPaths: await this.#o.protectedPaths?.() ?? [] } : {}),

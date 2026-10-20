@@ -1,6 +1,6 @@
 // Journey H (bridge specification, "Remote MCP"), simulated: a fake GitHub-compatible identity provider, the real daemon over HTTP with
 // the tunnel's Host header, and the official MCP client.
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { createHash, randomBytes } from 'node:crypto';
 import { createServer, request as httpRequest, type Server } from 'node:http';
 import { readFileSync } from 'node:fs';
@@ -101,4 +101,24 @@ test('remote setup writes a valid cloudflared configuration and lists the owner 
   expect(text).toMatch(/^Wrote .+cloudflared\.yml\.\nSteps that need you:\n1\. cloudflared tunnel login/u);
   const yaml = readFileSync(text.split('\n')[0]!.slice('Wrote '.length, -1), 'utf8');
   expect(yaml).toBe(`tunnel: jevellan\ncredentials-file: ${f!.homes.root}/remote/jevellan-tunnel.json\ningress:\n  - hostname: ${HOST}\n    service: http://127.0.0.1:9771\n  - service: http_status:404\n`);
+});
+
+
+test('remote responses refuse every deployment decision before the engine even when writes are enabled', async () => {
+  const { fetcher } = await setup();
+  const signed = await signIn(fetcher); const client = await mcp(fetcher, signed.tokens!.access_token);
+  await f!.app.projectWork.coordinators.ensureAssigned('project');
+  const answer = vi.spyOn(f!.app.projectWork, 'answerDecision').mockResolvedValue({ repeated: false, closed: true });
+  try {
+    for (const action of ['approve', 'retry', 'rollback'] as const) {
+      const label = action === 'approve' ? 'Deploy aaaaaaa' : action === 'retry' ? 'Try again' : 'Roll back to bbbbbbb';
+      const decision = (await f!.app.projectHub.createDecision({ schema: 'project-decision-v1', id: `remote_deploy_${action}`, projectId: 'project', revision: 0, from: 'coordinator', question: 'Deployment choice', options: [{ label }], deploy: { deployId: 'remote_deploy_fixture', action }, createdAt: new Date().toISOString() })).document;
+      const item = f!.app.ownerTools.ids.one('project', 'W', decision.id);
+      for (const writeEnabled of [false, true]) {
+        f!.app.ownerTools.updateInstallationSettings(settings => ({ ...settings, remote: { ...settings.remote, writeEnabled } }));
+        expect(await client.callTool({ name: 'respond', arguments: { item, answer: label } })).toMatchObject({ isError: true, content: [{ text: 'Deploys and rollbacks are not available remotely.' }] });
+        expect(answer).not.toHaveBeenCalled();
+      }
+    }
+  } finally { answer.mockRestore(); await client.close(); }
 });

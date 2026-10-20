@@ -19,6 +19,7 @@ export const respond: OwnerHandler = async (context) => {
     return { text: option === 'Start' ? `Started the proposed task. It is queued now.` : `Rejected the proposed task.` };
   }
   const decision = item.decision!; const options = decision.options.map(option => option.label); const kind = waitingKind(decision);
+  if (decision.deploy && context.request.caller.startsWith('remote:')) throw new OwnerRefusal('Deploys and rollbacks are not available remotely.', 'remote_refused', 403);
   if (!options.length) {
     await engine.answerDecision(project.id, decision.id, { schema: 'decision-answer-request-v1', clientRequestId: clientId('owner_answer'), text: answer.slice(0, 4000) });
     return { text: `Sent your answer to ${decision.from === 'coordinator' || !decision.threadId ? 'the coordinator' : (context.tools.ids.shortOf(project.id, decision.threadId) ?? 'the thread')}.` };
