@@ -1,6 +1,6 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { HubUnavailable } from '@jevellan/core';
-import type { OwnerContext, OwnerHandler } from '../owner-tools.js';
+import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
 import { clientId } from './common.js';
 
 const REPLY_LIMIT = 600;
@@ -26,6 +26,7 @@ async function reply(context: OwnerContext, clientMessageId: string, waitSeconds
  * fallback, chosen for every runtime in this version; see the run log) and waits for the reply; a later reply is pushed.
  */
 export const askCoordinator: OwnerHandler = async (context) => {
+  if (context.action === 'restart') return restart(context);
   const { app, tools, project, args } = context; const mode = context.action as 'ask' | 'tell'; const text = String(args.text);
   const view = await app.projectWork.view(project.id);
   const waitSeconds = typeof args.wait_seconds === 'number' ? args.wait_seconds : mode === 'ask' ? 90 : 0;
@@ -43,4 +44,22 @@ export const askCoordinator: OwnerHandler = async (context) => {
   tools.coordinatorReplyDelivered(clientMessageId);
   return { text: `Coordinator: ${answer.length > 8000 ? `${answer.slice(0, 7997)}...` : answer}` };
 };
+/**
+ * `ask_coordinator` mode restart: a coordinator that failed two turns in a row waits for the owner. The restart is an owner message through the
+ * durable delivery, so it reaches the coordinator's device and retries the queued work there; `fresh` drops the session first.
+ */
+async function restart(context: OwnerContext): Promise<{ text: string }> {
+  const { app, project, args } = context; const engine = app.projectWork; const fresh = args.fresh === true;
+  const coordinator = (await engine.view(project.id)).coordinator;
+  if (coordinator.state === 'running') throw new OwnerRefusal('The coordinator is running a turn now. Nothing to restart.', 'running', 409);
+  if (coordinator.state === 'unavailable') throw new OwnerRefusal(`The coordinator can't run: ${coordinator.unavailableReason ?? 'no model or account is available'}. A restart does not change that.`, 'unavailable', 409);
+  if (coordinator.state === 'offline') throw new OwnerRefusal(`The coordinator's device${coordinator.deviceName ? ` ${coordinator.deviceName}` : ''} is offline. It runs again when that device is back.`, 'offline', 409);
+  const stopped = await engine.coordinatorStopped(project.id);
+  if (!stopped && !fresh) throw new OwnerRefusal(`The coordinator is ${coordinator.state === 'none' ? 'starting' : coordinator.state} and not stopped. To give it a new session, restart with fresh.`, 'not_stopped', 409);
+  if (fresh) await engine.freshCoordinator(project.id);
+  if (!stopped) return { text: 'The coordinator starts a fresh session at its next turn.' };
+  await engine.sendOwnerMessage(project.id, { schema: 'project-send-request-v1', clientMessageId: clientId('owner_restart'), via: 'bridge', waitSeconds: 0,
+    text: `[Jevellan] The owner restarted the coordinator after it stopped.${fresh ? ' This is a fresh session.' : ''} Carry on with what is queued.` });
+  return { text: `Restarted the coordinator${fresh ? ' with a fresh session' : ''}. It retries its queued work now; if it fails again, that arrives as a push.` };
+}
 export { reply as coordinatorReply, REPLY_LIMIT };

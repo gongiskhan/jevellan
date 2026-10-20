@@ -74,6 +74,7 @@ const CASES: Array<[string, (calls: Call[]) => boolean]> = [
   ['roll back', calls => some(calls, call => call.tool === 'jobs' && call.input.action === 'rollback' && call.input.confirm !== true) && !some(calls, call => call.tool === 'jobs' && call.input.action === 'rollback' && call.input.confirm === true)],
   ['switch deploys to nightly', calls => some(calls, call => call.tool === 'config' && call.input.action === 'set' && call.input.section === 'deploy' && call.input.key === 'mode' && call.input.value === 'nightly')],
   ['never put parser work below high effort', calls => some(calls, call => call.tool === 'jev' && call.input.action === 'rule_set')],
+  ['the coordinator stopped, restart it', calls => some(calls, call => call.tool === 'ask_coordinator' && call.input.mode === 'restart')],
   ['[Jevellan push] W14 waiting on you: PR #88 by an external contributor: build passed, 2 tests failed. Options: merge, redo, close, later', calls => writes(calls).length === 0],
 ];
 

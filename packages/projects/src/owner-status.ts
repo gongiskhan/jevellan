@@ -38,6 +38,8 @@ export function waitingKind(decision: Pick<ProjectDecision, 'deploy' | 'accountI
 
 export type StatusInput = {
   project: { id: string; name: string }; now: Date; settings: ProjectWorkSettings; coordinator: CoordinatorView; coordinatorStalled: boolean;
+  /** Two turns failed in a row: the coordinator waits for the owner (a message or a restart) before it runs again. */
+  coordinatorStopped?: boolean;
   threads: readonly ThreadIndex[]; tasks: readonly ProjectWorkTask[]; goals: readonly ProjectGoal[]; decisions: readonly ProjectDecision[];
   jobs: readonly ProjectJob[]; dailies: readonly ProjectDaily[]; runs: readonly ProjectJobRun[]; windows: readonly ProjectWindow[]; deploys: readonly ProjectDeploy[];
   budgets: ProjectStatusView['budgets']; deviceName: (deviceId: string) => string; deployPaused: boolean;
@@ -144,7 +146,7 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
     return { id: goalIds.get(goal.id)!, internalId: goal.id, title: goal.name, state: goal.state, counts, due };
   });
 
-  const coordinatorState = input.coordinatorStalled ? 'stalled' : input.coordinator.state === 'running' ? 'running' : input.coordinator.state === 'unavailable' ? 'crashed'
+  const coordinatorState = input.coordinatorStalled ? 'stalled' : input.coordinator.state === 'running' ? 'running' : input.coordinator.state === 'unavailable' ? 'crashed' : input.coordinatorStopped ? 'stopped'
     : input.coordinator.state === 'none' ? 'starting' : 'idle';
   const session = input.coordinator.session ?? input.coordinator.planned;
   const deployLine = settings.deploy.jobId || input.deploys.length ? {

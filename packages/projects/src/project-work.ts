@@ -833,6 +833,14 @@ export class ProjectWork {
     this.relayArrived();
   }
   /** Interrupts the running coordinator turn (brief 8.1); its events count as delivered (D33). Nothing to stop before assignment. */
+  /** Whether the coordinator failed two turns in a row and waits for the owner: its local state here, else the status it published. */
+  async coordinatorStopped(projectId: string): Promise<boolean> {
+    await this.#project(projectId);
+    const deviceId = await this.coordinators.deviceOf(projectId); if (deviceId === null) return false;
+    if (deviceId === this.#o.deviceId) return this.coordinators.get(projectId).state().failedTurnsInARow >= 2;
+    const published = (await this.#o.hub.coordinatorStatus(projectId))?.document;
+    return published?.deviceId === deviceId && published.failedTurnsInARow >= 2;
+  }
   async stopCoordinator(projectId: string): Promise<void> { await (await this.#assignedHere(projectId))?.stop(); }
   /** The next coordinator turn starts a fresh session (D77). Before assignment there is no session, and Fresh assigns nothing (D206). */
   async freshCoordinator(projectId: string): Promise<void> { (await this.#assignedHere(projectId))?.fresh(); }

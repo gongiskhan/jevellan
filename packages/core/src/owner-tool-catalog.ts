@@ -22,9 +22,10 @@ export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
   { name: 'activity', single: true, description: 'What happened: a digest for a period (for example overnight), recent events of the coordinator, a thread or a job run, or decisions with their reasons.',
     actions: [read('activity', { target: z.string().min(1).max(40).optional().describe('C, a T id, a J id, or all (default all).'), kind: z.enum(['digest', 'events', 'decisions']).optional(),
       since: z.string().min(1).max(60).optional().describe('ISO time, HH:MM, "N minutes", "N hours", "today" or "last night".'), limit: z.number().int().min(1).max(200).optional(), detail })] },
-  { name: 'ask_coordinator', single: true, description: "Ask the project's coordinator a question (mode ask) or give it an instruction (mode tell). Every 'why' question (why this model, this thread, this landing) and every 'what next' question goes here. Never guess what the coordinator would answer.",
+  { name: 'ask_coordinator', single: true, description: "Ask the project's coordinator a question (mode ask), give it an instruction (mode tell), or restart it after it stopped on failed turns (mode restart; fresh: true also gives it a new session). Every 'why' question (why this model, this thread, this landing) and every 'what next' question goes here. Never guess what the coordinator would answer.",
     actions: [{ name: 'ask', access: 'read', input: z.strictObject({ project, mode: z.literal('ask'), text: text(8000), wait_seconds: z.number().int().min(0).max(600).optional() }) },
-      { name: 'tell', access: 'write', input: z.strictObject({ project, mode: z.literal('tell'), text: text(20000), wait_seconds: z.number().int().min(0).max(600).optional() }) }] },
+      { name: 'tell', access: 'write', input: z.strictObject({ project, mode: z.literal('tell'), text: text(20000), wait_seconds: z.number().int().min(0).max(600).optional() }) },
+      { name: 'restart', access: 'write', input: z.strictObject({ project, mode: z.literal('restart'), fresh: z.boolean().optional().describe('Start the coordinator with a new session instead of resuming its current one.') }) }] },
   { name: 'work', description: 'The task queue: list it, add a task (optionally continuing an existing branch), move a task, cancel one, or inspect one in detail.',
     actions: [read('list', { goal: z.string().min(1).max(200).optional() }),
       write('add', { title: text(120), description: text(20000).optional(), goal: z.string().min(1).max(200).optional(), priority: z.enum(['urgent', 'normal']).optional(),
@@ -90,7 +91,7 @@ export function ownerToolInputSchema(tool: OwnerToolDefinition): Record<string, 
     for (const [key, value] of Object.entries(json.properties ?? {})) if (!(key in properties)) properties[key] = value;
   }
   // The mode is the action here: both values are offered (each action's own schema has only its literal).
-  if (tool.name === 'ask_coordinator') return { type: 'object', properties: { ...properties, mode: { type: 'string', enum: ['ask', 'tell'], description: 'ask: a question the coordinator answers without acting. tell: an instruction it acts on.' } }, required: ['mode', 'text'], additionalProperties: false };
+  if (tool.name === 'ask_coordinator') return { type: 'object', properties: { ...properties, mode: { type: 'string', enum: ['ask', 'tell', 'restart'], description: 'ask: a question the coordinator answers without acting. tell: an instruction it acts on. restart: run a coordinator that stopped after failed turns again (text is not used).' } }, required: ['mode'], additionalProperties: false };
   if (tool.single) return { type: 'object', properties, additionalProperties: false };
   return { type: 'object', properties: { action: { type: 'string', enum: tool.actions.map(action => action.name), description: `One of: ${tool.actions.map(action => `${action.name} (${action.access})`).join(', ')}.` }, ...properties }, required: ['action'], additionalProperties: false };
 }

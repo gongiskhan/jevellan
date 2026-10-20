@@ -47,7 +47,7 @@ export type GoalLine = z.infer<typeof GoalLineSchema>;
 
 /** The whole status of a project at a moment, as the engine orders it; tools render it, the UI reads its parts. */
 export const ProjectStatusViewSchema = z.strictObject({ schema: z.literal('project-status-view-v1'), projectId: IdSchema, project: z.string().min(1).max(200), at: TimestampSchema, timeZone: z.string().min(1).max(80),
-  coordinator: z.strictObject({ state: z.enum(['running', 'idle', 'starting', 'stalled', 'crashed']), model: z.string().max(120).nullable(), effort: EffortSchema.nullable(), account: z.string().max(120).nullable() }),
+  coordinator: z.strictObject({ state: z.enum(['running', 'idle', 'starting', 'stalled', 'crashed', 'stopped']), model: z.string().max(120).nullable(), effort: EffortSchema.nullable(), account: z.string().max(120).nullable() }),
   budgets: z.array(z.strictObject({ label: z.string().max(120), usedPercent: z.number().nonnegative().nullable(), budgetPercent: z.number().int().min(1).max(100) })).max(40),
   deploy: z.strictObject({ mode: z.string().max(40), paused: z.boolean(), undeployed: z.number().int().nonnegative(), message: ShortIdSchema.optional(), health: z.string().max(400).optional() }).nullable(),
   night: z.string().max(400).nullable(), quietHours: z.strictObject({ enabled: z.boolean(), start: z.string().max(5), end: z.string().max(5) }).nullable(),

@@ -58,3 +58,23 @@ test('activity digests the period and thread say and stop refuse what they canno
   expect(await text('thread', { action: 'say', thread: 'T1', text: 'Use the existing fixture.' })).toBe('T1 has not started. Your message is attached to its task and it sees it when it starts.');
   expect(f.app.ownerTools.steeringRecords('project')).toMatchObject([{ thread: 'T1', kind: 'say', text: 'Use the existing fixture.', by: 'bridge' }]);
 });
+
+test('status shows a coordinator stopped after two failed turns, and ask_coordinator restart retries it with or without a fresh session', { timeout: 120_000 }, async () => {
+  f = await projectFixture({ coordinator: true });
+  const failed = () => ({ status: 'failed' as const, error: { kind: 'other' as const, message: 'A journal projection cannot replace earlier entries.' } });
+  f.fake.enqueueTurn(failed, forCoordinator); f.fake.enqueueTurn(failed, forCoordinator);
+  expect(await text('ask_coordinator', { mode: 'restart' })).toMatch(/^ERROR not_stopped: The coordinator is (idle|starting) and not stopped\./u);
+  await text('ask_coordinator', { mode: 'tell', text: 'Plan the release.' });
+  await f.waitFor(() => f!.coordinatorState(), state => state.failedTurnsInARow === 2 && state.state === 'idle');
+  expect((await text('status')).split('\n')[0]).toMatch(/ · coordinator stopped \(/u);
+
+  f.fake.enqueueTurn(async turn => { turn.say('Back on track.'); return { status: 'completed' }; }, forCoordinator);
+  const starts = f.fake.turnStarts.length;
+  expect(await text('ask_coordinator', { mode: 'restart', fresh: true })).toBe('Restarted the coordinator with a fresh session. It retries its queued work now; if it fails again, that arrives as a push.');
+  await f.waitFor(() => f!.coordinatorState(), state => state.failedTurnsInARow === 0 && state.queue.length === 0);
+  const prompt = f.fake.turnStarts.slice(starts).at(-1)?.prompt ?? '';
+  expect(prompt).toContain('Plan the release.');
+  expect(prompt).toContain('The owner restarted the coordinator after it stopped.');
+  expect(f.fake.turnStarts.at(-1)?.resume).toBeUndefined();
+  expect((await text('status')).split('\n')[0]).toMatch(/ · coordinator idle \(/u);
+});
