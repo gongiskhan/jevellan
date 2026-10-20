@@ -1,0 +1,23 @@
+sandbox · coordinator idle (opus-5.5 high, main) · 1 running · 1 landing · 2 queued · 0 waiting on you
+Budgets: main 41% of 90% · second 12% of 90%
+Night: next at 01:00
+Quiet hours: on, 23:00 to 08:00
+
+Goals
+G1 Goal A: 1 running, 1 queued
+G2 Goal B: nothing running
+G3 Goal C: paused
+
+Waiting on you
+Nothing waiting on you.
+
+Running
+J1 job: Full suite · dev-box · 8 min
+T1 Goal A · Harden parser tests · checks running (attempt 1 of 3)
+
+Queued
+T3 Goal A · Review flaky browser test · next
+T4 manual · Bump the PDF library
+
+Landed, not deployed
+T5 Fix receipts rounding · landed as 9f8e7d6 at 13:10

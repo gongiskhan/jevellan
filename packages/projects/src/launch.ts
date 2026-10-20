@@ -196,7 +196,8 @@ export class TurnLauncher {
       await this.#o.accounts.markUsed(account.id);
       grant = this.#o.bridges.issueTools(request.tools);
       // Every value is non-empty: WorkerRun drops empty launch values, and the MCP server env must equal what it keeps.
-      const env: Record<string, string> = { JEVELLAN_STRETCH_TOKEN: grant.token, JEVELLAN_DAEMON_URL: daemonUrl,
+      // The recursion guard (bridge): a session Jevellan starts never sees the owner tools; the forwarder registers none with a role set.
+      const env: Record<string, string> = { JEVELLAN_STRETCH_TOKEN: grant.token, JEVELLAN_DAEMON_URL: daemonUrl, JEVELLAN_ROLE: request.owner.kind === 'coordinator' ? 'coordinator' : 'thread',
         ...(request.memoryMode ? { JEVELLAN_PROJECT_MEMORY_MODE: request.memoryMode } : {}),
         ...(gitIdentity ? { GIT_AUTHOR_NAME: gitIdentity.name, GIT_AUTHOR_EMAIL: gitIdentity.email, GIT_COMMITTER_NAME: gitIdentity.name, GIT_COMMITTER_EMAIL: gitIdentity.email } : {}) };
       const gitEnv = request.owner.kind === 'thread' && request.permissions === 'write'

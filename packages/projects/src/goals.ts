@@ -8,7 +8,9 @@ const refuse = (message: string, status = 409): never => { throw Object.assign(n
 export class ProjectGoals {
   constructor(readonly o: { hub: Pick<ProjectHub, 'goals' | 'goal' | 'putGoal' | 'refill' | 'putRefill'>; tasks: ProjectTasks; redactor: SecretRedactor; now(): number;
     settings(projectId: string): Promise<ProjectWorkSettings>; event(projectId: string, event: CoordinatorEvent): Promise<void>; changed?(projectId: string): void;
-    available(projectId: string): Promise<boolean>; windowOpen?(projectId: string): Promise<boolean> }) {}
+    available(projectId: string): Promise<boolean>; windowOpen?(projectId: string): Promise<boolean>;
+    /** The owner's display id of a goal (bridge), for refusals he reads. */
+    displayId?(projectId: string, goalId: string): string | undefined }) {}
   async list(projectId: string): Promise<ProjectGoal[]> {
     const goals: ProjectGoal[] = []; let after: string | undefined;
     do { const page = await this.o.hub.goals(projectId, after); goals.push(...page.records); after = page.next ?? undefined; } while (after);
@@ -47,6 +49,8 @@ export class ProjectGoals {
   async validate(projectId: string, goalId: string | null, source: ProjectWorkTask['source'], refillEventId?: string): Promise<'draft' | 'queued'> {
     if (goalId === null) { if (source === 'refill') return refuse('A refill task must serve a listed goal.', 400); return 'queued'; }
     const goal = await this.read(projectId, goalId);
+    // A paused or done goal takes no new tasks from the coordinator (bridge); the owner may still add one on purpose.
+    if (goal.state !== 'active' && source !== 'owner') return refuse(`${this.o.displayId?.(projectId, goal.id) ?? `Goal "${goal.name}"`} is ${goal.state}.`);
     if (source === 'refill') {
       if (await this.o.windowOpen?.(projectId)) return refuse('Goals wait for the nightly window to finish.');
       const refill = (await this.o.hub.refill(projectId))?.document, tasks = await this.o.tasks.list(projectId), day = await this.day(projectId);

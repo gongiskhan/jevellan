@@ -8,7 +8,7 @@ import { CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSc
 import { LocalRequestError, localRequest } from './local-request.js';
 import { findExecutable } from './toolchain.js';
 
-export type ThreadCommandOptions = { homes?: Homes; fetcher?: typeof fetch; env?: NodeJS.ProcessEnv };
+export type ThreadCommandOptions = { homes?: Homes; fetcher?: typeof fetch; env?: NodeJS.ProcessEnv; remoteControl?: string };
 type AttachView = z.infer<typeof ThreadAttachViewSchema>;
 type Launch = { executable: string; args: string[]; env: Record<string, string>; cwd: string; label: string };
 
@@ -90,13 +90,14 @@ export async function claudeTakesEffort(executable: string, cwd: string, env: Re
  * `codex resume <id> -m <model> -c model_reasoning_effort="<effort>"`, in the thread's folder, with the account home and authentication
  * variables merged into a minimal environment. Secrets stay in the environment, never in the arguments.
  */
-async function prepare(answer: unknown, base: NodeJS.ProcessEnv, homes: Homes): Promise<Launch | string> {
+async function prepare(answer: unknown, base: NodeJS.ProcessEnv, homes: Homes, remoteControl?: string): Promise<Launch | string> {
   const parsed = ThreadAttachViewSchema.safeParse(answer); if (!parsed.success) return UNUSABLE;
   const view = parsed.data, home = view.env.HOME, label = LABELS[view.runtime];
   if (!home || !isAbsolute(home) || view.env[view.runtime === 'claude' ? 'CLAUDE_CONFIG_DIR' : 'CODEX_HOME'] !== home || view.env[view.runtime === 'claude' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR'] !== undefined) return UNUSABLE;
   const launchKeys = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE'];
   const auth = Object.fromEntries(Object.entries(view.env).filter(([key]) => !HOME_KEYS.includes(key) && !launchKeys.includes(key)));
-  const launch = Object.fromEntries(Object.entries(view.env).filter(([key]) => launchKeys.includes(key)));
+  // The recursion guard (bridge): a taken-over thread never sees the owner tools either.
+  const launch = { ...Object.fromEntries(Object.entries(view.env).filter(([key]) => launchKeys.includes(key))), JEVELLAN_ROLE: 'thread' };
   let env: Record<string, string>; try { env = minimalEnvironment(view.runtime, home, auth, launch, base); } catch { return UNUSABLE; }
   if (view.runtime === 'claude' && view.integration) env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE = String(view.integration.compactAtPercent);
   const executable = findExecutable(view.runtime, env.PATH ?? '/usr/bin:/bin');
@@ -107,8 +108,11 @@ async function prepare(answer: unknown, base: NodeJS.ProcessEnv, homes: Homes): 
   const rootInstructions = view.runtime === 'codex' ? projectInstructionFile(view.cwd) : null;
   const hooks = integration ? { PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: integration.safetyCommand, timeout: 10 }] }] } : undefined;
   const mcp = integration ? { jevellan: { command: integration.bridgeCommand, args: integration.bridgeArgs } } : undefined;
+  // Takeover from the bridge: remote control needs the folder's interactive login, which a long-lived token would override.
+  const remote = view.runtime === 'claude' && remoteControl && existsSync(join(home, '.credentials.json'));
+  if (remote) { delete env.CLAUDE_CODE_OAUTH_TOKEN; delete env.ANTHROPIC_API_KEY; }
   const args = view.runtime === 'claude'
-    ? ['--resume', view.nativeSessionId, '--model', view.model, ...(await claudeTakesEffort(executable, view.cwd, minimalEnvironment('claude', home, {}, {}, base)) ? ['--effort', view.effort] : []),
+    ? ['--resume', view.nativeSessionId, ...(remote ? ['--remote-control', remoteControl!] : []), '--model', view.model, ...(await claudeTakesEffort(executable, view.cwd, minimalEnvironment('claude', home, {}, {}, base)) ? ['--effort', view.effort] : []),
       '--settings', JSON.stringify({ ...CLAUDE_FLAG_SETTINGS, ...(hooks ? { hooks, skipDangerousModePermissionPrompt: true } : {}) }), ...(mcp ? ['--mcp-config', JSON.stringify({ mcpServers: mcp }), '--permission-mode', 'bypassPermissions'] : [])]
     : ['resume', view.nativeSessionId, '-m', view.model, '-c', `model_reasoning_effort="${view.effort}"`, ...(integration ? ['-c', 'approval_policy="never"', '-c', 'sandbox_mode="danger-full-access"',
       '-c', 'features.hooks=true', '-c', `hooks=${toml(hooks)}`, '-c', `mcp_servers.jevellan.command=${JSON.stringify(integration.bridgeCommand)}`, '-c', `mcp_servers.jevellan.args=${JSON.stringify(integration.bridgeArgs)}`,
@@ -170,7 +174,7 @@ export async function attachThread(threadId: string, options: ThreadCommandOptio
     const attached = await call(homes, options, threadId, 'attach', { schema: 'thread-attach-request-v1' });
     if (!attached.ok) { console.error(attached.message); return 1; }
     let launch: Launch | string;
-    try { launch = await prepare(attached.value, options.env ?? process.env, homes); }
+    try { launch = await prepare(attached.value, options.env ?? process.env, homes, options.remoteControl); }
     catch (error) { launch = sentence(error); }
     const early = hold.received();
     if (typeof launch === 'string' || early) {

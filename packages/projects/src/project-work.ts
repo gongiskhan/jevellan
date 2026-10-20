@@ -2,7 +2,7 @@ import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction } fr
 import { ProjectCleanupInventory } from './cleanup.js';
 import { ProjectDeployService } from './deploy.js';
 import { setupProposalId } from './setup.js';
-import { SETUP_ALREADY_PROPOSED } from './copy.js';
+import { SETUP_ALREADY_PROPOSED, STEERING_PREFIX } from './copy.js';
 import { ProjectSetupProposalSchema, SetupProposeInputSchema, SetupProposalViewSchema, SetupActionRequestSchema, ProjectRunRequestSchema, projectSetupPlan } from '@jevellan/core';
 import { ProjectNotifications } from './notifications.js';
 import { ProjectUsage } from './usage.js';
@@ -97,6 +97,12 @@ export const DEFAULT_PROJECT_TIMERS: ProjectTimers = {
   mainLeaseRetryMs: 20_000, fallbackCheckMs: 60_000, now: Date.now,
 };
 export type ProjectWorkOptions = {
+  /** Jev control (bridge) for the l-v1 landing route. */
+  landingJev?(projectId: string): Promise<import('./landing.js').LandingJev | undefined>;
+  /** The owner's display id of an object (bridge short ids), for refusals he reads. */
+  displayId?(projectId: string, prefix: 'G' | 'T', internalId: string): string | undefined;
+  /** Missed nights (bridge): decides whether a window this late still opens as a catch-up. */
+  nightGuard?(projectId: string, date: string, latenessMs: number, items: readonly string[]): Promise<{ open: true } | { open: false; outcome: string }>;
   /** Why this device may not start new work now (B5: it runs a newer version than its hub). */
   deployHealth?(id: string, checks: import('@jevellan/core').ProjectHealthCheck[], trigger: import('@jevellan/core').ProjectHealthRun['trigger'], deployId: string): Promise<import('@jevellan/core').ProjectHealthRun[]>;
   workRefusal?(): string | undefined;
@@ -314,7 +320,7 @@ export class ProjectWork {
       },
       baseBranch: (project) => worktrees.baseBranch(worktrees.repository(project)), enterOperation: o.enterOperation,
       timers: { startMs: timers.coordinatorStartMs, retryMs: timers.coordinatorRetryMs, turnTimeoutMs: timers.coordinatorTurnTimeoutMs }, now });
-    const delivery = new LocalDelivery({ deviceId: o.deviceId, coordinators: this.coordinators, store: this.store, outbox: () => this.outbox, now,
+    const delivery = this.#delivery = new LocalDelivery({ deviceId: o.deviceId, coordinators: this.coordinators, store: this.store, outbox: () => this.outbox, now,
       command: (projectId, threadId, command) => this.threads.command(projectId, threadId, command) });
     this.tasks = new ProjectTasks({ hub: o.hub, deviceId: o.deviceId, redactor: o.redactor, now,
       settings: projectId => this.admission.settings(projectId), validateBranch: async (id, branch) => validateBranch(await this.#project(id), branch),
@@ -323,7 +329,7 @@ export class ProjectWork {
       cancelThread: (task, reason, owner) => this.threads.stop(task.projectId, task.threadId!, reason, owner),
       reviewed: async (task, outcome, note) => delivery.toCoordinator(task.projectId, { schema: 'coordinator-event-v1', kind: 'task-reviewed', taskId: task.id, title: task.title, outcome, ...(note ? { note } : {}),
         id: `cev_${task.id}_${task.revision}`, at: task.updatedAt }) });
-    this.goals = new ProjectGoals({ hub: o.hub, tasks: this.tasks, redactor: o.redactor, now, settings: projectId => this.admission.settings(projectId),
+    this.goals = new ProjectGoals({ hub: o.hub, tasks: this.tasks, redactor: o.redactor, now, settings: projectId => this.admission.settings(projectId), ...(o.displayId ? { displayId: (projectId, goalId) => o.displayId!(projectId, 'G', goalId) } : {}),
       event: (projectId, event) => delivery.toCoordinator(projectId, event), changed: () => { void this.#sweepTasks(true).catch(() => undefined); },
       windowOpen: projectId => this.daily.mergesHeld(projectId),
       available: async projectId => {
@@ -405,7 +411,7 @@ export class ProjectWork {
       windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
     this.daily = new ProjectDailyWork({ landing: (threadId, held) => { if (!this.store.get(threadId)) return; if (held) this.store.setIndexFields(threadId, { landing: 'held' }); else if (this.store.local(threadId).landing === 'held') this.store.setIndexFields(threadId, { landing: undefined }); }, fixCutoffMinutes: nightlyFixMinutes(o.homes), hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
       memoryDream: async (id, requestId) => { if (!this.memoryProgramme) throw new Error('The memory dream runs on the hub.'); return this.memoryProgramme.runNow(await this.#project(id), requestId); },
-      memoryDreamLine: id => this.memoryProgramme?.line(id),
+      memoryDreamLine: id => this.memoryProgramme?.line(id), ...(o.nightGuard ? { nightGuard: o.nightGuard } : {}),
       validateGoal: async (id, goalId) => { if (goalId) await this.goals.read(id, goalId); }, event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
     this.memoryProgramme = o.hubMemory ? new ProjectMemoryProgramme({ sessionEnd: evidence => this.ledgers.sessionEnd(evidence), store: o.hubMemory, captures: this.captures, hub: o.hub, launcher, placement, git, daily: this.daily,
       deviceId: o.deviceId, redactor: o.redactor, accounts: o.accounts, settings: id => this.admission.settings(id), repository: project => worktrees.repository(project), baseBranch: repo => worktrees.baseBranch(repo),
@@ -439,7 +445,7 @@ export class ProjectWork {
     const verification = new PullRequestVerification({ projectEnvironment, sessionEnd: evidence => this.ledgers.sessionEnd(evidence), hub: o.hub, homes: o.homes, git, launcher, deviceId: o.deviceId, deviceName: o.deviceName, facts, redactor: o.redactor, now, settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, timeoutMs: timers.testTimeoutMs,
       memory: project => o.memory.project(project, o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'verification' }) });
     publication.bindBackup(id => this.store.local(id), (id, pushedCommit) => this.store.updateLocal(id, local => ({ ...local, pushedCommit })));
-    this.landings = new ThreadLandingService({ homes: o.homes, git, github, publication, hub: o.hub, store: this.store, verification,
+    this.landings = new ThreadLandingService({ ...(o.landingJev ? { jev: o.landingJev } : {}),  homes: o.homes, git, github, publication, hub: o.hub, store: this.store, verification,
       ...(o.leases ? { leases: o.leases } : {}), deviceId: o.deviceId, redactor: o.redactor, now, settings: id => this.admission.settings(id), configuration: o.settings,
       ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}), projectEnvironment, assertLanding: (id, tid) => this.daily.assertMerge(id, tid),
       retry: async (_projectId, threadId) => { const runner = this.threads.runner(threadId); if (runner && !runner.busy) await runner.requestTurn('publish', 'Retry the checked landing.'); } });
@@ -981,6 +987,17 @@ export class ProjectWork {
     return this.threads.stop(projectId, threadId, input?.reason || STOPPED_BY_YOU, true);
   }
   discardThread(projectId: string, threadId: string): Promise<void> { return this.threads.discard(projectId, threadId); }
+  /** A steering line for the coordinator's next turn (bridge): the owner spoke to or took over one of its threads. */
+  steeringNote(projectId: string, threadId: string, text: string): Promise<void> {
+    return this.#delivery!.toCoordinator(projectId, { schema: 'coordinator-event-v1', kind: 'thread-user-message', id: newId('cev'), at: new Date().toISOString(), threadId, text: `${STEERING_PREFIX}${text}`.slice(0, 20000) });
+  }
+  #delivery: LocalDelivery | undefined;
+  /** Takeover (bridge): interrupt a thread on this device at its next safe point so it rests; false when it was not working. */
+  pauseThread(projectId: string, threadId: string): boolean {
+    this.#thread(projectId, threadId); const runner = this.threads.runner(threadId);
+    if (!runner) throw Object.assign(new Error('This thread runs on another device. Take it over there.'), { status: 409 });
+    return runner.pause();
+  }
   allowTurns(projectId: string, threadId: string): Promise<void> { return this.threads.allowTurns(projectId, threadId); }
   /**
    * Override from the thread page (brief 10, 12.3): from the next turn on this device, or a restart whose new thread starts on

@@ -13,6 +13,8 @@ import { attachThread, detachThread } from './thread-attach.js';
 import { serveAgentMcp } from './agent-mcp.js';
 import { hubCommand } from './hub-command.js';
 import { journalCommand } from './journal-command.js';
+import { serveOwnerMcp } from './owner-mcp.js';
+import { attachCommand, bridgeCommand, callCommand, loginCommand, remoteCommand, secretCommand, hookCommand, pluginCommand, pluginDoctorLine, statuslineCommand, watchCommand } from './owner-commands.js';
 
 function printInstallation(result: Awaited<ReturnType<Installer['install']>>) {
   if (result.changedPort) console.log(`The default port was occupied. Jevellan uses ${result.port}.`);
@@ -41,18 +43,33 @@ export async function main(args: string[], options: { installer?: () => Installe
   if (args[0] === 'doctor') {
     if (args.length !== 1) throw new Error('Usage: jevellan doctor');
     const report = await (options.doctor ?? doctor)(); doctorLines(report).forEach(line => console.log(line));
+    if (!options.doctor) console.log(await pluginDoctorLine());
     if (report.checks.some(check => check.status !== 'ok')) process.exitCode = 1;
     return;
   }
   if (args[0] === 'thread') {
     // Terminal takeover (brief phase 7, D47): every outcome is one printed sentence and an exit code, never a stack trace.
     const id = IdSchema.safeParse(args[2]);
-    if (args.length !== 3 || (args[1] !== 'attach' && args[1] !== 'detach')) { console.error('Usage: jevellan thread attach threadId, or jevellan thread detach threadId'); process.exitCode = 1; return; }
+    // `--remote-control <name>` (bridge takeover) also shows the resumed session in the Claude app.
+    const remoteControl = args[1] === 'attach' && args[3] === '--remote-control' && args[4] ? args[4] : undefined;
+    if ((args.length !== 3 && !(remoteControl && args.length === 5)) || (args[1] !== 'attach' && args[1] !== 'detach')) { console.error('Usage: jevellan thread attach threadId [--remote-control name], or jevellan thread detach threadId'); process.exitCode = 1; return; }
     if (!id.success) { console.error('That is not a thread id. Copy the command from the thread page.'); process.exitCode = 1; return; }
-    try { process.exitCode = await (args[1] === 'attach' ? options.attach ?? attachThread : options.detach ?? detachThread)(id.data); }
+    try { process.exitCode = await (args[1] === 'attach' ? options.attach ?? attachThread : options.detach ?? detachThread)(id.data, remoteControl ? { remoteControl } : {}); }
     catch (error) { console.error(error instanceof Error && error.message ? error.message : 'The command could not complete.'); process.exitCode = 1; }
     return;
   }
+  // The bridge (owner tools): the plugin's forwarder and the terminal commands over the same tool route.
+  if (args[0] === 'mcp') { await serveOwnerMcp(); return; }
+  if (args[0] === 'call') { process.exitCode = await callCommand(args.slice(1)); return; }
+  if (args[0] === 'statusline') { process.exitCode = await statuslineCommand(args.slice(1)); return; }
+  if (args[0] === 'watch') { process.exitCode = await watchCommand(args.slice(1)); return; }
+  if (args[0] === 'attach') { process.exitCode = attachCommand(args.slice(1)); return; }
+  if (args[0] === 'plugin') { process.exitCode = pluginCommand(args.slice(1)); return; }
+  if (args[0] === 'hook') { process.exitCode = await hookCommand(args.slice(1)); return; }
+  if (args[0] === 'bridge') { process.exitCode = await bridgeCommand(args.slice(1)); return; }
+  if (args[0] === 'login') { process.exitCode = await loginCommand(args.slice(1)); return; }
+  if (args[0] === 'secret') { process.exitCode = await secretCommand(args.slice(1)); return; }
+  if (args[0] === 'remote') { process.exitCode = await remoteCommand(args.slice(1)); return; }
   if (args[0] === 'mcp-bridge') { await serveMcpBridge(); return; }
   if (args[0] === 'mcp-server') { if (args.length !== 1) throw new Error('Usage: jevellan mcp-server (connection details come from the environment).'); await (options.mcpServer ?? serveAgentMcp)(); return; }
   if (args[0] === 'memory-hook') { await serveMemoryHook(); return; }

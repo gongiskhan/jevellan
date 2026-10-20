@@ -1022,68 +1022,68 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "0.6.0 prerequisite complete. Freeze one fetched bridge commit into main, then gate, publish and install0.7.0. Remaining parity, UI, intake and engine expansion are planned separately for0.7.1; historical branch evidence is not installed acceptance.",
+    "why": "Frozen source moves Overview grouping and owner-facing services into the engine. Remaining UI logic and component-row parity remain planned0.7.1; no complete migration claim.",
     "status": "planned"
   },
   {
     "id": "br-tools",
     "title": "Owner tool parity",
-    "why": "0.6.0 prerequisite complete. Freeze one fetched bridge commit into main, then gate, publish and install0.7.0. Remaining parity, UI, intake and engine expansion are planned separately for0.7.1; historical branch evidence is not installed acceptance.",
-    "status": "planned"
+    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
+    "status": "in-progress"
   },
   {
     "id": "br-plugin",
     "title": "Generated plugin and terminal clients",
-    "why": "0.6.0 prerequisite complete. Freeze one fetched bridge commit into main, then gate, publish and install0.7.0. Remaining parity, UI, intake and engine expansion are planned separately for0.7.1; historical branch evidence is not installed acceptance.",
-    "status": "planned"
+    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
+    "status": "in-progress"
   },
   {
     "id": "br-bridge",
     "title": "Bridge and durable push",
-    "why": "0.6.0 prerequisite complete. Freeze one fetched bridge commit into main, then gate, publish and install0.7.0. Remaining parity, UI, intake and engine expansion are planned separately for0.7.1; historical branch evidence is not installed acceptance.",
-    "status": "planned"
+    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
+    "status": "in-progress"
   },
   {
     "id": "br-jobs",
     "title": "Jobs, missed nights and external intake",
-    "why": "0.6.0 prerequisite complete. Freeze one fetched bridge commit into main, then gate, publish and install0.7.0. Remaining parity, UI, intake and engine expansion are planned separately for0.7.1; historical branch evidence is not installed acceptance.",
-    "status": "planned"
+    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
+    "status": "in-progress"
   },
   {
     "id": "br-goals",
     "title": "Goals and labels",
-    "why": "0.6.0 prerequisite complete. Freeze one fetched bridge commit into main, then gate, publish and install0.7.0. Remaining parity, UI, intake and engine expansion are planned separately for0.7.1; historical branch evidence is not installed acceptance.",
-    "status": "planned"
+    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
+    "status": "in-progress"
   },
   {
     "id": "br-takeover",
     "title": "Thread takeover and hold continuity",
-    "why": "0.6.0 prerequisite complete. Freeze one fetched bridge commit into main, then gate, publish and install0.7.0. Remaining parity, UI, intake and engine expansion are planned separately for0.7.1; historical branch evidence is not installed acceptance.",
-    "status": "planned"
+    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
+    "status": "in-progress"
   },
   {
     "id": "br-jev",
     "title": "Complete Jev rules, prompts and replay",
-    "why": "0.6.0 prerequisite complete. Freeze one fetched bridge commit into main, then gate, publish and install0.7.0. Remaining parity, UI, intake and engine expansion are planned separately for0.7.1; historical branch evidence is not installed acceptance.",
-    "status": "planned"
+    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
+    "status": "in-progress"
   },
   {
     "id": "br-accounts",
     "title": "Managed account login and secrets",
-    "why": "0.6.0 prerequisite complete. Freeze one fetched bridge commit into main, then gate, publish and install0.7.0. Remaining parity, UI, intake and engine expansion are planned separately for0.7.1; historical branch evidence is not installed acceptance.",
-    "status": "planned"
+    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
+    "status": "in-progress"
   },
   {
     "id": "br-remote",
     "title": "Remote MCP",
-    "why": "0.6.0 prerequisite complete. Freeze one fetched bridge commit into main, then gate, publish and install0.7.0. Remaining parity, UI, intake and engine expansion are planned separately for0.7.1; historical branch evidence is not installed acceptance.",
-    "status": "planned"
+    "why": "Working frozen bridge source is merged and its revised gate is accepted; publication/install/live authentication are pending. Expanded row parity, intake, prompt/placement wiring, member streams and remaining remote/live coverage stay planned0.7.1.",
+    "status": "in-progress"
   },
   {
     "id": "br-release",
     "title": "Bridge gate, 0.7.0 and installation",
-    "why": "0.6.0 prerequisite complete. Freeze one fetched bridge commit into main, then gate, publish and install0.7.0. Remaining parity, UI, intake and engine expansion are planned separately for0.7.1; historical branch evidence is not installed acceptance.",
-    "status": "planned"
+    "why": "Frozenac98492f merged into main;0.7.0typecheck/lint/build and5desktop-light core smokes pass. Full backend2602selected:2584initial passes,3harness-induced permission/recovery failures cleared by exact once-reruns,15notrun. Original counts retained; publication/install/managed bridge proof pending.",
+    "status": "in-progress"
   },
   {
     "id": "br-ui-071",

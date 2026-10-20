@@ -58,7 +58,9 @@ export function projectRoute(path: string): ProjectRoute | null {
 
 export type ProjectTab = 'chat' | 'queue' | 'waiting' | 'threads' | 'pull-requests' | 'terminal' | 'overview' | 'routines';
 /** The tab below 840 px: Overview when something needs the owner, else Chat. Computed once, after the first view load. */
-export function defaultTab(view: Pick<ProjectWorkView, 'decisions'> & Partial<Pick<ProjectWorkView, 'threads'>>, drafts = 0): ProjectTab {
+export function defaultTab(view: Pick<ProjectWorkView, 'decisions'> & Partial<Pick<ProjectWorkView, 'threads' | 'needsOwner'>>, drafts = 0): ProjectTab {
+  // The engine counts what needs the owner (bridge phase 2); the local count is kept only for views from an older hub.
+  if (view.needsOwner !== undefined) return view.needsOwner ? 'overview' : 'chat';
   return view.decisions.open.length + drafts + (view.threads?.filter(thread => boardGroup(thread) === 'waiting').length ?? 0) ? 'overview' : 'chat';
 }
 
@@ -89,13 +91,14 @@ export function dotClass(state: ThreadState): string {
 }
 
 /** The sidebar row dot: a working coordinator pulses, open questions show solid magenta, else a muted outline. */
-export function projectDot(entry: Pick<ProjectWorkListView['projects'][number], 'waiting' | 'coordinator'>): string {
-  return dotClass(entry.coordinator.state === 'running' ? 'running' : entry.waiting ? 'waiting-for-you' : 'idle');
+export function projectDot(entry: Pick<ProjectWorkListView['projects'][number], 'waiting' | 'coordinator' | 'attention'>): string {
+  return dotClass(entry.attention ?? (entry.coordinator.state === 'running' ? 'running' : entry.waiting ? 'waiting-for-you' : 'idle'));
 }
 
 /** Sidebar order: by name, so rows never move while their counts change. */
 export function sidebarProjects(view: ProjectWorkListView): ProjectWorkListView['projects'] {
-  return [...view.projects].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.projectId.localeCompare(b.projectId));
+  // The engine sends rows in sidebar order (bridge phase 2).
+  return view.projects;
 }
 
 /** The coordinator chip (12.2); `none` (not assigned yet) reads Idle. */

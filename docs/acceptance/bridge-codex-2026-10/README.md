@@ -78,3 +78,15 @@ The prescribed sequence involving the ERP check, coordinator handoff, preset 3 a
 21. **Setup migration:** an older preset's goal name can conflict with its stable create-request ID before the rename migration runs. A revision-checked edit preserves the existing identifier and history. Automating that ordering and its regression is planned for 0.7.1; no receipt or goal history was reset.
 
 The 0.6.0 phase is complete before the owner deadline. Next is one fetch of the bridge branch, freezing that exact commit and merging it into main. Later bridge commits belong to a later merge.
+
+### Frozen 0.7.0 source and revised gate
+
+22. **Frozen merge:** one fetch at 2026-10-20T07:46:49Z selected `ac98492fe78ea0ecf583e716ab50c1206997f571`, the same commit read during orientation. It merged cleanly into main on `f847881f`. The branch was neither checked out nor pushed, and later commits will not be chased. The latest owner instruction replaces the older bridge-to-main push procedure. All workspace manifests, internal references, the lockfile and core version are now 0.7.0.
+
+Simulated gate: typecheck, lint and the production web build pass. The complete backend run selected 2,602 tests: **2,584 passed, three failed, 15 not run**. All three exact failures passed on one corrected-harness rerun each, with exactly one executed test per rerun. The backend gate is accepted under the owner's one-rerun rule; this is not an unqualified claim that the original full run had zero failures. Thirteen model-eval cases and the full bridge Journey B were not enabled; the generated Node20 sandbox case lacks its documented runtime. None is counted as passed. Installed bridge status/push proof remains separate.
+
+23. **Reporter and harness corrections:** the first full attempt's `/dev/stdout` JSON ended with EPIPE and is invalid; its partial header is never used as a pass. A regular private output file produces a complete report and is filtered before evidence reads, then removed. The first regular-file wrapper incorrectly applied `umask077` to the whole suite, changing executable bits and command-recovery behavior. The corrected wrapper preserves inherited `umask0002` and precreates only the private report at0600. Product source, assertions and timeouts were unchanged. The three exact permission/recovery cases passed once after that correction. Both fixture-close cases also passed their one file rerun and the complete regular-file run.
+
+Desktop-light rewired-screen smokes: **5 selected, 5 passed, zero skipped**, covering Overview, thread list, thread page, deploy message and settings save. Five isolated fixture projects ran with five workers after the backend job; screenshot bytes were retained immediately. Only two existing web views changed, with no new screen, so the owner plan requires no new-screen vision check. The four-layout matrix and expanded parity remain planned0.7.1.
+
+Publication, installation and managed interactive bridge authentication are pending for0.7.0. The single closing review remains after readiness.

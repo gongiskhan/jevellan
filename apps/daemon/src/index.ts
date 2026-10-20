@@ -24,6 +24,8 @@ export function createDaemon(options: { application?: Application; diagnostics?:
     try {
       const url = new URL(request.url ?? '/', 'http://127.0.0.1');
       if (url.pathname === '/mcp' && options.application) { await handleAgentMcp(options.application, request, response, options); return; }
+      // The remote owner endpoint answers only for its configured hostname, which only the tunnel serves (bridge, remote MCP).
+      if (options.application?.ownerRemote?.owns(request, url)) { await options.application.ownerRemote.handle(request, response, url); return; }
       // Local control (doctor, terminal takeover) is authorized by the installation control file, before any browser rule.
       if (url.pathname.startsWith('/api/local/')) { await handleLocalApi(options.application, options.diagnostics, request, response, url); return; }
       if (url.pathname === '/api/health' && request.method === 'GET') {

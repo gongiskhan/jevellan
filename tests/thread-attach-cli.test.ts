@@ -121,7 +121,7 @@ test('a Claude thread is refused while it works, then resumes in the terminal wi
   // The flag settings keep the account home's transcripts past the CLI's 30-day retention (P8 review R-T1).
   claudeIntegration(run, stored);
   expect(run.cwd).toBe(realpathSync(f.thread(threadId).cwd));
-  expect(run.envKeys).toEqual(['CLAUDE_AUTOCOMPACT_PCT_OVERRIDE', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CONFIG_DIR', 'HOME', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'JEVELLAN_STRETCH_TOKEN', 'LANG', 'PATH', 'TERM', 'TMPDIR']);
+  expect(run.envKeys).toEqual(['CLAUDE_AUTOCOMPACT_PCT_OVERRIDE', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CONFIG_DIR', 'HOME', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'JEVELLAN_ROLE', 'JEVELLAN_STRETCH_TOKEN', 'LANG', 'PATH', 'TERM', 'TMPDIR']);
   expect(run.authDigest).toBe(createHash('sha256').update(secret).digest('hex'));
   expect(run.argv!.some((arg) => arg.includes(secret) || arg.includes(CANARY))).toBe(false);
   // HOME and CLAUDE_CONFIG_DIR are the account home: the terminal's session is written there.
@@ -168,7 +168,7 @@ test('a Codex thread resumes with its effort as a configuration override, and SI
   const first = jevellan(f, ['thread', 'attach', threadId], { path });
   const run = await cli.started(1);
   codexIntegration(run, stored);
-  expect(run.envKeys).toEqual(['CODEX_HOME', 'HOME', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'JEVELLAN_STRETCH_TOKEN', 'LANG', 'PATH', 'TERM', 'TMPDIR']); expect(run.authDigest).toBeUndefined();
+  expect(run.envKeys).toEqual(['CODEX_HOME', 'HOME', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'JEVELLAN_ROLE', 'JEVELLAN_STRETCH_TOKEN', 'LANG', 'PATH', 'TERM', 'TMPDIR']); expect(run.authDigest).toBeUndefined();
   expect(cli.records().some((record) => record.kind === 'help')).toBe(false);
   expect(fakeNativeSessionFile('codex', f.homes.at('homes', 'codex', 'acc_codex'), run.sessionId!)).toBeTruthy();
   // SIGTERM to the command alone is forwarded once; the native CLI ends by it, so the command exits 128 + 15 after detaching.
@@ -251,8 +251,8 @@ test('the command prints the daemon refusals, hands back a thread it cannot resu
   };
 
   // 1. Usage and ids are checked before anything is sent; unknown threads and threads on another device get the daemon's sentence.
-  await refused(['thread', 'attach'], 'Usage: jevellan thread attach threadId, or jevellan thread detach threadId');
-  await refused(['thread', 'leave', 'thread_x'], 'Usage: jevellan thread attach threadId, or jevellan thread detach threadId');
+  await refused(['thread', 'attach'], 'Usage: jevellan thread attach threadId [--remote-control name], or jevellan thread detach threadId');
+  await refused(['thread', 'leave', 'thread_x'], 'Usage: jevellan thread attach threadId [--remote-control name], or jevellan thread detach threadId');
   await refused(['thread', 'attach', '../thread'], 'That is not a thread id. Copy the command from the thread page.');
   await refused(['thread', 'attach', 'thread_missing'], THREAD_NOT_FOUND);
   const at = new Date().toISOString();

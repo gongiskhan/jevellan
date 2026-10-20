@@ -6,6 +6,7 @@ import {
   type ThreadReport, type ThreadView,
 } from '../packages/core/dist/index.js';
 import * as server from '../packages/projects/dist/copy.js';
+import { sidebarOrder } from '../packages/projects/dist/views.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import { chatProposalIds, chatProposalGroups } from '../apps/web/src/project-work-model.js';
 import {
@@ -135,8 +136,9 @@ test('dots follow D54 and the sidebar dot pulses only for a working coordinator'
 test('sidebar rows sort by name without regard to case', () => {
   const row = (projectId: string, name: string) => ({ projectId, name, waiting: 0, running: 0, inReview: 0, coordinator: { deviceId: null, state: 'none' as const } });
   const view = ProjectWorkListViewSchema.parse({ schema: 'project-work-list-view-v1', projects: [row('c', 'zeta'), row('b', 'Alpha'), row('a', 'beta'), row('d', 'alpha')] });
-  expect(sidebarProjects(view).map((entry) => entry.projectId)).toEqual(['b', 'd', 'a', 'c']);
-  expect(view.projects.map((entry) => entry.projectId)).toEqual(['c', 'b', 'a', 'd']);
+  // The engine orders the rows (bridge phase 2); the page shows them as they arrive.
+  expect(sidebarOrder(view.projects).map((entry) => entry.projectId)).toEqual(['b', 'd', 'a', 'c']);
+  expect(sidebarProjects(view).map((entry) => entry.projectId)).toEqual(['c', 'b', 'a', 'd']);
 });
 
 test('coordinator chip labels', () => {

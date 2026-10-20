@@ -6,6 +6,7 @@ import { ProjectMemoryRequestSchema, DeviceSettingsRequestSchema, DeviceSettings
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { AccountHubRequestSchema, ConsumeSwitchSchema, DeviceSwitchInputSchema, EmptySchema, MeshSessionInputSchema, MeshSessionResultSchema, PassphraseInputSchema, PeerSessionInputSchema, ProjectHubCollectionSchema, ProjectHubRequestSchema, collectionOf, isProjectHubRead } from '@jevellan/core';
 import { HubAccounts, HubCheckoutStore, HubIndexes, HubPublicationLeases, sessionCookie } from '@jevellan/mesh';
+import { OwnerToolForwardSchema } from '@jevellan/core';
 import type { Application } from './application.js';
 import { json, requestBody } from './http.js';
 import { SharedStateRequestSchema, boundedRedaction } from '@jevellan/core';
@@ -40,6 +41,11 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
   if (path === '/hub/mesh/health' && method === 'POST') {
     const release = app.lifecycle.enter({ kind: 'request' });
     try { const result = await app.projectHealthRequest(ProjectHealthRequestSchema.parse(await requestBody(request))); app.devices.authenticate(authorization!.slice(7)); send(result); return true; }
+    finally { release(); }
+  }
+  if (path === '/hub/mesh/owner-tools' && method === 'POST') {
+    const input = OwnerToolForwardSchema.parse(await requestBody(request)); const release = app.lifecycle.enter({ kind: 'request' });
+    try { const result = await app.ownerTools.call(input.name, { ...input.request, deviceId: device.id }); app.devices.authenticate(authorization!.slice(7)); send(result); return true; }
     finally { release(); }
   }
   if (path === '/hub/mesh/journal' && method === 'POST') {

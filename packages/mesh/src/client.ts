@@ -122,6 +122,11 @@ export class MemberHubClient {
     const { ProjectJournalRequestSchema, ProjectJournalResultSchema } = await import('@jevellan/core');
     return this.#request('journal', ProjectJournalResultSchema, ProjectJournalRequestSchema.parse(input), 30000);
   }
+  /** Owner tools run on the state point (bridge): a member forwards the call with its device credential. */
+  async ownerTool(input: unknown) {
+    const { OwnerToolForwardSchema, OwnerToolResultSchema } = await import('@jevellan/core');
+    return this.#request('owner-tools', OwnerToolResultSchema, OwnerToolForwardSchema.parse(input), 16 * 60_000);
+  }
   terminals(input: unknown) { return this.#request('terminals', TerminalHubResultSchema, TerminalHubRequestSchema.parse(input), 20_000); }
   readonly #transport: HubTransport;
   readonly deviceId: string;

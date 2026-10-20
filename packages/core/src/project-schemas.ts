@@ -492,7 +492,9 @@ export function parseProjectLedgerData<T extends ProjectLedgerEventType>(type: T
 const CoordinatorStateNameSchema = z.enum(['idle', 'running', 'unavailable', 'offline', 'none']);
 export const ProjectWorkListViewSchema = z.strictObject({ schema: z.literal('project-work-list-view-v1'),
   projects: z.array(z.strictObject({ projectId: IdSchema, name: text, status: z.enum(['active', 'paused', 'archived']).optional(), waiting: count, running: count, inReview: count,
-    coordinator: z.strictObject({ deviceId: IdSchema.nullable(), state: CoordinatorStateNameSchema }) })) });
+    coordinator: z.strictObject({ deviceId: IdSchema.nullable(), state: CoordinatorStateNameSchema }),
+    // bridge phase 2: what the sidebar dot shows, decided by the engine (the rows also arrive in display order).
+    attention: z.enum(['running', 'waiting-for-you', 'idle']).optional() })) });
 export type ProjectWorkListView = z.infer<typeof ProjectWorkListViewSchema>;
 export const CoordinatorViewSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), state: CoordinatorStateNameSchema,
   unavailableReason: z.string().optional(), deviceId: IdSchema.nullable(), deviceName: z.string().nullable(), online: z.boolean(),
@@ -518,7 +520,11 @@ export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project
   // The placement phase gates (D88) this device applies, so the interface disables what placement would refuse (D221).
   gates: z.strictObject({ mainIsolation: z.boolean(), remoteDevices: z.boolean() }),
   // phase 5: every roster device that is not revoked, in roster order, so New thread and Override disable what placement refuses (D281)
-  devices: z.array(ProjectDeviceSetupSchema).optional() });
+  devices: z.array(ProjectDeviceSetupSchema).optional(),
+  // bridge phase 2: the Overview's thread groups and their order, decided by the engine; `at` lets the page page Resolved by age.
+  // bridge phase 2: how many things need the owner (open questions, proposed tasks, waiting threads); the page opens on Overview when any do.
+  needsOwner: count.optional(),
+  board: z.strictObject(Object.fromEntries(['waiting', 'review', 'working', 'landing', 'landed', 'idle', 'resolved'].map(group => [group, z.array(z.strictObject({ id: IdSchema, at: TimestampSchema }))])) as Record<'waiting' | 'review' | 'working' | 'landing' | 'landed' | 'idle' | 'resolved', z.ZodArray<z.ZodObject<{ id: typeof IdSchema; at: typeof TimestampSchema }, z.core.$strict>>>).optional() });
 export type ProjectWorkView = z.infer<typeof ProjectWorkViewSchema>;
 export const ThreadViewSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-thread-view-v1'),
   notices: z.array(z.strictObject({ at: TimestampSchema, text: z.string().max(4000), kind: z.enum(['info', 'error']) })).max(20).optional(),

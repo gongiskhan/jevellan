@@ -15,6 +15,8 @@ export const JobRunSpecSchema = z.discriminatedUnion('kind', [
 ]);
 export const ProjectJobSchema = z.strictObject({ schema: z.literal('project-job-v1'), id: IdSchema, projectId: IdSchema, revision,
   name: text.max(80), goalId: IdSchema.nullable(), run: JobRunSpecSchema, gate: z.strictObject({ jobId: IdSchema }).nullable(), enabled: z.boolean(),
+  // bridge: a paused command job runs nowhere until resumed; an interval schedule runs it every N minutes between two local times (no misses).
+  paused: z.boolean().optional(), interval: z.strictObject({ everyMinutes: z.number().int().min(5).max(1440), start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u), end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u) }).optional(),
   requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema });
 export type ProjectJob = z.infer<typeof ProjectJobSchema>;
 export const ProjectJobFindingsSchema = z.strictObject({ schema: z.literal('project-job-findings-v1'), findings: z.array(z.strictObject({ title: text.max(120), brief: text.max(20000) })).max(20) });

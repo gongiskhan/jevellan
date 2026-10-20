@@ -6,6 +6,17 @@ Jevellan runs coding agents in conversations across your runtimes, accounts and 
 
 This repository is under active development. See [the acceptance report](docs/acceptance/REPORT.md) for what is built, tested and still blocked. Published releases are available; main can contain changes that are still undergoing release checks.
 
+## Use it from Claude Code
+
+Install Jevellan, finish account setup in its UI, then add the plugin to your chosen Claude Code configuration:
+
+```sh
+npx github:gongiskhan/jevellan install
+jevellan plugin install
+```
+
+The plugin gives Claude Code twelve Jevellan tools, five slash commands and a status line (`jevellan statusline install`). See [the bridge](docs/bridge.md) for the bridge session you reach from the Claude app.
+
 ## Install
 
 The installation command from main is:
@@ -46,7 +57,7 @@ In this metaphor, a conversation is a voyage, a stretch is a watch, and a handof
 
 ## Accounts
 
-Jevellan uses the accounts you give it. Anthropic's terms restrict third-party tools from offering Claude subscription logins without their approval; Jevellan has no such approval, and using your own subscription token is your decision. API keys are always supported. API-key accounts require an explicit paid-use policy. Live Claude validation remains blocked by a missing dedicated test token.
+Jevellan uses the accounts you give it. Anthropic's terms restrict third-party tools from offering Claude subscription logins without their approval; Jevellan has no such approval, and using your own subscription token is your decision. API keys are always supported. API-key accounts require an explicit paid-use policy. Runtime-specific live validation and its credential requirements are recorded in [runtime documentation](docs/runtimes.md).
 
 ## What is enforced
 

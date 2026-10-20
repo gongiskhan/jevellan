@@ -2465,3 +2465,10 @@ Fresh authorized run: 0.6.0 must complete on main before integration of the exis
 Fixture responsiveness: failing-first process-identity, journal and heartbeat regressions reproduced request starvation; 39 affected cases, typecheck and lint now pass. Final HTTP probe and browser gate remain pending. Exact screenshot bytes are retained immediately in the private run evidence folder. See the fresh run log.
 
 The final fixture probe passes: 1,412 authenticated requests, maximum95ms, zero slow/unanswered requests, clean owned teardown.40 affected cases pass. The full gate, release and installed switch remain pending.
+
+
+## Bridge pass: owner pivot and0.6.0 installation,20October2026
+
+The latest owner plan supersedes the older classification, layout matrix, clocks and review timing.0.6.0 was published from075cbec2 without bridge at07:14:31Z, then installed Madrid first and Pro second with fresh cold backups. Doctor10/10each, bothOnline and current vault sync are verified. The ordered project switch has private receipts; production was unchanged, rollback lacks actual VM/image attestation and interactive Ekoa OAuth remains deferred/blocked. The private handoff lists owner steps first. Earlier incomplete comparison and missing-image receipts remain historical, not passes.
+
+One fetch at07:46:49Z froze bridgeac98492f and merged it into main.0.7.0 source typecheck/lint/build and all five desktop-light core smokes pass. The full backend selected2602:2584passed,3initial permission/recovery failures caused by the reporter wrapper's globalumask077,15notrun. Each exact failure passed once after restoring the inherited test environment; the owner one-rerun rule accepts the gate, with original counts retained. The earlier EPIPE/truncated attempt is invalid. Publication/installation and actual managed bridge status/push proof remain pending; the single scoped review follows readiness. See the [current run log](bridge-codex-2026-10/README.md) for numbered decisions22–23 and exact limits.

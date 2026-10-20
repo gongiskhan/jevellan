@@ -13,7 +13,7 @@ import { ProjectDailyListViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
-  boardGroup, openQuestions,
+  openQuestions,
   CoordinatorMessageReceiptSchema, DecisionAnsweredViewSchema, EffortSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema,
   GoalListViewSchema, ProjectWorkListViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskListViewSchema, TaskReceiptSchema, TaskTypeSchema, ThreadViewSchema,
   type ProjectDecision, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkView, type PullRequestEntry,
@@ -459,7 +459,10 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const coordinatorDevice = coordinator.deviceName ?? (coordinator.deviceId ? deviceName(coordinator.deviceId) : '');
   const drafts = tasks.filter(task => task.state === 'draft');
   const open = openQuestions(view.decisions.open).filter((decision) => !answered.has(decision.id));
-  const groups = Object.fromEntries(Object.keys(copy.BOARD_LABELS).map(group => [group, view.threads.filter(thread => boardGroup(thread) === group && (group !== 'resolved' || now - Date.parse(thread.resolution?.at ?? thread.endedAt ?? thread.updatedAt) <= resolvedDays * 86_400_000)).sort((a, b) => group === 'waiting' ? a.updatedAt.localeCompare(b.updatedAt) : (b.resolution?.at ?? b.endedAt ?? b.updatedAt).localeCompare(a.resolution?.at ?? a.endedAt ?? a.updatedAt))])) as Record<keyof typeof copy.BOARD_LABELS, ThreadIndex[]>;
+  // The engine decides each thread's group and the order (bridge phase 2); the page only pages Resolved by age.
+  const byId = new Map(view.threads.map(thread => [thread.id, thread]));
+  const groups = Object.fromEntries(Object.keys(copy.BOARD_LABELS).map(group => [group, (view.board?.[group as keyof typeof copy.BOARD_LABELS] ?? [])
+    .filter(row => group !== 'resolved' || now - Date.parse(row.at) <= resolvedDays * 86_400_000).flatMap(row => byId.get(row.id) ?? [])])) as Record<keyof typeof copy.BOARD_LABELS, ThreadIndex[]>;
   const pulls = openPullRequests(view.pullRequests), recentPulls = view.pullRequests.filter(entry => entry.pr?.state === 'merged' && Date.parse(entry.pr.updatedAt) >= now - 7 * 24 * 3_600_000);
   const stop = () => void control.run(async (signal) => {
     setView(await api(`/api/projects/${id}/coordinator/stop`, ProjectWorkViewSchema, 'POST', empty, { signal })); updated();

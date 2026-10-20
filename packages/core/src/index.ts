@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const DEFAULT_PORT = 9771;
-export const VERSION = '0.6.0';
+export const VERSION = '0.7.0';
 export const HealthSchema = z.object({
   schema: z.literal('health-v1'),
   status: z.literal('ok'),
@@ -10,6 +10,9 @@ export const HealthSchema = z.object({
 export type Health = z.infer<typeof HealthSchema>;
 export * from './schemas.js';
 export * from './reply.js';
+export * from './owner-tool-schemas.js';
+export * from './owner-tool-catalog.js';
+export * from './owner-time.js';
 export * from './version-skew.js';
 export * from './session-cache-schemas.js';
 export * from './project-journal-schemas.js';
@@ -121,3 +124,4 @@ export * from './job-delivery-schemas.js';
 export * from './project-send-schemas.js';
 
 export * from './ekoa-oauth-schemas.js';
+export * from './owner-plugin.js';
