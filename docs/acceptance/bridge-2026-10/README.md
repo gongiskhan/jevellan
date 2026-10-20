@@ -139,3 +139,5 @@ The real-model journeys split by who runs the model. The Claude Code side (the `
 ## Backend suite (before the first main merge after phase 0)
 
 Simulated, on a separate snapshot clone of `1590ade4` while the parallel run's gate loaded the machine: 2521 passed, 37 failed, 1 skipped, in 5227 s. 17 of the 19 failing files fail on main in the parallel run's own gate (its full backend at `eb7855ae`: 2501 passed, 32 failed), so they are not this branch's. The two others: `project-turns` expected the old launch environment without `JEVELLAN_ROLE` (expectation updated: the role is intended), and `conversation-service` failed on tests that ran 60 to 92 s against a 60 s limit under the load; rerun alone below.
+
+Rerun alone: `conversation-service` 95 of 95 passed (load timeouts confirmed); `project-turns` passes with the role in its expected environment. No failure is this branch's.
