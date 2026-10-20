@@ -275,7 +275,7 @@ test('the launcher keeps a session on its account, starts fresh on another eligi
   fake.capabilities.readOnlyEnforced = true; fake.enqueueTurn(done);
   try {
     const lead = await value.launch(request({ owner: { kind: 'coordinator', projectId: 'proj_a', id: 'proj_a' }, permissions: 'read-only', safetyProfile: 'coordinator', gitIdentityFrom: repo, tools: tools(coordinator).tools }));
-    expect(lead.kind).toBe('started'); expect(Object.keys(fake.turnStarts[2]!.launch.env).sort()).toEqual(['JEVELLAN_DAEMON_URL', 'JEVELLAN_STRETCH_TOKEN']);
+    expect(lead.kind).toBe('started'); expect(Object.keys(fake.turnStarts[2]!.launch.env).sort()).toEqual(['JEVELLAN_DAEMON_URL', 'JEVELLAN_ROLE', 'JEVELLAN_STRETCH_TOKEN']); expect(fake.turnStarts[2]!.launch.env.JEVELLAN_ROLE).toBe('coordinator');
     if (lead.kind === 'started') await lead.release();
   } finally { fake.capabilities.readOnlyEnforced = false; }
 });
