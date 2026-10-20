@@ -164,7 +164,7 @@ export class OwnerBridges {
   /** The `inject` transport: types pushes into an idle bridge's pane as a message and acks them. */
   async injectPending(): Promise<void> {
     for (const { document: state } of this.app.hub.list(NAMESPACE, BridgeStateSchema)) {
-      if (!state.wanted || state.transport !== 'inject' || !this.running(state.tmuxSession) || !this.idle(state.projectId)) continue;
+      if (!state.wanted || state.transport !== 'inject' || !this.accepting(state.projectId) || !this.running(state.tmuxSession) || !this.idle(state.projectId)) continue;
       const [message] = this.app.ownerPushes.messages(state.projectId); if (!message) continue;
       const text = ` [Jevellan push]  ${message.text.replace(/^\[Jevellan\] /u, '').replace(/\n/gu, ' | ')}`;
       this.tmux(['send-keys', '-t', `=${state.tmuxSession}:`, '-l', text]); this.tmux(['send-keys', '-t', `=${state.tmuxSession}:`, 'Enter']);
