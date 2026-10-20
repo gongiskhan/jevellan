@@ -1,3 +1,5 @@
+import { ProjectMergeWhyRequestSchema } from '@jevellan/core';
+import { routeWhyView } from './route-why.js';
 import { decideMergeRoute, type DecisionSource } from '@jevellan/decisions';
 import { MergeCorrectionInputSchema, MergeCorrectionSchema, MergeDocumentsViewSchema, MergeRouteSchema, ProjectDecisionSchema, parseGitHubPullUrl,
   type Configuration, type CoordinatorEvent, type DecisionAnswer, type MergeDocument, type MergeRoute, type Project, type ProjectDecision, type ProjectHub, type ProjectWorkSettings, type SecretRedactor, type Thread } from '@jevellan/core';
@@ -27,6 +29,10 @@ export class ProjectMergeGate {
     return records;
   }
   async view(projectId: string, threadId: string) { return MergeDocumentsViewSchema.parse({ schema: 'merge-documents-view-v1', records: await this.documents(projectId, threadId) }); }
+  async whyView(projectId: string, threadId: string, raw: unknown, saved = false) {
+    const input = ProjectMergeWhyRequestSchema.parse(raw), [records, settings] = await Promise.all([this.documents(projectId, threadId), this.o.settings(projectId)]);
+    return routeWhyView({ kind: 'merge', projectId, threadId, records, commit: input.commit, automatic: settings.pullRequestAutoMerge, saved });
+  }
   async correct(projectId: string, threadId: string, raw: unknown) {
     const input = MergeCorrectionInputSchema.parse(raw), thread = (await this.o.hub.thread(threadId))?.document;
     if (!thread || thread.projectId !== projectId) throw refuse('Thread not found.', 404);

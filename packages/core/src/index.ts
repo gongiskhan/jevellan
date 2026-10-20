@@ -82,6 +82,7 @@ export * from './project-goal-schemas.js';
 export * from './project-goal-view-schemas.js';
 export * from './project-thread-why-schemas.js';
 export * from './project-override-editor-schemas.js';
+export * from './project-route-why-schemas.js';
 
 export * from './project-daily-schemas.js';
 

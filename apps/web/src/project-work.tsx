@@ -828,7 +828,7 @@ function AnsweredList({ items, now }: { items: readonly ProjectWaitingItem[]; no
  * failing checks, allowed while checks run) and Open on GitHub; a branch-only thread shows its branch and reason (D58).
  */
 function PullRequestRow({ projectId, model, navigate, merge }: { projectId: string; model: OverviewPullRequest; navigate(path: string): void; merge(): void }) {
-  const { entry, held: hold, shadow, taskId } = model;
+  const { entry, held: hold, taskId } = model;
   const blockId = useId();
   const thread = `/projects/${projectId}/threads/${entry.threadId}`;
   const pr = entry.pr;
@@ -851,7 +851,7 @@ function PullRequestRow({ projectId, model, navigate, merge }: { projectId: stri
       </div>
       {hold && <p className="pw-pr-reason">Merges are held while the nightly window runs.</p>}
       <div className="pw-pr-actions">
-        <MergeWhy projectId={projectId} threadId={entry.threadId} commit={pr.headSha} shadow={shadow} />
+        <MergeWhy projectId={projectId} threadId={entry.threadId} commit={pr.headSha} />
         <RouteLink className="text-button pw-open-thread" href={thread} navigate={navigate}>{copy.OPEN_THREAD}</RouteLink>
         {taskId && <RouteLink className="text-button" href={`/projects/${projectId}/tasks/${taskId}`} navigate={navigate}>Open task</RouteLink>}
         <a className="button-link secondary small" href={pr.url} target="_blank" rel="noopener noreferrer"><Icon name="external" size={14} />{copy.OPEN_ON_GITHUB}</a>

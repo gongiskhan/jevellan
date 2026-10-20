@@ -1,8 +1,9 @@
+import { seedRouteDecision } from './helpers/route-fixtures.js';
 import { afterEach, expect, test } from 'vitest';
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { ProjectThreadOverrideEditorSchema, ThreadCreatedViewSchema, OWNER_TOOLS, OwnerToolResultSchema, ProjectGoalEditorSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
+import { ProjectRouteWhyViewSchema, ProjectThreadOverrideEditorSchema, ThreadCreatedViewSchema, OWNER_TOOLS, OwnerToolResultSchema, ProjectGoalEditorSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
 import { reportStep, projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
@@ -120,4 +121,21 @@ test('the official MCP editor previews and saves a next-turn override through th
   for (let attempt = 0; attempt < 2; attempt++) expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'override_save', thread: made.threadId, request } })).structuredContent)).toMatchObject({ ok: true, data: { schema: 'thread-override-view-v1' } });
   expect(await f.app.projectHub.recentOverrides('project', 8)).toHaveLength(1);
   expect(f.thread(made.threadId).placement.effortRequested).toBe('high');
+});
+
+
+test('the official MCP transport reads route models and retries the same canonical correction', async () => {
+  f = await projectFixture({ control: true }); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'MCP route fixture.' }), forThread());
+  const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'mcp_route_model', title: 'MCP route model', task: 'Inspect the simulated route.' });
+  await f.waitFor(() => f!.thread(made.threadId), row => row.state === 'idle'); const commit = 'a'.repeat(40);
+  const identity = { projectId: 'project', threadId: made.threadId, deviceId: f.app.device.deviceId, commit, at: f.thread(made.threadId).createdAt };
+  await seedRouteDecision(f.app.projectHub, identity, 'landing'); await seedRouteDecision(f.app.projectHub, identity, 'merge');
+  const ui = await (await f.request(`/api/projects/project/threads/${made.threadId}/pr/why-view`, 'POST', { schema: 'project-merge-why-request-v1', commit })).json();
+  const mcp = await connect({ JEVELLAN_HOME: f.homes.root }), read = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'why', kind: 'merge', thread: made.threadId, commit } })).structuredContent);
+  expect(read.ok).toBe(true); if (!read.ok) throw new Error('Expected the route model.'); const model = ProjectRouteWhyViewSchema.parse(read.data);
+  expect(model).toMatchObject({ route: ui.route, verifications: ui.verifications, shadowLine: ui.shadowLine, commit: ui.commit });
+  const request = model.correctionActions[0]!.request.body;
+  for (let n = 0; n < 2; n++) expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'route_correct', thread: made.threadId, request } })).structuredContent)).toMatchObject({ ok: true, data: { kind: 'merge', savedNotice: 'Saved for future merge decisions.' } });
+  expect((await f.app.projectHub.mergeDocuments('project')).records.filter(row => row.schema === 'merge-correction-v1')).toHaveLength(1);
+  expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'why', kind: 'landing', thread: made.threadId } })).structuredContent)).toMatchObject({ ok: true, data: { kind: 'landing', route: { id: 'route_landing_fixture' } } });
 });

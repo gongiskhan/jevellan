@@ -19,7 +19,7 @@ export function projectPageView(input: Pick<ProjectPageView, 'work' | 'tasks' | 
   const row = (entry: PullRequestEntry): OverviewPullRequest => {
     const pr = entry.pr, held = daily.mergesHeld && !daily.mergeAllowedThreads.includes(entry.threadId);
     const taskId = tasks.find(task => task.threadId === entry.threadId)?.id, badge = pr ? checksBadge(pr) : null;
-    return { entry, ...(taskId ? { taskId } : {}), shadow: !work.settings.autoLand, held, conflicts: pr?.mergeable === 'conflict', checks: badge,
+    return { entry, ...(taskId ? { taskId } : {}), shadow: !work.settings.pullRequestAutoMerge, held, conflicts: pr?.mergeable === 'conflict', checks: badge,
       badges: !pr ? [] : pr.state === 'merged' ? [{ text: 'Merged', tone: 'ok' }] : pr.state === 'closed' ? [{ text: 'Closed', tone: 'muted' }]
         : [...(badge ? [badge] : []), ...(pr.mergeable === 'conflict' ? [{ text: 'Conflicts', tone: 'danger' as const }] : [])],
       mergeRefusal: held ? mergeHeld : pr ? mergeBlock(pr) : null,

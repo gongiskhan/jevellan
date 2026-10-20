@@ -1,3 +1,4 @@
+import { ProjectMergeWhyRequestSchema, ProjectRouteWhyViewSchema } from '@jevellan/core';
 import { ProjectThreadOverrideEditorSchema, ThreadOverrideEditorPreviewSchema, ThreadOverrideEditorSaveSchema } from '@jevellan/core';
 import { ProjectPageRequestSchema, ProjectWaitingRespondRequestSchema } from '@jevellan/core';
 import { DailyEnabledRequestSchema, JobPausedRequestSchema } from '@jevellan/core';
@@ -29,7 +30,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -40,6 +41,10 @@ type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GE
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'landing-why', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/landing\/why-view$/, methods: ['GET'], target: 'owner' },
+  { name: 'merge-why', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/pr\/why-view$/, methods: ['POST'], target: 'owner' },
+  { name: 'landing-why-correction', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/landing\/why-correction$/, methods: ['POST'], target: 'owner' },
+  { name: 'merge-why-correction', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/pr\/why-correction$/, methods: ['POST'], target: 'owner' },
   { name: 'thread-override-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/override-editor$/, methods: ['GET'], target: 'owner' },
   { name: 'thread-override-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/override-editor$/, methods: ['POST'], target: 'owner' },
   { name: 'thread-override-preview', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/override-editor\/preview$/, methods: ['POST'], target: 'owner' },
@@ -183,28 +188,57 @@ async function target(app: Application, deviceId: string, purpose: 'thread' | 'c
 
 /** Authenticated owner tools reuse the browser's typed owner routes; work never moves to the state point. */
 export async function ownerThreadOperation(app: Application, projectId: string, threadId: string,
-  operation: 'override-editor' | 'override-preview' | 'override-save' | 'why' | 'actions' | 'act' | 'merge', input?: unknown) {
-  const work = app.projectWork, owner = await (operation === 'why' || operation === 'override-editor' || operation === 'override-preview' ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
+  operation: 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'override-editor' | 'override-preview' | 'override-save' | 'why' | 'actions' | 'act' | 'merge', input?: unknown) {
+  const work = app.projectWork, read = ['landing-why', 'merge-why', 'override-editor', 'override-preview', 'why', 'actions'].includes(operation);
+  const owner = await (read ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
   if (owner === null) throw failure(THREAD_NOT_FOUND, 404);
   if (owner === app.device.deviceId) {
-    if (operation === 'override-editor') return work.views.overrideEditor(projectId, threadId);
-    if (operation === 'override-preview') return work.views.overrideEditor(projectId, threadId, ThreadOverrideEditorPreviewSchema.parse(input));
-    if (operation === 'override-save') {
-      const request = await work.views.overrideEditorInput(projectId, threadId, ThreadOverrideEditorSaveSchema.parse(input));
-      const auth = app.auth; if (!(auth instanceof UiAuth)) throw failure('Owner tools must run on the state point.', 409);
-      const token = auth.issue(app.device.deviceId);
-      try { return await work.overrideThread(projectId, threadId, request, remoteStart(app, { token, sourceDeviceId: app.device.deviceId, peer: false, authenticated: async () => auth.verify(token) !== null })); }
-      finally { auth.logout(token); }
+    switch (operation) {
+      case 'landing-why': return work.landingWhy(projectId, threadId);
+      case 'merge-why': return work.mergeWhy(projectId, threadId, ProjectMergeWhyRequestSchema.parse(input));
+      case 'landing-why-correction': return work.landingWhyCorrection(projectId, threadId, LandingCorrectionInputSchema.parse(input));
+      case 'merge-why-correction': return work.mergeWhyCorrection(projectId, threadId, MergeCorrectionInputSchema.parse(input));
+      case 'override-editor': return work.views.overrideEditor(projectId, threadId);
+      case 'override-preview': return work.views.overrideEditor(projectId, threadId, ThreadOverrideEditorPreviewSchema.parse(input));
+      case 'override-save': {
+        const request = await work.views.overrideEditorInput(projectId, threadId, ThreadOverrideEditorSaveSchema.parse(input));
+        const auth = app.auth; if (!(auth instanceof UiAuth)) throw failure('Owner tools must run on the state point.', 409);
+        const token = auth.issue(app.device.deviceId);
+        try { return await work.overrideThread(projectId, threadId, request, remoteStart(app, { token, sourceDeviceId: app.device.deviceId, peer: false, authenticated: async () => auth.verify(token) !== null })); }
+        finally { auth.logout(token); }
+      }
+      case 'why': return work.views.why(projectId, threadId);
+      case 'actions': return work.views.actions(projectId, threadId);
+      case 'act': return work.threadAction(projectId, threadId, ThreadActionRequestSchema.parse(input));
+      case 'merge': return work.mergePullRequest(projectId, threadId);
     }
-    if (operation === 'why') return work.views.why(projectId, threadId);
-    if (operation === 'actions') return work.views.actions(projectId, threadId);
-    if (operation === 'act') return work.threadAction(projectId, threadId, ThreadActionRequestSchema.parse(input));
-    return work.mergePullRequest(projectId, threadId);
   }
-  const path = `${API_PREFIX}${projectId}/threads/${threadId}/${operation === 'override-editor' || operation === 'override-save' ? 'override-editor' : operation === 'override-preview' ? 'override-editor/preview' : operation === 'why' ? 'why-view' : operation === 'actions' ? 'actions-view' : operation === 'act' ? 'actions' : 'pr/merge'}`;
-  const value = await ownerProjectJson(app, owner, 'thread', path, operation === 'actions' || operation === 'why' || operation === 'override-editor' ? 'GET' : 'POST',
-    operation === 'actions' || operation === 'why' || operation === 'override-editor' ? undefined : operation === 'override-preview' ? ThreadOverrideEditorPreviewSchema.parse(input) : operation === 'override-save' ? ThreadOverrideEditorSaveSchema.parse(input) : operation === 'act' ? ThreadActionRequestSchema.parse(input) : EmptySchema.parse({ schema: 'empty-request-v1' }));
-  if (operation === 'override-editor' || operation === 'override-preview') { const view = parseReply(ProjectThreadOverrideEditorSchema, value); if (view.projectId !== projectId || view.threadId !== threadId) throw failure('The returned editor does not match the thread.', 502); return view; }
+  let suffix: string, method: 'GET' | 'POST' = 'POST', body: unknown;
+  switch (operation) {
+    case 'landing-why': suffix = 'landing/why-view'; method = 'GET'; break;
+    case 'merge-why': suffix = 'pr/why-view'; body = ProjectMergeWhyRequestSchema.parse(input); break;
+    case 'landing-why-correction': suffix = 'landing/why-correction'; body = LandingCorrectionInputSchema.parse(input); break;
+    case 'merge-why-correction': suffix = 'pr/why-correction'; body = MergeCorrectionInputSchema.parse(input); break;
+    case 'override-editor': suffix = 'override-editor'; method = 'GET'; break;
+    case 'override-preview': suffix = 'override-editor/preview'; body = ThreadOverrideEditorPreviewSchema.parse(input); break;
+    case 'override-save': suffix = 'override-editor'; body = ThreadOverrideEditorSaveSchema.parse(input); break;
+    case 'why': suffix = 'why-view'; method = 'GET'; break;
+    case 'actions': suffix = 'actions-view'; method = 'GET'; break;
+    case 'act': suffix = 'actions'; body = ThreadActionRequestSchema.parse(input); break;
+    case 'merge': suffix = 'pr/merge'; body = EmptySchema.parse({ schema: 'empty-request-v1' }); break;
+  }
+  const value = await ownerProjectJson(app, owner, 'thread', `${API_PREFIX}${projectId}/threads/${threadId}/${suffix}`, method, body);
+  if (['landing-why', 'merge-why', 'landing-why-correction', 'merge-why-correction'].includes(operation)) {
+    const view = parseReply(ProjectRouteWhyViewSchema, value), kind = operation.startsWith('landing-') ? 'landing' : 'merge';
+    if (view.projectId !== projectId || view.threadId !== threadId || view.kind !== kind) throw failure('The returned explanation does not match the thread.', 502);
+    const commit = operation === 'merge-why' ? ProjectMergeWhyRequestSchema.parse(input).commit : operation === 'merge-why-correction' ? MergeCorrectionInputSchema.parse(input).commit : undefined;
+    if (commit && view.commit !== commit) throw failure('The returned explanation does not match the commit.', 502);
+    return view;
+  }
+  if (operation === 'override-editor' || operation === 'override-preview') {
+    const view = parseReply(ProjectThreadOverrideEditorSchema, value);
+    if (view.projectId !== projectId || view.threadId !== threadId) throw failure('The returned editor does not match the thread.', 502); return view;
+  }
   if (operation === 'override-save') return parseReply(ThreadOverrideViewSchema, value);
   if (operation === 'why') { const view = parseReply(ProjectThreadWhyViewSchema, value); if (view.projectId !== projectId || view.threadId !== threadId) throw failure('The returned explanation does not match the thread.', 502); return view; }
   if (operation === 'actions') return parseReply(ProjectThreadActionsViewSchema, value);
@@ -357,7 +391,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
   }
   if (route.target === 'owner') {
     const owner = await (route.name === 'thread-events' ? work.threadStreamOwner(projectId, threadId)
-      : route.name === 'thread' || route.name === 'thread-actions-view' || route.name === 'thread-why-view' || route.name === 'thread-override-editor' || route.name === 'thread-override-preview' ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
+      : route.name === 'thread' || route.name === 'thread-actions-view' || route.name === 'thread-why-view' || route.name === 'thread-override-editor' || route.name === 'thread-override-preview' || route.name === 'landing-why' || route.name === 'merge-why' ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
     if (owner === null) throw failure(THREAD_NOT_FOUND, 404);
     if (owner !== app.device.deviceId) {
       if (caller.peer) throw failure(THREAD_NOT_FOUND, 404);
@@ -433,6 +467,10 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
       const ledger = await work.coordinatorEvents(projectId);
       streamLedger(ledger, request, response, url, caller.authenticated, projectFrame(ledger, true)); return true;
     }
+    case 'landing-why': send(await work.landingWhy(projectId, threadId)); return true;
+    case 'merge-why': send(await work.mergeWhy(projectId, threadId, ProjectMergeWhyRequestSchema.parse(await requestBody(request)))); return true;
+    case 'landing-why-correction': send(await work.landingWhyCorrection(projectId, threadId, LandingCorrectionInputSchema.parse(await requestBody(request)))); return true;
+    case 'merge-why-correction': send(await work.mergeWhyCorrection(projectId, threadId, MergeCorrectionInputSchema.parse(await requestBody(request)))); return true;
     case 'thread-override-editor': send(await work.views.overrideEditor(projectId, threadId)); return true;
     case 'thread-override-preview': send(await work.views.overrideEditor(projectId, threadId, ThreadOverrideEditorPreviewSchema.parse(await requestBody(request)))); return true;
     case 'thread-override-save': send(await work.overrideThread(projectId, threadId, await work.views.overrideEditorInput(projectId, threadId, ThreadOverrideEditorSaveSchema.parse(await requestBody(request))), remoteStart(app, caller))); return true;

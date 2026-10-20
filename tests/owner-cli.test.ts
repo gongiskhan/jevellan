@@ -1,3 +1,4 @@
+import { seedRouteDecision } from './helpers/route-fixtures.js';
 import { afterEach, expect, test, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -6,7 +7,7 @@ import { join } from 'node:path';
 import { buildPlugin, callCommand, hookCommand, pluginCommand, statuslineCommand } from '../packages/cli/dist/owner-commands.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
 import { reportStep, projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
-import { ProjectThreadOverrideEditorSchema, ThreadCreatedViewSchema, OwnerToolResultSchema, ProjectGoalEditorSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
+import { ProjectRouteWhyViewSchema, ProjectThreadOverrideEditorSchema, ThreadCreatedViewSchema, OwnerToolResultSchema, ProjectGoalEditorSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
 
 let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
@@ -134,4 +135,18 @@ test('CLI override templates preserve requested effort and save through the cano
   const request = { ...editor.request.base, fields: { ...editor.fields, effort: 'high' } };
   expect(await callCommand(['jev', 'override_save', '--thread', made.threadId, '--request', JSON.stringify(request)], f.homes)).toBe(0);
   expect(f.thread(made.threadId).placement.effortRequested).toBe('high');
+});
+
+
+test('CLI route models carry a reusable canonical correction request', async () => {
+  f = await projectFixture({ control: true }); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'CLI route fixture.' }), forThread());
+  const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'cli_route_model', title: 'CLI route model', task: 'Inspect the simulated route.' });
+  await f.waitFor(() => f!.thread(made.threadId), row => row.state === 'idle');
+  await seedRouteDecision(f.app.projectHub, { projectId: 'project', threadId: made.threadId, deviceId: f.app.device.deviceId, commit: 'a'.repeat(40), at: f.thread(made.threadId).createdAt }, 'landing');
+  const out = vi.spyOn(console, 'log').mockImplementation(() => undefined); expect(await callCommand(['jev', 'why', '--kind', 'landing', '--thread', made.threadId], f.homes)).toBe(0);
+  const encoded = out.mock.calls.map(row => String(row[0])).find(text => text.startsWith('{')), result = OwnerToolResultSchema.parse(encoded ? JSON.parse(encoded) : undefined);
+  expect(result.ok).toBe(true); if (!result.ok) throw new Error('Expected the CLI route model.'); const model = ProjectRouteWhyViewSchema.parse(result.data);
+  const request = model.correctionActions[0]!.request.body;
+  for (let n = 0; n < 2; n++) expect(await callCommand(['jev', 'route_correct', '--thread', made.threadId, '--request', JSON.stringify(request)], f.homes)).toBe(0);
+  expect((await f.app.projectHub.mergeDocuments('project')).records.filter(row => row.schema === 'landing-correction-v1')).toHaveLength(1);
 });

@@ -1,3 +1,4 @@
+import { ProjectRouteCorrectionRequestSchema, ProjectRouteWhyViewSchema } from '@jevellan/core';
 import { capLines } from '@jevellan/projects';
 import { ProjectThreadOverrideEditorSchema, ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, type JevRule } from '@jevellan/core';
 import { OwnerRefusal, type OwnerHandler } from '../owner-tools.js';
@@ -24,9 +25,22 @@ export const jev: OwnerHandler = async (context) => {
       return context.action === 'override_save' ? { text: `Applied override for ${target.id}.`, data: ThreadOverrideViewSchema.parse(result) }
         : { text: `Override ${target.id}.`, data: ProjectThreadOverrideEditorSchema.parse(result) };
     }
+    case 'route_correct': {
+      const target = await resolveTask(context, String(args.thread)); if (!target.thread) throw new OwnerRefusal(`${target.id} has no thread yet.`, 'not_running', 409);
+      const input = ProjectRouteCorrectionRequestSchema.parse(args.request), operation = input.schema === 'landing-correction-input-v1' ? 'landing-why-correction' : 'merge-why-correction';
+      const view = ProjectRouteWhyViewSchema.parse(await ownerThreadOperation(app, projectId, target.thread.id, operation, input));
+      return { text: view.savedNotice ?? 'Saved.', data: view };
+    }
     case 'why': {
       const target = await resolveTask(context, String(args.thread));
       if (!target.thread) throw new OwnerRefusal(`${target.id} has no thread yet.`, 'not_running', 409);
+      if (args.kind === 'landing' || args.kind === 'merge') {
+        const commit = typeof args.commit === 'string' ? args.commit : target.thread.pr?.headSha;
+        if (args.kind === 'merge' && !commit) throw new OwnerRefusal(`${target.id} has no recorded pull request head. Supply a recorded commit.`, 'no_merge_head', 409);
+        const operation = args.kind === 'landing' ? 'landing-why' : 'merge-why';
+        const view = ProjectRouteWhyViewSchema.parse(await ownerThreadOperation(app, projectId, target.thread.id, operation, operation === 'merge-why' ? { schema: 'project-merge-why-request-v1', commit } : undefined));
+        return { text: capLines([view.title, ...(view.route ? [`${view.route.routeLabel} · ${view.route.sourceLabel} · ${view.route.stateLabel}`, ...(view.route.reason ? [view.route.reason] : []), `Checked commit ${view.route.checkedCommit}`, view.route.riskyLine] : [view.emptyText])]), data: view };
+      }
       const view = ProjectThreadWhyViewSchema.parse(await ownerThreadOperation(app, projectId, target.thread.id, 'why'));
       return { text: capLines([view.title, `Placement: ${view.placement.sourceLabel}`, view.placement.fixedLine,
         ...view.fields.map(field => `${field.label}: ${field.valueLabel} · ${field.sourceLabel}`), ...(view.placement.fallbackNotice ? [view.placement.fallbackNotice] : []), ...view.jev.lines]), data: view };

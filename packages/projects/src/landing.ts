@@ -1,3 +1,4 @@
+import { routeWhyView } from './route-why.js';
 import { deliveryDirectory, JobGateResultSchema, PrivateJobDeliverySchema } from './job-deliveries.js';
 import { readDocument, writeDocument } from '@jevellan/core';
 import { join } from 'node:path';
@@ -40,6 +41,7 @@ export class ThreadLandingService {
     return rows;
   }
   async view(projectId: string, threadId: string) { return MergeDocumentsViewSchema.parse({ schema: 'merge-documents-view-v1', records: await this.records(projectId, threadId) }); }
+  async whyView(projectId: string, threadId: string, saved = false) { return routeWhyView({ kind: 'landing', projectId, threadId, records: await this.records(projectId, threadId), saved }); }
   async correct(projectId: string, threadId: string, raw: unknown) {
     const input = LandingCorrectionInputSchema.parse(raw), thread = (await this.o.hub.thread(threadId))?.document;
     if (!thread || thread.projectId !== projectId) throw new Error('Thread not found.');

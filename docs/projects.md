@@ -70,6 +70,8 @@ Someone else may push to a thread's pull request. Before a fix turn (automatic, 
 
 The legacy pull-request merge gate records Jev's route and Why for each eligible head: merge, test then merge, or ask the owner. It retains the saved pull-request automatic-merge policy independently of automatic landing. Verification uses another eligible provider where possible, in a fresh read-only worktree. Head changes, pending coordinator messages, stopped threads and nightly holds prevent automatic merges. Owner Merge retains its checks and confirmation. The retired required-check editor is removed. Jevellan posts no GitHub comments, replies or reviews.
 
+Landing and merge Why use the same versioned engine model in the UI and explicit CLI/MCP `jev why` reads. Landing selects its latest decision; merge explanations and verification runs stay pinned to the requested head. The engine supplies labels, shadow notices, polling policy and correction requests. Corrections record learning through the existing retry-safe writer on the thread's owner device; they do not land, merge or answer an approval. A project using landing delivery still explains its legacy pull requests with their saved automatic-merge switch.
+
 ## Placement, accounts and limits
 
 Jev's p-v1 choice selects model, effort and device within code-enforced resources, project constraints and owner-fixed choices. Project work uses Worktrees only. The a-v1 account choice uses eligible accounts and their usage rules; it never substitutes a machine login for an available managed account. Why records choices, constraints, corrections, exclusions and escalation history.

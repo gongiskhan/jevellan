@@ -1,3 +1,4 @@
+import { MergeCorrectionInputSchema } from '@jevellan/core';
 import { waitingItemsView, sentText } from './waiting-views.js';
 import { QUESTION_NOT_FOUND } from './copy.js';
 import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction, type ProjectPageRequest, type ProjectWaitingRespondRequest, ProjectWaitingResponseSchema } from '@jevellan/core';
@@ -1082,6 +1083,13 @@ export class ProjectWork {
     return ThreadOverrideViewSchema.parse({ schema: 'thread-override-view-v1', newThreadId });
   }
   async mergePullRequest(projectId: string, threadId: string): Promise<MergeResultView> { this.#thread(projectId, threadId); return this.tracker.merge(threadId); }
+  async landingWhy(projectId: string, threadId: string, saved = false) { await this.#project(projectId); return this.landings.whyView(projectId, threadId, saved); }
+  async mergeWhy(projectId: string, threadId: string, input: unknown, saved = false) { await this.#project(projectId); return this.mergeGate.whyView(projectId, threadId, input, saved); }
+  async landingWhyCorrection(projectId: string, threadId: string, raw: unknown) { await this.landingCorrection(projectId, threadId, raw); return this.landingWhy(projectId, threadId, true); }
+  async mergeWhyCorrection(projectId: string, threadId: string, raw: unknown) {
+    const input = MergeCorrectionInputSchema.parse(raw); await this.mergeCorrection(projectId, threadId, input);
+    return this.mergeWhy(projectId, threadId, { schema: 'project-merge-why-request-v1', commit: input.commit }, true);
+  }
   async landingRoute(projectId: string, threadId: string) { await this.#project(projectId); return this.landings.view(projectId, threadId); }
   async landingCorrection(projectId: string, threadId: string, input: unknown) { await this.#project(projectId); return this.landings.correct(projectId, threadId, input); }
   async mergeRoute(projectId: string, threadId: string) { await this.#project(projectId); return this.mergeGate.view(projectId, threadId); }
