@@ -78,8 +78,10 @@ export class RiggingDelivery {
   }
   async #apply(runtime: 'claude' | 'codex', home: string, raw: RiggingItem[]): Promise<RiggingResult[]> {
     const accountId = basename(home);
-    if (this.homes.account(runtime, accountId) !== home) throw new Error('Rigging requires an account home owned by Jevellan.');
     const items = raw.map((item) => RiggingItemSchema.parse(item)).filter((item) => item.runtime === runtime);
+    // An in-place account is the owner's own folder: Jevellan never writes Rigging into it.
+    if (this.homes.isInPlaceFolder(home)) return items.map((item) => ({ itemId: item.id, applied: false, reason: 'This account uses your own folder in place.' }));
+    if (this.homes.account(runtime, accountId) !== home) throw new Error('Rigging requires an account home owned by Jevellan.');
     if (new Set(items.map((item) => item.id)).size !== items.length) throw new Error('Rigging item ids must be unique per runtime.');
     for (const item of items) {
       if (this.redactor.text(item.content) !== item.content || item.bundle?.files.some((file) => { const content = Buffer.from(file.base64, 'base64').toString('utf8'); return this.redactor.text(content) !== content; })) throw new Error('Store credentials in Accounts, not in Rigging content.');

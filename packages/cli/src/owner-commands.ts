@@ -183,6 +183,19 @@ export async function bridgeCommand(args: string[], homes = new Homes()): Promis
   console.error(body?.text ?? body?.message ?? `The bridge could not start (HTTP ${response.status}).`); return 1;
 }
 
+/** `jevellan account in-place <label> --runtime claude|codex --folder <dir>`: use a folder you already logged in, in place (no copy). */
+export async function accountCommand(args: string[], homes = new Homes()): Promise<number> {
+  const option = (name: string) => { const index = args.indexOf(name); return index >= 0 ? args[index + 1] : undefined; };
+  const label = args[1]; const runtime = option('--runtime'); const folder = option('--folder');
+  if (args[0] !== 'in-place' || !label || label.startsWith('--') || (runtime !== 'claude' && runtime !== 'codex') || !folder) { console.error('Usage: jevellan account in-place <label> --runtime claude|codex --folder <dir>'); return 1; }
+  let control; try { control = readDocument(doctorControlPath(homes), DoctorControlSchema); } catch { console.error('Jevellan is not running on this device.'); return 3; }
+  const response = await fetch(`${control.origin}/api/local/accounts/in-place`, { method: 'POST', signal: AbortSignal.timeout(60_000), headers: { Authorization: `Bearer ${control.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ schema: 'owner-in-place-account-request-v1', label, runtime, folder: resolve(folder) }) });
+  const body = await response.json().catch(() => null) as { ok?: boolean; text?: string; message?: string } | null;
+  if (body?.ok) { console.log(body.text); return 0; }
+  console.error(body?.text ?? body?.message ?? `The account could not be added (HTTP ${response.status}).`); return 1;
+}
+
 /** Reads one line from the terminal without echoing it, so codes and secrets never appear on screen or in a transcript. */
 async function hidden(question: string): Promise<string> {
   const { createInterface } = await import('node:readline');

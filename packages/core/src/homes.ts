@@ -1,10 +1,15 @@
-import { chmodSync, lstatSync, mkdirSync, realpathSync } from 'node:fs';
+import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { execFile, execFileSync } from 'node:child_process';
 import { realpath } from 'node:fs/promises';
 import { promisify } from 'node:util';
+import { z } from 'zod';
 import { IdSchema, type Project } from './schemas.js';
+
+/** Accounts that run in a folder the owner already logged in, used where it is: no copy, no rigging, no login through Jevellan. */
+export const InPlaceHomesSchema = z.strictObject({ schema: z.literal('in-place-homes-v1'), homes: z.record(z.string().regex(/^[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+$/u), z.string().min(1)) });
+export type InPlaceHomes = z.infer<typeof InPlaceHomesSchema>;
 
 export function resolvedPath(path: string): string {
   const absolute = resolve(path);
@@ -44,8 +49,36 @@ export class Homes {
     chmodSync(path, 0o700);
     return path;
   }
+  /** The owner's own folder registered for this account, or undefined when Jevellan owns the account's home. */
+  inPlace(runtime: string, accountId: string): string | undefined {
+    const file = join(this.root, 'homes', 'in-place.json');
+    if (!existsSync(file)) return undefined;
+    const path = InPlaceHomesSchema.parse(JSON.parse(readFileSync(file, 'utf8'))).homes[`${IdSchema.parse(runtime)}/${IdSchema.parse(accountId)}`];
+    return path === undefined ? undefined : resolvedPath(path);
+  }
+  /** Whether a folder is registered as some account's in-place folder. */
+  isInPlaceFolder(folder: string): boolean {
+    const file = join(this.root, 'homes', 'in-place.json');
+    if (!existsSync(file)) return false;
+    const path = resolvedPath(folder);
+    return Object.values(InPlaceHomesSchema.parse(JSON.parse(readFileSync(file, 'utf8'))).homes).some(entry => resolvedPath(entry) === path);
+  }
+  registerInPlace(runtime: string, accountId: string, folder: string): string {
+    IdSchema.parse(runtime); IdSchema.parse(accountId);
+    if (!isAbsolute(folder)) throw new Error('An in-place account folder must be an absolute path.');
+    const path = resolvedPath(folder);
+    if (!existsSync(path) || !lstatSync(path).isDirectory()) throw new Error(`${path} is not a folder.`);
+    if (inside(this.root, path) || inside(path, this.root) || path === this.userHome) throw new Error('An in-place account folder must be outside the Jevellan home.');
+    const file = join(this.ensure('homes'), 'in-place.json');
+    const current = existsSync(file) ? InPlaceHomesSchema.parse(JSON.parse(readFileSync(file, 'utf8'))) : { schema: 'in-place-homes-v1' as const, homes: {} };
+    const next = InPlaceHomesSchema.parse({ ...current, homes: { ...current.homes, [`${runtime}/${accountId}`]: path } });
+    writeFileSync(`${file}.tmp`, `${JSON.stringify(next, null, 2)}\n`, { mode: 0o600 }); renameSync(`${file}.tmp`, file);
+    return path;
+  }
   account(runtime: string, accountId: string): string {
     IdSchema.parse(runtime); IdSchema.parse(accountId);
+    const own = this.inPlace(runtime, accountId);
+    if (own !== undefined) return own;
     const expected = join(this.root, 'homes', runtime, accountId);
     if (resolvedPath(expected) !== expected) throw new Error('Account homes cannot alias another directory.');
     this.ensure();

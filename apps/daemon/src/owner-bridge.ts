@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { IdSchema, TimestampSchema, atomicWrite, buildPlugin, pluginDist, type Project } from '@jevellan/core';
 import type { Application } from './application.js';
+import { hasInteractiveClaudeLogin } from '@jevellan/core';
 import { OwnerRefusal } from './owner-tools.js';
 
 const NAMESPACE = 'owner-bridges';
@@ -78,7 +79,7 @@ export class OwnerBridges {
     if (this.running(session) && !options.restart) return `The bridge for ${project.name} is already running (tmux ${session}).`;
     const { dir, label } = await this.#configDir(project, options.claudeConfigDir ?? this.state(project.id)?.configDir);
     // Remote control needs an interactive claude.ai login in the folder; a long-lived token cannot start it (run log, phase 0).
-    if (!existsSync(join(dir, '.credentials.json'))) throw new OwnerRefusal(`Account ${label} has no interactive Claude login, which remote control needs. Run: jevellan login ${label} --interactive`, 'no_interactive_login', 409);
+    if (!hasInteractiveClaudeLogin(dir)) throw new OwnerRefusal(`Account ${label} has no interactive Claude login, which remote control needs. Run: jevellan login ${label} --interactive`, 'no_interactive_login', 409);
     if (options.restart && this.tmux(['has-session', '-t', `=${session}`]).status === 0) this.tmux(['kill-session', '-t', `=${session}`]);
     const folder = this.app.homes.at('bridges', slug(project.name)); mkdirSync(folder, { recursive: true, mode: 0o700 });
     buildPlugin(this.app.homes);

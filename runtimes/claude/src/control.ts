@@ -1,5 +1,5 @@
 import { query, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
-import { CLAUDE_ENDPOINT_AUTH_KEYS, CLAUDE_FLAG_SETTINGS, EffortSchema, minimalEnvironment, type AccountStatus, type OfferedModel } from '@jevellan/core';
+import { CLAUDE_ENDPOINT_AUTH_KEYS, CLAUDE_FLAG_SETTINGS, EffortSchema, hasInteractiveClaudeLogin, minimalEnvironment, type AccountStatus, type OfferedModel } from '@jevellan/core';
 import { AsyncQueue, type ResolvedAccount } from '@jevellan/runtime-contract';
 import { z } from 'zod';
 
@@ -42,7 +42,8 @@ export async function probeClaude(account: ResolvedAccount, fetcher: typeof fetc
     } catch (error) { return { auth: 'unknown', error: `Unreachable: ${error instanceof Error ? error.message : 'connection failed'}` }; }
   }
   const token = account.account.kind === 'subscription'  ? account.env.CLAUDE_CODE_OAUTH_TOKEN : account.env.ANTHROPIC_API_KEY;
-  if (!token) return { auth: 'needs-login' };
+  // A folder logged in to claude.ai (an in-place account, or an interactive login) runs without a token; its usage is read from turns.
+  if (!token) return account.account.kind === 'subscription' && hasInteractiveClaudeLogin(account.home) ? { auth: 'ready' } : { auth: 'needs-login' };
   try {
     const subscription = account.account.kind === 'subscription';
     const response = await fetcher(subscription ? 'https://api.anthropic.com/v1/messages' : 'https://api.anthropic.com/v1/models?limit=1', {
