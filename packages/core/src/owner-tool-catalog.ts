@@ -54,15 +54,15 @@ export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
     actions: [write('override', { decision: id('Decision id (D201).'), choice: text(200), mode: z.enum(['override_undo', 'override_only']), reason: text(1000) })] },
   { name: 'jev', description: 'Control Jev, which decides runtime, account, model, effort and how a finished thread lands: its rules, its prompts and question sets, and the lessons learned from overrides. Changes are proposed, replayed against recent real decisions, then applied, with versions to roll back to.',
     actions: [read('rules'), read('prompts'), read('prompt_show', { name: id('Prompt or question set name (l-v1).'), version: z.number().int().positive().optional() }), read('prompt_history', { name: id('Prompt or question set name (l-v1).') }), read('lessons'),
-      write('rule_set', { rule: z.string().regex(/^R[1-9][0-9]*$/u).optional(), scope: z.enum(['global', 'project']).optional(),
+      write('rule_set', { rule: z.string().regex(/^[Rr][1-9][0-9]*$/u).optional(), scope: z.enum(['global', 'project']).optional(),
         when: z.strictObject({ taskType: z.string().max(40).optional(), goal: z.string().max(200).optional(), label: z.string().max(200).optional(), keywords: z.array(z.string().min(1).max(60)).max(20).optional() }).optional(),
         set: z.strictObject({ minModel: z.string().max(120).optional(), minEffort: z.string().max(20).optional(), maxEffort: z.string().max(20).optional(), account: z.string().max(120).optional(), runtime: z.string().max(40).optional(), landingRoute: z.string().max(40).optional() }).optional(),
         note: text(400).optional(), enabled: z.boolean().optional() }),
-      write('rule_remove', { rule: z.string().regex(/^R[1-9][0-9]*$/u) }),
+      write('rule_remove', { rule: z.string().regex(/^[Rr][1-9][0-9]*$/u) }),
       write('prompt_propose', { name: id('Prompt or question set name (l-v1).'), text: text(60000).optional(), edits: z.array(z.strictObject({ find: text(20000), replace: z.string().max(20000) })).min(1).max(30).optional(), summary: text(400) }),
-      write('prompt_apply', { proposal: z.string().regex(/^P[1-9][0-9]*$/u) }), write('prompt_rollback', { name: id('Prompt or question set name (l-v1).'), version: z.number().int().positive() }),
-      write('lesson_edit', { lesson: z.string().regex(/^L[1-9][0-9]*$/u), text: text(1000).optional(), enabled: z.boolean().optional() }), write('lesson_remove', { lesson: z.string().regex(/^L[1-9][0-9]*$/u) }),
-      write('replay', { proposal: z.string().regex(/^P[1-9][0-9]*$/u).optional(), lesson: z.string().regex(/^L[1-9][0-9]*$/u).optional(), n: z.number().int().min(1).max(50).optional() })] },
+      write('prompt_apply', { proposal: z.string().regex(/^[Pp][1-9][0-9]*$/u) }), write('prompt_rollback', { name: id('Prompt or question set name (l-v1).'), version: z.number().int().positive() }),
+      write('lesson_edit', { lesson: z.string().regex(/^[Ll][1-9][0-9]*$/u), text: text(1000).optional(), enabled: z.boolean().optional() }), write('lesson_remove', { lesson: z.string().regex(/^[Ll][1-9][0-9]*$/u) }),
+      write('replay', { proposal: z.string().regex(/^[Pp][1-9][0-9]*$/u).optional(), lesson: z.string().regex(/^[Ll][1-9][0-9]*$/u).optional(), n: z.number().int().min(1).max(50).optional() })] },
   { name: 'config', description: 'Jevellan settings for a project and the installation: accounts and budgets, limits, the deploy switch, landing, health checks, the coordinator, notifications and quiet hours, cleanup, environment and secrets, remote access and the heartbeat.',
     actions: [read('get', { section: z.string().min(1).max(40).optional() }), read('secrets'),
       write('set', { section: z.string().min(1).max(40), key: z.string().min(1).max(120), value: z.union([z.string().max(4000), z.number(), z.boolean()]) }),
@@ -89,7 +89,8 @@ export function ownerToolInputSchema(tool: OwnerToolDefinition): Record<string, 
     const json = z.toJSONSchema(action.input, { io: 'input', unrepresentable: 'any' }) as { properties?: Record<string, unknown> };
     for (const [key, value] of Object.entries(json.properties ?? {})) if (!(key in properties)) properties[key] = value;
   }
-  if (tool.name === 'ask_coordinator') return { type: 'object', properties, required: ['mode', 'text'], additionalProperties: false };
+  // The mode is the action here: both values are offered (each action's own schema has only its literal).
+  if (tool.name === 'ask_coordinator') return { type: 'object', properties: { ...properties, mode: { type: 'string', enum: ['ask', 'tell'], description: 'ask: a question the coordinator answers without acting. tell: an instruction it acts on.' } }, required: ['mode', 'text'], additionalProperties: false };
   if (tool.single) return { type: 'object', properties, additionalProperties: false };
   return { type: 'object', properties: { action: { type: 'string', enum: tool.actions.map(action => action.name), description: `One of: ${tool.actions.map(action => `${action.name} (${action.access})`).join(', ')}.` }, ...properties }, required: ['action'], additionalProperties: false };
 }
