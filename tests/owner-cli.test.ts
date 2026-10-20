@@ -1,3 +1,5 @@
+import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
+import { seedConversationDecision } from './helpers/conversation-decision-fixture.js';
 import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -168,4 +170,18 @@ test('CLI composer models preview draft scope and retry the same canonical conve
   for (let attempt = 0; attempt < 2; attempt++) expect(await callCommand(['jev', 'composer_save', '--conversation', 'cli_composer', '--request', JSON.stringify(request)], f.homes)).toBe(0);
   expect((await f.app.conversations.view('cli_composer')).composerOverrides.filter(row => row.request.clientRequestId === request.clientRequestId)).toHaveLength(1);
   expect(f.fake.starts).toHaveLength(0);
+});
+
+
+test('CLI conversation Why and step correction templates retain the canonical receipt on retry', async () => {
+  f = await projectFixture({ control: true, testCommand: 'true' }); const { id, decision } = await seedConversationDecision(f, 'cli_decision_fixture'), out = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  const result = () => { const value = OwnerToolResultSchema.parse(JSON.parse(String(out.mock.calls.at(-1)?.[0]))); if (!value.ok) throw new Error('Expected CLI model data.'); return value.data; };
+  expect(await callCommand(['jev', 'conversation_why', '--conversation', id, '--decision', decision.id], f.homes)).toBe(0);
+  expect(ConversationDecisionWhyViewSchema.parse(result()).action.options.map(row => row.id)).toEqual(['implement', 'plan', 'reply']);
+  expect(await callCommand(['jev', 'correction_editor', '--conversation', id, '--stretch', '1'], f.homes)).toBe(0);
+  const editor = StepCorrectionEditorSchema.parse(result()), request = { ...editor.preview.request, fields: { ...editor.fields, effort: 'high' } };
+  expect(await callCommand(['jev', 'correction_preview', '--conversation', id, '--request', JSON.stringify(request)], f.homes)).toBe(0);
+  const preview = StepCorrectionEditorSchema.parse(result());
+  for (let attempt = 0; attempt < 2; attempt++) expect(await callCommand(['jev', 'correction_save', '--conversation', id, '--request', JSON.stringify(preview.requests.noted)], f.homes)).toBe(0);
+  expect((await f.app.conversations.view(id)).overrides.filter(row => row.request.clientRequestId === preview.requests.noted!.clientRequestId)).toHaveLength(1); expect(f.fake.starts.length).toBe(1);
 });

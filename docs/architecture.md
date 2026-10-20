@@ -37,6 +37,8 @@ The application composition lives in `apps/daemon/src/application.ts`, which wir
 
 Composer drafts and existing-conversation editors share a versioned engine model for options, unavailable selections, scope text and prepared requests. Unsaved previews use the same pure transition as durable choice replay without creating work. Existing saves retain the canonical generation checks, idempotent intent receipts and decision binding. UI, CLI and MCP reads use the same projection; conversation writes stay on the indexed owner device through the normal authenticated relay.
 
+Recorded step explanations and correction editors also use engine projections. Step presentation stays deterministic for settled history, while the browser formats local time and elapsed display. Detailed Why composes recorded decisions and correction facts without asking a provider to invent an explanation. Historical correction previews prepare canonical requests and consequences; saves retain the original receipt, generation and undo guards. Narrow owner location metadata binds tool operations without transferring the full transcript, and advertised tool schemas retain every versioned argument variant.
+
 ## Project work
 
 `packages/projects` runs one `ProjectWork` per daemon beside the conversation service. It reuses the runtime adapters, account ranking and usage accounting, Jev, the bridge registry and project memory, but not the conversation service itself. Behavior, limits and prompts are described in [projects](projects.md).

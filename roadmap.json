@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Areas 1a–1e/2a–2d/3/4a–4d: 48 of 310 UI rows migrated/refined plus 1 browser-only. Composer engine models and shared replay preserve canonical guards/retries, resource pins and owner routing across UI/MCP/CLI. Final static checks pass; 275 affected backend cases in 15 files with 6 workers and 0 skips pass. The enhanced desktop-light composer journey passes after a repeated failing-first configuration-refresh case; the client-only fix leaves backend source and assertions unchanged. Three exact images are retained; vision is not run. Remaining step/Jev/Settings/other UI, intake and placement/p-v1/m-v1 follow; full parity is incomplete, and CM1 remains. Installations were last verified 0.7.2; no further release.",
+    "why": "Areas 1a–1e/2a–2d/3/4a–4e: 56 of 310 UI rows migrated/refined plus 1 browser-only. Engine step presentation, recorded Why and historical correction editors preserve canonical receipts, late redo guards and owner routing across UI/MCP/CLI. Final static checks pass; 338 affected backend cases in 19 files with 6 workers and 0 skips pass. Both desktop-light correction/undo and recorded-Why journeys pass once without retries/skips; seven exact images are retained, vision not run. Remaining Settings/Jev/improver/other UI, intake and placement/p-v1/m-v1 follow; full parity is incomplete and CM1 remains. Installations were last verified 0.7.2; no further release.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Areas 1a–1e/2a–2d/3/4a–4d: 48 of 310 UI rows migrated/refined plus 1 browser-only. Composer engine models and shared replay preserve canonical guards/retries, resource pins and owner routing across UI/MCP/CLI. Final static checks pass; 275 affected backend cases in 15 files with 6 workers and 0 skips pass. The enhanced desktop-light composer journey passes after a repeated failing-first configuration-refresh case; the client-only fix leaves backend source and assertions unchanged. Three exact images are retained; vision is not run. Remaining step/Jev/Settings/other UI, intake and placement/p-v1/m-v1 follow; full parity is incomplete, and CM1 remains. Installations were last verified 0.7.2; no further release.",
+    "why": "Areas 1a–1e/2a–2d/3/4a–4e: 56 of 310 UI rows migrated/refined plus 1 browser-only. Engine step presentation, recorded Why and historical correction editors preserve canonical receipts, late redo guards and owner routing across UI/MCP/CLI. Final static checks pass; 338 affected backend cases in 19 files with 6 workers and 0 skips pass. Both desktop-light correction/undo and recorded-Why journeys pass once without retries/skips; seven exact images are retained, vision not run. Remaining Settings/Jev/improver/other UI, intake and placement/p-v1/m-v1 follow; full parity is incomplete and CM1 remains. Installations were last verified 0.7.2; no further release.",
     "status": "in-progress"
   },
   {

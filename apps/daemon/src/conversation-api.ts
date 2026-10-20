@@ -4,7 +4,8 @@ import type { Application } from './application.js';
 import { publicConversationData, streamConversation } from './conversation-events.js';
 import { json, requestBody } from './http.js';
 
-const reads = new Set(['', 'changes', 'file', 'events', 'read', 'choices-view']);
+const reads = new Set(['', 'changes', 'file', 'events', 'read', 'choices-view', 'step-editor']);
+const readPosts = new Set(['decision-why', 'step-preview']);
 const writes = new Set(['messages', 'manual', 'resume', 'retry-external', 'choices', 'choices-editor', 'cancel', 'approve-plan', 'settle', 'correct', 'retry-redo', 'adopt-changes', 'rename', 'finish-outside']);
 export type ConversationRoute = { id: string; operation: string; stretch?: number };
 
@@ -13,7 +14,7 @@ export function conversationRoute(path: string, method: string): ConversationRou
   const match = path.match(/^\/api\/conversations\/([A-Za-z0-9_-]+)(?:\/([a-z-]+)(?:\/([1-9]\d*))?)?$/);
   if (!match) return null;
   const operation = match[2] ?? ''; const stretch = match[3] ? Number(match[3]) : undefined;
-  if (!reads.has(operation) && !writes.has(operation) || (operation === 'changes') !== (stretch !== undefined) || stretch !== undefined && !Number.isSafeInteger(stretch)) return null;
+  if (!reads.has(operation) && !readPosts.has(operation) && !writes.has(operation) || (operation === 'changes' || operation === 'step-editor') !== (stretch !== undefined) || stretch !== undefined && !Number.isSafeInteger(stretch)) return null;
   if (method !== (reads.has(operation) ? 'GET' : 'POST')) throw Object.assign(new Error('This conversation operation does not support that method.'), { status: 405 });
   return { id: IdSchema.parse(match[1]), operation, ...(stretch === undefined ? {} : { stretch }) };
 }
@@ -23,6 +24,7 @@ export async function handleConversation(app: Application, request: IncomingMess
   const send = (value: unknown, status = 200) => json(response, app.redactor.document(value), status);
   await app.conversations.ready;
   if (!operation) { send(await app.conversations.view(id)); return; }
+  if (operation === 'step-editor') { send(await app.conversations.stepEditor(id, route.stretch!)); return; }
   if (operation === 'choices-view') { send(await app.conversations.composerEditor(id)); return; }
   if (operation === 'changes') { send(await app.conversations.changes(id, route.stretch!)); return; }
   if (operation === 'file') {
@@ -34,6 +36,8 @@ export async function handleConversation(app: Application, request: IncomingMess
     send(ConversationReadSchema.parse({ schema: 'conversation-read-v1', pointer, content: publicConversationData(app.conversations.ledger(id).read(pointer)) })); return;
   }
   const input = await requestBody(request);
+  if (operation === 'decision-why') { send(await app.conversations.decisionWhy(id, input)); return; }
+  if (operation === 'step-preview') { send(await app.conversations.previewStepCorrection(id, input)); return; }
   if (operation === 'rename') { send(await app.conversations.rename(id, input)); return; }
   if (operation === 'finish-outside') { send(await app.conversations.finishOutside(id, input)); return; }
   if (operation === 'messages') { send(await app.conversations.message(id, input)); return; }

@@ -1,3 +1,5 @@
+import { StepCorrectionPreviewSchema } from './conversation-decision-view-schemas.js';
+import { CorrectStepSchema } from './conversation-schemas.js';
 import { ComposerChoiceSchema, ComposerInitialSchema } from './composer-schemas.js';
 import { ProjectRouteCorrectionRequestSchema } from './project-route-why-schemas.js';
 import { z } from 'zod';
@@ -67,7 +69,7 @@ export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
   { name: 'override', single: true, description: "Override a decision made by Jev, the coordinator or Jevellan. override_undo undoes what followed the decision and redoes it the owner's way; override_only keeps what happened and records the lesson for next time. A reason is required: it becomes the lesson.",
     actions: [write('override', { decision: id('Decision id (D201).'), choice: text(200), mode: z.enum(['override_undo', 'override_only']), reason: text(1000) })] },
   { name: 'jev', description: 'Control Jev, which decides runtime, account, model, effort and how a finished thread lands: its rules, its prompts and question sets, and the lessons learned from overrides. Changes are proposed, replayed against recent real decisions, then applied, with versions to roll back to.',
-    actions: [read('composer_editor', { conversation: id('Conversation id.').optional(), initial: ComposerInitialSchema.optional() }, true), read('composer_preview', { initial: ComposerInitialSchema, request: ComposerChoiceSchema }, true), write('composer_save', { conversation: id('Conversation id.'), request: ComposerChoiceSchema }, true), read('override_editor', { thread: id('Thread id (T31).') }, true), read('override_preview', { thread: id('Thread id (T31).'), request: ThreadOverrideEditorPreviewSchema }, true), write('override_save', { thread: id('Thread id (T31).'), request: ThreadOverrideEditorSaveSchema }, true), read('why', { thread: id('Thread id (T31).'), kind: z.enum(['placement', 'landing', 'merge']).optional(), commit: z.string().regex(/^[a-f0-9]{40,64}$/u).optional() }, true), write('route_correct', { thread: id('Thread id (T31).'), request: ProjectRouteCorrectionRequestSchema }, true), read('rules'), read('prompts'), read('prompt_show', { name: id('Prompt or question set name (l-v1).'), version: z.number().int().positive().optional() }), read('prompt_history', { name: id('Prompt or question set name (l-v1).') }), read('lessons'),
+    actions: [read('conversation_why', { conversation: id('Conversation id.'), decision: id('Recorded decision id.') }, true), read('correction_editor', { conversation: id('Conversation id.'), stretch: z.number().int().positive() }, true), read('correction_preview', { conversation: id('Conversation id.'), request: StepCorrectionPreviewSchema }, true), write('correction_save', { conversation: id('Conversation id.'), request: CorrectStepSchema }, true), read('composer_editor', { conversation: id('Conversation id.').optional(), initial: ComposerInitialSchema.optional() }, true), read('composer_preview', { initial: ComposerInitialSchema, request: ComposerChoiceSchema }, true), write('composer_save', { conversation: id('Conversation id.'), request: ComposerChoiceSchema }, true), read('override_editor', { thread: id('Thread id (T31).') }, true), read('override_preview', { thread: id('Thread id (T31).'), request: ThreadOverrideEditorPreviewSchema }, true), write('override_save', { thread: id('Thread id (T31).'), request: ThreadOverrideEditorSaveSchema }, true), read('why', { thread: id('Thread id (T31).'), kind: z.enum(['placement', 'landing', 'merge']).optional(), commit: z.string().regex(/^[a-f0-9]{40,64}$/u).optional() }, true), write('route_correct', { thread: id('Thread id (T31).'), request: ProjectRouteCorrectionRequestSchema }, true), read('rules'), read('prompts'), read('prompt_show', { name: id('Prompt or question set name (l-v1).'), version: z.number().int().positive().optional() }), read('prompt_history', { name: id('Prompt or question set name (l-v1).') }), read('lessons'),
       write('rule_set', { rule: z.string().regex(/^[Rr][1-9][0-9]*$/u).optional(), scope: z.enum(['global', 'project']).optional(),
         when: z.strictObject({ taskType: z.string().max(40).optional(), goal: z.string().max(200).optional(), label: z.string().max(200).optional(), keywords: z.array(z.string().min(1).max(60)).max(20).optional() }).optional(),
         set: z.strictObject({ minModel: z.string().max(120).optional(), minEffort: z.string().max(20).optional(), maxEffort: z.string().max(20).optional(), account: z.string().max(120).optional(), runtime: z.string().max(40).optional(), landingRoute: z.string().max(40).optional() }).optional(),
@@ -109,11 +111,18 @@ export function ownerToolAction(tool: OwnerToolDefinition, args: Record<string, 
 
 /** One JSON input schema per tool for MCP listing: the union of its actions' fields with an `action` enum where there are several. */
 export function ownerToolInputSchema(tool: OwnerToolDefinition): Record<string, unknown> {
-  const properties: Record<string, unknown> = {};
+  const variants = new Map<string, unknown[]>();
   for (const action of tool.actions) {
     const json = z.toJSONSchema(action.input, { io: 'input', unrepresentable: 'any' }) as { properties?: Record<string, unknown> };
-    for (const [key, value] of Object.entries(json.properties ?? {})) if (!(key in properties)) properties[key] = value;
+    for (const [key, value] of Object.entries(json.properties ?? {})) {
+      const choices = variants.get(key) ?? [];
+      if (!choices.some(choice => JSON.stringify(choice) === JSON.stringify(value))) choices.push(value);
+      variants.set(key, choices);
+    }
   }
+  // Different actions may use one argument name for different versioned documents.
+  // Advertising their union does not change the canonical per-action input validation.
+  const properties: Record<string, unknown> = Object.fromEntries([...variants].map(([key, choices]) => [key, choices.length === 1 ? choices[0] : { anyOf: choices }]));
   // The mode is the action here: both values are offered (each action's own schema has only its literal).
   if (tool.name === 'ask_coordinator') return { type: 'object', properties: { ...properties, mode: { type: 'string', enum: ['ask', 'tell', 'restart'], description: 'ask: a question the coordinator answers without acting. tell: an instruction it acts on. restart: run a coordinator that stopped after failed turns again (text is not used).' } }, required: ['mode'], additionalProperties: false };
   if (tool.single) return { type: 'object', properties, additionalProperties: false };

@@ -1,3 +1,4 @@
+import { ConversationStepPresentationSchema } from './conversation-step-presentation-schemas.js';
 import { z } from 'zod';
 import { ConversationIndexSchema } from './schemas.js';
 import { ComposerInitialSchema, ComposerOverrideRecordSchema } from './composer-schemas.js';
@@ -80,7 +81,7 @@ export type CheckpointAdoption = z.infer<typeof CheckpointAdoptionSchema>;
 export const ConversationProgressSchema = z.strictObject({ schema: z.literal('conversation-progress-v1'), phase: z.enum(['preparing', 'deciding', 'memory', 'starting', 'running', 'saving', 'verifying', 'publishing']), since: z.iso.datetime() });
 export const ConversationPublicSchema = z.strictObject({
   schema: z.literal('conversation-view-v1'), progress: ConversationProgressSchema.optional(), conversation: ConversationSchema, summary: SummarySchema, closedWorks: z.array(WorkSchema),
-  stretches: z.array(StretchSchema.omit({ native: true })), handoffs: z.array(HandoffSchema),
+  stretches: z.array(StretchSchema.omit({ native: true }).extend({ presentation: ConversationStepPresentationSchema.optional() })), handoffs: z.array(HandoffSchema),
   messages: z.array(z.strictObject({ id: z.number().int().positive(), type: z.enum(['user-message', 'note']), clientMessageId: IdSchema, text: z.string(), workId: IdSchema,
     answer: z.strictObject({ stretch: z.number().int().positive(), option: z.number().int().min(0).max(3), label: z.string() }).optional() })),
   /** The last handoff's question while no message has answered it, with the options to show as buttons. */

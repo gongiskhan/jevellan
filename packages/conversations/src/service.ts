@@ -1,3 +1,7 @@
+import { ConversationLocationSchema, ConversationDecisionWhyRequestSchema, StepCorrectionPreviewSchema } from '@jevellan/core';
+import { conversationStepPresentation } from './step-presentation.js';
+import { conversationDecisionWhy } from './decision-view.js';
+import { stepCorrectionEditor, stepCorrectionTarget } from './correction-editor.js';
 import { ConversationComposerRequestSchema } from '@jevellan/core';
 import { applyComposerChoice, conversationComposerView } from './composer-view.js';
 import { existsSync, readdirSync } from 'node:fs';
@@ -480,13 +484,14 @@ export class ConversationService {
       });
     }).sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit).map((entry) => entry.summary);
   }
-  async ownerDevice(id: string): Promise<string> {
+  async location(id: string) {
     await this.ready; IdSchema.parse(id);
-    const local = this.#works.get(id); if (local) return local.load().conversation.ownerDeviceId;
-    const entry = (await this.options.indexes.conversations()).find(conversation => conversation.id === id);
-    if (!entry) throw Object.assign(new Error('Conversation not found.'), { status: 404 });
-    return entry.ownerDeviceId;
+    const local = this.#works.get(id);
+    const row = local ? local.load().conversation : (await this.options.indexes.conversations()).find(conversation => conversation.id === id);
+    if (!row) throw Object.assign(new Error('Conversation not found.'), { status: 404 });
+    return ConversationLocationSchema.parse({ schema: 'conversation-location-v1', id: row.id, projectId: row.projectId, ownerDeviceId: row.ownerDeviceId });
   }
+  async ownerDevice(id: string): Promise<string> { return (await this.location(id)).ownerDeviceId; }
   async corrections(ids?: string[]) { await this.indexes.flush(); const records = await this.options.indexes.corrections(); return ids ? records.filter(record => ids.includes(record.id)) : records; }
   async rename(id: string, raw: unknown) {
     await this.ready; if (this.#closed) throw new Error('Conversations are closed.');
@@ -570,15 +575,17 @@ export class ConversationService {
   async view(id: string) {
     const work = this.#load(id); const view = work.load();
     // Closed history has no next actions and needs no shared configuration.
-    const decisions = this.decisions(id);
+    const decisions = this.decisions(id), savedOverrides = overrides(work), byId = new Map(decisions.map(row => [row.id, row]));
+    const correctionsByStep = new Map<number, typeof savedOverrides>();
+    for (const row of savedOverrides) { const rows = correctionsByStep.get(row.request.stretch) ?? []; rows.push(row); correctionsByStep.set(row.request.stretch, rows); }
     const allowed = view.conversation.work ? allowedActions(view.conversation.work, (await this.options.settings()).guards, !!(await this.#project(view.conversation.projectId)).testCommand, decisions.filter((decision) => decision.workId === view.conversation.work!.id).length, latestMessageNeedsResponse(work, decisions)) : [];
     return ConversationPublicSchema.parse({ schema: 'conversation-view-v1', ...view, progress: this.#operations.get(id)?.progress,
-      stretches: view.stretches.map((step) => { const result = { ...step }; delete result.native; return result; }),
+      stretches: view.stretches.map((step) => { const result = { ...step, presentation: conversationStepPresentation(step, correctionsByStep.get(step.n) ?? [], byId.get(step.decisionId)) }; delete result.native; return result; }),
       ...(this.#decisionWait(work) ? { decisionWait: this.#decisionWait(work) } : {}),
       ...(() => { const open = view.conversation.state === 'waiting-for-you' && !this.#operations.has(id) ? this.#lastQuestion(work) : undefined;
         return open && !open.answered ? { openQuestion: { stretch: open.stretch, text: open.text, options: open.options } } : {}; })(),
       ...(this.#externalWait(work) ? { externalWait: this.#externalWait(work) } : {}),
-      settlements: this.#settlements(work), overrides: overrides(work), composerOverrides: composerOverrides(work), redos: redoOperations(work), checkpointBlocks: checkpointBlocks(work), decisions: this.decisions(id), busy: this.#operations.has(id) || this.#correcting.has(id), allowed });
+      settlements: this.#settlements(work), overrides: savedOverrides, composerOverrides: composerOverrides(work), redos: redoOperations(work), checkpointBlocks: checkpointBlocks(work), decisions: this.decisions(id), busy: this.#operations.has(id) || this.#correcting.has(id), allowed });
   }
   #settlements(work: ConversationWork) {
     const results = new Map<string, ReturnType<typeof WorkSettlementSchema.parse>>();
@@ -657,6 +664,29 @@ export class ConversationService {
       if (waiting && view.conversation.state !== 'running') this.#waitDecision(work, { kind: waiting.kind, text: waiting.text, calls: waiting.calls, reasons: waiting.reasons });
     }
     this.#index(work);
+  }
+  async decisionWhy(id: string, raw: unknown) {
+    await this.ready;
+    const input = ConversationDecisionWhyRequestSchema.parse(raw), work = this.#load(id), view = work.load();
+    const decision = this.decisions(id).find(row => row.id === input.decisionId);
+    if (!decision) throw Object.assign(new Error('Decision not found in this conversation.'), { status: 404 });
+    const [settings, accounts, corrections] = await Promise.all([this.options.settings(), this.options.accounts.list(), decision.correctionsShown.length ? this.corrections(decision.correctionsShown) : []]);
+    const step = view.stretches.find(row => row.decisionId === decision.id);
+    return conversationDecisionWhy({ projectId: view.conversation.projectId, decision, ...(step ? { step } : {}), settings,
+      accounts: accounts.map(row => ({ id: row.account.id, label: row.account.label })), corrections });
+  }
+  async stepEditor(id: string, stretch: number, preview?: ReturnType<typeof StepCorrectionPreviewSchema.parse>) {
+    await this.ready;
+    const work = this.#load(id), projectId = work.load().conversation.projectId;
+    const [settings, project] = await Promise.all([this.options.settings(), this.#project(projectId)]);
+    let refusal: string | undefined;
+    try { this.#notFinishing(work); } catch (error) { refusal = error instanceof Error ? error.message : 'A finish is in progress.'; }
+    if (this.#correcting.has(id)) refusal = 'Another correction is being applied.';
+    return stepCorrectionEditor({ view: work.load(), decisions: this.decisions(id), settings, stretch, external: project.branchPolicy === 'external', ...(preview ? { preview } : {}), ...(refusal ? { refusal } : {}) });
+  }
+  async previewStepCorrection(id: string, raw: unknown) {
+    const input = StepCorrectionPreviewSchema.parse(raw);
+    return this.stepEditor(id, input.stretch, input);
   }
   async composerDraft(raw: unknown) {
     await this.ready;
@@ -1062,10 +1092,9 @@ export class ConversationService {
     }
     if (this.#correcting.has(id)) throw conflict('Another correction is being applied.');
     if (view.conversation.generation !== input.generation) throw conflict('This correction is stale. Reload the conversation.');
-    const step = view.stretches.find((entry) => entry.n === input.stretch);
-    if (!step || step.status === 'undone' || ![view.conversation.work?.id, view.closedWorks.at(-1)?.id].includes(step.workId)) throw conflict('Choose an active step of the open work or last closed work.');
-    const decision = this.decisions(id).find((entry) => entry.id === step.decisionId);
-    if (!decision) throw conflict('The original decision record is unavailable.');
+    const target = stepCorrectionTarget(view, this.decisions(id), input.stretch);
+    if (target.refusal || !target.step || !target.decision) throw conflict(target.refusal ?? 'The original decision record is unavailable.');
+    const { step, decision } = target;
     const action = input.choices.action ?? step.action;
     if (input.mode === 'redo' && action === 'integrate') throw conflict('Integration steps can run only during publication. Choose another action.');
     const modelId = input.choices.modelId ?? step.modelId;

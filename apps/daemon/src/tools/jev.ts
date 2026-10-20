@@ -1,5 +1,5 @@
 import { ComposerInitialSchema, ConversationComposerViewSchema } from '@jevellan/core';
-import { ownerConversationComposer } from '../owner-proxy.js';
+import { ownerConversationComposer, ownerConversationOperation } from '../owner-proxy.js';
 import { ProjectRouteCorrectionRequestSchema, ProjectRouteWhyViewSchema } from '@jevellan/core';
 import { capLines } from '@jevellan/projects';
 import { ProjectThreadOverrideEditorSchema, ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, type JevRule } from '@jevellan/core';
@@ -19,6 +19,13 @@ export const jev: OwnerHandler = async (context) => {
   await tools.status(project); // display ids for every current thread and goal
   const goals = new Map((await app.projectWork.goalList(projectId)).goals.map(row => [row.goal.id, tools.ids.one(projectId, 'G', row.goal.id)]));
   switch (context.action) {
+    case 'conversation_why': case 'correction_editor': case 'correction_preview': case 'correction_save': {
+      const operation = context.action === 'conversation_why' ? 'decision-why' : context.action === 'correction_editor' ? 'step-editor' : context.action === 'correction_preview' ? 'step-preview' : 'correction-save';
+      const input = context.action === 'conversation_why' ? { schema: 'conversation-decision-why-request-v1', decisionId: args.decision } : context.action === 'correction_editor' ? args.stretch : args.request;
+      const data = await ownerConversationOperation(app, projectId, String(args.conversation), operation, input);
+      return { text: context.action === 'correction_save' ? 'Recorded correction.' : context.action === 'conversation_why' ? 'Why this step.' : 'Change this step.', data };
+    }
+
     case 'composer_editor': case 'composer_preview': case 'composer_save': {
       if (typeof args.conversation === 'string') {
         if (args.initial !== undefined) throw new OwnerRefusal('Read the existing conversation without an initial draft.', 'invalid_arguments');

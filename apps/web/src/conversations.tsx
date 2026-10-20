@@ -1,4 +1,4 @@
-import { modelNotServed } from './project-work-copy.js';
+import { ConversationCorrectionDialog as ChangeStep, ConversationWhyPanel as Why } from './conversation-decision-panels.js';
 import { PlanReview, type PlanReviewActions } from './plan-review.js';
 import { BranchChangeNotice, branchChangeText } from './branch-change-notice.js';
 import { useShellVisibility } from './shell-visibility.js';
@@ -15,7 +15,6 @@ import { z } from 'zod';
 import {
   GitBranchChangeSchema, type GitBranchChange,
   ComposerInitialSchema,
-  CorrectionsListSchema,
   ConversationChangesSchema,
   ConversationEventSchema,
   ConversationListSchema,
@@ -38,7 +37,7 @@ import { Icon } from './icons.js';
 import { useCursorSessions, sessionRuntimeLabel } from './cursor-sessions.js';
 import { MessageDelivery, MessageInput, LatestUserMessage } from './message-delivery.js';
 import { EvidenceLink, EvidencePanel, type EvidenceTarget } from './evidence.js';
-import { Markdown, Modal, Panel, composerClearance, dateTime, followOnScroll, repinAtEnd, useDismissible, useTask, type PageProps } from './components.js';
+import { Markdown, Modal, Panel, composerClearance, followOnScroll, repinAtEnd, useDismissible, useTask, type PageProps } from './components.js';
 
 type View = z.infer<typeof ConversationPublicSchema>;
 type Step = View['stretches'][number];
@@ -1017,7 +1016,6 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
         <ChangeStep
           step={correcting}
           view={view}
-          external={project?.branchPolicy === 'external'}
           props={props}
           update={setView}
           close={() => setCorrecting(undefined)}
@@ -1026,7 +1024,6 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
       {why && (
         <Why
           decision={why}
-          stretch={view.stretches.find((entry) => entry.decisionId === why.id)}
           props={props}
           close={() => setWhy(undefined)}
           key={why.id}
@@ -1626,8 +1623,7 @@ function StepBlock({
   const editable =
     step.status !== 'undone' &&
     [view.conversation.work?.id, view.closedWorks.at(-1)?.id].includes(step.workId);
-  const corrections = view.overrides.filter((entry) => entry.request.stretch === step.n);
-  const decision = view.decisions.find((entry) => entry.id === step.decisionId);
+  const presentation = step.presentation;
   const findings = [
     ...events
       .filter((event) => event.type === 'finding')
@@ -1652,38 +1648,18 @@ function StepBlock({
           Step {step.n} · {actionLabel(step.action)}
         </h2>
         <span className="assistant-model">{model?.label ?? step.modelId}</span>
-        {step.status !== 'completed' && (
-          <span className={`assistant-step-status status-${step.status}`}>
-            {step.status === 'running' && <span className="activity-spinner" aria-hidden="true" />}
-            {step.status === 'undone' ? 'Undone' : stepStatusLabel(step.status)}
+        {presentation?.statusBadge && (
+          <span className={`assistant-step-status status-${presentation.statusBadge.tone}`}>
+            {presentation.statusBadge.spinner && <span className="activity-spinner" aria-hidden="true" />}
+            {presentation.statusBadge.label}
           </span>
         )}
-        {corrections.map((entry) => (
-          <span className="assistant-correction" key={entry.id}>
-            corrected: {entry.changes.map((change) => `${change.field} → ${change.to}`).join(', ')}
-          </span>
-        ))}
+        {presentation?.corrections.map(entry => <span className="assistant-correction" key={entry.id}>{entry.text}</span>)}
         <StretchTiming step={step} />
       </div>
-      {decision?.notices
-        .filter((notice) => notice.kind === 'preferred-needs-login')
-        .map((notice, index) => (
-          <div className="notice" key={index}>
-            {notice.text}
-            {notice.accountId && (
-              <button
-                className="text-button"
-                onClick={() =>
-                  props.navigate(
-                    `/settings/runtimes?account=${encodeURIComponent(notice.accountId!)}&login=1`,
-                  )
-                }
-              >
-                Log in
-              </button>
-            )}
-          </div>
-        ))}
+      {presentation?.notices.map((notice, index) => <div className="notice" key={index}>{notice.text}
+        {notice.action && <button className="text-button" onClick={() => props.navigate(notice.action!.href)}>{notice.action.label}</button>}
+      </div>)}
       {!!transcript.length && <div className="step-transcript cursor-transcript" aria-label={`Step ${step.n} transcript`}>
         {activity.map(item => item.kind === 'response'
           ? answerResult && finalTurnIds.has(item.id) ? null : <TranscriptTurn key={item.id} turn={item.turn} onOpen={ref => read(ref, ref)} />
@@ -1769,26 +1745,23 @@ function ConversationTime({ value }: { value: string }) {
   return <time dateTime={value} title={fullConversationTime.format(date)}>{conversationTime.format(date)}</time>;
 }
 function StretchTiming({ step }: { step: Step }) {
-  const running = step.status === 'running' && !step.endedAt;
+  const timing = step.presentation?.timing;
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
-    if (!running) return;
+    if (!timing?.ticking) return;
     setNow(Date.now());
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [running, step.startedAt]);
-  const end = step.endedAt ? Date.parse(step.endedAt) : running ? now : undefined;
-  const seconds = end === undefined ? undefined : Math.max(0, Math.floor((end - Date.parse(step.startedAt)) / 1000));
+  }, [timing?.ticking, timing?.clockStartAt]);
+  if (!timing) return <div className="stretch-timing">Timing unavailable</div>;
+  const milliseconds = timing.clockStartAt ? Math.max(0, now - Date.parse(timing.clockStartAt)) : timing.durationMs;
   return <div className="stretch-timing" aria-label={`Step ${step.n} timing, local time`}>
-    <span>Started <ConversationTime value={step.startedAt} /></span>
-    <span>{step.endedAt ? <>Ended <ConversationTime value={step.endedAt} /></> : running ? 'In progress' : 'End time not recorded'}</span>
-    {seconds !== undefined && Number.isFinite(seconds) && <span>{running ? 'Elapsed' : 'Duration'} <b>{duration(seconds)}</b></span>}
+    <span>Started <ConversationTime value={timing.startedAt} /></span>
+    <span>{timing.endedAt ? <>{timing.endLabel} <ConversationTime value={timing.endedAt} /></> : timing.endLabel}</span>
+    {milliseconds !== null && <span>{timing.durationLabel} <b>{duration(Math.floor(milliseconds / 1000))}</b></span>}
     <span className="timing-zone" title={Intl.DateTimeFormat().resolvedOptions().timeZone}>Local time</span>
   </div>;
 }
-const stepStatusLabel = (status: string) =>
-  ({ running: 'Running', interrupted: 'Interrupted', failed: 'Failed', 'timed-out': 'Timed out' })[status] ??
-  status;
 const duration = (seconds: number) =>
   seconds < 60
     ? `${seconds}s`
@@ -1801,145 +1774,6 @@ const compactNumber = (value: number) =>
     : value < 1_000_000
       ? `${(value / 1000).toFixed(value < 10_000 ? 1 : 0)}k`
       : `${(value / 1_000_000).toFixed(1)}M`;
-function ChangeStep({
-  step,
-  view,
-  external,
-  props,
-  update,
-  close,
-}: {
-  step: Step;
-  view: View;
-  external: boolean;
-  props: PageProps;
-  update(value: View): void;
-  close(): void;
-}) {
-  const models = props.data.config.configuration['x-jevellan'].menu;
-  const [action, setAction] = useState(step.action);
-  const [modelId, setModel] = useState(step.modelId);
-  const [effort, setEffort] = useState(step.effortRequested);
-  const [confirm, setConfirm] = useState(false);
-  const task = useTask(props.onError);
-  const request = useRef<{ signature: string; id: string } | undefined>(undefined);
-  const choices = {
-    ...(action !== step.action ? { action } : {}),
-    ...(modelId !== step.modelId ? { modelId } : {}),
-    ...(effort !== step.effortRequested ? { effort } : {}),
-  };
-  const changed = Object.keys(choices).length > 0;
-  const submit = (mode: 'noted' | 'redo') =>
-    task.run(async () => {
-      const body = {
-        schema: 'correct-step-v1',
-        generation: view.conversation.generation,
-        stretch: step.n,
-        mode,
-        choices,
-      };
-      const signature = JSON.stringify(body);
-      if (request.current?.signature !== signature)
-        request.current = { signature, id: `correction_${clientId()}` };
-      update(
-        await api(`/api/conversations/${view.conversation.id}/correct`, ConversationPublicSchema, 'POST', {
-          ...body,
-          clientRequestId: request.current.id,
-        }),
-      );
-      close();
-    });
-  const choice = `${actionLabel(action)}, ${models.find((entry) => entry.id === modelId)?.label ?? modelId}, ${effort}`;
-  return (
-    <Modal title="Change this step" close={close}>
-      {external && (
-        <p className="notice">
-          This project follows its own git rules. Undo changes the conversation history; repository files are
-          kept.
-        </p>
-      )}
-      {confirm ? (
-        <>
-          <p>
-            {external
-              ? `This marks the steps from ${step.n} onwards undone in the conversation and redoes the step with ${choice}. Repository files are kept.`
-              : `This undoes the code and memory changes from step ${step.n} onwards and redoes it with ${choice}. Anything outside the repository (databases, deployments, messages sent) is not undone.`}
-          </p>
-          {view.conversation.work && view.conversation.work.id !== step.workId && (
-            <p className="muted">
-              This also undoes the newer open work. Its request and notes stay with the reopened work.
-            </p>
-          )}
-          <div className="actions">
-            <button disabled={task.busy} onClick={() => void submit('redo')}>
-              {task.busy ? 'Stopping and undoing…' : 'Undo and redo'}
-            </button>
-            <button className="secondary" disabled={task.busy} onClick={() => setConfirm(false)}>
-              Back
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          <p>Step {step.n}</p>
-          <label>
-            Action
-            <select value={action} onChange={(event) => setAction(event.target.value as Action)}>
-              {[
-                'reply',
-                'plan',
-                'implement',
-                'test',
-                'review',
-                'adversarial-review',
-                'ask-you',
-                'done',
-                ...(step.action === 'integrate' ? ['integrate'] : []),
-              ].map((entry) => (
-                <option key={entry} value={entry} disabled={entry === 'integrate'}>
-                  {actionLabel(entry)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Model
-            <select value={modelId} onChange={(event) => setModel(event.target.value)}>
-              {models.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Effort
-            <select value={effort} onChange={(event) => setEffort(event.target.value as Effort)}>
-              {['low', 'medium', 'high', 'xhigh', 'max'].map((entry) => (
-                <option key={entry}>{entry}</option>
-              ))}
-            </select>
-          </label>
-          <div className="actions">
-            <button
-              disabled={task.busy || !changed || action === 'integrate'}
-              onClick={() => setConfirm(true)}
-            >
-              Override and undo
-            </button>
-            <button
-              className="secondary"
-              disabled={task.busy || !changed}
-              onClick={() => void submit('noted')}
-            >
-              Just override
-            </button>
-          </div>
-        </>
-      )}
-    </Modal>
-  );
-}
 function StepResult({
   kind,
   fallback,
@@ -1974,294 +1808,5 @@ function StepResult({
     <div className={kind === 'plan' ? 'plan-result' : 'answer-result'}>
       <Markdown onOpen={open}>{content || fallback || `Loading the full ${kind}…`}</Markdown>
     </div>
-  );
-}
-function WhyMemory({ memory }: Pick<DecisionRecord, 'memory'>) {
-  if (!memory) return null;
-  return (
-    <section className="why-memory" aria-label="Memory selection">
-      <h3>Memory</h3>
-      <p className="muted small-text">
-        {memory.source === 'search-rank' ? 'Selected by search rank.' : 'Selected by Jev.'}
-      </p>
-      <h4>Chosen memory</h4>
-      {memory.chosen.length ? (
-        <ul aria-label="Chosen memory">
-          {memory.chosen.map((note) => (
-            <li key={note}>{note}</li>
-          ))}
-        </ul>
-      ) : (
-        <p>No memory notes were selected.</p>
-      )}
-      <details>
-        <summary>Candidates ({memory.candidates.length})</summary>
-        {memory.candidates.length ? (
-          <ul aria-label="Memory candidates">
-            {memory.candidates.map((note) => (
-              <li key={note}>
-                {note}
-                {memory.chosen.includes(note) ? ' · chosen' : ''}
-                {memory.scores?.[note] === undefined ? '' : ` · score ${memory.scores[note]}`}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No candidate notes were found.</p>
-        )}
-      </details>
-    </section>
-  );
-}
-function Why({
-  decision,
-  stretch,
-  props,
-  close,
-}: {
-  decision: DecisionRecord;
-  stretch: Step | undefined;
-  props: PageProps;
-  close(): void;
-}) {
-  const [corrections, setCorrections] = useState<z.infer<typeof CorrectionsListSchema>['records']>();
-  useEffect(() => {
-    let active = true;
-    void api(
-      `/hub/overrides?ids=${encodeURIComponent(decision.correctionsShown.join(','))}`,
-      CorrectionsListSchema,
-    )
-      .then((value) => {
-        if (active) setCorrections(value.records);
-      })
-      .catch(props.onError);
-    return () => {
-      active = false;
-    };
-  }, [decision.id, props.onError]);
-  const modelLabel = (id: string) =>
-    props.data.config.configuration['x-jevellan'].menu.find((model) => model.id === id)?.label ?? id;
-  const accountLabel = (id: string) =>
-    props.data.accounts.find((entry) => entry.account.id === id)?.account.label ?? id;
-  const bars = (
-    entries: Array<[string, number | undefined]>,
-    label: (value: string) => string,
-    chosen: string,
-    name: string,
-  ) => {
-    const known = entries.filter((entry): entry is [string, number] => entry[1] !== undefined);
-    if (!known.length) return null;
-    return known
-      .sort((a, b) => b[1] - a[1])
-      .map(([value, p]) => (
-        <div className={`why-option ${value === chosen ? 'win' : ''}`} key={value}>
-          <span>{label(value)}</span>
-          <progress aria-label={`${label(value)} ${name}`} max={1} value={p} />
-          <span>{p.toFixed(2)}</span>
-        </div>
-      ));
-  };
-  const sourceLabel = (source: string) =>
-    ({
-      jev: 'Jev',
-      'only-option': 'only option',
-      guard: 'guard',
-      override: 'your override',
-      redo: 'redo',
-      manual: 'picked manually',
-      kept: 'kept',
-      pin: 'kept for this conversation',
-    })[source] ?? source;
-  return (
-    <Panel
-      title="Why this step"
-      eyebrow={stretch ? `step ${stretch.n} · ${stretch.action}` : undefined}
-      close={close}
-    >
-      <section className="why-section">
-        <h3>
-          Next step <span className="why-source">{sourceLabel(decision.action.source)}</span>
-        </h3>
-        {decision.action.guardReason && <p className="why-line">{decision.action.guardReason}</p>}
-        {bars(
-          decision.action.allowed.map((action) => [action, decision.action.probabilities?.[action]]),
-          actionLabel,
-          decision.action.chosen,
-          'probability',
-        ) ?? (
-          <p className="why-line">
-            <b>{actionLabel(decision.action.chosen)}</b>
-          </p>
-        )}
-      </section>
-      {decision.model && (
-        <section className="why-section">
-          <h3>
-            Model <span className="why-source">{sourceLabel(decision.model.source)}</span>
-          </h3>
-          {decision.model.keepCurrentP !== undefined && (
-            <p className="why-line">
-              Keep the current model? <b>{decision.model.keepCurrentP.toFixed(2)}</b>
-              {decision.model.source === 'kept' ? ', so it was kept.' : ', so Jev picked again.'}
-            </p>
-          )}
-          {bars(
-            decision.model.eligible.map((model) => [model.modelId, model.p]),
-            modelLabel,
-            decision.model.chosen,
-            'model probability',
-          ) ?? (
-            <p className="why-line">
-              <b>{modelLabel(decision.model.chosen)}</b>
-            </p>
-          )}
-          {decision.model.preferredAny && decision.model.preferredAny.modelId !== decision.model.chosen && (
-            <p className="why-line">
-              Preferred across enabled models: {modelLabel(decision.model.preferredAny.modelId)}.
-            </p>
-          )}
-          {decision.model.excluded.length > 0 && (
-            <ul className="why-rank">
-              {decision.model.excluded.map((model) => (
-                <li className="excluded" key={model.modelId}>
-                  {modelLabel(model.modelId)}: {model.reason === 'model-not-served' ? modelNotServed(modelLabel(model.modelId)) : model.reason.replaceAll('-', ' ')}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
-      {decision.effort && (
-        <section className="why-section">
-          <h3>
-            Effort <span className="why-source">{sourceLabel(decision.effort.source)}</span>
-          </h3>
-          {decision.effort.requested !== decision.effort.effective && (
-            <p className="why-line">
-              {decision.effort.requested} → <b>{decision.effort.effective}</b> (nearest effort this model
-              supports)
-            </p>
-          )}
-          {bars(
-            Object.entries(decision.effort.probabilities ?? {}),
-            (value) => value,
-            decision.effort.requested,
-            'effort probability',
-          ) ?? (
-            <p className="why-line">
-              <b>{decision.effort.effective}</b>
-            </p>
-          )}
-        </section>
-      )}
-      {decision.notices.length > 0 && (
-        <section className="why-section">
-          {decision.notices.map((notice, index) => (
-            <p className="notice" key={index}>
-              {notice.text}
-              {notice.kind === 'preferred-needs-login' && notice.accountId && (
-                <button
-                  className="text-button"
-                  onClick={() =>
-                    props.navigate(
-                      `/settings/runtimes?account=${encodeURIComponent(notice.accountId!)}&login=1`,
-                    )
-                  }
-                >
-                  Log in
-                </button>
-              )}
-            </p>
-          ))}
-        </section>
-      )}
-      <section className="why-section">
-        <WhyMemory memory={decision.memory} />
-      </section>
-      <section className="why-section">
-        <h3>Corrections used</h3>
-        {!decision.correctionsShown.length ? (
-          <p className="why-line">None</p>
-        ) : !corrections ? (
-          <p className="why-line">Loading corrections…</p>
-        ) : (
-          decision.correctionsShown.map((id) => {
-            const correction = corrections.find((entry) => entry.id === id);
-            return (
-              <div className="why-correction" key={id}>
-                {correction ? (
-                  <>
-                    <p>
-                      <strong>
-                        {correction.schema === 'composer-override-v1' && correction.request.value === null
-                          ? 'Back to Auto'
-                          : {
-                              once: 'Next decision only',
-                              pin: 'Keep for this conversation',
-                              noted: 'Just override',
-                              redo: 'Override and undo',
-                            }[correction.request.mode]}
-                      </strong>{' '}
-                      ·{' '}
-                      {correction.changes
-                        .map(
-                          (change) =>
-                            `${change.field}: ${change.from === null ? 'Auto' : change.field === 'model' ? modelLabel(change.from) : change.from} → ${change.to === null ? 'Auto' : change.field === 'model' ? modelLabel(change.to) : change.to}`,
-                        )
-                        .join(', ')}
-                    </p>
-                    <p className="muted small-text">{correction.context}</p>
-                  </>
-                ) : (
-                  <p>This earlier correction is unavailable.</p>
-                )}
-              </div>
-            );
-          })
-        )}
-      </section>
-      {decision.account && (
-        <section className="why-section">
-          <h3>Account</h3>
-          <ul className="why-rank">
-            {decision.account.ranking.map((entry) => (
-              <li
-                key={entry.accountId}
-                className={
-                  entry.accountId === decision.account?.chosen ? 'chosen' : entry.eligible ? '' : 'excluded'
-                }
-              >
-                {accountLabel(entry.accountId)}: {entry.reason}
-                {entry.accountId === decision.account?.chosen ? ' · selected' : ''}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      <section className="why-section why-jev">
-        <h3>Jev</h3>
-        {decision.jev ? (
-          <>
-            <p>
-              {decision.jev.returnedModel} · {decision.latencyMs} ms
-            </p>
-            {decision.jev.records?.map((call, index) => (
-              <p key={index}>
-                {call.kind === 'action' ? 'Next step' : call.kind === 'model' ? 'Model and effort' : call.kind === 'memory' ? 'Memory' : 'Placement'}{' '}
-                · {call.returnedModel} · {call.usage.input_tokens + call.usage.output_tokens} tokens ·{' '}
-                {call.latencyMs} ms
-              </p>
-            ))}
-          </>
-        ) : (
-          <p>
-            {decision.action.source === 'manual' || decision.action.source === 'redo'
-              ? 'This step was picked manually.'
-              : 'No Jev call was needed for this choice.'}
-          </p>
-        )}
-        <p>{dateTime(decision.at)}</p>
-      </section>
-    </Panel>
   );
 }

@@ -1,3 +1,5 @@
+import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
+import { seedConversationDecision } from './helpers/conversation-decision-fixture.js';
 import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
 import { afterEach, expect, test } from 'vitest';
@@ -159,4 +161,20 @@ test('the official MCP composer model preserves pins and saves through the canon
   for (let attempt = 0; attempt < 2; attempt++) expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'composer_save', conversation: 'mcp_composer', request } })).structuredContent)).toMatchObject({ ok: true, data: { initial: { once: { effort: 'high' } } } });
   expect((await f.app.conversations.view('mcp_composer')).composerOverrides.filter(row => row.request.clientRequestId === request.clientRequestId)).toHaveLength(1);
   expect(f.fake.starts).toHaveLength(0);
+});
+
+
+test('the official MCP transport exposes recorded conversation Why and canonical step correction templates', async () => {
+  f = await projectFixture({ control: true, testCommand: 'true' }); const { id, path, decision } = await seedConversationDecision(f, 'mcp_decision_fixture'), mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const why = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'conversation_why', conversation: id, decision: decision.id } })).structuredContent);
+  if (!why.ok) throw new Error('Expected the recorded explanation.'); expect(ConversationDecisionWhyViewSchema.parse(why.data).action.options.map(row => row.id)).toEqual(['implement', 'plan', 'reply']);
+  const read = await mcp.callTool({ name: 'jev', arguments: { action: 'correction_editor', conversation: id, stretch: 1 } });
+  expect((read.content as Array<{ text: string }>).some(row => row.text.includes('"schema":"step-correction-editor-v1"'))).toBe(true);
+  const editorResult = OwnerToolResultSchema.parse(read.structuredContent); if (!editorResult.ok) throw new Error('Expected the correction editor.'); const editor = StepCorrectionEditorSchema.parse(editorResult.data);
+  const request = { ...editor.preview.request, fields: { ...editor.fields, effort: 'high' } };
+  const reply = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'correction_preview', conversation: id, request } })).structuredContent); if (!reply.ok) throw new Error('Expected the correction preview.');
+  const preview = StepCorrectionEditorSchema.parse(reply.data), ui = StepCorrectionEditorSchema.parse(await (await f.request(`${path}/step-preview`, 'POST', request)).json());
+  expect(preview.requests).toEqual(ui.requests);
+  for (let attempt = 0; attempt < 2; attempt++) expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'correction_save', conversation: id, request: preview.requests.noted } })).structuredContent)).toMatchObject({ ok: true });
+  expect((await f.app.conversations.view(id)).overrides.filter(row => row.request.clientRequestId === preview.requests.noted!.clientRequestId)).toHaveLength(1); expect(f.fake.starts.length).toBe(1);
 });

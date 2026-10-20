@@ -1,3 +1,4 @@
+import { ConversationDecisionWhyRequestSchema, ConversationDecisionWhyViewSchema, ConversationPublicSchema, CorrectStepSchema, StepCorrectionEditorSchema, StepCorrectionPreviewSchema } from '@jevellan/core';
 import { once } from 'node:events';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { z } from 'zod';
@@ -51,33 +52,51 @@ export async function proxyConversation(app: Application, request: IncomingMessa
   return true;
 }
 
-/** Owner tools use the same closed conversation routes and temporary in-memory authority as the UI. */
-export async function ownerConversationComposer(app: Application, projectId: string, id: string, raw?: unknown) {
-  const owner = await app.conversations.ownerDevice(id);
-  const bind = (raw: unknown) => {
-    const view = parseReply(ConversationComposerViewSchema, raw);
-    if (view.projectId !== projectId || view.conversationId !== id) throw failure('This composer belongs to another conversation or project.', 409);
-    return view;
+export type OwnerConversationOperation = 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
+
+/** Closed owner operations bind the indexed resource before issuing temporary peer authority. */
+export async function ownerConversationOperation(app: Application, projectId: string, id: string, operation: OwnerConversationOperation, raw?: unknown) {
+  const location = await app.conversations.location(id);
+  if (location.projectId !== projectId) throw failure('This composer or decision belongs to another conversation or project.', 409);
+  const spec = (() => {
+    switch (operation) {
+      case 'composer-editor': return { suffix: 'choices-view', method: 'GET' as const, body: undefined, local: () => app.conversations.composerEditor(id) };
+      case 'composer-save': { const body = ComposerChoiceSchema.parse(raw); return { suffix: 'choices-editor', method: 'POST' as const, body, local: () => app.conversations.saveComposerEditor(id, body) }; }
+      case 'decision-why': { const body = ConversationDecisionWhyRequestSchema.parse(raw); return { suffix: 'decision-why', method: 'POST' as const, body, local: () => app.conversations.decisionWhy(id, body) }; }
+      case 'step-editor': { const n = z.number().int().positive().parse(raw); return { suffix: `step-editor/${n}`, method: 'GET' as const, body: undefined, local: () => app.conversations.stepEditor(id, n) }; }
+      case 'step-preview': { const body = StepCorrectionPreviewSchema.parse(raw); return { suffix: 'step-preview', method: 'POST' as const, body, local: () => app.conversations.previewStepCorrection(id, body) }; }
+      case 'correction-save': { const body = CorrectStepSchema.parse(raw); return { suffix: 'correct', method: 'POST' as const, body, local: () => app.conversations.correct(id, body) }; }
+      default: throw failure('Conversation operation not found.', 404);
+    }
+  })();
+  const path = `/api/conversations/${id}/${spec.suffix}`;
+  if (!conversationRoute(path, spec.method)) throw failure('Conversation operation not found.', 404);
+  const bind = (received: unknown) => {
+    const value = operation === 'correction-save' ? parseReply(ConversationPublicSchema, received)
+      : operation === 'decision-why' ? parseReply(ConversationDecisionWhyViewSchema, received)
+        : operation === 'step-editor' || operation === 'step-preview' ? parseReply(StepCorrectionEditorSchema, received) : parseReply(ConversationComposerViewSchema, received);
+    const actual = 'conversation' in value ? { project: value.conversation.projectId, id: value.conversation.id } : { project: value.projectId, id: value.conversationId };
+    if (actual.project !== projectId || actual.id !== id) throw failure('The returned model belongs to another conversation or project.', 502);
+    if (operation === 'decision-why' && 'decisionId' in value && value.decisionId !== ConversationDecisionWhyRequestSchema.parse(spec.body).decisionId) throw failure('The returned decision does not match the request.', 502);
+    if ('stretch' in value) {
+      const wanted = operation === 'step-editor' ? z.number().int().positive().parse(raw) : StepCorrectionPreviewSchema.parse(spec.body).stretch;
+      if (value.stretch !== wanted || value.preview.path !== `/api/conversations/${id}/step-preview`) throw failure('The returned step editor does not match the request.', 502);
+    }
+    return value;
   };
-  const choice = raw === undefined ? undefined : ComposerChoiceSchema.parse(raw);
-  if (owner === app.device.deviceId) {
-    const view = bind(await app.conversations.composerEditor(id));
-    return choice ? bind(await app.conversations.saveComposerEditor(id, choice)) : view;
-  }
-  const target = (await app.roster()).devices.find(row => row.device.id === owner);
+  if (location.ownerDeviceId === app.device.deviceId) return bind(await spec.local());
+  const target = (await app.roster()).devices.find(row => row.device.id === location.ownerDeviceId);
   if (!target || target.revoked) throw failure('The conversation owner is no longer available in this mesh.', 409);
   const auth = app.auth;
   if (!(auth instanceof UiAuth)) throw failure('Owner tools must run on the state point.', 409);
   const token = auth.issue(); app.redactor.add(token);
-  const invoke = async (operation: 'choices-view' | 'choices-editor') => {
-    const method = operation === 'choices-view' ? 'GET' : 'POST';
-    if (!conversationRoute(`/api/conversations/${id}/${operation}`, method)) throw failure('Conversation operation not found.', 404);
-    const url = new URL(DeviceOriginSchema.parse(target.device.url)); url.pathname = `${peerPrefix}${id}/${operation}`;
+  try {
+    const url = new URL(DeviceOriginSchema.parse(target.device.url)); url.pathname = `${peerPrefix}${id}/${spec.suffix}`;
     let response: Response;
     try {
-      response = await fetch(url, { method, redirect: 'manual', signal: AbortSignal.timeout(OWNER_REQUEST_TIMEOUT_MS),
-        headers: { Authorization: `Bearer ${token}`, 'X-Jevellan-Source-Device': app.device.deviceId, Accept: 'application/json', ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}) },
-        ...(method === 'POST' ? { body: JSON.stringify(choice) } : {}) });
+      response = await fetch(url, { method: spec.method, redirect: 'manual', signal: AbortSignal.timeout(OWNER_REQUEST_TIMEOUT_MS),
+        headers: { Authorization: `Bearer ${token}`, 'X-Jevellan-Source-Device': app.device.deviceId, Accept: 'application/json', ...(spec.body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+        ...(spec.body === undefined ? {} : { body: JSON.stringify(spec.body) }) });
     } catch { throw failure(proxyCopy.conversation.unreachable(target.device.name), 502); }
     if (response.status >= 300 && response.status < 400) { await response.body?.cancel(); throw failure(proxyCopy.conversation.redirect, 502); }
     const value: unknown = await response.json().catch(() => null);
@@ -86,11 +105,11 @@ export async function ownerConversationComposer(app: Application, projectId: str
       throw failure(error.success ? error.data.message : proxyCopy.conversation.unreachable(target.device.name), error.success ? response.status : 502);
     }
     return bind(value);
-  };
-  try {
-    const view = await invoke('choices-view');
-    return choice ? await invoke('choices-editor') : view;
   } finally { auth.logout(token); }
+}
+
+export async function ownerConversationComposer(app: Application, projectId: string, id: string, raw?: unknown) {
+  return parseReply(ConversationComposerViewSchema, await ownerConversationOperation(app, projectId, id, raw === undefined ? 'composer-editor' : 'composer-save', raw));
 }
 
 /** Preserve bytes and backpressure without collecting a growing conversation in memory. */

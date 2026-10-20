@@ -1,3 +1,4 @@
+import { UiAuth } from '../packages/mesh/dist/index.js';
 import { ownerConversationComposer } from '../apps/daemon/dist/owner-proxy.js';
 import { afterEach, expect, test, vi } from 'vitest';
 import { ConversationComposerViewSchema, ComposerInitialSchema, type ComposerChoice, type ConversationComposerView } from '../packages/core/dist/index.js';
@@ -85,12 +86,13 @@ test('member conversation composer reads and UI/tool writes stay on their indexe
   await member.app.conversations.wait('composer_member'); await member.app.conversations.list();
   const response = await f.request('/api/conversations/composer_member/choices-view'); expect(response.status).toBe(200); const view = ConversationComposerViewSchema.parse(await response.json());
   const choice = view.fields.find(field => field.id === 'effort')!.options.find(option => option.value === 'high')!.choice;
-  const hubWrite = vi.spyOn(f.app.conversations, 'composerChoice'), memberWrite = vi.spyOn(member.app.conversations, 'composerChoice'), revoke = vi.spyOn(f.app.auth, 'logout');
+  const auth = f.app.auth; if (!(auth instanceof UiAuth)) throw new Error('Expected the fixture state-point authority.');
+  const hubWrite = vi.spyOn(f.app.conversations, 'composerChoice'), memberWrite = vi.spyOn(member.app.conversations, 'composerChoice'), revoke = vi.spyOn(auth, 'logout'), issue = vi.spyOn(auth, 'issue');
   expect((await f.request('/api/conversations/composer_member/choices-editor', 'POST', choice)).status).toBe(200);
   expect(await f.app.ownerTools.call('jev', { schema: 'owner-tool-request-v1', caller: 'cli', action: 'composer_save', args: { project: 'project', conversation: 'composer_member', request: choice } })).toMatchObject({ ok: true, data: { conversationId: 'composer_member', initial: { once: { effort: 'high' } } } });
-  expect(hubWrite).not.toHaveBeenCalled(); expect(memberWrite).toHaveBeenCalledTimes(2); expect(revoke).toHaveBeenCalledTimes(1);
+  expect(hubWrite).not.toHaveBeenCalled(); expect(memberWrite).toHaveBeenCalledTimes(2); expect(issue).toHaveBeenCalledTimes(1); expect(revoke).toHaveBeenCalledTimes(1);
   await expect(ownerConversationComposer(f.app, 'another_project', 'composer_member', choice)).rejects.toThrow('another conversation or project');
-  expect(memberWrite).toHaveBeenCalledTimes(2); expect(revoke).toHaveBeenCalledTimes(2);
+  expect(memberWrite).toHaveBeenCalledTimes(2); expect(revoke.mock.calls.length).toBe(issue.mock.calls.length);
   expect(f.app.conversations.hasLocalConversation('composer_member')).toBe(false);
   expect((await member.app.conversations.view('composer_member')).composerOverrides.filter(row => row.request.clientRequestId === choice.clientRequestId)).toHaveLength(1);
   expect(member.fake.starts).toHaveLength(0);

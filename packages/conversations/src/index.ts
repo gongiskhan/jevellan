@@ -19,3 +19,6 @@ export * from './external-activity.js';
 export * from './checkout-history.js';
 export * from './background-drafts.js';
 export { applyComposerChoice, conversationComposerView } from './composer-view.js';
+export { conversationStepPresentation, recordedDecisionNotice } from './step-presentation.js';
+export { conversationDecisionWhy, conversationActionLabel } from './decision-view.js';
+export { stepCorrectionEditor, stepCorrectionTarget } from './correction-editor.js';

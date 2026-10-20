@@ -500,7 +500,7 @@ export const ENDPOINT = {
   models: 'Models', modelId: 'Model id', label: 'Label', efforts: 'Efforts', description: 'When to use it (Jev reads this)', addModel: 'Add model', removeModel: 'Remove model',
   background: 'Background model', backgroundHelp: "Used for Claude Code's small background calls. Defaults to the first model.", keyRefused: 'Key refused',
 } as const;
-export const modelNotServed = (model: string): string => `This account does not serve ${model}.`;
+export { modelNotServed } from '@jevellan/core/client';
 
 export const SUGGEST_SETUP = 'Suggest setup';
 export const SUGGESTED_SETUP = 'Suggested setup';
