@@ -183,7 +183,7 @@ export class OwnerTools {
     const view_ = projectStatus({ project: { id: projectId, name: project.name }, now: this.now(), settings: view.settings, coordinator: view.coordinator, coordinatorStalled: false,
       threads: view.threads, tasks: tasks.tasks, goals: goals.goals.map(row => row.goal), decisions: view.decisions.open, jobs: daily.jobs, dailies: daily.dailies, runs: daily.runs,
       windows: daily.window ? [daily.window] : [], deploys: deploys.records,
-      budgets, deviceName: id => names.get(id) ?? id, deployPaused: this.projectSettings(projectId).deploy.paused, ...(goal ? { goalFilter: goal } : {}),
+      budgets, deviceName: id => names.get(id) ?? id, deployPaused: this.projectSettings(projectId).deploy.paused, missedThisWeek: this.app.ownerSchedules.missed(projectId, 7).length, ...(goal ? { goalFilter: goal } : {}),
       holds: new Map(this.takeover.holds(projectId).map(hold => [hold.threadId, { since: hold.since, via: hold.via, tmuxSession: hold.tmuxSession }])),
       extraWaiting: this.takeover.holds(projectId).filter(hold => hold.warnedAt).map(hold => ({ schema: 'waiting-item-view-v1' as const, id: this.takeover.waitingId(hold), internalId: `held-${hold.threadId}`.slice(0, 128), kind: 'held_idle' as const,
         from: 'jevellan', text: `${hold.id} has been held with no activity since ${hold.keptAt ?? hold.since}.`, options: ['keep', 'return'], freeText: false, urgent: false, createdAt: hold.warnedAt!, updatedAt: hold.warnedAt!, state: 'open' as const })) }, this.ids);

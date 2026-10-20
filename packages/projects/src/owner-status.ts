@@ -46,6 +46,8 @@ export type StatusInput = {
   /** Waiting items the state point keeps itself (a held thread gone idle). */
   extraWaiting?: readonly WaitingItemView[];
   goalFilter?: string;
+  /** Missed nights in the last seven days (state point records). */
+  missedThisWeek?: number;
 };
 
 const TWELVE_HOURS = 12 * 3600_000;
@@ -153,7 +155,8 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
   const view: ProjectStatusView = { schema: 'project-status-view-v1', projectId, project: project.name, at: now.toISOString(), timeZone,
     coordinator: { state: coordinatorState, model: session?.modelLabel ?? null, effort: session?.effort ?? null, account: input.coordinator.session?.accountLabel ?? null },
     budgets: input.budgets, deploy: deployLine,
-    night: nightly.enabled ? `next at ${nightly.time}` : null,
+    night: nightly.enabled ? [`next at ${nightly.time}`, ...(input.windows.length ? [(() => { const last = [...input.windows].sort((a, b) => b.openedAt.localeCompare(a.openedAt))[0]!; return last.state === 'finished' ? (last.failed ? 'last night had failures' : 'last night complete') : 'night running'; })()] : []),
+      ...(input.missedThisWeek !== undefined ? [`${input.missedThisWeek} missed this week`] : [])].join(' · ') : null,
     quietHours: quiet.enabled ? { enabled: true, start: quiet.start, end: quiet.end } : null,
     goals, waiting, running, queued: [...threadQueued, ...queued], landed, finished };
   if (input.goalFilter) {
