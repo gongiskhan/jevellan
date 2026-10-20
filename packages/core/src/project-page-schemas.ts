@@ -4,6 +4,7 @@ import { ProjectWorkListViewSchema, ProjectWorkViewSchema, ProjectWorkSettingsRe
 import { ProjectWorkTaskSchema } from './project-loop-schemas.js';
 import { GoalViewSchema } from './project-goal-schemas.js';
 import { ProjectDailyListViewSchema } from './project-daily-schemas.js';
+import { ProjectWorkCardSchema, MergeConfirmationSchema } from './project-card-schemas.js';
 
 const count = z.number().int().nonnegative();
 export const ProjectSidebarViewSchema = ProjectWorkListViewSchema.extend({ schema: z.literal('project-sidebar-view-v1'),
@@ -11,7 +12,8 @@ export const ProjectSidebarViewSchema = ProjectWorkListViewSchema.extend({ schem
 export type ProjectSidebarView = z.infer<typeof ProjectSidebarViewSchema>;
 const badge = z.strictObject({ text: z.string(), tone: z.enum(['ok', 'danger', 'warn', 'muted']) });
 export const OverviewPullRequestSchema = z.strictObject({ entry: PullRequestEntrySchema, taskId: IdSchema.optional(),
-  shadow: z.boolean(), held: z.boolean(), conflicts: z.boolean(), checks: badge.nullable(), badges: z.array(badge), mergeRefusal: z.string().nullable() });
+  shadow: z.boolean(), held: z.boolean(), conflicts: z.boolean(), checks: badge.nullable(), badges: z.array(badge), mergeRefusal: z.string().nullable(),
+  showMerge: z.boolean(), mergeConfirmation: MergeConfirmationSchema.nullable() });
 export type OverviewPullRequest = z.infer<typeof OverviewPullRequestSchema>;
 const timeZone = z.string().min(1).max(80).refine(value => { try { new Intl.DateTimeFormat('en', { timeZone: value }); return true; } catch { return false; } }, 'Unknown time zone');
 const locale = z.string().min(1).max(80).refine(value => { try { return Intl.DateTimeFormat.supportedLocalesOf(value).length > 0; } catch { return false; } }, 'Unknown locale');
@@ -36,5 +38,6 @@ export type ProjectOverview = z.infer<typeof ProjectOverviewSchema>;
 /** Separate from the compact owner-tool project-status-view-v1. */
 export const ProjectPageViewSchema = z.strictObject({ schema: z.literal('project-page-view-v1'), at: TimestampSchema,
   changeToken: z.string().regex(/^[a-f0-9]{64}$/u), work: ProjectWorkViewSchema,
-  tasks: z.array(ProjectWorkTaskSchema), goals: z.array(GoalViewSchema), daily: ProjectDailyListViewSchema, overview: ProjectOverviewSchema, header: ProjectHeaderSchema });
+  tasks: z.array(ProjectWorkTaskSchema), goals: z.array(GoalViewSchema), daily: ProjectDailyListViewSchema, overview: ProjectOverviewSchema, header: ProjectHeaderSchema,
+  cards: z.array(ProjectWorkCardSchema) });
 export type ProjectPageView = z.infer<typeof ProjectPageViewSchema>;

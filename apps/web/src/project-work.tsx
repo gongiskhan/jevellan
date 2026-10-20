@@ -2,7 +2,7 @@ import { LastDeploy } from './project-deploy.js';
 import { SetupCard } from './setup-card.js';
 import { EmptySchema } from '@jevellan/core/client';
 import { AttachmentControls, LibraryMessage, ProjectLibraryPanel, useProjectAttachments } from './project-library.js';
-import { ThreadMergeHoldContext } from './thread-actions.js';
+import { ProjectCardsContext, projectCardKey } from './project-cards.js';
 import { ThreadCard } from './thread-card.js';
 import { ChatWorkCards, ChatSettingsChanges } from './chat-work-cards.js';
 import { NightlyBanner, ProjectDailyPanel, type DailyView } from './project-daily.js';
@@ -12,10 +12,10 @@ import { TerminalLauncher } from './terminal.js';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
-  CoordinatorMessageReceiptSchema, DecisionAnsweredViewSchema, EffortSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema,
-  ProjectPageViewSchema, ProjectSidebarViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskReceiptSchema, TaskTypeSchema, ThreadViewSchema,
-  type ProjectDecision, type ProjectLedgerEvent, type ProjectSidebarView, type ProjectWorkView, type PullRequestEntry,
-  type ThreadIndex, type ProjectWorkTask, type ProjectOverview, type OverviewPullRequest, type ProjectHeader, type ProjectCoordinatorActivity,
+  CoordinatorMessageReceiptSchema, DecisionAnsweredViewSchema, EffortSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema, ProjectThreadActionsViewSchema,
+  ProjectPageViewSchema, ProjectSidebarViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskReceiptSchema, TaskTypeSchema,
+  type ProjectDecision, type ProjectLedgerEvent, type ProjectSidebarView, type ProjectWorkView,
+  type ThreadIndex, type ProjectWorkTask, type ProjectOverview, type OverviewPullRequest, type ProjectHeader, type ProjectCoordinatorActivity, type ProjectWorkCard,
 } from '@jevellan/core/client';
 import { ApiError, api, empty, isCancelled } from './api.js';
 import { clientId } from './client-id.js';
@@ -267,6 +267,8 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const titleId = useId(); const tabsId = useId(); const chatId = useId(); const sideId = useId();
   const [view, setView] = useState<ProjectWorkView>();
   const [overview, setOverview] = useState<ProjectOverview>();
+  const [cards, setCards] = useState<ProjectWorkCard[]>([]);
+  const cardModels = useMemo(() => new Map(cards.map(card => [projectCardKey(card.kind, card.id), card])), [cards]);
   const [header, setHeader] = useState<ProjectHeader>();
   const [coordinatorActivity, setCoordinatorActivity] = useState<ProjectCoordinatorActivity>();
   const viewer = useRef({ timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale: navigator.language });
@@ -283,7 +285,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const resolvedWindow = useRef(resolvedDays);
   const [dialog, setDialog] = useState<'new-thread' | 'coordinator'>();
   const [notebook, setNotebook] = useState(false);
-  const [merging, setMerging] = useState<PullRequestEntry>();
+  const [merging, setMerging] = useState<OverviewPullRequest>();
   const [sent, setSent] = useState<{ text: string; known: string[] }>();
   const [answered, setAnswered] = useState<ReadonlySet<string>>(new Set());
   // Withdrawal toasts start after the chat history the first view already covered (D84, D218).
@@ -353,7 +355,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         if (moved) restart();
         if (!historyReady) publishHistory(history.snapshot(next.lastEventId));
         setView(next); setLoadError('');
-        setTasks(pageView.tasks); setGoals(pageView.goals); setDaily(pageView.daily); setOverview(pageView.overview); setHeader(pageView.header);
+        setTasks(pageView.tasks); setGoals(pageView.goals); setDaily(pageView.daily); setOverview(pageView.overview); setHeader(pageView.header); setCards(pageView.cards);
       },
       (failure) => {
         if (failure instanceof ApiError && failure.status === 401) onError(failure);
@@ -498,7 +500,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const chatPanel = !wide && current === 'chat' ? { role: 'tabpanel', 'aria-labelledby': `${tabsId}-chat` } : {};
 
   return (
-    <ThreadMergeHoldContext.Provider value={{ held: daily?.mergesHeld === true, allowed: daily?.mergeAllowedThreads ?? [] }}>
+    <ProjectCardsContext.Provider value={cardModels}>
     <OwnerCommandScope value={{ projectId: id, deviceId: coordinator.deviceId ?? undefined, cwd: 'checkout', deviceName, deviceForThread: threadId => view.threads.find(thread => thread.id === threadId)?.ownerDeviceId, navigate, onError }}>
     <div className="conversation-page pw-page" ref={page}>
       <div className="section-heading conversation-heading pw-heading" ref={heading}>
@@ -568,7 +570,6 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           {!historyLoaded ? <p className="page-loading" role="status">{copy.LOADING_CHAT}</p> : items.length ? (
             <div className="timeline pw-timeline" aria-label={copy.CHAT_LABEL}>
               {items.map((item) => <ChatEntry key={item.id} item={item} projectId={id} navigate={navigate} tasks={tasks} threads={view.threads} settings={view.settings} changed={updated} onError={onError}
-                deviceName={deviceName}
                 startAll={proposalGroups.get(item.id) ?? []} />)}
             </div>
           ) : <p className="pw-chat-empty">{copy.EMPTY_CHAT}</p>}
@@ -588,7 +589,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             {open.length ? open.map((decision, index) => (
               <DecisionCard key={decision.id} number={index + 1} projectId={id} decision={decision} titles={titles} now={now} answered={answeredQuestion} changed={updated} onError={onError} />
             )) : overview.waiting.isEmpty && <p className="pw-empty">{overview.waiting.emptyText}</p>}
-            {waitingThreads.map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} deviceName={deviceName} navigate={navigate} changed={updated} onError={onError} />)}
+            {waitingThreads.map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} navigate={navigate} changed={updated} onError={onError} />)}
             {view.decisions.answered.length > 0 && <AnsweredList decisions={view.decisions.answered} titles={titles} now={now} />}
           </section>
           <div hidden={overviewTab !== 'library'}>{overviewTab === 'library' && <ProjectLibraryPanel projectId={id} threadTitle={threadId => titles(threadId) ?? threadId} onError={onError} />}</div>
@@ -598,14 +599,14 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           </section>
           {overview.sections.filter(section => section.visible).map(section => <section key={section.id} className="pw-section" hidden={overviewTab !== 'threads'} aria-labelledby={`${sideId}-${section.id}`}>
             {sectionHeading(`${sideId}-${section.id}`, section.label, section.threadIds.length)}
-            {section.threadIds.length ? <div className="pw-list">{rows(section.threadIds).map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} deviceName={deviceName} navigate={navigate} changed={updated} onError={onError} />)}</div> : <p className="pw-empty">{section.emptyText}</p>}
+            {section.threadIds.length ? <div className="pw-list">{rows(section.threadIds).map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} navigate={navigate} changed={updated} onError={onError} />)}</div> : <p className="pw-empty">{section.emptyText}</p>}
             {section.showOlder && <button className="secondary small" onClick={() => setResolvedDays(days => days + 14)}>{copy.SHOW_OLDER}</button>}
           </section>)}
           <section className="pw-section" hidden={overviewTab !== 'pull-requests'} data-tab="pull-requests" aria-labelledby={`${sideId}-pulls`}>
             {sectionHeading(`${sideId}-pulls`, copy.PULL_REQUESTS, pulls.length)}
             {view.githubNotice && <p role="status" className="notice">{view.githubNotice}</p>}
             {pulls.length ? pulls.map((row) => (
-              <PullRequestRow key={row.entry.threadId} projectId={id} model={row} navigate={navigate} merge={() => setMerging(row.entry)} />
+              <PullRequestRow key={row.entry.threadId} projectId={id} model={row} navigate={navigate} merge={() => setMerging(row)} />
             )) : <p className="pw-empty">{copy.NO_OPEN_PULL_REQUESTS}</p>}
             {recentPulls.length > 0 && <details><summary>Recently merged · last 7 days</summary>{recentPulls.map(row => <PullRequestRow key={row.entry.threadId} projectId={id} model={row} navigate={navigate} merge={() => undefined} />)}</details>}
           </section>
@@ -621,14 +622,14 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       </div>
       {dialog === 'new-thread' && <NewThreadDialog props={props} view={view} coordinatorUi={coordinatorUi} tasks={tasks} goals={goals} move={moveHere} close={() => setDialog(undefined)} />}
       {dialog === 'coordinator' && <CoordinatorOverrideDialog props={props} view={view} close={() => setDialog(undefined)} />}
-      {merging?.pr && (
-        <MergeDialog projectId={id} entry={merging} fallbackBase={view.project.baseBranch} onError={onError}
+      {merging?.entry.pr && (
+        <MergeDialog projectId={id} model={merging} onError={onError}
           close={() => setMerging(undefined)} merged={() => { setMerging(undefined); updated(); }} />
       )}
       {notebook && <NotebookPanel projectId={id} projectName={view.project.name} revision={view.notebookRevision} onError={onError} close={() => setNotebook(false)} />}
     </div>
     </OwnerCommandScope>
-    </ThreadMergeHoldContext.Provider>
+    </ProjectCardsContext.Provider>
   );
 }
 
@@ -654,13 +655,13 @@ function OfflineNotice({ text, canMove, enabled, refusal, moving, move }: { text
 }
 
 /** One chat entry (12.2): owner messages right-aligned, Markdown replies, muted tool one-liners, event cards and notices. */
-function ChatEntry({ item, projectId, navigate, tasks, threads, settings, changed, onError, deviceName, startAll }: {
+function ChatEntry({ item, projectId, navigate, tasks, threads, settings, changed, onError, startAll }: {
   item: ChatItem; projectId: string; navigate(path: string): void; tasks: readonly ProjectWorkTask[]; threads: readonly ThreadIndex[];
-  settings: ProjectWorkView['settings']; changed(): void; onError(error: unknown): void; deviceName(id: string): string; startAll: string[];
+  settings: ProjectWorkView['settings']; changed(): void; onError(error: unknown): void; startAll: string[];
 }) {
   const thread = (threadId: string) => `/projects/${projectId}/threads/${threadId}`;
   switch (item.kind) {
-    case 'routed': return <ChatWorkCards {...{ item, projectId, tasks, threads, startAll, deviceName, navigate, changed, onError }} />;
+    case 'routed': return <ChatWorkCards {...{ item, projectId, tasks, threads, startAll, navigate, changed, onError }} />;
     case 'setup': return <SetupCard projectId={projectId} proposalId={item.proposalId} changed={changed} onError={onError} />;
     case 'settings': return <ChatSettingsChanges projectId={projectId} change={item.change} settings={settings} changed={changed} onError={onError} />;
     case 'owner':
@@ -850,7 +851,7 @@ function PullRequestRow({ projectId, model, navigate, merge }: { projectId: stri
         <RouteLink className="text-button pw-open-thread" href={thread} navigate={navigate}>{copy.OPEN_THREAD}</RouteLink>
         {taskId && <RouteLink className="text-button" href={`/projects/${projectId}/tasks/${taskId}`} navigate={navigate}>Open task</RouteLink>}
         <a className="button-link secondary small" href={pr.url} target="_blank" rel="noopener noreferrer"><Icon name="external" size={14} />{copy.OPEN_ON_GITHUB}</a>
-        {pr.state === 'open' && <span className="pw-merge" title={block ?? undefined}>
+        {model.showMerge && <span className="pw-merge" title={block ?? undefined}>
           <button type="button" className="small" disabled={!!block} title={block ?? undefined} aria-describedby={block ? blockId : undefined} onClick={merge}>
             {copy.MERGE}
           </button>
@@ -861,32 +862,32 @@ function PullRequestRow({ projectId, model, navigate, merge }: { projectId: stri
   );
 }
 
-/** Squash and merge confirmation (12.2); the base branch comes from the owner's thread view (D93). */
-function MergeDialog({ projectId, entry, fallbackBase, close, merged, onError }: {
-  projectId: string; entry: PullRequestEntry; fallbackBase: string | null; close(): void; merged(): void; onError(error: unknown): void;
+/** Merge confirmation comes from the thread owner's engine, with the projected project fallback if unreachable. */
+function MergeDialog({ projectId, model, close, merged, onError }: {
+  projectId: string; model: OverviewPullRequest; close(): void; merged(): void; onError(error: unknown): void;
 }) {
-  const { error, setError, fail } = useLocalError(onError);
+  const { error, setError, fail } = useLocalError(onError), entry = model.entry;
   const task = useTask(fail);
-  const [base, setBase] = useState<string | null>();
+  const [confirmation, setConfirmation] = useState<OverviewPullRequest['mergeConfirmation']>();
   useEffect(() => {
-    const controller = new AbortController();
-    api(`/api/projects/${projectId}/threads/${entry.threadId}`, ThreadViewSchema, 'GET', undefined, { signal: controller.signal })
-      .then((thread) => setBase(thread.baseBranch), (failure: unknown) => {
+    const controller = new AbortController(); setConfirmation(undefined);
+    api(`/api/projects/${projectId}/threads/${entry.threadId}/actions-view`, ProjectThreadActionsViewSchema, 'GET', undefined, { signal: controller.signal })
+      .then(view => setConfirmation(view.mergeConfirmation ?? model.mergeConfirmation), (failure: unknown) => {
         if (controller.signal.aborted) return;
         if (failure instanceof ApiError && failure.status === 401) onError(failure);
-        setBase(fallbackBase);
+        setConfirmation(model.mergeConfirmation);
       });
     return () => controller.abort();
-  }, [projectId, entry.threadId, fallbackBase, onError]);
-  const number = entry.pr?.number ?? 0;
+  }, [projectId, entry.threadId, model.mergeConfirmation, onError]);
+  const copyView = confirmation ?? model.mergeConfirmation;
   return (
-    <Confirm title={copy.mergeTitle(number)} action={copy.MERGE} busy={task.busy || base === undefined} close={close}
+    <Confirm title={copyView?.title ?? ''} action={copyView?.actionLabel ?? ''} busy={task.busy || confirmation === undefined} close={close}
       confirm={() => void task.run(async (signal) => {
         setError('');
         const result = await api(`/api/projects/${projectId}/threads/${entry.threadId}/pr/merge`, MergeResultViewSchema, 'POST', empty, { signal });
         if (result.merged) merged(); else setError(result.message ?? copy.MERGE_FAILED);
       })}>
-      {base === undefined ? <p className="muted">{copy.LOADING}</p> : <p className="pw-confirm-body">{copy.mergeBody(entry.title, base ?? copy.UNKNOWN_BASE)}</p>}
+      {confirmation === undefined ? <p className="muted">{copy.LOADING}</p> : <p className="pw-confirm-body">{confirmation?.body}</p>}
       {error && <p className="error">{error}</p>}
     </Confirm>
   );

@@ -1,3 +1,4 @@
+import { checksBadge, mergeBlock, openPullRequests, outcomeText, placementLine, pullRequestBadges, threadMeta } from '../packages/projects/dist/card-views.js';
 import { coordinatorChip, coordinatorLabel, working } from '../packages/projects/dist/coordinator-view.js';
 import { expect, test } from 'vitest';
 import {
@@ -11,10 +12,10 @@ import { sidebarOrder } from '../packages/projects/dist/views.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import { chatProposalIds, chatProposalGroups } from '../apps/web/src/project-work-model.js';
 import {
-  alignReports, mergeThreadToolTurns, chatItems, checksBadge, composerBlock, decisionSource, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
-  lineParts, mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, projectDot,
-  projectRoute, pullRequestBadges, reportBadge, restartedThread, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadActions, threadCreateRequest,
-  threadActivity, threadLiveText, threadMeta, threadPollDelay, threadReason, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutEchoedSummaries,
+  alignReports, mergeThreadToolTurns, chatItems, composerBlock, decisionSource, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
+  lineParts, mainIsolationBlock, nearestEffort, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, projectDot,
+  projectRoute, reportBadge, restartedThread, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadActions, threadCreateRequest,
+  threadActivity, threadLiveText, threadPollDelay, threadReason, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutEchoedSummaries,
   withoutReportCalls,
 } from '../apps/web/src/project-work-model.js';
 import { dateOnly, duration, relativeDuration, shortTime, timeStamp } from '../apps/web/src/time.js';

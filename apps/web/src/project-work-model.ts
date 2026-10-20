@@ -2,8 +2,6 @@ import { joinToolTurns } from './transcript-groups.js';
 import {
   EffortSchema,
   IdSchema,
-  NO_CHANGES,
-  MANUAL_CHECKOUT_COMPLETED,
   OWNER_STARTED_PREFIX,
   OWNER_STOPPED_THREAD,
   OWNER_WORKED_PREFIX,
@@ -27,8 +25,6 @@ import {
   type ProjectLedgerEventType,
   type ProjectWorkListView,
   type ProjectWorkView,
-  type PullRequestEntry,
-  type PullRequestState,
   type ThreadIndex,
   type ThreadReport,
   type ThreadState,
@@ -79,39 +75,7 @@ export function sidebarProjects(view: ProjectWorkListView): ProjectWorkListView[
   return view.projects;
 }
 
-/** Concluded rows: `Merged #42`, `Published to main`, `No changes`, `Stopped` or `Failed`; null while not concluded. */
-export function outcomeText(thread: Pick<ThreadIndex, 'state' | 'stateReason' | 'isolation' | 'pr'>): string | null {
-  switch (thread.state) {
-    case 'done':
-      if (thread.pr?.state === 'merged') return copy.mergedOutcome(thread.pr.number);
-      // A done worktree thread without a merged pull request concluded without changes (branch-only threads rest idle, D23).
-      return thread.stateReason === MANUAL_CHECKOUT_COMPLETED ? copy.CHECKOUT_COMPLETED : thread.isolation === 'main' && thread.stateReason !== NO_CHANGES ? copy.PUBLISHED_TO_MAIN : copy.NO_CHANGES_OUTCOME;
-    case 'stopped': return copy.STOPPED;
-    case 'failed': return copy.FAILED;
-    default: return null;
-  }
-}
-
 export type BadgeTone = 'ok' | 'danger' | 'warn' | 'muted' | 'jev';
-const CHECKS = {
-  passing: { text: copy.CHECKS_PASSING, tone: 'ok' }, failing: { text: copy.CHECKS_FAILING, tone: 'danger' },
-  pending: { text: copy.CHECKS_RUNNING, tone: 'warn' }, none: { text: copy.NO_CHECKS, tone: 'muted' },
-} as const satisfies Record<PullRequestState['checks'], { text: string; tone: BadgeTone }>;
-export function checksBadge(pr: Pick<PullRequestState, 'checks'>): { text: string; tone: BadgeTone } {
-  return CHECKS[pr.checks];
-}
-/** Why Merge is disabled (its tooltip): conflicts, else failing checks; pending checks still allow a merge (D75). */
-export function mergeBlock(pr: Pick<PullRequestState, 'checks' | 'mergeable'>): string | null {
-  return pr.mergeable === 'conflict' ? copy.MERGE_BLOCKED_CONFLICTS : pr.checks === 'failing' ? copy.MERGE_BLOCKED_CHECKS : null;
-}
-
-/**
- * The Pull requests section: open pull requests and branch-only threads with their reason (D58). Merged and closed pull
- * requests belong to Concluded, so they leave this list (D222).
- */
-export function openPullRequests(entries: readonly PullRequestEntry[]): PullRequestEntry[] {
-  return entries.filter((entry) => entry.pr ? entry.pr.state === 'open' : entry.reason !== undefined);
-}
 
 /** Why Main cannot be chosen here, or null: the Leave git text wins over the phase text (D88, D221). */
 export function mainIsolationBlock(view: Pick<ProjectWorkView, 'project' | 'gates'> & Partial<Pick<ProjectWorkView, 'settings'>>): string | null {
@@ -198,17 +162,7 @@ export function toolIcon(tool: string): IconName {
   return TOOL_ICONS[tool] ?? 'tune';
 }
 
-const isolationText = (thread: Pick<ThreadIndex, 'isolation' | 'branch'>, branch: boolean) =>
-  thread.isolation === 'main' ? copy.MAIN : branch && thread.branch ? copy.worktreeOn(thread.branch) : copy.WORKTREE;
-/** Thread row meta (12.2). `runtime` is the runtime's display name (D83), `device` the owner device's name. */
-export function threadMeta(thread: ThreadIndex, runtime: string, device: string): string {
-  return copy.threadMetaText({ runtime, modelLabel: thread.modelLabel, effort: thread.effort, isolation: isolationText(thread, false), device });
-}
-/** The thread page placement line (12.3); a worktree thread without a branch yet reads `Worktree`. */
-export function placementLine(thread: ThreadIndex, view: Pick<ThreadView, 'deviceName'>, runtime: string = thread.runtime): string {
-  return copy.placementLineText({ runtime, modelLabel: thread.modelLabel, effort: thread.effort, accountLabel: thread.accountLabel,
-    isolation: isolationText(thread, true), device: view.deviceName });
-}
+
 
 /**
  * A ` · ` separated line (the placement line, a Jev call) in the parts it wraps by: each part but the last keeps its
@@ -297,12 +251,7 @@ const REPORT_TONES = { progress: 'muted', done: 'ok', 'needs-decision': 'jev', b
 export function reportBadge(status: ThreadReport['status']): { text: string; tone: BadgeTone } {
   return { text: copy.REPORT_STATUS[status], tone: REPORT_TONES[status] };
 }
-/** The thread header's pull request badges: checks and conflicts while open, else merged or closed. */
-export function pullRequestBadges(pr: Pick<PullRequestState, 'state' | 'checks' | 'mergeable'>): Array<{ text: string; tone: BadgeTone }> {
-  if (pr.state === 'merged') return [{ text: copy.PR_MERGED, tone: 'ok' }];
-  if (pr.state === 'closed') return [{ text: copy.PR_CLOSED, tone: 'muted' }];
-  return [checksBadge(pr), ...(pr.mergeable === 'conflict' ? [{ text: copy.CONFLICTS, tone: 'danger' as const }] : [])];
-}
+
 
 // ---------- placement: the fallback chip, Why and Override (12.3, 9.8; D255) ----------
 /** The 9.8 chip of a thread placed without Jev, with the recorded reason, or null. */

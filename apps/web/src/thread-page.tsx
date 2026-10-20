@@ -17,7 +17,7 @@ import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
   THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip, lineParts, nearestEffort,
-  mergeThreadToolTurns, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, pullRequestBadges, reportBadge, threadActions, threadActivity, threadLiveText,
+  mergeThreadToolTurns, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, reportBadge, threadActions, threadActivity, threadLiveText,
   threadPollDelay, threadReason, threadStarting, transcriptNotice, whyFields, withoutEchoedSummaries, withoutReportCalls, type OverrideForm, type OverrideMode,
 } from './project-work-model.js';
 import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
@@ -128,7 +128,6 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   }, [loaded]);
   const jump = () => { following.current = true; setBehind(false); bottom.current?.scrollIntoView({ block: 'end' }); };
 
-  const runtimeName = useMemo(() => runtimeNames(data), [data]);
   const { error: actionError, setError: setActionError, fail } = useLocalError(onError);
   const allow = useTask((failure) => { fail(failure); kick.current(); });
   const turns = view?.transcript?.turns; const reports = view?.reports;
@@ -168,7 +167,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
 
   const thread = view.thread;
   const actions = threadActions(view);
-  const line = placementLine(thread, view, runtimeName(thread.runtime));
+  const line = view.card?.placementLine ?? '';
   const notice = transcriptNotice(view);
   const fallback = fallbackChip(view.placement);
   const reason = threadReason(thread.stateReason);
@@ -206,20 +205,20 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
             </button>
           )}
         </div>
-        <div className="pw-thread-owner-actions"><ThreadActions projectId={projectId} thread={thread} hold={view.mergesHeld} changed={() => kick.current()} onError={onError} /></div>
+        <div className="pw-thread-owner-actions"><ThreadActions projectId={projectId} thread={thread} presentation={view.card?.threadActions ?? undefined} changed={() => kick.current()} onError={onError} /></div>
         <div className="conversation-meta pw-thread-meta">
           {back}
           <span className={`chip pw-state-chip pw-state-${thread.state}`}>
-            <i className={dotClass(thread.state)} aria-hidden="true" />{thread.resolution ? copy.BOARD_LABELS.resolved : copy.STATE_LABELS[thread.state]}
+            <i className={dotClass(thread.state)} aria-hidden="true" />{view.card?.stateLabel}
           </span>
-          {thread.delivery === 'land' && <>{thread.landing && <span className="chip">Landed as {thread.landing.commit.slice(0, 7)}</span>}<LandingWhy projectId={projectId} threadId={thread.id} /></>}
+          {view.card?.showLandingWhy && <>{view.card.landingLabel && <span className="chip">{view.card.landingLabel}</span>}<LandingWhy projectId={projectId} threadId={thread.id} /></>}
           {thread.pr && (
             <>
               <a className="chip pw-pr-chip" href={thread.pr.url} target="_blank" rel="noopener noreferrer" title={copy.OPEN_PULL_REQUEST}>
                 <Icon name="pull-request" size={13} />{copy.pullRequestNumber(thread.pr.number)}
               </a>
               <MergeWhy projectId={projectId} threadId={thread.id} commit={thread.pr.headSha} buttonLabel="Why this merge" compact />
-              {pullRequestBadges(thread.pr).map((badge) => <span key={badge.text} className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>)}
+              {view.card?.headerBadges.map((badge) => <span key={badge.text} className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>)}
             </>
           )}
           {fallback && <span className="chip pw-badge pw-tone-warn pw-fallback-chip">{fallback}</span>}

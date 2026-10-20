@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Area1a/1b: ten Overview/sidebar/coordinator map rows migrated/refined behind versioned engine projections. Static pass;83backend area1a and77backend area1b pass; desktop-light core main actions pass. Replay-frame regression caught and fixed without weaker assertions. NoncoreCM1 twice failed obsolete Settings selector before context assertions, deferred per owner. Cards/actions and waiting items next, then ordered UI areas, intake and placement/prompt versions. Full310-row/tool parity incomplete; no further release.",
+    "why": "Area1a\u20131c:13Overview/sidebar/coordinator/card-action rows migrated/refined. Latest static pass,91affected backend pass,3desktop-light main actions pass including fake-repository Publish+Merge with actual-owner confirmation. Existing guards retained. Waiting items and shared thread owner-tool parity next before closing this area; then ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1noncore twicefailed obsolete Settings selector remains deferred. No further release.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Area1a/1b: ten Overview/sidebar/coordinator map rows migrated/refined behind versioned engine projections. Static pass;83backend area1a and77backend area1b pass; desktop-light core main actions pass. Replay-frame regression caught and fixed without weaker assertions. NoncoreCM1 twice failed obsolete Settings selector before context assertions, deferred per owner. Cards/actions and waiting items next, then ordered UI areas, intake and placement/prompt versions. Full310-row/tool parity incomplete; no further release.",
+    "why": "Area1a\u20131c:13Overview/sidebar/coordinator/card-action rows migrated/refined. Latest static pass,91affected backend pass,3desktop-light main actions pass including fake-repository Publish+Merge with actual-owner confirmation. Existing guards retained. Waiting items and shared thread owner-tool parity next before closing this area; then ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1noncore twicefailed obsolete Settings selector remains deferred. No further release.",
     "status": "in-progress"
   },
   {
@@ -1155,6 +1155,12 @@
     "id": "br-cm1-context-smoke",
     "title": "Update legacy compaction browser journey during Settings migration",
     "why": "CM1 desktop-light failed its first run and exact rerun at the absent Compact at percent Settings selector before reaching context assertions. Owner says record non-core failures without repairing them now. Keep behavior assertions and migrate this smoke with the Settings area; engine context/timezone tests pass, no context-browser pass claimed.",
+    "status": "planned"
+  },
+  {
+    "id": "br-thread-owner-action-parity",
+    "title": "Complete owner-tool parity for shared thread actions",
+    "why": "Card/HTTP action models and UI controls are migrated; the existing twelve-tool surface still needs guarded access and resulting-state parity for all shared thread controls. Required to complete area1, before moving to the next UI area. Preserve ownership forwarding, confirmation, idempotence, production refusal and existing resource guards.",
     "status": "planned"
   }
 ]

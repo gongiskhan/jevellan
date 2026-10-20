@@ -1,47 +1,53 @@
-import { createContext, useContext, useState } from 'react';
-import { MergeResultViewSchema, ThreadViewSchema, type ThreadActionRequest, type ThreadIndex } from '@jevellan/core/client';
+import { useContext, useEffect, useState } from 'react';
+import { MergeResultViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema, type ProjectThreadActionsView, type ThreadActionItem, type ThreadActionRequest, type ThreadIndex } from '@jevellan/core/client';
 import { api, empty } from './api.js';
 import { clientId } from './client-id.js';
 import { Confirm, useTask } from './components.js';
-import { mergeBlock, PROJECT_WORK_UPDATED } from './project-work-model.js';
+import { PROJECT_WORK_UPDATED } from './project-work-model.js';
+import { ProjectCardsContext, projectCardKey } from './project-cards.js';
 import * as copy from './project-work-copy.js';
 
-export const ThreadMergeHoldContext = createContext<{ held: boolean; allowed: readonly string[] } | undefined>(undefined);
+type ConfirmationItem = Exclude<ThreadActionItem, { kind: 'link' }>;
 
-/** The same owner actions in chat cards, Overview and the thread header. */
-export function ThreadActions({ projectId, thread, changed, onError, hold }: { projectId: string; thread: ThreadIndex; hold?: boolean | undefined; changed?: (() => void) | undefined; onError?: ((error: unknown) => void) | undefined }) {
-  const projectHold = useContext(ThreadMergeHoldContext);
-  const held = hold ?? (projectHold ? projectHold.held && !projectHold.allowed.includes(thread.id) : thread.landingStage === 'held');
-  const [error, setError] = useState(''), [confirm, setConfirm] = useState<'merge' | 'resolve'>();
+/** Executes the engine's owner-action view; mutation services still enforce their own current guards. */
+export function ThreadActions({ projectId, thread, presentation, changed, onError }: { projectId: string; thread: ThreadIndex; presentation?: ProjectThreadActionsView | undefined; changed?: (() => void) | undefined; onError?: ((error: unknown) => void) | undefined }) {
+  const cards = useContext(ProjectCardsContext), model = presentation ?? cards.get(projectCardKey('thread', thread.id))?.threadActions;
+  const [error, setError] = useState(''), [confirm, setConfirm] = useState<ConfirmationItem>();
+  const [mergeConfirmation, setMergeConfirmation] = useState<ProjectThreadActionsView['mergeConfirmation']>(), [loadingMerge, setLoadingMerge] = useState(false);
   const operation = useTask(failure => { setError(failure instanceof Error ? failure.message : String(failure)); onError?.(failure); });
+  useEffect(() => {
+    setMergeConfirmation(undefined);
+    if (confirm?.kind !== 'merge') { setLoadingMerge(false); return; }
+    const controller = new AbortController();
+    api(`/api/projects/${projectId}/threads/${thread.id}/actions-view`, ProjectThreadActionsViewSchema, 'GET', undefined, { signal: controller.signal })
+      .then(next => { if (!controller.signal.aborted) setMergeConfirmation(next.mergeConfirmation); }, () => undefined)
+      .finally(() => { if (!controller.signal.aborted) setLoadingMerge(false); });
+    return () => controller.abort();
+  }, [confirm?.kind, projectId, thread.id]);
   const refresh = () => { changed?.(); window.dispatchEvent(new Event(PROJECT_WORK_UPDATED)); };
   const act = (action: ThreadActionRequest['action']) => void operation.run(async signal => {
     setError(''); await api(`/api/projects/${projectId}/threads/${thread.id}/actions`, ThreadViewSchema, 'POST', { schema: 'thread-action-request-v1', clientRequestId: clientId(), action }, { signal, waitForHub: true });
     setConfirm(undefined); refresh();
   });
-  const open = thread.pr?.state === 'open', resting = !['queued', 'preparing', 'running', 'publishing', 'attached'].includes(thread.state);
-  const block = held ? copy.MERGE_HELD : thread.pr ? mergeBlock(thread.pr) : null;
+  if (!model) return null;
+  const confirmation = confirm?.kind === 'merge' ? mergeConfirmation ?? confirm.confirmation : confirm?.confirmation;
   return <>
     <div className="actions pw-thread-actions">
-      {resting && thread.fixable?.checks && <button className="secondary small" disabled={operation.busy} onClick={() => act('fix-checks')}>{copy.FIX_CHECKS}</button>}
-      {resting && thread.fixable?.conflicts && <button className="secondary small" disabled={operation.busy} onClick={() => act('resolve-conflicts')}>{copy.RESOLVE_CONFLICTS}</button>}
-      {resting && !!thread.fixable?.comments && <button className="secondary small" disabled={operation.busy} onClick={() => act('address-comments')}>{copy.addressComments(thread.fixable.comments)}</button>}
-      {thread.delivery === 'land' && resting && !thread.landing && !thread.resolution && <button className="small" disabled={operation.busy || held} onClick={() => act('land-now')}>Land now</button>}
-      {open && thread.delivery === 'pull-request' && <button className="secondary small" disabled={operation.busy || !resting || held} onClick={() => act('land-instead')}>Land instead</button>}
-      {open && <button className="small" disabled={operation.busy || !!block || !resting} title={block ?? undefined} onClick={() => setConfirm('merge')}>{copy.MERGE}</button>}
-      {thread.pr && <a className="button-link secondary small" href={thread.pr.url} target="_blank" rel="noreferrer">{copy.OPEN_ON_GITHUB}</a>}
-      {thread.fixable?.publish && <button className="secondary small" disabled={operation.busy} title={copy.PUBLISH_HELP} onClick={() => act('publish')}>{copy.PUBLISH}</button>}
-      {!open && ['idle', 'waiting-for-you', 'failed'].includes(thread.state) && !thread.resolution && <button className="secondary small" disabled={operation.busy} onClick={() => thread.fixable?.publish ? setConfirm('resolve') : act('resolve')}>{copy.RESOLVE}</button>}
-      {thread.resolution && ['idle', 'failed'].includes(thread.state) && <button className="secondary small" disabled={operation.busy} onClick={() => act('reopen')}>{copy.REOPEN}</button>}
+      {model.items.map(item => item.kind === 'link'
+        ? <a key={item.id} className="button-link secondary small" href={item.href} target="_blank" rel="noreferrer">{item.label}</a>
+        : <button key={item.id} className={item.secondary ? 'secondary small' : 'small'} disabled={operation.busy || !item.enabled} title={item.refusal ?? item.help ?? undefined} onClick={() => {
+          if (item.confirmation) { setLoadingMerge(item.kind === 'merge'); setConfirm(item); }
+          else if (item.kind === 'mutation') act(item.id);
+        }}>{item.label}</button>)}
     </div>
     {error && <p className="error" role="alert">{error}</p>}
-    {confirm && <Confirm title={confirm === 'merge' ? copy.mergeTitle(thread.pr!.number) : copy.RESOLVE} action={confirm === 'merge' ? copy.MERGE : copy.RESOLVE} busy={operation.busy} close={() => setConfirm(undefined)} confirm={() => {
-      if (confirm === 'resolve') { act('resolve'); return; }
+    {confirm && confirmation && <Confirm title={confirmation.title} action={confirmation.actionLabel} busy={operation.busy || loadingMerge} close={() => setConfirm(undefined)} confirm={() => {
+      if (confirm.kind === 'mutation') { act(confirm.id); return; }
       void operation.run(async signal => {
         const result = await api(`/api/projects/${projectId}/threads/${thread.id}/pr/merge`, MergeResultViewSchema, 'POST', empty, { signal });
         if (!result.merged) { setError(result.message ?? copy.MERGE_FAILED); return; }
         setConfirm(undefined); refresh();
       });
-    }}><p>{confirm === 'resolve' ? copy.RESOLVE_COMMITS_CONFIRM : copy.mergeBody(thread.title, copy.BASE_BRANCH)}</p>{error && <p className="error">{error}</p>}</Confirm>}
+    }}><p>{confirmation.body}</p>{error && <p className="error">{error}</p>}</Confirm>}
   </>;
 }

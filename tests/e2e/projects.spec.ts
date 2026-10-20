@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { CleanupStateSchema, DeviceRosterSchema, MergeDocumentsViewSchema, ProjectJobRunListViewSchema, ProjectDeployViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
+import { ProjectThreadActionsViewSchema, CleanupStateSchema, DeviceRosterSchema, MergeDocumentsViewSchema, ProjectJobRunListViewSchema, ProjectDeployViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
@@ -2573,5 +2573,35 @@ test('WG9 owner labels, Claude app prompts, quiet hours and OAuth connect', asyn
   await page.screenshot({ path: info.outputPath(`ekoa-oauth-${layout(info)}.png`), fullPage: true });
   const latest = (await work(page)).settings, { schema: _s, projectId: _p, revision: rev, ...kept } = latest; void _s; void _p;
   expect((await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision: rev, settings: { ...kept, notifications: before.notifications } } })).ok()).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+
+test('EV1 engine card publication and owner merge confirmation preserve the resulting thread state', async ({ page }, info) => {
+  const errors = await begin(page);
+  await page.goto('about:blank');
+  const prepared = await control('/projects/overview', { schema: 'fixture-overview-v1', action: 'prepare' }) as { threadId: string; publishThreadId: string };
+  await page.goto('/projects/projects_fixture');
+  await expect(page.getByRole('heading', { name: 'Projects fixture', exact: true })).toBeVisible(LONG);
+  await sectionTab(page, info, 'Threads');
+  const card = page.locator(`.pw-side [data-thread-id="${prepared.publishThreadId}"]`);
+  await card.getByRole('button', { name: 'Publish', exact: true }).click();
+  await expect(region(page, 'Ready for review')).toContainText('PAR3 publish work', LONG);
+  await expect(card.getByRole('button', { name: 'Merge', exact: true })).toBeEnabled(LONG);
+  const actions = ProjectThreadActionsViewSchema.parse(await read(page, `${PROJECT}/threads/${prepared.publishThreadId}/actions-view`));
+  expect(actions.mergeConfirmation).not.toBeNull();
+  await card.getByRole('button', { name: 'Merge', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText(actions.mergeConfirmation!.body);
+  await expect(dialog.getByRole('button', { name: actions.mergeConfirmation!.actionLabel, exact: true })).toBeEnabled(LONG);
+  await page.screenshot({ path: `test-results/EV1-owner-merge-confirmation-${layout(info)}.png`, fullPage: false });
+  await dialog.getByRole('button', { name: actions.mergeConfirmation!.actionLabel, exact: true }).click();
+  await expect(dialog).toHaveCount(0, LONG);
+  await expect.poll(async () => (await threadView(page, prepared.publishThreadId)).thread.pr?.state, LONG).toBe('merged');
+  const finished = await threadView(page, prepared.publishThreadId);
+  await expect(region(page, 'Resolved')).toContainText('PAR3 publish work', LONG);
+  await expect(card.locator('.pw-outcome')).toHaveText(finished.card!.mergedOutcome!);
+  expect(finished.card!.outcome).toBe(finished.card!.mergedOutcome);
+  await page.screenshot({ path: `test-results/EV1-engine-card-merged-${layout(info)}.png`, fullPage: false });
   expect(errors).toEqual([]);
 });

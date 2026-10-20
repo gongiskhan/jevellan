@@ -1,6 +1,7 @@
 import { NotificationLevelSchema, ProjectNotificationPreferencesSchema, defaultQuietHours, defaultProjectNotifications } from './notification-schemas.js';
 import { OwnerViaSchema } from './project-send-schemas.js';
 import { z } from 'zod';
+import { ProjectWorkCardSchema, ThreadMutationActionSchema } from './project-card-schemas.js';
 import { ProjectDeploySettingsSchema } from './project-deploy-schemas.js';
 import { DeliverySchema, LandingCheckSchema, ThreadLandingSchema } from './project-landing-schemas.js';
 import { ProjectRelativePathSchema } from './project-parity-schemas.js';
@@ -530,6 +531,7 @@ export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project
   board: z.strictObject(Object.fromEntries(['waiting', 'review', 'working', 'landing', 'landed', 'idle', 'resolved'].map(group => [group, z.array(z.strictObject({ id: IdSchema, at: TimestampSchema }))])) as Record<'waiting' | 'review' | 'working' | 'landing' | 'landed' | 'idle' | 'resolved', z.ZodArray<z.ZodObject<{ id: typeof IdSchema; at: typeof TimestampSchema }, z.core.$strict>>>).optional() });
 export type ProjectWorkView = z.infer<typeof ProjectWorkViewSchema>;
 export const ThreadViewSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-thread-view-v1'),
+  card: ProjectWorkCardSchema.optional(),
   notices: z.array(z.strictObject({ at: TimestampSchema, text: z.string().max(4000), kind: z.enum(['info', 'error']) })).max(20).optional(),
   escalations: ThreadLocalSchema.shape.escalations,
   fixTurns: z.array(z.strictObject({ turn: positive, fix: ThreadFixSchema })).optional(),
@@ -555,7 +557,7 @@ export const ThreadCreateRequestSchema = z.strictObject({ schema: z.literal('thr
   // A restart's owner note for placement, sent by the thread's device to the coordinator device (D266); the New thread form sends none.
   note: z.string().max(400).optional() });
 export const ThreadActionRequestSchema = z.strictObject({ schema: z.literal('thread-action-request-v1'), clientRequestId: IdSchema,
-  action: z.enum(['fix-checks', 'resolve-conflicts', 'address-comments', 'publish', 'land-now', 'land-instead', 'resolve', 'reopen']) });
+  action: ThreadMutationActionSchema });
 export type ThreadActionRequest = z.infer<typeof ThreadActionRequestSchema>;
 export const ThreadActionReceiptSchema = z.strictObject({ schema: z.literal('thread-action-receipt-v1'), request: ThreadActionRequestSchema, at: TimestampSchema, applied: z.boolean() });
 export const ThreadMessageRequestSchema = z.strictObject({ schema: z.literal('thread-message-request-v1'),

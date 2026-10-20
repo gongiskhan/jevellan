@@ -1,3 +1,4 @@
+import { threadActionView, threadCardView } from './card-views.js';
 import { overviewBoard } from './owner-status.js';
 import { ProjectSidebarViewSchema, type ProjectSidebarView } from '@jevellan/core';
 /** Sidebar order: by name without regard to case, so rows never move while their counts change. */
@@ -198,6 +199,15 @@ export class ProjectViews {
       settings: shown.settings, ...(githubNotice ? { githubNotice } : {}), ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator, threads,
       decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES, devices, board: overviewBoard(threads), needsOwner: decisionLists(decisions).open.length + threads.filter(thread => boardGroup(thread) === 'waiting').length + await this.#drafts(projectId) });
   }
+  /** Owner-target projection: the base is this thread's recorded base, independent of the caller's checkout. */
+  async actions(projectId: string, threadId: string) {
+    const thread = this.#o.store.get(threadId);
+    if (!thread || thread.projectId !== projectId) throw refuse(THREAD_NOT_FOUND, 404);
+    const ledger = this.#o.ledgers.thread(projectId, threadId);
+    const index = this.#o.store.index(thread, this.#o.store.labels(threadId), ledger.events().at(-1)?.t ?? thread.createdAt);
+    const held = await this.#o.mergesHeld?.(projectId, threadId).catch(() => undefined);
+    return threadActionView(index, held ?? index.landingStage === 'held', thread.baseBranch);
+  }
   /** `GET /api/projects/:id/threads/:tid` for a thread this device owns (D81 `canMessage`; overrides as the API allows them, D252). */
   async thread(projectId: string, threadId: string): Promise<ThreadView> {
     const thread = this.#o.store.get(threadId);
@@ -212,8 +222,9 @@ export class ProjectViews {
     const kept = isTerminal(thread.state) ? this.#o.store.local(threadId).unsettledCheckout?.message : undefined;
     const routed = events.findLast(event => event.type === 'thread-message-route');
     const mergesHeld = await this.#o.mergesHeld?.(projectId, threadId).catch(() => undefined);
-    return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: { ...this.#o.store.index(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt),
-      sessionCache: sessionCacheSummaries(cacheRecords(ledger)).slice(-500) },
+    const index = { ...this.#o.store.index(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt), sessionCache: sessionCacheSummaries(cacheRecords(ledger)).slice(-500) };
+    return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: index,
+      card: threadCardView(index, { deviceName: () => this.#o.deviceName, runtimeName: id => this.#o.runtimes.get(id)?.displayName ?? id, held: mergesHeld ?? index.landingStage === 'held', baseBranch: thread.baseBranch }),
       ...(this.#o.store.local(threadId).memoryRecall ? { memoryRecall: this.#o.store.local(threadId).memoryRecall } : {}),
       ...(this.#o.store.local(threadId).escalations ? { escalations: this.#o.store.local(threadId).escalations } : {}),
       notices: events.filter(event => event.type === 'notice').slice(-20).map(event => { const notice = ledger.payload(event as ProjectLedgerEvent & { type: 'notice' }); return { at: event.t, text: clipRedacted(notice.text, 4000), kind: notice.kind }; }),
