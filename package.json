@@ -1,6 +1,6 @@
 {
   "name": "jevellan",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Autonomous development, coordinated.",
   "type": "module",
   "license": "MIT",
@@ -29,8 +29,8 @@
     "tsconfig*.json"
   ],
   "dependencies": {
-    "@jevellan/cli": "0.5.1",
-    "@jevellan/web": "0.5.1"
+    "@jevellan/cli": "0.6.0",
+    "@jevellan/web": "0.6.0"
   },
   "bundleDependencies": [
     "@jevellan/cli",

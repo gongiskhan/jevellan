@@ -905,7 +905,7 @@ async function projectControl(request, response) {
     const now = Date.now(), at = new Date(now).toISOString();
     for (const [key, state, extra] of [
       ['review', 'in-review', { fixable: { checks: true, conflicts: true, comments: 2, publish: false }, pr: { number: 99, url: `https://github.com/${PROJECTS_REPOSITORY}/pull/99`, state: 'open', headSha: '9'.repeat(40), checks: 'failing', mergeable: 'conflict', updatedAt: at } }],
-      ['working', 'running', {}], ['attached', 'attached', {}], ['landing', 'in-review', { landing: 'verifying' }], ['merging', 'in-review', { landing: 'merging' }], ['held', 'in-review', { landing: 'held' }],
+      ['working', 'running', {}], ['attached', 'attached', {}], ['landing', 'in-review', { landingStage: 'verifying' }], ['merging', 'in-review', { landingStage: 'merging' }], ['held', 'in-review', { landingStage: 'held' }],
       ['waiting', 'failed', {}], ['idle', 'idle', {}], ['resolved', 'done', { endedAt: at }],
       ['older', 'idle', { resolution: { by: 'owner', at: new Date(now - 20 * 86_400_000).toISOString() } }],
     ]) await new HubProjectAccess(application.hub, member.device.deviceId).publishThread({ schema: 'project-thread-index-v1', revision: 0, id: `overview_${key}`, projectId, title: `PAR3 ${key}`, state, isolation: 'worktree', ownerDeviceId: member.device.deviceId, runtime: 'claude', modelLabel: 'Fable', effort: 'high', accountLabel: 'Projects Claude', turns: 1, createdAt: at, updatedAt: at, ...extra }, 1);

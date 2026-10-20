@@ -986,13 +986,13 @@
   {
     "id": "wg-release",
     "title": "Release, installation and live checks",
-    "why": "Release clock ended 2026-10-20T00:32:57.724Z; gate unaccepted. Full backend 2501/32/1; browser 96 passed, 100 failed, 208 skipped. Final focused 278 backend cases and 12 browser cases/40 retained images+vision judgements pass; two reviews and fixes complete. Paired classification 29/32 backend, 0/100 browser; unavailable counterparts are not passes. Full visual evidence misses 22 images. Both devices remain 0.5.1; no release/install/switch/live.",
-    "status": "blocked"
+    "why": "Revised owner gate accepted: backend2547passed/0failed/1Node20skip; typecheck/lint pass; all five core desktop-light journeys pass. J8/J11/LJ2 each fail twice and remain deferred. The Overview fixture migration was corrected failing-first. Preparing0.6.0 without bridge; publication/install/switch not yet done.",
+    "status": "in-progress"
   },
   {
     "id": "wg-release-publication",
     "title": "Finish the 0.6.0 gate and publication",
-    "why": "Fresh bridge Codex brief authorizes step 2.1: diagnose fixture stalls, complete original gate classification and images, then 0.6.0 publication. Historical expired clocks remain closed; see docs/acceptance/bridge-codex-2026-10/README.md.",
+    "why": "Revised owner gate accepted: backend2547passed/0failed/1Node20skip; typecheck/lint pass; all five core desktop-light journeys pass. J8/J11/LJ2 each fail twice and remain deferred. The Overview fixture migration was corrected failing-first. Preparing0.6.0 without bridge; publication/install/switch not yet done.",
     "status": "in-progress"
   },
   {
@@ -1016,7 +1016,7 @@
   {
     "id": "bridge-codex-060",
     "title": "Finish 0.6.0 before bridge integration",
-    "why": "Step 2.1 deadline 2026-10-20T11:39:58Z. Fixture stalls and premature readiness fixed failing-first:40 affected cases pass; final1412-request probe max95ms, no starvation, clean teardown. Fresh full gate, original comparisons and missing images follow. Both installations remain0.5.1; no release/switch.",
+    "why": "Revised owner gate accepted: backend2547passed/0failed/1Node20skip; typecheck/lint pass; all five core desktop-light journeys pass. J8/J11/LJ2 each fail twice and remain deferred. The Overview fixture migration was corrected failing-first. Preparing0.6.0 without bridge; publication/install/switch not yet done.",
     "status": "in-progress"
   },
   {
@@ -1106,13 +1106,13 @@
   {
     "id": "br-live-071",
     "title": "Remaining live journeys",
-    "why": "Owner plan requires only the healthy ERP check, a deploy message after a real landing and sandbox automatic rollback now. Other live journeys remain not run.",
+    "why": "Owner plan requires only a healthy result from the ERP check, a deploy message after a real landing and sandbox automatic rollback now. Other live journeys remain not run.",
     "status": "planned"
   },
   {
     "id": "br-browser-071",
     "title": "Remaining browser and visual coverage",
-    "why": "Desktop light runs once under the owner release gate; four-layout coverage and noncore browser failures are planned follow-up, with no missing evidence treated as passed.",
+    "why": "Remaining noncore coverage is planned after the working bridge release. Desktop-light J8/J11 stale routes and LJ2 retired-field assertion each failed twice;37 full-run skips are not passes. Required core gaps were run separately and pass after the Overview fixture correction.",
     "status": "planned"
   }
 ]

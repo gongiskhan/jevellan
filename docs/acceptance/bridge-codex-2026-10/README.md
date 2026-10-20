@@ -1,5 +1,7 @@
 # Bridge Codex pass
 
+Current owner plan: 0.6.0 by 08:30 UTC, 0.7.0 by 10:30 UTC, daily use goal 11:00 UTC on 20 October. Decisions 11–15 supersede the earlier clocks, classification, integration procedure and review timing.
+
 Fresh run on 20 October 2026. Main starts at c1248ab2; origin/bridge is ac98492f. Neither 0.6.0 nor 0.7.0 is released or installed. Both active devices are reported on 0.5.1; fresh installation checks follow. The full required authority documents and the complete bridge surface map were read before implementation. PRD.md, PLANING.md and TASKS.md are absent.
 
 ## Numbered decisions
@@ -47,3 +49,12 @@ Simulated, final responsiveness probe **passed**: 1,412 authenticated HTTP reque
 15. Publish and install 0.7.0 directly, record readiness, then perform one scoped closing review while the owner can use it. Further UI work belongs to 0.7.1. Interactive authentication remains blocked with an exact owner step.
 
 Checkpoint preserved at 04e41062: fixture probe passed 1,412 requests, maximum 95 ms; 40 affected backend checks passed. Full revised gates start next. No release or installation is claimed yet.
+
+Revised full backend gate (simulated): **2,547 passed, zero failed, one skipped**, six workers. The skipped fixture remains not run. Desktop light selected exactly 100 journeys across the ordinary, improver and projects groups and is now running once. No release or installation is claimed yet.
+
+Desktop light, simulated: **60 passed, three failed, 37 skipped** of 100 selected. J8 and J11 still navigate to the project home before looking for the new-conversation form; LJ2 asserts the retired `autoMerge` field. These noncore cases are rerun once and recorded, without fixes in this release stage. The serial Projects file skipped later core journeys; settings save, Overview and the deploy message get fresh first attempts. Typecheck and lint pass. All 88 generated documentation images were retained privately before only generated outputs were restored.
+
+16. Parent operational authorization permits the normal managed bridge interactive login for an existing browser SSO attempt after installation. Authentication is labelled blocked only if that normal path genuinely cannot complete; no native credential files are copied. The separate OAuth integration remains deferred.
+17. Darwin cache reuse is optional and conditional: the official archive digest, all external lock entries/integrities and dependency edges, Node ABI, unchanged external file bytes, current source/shared compiled bytes and an extracted CLI/native-PTY smoke must match. It is never reported as a native build. npm supports packaging existing [bundled dependencies](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#bundledependencies); Node documents its [module ABI check](https://nodejs.org/download/release/latest-v22.x/docs/api/process.html#processversions). The preflight matches 444 external entries and ABI 127 on both devices; candidate verification is pending.
+
+The three noncore failures repeated on their single rerun (three selected, zero skipped); they remain recorded failures. Fresh core checks pass settings save and the deploy-message journey. Overview failed twice, exposing a stale synthetic index: the fixture used retired `landing` string values, which the current schema discards, instead of `landingStage`. Three fixture records now use the current field. The original Overview journey then passes with all assertions unchanged; lint and the focused readiness test also pass. Production code did not change in this correction. Thread-list and thread-page journeys passed in the full desktop-light run. The revised owner gate is accepted with these explicit noncore failures and skipped follow-up journeys; version 0.6.0 is prepared next.
