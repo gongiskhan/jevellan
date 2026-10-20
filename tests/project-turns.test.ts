@@ -258,7 +258,7 @@ test('the launcher keeps a session on its account, starts fresh on another eligi
   expect(kept).toMatchObject({ accountId: 'acc_home', accountLabel: 'Home', accountChanged: false, resumed: true, secretRef: null, gitIdentity: { name: 'Owner', email: 'owner@example.invalid' } });
   const input = fake.turnStarts[0]!;
   expect(input).toMatchObject({ owner: { kind: 'thread', id: 'thread_a' }, turn: 2, permissions: 'write', safetyProfile: 'thread', resume: { sessionId: 'session-1' }, prompt: 'Next.', model: 'scripted-model', effort: 'high' });
-  expect(input.launch.env).toEqual({ JEVELLAN_STRETCH_TOKEN: expect.any(String), JEVELLAN_DAEMON_URL: 'http://127.0.0.1:4100', GIT_AUTHOR_NAME: 'Owner', GIT_AUTHOR_EMAIL: 'owner@example.invalid',
+  expect(input.launch.env).toEqual({ JEVELLAN_STRETCH_TOKEN: expect.any(String), JEVELLAN_DAEMON_URL: 'http://127.0.0.1:4100', JEVELLAN_ROLE: 'thread', GIT_AUTHOR_NAME: 'Owner', GIT_AUTHOR_EMAIL: 'owner@example.invalid',
     GIT_COMMITTER_NAME: 'Owner', GIT_COMMITTER_EMAIL: 'owner@example.invalid' });
   expect(input.launch.mcpServers.jevellan).toMatchObject({ command: process.execPath, args: [expect.stringMatching(/bin\/jevellan\.mjs$/), 'mcp-bridge'], env: input.launch.env });
   expect(BridgeToolsSchema.parse(await bridges.request(input.launch.env.JEVELLAN_STRETCH_TOKEN, { schema: 'bridge-request-v1', operation: 'list' })).tools.map((tool) => tool.name)).toContain('jevellan_thread_report');
