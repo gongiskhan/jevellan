@@ -130,3 +130,12 @@ test('a Codex folder needs an auth file, and a folder inside the Jevellan home i
   const refused = await addInPlace({ label: 'inside', runtime: 'claude', folder: inside });
   expect(refused.status).toBeGreaterThanOrEqual(400); expect(JSON.stringify(refused.body)).toContain('outside the Jevellan home');
 });
+
+test('A bridge command is found by its full path on the given PATH', async () => {
+  const { executableOnPath } = await import('../apps/daemon/dist/owner-bridge.js');
+  const first = join(folder, 'first'), second = join(folder, 'second'); mkdirSync(first); mkdirSync(second);
+  writeFileSync(join(second, 'tool'), '#!/bin/sh\n', { mode: 0o755 }); writeFileSync(join(first, 'tool'), 'not executable', { mode: 0o644 });
+  expect(executableOnPath('tool', `relative:${first}:${second}`)).toBe(join(second, 'tool'));
+  expect(executableOnPath('missing', `${first}:${second}`)).toBe('missing');
+  expect(executableOnPath('/opt/tool', `${first}`)).toBe('/opt/tool');
+});

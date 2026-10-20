@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from 'node:fs';
+import { accessSync, constants, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { IdSchema, TimestampSchema, atomicWrite, buildPlugin, pluginDist, type Project } from '@jevellan/core';
@@ -96,8 +96,11 @@ export class OwnerBridges {
       ...(previous && options.continue !== false ? ['--continue'] : [])];
     // The account's claude.ai connectors stay out of the bridge: their task and calendar tools would compete with Jevellan's (run log, Journey A).
     const env: Record<string, string> = { JEVELLAN_BRIDGE: '1', JEVELLAN_PROJECT: project.name, JEVELLAN_HOME: this.app.homes.root, CLAUDE_CONFIG_DIR: dir, ENABLE_CLAUDEAI_MCP_SERVERS: 'false' };
-    const script = ['#!/bin/sh', 'unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY JEVELLAN_ROLE', ...Object.entries(env).map(([key, value]) => `export ${key}=${shell(value)}`),
-      `exec ${shell(this.claude)} ${args.map(shell).join(' ')}`].join('\n');
+    // tmux starts the session through the owner's login shell, whose profile can reorder PATH and find an older claude first: the script
+    // restores the service's PATH and runs the claude that PATH finds, by its full path.
+    const path = process.env.PATH ?? '/usr/bin:/bin';
+    const script = ['#!/bin/sh', 'unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY JEVELLAN_ROLE', `export PATH=${shell(path)}`, ...Object.entries(env).map(([key, value]) => `export ${key}=${shell(value)}`),
+      `exec ${shell(executableOnPath(this.claude, path))} ${args.map(shell).join(' ')}`].join('\n');
     writeFileSync(join(folder, 'start.sh'), `${script}\n`, { mode: 0o700 });
     trustFolder(dir, folder);
     const startedAt = new Date().toISOString(); let ready = false;
@@ -172,4 +175,14 @@ export class OwnerBridges {
       this.app.ownerPushes.ack(state.projectId, message.pushIds);
     }
   }
+}
+
+/** The full path of a command on PATH (the first executable file), or the name itself when it already has a slash or is not found. */
+export function executableOnPath(name: string, path: string): string {
+  if (name.includes('/')) return name;
+  for (const directory of path.split(':').filter(entry => entry.startsWith('/'))) {
+    const file = join(directory, name);
+    try { accessSync(file, constants.X_OK); if (statSync(file).isFile()) return file; } catch { /* the next directory */ }
+  }
+  return name;
 }

@@ -73,7 +73,7 @@ export class OwnerTakeover {
     const session = `jv-${id}`; const title = row.title;
     if (this.#alive(session)) this.tmux(['kill-session', '-t', `=${session}`]);
     const command = [...installedCommand(app.homes), 'thread', 'attach', row.id, ...(remote ? ['--remote-control', `${id} · ${title}`.slice(0, 120)] : [])];
-    const started = this.tmux(['new-session', '-d', '-s', session, '-x', '200', '-y', '50', '-c', thread.cwd, '-e', `JEVELLAN_HOME=${app.homes.root}`, command.map(quote).join(' ')]);
+    const started = this.tmux(['new-session', '-d', '-s', session, '-x', '200', '-y', '50', '-c', thread.cwd, '-e', `JEVELLAN_HOME=${app.homes.root}`, ['env', `PATH=${process.env.PATH ?? '/usr/bin:/bin'}`, ...command].map(quote).join(' ')]);
     if (started.status !== 0) throw new OwnerRefusal(`tmux could not start the session for ${id}.`, 'tmux_failed', 500);
     const deadline = Date.now() + this.waitMs;
     while (Date.now() < deadline && this.#state(row.id) !== 'attached' && this.#alive(session)) await sleep(500);
