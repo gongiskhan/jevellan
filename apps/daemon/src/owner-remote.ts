@@ -7,7 +7,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { IdSchema, OWNER_TOOLS, TimestampSchema, VERSION, ownerTool, ownerToolAction, ownerToolInputSchema } from '@jevellan/core';
+import { IdSchema, OWNER_TOOLS, TimestampSchema, VERSION, OwnerToolResultSchema, ownerTool, ownerToolAction, ownerToolInputSchema, ownerToolOutput } from '@jevellan/core';
 import type { Application } from './application.js';
 
 const CLIENTS = 'owner-remote-clients', GRANTS = 'owner-remote-grants', TOKENS = 'owner-remote-tokens';
@@ -165,7 +165,7 @@ export class OwnerRemote {
       if (action?.access === 'write' && tool?.name !== 'respond' && !this.settings.writeEnabled) return refuse(REMOTE_WRITES_OFF);
       const { action: _a, ...rest } = args; void _a;
       const result = await this.app.ownerTools.call(call.params.name, { schema: 'owner-tool-request-v1', ...(action ? { action: action.name } : {}), args: rest, caller });
-      return result.ok ? { content: [{ type: 'text' as const, text: result.text }] } : { content: [{ type: 'text' as const, text: result.error.text }], isError: true };
+      return ownerToolOutput(call.params.name, args, OwnerToolResultSchema.parse(this.app.redactor.document(result)));
     });
     const transport = new StreamableHTTPServerTransport({});
     response.once('close', () => { void transport.close().catch(() => undefined); void server.close().catch(() => undefined); });

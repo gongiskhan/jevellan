@@ -2,7 +2,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { DoctorControlSchema, Homes, OWNER_TOOLS, OwnerEventSchema, StatusLineViewSchema, buildPlugin, doctorControlPath, installedCommand, ownerTool, pluginDist, quote, readDocument, type OwnerEvent } from '@jevellan/core';
+import { DoctorControlSchema, Homes, OWNER_TOOLS, OwnerEventSchema, StatusLineViewSchema, buildPlugin, doctorControlPath, installedCommand, ownerTool, ownerToolOutput, pluginDist, quote, readDocument, type OwnerEvent } from '@jevellan/core';
 export { buildPlugin, installedCommand, pluginDist } from '@jevellan/core';
 import { callOwnerTool } from './owner-mcp.js';
 
@@ -30,7 +30,7 @@ export async function callCommand(args: string[], homes = new Homes()): Promise<
   else if (positional.length && ['ask_coordinator', 'thread'].includes(tool.name) && input.text === undefined) input.text = positional.join(' ');
   else if (positional.length) { console.error(`Unexpected ${positional.join(' ')}. Pass values as --key value.`); return 1; }
   const result = await callOwnerTool(tool.name, input, { homes, caller: 'cli' });
-  if (result.ok) { console.log(result.text); return 0; }
+  if (result.ok) { for (const item of ownerToolOutput(tool.name, input, result).content) console.log(item.text); return 0; }
   console.error(result.error.text); return result.error.code === 'not_running' ? 3 : 1;
 }
 

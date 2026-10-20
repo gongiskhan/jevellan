@@ -139,6 +139,11 @@ export class ProjectDailyWork {
     while (parent) { if (visited.has(parent)) return refuse('Job gates cannot contain a cycle.', 400); visited.add(parent);
       const job = (await this.o.hub.job(parent))?.document; if (!job || job.projectId !== projectId) return refuse('A gate must be a job of this project.', 400); parent = job.gate?.jobId; }
   }
+  validateEditorGate(projectId: string, id: string, parent: string): Promise<void> { return this.#gate(projectId, id, parent); }
+  async validateEditorGoal(projectId: string, goalId: string, review: boolean): Promise<void> {
+    if (review) await this.#dailyTarget(projectId, { goalId, target: { kind: 'review-since-last' } });
+    else await this.o.validateGoal(projectId, goalId);
+  }
   async createDaily(projectId: string, raw: unknown): Promise<ProjectDaily> {
     const input = DailyCreateRequestSchema.parse(raw), id = derivedId('daily', projectId, input.clientRequestId), requestDigest = createHash('sha256').update(stableJson(input)).digest('hex');
     const current = (await this.o.hub.daily(id))?.document; if (current) { if (current.projectId !== projectId || current.requestDigest !== requestDigest) return refuse('This request ID already created a different daily item.'); return current; }

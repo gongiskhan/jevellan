@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { DoctorControlSchema, doctorControlPath, readDocument } from '../packages/core/dist/index.js';
+import { DoctorControlSchema, doctorControlPath, readDocument, OwnerToolResultSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
 const HOST = 'mcp.example.test';
@@ -64,6 +64,28 @@ async function mcp(fetcher: typeof fetch, accessToken: string): Promise<Client> 
   await client.connect(new StreamableHTTPClientTransport(new URL(`https://${HOST}/remote/mcp`), { fetch: fetcher, requestInit: { headers: { Authorization: `Bearer ${accessToken}` } } }) as Transport);
   return client;
 }
+
+test('remote editor templates preserve data and redact known private values', async () => {
+  const { fetcher } = await setup(), signed = await signIn(fetcher), client = await mcp(fetcher, signed.tokens!.access_token);
+  try {
+    const sensitive = `fixture-sensitive-${randomBytes(16).toString('hex')}`;
+    const job = await f!.app.projectWork.daily.createJob('project', { schema: 'job-create-request-v1', clientRequestId: 'remote_editor', name: sensitive,
+      enabled: false, goalId: null, gate: null, run: { kind: 'command', command: 'true', timeoutMinutes: 1 } });
+    f!.app.redactor.add(sensitive);
+    const read = await client.callTool({ name: 'jobs', arguments: { action: 'editor', kind: 'job', id: job.id } });
+    expect(read.isError).toBeFalsy();
+    const result = OwnerToolResultSchema.parse(read.structuredContent); expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('Expected the remote editor model.');
+    const view = ProjectJobEditorSchema.parse(result.data);
+    expect(JSON.stringify(read).includes(sensitive)).toBe(false);
+    const request = { ...view.request.base, fields: { ...view.defaults, name: 'Remote editor fixture' } };
+    expect((await client.callTool({ name: 'jobs', arguments: { action: 'save', id: job.id, request } })).isError).toBe(true);
+    f!.app.ownerTools.updateInstallationSettings(settings => ({ ...settings, remote: { ...settings.remote, writeEnabled: true } }));
+    const saved = await client.callTool({ name: 'jobs', arguments: { action: 'save', id: job.id, request } });
+    expect(saved.isError).toBeFalsy();
+    expect(OwnerToolResultSchema.parse(saved.structuredContent)).toMatchObject({ ok: true, data: { name: 'Remote editor fixture' } });
+  } finally { await client.close(); }
+});
 
 test('Journey H: a client registers, signs in with PKCE as the one allowed identity, lists twelve tools, reads, and is refused writes, deploys, other identities, a disabled endpoint and revoked tokens', async () => {
   const { fetcher, control } = await setup();

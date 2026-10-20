@@ -627,7 +627,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           </section>
           <section className="pw-section" hidden={overviewTab !== 'routines'} data-tab="routines" aria-labelledby={`${sideId}-daily`}>
             {sectionHeading(`${sideId}-daily`, 'Nightly', overview.nightlyCount)}
-            {routines && <ProjectDailyPanel view={routines} goals={goals} changed={updated} onError={onError} />}
+            {routines && <ProjectDailyPanel view={routines} changed={updated} onError={onError} />}
           </section>
           <section className="pw-section" hidden={overviewTab !== 'routines'} data-tab="routines" aria-labelledby={`${sideId}-goals`}>
             {sectionHeading(`${sideId}-goals`, 'Goals', overview.goalCount)}

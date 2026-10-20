@@ -1,7 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { DoctorControlSchema, Homes, OWNER_TOOLS, OwnerPushMessageSchema, OwnerToolResultSchema, VERSION, doctorControlPath, ownerToolInputSchema, readDocument, type OwnerPushMessage, type OwnerToolResult } from '@jevellan/core';
+import { DoctorControlSchema, Homes, OWNER_TOOLS, OwnerPushMessageSchema, OwnerToolResultSchema, VERSION, doctorControlPath, ownerToolOutput, ownerToolInputSchema, readDocument, type OwnerPushMessage, type OwnerToolResult } from '@jevellan/core';
 
 /** Context every session gets with the tools: which tool answers which kind of question (the descriptions stay as specified). */
 export const TOOL_INSTRUCTIONS = "These are the Jevellan tools for the project in this folder. Every 'why' question about the project (why this model, this thread, this landing, this decision) and every 'what next' question goes to ask_coordinator with mode ask, and a coordinator that stopped (status says coordinator stopped) is restarted with ask_coordinator mode restart; use jev to see or change Jev's rules, prompts and lessons, and every standing rule about how work is placed (\"never put parser work below high effort\", \"always use Opus for migrations\") is a jev rule_set, not an instruction for the coordinator. Tasks for this project go to work, not to other task trackers. A short answer such as \"deploy\", \"merge\" or \"later\" answers what waits on the owner: find the item with status and answer it with respond; deploying is never a job run. Settings change with config, among them the deploy switch (approve, nightly or automatic: section deploy, key mode); jobs changes when jobs and the night run. \"Roll back\" means the last deploy: call jobs with action rollback and no confirm, which shows what would be rolled back, and confirm only after the owner says yes.";
@@ -50,8 +50,9 @@ export async function serveOwnerMcp(env: NodeJS.ProcessEnv = process.env, startP
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: guarded ? [] : OWNER_TOOLS.map(tool => ({ name: tool.name, description: tool.description, inputSchema: ownerToolInputSchema(tool) as { type: 'object' } })) }));
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (guarded) return { content: [{ type: 'text', text: 'Jevellan tools are not available inside sessions Jevellan runs.' }], isError: true };
-    const result = await callOwnerTool(request.params.name, (request.params.arguments ?? {}) as Record<string, unknown>);
-    return result.ok ? { content: [{ type: 'text', text: result.text }] } : { content: [{ type: 'text', text: result.error.text }], isError: true };
+    const args = (request.params.arguments ?? {}) as Record<string, unknown>;
+    const result = await callOwnerTool(request.params.name, args);
+    return ownerToolOutput(request.params.name, args, result);
   });
   // The session ended: stop relaying so the process exits with it.
   process.stdin.once('end', () => { stop.abort(); setTimeout(() => process.exit(0), 200).unref(); });

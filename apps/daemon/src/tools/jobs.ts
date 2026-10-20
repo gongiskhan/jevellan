@@ -1,6 +1,7 @@
 import { newId, ownerClock, type ProjectDaily, type ProjectDeploy, type ProjectJob, type ProjectJobRun } from '@jevellan/core';
 import { capLines, projectJobsView } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
+import { ownerRoutineSave } from '../project-work-api.js';
 
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 const dayNames: Record<string, string> = { mon: 'Mondays', tue: 'Tuesdays', wed: 'Wednesdays', thu: 'Thursdays', fri: 'Fridays', sat: 'Saturdays', sun: 'Sundays' };
@@ -41,6 +42,14 @@ export const jobs: OwnerHandler = async (context) => {
   const nameOfRun = (run: ProjectJobRun) => daily.dailies.find(row => row.target.kind === 'job' && row.target.jobId === run.jobId)?.name ?? daily.jobs.find(job => job.id === run.jobId)?.name ?? 'job';
   const nightOrder = () => [...daily.dailies].filter(row => row.enabled).sort((a, b) => a.order - b.order).map(row => row.name);
   switch (context.action) {
+    case 'editor': {
+      const view = await engine.routineEditor(projectId, args.kind as 'job' | 'daily', typeof args.id === 'string' ? args.id : undefined);
+      return { text: view.title, data: view };
+    }
+    case 'save': {
+      const result = await ownerRoutineSave(app, projectId, typeof args.id === 'string' ? args.id : undefined, args.request);
+      return { text: `Saved ${result.name}.`, data: result };
+    }
     case 'list': {
       const lastWindow = daily.window;
       const weekly = daily.dailies.filter(row => row.days && row.days.length < 7);

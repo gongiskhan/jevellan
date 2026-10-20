@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'vitest';
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { OWNER_TOOLS } from '../packages/core/dist/index.js';
+import { OWNER_TOOLS, OwnerToolResultSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
 let f: ProjectFixture | undefined; let client: Client | undefined;
@@ -50,4 +50,21 @@ test('a forwarder without a running service says so in one sentence', async () =
   const mcp = await connect({ JEVELLAN_HOME: join(f.root, 'nowhere') });
   const result = await mcp.callTool({ name: 'status', arguments: {} });
   expect(result).toMatchObject({ isError: true, content: [{ text: 'Jevellan is not running on this device (no installation control file).' }] });
+});
+
+test('editor request templates survive the official MCP transport and create one retry-safe definition', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const read = await mcp.callTool({ name: 'jobs', arguments: { action: 'editor', kind: 'job' } });
+  expect(read.isError).toBeFalsy();
+  const result = OwnerToolResultSchema.parse(read.structuredContent); expect(result.ok).toBe(true);
+  if (!result.ok) throw new Error('Expected the editor model.');
+  const view = ProjectJobEditorSchema.parse(result.data);
+  expect((read.content as Array<{ text: string }>).some(item => item.text.includes('"schema":"project-job-editor-v1"'))).toBe(true);
+  const request = { ...view.request.base, fields: { ...view.defaults, name: 'MCP editor fixture', command: 'true', enabled: false } };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const saved = await mcp.callTool({ name: 'jobs', arguments: { action: 'save', request } });
+    expect(saved.isError).toBeFalsy();
+    expect(OwnerToolResultSchema.parse(saved.structuredContent)).toMatchObject({ ok: true, data: { name: 'MCP editor fixture', enabled: false } });
+  }
+  expect((await f.app.projectWork.daily.jobs('project')).map(job => job.name)).toEqual(['MCP editor fixture']);
 });

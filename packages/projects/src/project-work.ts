@@ -3,6 +3,8 @@ import { QUESTION_NOT_FOUND } from './copy.js';
 import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction, type ProjectPageRequest, type ProjectWaitingRespondRequest, ProjectWaitingResponseSchema } from '@jevellan/core';
 import { projectPageView } from './page-view.js';
 import { projectJobsView } from './jobs-view.js';
+import { jobEditorView, dailyEditorView, routineEditorRequest } from './routine-editors.js';
+import { RoutineEditorSaveRequestSchema, type RoutineEditorChoice } from '@jevellan/core';
 import { ProjectCleanupInventory } from './cleanup.js';
 import { ProjectDeployService } from './deploy.js';
 import { setupProposalId } from './setup.js';
@@ -721,6 +723,40 @@ export class ProjectWork {
     await this.#project(projectId);
     const [raw, settings, goals] = await Promise.all([this.daily.view(projectId), this.admission.settings(projectId), this.goalList(projectId)]);
     return projectJobsView(raw, settings, goals.goals);
+  }
+  async routineEditor(projectId: string, kind: 'job' | 'daily', itemId?: string) {
+    await this.#project(projectId);
+    const [jobs, goals] = await Promise.all([this.daily.jobs(projectId), this.goalList(projectId)]);
+    const option = async (value: string, label: string, validate: () => Promise<void>): Promise<RoutineEditorChoice> => {
+      try { await validate(); return { value, label, disabled: false, refusal: null }; }
+      catch (error) { const status = statusOf(error); if (typeof status !== 'number' || status < 400 || status >= 500) throw error;
+        return { value, label, disabled: true, refusal: error instanceof Error ? error.message : 'Unavailable.' }; }
+    };
+    const goalOptions = (review: boolean) => Promise.all(goals.goals.map(({ goal }) => option(goal.id, goal.name, () => this.daily.validateEditorGoal(projectId, goal.id, review))));
+    if (kind === 'job') {
+      const item = jobs.find(row => row.id === itemId); if (itemId && !item) throw refuse('Job not found.', 404);
+      const [ordinary, gates] = await Promise.all([goalOptions(false), Promise.all(jobs.filter(job => job.id !== itemId && job.run.kind === 'command')
+        .map(job => option(job.id, job.name, () => this.daily.validateEditorGate(projectId, itemId ?? 'new_job', job.id))))]);
+      return jobEditorView(projectId, item, { goals: ordinary, gates });
+    }
+    const item = (await this.daily.dailies(projectId)).find(row => row.id === itemId); if (itemId && !item) throw refuse('Daily item not found.', 404);
+    const [ordinary, review] = await Promise.all([goalOptions(false), goalOptions(true)]);
+    return dailyEditorView(projectId, item, jobs, { ordinary, review });
+  }
+  async saveRoutineEditor(projectId: string, itemId: string | undefined, raw: unknown, expectedKind?: 'job' | 'daily') {
+    const request = RoutineEditorSaveRequestSchema.parse(raw);
+    const kind = request.schema === 'job-editor-create-request-v1' || request.schema === 'job-editor-update-request-v1' ? 'job' : 'daily';
+    if (expectedKind && kind !== expectedKind) throw refuse('The editor request does not match this definition.', 400);
+    await this.#coordinatorHere(projectId);
+    const item = itemId ? kind === 'job' ? (await this.#o.hub.job(itemId))?.document : (await this.#o.hub.daily(itemId))?.document : undefined;
+    if (itemId && (!item || item.projectId !== projectId)) throw refuse(kind === 'job' ? 'Job not found.' : 'Daily item not found.', 404);
+    const input = routineEditorRequest(request, item);
+    switch (input.schema) {
+      case 'job-create-request-v1': return this.daily.createJob(projectId, input);
+      case 'job-update-request-v1': return this.daily.updateJob(projectId, itemId!, input);
+      case 'daily-create-request-v1': return this.daily.createDaily(projectId, input);
+      case 'daily-update-request-v1': return this.daily.updateDaily(projectId, itemId!, input);
+    }
   }
   runningThreads(): string[] { return this.store.all().filter(thread => liveWork(thread.state)).map(thread => thread.id); }
   async prepareDailyWork(projectId: string): Promise<void> { await this.#coordinatorHere(projectId); }

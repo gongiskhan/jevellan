@@ -5,10 +5,23 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildPlugin, callCommand, hookCommand, pluginCommand, statuslineCommand } from '../packages/cli/dist/owner-commands.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
+import { OwnerToolResultSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
 
 let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
+
+test('CLI editor templates include their versioned request data', async () => {
+  f = await projectFixture({ control: true });
+  const out = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  expect(await callCommand(['jobs', 'editor', '--kind', 'job'], f.homes)).toBe(0);
+  const encoded = out.mock.calls.map(row => String(row[0])).find(text => text.startsWith('{'));
+  const result = OwnerToolResultSchema.parse(encoded ? JSON.parse(encoded) : undefined); expect(result.ok).toBe(true);
+  if (!result.ok) throw new Error('Expected the CLI editor model.');
+  const view = ProjectJobEditorSchema.parse(result.data), request = { ...view.request.base, fields: { ...view.defaults, name: 'CLI editor fixture', command: 'true', enabled: false } };
+  expect(await callCommand(['jobs', 'save', '--request', JSON.stringify(request)], f.homes)).toBe(0);
+  expect((await f.app.projectWork.daily.jobs('project')).map(job => job.name)).toEqual(['CLI editor fixture']);
+});
 
 test('jevellan call reaches every tool from a terminal with positional subjects and typed values', async () => {
   f = await projectFixture({ control: true });

@@ -1,5 +1,6 @@
 import { ProjectPageRequestSchema, ProjectWaitingRespondRequestSchema } from '@jevellan/core';
 import { DailyEnabledRequestSchema, JobPausedRequestSchema } from '@jevellan/core';
+import { ProjectJobSchema, ProjectDailySchema, RoutineEditorSaveRequestSchema } from '@jevellan/core';
 import { projectEventNotices } from '@jevellan/projects';
 import { CoordinatorActivityProjector } from '@jevellan/projects';
 import { DeployBaselineRequestSchema, DeployRollbackRequestSchema, ProjectPageQuerySchema } from '@jevellan/core';
@@ -25,7 +26,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ProjectThreadActionsViewSchema, ThreadViewSchema, type ThreadActionRequest } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -36,6 +37,14 @@ type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GE
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'job-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/editor$/, methods: ['GET'], target: 'any' },
+  { name: 'job-editor-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/editor$/, methods: ['POST'], target: 'coordinator' },
+  { name: 'job-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/editor$/, methods: ['GET'], target: 'any', ids: ['projectId', 'jobId'] },
+  { name: 'job-editor-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/editor$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'jobId'] },
+  { name: 'daily-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies\/editor$/, methods: ['GET'], target: 'any' },
+  { name: 'daily-editor-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies\/editor$/, methods: ['POST'], target: 'coordinator' },
+  { name: 'daily-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies\/([A-Za-z0-9_-]+)\/editor$/, methods: ['GET'], target: 'any', ids: ['projectId', 'dailyId'] },
+  { name: 'daily-editor-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies\/([A-Za-z0-9_-]+)\/editor$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'dailyId'] },
   { name: 'jobs-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs-view$/, methods: ['GET'], target: 'any' },
   { name: 'daily-enabled', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies\/([A-Za-z0-9_-]+)\/enabled$/, methods: ['POST'], target: 'any', ids: ['projectId', 'dailyId'] },
   { name: 'job-paused', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/paused$/, methods: ['POST'], target: 'any', ids: ['projectId', 'jobId'] },
@@ -167,30 +176,50 @@ export async function ownerThreadOperation(app: Application, projectId: string, 
     if (operation === 'act') return work.threadAction(projectId, threadId, ThreadActionRequestSchema.parse(input));
     return work.mergePullRequest(projectId, threadId);
   }
-  const row = await target(app, owner, 'thread'), auth = app.auth;
+  const path = `${API_PREFIX}${projectId}/threads/${threadId}/${operation === 'actions' ? 'actions-view' : operation === 'act' ? 'actions' : 'pr/merge'}`;
+  const value = await ownerProjectJson(app, owner, 'thread', path, operation === 'actions' ? 'GET' : 'POST',
+    operation === 'actions' ? undefined : operation === 'act' ? ThreadActionRequestSchema.parse(input) : EmptySchema.parse({ schema: 'empty-request-v1' }));
+  if (operation === 'actions') return parseReply(ProjectThreadActionsViewSchema, value);
+  if (operation === 'act') return parseReply(ThreadViewSchema, value);
+  return parseReply(MergeResultViewSchema, value);
+}
+/** Only a registered resource-owner route can receive the in-memory authority of an authenticated owner call. */
+async function ownerProjectJson(app: Application, owner: string, purpose: 'thread' | 'coordinator', path: string, method: 'GET' | 'POST', body?: unknown): Promise<unknown> {
+  const route = projectWorkRoute(path, method);
+  if (!route || route.target !== (purpose === 'thread' ? 'owner' : 'coordinator')) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
+  const row = await target(app, owner, purpose), auth = app.auth;
   if (!(auth instanceof UiAuth)) throw failure('Owner tools must run on the state point.', 409);
   const upstream = new URL(DeviceOriginSchema.parse(row.device.url));
-  upstream.pathname = `${PEER_PREFIX}${projectId}/threads/${threadId}/${operation === 'actions' ? 'actions-view' : operation === 'act' ? 'actions' : 'pr/merge'}`;
+  upstream.pathname = peerPath(route, path);
   // This authenticated owner call holds the same authority as the UI. The peer session stays in memory,
   // is never returned, and is revoked afterward; the receiver retains its owner/lifecycle/guard checks.
   const token = auth.issue(); app.redactor.add(token);
   try {
     let answer: Response;
     try {
-      answer = await fetch(upstream, { method: operation === 'actions' ? 'GET' : 'POST', redirect: 'manual', signal: AbortSignal.timeout(OWNER_REQUEST_TIMEOUT_MS),
-        headers: { Authorization: `Bearer ${token}`, 'X-Jevellan-Source-Device': app.device.deviceId, Accept: 'application/json', ...(operation === 'actions' ? {} : { 'Content-Type': 'application/json' }) },
-        ...(operation === 'actions' ? {} : { body: JSON.stringify(operation === 'act' ? ThreadActionRequestSchema.parse(input) : EmptySchema.parse({ schema: 'empty-request-v1' })) }) });
-    } catch { throw failure(threadDeviceUnreachable(row.device.name), 502); }
-    if (answer.status >= 300 && answer.status < 400) { await answer.body?.cancel(); throw failure(THREAD_DEVICE_REDIRECT, 502); }
+      answer = await fetch(upstream, { method, redirect: 'manual', signal: AbortSignal.timeout(OWNER_REQUEST_TIMEOUT_MS),
+        headers: { Authorization: `Bearer ${token}`, 'X-Jevellan-Source-Device': app.device.deviceId, Accept: 'application/json', ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    } catch { throw failure(purpose === 'thread' ? threadDeviceUnreachable(row.device.name) : coordinatorUnreachable(row.device.name), 502); }
+    if (answer.status >= 300 && answer.status < 400) { await answer.body?.cancel(); throw failure(purpose === 'thread' ? THREAD_DEVICE_REDIRECT : COORDINATOR_DEVICE_REDIRECT, 502); }
     const value: unknown = await answer.json().catch(() => null);
     if (!answer.ok) {
       const refusal = ErrorDocumentSchema.safeParse(value);
-      throw refusal.success ? failure(refusal.data.message, answer.status) : failure(threadDeviceUnreachable(row.device.name), 502);
+      throw refusal.success ? failure(refusal.data.message, answer.status) : failure(purpose === 'thread' ? threadDeviceUnreachable(row.device.name) : coordinatorUnreachable(row.device.name), 502);
     }
-    if (operation === 'actions') return parseReply(ProjectThreadActionsViewSchema, value);
-    if (operation === 'act') return parseReply(ThreadViewSchema, value);
-    return parseReply(MergeResultViewSchema, value);
+    return value;
   } finally { auth.logout(token); }
+}
+export async function ownerRoutineSave(app: Application, projectId: string, itemId: string | undefined, raw: unknown) {
+  const input = RoutineEditorSaveRequestSchema.parse(raw), work = app.projectWork;
+  const kind = input.schema === 'job-editor-create-request-v1' || input.schema === 'job-editor-update-request-v1' ? 'job' : 'daily';
+  const owner = await work.coordinatorDevice(projectId);
+  if (owner === null || owner === app.device.deviceId) return work.saveRoutineEditor(projectId, itemId, input, kind);
+  const collection = kind === 'job' ? 'jobs' : 'dailies';
+  const value = await ownerProjectJson(app, owner, 'coordinator', `${API_PREFIX}${projectId}/${collection}/${itemId ? `${itemId}/` : ''}editor`, 'POST', input);
+  const result = kind === 'job' ? parseReply(ProjectJobSchema, value) : parseReply(ProjectDailySchema, value);
+  if (result.projectId !== projectId || itemId && result.id !== itemId) throw failure('The returned definition does not match the request.', 502);
+  return result;
 }
 /** Sends the request to the device that runs it (2.10): the thread's owner or the coordinator device, with the owner's session. */
 async function proxy(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, route: ProjectWorkRoute, deviceId: string, caller: Caller): Promise<void> {
@@ -298,6 +327,16 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'deploy-rollback': { const input = DeployRollbackRequestSchema.parse(await requestBody(request)); send(await work.deploys.rollback(projectId, threadId, input.expectedRevision), 202); return true; }
     case 'health-list': send(await app.projectHealthRequest({ schema: 'project-health-request-v1', project: projectId, operation: 'list' })); return true;
     case 'health-run': { const input = ProjectHealthRequestSchema.parse(await requestBody(request)); send(await app.projectHealthRequest({ ...input, project: projectId, operation: 'run' })); return true; }
+    case 'job-editor': send(await work.routineEditor(projectId, 'job', route.jobId)); return true;
+    case 'daily-editor': send(await work.routineEditor(projectId, 'daily', route.dailyId)); return true;
+    case 'job-editor-save': {
+      const input = RoutineEditorSaveRequestSchema.parse(await requestBody(request));
+      send(await work.saveRoutineEditor(projectId, route.jobId, input, 'job'), input.schema === 'job-editor-create-request-v1' ? 201 : 200); return true;
+    }
+    case 'daily-editor-save': {
+      const input = RoutineEditorSaveRequestSchema.parse(await requestBody(request));
+      send(await work.saveRoutineEditor(projectId, route.dailyId, input, 'daily'), input.schema === 'daily-editor-create-request-v1' ? 201 : 200); return true;
+    }
     case 'jobs-view': send(await work.jobsView(projectId)); return true;
     case 'daily-enabled': send(await work.daily.setEnabled(projectId, route.dailyId!, DailyEnabledRequestSchema.parse(await requestBody(request)))); return true;
     case 'job-paused': send(await work.daily.setPaused(projectId, route.jobId!, JobPausedRequestSchema.parse(await requestBody(request)))); return true;
