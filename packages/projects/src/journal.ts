@@ -7,7 +7,7 @@ import { CoordinatorEventSchema, CoordinatorHandoffSchema, defaultProjectWorkSet
   ProjectJournalStateSchema, ProjectLedgerEventSchema, atomicWrite, parseProjectLedgerData, readDocument, stableJson, writeDocument, type Homes, type Project,
   type CoordinatorHandoff, type ProjectHub, type JournalDocument, type ProjectJournalRecord, type ProjectJournalRequest, type ProjectJournalResult, type ProjectJournalState, type Thread } from '@jevellan/core';
 import type { ProjectLedgers } from './ledger.js';
-import { journalRecordKey, renderProjectJournal, threadJournalFile, validateJournalDocument } from './journal-render.js';
+import { JOURNAL_RENDERER, journalRecordKey, renderProjectJournal, threadJournalFile, validateJournalDocument } from './journal-render.js';
 import { taskOrder } from './tasks.js';
 import { CoordinatorReplySchema, CoordinatorTurnStartSchema, CoordinatorTurnEndSchema, CoordinatorTextSchema } from '@jevellan/core';
 
@@ -81,7 +81,7 @@ export class ProjectJournals {
   #publishedPath(projectId: string) { return this.o.homes.at('project-journal-publish', `${IdSchema.parse(projectId)}.json`); }
   state(projectId: string): ProjectJournalState {
     const path = this.#statePath(projectId);
-    return existsSync(path) ? readDocument(path, ProjectJournalStateSchema) : { schema: 'project-journal-state-v1', files: {}, lastLedgerEventId: null, indexUpdatedAt: '1970-01-01T00:00:00.000Z' };
+    return existsSync(path) ? readDocument(path, ProjectJournalStateSchema) : { schema: 'project-journal-state-v2', renderer: JOURNAL_RENDERER, files: {}, lastLedgerEventId: null, indexUpdatedAt: '1970-01-01T00:00:00.000Z' };
   }
   start(periodic = true): void {
     if (!periodic || this.#timer || this.#closed) return;
@@ -261,8 +261,8 @@ export class ProjectJournals {
     const target = this.#file(projectId, path); mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
     atomicWrite(target, text, 0o400);
   }
-  async #render(project: Project, rebuild: boolean): Promise<void> {
-    const records = this.#records(project.id), prior = this.state(project.id), settings = (await this.o.hub.settings(project.id))?.document ?? defaultProjectWorkSettings(project.id);
+  async #render(project: Project, requested: boolean): Promise<void> {
+    const records = this.#records(project.id), prior = this.state(project.id), rebuild = requested || prior.renderer !== JOURNAL_RENDERER, settings = (await this.o.hub.settings(project.id))?.document ?? defaultProjectWorkSettings(project.id);
     const threads = await this.#all(project.id, after => this.o.hub.threads(project.id, after));
     const headers = new Map<string, ReturnType<typeof JournalThreadSchema.parse>>();
     for (const record of records) if (record.event.type === 'journal-thread') { const data = JournalThreadSchema.parse(record.event.data); if (!headers.has(data.id)) headers.set(data.id, data); }
@@ -289,7 +289,7 @@ export class ProjectJournals {
       rendered.files[`${path}.md`] = `# Coordinator handoff ${handoff.date}-${handoff.sequence}\n\nIn flight:\n${handoff.inFlight}\n\nPending asks:\n${handoff.pendingAsks || '(none)'}\n\nDecisions:\n${handoff.decisions || '(none)'}\n\nOwner messages:\n${handoff.ownerMessages.map(row => `- ${row.eventId}: ${row.outcome}${row.ref ? ` (${row.ref})` : ''}`).join('\n') || '(none)'}\n`;
     }
     if (handoffs.length) rendered.files['INDEX.md'] += `\n## Coordinator handoffs\n${handoffs.map(row => `- ${row.date}-${row.sequence} → handoffs/${row.date}-${row.sequence}.md`).join('\n')}\n`;
-    const state: ProjectJournalState = { schema: 'project-journal-state-v1', lastLedgerEventId: records.at(-1) ? journalRecordKey(records.at(-1)!) : null, files: {}, indexUpdatedAt: new Date(this.o.now()).toISOString() };
+    const state: ProjectJournalState = { schema: 'project-journal-state-v2', renderer: JOURNAL_RENDERER, lastLedgerEventId: records.at(-1) ? journalRecordKey(records.at(-1)!) : null, files: {}, indexUpdatedAt: new Date(this.o.now()).toISOString() };
     for (const [path, text] of Object.entries(rendered.files)) {
       if (path === 'INDEX.md' && !rebuild && this.o.now() - Date.parse(prior.indexUpdatedAt) < 10000) { if (prior.files[path]) state.files[path] = prior.files[path]; state.indexUpdatedAt = prior.indexUpdatedAt; continue; }
       const hash = digest(text); state.files[path] = hash;

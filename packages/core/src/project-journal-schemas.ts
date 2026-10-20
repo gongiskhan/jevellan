@@ -31,11 +31,14 @@ export const ProjectJournalRecordSchema = z.strictObject({ schema: z.literal('pr
 });
 export type ProjectJournalRecord = z.infer<typeof ProjectJournalRecordSchema>;
 export const JournalRelativePathSchema = z.string().max(300).regex(/^(?:INDEX\.md|(?:threads|days|nights)\/[A-Za-z0-9_-]+\.md|handoffs\/\d{4}-\d{2}-\d{2}-[1-9]\d*\.(?:md|json))$/u);
-export const ProjectJournalStateSchema = z.strictObject({ schema: z.literal('project-journal-state-v1'),
-  lastLedgerEventId: z.string().max(512).nullable(), files: z.record(JournalRelativePathSchema, z.string().regex(/^[a-f0-9]{64}$/u)),
-  indexUpdatedAt: TimestampSchema,
-});
-export type ProjectJournalState = z.infer<typeof ProjectJournalStateSchema>;
+const journalStateFields = { lastLedgerEventId: z.string().max(512).nullable(), files: z.record(JournalRelativePathSchema, z.string().regex(/^[a-f0-9]{64}$/u)),
+  indexUpdatedAt: TimestampSchema };
+/** The journal manifest. `renderer` is the renderer version that wrote the files; v1 manifests were all written by renderer 1. */
+export const ProjectJournalStateSchema = z.union([
+  z.strictObject({ schema: z.literal('project-journal-state-v2'), renderer: z.number().int().positive(), ...journalStateFields }),
+  z.strictObject({ schema: z.literal('project-journal-state-v1'), ...journalStateFields }).transform(state => ({ ...state, schema: 'project-journal-state-v2' as const, renderer: 1 })),
+]);
+export type ProjectJournalState = z.output<typeof ProjectJournalStateSchema>;
 const request = { schema: z.literal('project-journal-request-v1'), projectId: IdSchema };
 export const ProjectJournalRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...request, operation: z.literal('publish'), records: z.array(ProjectJournalRecordSchema).max(100) }),

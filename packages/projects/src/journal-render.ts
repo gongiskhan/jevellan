@@ -9,6 +9,12 @@ export function validateJournalDocument(raw: unknown) {
   schemas[data.collection].parse(data.document); return data;
 }
 
+/**
+ * The version of the text this renderer produces for a recorded event. Bump it whenever the text of an existing entry changes:
+ * the hub then rebuilds each journal once instead of refusing a projection that no longer extends the files on disk.
+ * 2: entries render their recorded payload, not the payload as a later schema parses it.
+ */
+export const JOURNAL_RENDERER = 2;
 export const journalRecordKey = (record: ProjectJournalRecord): string => `${record.deviceId}-${record.ledgerId}-${record.event.id}`;
 const line = (text: string): string => text.replace(/[\r\n]+/gu, ' ');
 const quote = (value: unknown): string => `\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``;
@@ -26,11 +32,13 @@ export type JournalEntry = { record: ProjectJournalRecord; kind: string; body: s
 export function journalEntry(record: ProjectJournalRecord): JournalEntry | null {
   const { type } = record.event;
   if (['journal-source', 'coordinator-turn-start', 'coordinator-turn-end', 'thread-turn-start', 'thread-turn-end', 'session-turn-cache', 'project-session-end', 'thread-placement'].includes(type)) return null;
-  const data = parseProjectLedgerData(type as ProjectLedgerEventType, record.event.data) as Record<string, unknown>;
+  parseProjectLedgerData(type as ProjectLedgerEventType, record.event.data);
+  // The recorded payload, not the parsed one: a default or transform a later schema adds must never change an entry already written.
+  const data = record.event.data as Record<string, unknown>;
   const threadId = record.ledgerId !== 'coordinator' ? record.ledgerId : typeof data.threadId === 'string' ? data.threadId : undefined;
   const base = { record, ...(threadId ? { threadId } : {}) };
   if (type === 'journal-thread') {
-    const { task: _task, ...metadata } = JournalThreadSchema.parse(data); void _task;
+    JournalThreadSchema.parse(data); const { task: _task, ...metadata } = data; void _task;
     return { ...base, kind: 'Thread metadata', body: quote(metadata) };
   }
   if (type === 'coordinator-text') return { ...base, kind: 'Coordinator', body: String(data.text) };
@@ -50,7 +58,7 @@ export function journalEntry(record: ProjectJournalRecord): JournalEntry | null 
     return null;
   }
   if (type === 'journal-document') {
-    const source = JournalDocumentSchema.parse(data), document = source.document;
+    const source = JournalDocumentSchema.parse(data), document = data.document as Record<string, unknown>;
     const summary = source.collection === 'job'
       ? `Result: ${String(document.conclusion ?? document.phase)}\nCommit: ${String(document.commit)}${typeof document.url === 'string' ? `\nRun: [Open run](${document.url})` : ''}\n\n${String(document.summary ?? '')}\n\n`
       : source.collection === 'window' ? `Night: ${String(document.date)} · ${String(document.state)}\n\n${String(document.outcome ?? '')}\n\n`

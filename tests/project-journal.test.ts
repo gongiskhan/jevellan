@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, expect, test } from 'vitest';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defaultProjectWorkSettings, Homes, JournalThreadSchema, MemoryDreamReportSchema, MergeRouteSchema, PlacementRecordSchema, ProjectJobRunSchema, ProjectSchema, ProjectWindowSchema, ProjectWorkTaskSchema, ThreadIndexSchema, ThreadSchema, VerificationRunSchema, type ProjectJournalRecord } from '../packages/core/dist/index.js';
 import { HubDatabase, HubProjectAccess } from '../packages/mesh/dist/index.js';
-import { ProjectJournals, ProjectLedgers, ProjectPaths, coordinatorJournalDigest, journalIndex, journalRecordKey, renderProjectJournal, threadJournalExcerpt, threadJournalFile } from '../packages/projects/dist/index.js';
+import { JOURNAL_RENDERER, ProjectJournals, ProjectLedgers, ProjectPaths, coordinatorJournalDigest, journalIndex, journalRecordKey, renderProjectJournal, threadJournalExcerpt, threadJournalFile } from '../packages/projects/dist/index.js';
 import { fileWriteDenial, safetyDenial } from '../packages/runtime-contract/dist/index.js';
 import { projectFixture, projectMember, type ProjectFixture } from './helpers/project-fixture.js';
 
@@ -273,4 +274,37 @@ test('an idle journal sweep preserves durable cursors and projection files', asy
   await new Promise(resolve => setTimeout(resolve, 20));
   await engine.sync(project.id);
   expect(files.map(file => ({ text: readFileSync(file, 'utf8'), mtime: statSync(file).mtimeMs }))).toEqual(before);
+});
+
+// A thread report recorded by 0.5: its owner commands predate the command kind, which later schemas default to "shell".
+const reportBeforeCommandKinds = { schema: 'thread-report-v1', turn: 1, status: 'blocked', summary: 'Publish the verified commit.', changedFiles: [], synthesized: false,
+  ownerCommands: [{ command: 'git push -u origin jv/export', why: 'The hook blocks agent publication.', cwd: '/private/worktree' }] };
+
+test('an entry renders as recorded, so a default a later schema adds never rewrites it', () => {
+  const result = renderProjectJournal({ name: 'Shop', timezone: 'Europe/Lisbon', records: [record(1, 'journal-thread', header), record(2, 'thread-report', reportBeforeCommandKinds)], open: [], updatedAt: at });
+  const text = result.files[threadJournalFile(header)]!;
+  expect(text).toContain('"command": "git push -u origin jv/export"');
+  expect(text).not.toContain('"kind"');
+});
+
+test('a journal written by an earlier renderer is rebuilt once, and the same renderer still never replaces entries', async () => {
+  const { engine, ledgers, project } = setup(), ledger = ledgers.coordinator(project.id);
+  ledger.append({ type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: 'First reply.' } }); await engine.sync(project.id);
+  const day = join(engine.path(project.id), 'days/2026-10-14.md'), statePath = homes.at('project-journal-state', `${project.id}.json`), current = readFileSync(day, 'utf8');
+  expect(JSON.parse(readFileSync(statePath, 'utf8'))).toMatchObject({ schema: 'project-journal-state-v2', renderer: JOURNAL_RENDERER });
+  // What 0.7.1 left on disk: a v1 manifest over text an earlier renderer produced.
+  const earlier = current.replace('First reply.', 'First reply, as an earlier renderer wrote it.');
+  chmodSync(day, 0o600); writeFileSync(day, earlier);
+  const { renderer: _renderer, ...v1 } = JSON.parse(readFileSync(statePath, 'utf8')) as Record<string, unknown>; void _renderer;
+  writeFileSync(statePath, JSON.stringify({ ...v1, schema: 'project-journal-state-v1', files: { ...(v1.files as Record<string, string>), 'days/2026-10-14.md': createHash('sha256').update(earlier).digest('hex') } }));
+  now += 60000; ledger.append({ type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: 'Second reply.' } });
+  await engine.sync(project.id);
+  const rebuilt = readFileSync(day, 'utf8');
+  expect(rebuilt.startsWith(current)).toBe(true); expect(rebuilt).toContain('Second reply.');
+  expect(JSON.parse(readFileSync(statePath, 'utf8'))).toMatchObject({ schema: 'project-journal-state-v2', renderer: JOURNAL_RENDERER });
+  chmodSync(day, 0o600); writeFileSync(day, rebuilt.replace('First reply.', 'A rewritten reply.'));
+  const state = JSON.parse(readFileSync(statePath, 'utf8')) as { files: Record<string, string> };
+  writeFileSync(statePath, JSON.stringify({ ...state, files: { ...state.files, 'days/2026-10-14.md': createHash('sha256').update(rebuilt.replace('First reply.', 'A rewritten reply.')).digest('hex') } }));
+  now += 60000; ledger.append({ type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: 'Third reply.' } });
+  await expect(engine.sync(project.id)).rejects.toThrow('A journal projection cannot replace earlier entries.');
 });
