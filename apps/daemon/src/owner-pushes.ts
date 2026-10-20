@@ -20,6 +20,7 @@ const line = (text: string, max = 600) => { const one = text.replace(/\s+/gu, ' 
 export class OwnerPushes {
   #timer: ReturnType<typeof setInterval> | undefined;
   #running: Promise<void> | undefined;
+  #lastHeavy = 0;
   constructor(private readonly app: Application, private readonly now: () => number = Date.now) {}
   start(): void { if (!this.#timer) { this.#timer = setInterval(() => { void this.sweep().catch(() => undefined); }, 2000); this.#timer.unref(); } }
   close(): void { if (this.#timer) clearInterval(this.#timer); this.#timer = undefined; }
@@ -65,8 +66,10 @@ export class OwnerPushes {
       if (notification.kind === 'deploy') this.add({ projectId: notification.projectId, kind: 'deploy', key: `notification:${notification.id}`, urgent: notification.urgent === true, at: notification.createdAt, text: `${notification.title}: ${notification.body}` });
       else if (notification.kind === 'coordinator-unavailable') this.add({ projectId: notification.projectId, kind: 'coordinator_crashed', key: `notification:${notification.id}`, at: notification.createdAt, text: `${notification.title}: ${notification.body}` });
     }
-    // Failed job and night runs, exhausted budgets and a coordinator that shows no activity while marked running.
-    for (const project of await this.app.ownerTools.projects()) {
+    // Failed job and night runs, exhausted budgets and a coordinator that shows no activity while marked running: these read whole
+    // project views, so they run every 30 seconds rather than on every sweep.
+    const heavy = now - this.#lastHeavy >= 30_000; if (heavy) this.#lastHeavy = now;
+    for (const project of heavy ? await this.app.ownerTools.projects() : []) {
       const daily = await this.app.projectWork.daily.view(project.id).catch(() => null); if (!daily) continue;
       const names = new Map([...daily.jobs.map(job => [job.id, job.name] as const), ...daily.dailies.flatMap(item => item.target.kind === 'job' ? [[item.target.jobId, item.name] as const] : [])]);
       for (const run of daily.runs) {
@@ -80,7 +83,7 @@ export class OwnerPushes {
         if (last && now - Date.parse(last.t) >= 20 * 60_000) this.add({ projectId: project.id, kind: 'coordinator_stalled', key: `stalled:${last.id}`, text: `The coordinator for ${project.name} has shown no activity for 20 min while marked running.` });
       }
     }
-    for (const row of await this.app.accounts.list().catch(() => [])) {
+    for (const row of heavy ? await this.app.accounts.list().catch(() => []) : []) {
       const usage = [...row.statuses].sort((a, b) => b.observedAt.localeCompare(a.observedAt))[0]?.usage; if (!usage) continue;
       const used = Math.max(usage.weeklyPct ?? 0, usage.fiveHourPct ?? 0); const budget = row.account.ceilingPct ?? 90; if (used < budget) continue;
       const resets = (usage.weeklyPct ?? 0) >= budget ? usage.weeklyResetsAt : usage.fiveHourResetsAt;
