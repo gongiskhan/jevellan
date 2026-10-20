@@ -59,7 +59,7 @@ export class OwnerBridges {
     return { dir: this.app.homes.account('claude', account.account.id), label };
   }
 
-  async startBridge(project: Project, options: { restart?: boolean; claudeConfigDir?: string; continue?: boolean } = {}): Promise<string> {
+  async startBridge(project: Project, options: { restart?: boolean; claudeConfigDir?: string; continue?: boolean; remoteName?: string } = {}): Promise<string> {
     const session = this.sessionName(project); const settings = this.app.ownerTools.projectSettings(project.id);
     if (this.running(session) && !options.restart) return `The bridge for ${project.name} is already running (tmux ${session}).`;
     const { dir, label } = await this.#configDir(project, options.claudeConfigDir ?? this.state(project.id)?.configDir);
@@ -72,7 +72,7 @@ export class OwnerBridges {
     const prompt = readFileSync(join(plugin, 'bridge', 'system-prompt.md'), 'utf8').replaceAll('{project}', project.name);
     writeFileSync(join(folder, 'system-prompt.md'), prompt, { mode: 0o600 });
     const transport = settings.push.transport; const previous = this.#sessionFiles(dir, folder).length > 0;
-    const args = ['--model', 'sonnet', '--effort', 'medium', '--remote-control', `Jevellan · ${project.name}`, '--plugin-dir', plugin,
+    const args = ['--model', 'sonnet', '--effort', 'medium', '--remote-control', options.remoteName ?? process.env.JEVELLAN_BRIDGE_REMOTE_NAME ?? `Jevellan · ${project.name}`, '--plugin-dir', plugin,
       ...(transport === 'channel' ? ['--dangerously-load-development-channels', 'plugin:jevellan@inline'] : []),
       '--append-system-prompt-file', join(folder, 'system-prompt.md'), '--allowedTools', `${BRIDGE_TOOL_PREFIX}*`, '--disallowedTools', 'Bash', 'Edit', 'Write', 'NotebookEdit',
       ...(previous && options.continue !== false ? ['--continue'] : [])];
