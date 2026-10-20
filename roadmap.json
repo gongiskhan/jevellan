@@ -1022,8 +1022,8 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Authorized immediately after both0.7.2 installations pass doctor: migrate the remaining310-row UI logic inventory area by area with backend behavior tests and desktop-light main-action smokes; fetch/rebase main and update map/context/evidence for each landing.",
-    "status": "planned"
+    "why": "Both072 prerequisites verified. Beginning the remaining310-row UI inventory area by area, first Overview/thread list: versioned engine views/routes, behavior and component parity, desktop-light main-action smoke, then fetch/rebase, map/context/evidence, scans and push per landing. No overall completion claim.",
+    "status": "in-progress"
   },
   {
     "id": "br-tools",
@@ -1088,14 +1088,14 @@
   {
     "id": "br-release-072",
     "title": "Release integrated account and connector fixes as 0.7.2",
-    "why": "Integrated main19a83fd0 includes merge47bb8565 and the three follow-up fixes. Workspace version072 prepared. Typecheck/lint/build pass; complete six-worker backend2622:2605pass,1known fixture-close flake passing its one exact isolated rerun,16not run;5desktop-light core smokes pass once.19screenshots/19vision-not-run receipts retained. Initial invalid reporter capture is recorded separately. Exact serial archive builds, source/digests/nativePTY proofs, scans/publication, both-archive Pro staging/preflights, strict cold backups and normal MRI-then-Pro updates/doctor10/10 remain. No authentication/bridge or production action; no later release or extra review.",
-    "status": "in-progress"
+    "why": "Published0.7.2 from064f17ce at16:33:46UTC; BOTH installed/doctor10/10/Online/healthy/vaultsynced verified16:50:18.23thread delivery/PR references preserved. Both normal native builds verified3677tracked files/309distribution exclusions/0mismatches; actualCLI/nativePTY/ABI127/environment/digests passed. Both archives+Pro helpers staged before fresh strict guards/cold backups and normal MRI-then-Pro update. Initial reconnect/stale-cache doctor failures retained; normal managed status probes then full confirmation passed. Backend2605pass/1known isolated-pass flake/16notrun; five desktop-light cores pass;19images/19vision-not-run retained. Live bridge authentication/status/push not rechecked; no native credential use, production action, guard exception, new review or further release.",
+    "status": "complete"
   },
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Authorized after0.7.2: engine UI migration and component parity per tested area. Desktop-light only; one nonblocking vision check per new screen. No complete migration/parity claim yet.",
-    "status": "planned"
+    "why": "Authorized engine/UI migration now begins after072verified16:50:18. First Overview/thread-list area, then ordered remaining areas with backend/component parity and desktop-light smoke. Nonblocking vision only for new screens; no four-layout matrix or completed310-row claim.",
+    "status": "in-progress"
   },
   {
     "id": "br-intake-071",
