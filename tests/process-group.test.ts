@@ -113,3 +113,18 @@ test('termination and process-tree snapshots read the process table without bloc
     expect(order.slice(0, 2)).toEqual(['timer before the first signal', 'signal SIGTERM']);
   } finally { vi.restoreAllMocks(); await terminateGroup(native, 100); }
 });
+
+test.runIf(process.platform === 'linux')('repeated ownership identity checks stay responsive while preserving the live process start', async () => {
+  const { processStartIdentity } = await import('../packages/core/dist/index.js');
+  const { child, native } = await spawnGroup(process.execPath, ['-e', 'console.log("ready"); setInterval(() => {}, 1000)'], { cwd: process.cwd(), env: {} });
+  try {
+    await once(child.stdout, 'data');
+    const started = performance.now();
+    const identities = Array.from({ length: 128 }, () => processStartIdentity(native.pid));
+    const elapsed = performance.now() - started;
+    expect(new Set(identities)).toEqual(new Set([native.startIdentity]));
+    // Identity reads happen in bursts during Git launches and request admission. They must not stall HTTP for seconds.
+    expect(elapsed).toBeLessThan(500);
+    expect(groupAlive(native.pgid)).toBe(true);
+  } finally { await terminateGroup(native, 100); }
+});

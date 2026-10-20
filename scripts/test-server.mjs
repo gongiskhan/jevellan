@@ -1029,6 +1029,13 @@ async function projectControl(request, response) {
   } else if (!response.headersSent) send(404, { message: 'Unknown control route.' });
 }
 // Fixture control for J10's later "seed a third group" step. It listens on this server's own offset only.
+// Saving a project can return while its initial context operation still runs. Finish that admitted work before readiness:
+// otherwise the first browser requests compete with synchronous startup Git and checkpoint work after the control port binds.
+await Promise.all([application.started, member.started]);
+for (const app of [application, member]) {
+  if (!await app.lifecycle.idle(55_000)) throw new Error('The browser fixture still has admitted startup work.');
+  await app.projectWork.journal?.syncAll();
+}
 improverControl = createServer((request, response) => {
   if (projectsMode && request.method === 'POST' && request.url === '/anthropic/v1/messages') {
     const operation = (async () => {

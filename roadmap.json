@@ -1016,7 +1016,7 @@
   {
     "id": "bridge-codex-060",
     "title": "Finish 0.6.0 before bridge integration",
-    "why": "Current brief step 2.1: gate classification and images, publication, cold updates on both devices, ERP-first switch, then existing bridge integration. Fresh six-hour clock starts at this run’s first commit.",
+    "why": "Step 2.1 deadline 2026-10-20T11:39:58Z. Fixture stalls and premature readiness fixed failing-first:40 affected cases pass; final1412-request probe max95ms, no starvation, clean teardown. Fresh full gate, original comparisons and missing images follow. Both installations remain0.5.1; no release/switch.",
     "status": "in-progress"
   },
   {

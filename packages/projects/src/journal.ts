@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
+import { setImmediate as yieldRequests } from 'node:timers/promises';
 import { CoordinatorEventSchema, CoordinatorHandoffSchema, defaultProjectWorkSettings, IdSchema, JournalConfigSchema, JournalDocumentSchema, JournalRelativePathSchema, JournalThreadSchema, ProjectJournalRecordSchema, ProjectJournalRequestSchema, ProjectJournalResultSchema,
   ProjectJournalStateSchema, ProjectLedgerEventSchema, atomicWrite, parseProjectLedgerData, readDocument, stableJson, writeDocument, type Homes, type Project,
   type CoordinatorHandoff, type ProjectHub, type JournalDocument, type ProjectJournalRecord, type ProjectJournalRequest, type ProjectJournalResult, type ProjectJournalState, type Thread } from '@jevellan/core';
@@ -93,6 +94,8 @@ export class ProjectJournals {
     await Promise.all(Array.from({ length: Math.min(4, projects.length) }, async () => {
       while (next < projects.length) {
         const project = projects[next++]!;
+        // Hub reads resolve in microtasks; a whole sweep otherwise blocks HTTP behind synchronous durable writes.
+        await yieldRequests();
         try { await this.sync(project.id); } catch (error) { failures.push(error); }
       }
     }));
@@ -135,7 +138,8 @@ export class ProjectJournals {
         if (records.length && (records.length === 100 || bytes + size > 700000)) await flush();
         records.push(record); bytes += size; cursor = event.id;
       }
-      await flush(); published.cursors[id] = cursor; writeDocument(statePath, PublishStateSchema, published);
+      await flush();
+      if (published.cursors[id] !== cursor) { published.cursors[id] = cursor; writeDocument(statePath, PublishStateSchema, published); }
     }
     if (this.o.isHub) await this.#render(project, rebuild); else await this.#mirror(projectId);
   }
@@ -289,12 +293,13 @@ export class ProjectJournals {
     for (const [path, text] of Object.entries(rendered.files)) {
       if (path === 'INDEX.md' && !rebuild && this.o.now() - Date.parse(prior.indexUpdatedAt) < 10000) { if (prior.files[path]) state.files[path] = prior.files[path]; state.indexUpdatedAt = prior.indexUpdatedAt; continue; }
       const hash = digest(text); state.files[path] = hash;
+      if (path === 'INDEX.md' && prior.files[path] === hash && existsSync(this.#file(project.id, path))) state.indexUpdatedAt = prior.indexUpdatedAt;
       if (prior.files[path] !== hash || !existsSync(this.#file(project.id, path))) {
         if (!rebuild && path !== 'INDEX.md' && existsSync(this.#file(project.id, path)) && !text.startsWith(readFileSync(this.#file(project.id, path), 'utf8'))) throw refuse('A journal projection cannot replace earlier entries.');
         this.#write(project.id, path, text);
       }
     }
-    writeDocument(this.#statePath(project.id), ProjectJournalStateSchema, state);
+    if (stableJson(state) !== stableJson(prior)) writeDocument(this.#statePath(project.id), ProjectJournalStateSchema, state);
   }
   async #mirror(projectId: string): Promise<void> {
     const response = await this.o.request?.({ schema: 'project-journal-request-v1', projectId, operation: 'state' });
@@ -311,7 +316,7 @@ export class ProjectJournals {
       }
       const bytes = Buffer.concat(chunks); if (bytes.length !== total || digest(bytes) !== hash) throw refuse('The journal mirror failed its hash check.'); this.#write(projectId, path, bytes);
     }
-    writeDocument(this.#statePath(projectId), ProjectJournalStateSchema, next);
+    if (stableJson(next) !== stableJson(before)) writeDocument(this.#statePath(projectId), ProjectJournalStateSchema, next);
   }
   async close(): Promise<void> { this.#closed = true; if (this.#timer) clearInterval(this.#timer); await Promise.allSettled(this.#running.values()); }
 }

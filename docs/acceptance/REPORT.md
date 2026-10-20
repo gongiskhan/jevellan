@@ -2461,3 +2461,7 @@ Without-GitHub P10 ended at its 2026-10-20T00:32:57.724Z clock limit with the ga
 ## Bridge Codex pass, 20 October 2026
 
 Fresh authorized run: 0.6.0 must complete on main before integration of the existing bridge source. Orientation is complete; fixture starvation, original gate classification and missing images are first. No new release or installation is claimed. Numbered authority and implementation decisions are in [the run log](bridge-codex-2026-10/README.md).
+
+Fixture responsiveness: failing-first process-identity, journal and heartbeat regressions reproduced request starvation; 39 affected cases, typecheck and lint now pass. Final HTTP probe and browser gate remain pending. Exact screenshot bytes are retained immediately in the private run evidence folder. See the fresh run log.
+
+The final fixture probe passes: 1,412 authenticated requests, maximum95ms, zero slow/unanswered requests, clean owned teardown.40 affected cases pass. The full gate, release and installed switch remain pending.

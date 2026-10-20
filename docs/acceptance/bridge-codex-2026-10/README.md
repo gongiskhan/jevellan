@@ -12,6 +12,10 @@ Fresh run on 20 October 2026. Main starts at c1248ab2; origin/bridge is ac98492f
 6. The prior 0.6 closing reviews and their fixes remain recorded; do not add another build review. The bridge's single scoped closing review remains a later prerequisite.
 7. The old continuity document's automatic production deployment and external contributor rules are superseded by the newer decisions and bridge intake specification. No production deployment or extra IAP preflight is authorized. The source map proposes many routes and still contains unmoved UI logic; proposed rows are not implemented evidence.
 
+8. Preserve synchronous launch identity and its existing start representation to avoid losing quick child exits; Linux uses the individual proc entry, other platforms keep the existing process-table mechanism.
+9. Journal durability stays intact for changed records. Idle sweeps avoid rewriting identical state and yield between projects so HTTP can progress.
+10. Background heartbeat checkout discovery uses asynchronous Git with the existing root/path guards; it does not fetch or change a checkout.
+
 ## Stage 2.1: finish 0.6.0
 
 In progress: first reproduce the fixture's periodic event-loop starvation, then fix its cause with a failing-first regression before trusting browser gates. Historical full results remain backend 2,501 passed/32 failed/1 skipped and browser 96 passed/100 failed/208 skipped. The fresh stage has not yet accepted a gate. Versioning, archives, publication, cold backups, installation, switch and live checks are not run.
@@ -19,3 +23,17 @@ In progress: first reproduce the fixture's periodic event-loop starvation, then 
 Tests for this orientation checkpoint: not run (documentation). No owner acceptance is claimed.
 
 First commit/start: `2026-10-20T05:39:58Z`. Step 2.1 deadline: `2026-10-20T11:39:58Z`. Later clocks are unstarted.
+
+## Fixture starvation investigation
+
+Simulated, failing first: a 100-second fixture probe recorded 1,320 HTTP requests, a maximum request delay of 1,146 ms and an event-loop pause of 1,804 ms. CPU profiles identified repeated synchronous process-table reads during command launches; the regression measured 128 identity reads blocking for 5,814 ms. Linux now reads the individual proc identity while preserving the existing UTC start representation. A read-only comparison matched 1,058 running process identities with the operating system, with zero mismatches and one already-exited process. The existing process-group checks still enforce reused-PID refusal and descendant termination. The Linux proc representation follows the [Linux process-stat documentation](https://www.man7.org/linux/man-pages/man5/proc_pid_stat.5.html).
+
+The first repeated probe remained red (maximum HTTP delay 767 ms): journal batches rewrote unchanged durable cursors/manifests and did not yield to requests, and heartbeat discovery synchronously resolved checkout roots through Git. Two journal regressions and one slow-Git heartbeat regression failed first. Journal batches now yield between projects, unchanged state avoids durable writes, and heartbeat discovery uses the same checkout boundary asynchronously. The first journal attempt exposed a batch reservation race; it was corrected before the final affected run.
+
+Simulated: final affected run passes **39 cases across three files**, typecheck and lint. The final HTTP probe is pending; browser gates remain unaccepted until it completes. Screenshot capture now immediately preserves the exact image bytes in the private run/layout evidence folder before the next Playwright run can clear its temporary artifacts.
+
+A readiness regression also failed: the final seeded project still had a busy context operation after the control listener announced readiness. The fixture now drains admitted startup work and the initial journals before binding that listener. Its focused readiness test passes. This is an actual startup-work barrier, without a fixed delay or relaxed HTTP assertion. The last responsiveness probe is running against this change.
+
+Classification preparation: all 14 checked browser input files in the preserved original-main and v0.5.1 snapshots match their recorded revisions. The isolated harness starts exactly one fresh fixture and selects exactly one non-skipped test per attempt. It uses each snapshot's own Playwright dependency instance. Twenty-nine backend failures retain six valid historical comparisons; three have no released selectable counterpart and remain explicitly unavailable comparisons. Fresh full gates follow the fixture checkpoint.
+
+Simulated, final responsiveness probe **passed**: 1,412 authenticated HTTP requests over 100 seconds, maximum 95 ms, zero slow or unanswered requests; owned fixture teardown confirmed exit 0. Exact CPU profiles, request summaries, source-diff hash and prior failed attempts are retained privately. The affected verification totals **40 passing backend cases across four files**, with typecheck and lint passed before the readiness-only fixture change. Full backend will deliberately use six workers on this 16-core machine with low load; heavy suites remain sequential. The optional Node 20 test runtime is absent and will be labelled blocked, not passed.
