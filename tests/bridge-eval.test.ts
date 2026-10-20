@@ -11,6 +11,9 @@ import { ProjectShortIdsSchema, buildPlugin, pluginDist } from '../packages/core
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
 const enabled = process.env.JEVELLAN_BRIDGE_EVAL === '1' && !!process.env.JEVELLAN_BRIDGE_EVAL_CLAUDE_DIR;
+// A cheaper run: JEVELLAN_BRIDGE_EVAL_EFFORT=low and JEVELLAN_BRIDGE_EVAL_ONLY with the 1-based case numbers to run, comma-separated.
+const effort = process.env.JEVELLAN_BRIDGE_EVAL_EFFORT ?? 'medium';
+const only = (process.env.JEVELLAN_BRIDGE_EVAL_ONLY ?? '').split(',').map(Number).filter(Number.isInteger).filter(n => n > 0);
 const PREFIX = 'mcp__plugin_jevellan_jevellan__';
 let f: ProjectFixture | undefined; let folder = ''; let prompt = '';
 type Call = { tool: string; input: Record<string, unknown> };
@@ -36,7 +39,7 @@ afterAll(async () => { await f?.close(); });
 /** One headless bridge turn; the Jevellan tool calls it made, in order. Spawned without blocking: the engine answers the forwarder from this
  * process. */
 async function bridge(text: string): Promise<Call[]> {
-  const child = spawn('claude', ['-p', '--model', 'sonnet', '--effort', 'medium', '--plugin-dir', join(pluginDist(f!.homes), 'jevellan'), '--append-system-prompt-file', prompt,
+  const child = spawn('claude', ['-p', '--model', 'sonnet', '--effort', effort, '--plugin-dir', join(pluginDist(f!.homes), 'jevellan'), '--append-system-prompt-file', prompt,
     '--allowedTools', `${PREFIX}*`, '--disallowedTools', 'Bash', 'Edit', 'Write', 'NotebookEdit', '--output-format', 'stream-json', '--verbose', '--max-turns', '6', text],
     { cwd: folder, stdio: ['ignore', 'pipe', 'ignore'], env: { ...process.env, CLAUDE_CONFIG_DIR: process.env.JEVELLAN_BRIDGE_EVAL_CLAUDE_DIR, JEVELLAN_HOME: f!.homes.root, JEVELLAN_BRIDGE: '1', JEVELLAN_PROJECT: f!.project.name, JEVELLAN_ROLE: '', ENABLE_CLAUDEAI_MCP_SERVERS: 'false' } });
   let stdout = '';
@@ -74,7 +77,7 @@ const CASES: Array<[string, (calls: Call[]) => boolean]> = [
   ['[Jevellan push] W14 waiting on you: PR #88 by an external contributor: build passed, 2 tests failed. Options: merge, redo, close, later', calls => writes(calls).length === 0],
 ];
 
-test.skipIf(!enabled).each(CASES)('bridge eval: %s', async (utterance, check) => {
+test.skipIf(!enabled).each(CASES.filter((_, index) => only.length === 0 || only.includes(index + 1)))('bridge eval: %s', async (utterance, check) => {
   const calls = await bridge(utterance);
   expect({ utterance, calls, pass: check(calls) }).toMatchObject({ pass: true });
 }, 300_000);

@@ -4,7 +4,7 @@ import { constants } from 'node:os';
 import { basename, isAbsolute, join } from 'node:path';
 import { isatty } from 'node:tty';
 import { z } from 'zod';
-import { CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, atomicWrite, minimalEnvironment, projectInstructionFile, resolvedPath, runOwnedCommand } from '@jevellan/core';
+import { CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, atomicWrite, hasInteractiveClaudeLogin, minimalEnvironment, projectInstructionFile, resolvedPath, runOwnedCommand } from '@jevellan/core';
 import { LocalRequestError, localRequest } from './local-request.js';
 import { findExecutable } from './toolchain.js';
 
@@ -109,7 +109,7 @@ async function prepare(answer: unknown, base: NodeJS.ProcessEnv, homes: Homes, r
   const hooks = integration ? { PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: integration.safetyCommand, timeout: 10 }] }] } : undefined;
   const mcp = integration ? { jevellan: { command: integration.bridgeCommand, args: integration.bridgeArgs } } : undefined;
   // Takeover from the bridge: remote control needs the folder's interactive login, which a long-lived token would override.
-  const remote = view.runtime === 'claude' && remoteControl && existsSync(join(home, '.credentials.json'));
+  const remote = view.runtime === 'claude' && remoteControl && hasInteractiveClaudeLogin(home);
   if (remote) { delete env.CLAUDE_CODE_OAUTH_TOKEN; delete env.ANTHROPIC_API_KEY; }
   const args = view.runtime === 'claude'
     ? ['--resume', view.nativeSessionId, ...(remote ? ['--remote-control', remoteControl!] : []), '--model', view.model, ...(await claudeTakesEffort(executable, view.cwd, minimalEnvironment('claude', home, {}, {}, base)) ? ['--effort', view.effort] : []),

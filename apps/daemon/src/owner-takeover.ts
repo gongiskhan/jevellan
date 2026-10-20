@@ -1,7 +1,7 @@
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { IdSchema, TimestampSchema, installedCommand, newId, ownerClock, ownerDuration, quote, type Project, type ThreadIndex } from '@jevellan/core';
+import { IdSchema, TimestampSchema, hasInteractiveClaudeLogin, installedCommand, newId, ownerClock, ownerDuration, quote, type Project, type ThreadIndex } from '@jevellan/core';
 import type { Application } from './application.js';
 import type { TmuxRunner } from './owner-bridge.js';
 import { OwnerRefusal, type OwnerContext } from './owner-tools.js';
@@ -69,7 +69,7 @@ export class OwnerTakeover {
       if (!['idle', 'waiting-for-you', 'in-review'].includes(this.#state(row.id) ?? '')) throw new OwnerRefusal(`${id} did not reach a safe point within 90 seconds. Try again.`, 'busy', 409);
     }
     const account = await app.accounts.resolve(thread.placement.accountId);
-    const remote = thread.placement.runtime === 'claude' && existsSync(join(account.home, '.credentials.json'));
+    const remote = thread.placement.runtime === 'claude' && hasInteractiveClaudeLogin(account.home);
     const session = `jv-${id}`; const title = row.title;
     if (this.#alive(session)) this.tmux(['kill-session', '-t', `=${session}`]);
     const command = [...installedCommand(app.homes), 'thread', 'attach', row.id, ...(remote ? ['--remote-control', `${id} · ${title}`.slice(0, 120)] : [])];
