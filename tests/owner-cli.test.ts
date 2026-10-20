@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildPlugin, callCommand, hookCommand, pluginCommand, statuslineCommand } from '../packages/cli/dist/owner-commands.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
-import { OwnerToolResultSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
+import { OwnerToolResultSchema, ProjectGoalEditorSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
 
 let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
@@ -95,4 +95,16 @@ test('statusline install wraps an existing status line in the given config folde
   expect(settings.theme).toBe('dark'); expect(settings.statusLine.command).toMatch(/ statusline --wrap '~\/bin\/line\.sh'$/u);
   expect(await statuslineCommand(['install', '--claude-config-dir', dir], f.homes)).toBe(0);
   expect(JSON.parse(readFileSync(join(dir, 'settings.json'), 'utf8')).statusLine.command).toBe(settings.statusLine.command);
+});
+
+
+test('CLI goal editor templates preserve defaults and the canonical save request', async () => {
+  f = await projectFixture({ control: true }); const out = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  expect(await callCommand(['goals', 'editor'], f.homes)).toBe(0);
+  const encoded = out.mock.calls.map(row => String(row[0])).find(text => text.startsWith('{'));
+  const result = OwnerToolResultSchema.parse(encoded ? JSON.parse(encoded) : undefined); expect(result.ok).toBe(true);
+  if (!result.ok) throw new Error('Expected the CLI goal editor.');
+  const view = ProjectGoalEditorSchema.parse(result.data), request = { ...view.request.base, fields: { ...view.defaults, name: 'CLI goal fixture', motivation: 'Shared canonical writer.' } };
+  expect(await callCommand(['goals', 'save', '--request', JSON.stringify(request)], f.homes)).toBe(0);
+  expect((await f.app.projectWork.goalList('project')).goals).toMatchObject([{ goal: { name: 'CLI goal fixture', dailyRefillCap: 3, openPrCap: 2 } }]);
 });

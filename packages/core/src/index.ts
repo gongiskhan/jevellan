@@ -79,6 +79,7 @@ export * from './native-setup-schemas.js';
 export * from './project-loop-schemas.js';
 
 export * from './project-goal-schemas.js';
+export * from './project-goal-view-schemas.js';
 
 export * from './project-daily-schemas.js';
 

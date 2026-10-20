@@ -8,8 +8,11 @@ const fields = {
   autonomy: GoalAutonomySchema, state: GoalStateSchema,
   dailyRefillCap: z.number().int().min(0).max(20), openPrCap: z.number().int().min(1).max(10),
 };
+export const GoalDoneCleanupSchema = z.strictObject({ schema: z.literal('goal-done-cleanup-v1'), id: IdSchema, requestedAt: TimestampSchema,
+  taskIds: z.array(IdSchema).max(10000), state: z.enum(['pending', 'complete']), cancelledCount: z.number().int().nonnegative(),
+});
 export const ProjectGoalSchema = z.strictObject({ schema: z.literal('project-goal-v1'), id: IdSchema, projectId: IdSchema,
-  revision: z.number().int().nonnegative(), ...fields, requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema });
+  revision: z.number().int().nonnegative(), ...fields, doneCleanup: GoalDoneCleanupSchema.optional(), requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema });
 export type ProjectGoal = z.infer<typeof ProjectGoalSchema>;
 export const GoalCreateRequestSchema = z.strictObject({ schema: z.literal('goal-create-request-v1'), clientRequestId: IdSchema,
   ...fields, health: fields.health.default(''), autonomy: fields.autonomy.default('propose'), state: fields.state.default('active'),

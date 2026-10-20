@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Areas1a–1e/2a–2d:29Overview/sidebar/coordinator/card-action/waiting/jobs-nightly/editor/deploy/settings-metadata rows migrated/refined,1explicit browser-only disposition. Canonical guards/CAS/retry/member ownership retained;SPEC UI mode policy enforced,config setters share routine fields and command slots,actual MCP list/night models retained. Final static pass,245affected backend26files6workers pass with complete redacted capture;desktop-light settings policy/draft/Save journey passes after documented matcher correction.8exact images,1nonblocking direct panel inspection;others/automated vision not run. Goals then remaining ordered UI areas,intake,placement/prompt versions;full310-row parity incomplete,CM1 remains for Settings. No further release.",
+    "why": "Areas1a–1e/2a–2d/3:32of310UI inventory rows migrated/refined plus1explicit browser-only. Goal completion/recovery, coordinator-owned UI/tool writes, shared due/queue/action/editor models and actual MCP/CLI templates covered. Final static pass;278affected backend33files6workers pass0skip;enhanceddesktop-light Goals journey passes once,no retries/skips.4exactimages,visionnotrun on existing surfaces. Jev then Settings/remaining UI areas,intake,placement/p-v1/m-v1;full parity incomplete,CM1 remains for Settings. Both installed0.7.2;no further release.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Areas1a–1e/2a–2d:29Overview/sidebar/coordinator/card-action/waiting/jobs-nightly/editor/deploy/settings-metadata rows migrated/refined,1explicit browser-only disposition. Canonical guards/CAS/retry/member ownership retained;SPEC UI mode policy enforced,config setters share routine fields and command slots,actual MCP list/night models retained. Final static pass,245affected backend26files6workers pass with complete redacted capture;desktop-light settings policy/draft/Save journey passes after documented matcher correction.8exact images,1nonblocking direct panel inspection;others/automated vision not run. Goals then remaining ordered UI areas,intake,placement/prompt versions;full310-row parity incomplete,CM1 remains for Settings. No further release.",
+    "why": "Areas1a–1e/2a–2d/3:32of310UI inventory rows migrated/refined plus1explicit browser-only. Goal completion/recovery, coordinator-owned UI/tool writes, shared due/queue/action/editor models and actual MCP/CLI templates covered. Final static pass;278affected backend33files6workers pass0skip;enhanceddesktop-light Goals journey passes once,no retries/skips.4exactimages,visionnotrun on existing surfaces. Jev then Settings/remaining UI areas,intake,placement/p-v1/m-v1;full parity incomplete,CM1 remains for Settings. Both installed0.7.2;no further release.",
     "status": "in-progress"
   },
   {

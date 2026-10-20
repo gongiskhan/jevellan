@@ -1358,6 +1358,19 @@ test('LJ4 owner goals refill into a draft, approve on phone, obey daily caps and
   await sectionTab(page, info, 'Queue');
   await expect(page.getByRole('group', { name: 'Queue grouping' }).getByRole('button', { name: 'Goals', exact: true })).toHaveAttribute('aria-pressed', 'true');
   expect((await queue()).find(task => task.title === 'Paused goal task')).toMatchObject({ state: 'queued', threadId: null });
+  await sectionTab(page, info, 'Routines');
+  await card.getByRole('button', { name: 'Edit', exact: true }).click();
+  const editor = page.getByRole('dialog', { name: 'Edit goal', exact: true });
+  await expect(editor.getByRole('spinbutton', { name: 'Open pull requests', exact: true })).toHaveValue('2');
+  await editor.getByRole('spinbutton', { name: 'Open pull requests', exact: true }).fill('3');
+  await shot(page, 'goal-shared-editor'); await editor.getByRole('button', { name: 'Save', exact: true }).click(); await expect(editor).toBeHidden();
+  await expect(card).toContainText('Open pull requests: 3');
+  await card.getByRole('button', { name: 'Mark done', exact: true }).click();
+  const confirmation = page.getByRole('dialog', { name: 'Mark "Hardening through automated tests" done?', exact: true });
+  await expect(confirmation).toContainText('Queued and proposed tasks are cancelled. Running tasks finish.');
+  await shot(page, 'goal-done-confirmation'); await confirmation.getByRole('button', { name: 'Mark done', exact: true }).click(); await expect(confirmation).toBeHidden();
+  await expect(card.locator('.chip')).toHaveText('Done');
+  expect((await queue()).find(task => task.title === 'Paused goal task')).toMatchObject({ state: 'cancelled', threadId: null });
   expect(errors).toEqual([]);
 });
 

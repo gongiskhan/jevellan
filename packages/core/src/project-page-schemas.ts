@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { IdSchema, TimestampSchema } from './schemas.js';
 import { ProjectWorkListViewSchema, ProjectWorkViewSchema, ProjectWorkSettingsRequestSchema, PullRequestEntrySchema } from './project-schemas.js';
 import { ProjectWorkTaskSchema } from './project-loop-schemas.js';
+import { ProjectGoalViewsSchema } from './project-goal-view-schemas.js';
 import { GoalViewSchema } from './project-goal-schemas.js';
 import { ProjectDailyListViewSchema } from './project-daily-schemas.js';
 import { ProjectWorkCardSchema, MergeConfirmationSchema } from './project-card-schemas.js';
@@ -42,6 +43,6 @@ export type ProjectOverview = z.infer<typeof ProjectOverviewSchema>;
 /** Separate from the compact owner-tool project-status-view-v1. */
 export const ProjectPageViewSchema = z.strictObject({ schema: z.literal('project-page-view-v1'), at: TimestampSchema,
   changeToken: z.string().regex(/^[a-f0-9]{64}$/u), work: ProjectWorkViewSchema,
-  tasks: z.array(ProjectWorkTaskSchema), goals: z.array(GoalViewSchema), daily: ProjectDailyListViewSchema, overview: ProjectOverviewSchema, header: ProjectHeaderSchema,
+  goalViews: ProjectGoalViewsSchema.optional(), tasks: z.array(ProjectWorkTaskSchema), goals: z.array(GoalViewSchema), daily: ProjectDailyListViewSchema, overview: ProjectOverviewSchema, header: ProjectHeaderSchema,
   cards: z.array(ProjectWorkCardSchema), waiting: ProjectWaitingItemsViewSchema, routines: ProjectJobsViewSchema });
 export type ProjectPageView = z.infer<typeof ProjectPageViewSchema>;

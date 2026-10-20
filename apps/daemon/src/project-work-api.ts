@@ -2,6 +2,7 @@ import { ProjectPageRequestSchema, ProjectWaitingRespondRequestSchema } from '@j
 import { DailyEnabledRequestSchema, JobPausedRequestSchema } from '@jevellan/core';
 import { ProjectJobSchema, ProjectDailySchema, RoutineEditorSaveRequestSchema } from '@jevellan/core';
 import { ProjectRoutineSettingsSaveSchema, ProjectRoutineSettingsViewSchema } from '@jevellan/core';
+import { goalEditorRequest } from '@jevellan/projects';
 import { projectEventNotices } from '@jevellan/projects';
 import { CoordinatorActivityProjector } from '@jevellan/projects';
 import { DeployBaselineRequestSchema, DeployRollbackRequestSchema, ProjectDeploySchema, ProjectPageQuerySchema } from '@jevellan/core';
@@ -13,7 +14,7 @@ import {
   CoordinatorMessageReceiptSchema, CoordinatorMessageRequestSchema, DecisionAnswerRequestSchema, DecisionAnsweredViewSchema, DeviceOriginSchema, EmptySchema, ErrorDocumentSchema, IdSchema,
   MergeResultViewSchema, LandingCorrectionInputSchema, MergeCorrectionInputSchema, NotebookRequestSchema, PeerLoginSessionInputSchema, ProjectEventFrameSchema, ProjectWorkSettingsRequestSchema, ThreadCreateRequestSchema, ThreadCreatedViewSchema,
   ThreadActionRequestSchema, ThreadMessageReceiptSchema, ThreadMessageRequestSchema, ThreadOverrideRequestSchema, ThreadStopRequestSchema, UiSessionTokenSchema, boundedRedaction, type ProjectLedgerEvent,
-  GoalCreateRequestSchema, GoalUpdateRequestSchema, TaskCreateRequestSchema, TaskUpdateRequestSchema, TaskActionRequestSchema,
+  GoalCreateRequestSchema, GoalUpdateRequestSchema, GoalViewSchema, TaskCreateRequestSchema, TaskUpdateRequestSchema, TaskActionRequestSchema,
 } from '@jevellan/core';
 import {
   COORDINATOR_DEVICE_REDIRECT, COORDINATOR_NOT_HERE, EVENT_CURSOR_AHEAD, EVENT_CURSOR_INVALID, PROJECT_OPERATION_NOT_FOUND, THREAD_DEVICE_GONE, THREAD_NOT_FOUND, coordinatorOfflineNotice,
@@ -27,7 +28,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ProjectThreadActionsViewSchema, ThreadViewSchema, type ThreadActionRequest } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -38,6 +39,11 @@ type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GE
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'goal-views', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goal-views$/, methods: ['GET'], target: 'any' },
+  { name: 'goal-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals\/editor$/, methods: ['GET'], target: 'any' },
+  { name: 'goal-editor-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals\/editor$/, methods: ['POST'], target: 'coordinator' },
+  { name: 'goal-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals\/([A-Za-z0-9_-]+)\/editor$/, methods: ['GET'], target: 'any', ids: ['projectId', 'goalId'] },
+  { name: 'goal-editor-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals\/([A-Za-z0-9_-]+)\/editor$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'goalId'] },
   { name: 'job-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/editor$/, methods: ['GET'], target: 'any' },
   { name: 'job-editor-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/editor$/, methods: ['POST'], target: 'coordinator' },
   { name: 'job-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/editor$/, methods: ['GET'], target: 'any', ids: ['projectId', 'jobId'] },
@@ -80,7 +86,7 @@ const rows: readonly Row[] = [
   { name: 'job-runs', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/job-runs$/, methods: ['GET'], target: 'any' },
   { name: 'goal-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals$/, methods: ['GET'], target: 'any' },
   { name: 'goal-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals$/, methods: ['POST'], target: 'coordinator' },
-  { name: 'goal-update', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals\/([A-Za-z0-9_-]+)\/edit$/, methods: ['POST'], target: 'any', ids: ['projectId', 'goalId'] },
+  { name: 'goal-update', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals\/([A-Za-z0-9_-]+)\/edit$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'goalId'] },
   { name: 'task-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks$/, methods: ['GET'], target: 'any' },
   { name: 'task-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks$/, methods: ['POST'], target: 'coordinator' },
   { name: 'task', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks\/([A-Za-z0-9_-]+)$/, methods: ['GET'], target: 'any', ids: ['projectId', 'taskId'] },
@@ -232,6 +238,17 @@ export async function ownerDeployRollback(app: Application, projectId: string, d
   if (result.projectId !== projectId || result.id !== deployId) throw failure('The returned deploy does not match the request.', 502);
   return result;
 }
+export async function ownerGoalEditorSave(app: Application, projectId: string, goalId: string | undefined, raw: unknown) {
+  return ownerGoalSave(app, projectId, goalId, goalEditorRequest(raw, goalId));
+}
+export async function ownerGoalSave(app: Application, projectId: string, goalId: string | undefined, raw: unknown) {
+  const input = goalId ? GoalUpdateRequestSchema.parse(raw) : GoalCreateRequestSchema.parse(raw), owner = await app.projectWork.coordinatorDevice(projectId);
+  if (owner === null || owner === app.device.deviceId) return goalId ? app.projectWork.updateGoal(projectId, goalId, input) : app.projectWork.createGoal(projectId, input);
+  const path = `${API_PREFIX}${projectId}/goals${goalId ? `/${goalId}/edit` : ''}`;
+  const result = parseReply(GoalViewSchema, await ownerProjectJson(app, owner, 'coordinator', path, 'POST', input));
+  if (result.goal.projectId !== projectId || goalId && result.goal.id !== goalId) throw failure('The returned goal does not match the request.', 502);
+  return result;
+}
 async function ownerRoutineSettings(app: Application, projectId: string, raw?: unknown) {
   const input = raw === undefined ? undefined : ProjectRoutineSettingsSaveSchema.parse(raw);
   const request = { schema: 'owner-tool-request-v1' as const, caller: 'ui', action: input ? 'routines_save' : 'routines', args: { project: projectId, ...(input ? { request: input } : {}) } };
@@ -374,6 +391,9 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'daily-update': send(await work.daily.updateDaily(projectId, route.dailyId!, DailyUpdateRequestSchema.parse(await requestBody(request)))); return true;
     case 'daily-run': send(await work.daily.runDaily(projectId, route.dailyId!, ProjectRunRequestSchema.parse(await requestBody(request))), 202); return true;
 
+    case 'goal-views': send(await work.goalViews(projectId)); return true;
+    case 'goal-editor': send(await work.goalEditor(projectId, route.goalId)); return true;
+    case 'goal-editor-save': send(await work.saveGoalEditor(projectId, route.goalId, await requestBody(request)), route.goalId ? 200 : 201); return true;
     case 'goal-list': send(await work.goalList(projectId)); return true;
     case 'goal-create': send(await work.createGoal(projectId, GoalCreateRequestSchema.parse(await requestBody(request))), 201); return true;
     case 'goal-update': send(await work.updateGoal(projectId, route.goalId!, GoalUpdateRequestSchema.parse(await requestBody(request)))); return true;

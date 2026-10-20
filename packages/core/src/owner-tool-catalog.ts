@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { IdSchema } from './schemas.js';
 import { ThreadMutationActionSchema } from './project-card-schemas.js';
+import { GoalEditorSaveRequestSchema } from './project-goal-view-schemas.js';
 import { RoutineEditorSaveRequestSchema } from './project-routine-editor-schemas.js';
 import { ProjectRoutineSettingsSaveSchema } from './project-routine-settings-schemas.js';
 import type { OwnerToolName, OwnerToolResult } from './owner-tool-schemas.js';
@@ -38,7 +39,7 @@ export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
       write('cancel', { task: id('Task id (T36).'), reason: text(400).optional() }),
       read('inspect', { task: id('Task id (T31).') })] },
   { name: 'goals', description: "Project goals: list them, see one in detail (its tasks by state, what is due, the coordinator's recent decisions), create, edit, pause, resume or mark one done. Act on a goal's tasks with work, thread and override.",
-    actions: [read('list'), read('show', { goal: id('Goal id (G1) or title.') }),
+    actions: [read('editor', { id: IdSchema.optional() }, true), write('save', { id: IdSchema.optional(), request: GoalEditorSaveRequestSchema }, true), read('list', {}, true), read('show', { goal: id('Goal id (G1) or title.') }),
       write('create', { title: text(80), motivation: text(4000), health: z.string().max(1000).optional() }),
       write('edit', { goal: id('Goal id (G1) or title.'), title: text(80).optional(), motivation: text(4000).optional(), health: z.string().max(1000).optional() }),
       write('pause', { goal: id('Goal id (G1) or title.') }), write('resume', { goal: id('Goal id (G1) or title.') }), write('done', { goal: id('Goal id (G1) or title.') })] },

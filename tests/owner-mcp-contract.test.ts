@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'vitest';
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { OWNER_TOOLS, OwnerToolResultSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
+import { OWNER_TOOLS, OwnerToolResultSchema, ProjectGoalEditorSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
 let f: ProjectFixture | undefined; let client: Client | undefined;
@@ -74,4 +74,21 @@ test.each(['list', 'night'])('the official MCP transport preserves the shared jo
   const answer = await mcp.callTool({ name: 'jobs', arguments: { action } }); expect(answer.isError).toBeFalsy();
   expect(OwnerToolResultSchema.parse(answer.structuredContent)).toMatchObject({ ok: true, data: { schema: 'project-jobs-view-v1', projectId: 'project' } });
   expect((answer.content as Array<{ text: string }>).some(row => row.text.includes('"schema":"project-jobs-view-v1"'))).toBe(true);
+});
+
+
+test('goal models and retry-safe editor saves reach the official MCP client', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const read = await mcp.callTool({ name: 'goals', arguments: { action: 'editor' } });
+  const result = OwnerToolResultSchema.parse(read.structuredContent); expect(result.ok).toBe(true);
+  if (!result.ok) throw new Error('Expected the goal editor.');
+  const view = ProjectGoalEditorSchema.parse(result.data), request = { ...view.request.base, fields: { ...view.defaults, name: 'MCP goal fixture', motivation: 'Shared goal transport.' } };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const saved = await mcp.callTool({ name: 'goals', arguments: { action: 'save', request } });
+    expect(saved.isError).toBeFalsy(); expect(OwnerToolResultSchema.parse(saved.structuredContent)).toMatchObject({ ok: true, data: { goal: { name: 'MCP goal fixture', openPrCap: 2 } } });
+  }
+  expect((await f.app.projectWork.goalList('project')).goals).toHaveLength(1);
+  const listed = await mcp.callTool({ name: 'goals', arguments: { action: 'list' } });
+  expect(OwnerToolResultSchema.parse(listed.structuredContent)).toMatchObject({ ok: true, data: { schema: 'project-goal-views-v1', projectId: 'project', rows: [{ name: 'MCP goal fixture' }] } });
+  expect((listed.content as Array<{ text: string }>).some(row => row.text.includes('"schema":"project-goal-views-v1"'))).toBe(true);
 });

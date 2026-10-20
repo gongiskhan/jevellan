@@ -2,18 +2,21 @@ import { newId, ownerClock, ownerDuration, ownerLocal } from '@jevellan/core';
 import { capLines } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerHandler } from '../owner-tools.js';
 import { resolveGoal } from './common.js';
+import { ownerGoalSave, ownerGoalEditorSave } from '../project-work-api.js';
 
 /** `goals` (bridge specification): list, show, create, edit, pause, resume, done; changes use the revision-checked goal updates. */
 export const goals: OwnerHandler = async (context) => {
   const { app, tools, project, args, now } = context; const engine = app.projectWork; const projectId = project.id;
-  const update = async (goalId: string, revision: number, patch: Record<string, unknown>) => engine.updateGoal(projectId, goalId, { schema: 'goal-update-request-v1', expectedRevision: revision, ...patch });
+  const update = async (goalId: string, revision: number, patch: Record<string, unknown>) => ownerGoalSave(app, projectId, goalId, { schema: 'goal-update-request-v1', expectedRevision: revision, ...patch });
   switch (context.action) {
+    case 'editor': { const view = await engine.goalEditor(projectId, typeof args.id === 'string' ? args.id : undefined); return { text: view.title, data: view }; }
+    case 'save': { const view = await ownerGoalEditorSave(app, projectId, typeof args.id === 'string' ? args.id : undefined, args.request); return { text: `Saved ${view.goal.name}.`, data: view }; }
     case 'list': {
       const view = await tools.status(project); const all = (await engine.goalList(projectId)).goals.map(row => row.goal);
       const lines = view.goals.map(goal => `${goal.id} ${goal.title} · ${goal.state} · ${[goal.counts.running ? `${goal.counts.running} running` : '', goal.counts.queued ? `${goal.counts.queued} queued` : '', goal.counts.waiting ? `${goal.counts.waiting} waiting` : '', goal.counts.landedToday ? `${goal.counts.landedToday} landed today` : ''].filter(Boolean).join(', ') || 'nothing running'}${goal.due.length ? ` · due: ${goal.due.map(entry => entry.text).join(', ')}` : ''}`);
       const done = all.filter(goal => goal.state === 'done');
       if (done.length) lines.push(`Done: ${done.map(goal => `${tools.ids.one(projectId, 'G', goal.id)} ${goal.name}`).join(', ')}`);
-      return { text: capLines(lines.length ? lines : ['No goals yet.']), data: view.goals };
+      return { text: capLines(lines.length ? lines : ['No goals yet.']), data: await engine.goalViews(projectId) };
     }
     case 'show': {
       const { goal } = await resolveGoal(context, String(args.goal)); const id = tools.ids.one(projectId, 'G', goal.id);
@@ -38,8 +41,8 @@ export const goals: OwnerHandler = async (context) => {
       return { text: capLines(lines) };
     }
     case 'create': {
-      const created = await engine.createGoal(projectId, { schema: 'goal-create-request-v1', clientRequestId: newId('owner_goal'), name: String(args.title), motivation: String(args.motivation),
-        ...(typeof args.health === 'string' ? { health: args.health } : {}), dailyRefillCap: 3, openPrCap: 3 });
+      const created = await ownerGoalSave(app, projectId, undefined, { schema: 'goal-create-request-v1', clientRequestId: newId('owner_goal'), name: String(args.title), motivation: String(args.motivation),
+        ...(typeof args.health === 'string' ? { health: args.health } : {}) });
       return { text: `Created ${tools.ids.one(projectId, 'G', created.goal.id)} "${created.goal.name}". The coordinator plans its first tasks at its next turn.` };
     }
     case 'edit': {
@@ -59,14 +62,8 @@ export const goals: OwnerHandler = async (context) => {
     }
     case 'done': {
       const { goal, id } = await resolveGoal(context, String(args.goal));
-      await update(goal.id, goal.revision, { state: 'done' });
-      const tasks = (await engine.taskList(projectId)).tasks.filter(task => task.goalId === goal.id);
-      let cancelled = 0;
-      for (const task of tasks.filter(row => ['queued', 'draft'].includes(row.state) && !row.threadId)) {
-        await engine.taskAction(projectId, task.id, { schema: 'task-action-request-v1', expectedRevision: task.revision, action: task.state === 'draft' ? 'reject' : 'cancel', reason: `Goal ${goal.name} is done.` }).then(() => { cancelled++; }).catch(() => undefined);
-      }
-      const running = tasks.filter(row => row.state === 'active').length;
-      return { text: `Marked ${id} done. Cancelled ${cancelled} queued tasks; ${running} running tasks will finish. Its history stays.` };
+      const result = await update(goal.id, goal.revision, { state: 'done' });
+      return { text: `Marked ${id} done. Cancelled ${result.goal.doneCleanup?.cancelledCount ?? 0} queued tasks; ${result.counts.active} running tasks will finish. Its history stays.` };
     }
   }
   throw new OwnerRefusal('goals takes list, show, create, edit, pause, resume, done.', 'unknown_action');

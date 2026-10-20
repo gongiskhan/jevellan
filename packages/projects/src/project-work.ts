@@ -1,6 +1,7 @@
 import { waitingItemsView, sentText } from './waiting-views.js';
 import { QUESTION_NOT_FOUND } from './copy.js';
 import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction, type ProjectPageRequest, type ProjectWaitingRespondRequest, ProjectWaitingResponseSchema } from '@jevellan/core';
+import { projectGoalViews, goalEditorView, goalEditorRequest } from './goal-views.js';
 import { projectPageView } from './page-view.js';
 import { projectJobsView } from './jobs-view.js';
 import { jobEditorView, dailyEditorView, routineEditorRequest } from './routine-editors.js';
@@ -719,6 +720,17 @@ export class ProjectWork {
   // Browser and API operations. Refusals throw Error(sentence) with a status.
   list(): Promise<ProjectWorkListView> { return this.views.list(); }
   async goalList(projectId: string) { await this.#project(projectId); return this.goals.view(projectId); }
+  async goalViews(projectId: string) {
+    const [goals, tasks, work, daily] = await Promise.all([this.goalList(projectId), this.taskList(projectId), this.view(projectId), this.daily.view(projectId)]);
+    return projectGoalViews(projectId, goals.goals, tasks.tasks, work.threads, daily);
+  }
+  async goalEditor(projectId: string, goalId?: string) {
+    await this.#project(projectId); return goalEditorView(projectId, goalId ? await this.goals.read(projectId, goalId) : undefined);
+  }
+  async saveGoalEditor(projectId: string, goalId: string | undefined, raw: unknown) {
+    const request = goalEditorRequest(raw, goalId);
+    return goalId ? this.updateGoal(projectId, goalId, request) : this.createGoal(projectId, request);
+  }
   async jobsView(projectId: string) {
     await this.#project(projectId);
     const [raw, settings, goals] = await Promise.all([this.daily.view(projectId), this.admission.settings(projectId), this.goalList(projectId)]);
@@ -770,7 +782,7 @@ export class ProjectWork {
     return this.tasks.exclusive(projectId, async () => applyEkoaCodeSetup(this, projectId, input, join(this.paths.project(projectId), 'ekoa-code-setup.json'), await this.admission.settings(projectId)));
   }
   async createGoal(projectId: string, raw: unknown) { await this.#coordinatorHere(projectId); return this.goals.create(projectId, raw); }
-  async updateGoal(projectId: string, goalId: string, raw: unknown) { await this.#project(projectId); return this.goals.update(projectId, goalId, raw); }
+  async updateGoal(projectId: string, goalId: string, raw: unknown) { await this.#coordinatorHere(projectId); return this.goals.update(projectId, goalId, raw); }
   async pageView(projectId: string, resolvedDays = 14, viewer: Pick<ProjectPageRequest, 'timeZone' | 'locale' | 'ackKnown'> = {}) {
     const [work, tasks, goals, daily, roster] = await Promise.all([this.view(projectId), this.taskList(projectId), this.goalList(projectId), this.daily.view(projectId), this.#o.roster()]);
     const names = new Map(roster.devices.map(row => [row.device.id, row.device.name])); names.set(this.#o.deviceId, this.#o.deviceName);

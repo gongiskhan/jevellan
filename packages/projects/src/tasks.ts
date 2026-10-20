@@ -40,6 +40,19 @@ export class ProjectTasks {
     const result = (this.#chains.get(projectId) ?? Promise.resolve()).then(work), tail = result.then(() => undefined, () => undefined);
     this.#chains.set(projectId, tail); void tail.then(() => { if (this.#chains.get(projectId) === tail) this.#chains.delete(projectId); }); return result;
   }
+  /** Goal transitions share the queue lock without re-entering it through the public action method. */
+  withGoalQueue<T>(projectId: string, goalId: string, work: (cancel: (taskId: string, reason: string) => Promise<ProjectWorkTask>) => Promise<T>): Promise<T> {
+    return this.exclusive(projectId, async () => {
+      await this.assertWriter(projectId);
+      return work(async (taskId, reason) => {
+        const task = await this.read(projectId, taskId);
+        if (task.goalId !== goalId) return refuse('The queued task belongs to another goal.', 409);
+        if (!['draft', 'queued'].includes(task.state)) return task;
+        if (task.dispatchText || task.threadId) return refuse(GOAL_COMPLETION_BUSY);
+        return this.#action(projectId, task.id, { schema: 'task-action-request-v1', expectedRevision: task.revision, action: task.state === 'draft' ? 'reject' : 'cancel', reason }, true);
+      });
+    });
+  }
   async list(projectId: string): Promise<ProjectWorkTask[]> {
     const tasks: ProjectWorkTask[] = []; let after: string | undefined;
     do { const page = await this.o.hub.tasks(projectId, after); tasks.push(...page.records); after = page.next ?? undefined; } while (after);
@@ -103,7 +116,9 @@ export class ProjectTasks {
     });
   }
   action(projectId: string, taskId: string, raw: unknown, owner = true): Promise<ProjectWorkTask> {
-    return this.exclusive(projectId, async () => {
+    return this.exclusive(projectId, () => this.#action(projectId, taskId, raw, owner));
+  }
+  async #action(projectId: string, taskId: string, raw: unknown, owner: boolean): Promise<ProjectWorkTask> {
       await this.assertWriter(projectId); const input = TaskActionRequestSchema.parse(raw), current = await this.read(projectId, taskId);
       if (current.revision !== input.expectedRevision) refuse('This task changed. Reload before acting.');
       if (!['draft', 'queued'].includes(current.state)) refuse('Use the thread controls for a task that has started.');
@@ -116,6 +131,9 @@ export class ProjectTasks {
         ...(['now', 'later'].includes(input.action) ? { now: input.action === 'now' } : {}), ...(input.action === 'now' ? { held: undefined } : {}) });
       if (['approve', 'reject'].includes(input.action)) await this.o.reviewed?.(task, input.action === 'approve' ? 'approved' : 'rejected', input.reason);
       this.o.changed?.(projectId); return task;
-    });
   }
+}
+export const GOAL_COMPLETION_BUSY = 'Some queued tasks have a reserved start or a thread. Wait for them to settle before marking the goal done.';
+export function goalCompletionRefusal(tasks: readonly ProjectWorkTask[]): string | null {
+  return tasks.some(task => ['draft', 'queued'].includes(task.state) && (task.dispatchText || task.threadId)) ? GOAL_COMPLETION_BUSY : null;
 }

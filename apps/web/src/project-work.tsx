@@ -1,4 +1,4 @@
-import type { ProjectJobsView } from '@jevellan/core/client';
+import type { ProjectGoalViews, ProjectJobsView } from '@jevellan/core/client';
 import { LastDeploy } from './project-deploy.js';
 import { SetupCard } from './setup-card.js';
 import { EmptySchema } from '@jevellan/core/client';
@@ -279,6 +279,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const viewer = useRef({ timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale: navigator.language });
   const [goals, setGoals] = useState<GoalEntry[]>([]);
   const [daily, setDaily] = useState<DailyView>();
+  const [goalViews, setGoalViews] = useState<ProjectGoalViews>();
   const [routines, setRoutines] = useState<ProjectJobsView>();
   const [tasks, setTasks] = useState<ProjectWorkTask[]>([]);
   const [loadError, setLoadError] = useState('');
@@ -362,7 +363,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         if (moved) restart();
         if (!historyReady) publishHistory(history.snapshot(next.lastEventId));
         setView(next); setLoadError('');
-        setTasks(pageView.tasks); setGoals(pageView.goals); setDaily(pageView.daily); setRoutines(pageView.routines); setOverview(pageView.overview); setHeader(pageView.header); setCards(pageView.cards); setWaiting(pageView.waiting);
+        setTasks(pageView.tasks); setGoals(pageView.goals); setGoalViews(pageView.goalViews); setDaily(pageView.daily); setRoutines(pageView.routines); setOverview(pageView.overview); setHeader(pageView.header); setCards(pageView.cards); setWaiting(pageView.waiting);
     };
     acceptPage.current = accept;
     const reads = queuedRefresh(
@@ -600,7 +601,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           <section className="pw-section" hidden={overviewTab !== 'threads'} data-tab="waiting" aria-labelledby={`${sideId}-waiting`}>
             {sectionHeading(`${sideId}-waiting`, overview.waiting.label, overview.waiting.count)}
             {sent && waiting.showSent && <p className="pw-sent" role="status"><Icon name="check" size={14} />{sent.text}</p>}
-            {drafts.length > 0 && <div className="pw-proposed"><h4>{copy.PROPOSED_TASKS}</h4><TaskQueue projectId={id} tasks={drafts} goals={goals} threads={view.threads} navigate={navigate} changed={updated} onError={onError} /></div>}
+            {drafts.length > 0 && goalViews && <div className="pw-proposed"><h4>{copy.PROPOSED_TASKS}</h4><TaskQueue projectId={id} tasks={drafts} goals={goals} view={goalViews.queue} scope="proposed" navigate={navigate} changed={updated} onError={onError} /></div>}
             {open.length ? open.map((item) => (
               <DecisionCard key={item.decision.id} item={item} query={answerView} now={now} answered={answeredQuestion} onError={onError} />
             )) : overview.waiting.isEmpty && <p className="pw-empty">{overview.waiting.emptyText}</p>}
@@ -610,7 +611,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           <div hidden={overviewTab !== 'library'}>{overviewTab === 'library' && <ProjectLibraryPanel projectId={id} threadTitle={threadId => titles(threadId) ?? threadId} onError={onError} />}</div>
           <section className="pw-section" hidden={overviewTab !== 'queue'} data-tab="queue" aria-labelledby={`${sideId}-queue`}>
             {sectionHeading(`${sideId}-queue`, 'Queue', overview.queueCount)}
-            <TaskQueue projectId={id} tasks={tasks} goals={goals} threads={view.threads} grouped navigate={navigate} changed={updated} onError={onError} />
+            {goalViews && <TaskQueue projectId={id} tasks={tasks} goals={goals} view={goalViews.queue} grouped navigate={navigate} changed={updated} onError={onError} />}
           </section>
           {overview.sections.filter(section => section.visible).map(section => <section key={section.id} className="pw-section" hidden={overviewTab !== 'threads'} aria-labelledby={`${sideId}-${section.id}`}>
             {sectionHeading(`${sideId}-${section.id}`, section.label, section.threadIds.length)}
@@ -631,7 +632,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           </section>
           <section className="pw-section" hidden={overviewTab !== 'routines'} data-tab="routines" aria-labelledby={`${sideId}-goals`}>
             {sectionHeading(`${sideId}-goals`, 'Goals', overview.goalCount)}
-            <ProjectGoals projectId={id} goals={goals} changed={updated} onError={onError} />
+            {goalViews && <ProjectGoals view={goalViews} changed={updated} onError={onError} />}
           </section>
         </div>
       </div>

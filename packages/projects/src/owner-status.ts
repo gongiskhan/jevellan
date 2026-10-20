@@ -1,3 +1,4 @@
+import { goalDue } from './goal-due.js';
 import { boardGroup, ownerLocal, type BoardGroup, type CoordinatorView, type GoalLine, type ProjectDecision, type ProjectDeploy, type ProjectDaily, type ProjectGoal, type ProjectJob, type ProjectJobRun, type ProjectStatusView,
   type ProjectWindow, type ProjectWorkSettings, type ProjectWorkTask, type RunView, type ThreadIndex, type WaitingItemView, type WaitingKind } from '@jevellan/core';
 import type { OwnerShortIds } from './owner-ids.js';
@@ -133,16 +134,9 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
   const today = ownerLocal(now, timeZone).day;
   const goals: GoalLine[] = byCreated(input.goals).filter(goal => goal.state !== 'done').map(goal => {
     const mine = (run: RunView) => run.label.goalId === goal.id;
-    const goalDailies = input.dailies.filter(daily => daily.goalId === goal.id && daily.enabled);
-    const lastWindow = [...input.windows].sort((a, b) => b.openedAt.localeCompare(a.openedAt))[0];
-    const due: GoalLine['due'] = [];
-    if (lastWindow?.state === 'finished') for (const daily of goalDailies) {
-      const ranInWindow = input.tasks.some(task => task.dailyId === daily.id && task.nightlyWindowId === lastWindow.id) || input.runs.some(run => dailyByJob.get(run.jobId)?.id === daily.id && run.startedAt >= lastWindow.openedAt);
-      if (!ranInWindow) due.push({ type: 'daily_item', ref: daily.id, text: `${daily.name} (not run last night)` });
-    }
     const counts = { running: running.filter(mine).length, queued: [...queued, ...threadQueued].filter(mine).length, waiting: threadRuns.filter(run => mine(run) && run.state === 'waiting').length,
       landedToday: threadRuns.filter(run => mine(run) && run.landing && ownerLocal(run.landing.at, timeZone).day === today).length };
-    if (goal.state === 'active' && counts.running + counts.queued === 0) due.push({ type: 'idle_goal', ref: goal.id, text: 'nothing queued or running' });
+    const due = goalDue(goal, counts, input);
     return { id: goalIds.get(goal.id)!, internalId: goal.id, title: goal.name, state: goal.state, counts, due };
   });
 

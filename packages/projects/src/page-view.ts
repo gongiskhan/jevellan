@@ -1,4 +1,5 @@
 import { waitingItemsView } from './waiting-views.js';
+import { projectGoalViews } from './goal-views.js';
 import { projectJobsView } from './jobs-view.js';
 import { openPullRequests, checksBadge, mergeBlock, mergeHeld, mergeConfirmation, threadCardView, taskCardView, type CardPresentationOptions } from './card-views.js';
 import { createHash } from 'node:crypto';
@@ -41,7 +42,7 @@ export function projectPageView(input: Pick<ProjectPageView, 'work' | 'tasks' | 
   const positions = new Map(tasks.filter(task => task.state === 'queued').map((task, index) => [task.id, index + 1]));
   const cards = [...work.threads.map(thread => threadCardView(thread, { ...options, held: daily.mergesHeld && !daily.mergeAllowedThreads.includes(thread.id), baseBranch: work.project.baseBranch })),
     ...tasks.map(task => taskCardView(task, positions.get(task.id)))];
-  const body = { work, tasks, goals, daily, routines, overview, header: coordinatorPresentation(work, { ...options, now }), cards, waiting: waitingItemsView(work, options.ackKnown) };
+  const body = { work, tasks, goals, daily, routines, goalViews: projectGoalViews(work.project.id, goals, tasks, work.threads, daily), overview, header: coordinatorPresentation(work, { ...options, now }), cards, waiting: waitingItemsView(work, options.ackKnown) };
   return ProjectPageViewSchema.parse({ schema: 'project-page-view-v1', at: new Date(now).toISOString(),
     changeToken: createHash('sha256').update(stableJson(body)).digest('hex'), ...body });
 }

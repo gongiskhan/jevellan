@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useSessionDrag } from './session-drag.js';
-import { TaskTypeSchema, TaskViewSchema, type ProjectWorkTask, type ThreadIndex } from '@jevellan/core/client';
+import { TaskTypeSchema, TaskViewSchema, type ProjectWorkTask, type ProjectTaskQueueView } from '@jevellan/core/client';
 import type { GoalEntry } from './project-goals.js';
 import { api } from './api.js';
 import { Confirm, Markdown, Modal, useTask } from './components.js';
 
-export function TaskQueue({ projectId, tasks, goals = [], threads = [], grouped = false, navigate, changed, onError }: { projectId: string; tasks: readonly ProjectWorkTask[]; goals?: readonly GoalEntry[]; threads?: readonly ThreadIndex[]; grouped?: boolean; navigate(path: string): void; changed(): void; onError(error: unknown): void }) {
+export function TaskQueue({ projectId, tasks, goals = [], view, scope = 'all', grouped = false, navigate, changed, onError }: { projectId: string; tasks: readonly ProjectWorkTask[]; goals?: readonly GoalEntry[]; view: ProjectTaskQueueView; scope?: 'all' | 'proposed'; grouped?: boolean; navigate(path: string): void; changed(): void; onError(error: unknown): void }) {
   const operation = useTask(onError), [editing, setEditing] = useState<ProjectWorkTask>(), [rejecting, setRejecting] = useState<ProjectWorkTask>();
   const [grouping, setGrouping] = useState(() => { try { return localStorage.getItem('jevellan.queue-grouping') === 'goals' ? 'goals' : 'order'; } catch { return 'order'; } });
   const choose = (value: string) => { setGrouping(value); try { localStorage.setItem('jevellan.queue-grouping', value); } catch { /* Storage may be unavailable. */ } };
-  const open = tasks.filter(task => ['draft', 'queued', 'active', 'in-review'].includes(task.state));
+  const selected = view.scopes[scope], open = selected.order.flatMap(id => { const task = tasks.find(row => row.id === id); return task ? [task] : []; });
   const action = (task: ProjectWorkTask, value: 'approve' | 'reject' | 'cancel' | 'now' | 'later') => void operation.run(async signal => {
     await api(`/api/projects/${projectId}/tasks/${task.id}/action`, TaskViewSchema, 'POST', { schema: 'task-action-request-v1', expectedRevision: task.revision, action: value }, { signal, waitForHub: true }); changed(); setRejecting(undefined);
   });
@@ -18,20 +18,20 @@ export function TaskQueue({ projectId, tasks, goals = [], threads = [], grouped 
   });
   const { list, drag } = useSessionDrag({ disabled: operation.busy, handleSelector: '.pw-task summary', start: () => undefined,
     drop: (id, target, after) => { const task = tasks.find(row => row.id === id); if (task && ['draft', 'queued'].includes(task.state)) move(task, after ? { after: target } : { before: target }); } });
-  const groups = grouped && grouping === 'goals' ? [...goals.filter(entry => entry.goal.state !== 'done').map(entry => ({ label: entry.goal.name, rows: open.filter(task => task.goalId === entry.goal.id && !task.dailyId) })), { label: 'Asks', rows: open.filter(task => !task.goalId && !task.dailyId) }, { label: 'Daily', rows: open.filter(task => !!task.dailyId) }] : [{ label: '', rows: open }];
+  const groups = grouped && grouping === 'goals' ? selected.groups.map(group => ({ label: group.label, rows: group.taskIds.flatMap(id => { const task = tasks.find(row => row.id === id); return task ? [task] : []; }) })) : [{ label: '', rows: open }];
   return <>
     {grouped && <div className="pw-group-control" role="group" aria-label="Queue grouping"><button className="secondary small" aria-pressed={grouping === 'order'} onClick={() => choose('order')}>Order</button><button className="secondary small" aria-pressed={grouping === 'goals'} onClick={() => choose('goals')}>Goals</button></div>}
     <div ref={list} className="pw-task-list">
     {open.length === 0 && <p className="pw-empty">Nothing in the queue. Ask the coordinator or add a task.</p>}
-    {groups.map(group => <section className="pw-task-group" key={group.label}>{group.label && <h4>{group.label}</h4>}{group.label && !group.rows.length && <p className="pw-empty">Nothing open for this goal.</p>}{group.rows.map(task => { const index = open.indexOf(task), goal = goals.find(entry => entry.goal.id === task.goalId)?.goal, thread = threads.find(row => row.id === task.threadId); return <article className={`pw-task${drag?.id === task.id ? ' pw-task-dragging' : ''}${drag?.target === task.id ? ' pw-task-drop' : ''}`} key={task.id}
+    {groups.map(group => <section className="pw-task-group" key={group.label}>{group.label && <h4>{group.label}</h4>}{group.label && !group.rows.length && <p className="pw-empty">Nothing open for this goal.</p>}{group.rows.map(task => { const index = open.indexOf(task), row = view.rows.find(row => row.taskId === task.id)!; return <article className={`pw-task${drag?.id === task.id ? ' pw-task-dragging' : ''}${drag?.target === task.id ? ' pw-task-drop' : ''}`} key={task.id}
       data-session-id={['draft', 'queued'].includes(task.state) ? task.id : undefined}>
-      <details><summary><strong>{task.title}</strong> <span className="chip">{task.held ? 'On hold · ' : task.now ? 'Now · ' : ''}{task.state === 'in-review' ? 'In review' : task.state[0]!.toUpperCase() + task.state.slice(1)}</span>{goal && goal.state !== 'active' && <span className="chip">Goal paused</span>}</summary>
-        <p className="muted">{task.type} · {goal?.name ?? (task.goalId ? 'Goal task' : 'Asks')}{task.ownerRanked ? ' · Ordered by you' : ''}</p>
-        {goal && goal.state !== 'active' && <p className="pw-field-note">Goal paused</p>}
-        {thread && <p className="muted">{thread.modelLabel} · {thread.effort} effort · {thread.ownerDeviceId}</p>}
+      <details><summary><strong>{task.title}</strong> <span className="chip">{row.stateLabel}</span>{row.goalNotice && <span className="chip">{row.goalNotice}</span>}</summary>
+        <p className="muted">{row.meta}</p>
+        {row.goalNotice && <p className="pw-field-note">{row.goalNotice}</p>}
+        {row.threadLine && <p className="muted">{row.threadLine}</p>}
         <Markdown>{task.brief}</Markdown>
         {task.needs.length > 0 && <p>Needs: {task.needs.join(', ')}</p>}
-        {task.after.some(id => !['done', 'cancelled'].includes(tasks.find(row => row.id === id)?.state ?? 'queued')) && <p>Waiting on: {task.after.filter(id => !['done', 'cancelled'].includes(tasks.find(row => row.id === id)?.state ?? 'queued')).map(id => tasks.find(row => row.id === id)?.title ?? id).join(', ')}</p>}
+        {row.waitingLine && <p>{row.waitingLine}</p>}
         {task.endNote && <p>{task.endNote}</p>}
         <div className="actions">
           <button type="button" className="secondary small" onClick={() => navigate(`/projects/${projectId}/tasks/${task.id}`)}>Open task</button>

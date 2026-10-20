@@ -3,7 +3,7 @@ import { GoalCreateRequestSchema, GoalListViewSchema, GoalUpdateRequestSchema, G
   type CoordinatorEvent, type ProjectGoal, type ProjectHub, type ProjectWorkTask, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
 import { derivedId } from './decision-items.js';
 import { projectDay } from './project-day.js';
-import type { ProjectTasks } from './tasks.js';
+import { goalCompletionRefusal, type ProjectTasks } from './tasks.js';
 const refuse = (message: string, status = 409): never => { throw Object.assign(new Error(message), { status }); };
 export class ProjectGoals {
   constructor(readonly o: { hub: Pick<ProjectHub, 'goals' | 'goal' | 'putGoal' | 'refill' | 'putRefill'>; tasks: ProjectTasks; redactor: SecretRedactor; now(): number;
@@ -42,9 +42,35 @@ export class ProjectGoals {
   }
   async update(projectId: string, goalId: string, raw: unknown) {
     const { schema: _schema, expectedRevision, ...patch } = GoalUpdateRequestSchema.parse(raw); void _schema;
-    const current = await this.read(projectId, goalId); if (current.revision !== expectedRevision) return refuse('This goal changed. Reload before editing.');
-    const goal = (await this.o.hub.putGoal(ProjectGoalSchema.parse(this.o.redactor.document({ ...current, ...patch, updatedAt: new Date(this.o.now()).toISOString() })), expectedRevision)).document;
-    this.o.changed?.(projectId); return GoalViewSchema.parse({ schema: 'goal-view-v1', goal, counts: this.counts(goal, await this.o.tasks.list(projectId), await this.day(projectId)) });
+    return this.o.tasks.withGoalQueue(projectId, goalId, async cancel => {
+      let current = await this.read(projectId, goalId); if (current.revision !== expectedRevision) return refuse('This goal changed. Reload before editing.');
+      current = await this.#complete(current, cancel);
+      const newCompletion = patch.state === 'done' && (current.state !== 'done' || !current.doneCleanup);
+      let doneCleanup = current.doneCleanup;
+      if (newCompletion) {
+        const queued = (await this.o.tasks.list(projectId)).filter(task => task.goalId === goalId && ['queued', 'draft'].includes(task.state));
+        const refusal = goalCompletionRefusal(queued); if (refusal) return refuse(refusal);
+        doneCleanup = { schema: 'goal-done-cleanup-v1', id: derivedId('gdone', projectId, goalId, String(expectedRevision)), requestedAt: new Date(this.o.now()).toISOString(), taskIds: queued.map(task => task.id), state: 'pending', cancelledCount: 0 };
+      }
+      let goal = await this.#save(ProjectGoalSchema.parse({ ...current, ...patch, ...(doneCleanup ? { doneCleanup } : {}) }));
+      goal = await this.#complete(goal, cancel);
+      return GoalViewSchema.parse({ schema: 'goal-view-v1', goal, counts: this.counts(goal, await this.o.tasks.list(projectId), await this.day(projectId)) });
+    });
+  }
+  async #save(goal: ProjectGoal) {
+    const saved = (await this.o.hub.putGoal(ProjectGoalSchema.parse(this.o.redactor.document({ ...goal, updatedAt: new Date(this.o.now()).toISOString() })), goal.revision)).document;
+    this.o.changed?.(goal.projectId); return saved;
+  }
+  async #complete(goal: ProjectGoal, cancel: (id: string, reason: string) => Promise<ProjectWorkTask>): Promise<ProjectGoal> {
+    const cleanup = goal.doneCleanup; if (!cleanup || cleanup.state !== 'pending') return goal;
+    let cancelledCount = 0;
+    for (const id of cleanup.taskIds) if ((await cancel(id, `Goal ${goal.name} is done.`)).state === 'cancelled') cancelledCount++;
+    return this.#save({ ...goal, doneCleanup: { ...cleanup, state: 'complete', cancelledCount } });
+  }
+  async recoverDone(projectId: string): Promise<void> {
+    for (const goal of (await this.list(projectId)).filter(goal => goal.doneCleanup?.state === 'pending')) {
+      await this.o.tasks.withGoalQueue(projectId, goal.id, async cancel => { await this.#complete(await this.read(projectId, goal.id), cancel); });
+    }
   }
   async validate(projectId: string, goalId: string | null, source: ProjectWorkTask['source'], refillEventId?: string): Promise<'draft' | 'queued'> {
     if (goalId === null) { if (source === 'refill') return refuse('A refill task must serve a listed goal.', 400); return 'queued'; }
@@ -62,7 +88,11 @@ export class ProjectGoals {
   }
   async eligible(task: ProjectWorkTask, tasks: readonly ProjectWorkTask[]): Promise<boolean> {
     // Enabled Nightly definitions are explicit owner work; goal refill and coding-task pause/caps do not skip them.
-    if (task.source === 'daily') return true;
+    if (task.source === 'daily') {
+      if (!task.goalId) return true;
+      const goal = (await this.o.hub.goal(task.goalId))?.document;
+      return goal?.projectId !== task.projectId || goal.doneCleanup?.state !== 'pending' || !goal.doneCleanup.taskIds.includes(task.id);
+    }
     if (!task.goalId) return true;
     const goal = await this.read(task.projectId, task.goalId); if (goal.state !== 'active') return false;
     if (task.kind !== 'session') return true;
@@ -74,6 +104,7 @@ export class ProjectGoals {
     return goal.state === 'active' && !own.some(task => ['draft', 'queued', 'active'].includes(task.state)) && counts.inReview < goal.openPrCap && counts.refillsToday < goal.dailyRefillCap;
   }
   async sweep(projectId: string): Promise<void> {
+    await this.recoverDone(projectId);
     await this.o.tasks.exclusive(projectId, async () => {
       await this.o.tasks.assertWriter(projectId);
       if ((await this.o.settings(projectId)).status !== 'active') return;
