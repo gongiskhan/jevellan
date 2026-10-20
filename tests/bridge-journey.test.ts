@@ -8,8 +8,8 @@ import { projectFixture, type ProjectFixture } from './helpers/project-fixture.j
 
 const enabled = process.env.JEVELLAN_BRIDGE_JOURNEY === '1' && !!process.env.JEVELLAN_BRIDGE_EVAL_CLAUDE_DIR;
 let f: ProjectFixture | undefined; let session = '';
-const pane = () => spawnSync('tmux', ['capture-pane', '-p', '-J', '-S', '-400', '-t', `=${session}`], { encoding: 'utf8' }).stdout;
-const type = (text: string) => { spawnSync('tmux', ['send-keys', '-t', `=${session}`, '-l', text]); spawnSync('tmux', ['send-keys', '-t', `=${session}`, 'Enter']); };
+const pane = () => spawnSync('tmux', ['capture-pane', '-p', '-J', '-S', '-400', '-t', `=${session}:`], { encoding: 'utf8' }).stdout;
+const type = (text: string) => { spawnSync('tmux', ['send-keys', '-t', `=${session}:`, '-l', text]); spawnSync('tmux', ['send-keys', '-t', `=${session}:`, 'Enter']); };
 async function until(check: () => boolean, ms = 180_000): Promise<void> { const end = Date.now() + ms; while (Date.now() < end) { if (check()) return; await new Promise(resolve => setTimeout(resolve, 2000)); } throw new Error(`Timed out. Pane:\n${pane().slice(-3000)}`); }
 const bridgeWrites = () => f!.app.ownerTools.callerLog().filter(row => row.caller.startsWith('bridge:') && row.access === 'write');
 
@@ -25,7 +25,7 @@ beforeAll(async () => {
   await until(() => /Jevellan bridge|❯/u.test(pane()), 120_000);
 }, 300_000);
 afterAll(async () => {
-  if (session) { spawnSync('tmux', ['send-keys', '-t', `=${session}`, '/exit', 'Enter']); await new Promise(resolve => setTimeout(resolve, 3000)); spawnSync('tmux', ['kill-session', '-t', `=${session}`]); }
+  if (session) { spawnSync('tmux', ['send-keys', '-t', `=${session}:`, '/exit', 'Enter']); await new Promise(resolve => setTimeout(resolve, 3000)); spawnSync('tmux', ['kill-session', '-t', `=${session}`]); }
   f?.app.ownerPushes.close(); await f?.close();
 });
 

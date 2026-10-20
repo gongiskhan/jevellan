@@ -97,7 +97,7 @@ export class OwnerBridges {
     if (state) this.#save({ ...state, wanted: false });
     this.app.ownerTools.updateProjectSettings(project.id, current => ({ ...current, bridge: { ...current.bridge, wanted: false } }));
     if (this.tmux(['has-session', '-t', `=${session}`]).status !== 0) return `The bridge for ${project.name} is not running.`;
-    this.tmux(['send-keys', '-t', `=${session}`, '/exit', 'Enter']);
+    this.tmux(['send-keys', '-t', `=${session}:`, '/exit', 'Enter']);
     return `Stopping the bridge for ${project.name}. It stays off until you start it again.`;
   }
 
@@ -106,9 +106,9 @@ export class OwnerBridges {
     const deadline = Date.now() + timeoutMs; let quiet = 0;
     while (Date.now() < deadline) {
       await new Promise(resolve => setTimeout(resolve, 500));
-      const pane = this.tmux(['capture-pane', '-p', '-t', `=${session}`]).stdout;
+      const pane = this.tmux(['capture-pane', '-p', '-t', `=${session}:`]).stdout;
       const dialog = DIALOGS.find(entry => entry.text.test(pane));
-      if (dialog) { for (const key of dialog.keys) { this.tmux(['send-keys', '-t', `=${session}`, key]); await new Promise(resolve => setTimeout(resolve, 300)); } quiet = 0; continue; }
+      if (dialog) { for (const key of dialog.keys) { this.tmux(['send-keys', '-t', `=${session}:`, key]); await new Promise(resolve => setTimeout(resolve, 300)); } quiet = 0; continue; }
       if (/Claude Code v\d/u.test(pane) && /❯/u.test(pane)) { quiet++; if (quiet >= 4) return true; }
     }
     return false;
@@ -141,7 +141,7 @@ export class OwnerBridges {
       if (!state.wanted || state.transport !== 'inject' || !this.running(state.tmuxSession) || !this.idle(state.projectId)) continue;
       const [message] = this.app.ownerPushes.messages(state.projectId); if (!message) continue;
       const text = ` [Jevellan push]  ${message.text.replace(/^\[Jevellan\] /u, '').replace(/\n/gu, ' | ')}`;
-      this.tmux(['send-keys', '-t', `=${state.tmuxSession}`, '-l', text]); this.tmux(['send-keys', '-t', `=${state.tmuxSession}`, 'Enter']);
+      this.tmux(['send-keys', '-t', `=${state.tmuxSession}:`, '-l', text]); this.tmux(['send-keys', '-t', `=${state.tmuxSession}:`, 'Enter']);
       this.app.ownerPushes.ack(state.projectId, message.pushIds);
     }
   }

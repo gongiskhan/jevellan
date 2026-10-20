@@ -13,7 +13,7 @@ const call = async (name: string, args: Record<string, unknown>) => { const resu
 function fakeTmux(fixture: ProjectFixture) {
   const sessions = new Map<string, string>(); const keys: string[][] = [];
   const tmux = (args: string[]) => {
-    const name = (args[args.indexOf('-t') + 1] ?? '').replace(/^=/u, '');
+    const name = (args[args.indexOf('-t') + 1] ?? '').replace(/^=/u, '').replace(/:$/u, '');
     if (args[0] === 'new-session') { const session = args[args.indexOf('-s') + 1]!; const threadId = args.at(-1)!.match(/thread attach (\S+)/u)![1]!; sessions.set(session, threadId); void fixture.app.projectWork.attach(threadId); return { status: 0, stdout: '' }; }
     if (args[0] === 'has-session') return { status: sessions.has(name) ? 0 : 1, stdout: '' };
     if (args[0] === 'send-keys') { keys.push(args); if (args.includes('/exit')) { const threadId = sessions.get(name)!; sessions.delete(name); void fixture.app.projectWork.detach(threadId); } return { status: 0, stdout: '' }; }

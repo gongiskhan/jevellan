@@ -93,8 +93,8 @@ export class OwnerTakeover {
     if (!this.#alive(hold.tmuxSession)) return;
     const deadline = Date.now() + 10 * 60_000;
     while (Date.now() < deadline && this.#midTurn(hold)) await sleep(1000);
-    if (this.#midTurn(hold)) { this.tmux(['send-keys', '-t', `=${hold.tmuxSession}`, 'Escape']); await sleep(1000); }
-    this.tmux(['send-keys', '-t', `=${hold.tmuxSession}`, hold.runtime === 'codex' ? '/quit' : '/exit', 'Enter']);
+    if (this.#midTurn(hold)) { this.tmux(['send-keys', '-t', `=${hold.tmuxSession}:`, 'Escape']); await sleep(1000); }
+    this.tmux(['send-keys', '-t', `=${hold.tmuxSession}:`, hold.runtime === 'codex' ? '/quit' : '/exit', 'Enter']);
     const exit = Date.now() + 60_000;
     while (Date.now() < exit && this.#state(hold.threadId) === 'attached') await sleep(500);
     if (this.#alive(hold.tmuxSession)) { this.tmux(['kill-session', '-t', `=${hold.tmuxSession}`]); await sleep(1000); }
