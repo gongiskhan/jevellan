@@ -2,7 +2,7 @@ import { AttachmentControls, LibraryMessage, useProjectAttachments } from './pro
 import { ThreadActions } from './thread-actions.js';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  ProjectThreadWhyViewSchema, type ProjectThreadWhyView, ProjectWorkViewSchema, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema, type ProjectWorkView,
+  ProjectWorkViewSchema, ProjectThreadOverrideEditorSchema, type ProjectThreadOverrideEditor, type ThreadOverrideEditorFields, ProjectThreadWhyViewSchema, type ProjectThreadWhyView, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema,
   type QueuedMessage, type ThreadIndex, type ThreadReport, type ThreadView,
 } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
@@ -16,11 +16,11 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, lineParts, nearestEffort,
-  mergeThreadToolTurns, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, reportBadge, threadActions, threadActivity, threadLiveText,
-  threadPollDelay, threadReason, threadStarting, transcriptNotice, withoutEchoedSummaries, withoutReportCalls, type OverrideForm, type OverrideMode,
+  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceRefusal, dotClass, lineParts,
+  mergeThreadToolTurns, partWords, reportBadge, threadActions, threadActivity, threadLiveText,
+  threadPollDelay, threadReason, threadStarting, transcriptNotice, withoutEchoedSummaries, withoutReportCalls,
 } from './project-work-model.js';
-import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
+import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, updated, useClientIds, useLocalError } from './project-work.js';
 import { TranscriptTurn } from './session-transcript.js';
 import { shortTime } from './time.js';
 import { SessionHistory } from './session-history.js';
@@ -247,7 +247,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
               <OpenTerminalButton props={props} projectId={projectId} threadId={threadId} deviceId={thread.ownerDeviceId} />
               {!['done', 'stopped', 'failed', 'running', 'attached'].includes(thread.state) && <OpenTerminalButton props={props} projectId={projectId} threadId={threadId} deviceId={thread.ownerDeviceId} takeover label="Take over in browser" />}
               <button type="button" className="secondary" aria-pressed={why} onClick={() => setWhy(!why)}><Icon name="why" size={15} />{copy.WHY}</button>
-              {overrideOffered(view) && <button type="button" className="secondary" onClick={() => setOverriding(true)}><Icon name="tune" size={15} />{copy.OVERRIDE}</button>}
+              {!!view.overrideEditorPath && <button type="button" className="secondary" onClick={() => setOverriding(true)}><Icon name="tune" size={15} />{copy.OVERRIDE}</button>}
             </div>
             {!['done', 'stopped', 'failed'].includes(thread.state) && <TakeOver device={view.deviceName} command={view.attachCommand} message={message} />}
             <SessionCache rows={thread.sessionCache} sessionKey={thread.cacheSessionKey} timezone={thread.sessionCache?.at(-1)?.timezone ?? 'UTC'} />
@@ -504,12 +504,6 @@ function TakeOver({ device, command, message }: { device: string; command: strin
   );
 }
 
-/** Model labels as the Projects pages show them: `{runtime display name} {menu label}`, or the id of a model no longer in the menu. */
-const modelNames = (data: PageProps['data']) => {
-  const runtimeName = runtimeNames(data); const menu = data.config.configuration['x-jevellan'].menu;
-  return (modelId: string) => { const entry = menu.find((model) => model.id === modelId); return entry ? `${runtimeName(entry.runtime)} ${entry.label}` : modelId; };
-};
-
 /** Layout and value formatting only; the owner device supplies every placement explanation. */
 function WhyPanel({ view, projectId, close, onError }: { view: ThreadView; projectId: string; close(): void; onError(error: unknown): void }) {
   const [model, setModel] = useState<ProjectThreadWhyView>(), fail = useRef(onError); fail.current = onError;
@@ -554,119 +548,50 @@ function WhyPanel({ view, projectId, close, onError }: { view: ThreadView; proje
   </Panel>;
 }
 
-/**
- * Override (12.3, brief 10): From the next turn changes the model (same runtime) and the effort of the thread's next turns;
- * Restart with these choices stops this thread and starts a new one with the chosen fields fixed, refused with the server's
- * reason (an open pull request, a thread already published to main or already restarted). The fields open on the thread's
- * current choices; the project view gives the placement gates for Main and other devices. Refusals stay in the dialog (D255).
- */
+/** Engine-provided fields/choices; local state only holds the draft and guards in-flight requests. */
 function OverrideDialog({ props, view, projectId, close, applied }: { props: PageProps; view: ThreadView; projectId: string; close(): void; applied(): void }) {
-  const { data } = props;
-  const { error, setError, fail } = useLocalError(props.onError);
-  const task = useTask(fail);
-  const ids = useClientIds('override');
-  const [form, setForm] = useState<OverrideForm>(() => overrideForm(view));
-  const [work, setWork] = useState<ProjectWorkView>();
-  const nextNote = useId(); const restartNote = useId(); const deviceNote = useId();
+  const { error, setError, fail } = useLocalError(props.onError), operation = useTask(fail), ids = useClientIds('override');
+  const [editor, setEditor] = useState<ProjectThreadOverrideEditor>(), [fields, setFields] = useState<ThreadOverrideEditorFields>();
+  const modeNote = useId(), deviceNote = useId(), threadId = view.thread.id;
   useEffect(() => {
     const controller = new AbortController();
-    api(`/api/projects/${projectId}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true })
-      .then(setWork, (failure: unknown) => { if (!controller.signal.aborted) fail(failure); });
+    void api(`/api/projects/${projectId}/threads/${threadId}/override-editor`, ProjectThreadOverrideEditorSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true })
+      .then(value => { if (!controller.signal.aborted) { setEditor(value); setFields(value.fields); } }).catch(error => { if (!controller.signal.aborted) fail(error); });
     return () => controller.abort();
-  }, [projectId, fail]);
-  const current = view.placement; const restart = form.mode === 'restart';
-  const modelName = modelNames(data);
-  const menu = data.config.configuration['x-jevellan'].menu;
-  // The thread's own model stays listed even if it was disabled since, so the field shows what the thread runs.
-  const listed = menu.filter((entry) => entry.enabled || entry.id === current.modelId);
-  const models = restart ? listed : listed.filter((entry) => entry.runtime === current.runtime);
-  const efforts = effortChoices(menu.find((entry) => entry.id === form.modelId)?.efforts, current.effortRequested);
-  const here = data.devices.currentDeviceId;
-  const devices = deviceChoices(work, data.roster.devices, here, form.deviceId);
-  const remoteBlock = work ? devices.map((choice) => deviceBlock(work, choice.id, here)).find((reason) => reason !== null) ?? null : null;
-  const change = (fields: Partial<OverrideForm>) => setForm((previous) => ({ ...previous, ...fields }));
-  // An effort the chosen model neither offers nor the thread requested moves to the model's nearest one.
-  const fitted = (next: OverrideForm): OverrideForm => {
-    const chosen = menu.find((entry) => entry.id === next.modelId);
-    if (!next.effort || !chosen || effortChoices(chosen.efforts, current.effortRequested).some((choice) => choice.effort === next.effort)) return next;
-    return { ...next, effort: nearestEffort(next.effort, chosen.efforts) };
+  }, [projectId, threadId, fail]);
+  const preview = (patch: Partial<ThreadOverrideEditorFields>, changed: 'mode' | 'model' | 'effort' | 'device') => {
+    if (!editor || !fields) return;
+    const previous = fields, draft = { ...fields, ...patch };
+    void operation.run(async signal => {
+      setFields(draft);
+      try {
+        const value = await api(editor.request.previewPath, ProjectThreadOverrideEditorSchema, 'POST', { schema: 'thread-override-editor-preview-request-v1', changed, fields: draft }, { signal, waitForHub: true });
+        setEditor(value); setFields(value.fields);
+      } catch (error) { if (!signal.aborted) setFields(previous); throw error; }
+    });
   };
-  const mode = (next: OverrideMode) => setForm((previous) => {
-    if (next === 'restart') return { ...previous, mode: next };
-    // The next turn keeps the runtime and always has a model and an effort.
-    const sameRuntime = menu.some((entry) => entry.id === previous.modelId && entry.runtime === current.runtime);
-    return fitted({ ...previous, mode: next, modelId: sameRuntime ? previous.modelId : current.modelId, effort: previous.effort || current.effortRequested });
-  });
-  const model = (modelId: string) => setForm((previous) => fitted({ ...previous, modelId }));
-  const ready = overrideReady(view, form) && (!restart || work !== undefined);
-  return (
-    <Modal title={copy.OVERRIDE} close={close}>
-      <form className="pw-override" onSubmit={(event) => {
-        event.preventDefault();
-        if (!ready) return;
-        void task.run(async (signal) => {
-          setError('');
-          const request = overrideRequest(view, form);
-          const result = await api(`/api/projects/${projectId}/threads/${view.thread.id}/override`, ThreadOverrideViewSchema, 'POST',
-            { ...request, clientRequestId: ids.id(request) }, { signal, waitForHub: true });
-          ids.done(); updated();
-          if (result.newThreadId) {
-            afterDialogs(props.message, copy.THREAD_RESTARTED); close();
-            props.navigate(`/projects/${projectId}/threads/${result.newThreadId}`);
-          } else { afterDialogs(props.message, copy.OVERRIDE_APPLIED); close(); applied(); }
-        });
-      }}>
-        <fieldset className="pw-override-modes">
-          <legend className="sr-only">{copy.OVERRIDE_MODES}</legend>
-          <label className={view.canOverride.nextTurn ? undefined : 'pw-disabled'}>
-            <input type="radio" name="pw-override-mode" checked={!restart} disabled={!view.canOverride.nextTurn} aria-describedby={nextNote}
-              onChange={() => mode('next-turn')} />{copy.FROM_NEXT_TURN}
-          </label>
-          <p className="pw-field-note pw-radio-note" id={nextNote}>{view.canOverride.nextTurn ? copy.NEXT_TURN_HELP : copy.THREAD_ENDED}</p>
-          <label className={view.canOverride.restart ? undefined : 'pw-disabled'}>
-            <input type="radio" name="pw-override-mode" checked={restart} disabled={!view.canOverride.restart} aria-describedby={restartNote}
-              onChange={() => mode('restart')} />{copy.RESTART_WITH_CHOICES}
-          </label>
-          <p className={`pw-field-note pw-radio-note${view.canOverride.restart ? '' : ' pw-refused'}`} id={restartNote}>
-            {view.canOverride.restart ? copy.RESTART_HELP : view.canOverride.restartReason}
-          </p>
-        </fieldset>
-        <fieldset className="pw-fields" disabled={restart && !work}>
-          <div className="form-grid pw-override-fields">
-            <label>{copy.MODEL}
-              <select value={form.modelId} onChange={(event) => model(event.target.value)}>
-                {restart && <option value="">{copy.AUTOMATIC}</option>}
-                {models.map((entry) => <option key={entry.id} value={entry.id}>{modelName(entry.id)}</option>)}
-              </select>
-            </label>
-            <label>{copy.EFFORT}
-              <select value={form.effort} onChange={(event) => change({ effort: event.target.value as OverrideForm['effort'] })}>
-                {restart && <option value="">{copy.AUTOMATIC}</option>}
-                {efforts.map((choice) => <option key={choice.effort} value={choice.effort}>{choice.runsAs ? copy.effortRunsAs(choice.effort, choice.runsAs) : choice.effort}</option>)}
-              </select>
-            </label>
-            {restart && (
-              <div className="pw-field">
-                <label>{copy.DEVICE}
-                  <select value={form.deviceId} aria-describedby={remoteBlock ? deviceNote : undefined} onChange={(event) => change({ deviceId: event.target.value })}>
-                    <option value="">{copy.AUTOMATIC}</option>
-                    {devices.map((choice) => <option key={choice.id} value={choice.id} disabled={choice.disabled}>{choice.label}</option>)}
-                  </select>
-                </label>
-                {remoteBlock && <p className="pw-field-note" id={deviceNote}>{remoteBlock}</p>}
-              </div>
-            )}
-          </div>
-          <label>{copy.OVERRIDE_NOTE}
-            <textarea rows={2} maxLength={400} value={form.note} placeholder={copy.OVERRIDE_NOTE_PLACEHOLDER} onChange={(event) => change({ note: event.target.value })} />
-          </label>
-        </fieldset>
-        {error && <p className="error">{error}</p>}
-        <div className="form-actions">
-          <button type="button" className="secondary" onClick={close}>{copy.CANCEL}</button>
-          <button className={restart ? 'danger' : undefined} disabled={task.busy || !ready}>{task.busy ? copy.APPLYING : copy.APPLY}</button>
-        </div>
-      </form>
-    </Modal>
-  );
+  return <Modal title={copy.OVERRIDE} close={close}>{!editor || !fields ? <p role="status">Loading editor…</p> : <form className="pw-override" onSubmit={event => {
+    event.preventDefault(); if (!editor.apply.enabled) return;
+    void operation.run(async signal => {
+      setError('');
+      const result = await api(editor.request.savePath, ThreadOverrideViewSchema, 'POST', { ...editor.request.base, clientRequestId: ids.id(fields), fields }, { signal, waitForHub: true });
+      ids.done(); updated();
+      if (result.newThreadId) { afterDialogs(props.message, copy.THREAD_RESTARTED); close(); props.navigate(`/projects/${projectId}/threads/${result.newThreadId}`); }
+      else { afterDialogs(props.message, copy.OVERRIDE_APPLIED); close(); applied(); }
+    });
+  }}>
+    <fieldset className="pw-override-modes" disabled={operation.busy}><legend className="sr-only">{copy.OVERRIDE_MODES}</legend>
+      {editor.choices.modes.map(mode => <Fragment key={mode.value}><label className={mode.enabled ? undefined : 'pw-disabled'}>
+        <input type="radio" name="pw-override-mode" checked={fields.mode === mode.value} disabled={!mode.enabled} aria-describedby={`${modeNote}-${mode.value}`}
+          onChange={() => preview({ mode: mode.value }, 'mode')} />{mode.label}</label>
+        <p className={`pw-field-note pw-radio-note${mode.enabled ? '' : ' pw-refused'}`} id={`${modeNote}-${mode.value}`}>{mode.help}</p></Fragment>)}
+    </fieldset>
+    <fieldset className="pw-fields" disabled={operation.busy}><div className="form-grid pw-override-fields">
+      <label>{copy.MODEL}<select value={fields.modelId} onChange={event => preview({ modelId: event.target.value }, 'model')}>{editor.choices.models.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select></label>
+      <label>{copy.EFFORT}<select value={fields.effort} onChange={event => preview({ effort: event.target.value as ThreadOverrideEditorFields['effort'] }, 'effort')}>{editor.choices.efforts.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select></label>
+      {editor.showDevice && <div className="pw-field"><label>{copy.DEVICE}<select value={fields.deviceId} aria-describedby={editor.deviceNotice ? deviceNote : undefined} onChange={event => preview({ deviceId: event.target.value }, 'device')}>{editor.choices.devices.map(choice => <option key={choice.value} value={choice.value} disabled={choice.disabled}>{choice.label}</option>)}</select></label>{editor.deviceNotice && <p className="pw-field-note" id={deviceNote}>{editor.deviceNotice}</p>}</div>}
+    </div><label>{copy.OVERRIDE_NOTE}<textarea rows={2} maxLength={editor.constraints.noteMax} value={fields.note} placeholder={copy.OVERRIDE_NOTE_PLACEHOLDER} onChange={event => setFields({ ...fields, note: event.target.value })} /></label></fieldset>
+    {error && <p className="error">{error}</p>}
+    <div className="form-actions"><button type="button" className="secondary" onClick={close}>{copy.CANCEL}</button><button className={editor.apply.tone === 'danger' ? 'danger' : undefined} title={editor.apply.refusal ?? undefined} disabled={operation.busy || !editor.apply.enabled}>{operation.busy ? copy.APPLYING : copy.APPLY}</button></div>
+  </form>}</Modal>;
 }

@@ -531,7 +531,7 @@ export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project
   needsOwner: count.optional(),
   board: z.strictObject(Object.fromEntries(['waiting', 'review', 'working', 'landing', 'landed', 'idle', 'resolved'].map(group => [group, z.array(z.strictObject({ id: IdSchema, at: TimestampSchema }))])) as Record<'waiting' | 'review' | 'working' | 'landing' | 'landed' | 'idle' | 'resolved', z.ZodArray<z.ZodObject<{ id: typeof IdSchema; at: typeof TimestampSchema }, z.core.$strict>>>).optional() });
 export type ProjectWorkView = z.infer<typeof ProjectWorkViewSchema>;
-export const ThreadViewSchema = z.strictObject({ placementNotice: z.string().nullable().optional(), sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-thread-view-v1'),
+export const ThreadViewSchema = z.strictObject({ overrideEditorPath: z.string().nullable().optional(), placementNotice: z.string().nullable().optional(), sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-thread-view-v1'),
   card: ProjectWorkCardSchema.optional(),
   notices: z.array(z.strictObject({ at: TimestampSchema, text: z.string().max(4000), kind: z.enum(['info', 'error']) })).max(20).optional(),
   escalations: ThreadLocalSchema.shape.escalations,

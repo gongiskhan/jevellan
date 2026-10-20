@@ -1,3 +1,4 @@
+import { ProjectThreadOverrideEditorSchema, ThreadOverrideEditorPreviewSchema, ThreadOverrideEditorSaveSchema } from '@jevellan/core';
 import { ProjectPageRequestSchema, ProjectWaitingRespondRequestSchema } from '@jevellan/core';
 import { DailyEnabledRequestSchema, JobPausedRequestSchema } from '@jevellan/core';
 import { ProjectJobSchema, ProjectDailySchema, RoutineEditorSaveRequestSchema } from '@jevellan/core';
@@ -26,9 +27,9 @@ import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
-import { ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema, type ThreadActionRequest } from '@jevellan/core';
+import { ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -39,6 +40,9 @@ type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GE
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'thread-override-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/override-editor$/, methods: ['GET'], target: 'owner' },
+  { name: 'thread-override-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/override-editor$/, methods: ['POST'], target: 'owner' },
+  { name: 'thread-override-preview', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/override-editor\/preview$/, methods: ['POST'], target: 'owner' },
   { name: 'goal-views', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goal-views$/, methods: ['GET'], target: 'any' },
   { name: 'goal-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals\/editor$/, methods: ['GET'], target: 'any' },
   { name: 'goal-editor-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals\/editor$/, methods: ['POST'], target: 'coordinator' },
@@ -179,18 +183,29 @@ async function target(app: Application, deviceId: string, purpose: 'thread' | 'c
 
 /** Authenticated owner tools reuse the browser's typed owner routes; work never moves to the state point. */
 export async function ownerThreadOperation(app: Application, projectId: string, threadId: string,
-  operation: 'why' | 'actions' | 'act' | 'merge', input?: ThreadActionRequest) {
-  const work = app.projectWork, owner = await (operation === 'why' ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
+  operation: 'override-editor' | 'override-preview' | 'override-save' | 'why' | 'actions' | 'act' | 'merge', input?: unknown) {
+  const work = app.projectWork, owner = await (operation === 'why' || operation === 'override-editor' || operation === 'override-preview' ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
   if (owner === null) throw failure(THREAD_NOT_FOUND, 404);
   if (owner === app.device.deviceId) {
+    if (operation === 'override-editor') return work.views.overrideEditor(projectId, threadId);
+    if (operation === 'override-preview') return work.views.overrideEditor(projectId, threadId, ThreadOverrideEditorPreviewSchema.parse(input));
+    if (operation === 'override-save') {
+      const request = await work.views.overrideEditorInput(projectId, threadId, ThreadOverrideEditorSaveSchema.parse(input));
+      const auth = app.auth; if (!(auth instanceof UiAuth)) throw failure('Owner tools must run on the state point.', 409);
+      const token = auth.issue(app.device.deviceId);
+      try { return await work.overrideThread(projectId, threadId, request, remoteStart(app, { token, sourceDeviceId: app.device.deviceId, peer: false, authenticated: async () => auth.verify(token) !== null })); }
+      finally { auth.logout(token); }
+    }
     if (operation === 'why') return work.views.why(projectId, threadId);
     if (operation === 'actions') return work.views.actions(projectId, threadId);
     if (operation === 'act') return work.threadAction(projectId, threadId, ThreadActionRequestSchema.parse(input));
     return work.mergePullRequest(projectId, threadId);
   }
-  const path = `${API_PREFIX}${projectId}/threads/${threadId}/${operation === 'why' ? 'why-view' : operation === 'actions' ? 'actions-view' : operation === 'act' ? 'actions' : 'pr/merge'}`;
-  const value = await ownerProjectJson(app, owner, 'thread', path, operation === 'actions' || operation === 'why' ? 'GET' : 'POST',
-    operation === 'actions' || operation === 'why' ? undefined : operation === 'act' ? ThreadActionRequestSchema.parse(input) : EmptySchema.parse({ schema: 'empty-request-v1' }));
+  const path = `${API_PREFIX}${projectId}/threads/${threadId}/${operation === 'override-editor' || operation === 'override-save' ? 'override-editor' : operation === 'override-preview' ? 'override-editor/preview' : operation === 'why' ? 'why-view' : operation === 'actions' ? 'actions-view' : operation === 'act' ? 'actions' : 'pr/merge'}`;
+  const value = await ownerProjectJson(app, owner, 'thread', path, operation === 'actions' || operation === 'why' || operation === 'override-editor' ? 'GET' : 'POST',
+    operation === 'actions' || operation === 'why' || operation === 'override-editor' ? undefined : operation === 'override-preview' ? ThreadOverrideEditorPreviewSchema.parse(input) : operation === 'override-save' ? ThreadOverrideEditorSaveSchema.parse(input) : operation === 'act' ? ThreadActionRequestSchema.parse(input) : EmptySchema.parse({ schema: 'empty-request-v1' }));
+  if (operation === 'override-editor' || operation === 'override-preview') { const view = parseReply(ProjectThreadOverrideEditorSchema, value); if (view.projectId !== projectId || view.threadId !== threadId) throw failure('The returned editor does not match the thread.', 502); return view; }
+  if (operation === 'override-save') return parseReply(ThreadOverrideViewSchema, value);
   if (operation === 'why') { const view = parseReply(ProjectThreadWhyViewSchema, value); if (view.projectId !== projectId || view.threadId !== threadId) throw failure('The returned explanation does not match the thread.', 502); return view; }
   if (operation === 'actions') return parseReply(ProjectThreadActionsViewSchema, value);
   if (operation === 'act') return parseReply(ThreadViewSchema, value);
@@ -342,7 +357,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
   }
   if (route.target === 'owner') {
     const owner = await (route.name === 'thread-events' ? work.threadStreamOwner(projectId, threadId)
-      : route.name === 'thread' || route.name === 'thread-actions-view' || route.name === 'thread-why-view' ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
+      : route.name === 'thread' || route.name === 'thread-actions-view' || route.name === 'thread-why-view' || route.name === 'thread-override-editor' || route.name === 'thread-override-preview' ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
     if (owner === null) throw failure(THREAD_NOT_FOUND, 404);
     if (owner !== app.device.deviceId) {
       if (caller.peer) throw failure(THREAD_NOT_FOUND, 404);
@@ -418,6 +433,9 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
       const ledger = await work.coordinatorEvents(projectId);
       streamLedger(ledger, request, response, url, caller.authenticated, projectFrame(ledger, true)); return true;
     }
+    case 'thread-override-editor': send(await work.views.overrideEditor(projectId, threadId)); return true;
+    case 'thread-override-preview': send(await work.views.overrideEditor(projectId, threadId, ThreadOverrideEditorPreviewSchema.parse(await requestBody(request)))); return true;
+    case 'thread-override-save': send(await work.overrideThread(projectId, threadId, await work.views.overrideEditorInput(projectId, threadId, ThreadOverrideEditorSaveSchema.parse(await requestBody(request))), remoteStart(app, caller))); return true;
     case 'thread-why-view': send(await work.views.why(projectId, threadId)); return true;
     case 'thread-actions-view': send(await work.views.actions(projectId, threadId)); return true;
     case 'thread-events': {

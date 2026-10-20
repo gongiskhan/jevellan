@@ -220,7 +220,6 @@ export const PUBLISHED_TO_MAIN = 'Published to main';
 export const CHECKOUT_COMPLETED = 'Completed';
 export const MANUAL_MAIN_HELP = 'Main edits your existing project files. Commits and pushes stay with you.';
 export const STOP_KEEPS_CHECKOUT = 'Your edits stay in the project checkout. Git is left to you.';
-export const RESTART_HELP_MANUAL = 'This thread stops and its edits stay in your checkout. A new thread starts with the same title and task. Git is left to you.';
 export const NO_CHANGES_OUTCOME = 'No changes';
 export const STOPPED = 'Stopped';
 export const FAILED = 'Failed';
@@ -303,7 +302,6 @@ export const COMMAND_COPIED = 'Command copied.';
 export const COMMAND_SELECTED = 'The browser blocked copying, so the command is selected for you to copy.';
 export const FROM_NEXT_TURN = 'From the next turn';
 export const RESTART_WITH_CHOICES = 'Restart with these choices';
-export const OPEN_PULL_REQUEST_BLOCKS_RESTART = 'This thread has an open pull request.';
 export const APPLY = 'Apply';
 export const JUMP_TO_LATEST = 'Jump to latest';
 /** The label of a Jevellan turn prompt in a thread transcript (D56). */
@@ -351,10 +349,7 @@ export const OPEN_PULL_REQUEST = 'Open the pull request on GitHub';
 
 // 12.3 Override modal (D255): what each choice does, the note, and what happens after Apply.
 export const OVERRIDE_MODES = 'When the choices apply';
-export const NEXT_TURN_HELP = 'The model and effort change for the next turn; a running turn finishes as it started.';
-export const RESTART_HELP = 'This thread stops and its worktree is removed. A new thread with the same title and task starts with these choices.';
 /** Restart of a main thread: there is no worktree; its unpublished commits are saved as on Stop (D29). */
-export const RESTART_HELP_MAIN = 'This thread stops, and commits it has not published are saved under refs/jevellan/discard. A new thread with the same title and task starts with these choices.';
 export const OVERRIDE_NOTE = 'Note (optional)';
 export const OVERRIDE_NOTE_PLACEHOLDER = 'Why this change? The coordinator and later placements read it.';
 export const APPLYING = 'Applying…';

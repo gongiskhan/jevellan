@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Areas 1a–1e/2a–2d/3/4a: 37 of 310 UI rows migrated/refined plus 1 browser-only. Shared Goal writers/recovery and engine placement Why models retain canonical guards, recorded facts and normal member ownership; UI/CLI/MCP parity covered. Final static pass; 349 affected backend cases in 39 files with 6 workers pass, 0 skips; desktop-light Why/override passes once, no retries/skips. Five exact images retained, vision not run on existing surfaces. Override controls then remaining Jev/Settings/other UI areas, intake and placement/p-v1/m-v1 follow; full parity incomplete and CM1 remains for Settings. Both installed 0.7.2; no further release.",
+    "why": "Areas 1a–1e/2a–2d/3/4a–4b: 42 of 310 UI rows migrated/refined plus 1 browser-only. Goal writers/recovery, placement Why and override editors share canonical guards/retries and owner/coordinator routing across UI/MCP/CLI. Final static pass; 359 affected backend cases in 40 files with 6 workers pass, 0 skips. Desktop override passed after failing-first raw-radio correction; unchanged assertion and 2 earlier failures retained, backend source unchanged. All 13 exact images retained, vision not run on existing surfaces. Landing/merge and remaining Jev/Settings/other UI areas, intake and placement/p-v1/m-v1 follow; full parity incomplete, CM1 remains for Settings. Both installed 0.7.2; no further release.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Areas 1a–1e/2a–2d/3/4a: 37 of 310 UI rows migrated/refined plus 1 browser-only. Shared Goal writers/recovery and engine placement Why models retain canonical guards, recorded facts and normal member ownership; UI/CLI/MCP parity covered. Final static pass; 349 affected backend cases in 39 files with 6 workers pass, 0 skips; desktop-light Why/override passes once, no retries/skips. Five exact images retained, vision not run on existing surfaces. Override controls then remaining Jev/Settings/other UI areas, intake and placement/p-v1/m-v1 follow; full parity incomplete and CM1 remains for Settings. Both installed 0.7.2; no further release.",
+    "why": "Areas 1a–1e/2a–2d/3/4a–4b: 42 of 310 UI rows migrated/refined plus 1 browser-only. Goal writers/recovery, placement Why and override editors share canonical guards/retries and owner/coordinator routing across UI/MCP/CLI. Final static pass; 359 affected backend cases in 40 files with 6 workers pass, 0 skips. Desktop override passed after failing-first raw-radio correction; unchanged assertion and 2 earlier failures retained, backend source unchanged. All 13 exact images retained, vision not run on existing surfaces. Landing/merge and remaining Jev/Settings/other UI areas, intake and placement/p-v1/m-v1 follow; full parity incomplete, CM1 remains for Settings. Both installed 0.7.2; no further release.",
     "status": "in-progress"
   },
   {

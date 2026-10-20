@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'vitest';
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { ThreadCreatedViewSchema, OWNER_TOOLS, OwnerToolResultSchema, ProjectGoalEditorSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
+import { ProjectThreadOverrideEditorSchema, ThreadCreatedViewSchema, OWNER_TOOLS, OwnerToolResultSchema, ProjectGoalEditorSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
 import { reportStep, projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
@@ -103,4 +103,21 @@ test('the official MCP transport preserves the shared thread placement explanati
   const result = await mcp.callTool({ name: 'jev', arguments: { action: 'why', thread: made.threadId } }); expect(result.isError).toBeFalsy();
   expect(OwnerToolResultSchema.parse(result.structuredContent)).toMatchObject({ ok: true, data: ui });
   expect((result.content as Array<{ text: string }>).some(row => row.text.includes('"schema":"project-thread-why-view-v1"'))).toBe(true);
+});
+
+
+test('the official MCP editor previews and saves a next-turn override through the canonical writer', async () => {
+  f = await projectFixture({ control: true }); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'MCP override editor.' }), forThread());
+  const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'mcp_override_editor', title: 'MCP override editor', task: 'Inspect the simulated fixture.', effort: 'medium' });
+  await f.waitFor(() => f!.thread(made.threadId), row => row.state === 'idle');
+  const mcp = await connect({ JEVELLAN_HOME: f.homes.root }), read = await mcp.callTool({ name: 'jev', arguments: { action: 'override_editor', thread: made.threadId } });
+  const result = OwnerToolResultSchema.parse(read.structuredContent); expect(result.ok).toBe(true); if (!result.ok) throw new Error('Expected the override editor.');
+  const editor = ProjectThreadOverrideEditorSchema.parse(result.data); expect(editor.fields.effort).toBe('medium');
+  const previewed = await mcp.callTool({ name: 'jev', arguments: { action: 'override_preview', thread: made.threadId, request: { schema: 'thread-override-editor-preview-request-v1', changed: 'effort', fields: { ...editor.fields, effort: 'high' } } } });
+  const previewResult = OwnerToolResultSchema.parse(previewed.structuredContent); expect(previewResult.ok).toBe(true); if (!previewResult.ok) throw new Error('Expected the preview.');
+  const preview = ProjectThreadOverrideEditorSchema.parse(previewResult.data); expect(preview.apply.enabled).toBe(true);
+  const request = { ...editor.request.base, fields: preview.fields };
+  for (let attempt = 0; attempt < 2; attempt++) expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'override_save', thread: made.threadId, request } })).structuredContent)).toMatchObject({ ok: true, data: { schema: 'thread-override-view-v1' } });
+  expect(await f.app.projectHub.recentOverrides('project', 8)).toHaveLength(1);
+  expect(f.thread(made.threadId).placement.effortRequested).toBe('high');
 });

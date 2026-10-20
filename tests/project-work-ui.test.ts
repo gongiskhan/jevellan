@@ -1,3 +1,4 @@
+import { effortChoices, nearestEffort, overrideForm, overrideOffered, overrideReady, overrideRequest, restartHelp } from '../packages/projects/dist/override-editor.js';
 import { fallbackChip, placementConstraintText, whyFields } from '../packages/projects/dist/thread-why.js';
 import { decisionSource, sentText, showSent, withdrawals } from '../packages/projects/dist/waiting-views.js';
 import { checksBadge, mergeBlock, openPullRequests, outcomeText, placementLine, pullRequestBadges, threadMeta } from '../packages/projects/dist/card-views.js';
@@ -14,8 +15,8 @@ import { sidebarOrder } from '../packages/projects/dist/views.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import { chatProposalIds, chatProposalGroups } from '../apps/web/src/project-work-model.js';
 import {
-  alignReports, mergeThreadToolTurns, chatItems, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices,
-  lineParts, mainIsolationBlock, nearestEffort, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, projectDot,
+  alignReports, mergeThreadToolTurns, chatItems, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass,
+  lineParts, mainIsolationBlock, partWords, projectDot,
   projectRoute, reportBadge, restartedThread, rowClockMs, settingsRequest, sidebarProjects, threadActions, threadCreateRequest,
   threadActivity, threadLiveText, threadPollDelay, threadReason, threadStarting, toolIcon, transcriptNotice, withoutEchoedSummaries,
   withoutReportCalls,
@@ -588,7 +589,7 @@ test('override requests: the next turn sends only what changed, a restart every 
   expect(overrideReady(refused, { ...overrideForm(refused), mode: 'restart' })).toBe(false);
   expect(overrideForm(overrideView({ nextTurn: false })).mode).toBe('restart');
   expect([overrideOffered(refused), overrideOffered(overrideView({ nextTurn: false })), overrideOffered(overrideView({ nextTurn: false, restart: false }))]).toEqual([true, true, false]);
-  expect(copy.OPEN_PULL_REQUEST_BLOCKS_RESTART).toBe(server.RESTART_OPEN_PULL_REQUEST);
+  expect(restartHelp(refused, 'main')).toBe(server.RESTART_OPEN_PULL_REQUEST);
   void (view satisfies Pick<ThreadView, 'thread' | 'placement' | 'canOverride'>);
 });
 

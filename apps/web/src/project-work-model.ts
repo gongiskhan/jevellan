@@ -100,6 +100,12 @@ export function deviceChoices(view: Pick<ProjectWorkView, 'gates' | 'devices'> |
   return selected && !choices.some((choice) => choice.id === selected) ? [...choices, { id: selected, label: name(selected), disabled: true }] : choices;
 }
 
+const EFFORTS = EffortSchema.options;
+/** The effort a model runs for a requested one: its lowest effort at or above it, else its highest (core `mapEffort`, which is not browser-safe). */
+export function nearestEffort(requested: Effort, supported: readonly Effort[]): Effort {
+  const offered = [...new Set(supported)].sort((a, b) => EFFORTS.indexOf(a) - EFFORTS.indexOf(b));
+  return offered.find((effort) => EFFORTS.indexOf(effort) >= EFFORTS.indexOf(requested)) ?? offered.at(-1) ?? requested;
+}
 export type ThreadForm = { title: string; task: string; isolation: '' | Isolation; modelId: string; effort: '' | Effort; deviceId: string };
 /** `POST /api/projects/:id/threads`: fields left on Automatic are omitted, so placement decides them. */
 export function threadCreateRequest(clientRequestId: string, form: ThreadForm) {
@@ -246,56 +252,6 @@ export function threadReason(reason: string | undefined): { text: string; restar
   const { text, ref } = splitSavedCommits(reason);
   return { text, restartedAs: restartedThread(text), savedRef: ref };
 }
-/** Override is offered while either choice is: the next turn of a thread that has not ended, or a restart the server allows. */
-export function overrideOffered(view: Pick<ThreadView, 'canOverride'>): boolean {
-  return view.canOverride.nextTurn || view.canOverride.restart;
-}
-
-const EFFORTS = EffortSchema.options;
-/** The effort a model runs for a requested one: its lowest effort at or above it, else its highest (core `mapEffort`, which is not browser-safe). */
-export function nearestEffort(requested: Effort, supported: readonly Effort[]): Effort {
-  const offered = [...new Set(supported)].sort((a, b) => EFFORTS.indexOf(a) - EFFORTS.indexOf(b));
-  return offered.find((effort) => EFFORTS.indexOf(effort) >= EFFORTS.indexOf(requested)) ?? offered.at(-1) ?? requested;
-}
-/**
- * The Override modal's effort options: the chosen model's efforts plus the thread's requested effort, so a modal left alone
- * changes no effort; an effort the model does not offer says what it runs as. Without a chosen model (Automatic), every effort.
- */
-export function effortChoices(supported: readonly Effort[] | undefined, requested: Effort): Array<{ effort: Effort; runsAs?: Effort }> {
-  if (!supported) return EFFORTS.map((effort) => ({ effort }));
-  return EFFORTS.filter((effort) => supported.includes(effort) || effort === requested)
-    .map((effort) => supported.includes(effort) ? { effort } : { effort, runsAs: nearestEffort(effort, supported) });
-}
-
-export type OverrideMode = 'next-turn' | 'restart';
-export type OverrideForm = { mode: OverrideMode; isolation: '' | Isolation; modelId: string; effort: '' | Effort; deviceId: string; note: string };
-/** The modal opens on the thread's current choices (the requested effort), on From the next turn while the thread takes turns. */
-export function overrideForm(view: Pick<ThreadView, 'thread' | 'placement' | 'canOverride'>): OverrideForm {
-  return { mode: view.canOverride.nextTurn ? 'next-turn' : 'restart', isolation: 'worktree', modelId: view.placement.modelId,
-    effort: view.placement.effortRequested, deviceId: view.thread.ownerDeviceId, note: '' };
-}
-/**
- * `POST .../override` without its client id. From the next turn sends only the model and effort that differ from the thread's (the
- * server records only changes, effort against the requested one); a restart sends every field not left on Automatic, so the new
- * thread keeps what the modal shows (D255).
- */
-export function overrideRequest(view: Pick<ThreadView, 'placement'>, form: OverrideForm) {
-  const note = form.note.trim();
-  const base = { schema: 'thread-override-request-v1' as const, mode: form.mode, ...(note ? { note: note.slice(0, 400) } : {}) };
-  if (form.mode === 'next-turn') {
-    return { ...base, ...(form.modelId && form.modelId !== view.placement.modelId ? { modelId: form.modelId } : {}),
-      ...(form.effort && form.effort !== view.placement.effortRequested ? { effort: form.effort } : {}) };
-  }
-  return { ...base, ...(form.isolation ? { isolation: form.isolation } : {}), ...(form.modelId ? { modelId: form.modelId } : {}),
-    ...(form.effort ? { effort: form.effort } : {}), ...(form.deviceId ? { deviceId: form.deviceId } : {}) };
-}
-/** Apply needs something to do: From the next turn changes the model or the effort; a restart is allowed by the server. */
-export function overrideReady(view: Pick<ThreadView, 'placement' | 'canOverride'>, form: OverrideForm): boolean {
-  if (form.mode === 'restart') return view.canOverride.restart;
-  const request = overrideRequest(view, form);
-  return view.canOverride.nextTurn && ('modelId' in request || 'effort' in request);
-}
-
 
 function payload<T extends ProjectLedgerEventType>(event: ProjectLedgerEvent, type: T): ProjectLedgerData<T> | undefined {
   if (event.type !== type) return undefined;

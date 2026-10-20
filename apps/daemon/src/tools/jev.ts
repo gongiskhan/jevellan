@@ -1,5 +1,5 @@
 import { capLines } from '@jevellan/projects';
-import { ProjectThreadWhyViewSchema, type JevRule } from '@jevellan/core';
+import { ProjectThreadOverrideEditorSchema, ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, type JevRule } from '@jevellan/core';
 import { OwnerRefusal, type OwnerHandler } from '../owner-tools.js';
 import { ownerThreadOperation } from '../project-work-api.js';
 import { resolveGoal, resolveTask } from './common.js';
@@ -16,6 +16,14 @@ export const jev: OwnerHandler = async (context) => {
   await tools.status(project); // display ids for every current thread and goal
   const goals = new Map((await app.projectWork.goalList(projectId)).goals.map(row => [row.goal.id, tools.ids.one(projectId, 'G', row.goal.id)]));
   switch (context.action) {
+    case 'override_editor': case 'override_preview': case 'override_save': {
+      const target = await resolveTask(context, String(args.thread));
+      if (!target.thread) throw new OwnerRefusal(`${target.id} has no thread yet.`, 'not_running', 409);
+      const operation = context.action === 'override_editor' ? 'override-editor' : context.action === 'override_preview' ? 'override-preview' : 'override-save';
+      const result = await ownerThreadOperation(app, projectId, target.thread.id, operation, args.request);
+      return context.action === 'override_save' ? { text: `Applied override for ${target.id}.`, data: ThreadOverrideViewSchema.parse(result) }
+        : { text: `Override ${target.id}.`, data: ProjectThreadOverrideEditorSchema.parse(result) };
+    }
     case 'why': {
       const target = await resolveTask(context, String(args.thread));
       if (!target.thread) throw new OwnerRefusal(`${target.id} has no thread yet.`, 'not_running', 409);
