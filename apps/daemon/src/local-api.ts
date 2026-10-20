@@ -71,7 +71,7 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
       const project = await app.ownerTools.resolveProject({ project: url.searchParams.get('project') ?? '' });
       response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
       const sent = new Set<string>();
-      const tick = () => { for (const message of app.ownerPushes.messages(project.id)) if (!sent.has(message.id)) { sent.add(message.id); response.write(`id: ${message.id}\nevent: push\ndata: ${JSON.stringify(message)}\n\n`); } };
+      const tick = () => { if (!app.ownerBridges.accepting(project.id)) return; for (const message of app.ownerPushes.messages(project.id)) if (!sent.has(message.id)) { sent.add(message.id); response.write(`id: ${message.id}\nevent: push\ndata: ${JSON.stringify(message)}\n\n`); } };
       tick(); const timer = setInterval(() => { try { tick(); } catch { /* the next tick retries */ } }, 1000); const keepAlive = setInterval(() => response.write(': keep-alive\n\n'), 15_000);
       response.on('close', () => { clearInterval(timer); clearInterval(keepAlive); }); return;
     }

@@ -55,9 +55,11 @@ export async function serveOwnerMcp(env: NodeJS.ProcessEnv = process.env, startP
   });
   // The session ended: stop relaying so the process exits with it.
   process.stdin.once('end', () => { stop.abort(); setTimeout(() => process.exit(0), 200).unref(); });
+  // Pushes start once the session has initialized the connection; a channel notification before that is dropped.
+  const initialized = new Promise<void>(resolve => { server.oninitialized = () => resolve(); });
   await server.connect(new StdioServerTransport());
   server.onclose = () => { stop.abort(); };
-  if (bridge) await startPushes(server, stop.signal);
+  if (bridge) { await initialized; await startPushes(server, stop.signal); }
 }
 
 /**

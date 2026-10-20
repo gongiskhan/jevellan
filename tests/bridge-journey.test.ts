@@ -5,7 +5,7 @@ import { afterAll, beforeAll, expect, test } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { ProjectNotificationSchema } from '../packages/core/dist/index.js';
+import { OwnerPushSchema, ProjectNotificationSchema } from '../packages/core/dist/index.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
 const enabled = process.env.JEVELLAN_BRIDGE_JOURNEY === '1' && !!process.env.JEVELLAN_BRIDGE_EVAL_CLAUDE_DIR;
@@ -18,8 +18,16 @@ function transcript(): string {
   try { return readdirSync(directory).filter(name => name.endsWith('.jsonl')).map(name => readFileSync(join(directory, name), 'utf8')).join('\n'); } catch { return ''; }
 }
 const seen = () => pane() + transcript();
+/** What the run log needs when a step times out: each push with its ack, the transcript files and what runs in the pane. */
+function diagnose(): string {
+  const state = f?.app.ownerBridges.state(f.project.id); const directory = state ? join(state.configDir, 'projects', state.folder.replace(/[^A-Za-z0-9]/gu, '-')) : '';
+  const pushes = f ? f.app.hub.list('owner-pushes', OwnerPushSchema).map(row => `${row.document.createdAt.slice(11, 19)} ${row.document.kind} acked=${row.document.ackedAt?.slice(11, 19) ?? '-'} ${row.document.text.slice(0, 60)}`) : [];
+  let files: string[] = []; try { files = readdirSync(directory); } catch { /* none yet */ }
+  const command = spawnSync('tmux', ['list-panes', '-t', `=${session}`, '-F', '#{pane_dead} #{pane_current_command}'], { encoding: 'utf8' }).stdout.trim();
+  return `Bridge state: ${JSON.stringify(state)}\nPushes:\n${pushes.join('\n')}\nTranscript files: ${files.join(', ')}\nPane: ${command}`;
+}
 const type = (text: string) => { spawnSync('tmux', ['send-keys', '-t', `=${session}:`, '-l', text]); spawnSync('tmux', ['send-keys', '-t', `=${session}:`, 'Enter']); };
-async function until(check: () => boolean, ms = 180_000): Promise<void> { const end = Date.now() + ms; while (Date.now() < end) { if (check()) return; await new Promise(resolve => setTimeout(resolve, 2000)); } throw new Error(`Timed out. Pane:\n${pane().slice(-3000)}`); }
+async function until(check: () => boolean, ms = 180_000): Promise<void> { const end = Date.now() + ms; while (Date.now() < end) { if (check()) return; await new Promise(resolve => setTimeout(resolve, 2000)); } throw new Error(`Timed out. Pane:\n${pane().slice(-3000)}\n${diagnose()}`); }
 const bridgeWrites = () => f!.app.ownerTools.callerLog().filter(row => row.caller.startsWith('bridge:') && row.access === 'write');
 
 beforeAll(async () => {

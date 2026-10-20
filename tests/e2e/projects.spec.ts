@@ -1203,7 +1203,7 @@ test('LJ2 native setup remains visible and merge routing explains its ask-owner 
   await shot(page, 'native-setup');
   await page.goto('/projects/projects_fixture');
   const settingsResponse = await page.request.get(`${PROJECT}/work-settings`), settings = await settingsResponse.json();
-  expect(settings.settings.autoMerge).toBe(false);
+  expect(settings.settings.autoLand).toBe(false);
   const saved = await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision: settings.settings.revision, clientRequestId: `merge_settings_${info.project.name}`, settings: { ...Object.fromEntries(Object.entries(settings.settings).filter(([key]) => !['schema', 'projectId', 'revision'].includes(key))), autoLand: false, riskyAreas: 'Stored data and deploy files.' } } });
   expect(saved.ok(), await saved.text()).toBe(true);
   const created = await page.request.post(`${PROJECT}/tasks`, { data: { schema: 'task-create-request-v1', clientRequestId: `request_gate_${info.project.name}`, title: 'Review loop', brief: 'LJ2 review loop: add a greeting example.', type: 'fix', fixed: { isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } } });

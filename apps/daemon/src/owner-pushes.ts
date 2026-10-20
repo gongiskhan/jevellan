@@ -144,6 +144,20 @@ export class OwnerPushes {
     }
     return count;
   }
+  /**
+   * An ack means the forwarder wrote the push, not that the session took it: a bridge that is shutting down still acks. When the bridge
+   * starts again, every push acked since the previous start whose text is not in that session's transcript is sent again.
+   */
+  requeueUndelivered(projectId: string, since: number, transcript: string): number {
+    const hub = this.app.hub; let count = 0;
+    for (const { document: push, revision } of hub.list(NAMESPACE, OwnerPushSchema)) {
+      if (push.projectId !== projectId || !push.ackedAt || push.droppedAt || Date.parse(push.ackedAt) < since) continue;
+      if (transcript.includes(JSON.stringify(push.text).slice(1, -1))) continue;
+      const { ackedAt: _acked, ...rest } = push; void _acked;
+      hub.put(NAMESPACE, push.id, OwnerPushSchema, rest, revision); count++;
+    }
+    return count;
+  }
   /** One line per push for tests and the run log. */
   describe(projectId: string): string[] { return this.app.hub.list(NAMESPACE, OwnerPushSchema).map(row => row.document).filter(row => row.projectId === projectId).map(row => `${ownerClock(row.createdAt, new Date(this.now()), 'Europe/Lisbon')} ${row.kind} ${row.text}`); }
 }

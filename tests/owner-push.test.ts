@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'vitest';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -57,9 +57,9 @@ test('the bridge starts in tmux with the specified flags, refuses an account wit
     if (args[0] === 'new-session') { alive = true; return { status: 0, stdout: '' }; }
     if (args[0] === 'has-session') return { status: alive ? 0 : 1, stdout: '' };
     if (args[0] === 'list-panes') return { status: 0, stdout: alive ? 'claude\n' : '' };
-    // The trust dialog stays on screen for three captures after its answer, then the channel confirmation shows under it once.
+    // The trust dialog is answered on its second capture and stays on screen for three more, then the channel confirmation shows under it.
     if (args[0] === 'capture-pane') { const n = calls.filter(row => row[0] === 'capture-pane').length;
-      return { status: 0, stdout: n <= 3 ? '❯ No, exit\n  Yes, I trust this folder' : n === 4 ? 'Yes, I trust this folder\n❯ 1. I am using this for local development\n  2. Exit' : 'Claude Code v2\n❯ ' }; }
+      return { status: 0, stdout: n <= 5 ? '❯ No, exit\n  Yes, I trust this folder' : n <= 7 ? 'Yes, I trust this folder\n❯ 1. I am using this for local development\n  2. Exit' : 'Claude Code v2\n❯ ' }; }
     return { status: 0, stdout: '' }; };
   const bridges = new OwnerBridges(f.app, tmux, '/usr/bin/claude');
   const project = (await f.app.ownerTools.projects())[0]!;
@@ -69,7 +69,11 @@ test('the bridge starts in tmux with the specified flags, refuses an account wit
   const text = await bridges.startBridge(project, { claudeConfigDir: config });
   expect(text).toMatch(new RegExp(`^Started the bridge for ${project.name} in tmux jv-bridge-`, 'u'));
   expect(calls.filter(row => row[0] === 'send-keys').map(row => row.at(-1))).toEqual(['Down', 'Enter', 'Enter']);
+  // Pushes wait until three seconds after the prompt showed: Claude drops a channel message sent while it starts.
+  expect(bridges.accepting(project.id)).toBe(false); expect(bridges.accepting(project.id, Date.now() + 3000)).toBe(true);
   const start = readFileSync(join(f.homes.root, 'bridges', bridges.sessionName(project).slice('jv-bridge-'.length), 'start.sh'), 'utf8');
+  const trusted = JSON.parse(readFileSync(join(config, '.claude.json'), 'utf8')) as { projects: Record<string, { hasTrustDialogAccepted?: boolean }> };
+  expect(trusted.projects[realpathSync(join(f.homes.root, 'bridges', bridges.sessionName(project).slice('jv-bridge-'.length)))]?.hasTrustDialogAccepted).toBe(true);
   expect(start).toContain(`export JEVELLAN_BRIDGE='1'`); expect(start).toContain(`export JEVELLAN_PROJECT='${project.name}'`); expect(start).toContain('unset CLAUDE_CODE_OAUTH_TOKEN'); expect(start).toContain("export ENABLE_CLAUDEAI_MCP_SERVERS='false'");
   for (const flag of [`'--model' 'sonnet' '--effort' 'medium' '--remote-control' 'Jevellan · ${project.name}'`, `'--dangerously-load-development-channels' 'plugin:jevellan@inline'`, `'--allowedTools' 'mcp__plugin_jevellan_jevellan__*' '--disallowedTools' 'Bash' 'Edit' 'Write' 'NotebookEdit'`, "'--append-system-prompt-file'"]) expect(start).toContain(flag);
   expect(start).not.toContain('--continue');
@@ -82,4 +86,17 @@ test('the bridge starts in tmux with the specified flags, refuses an account wit
   expect(alive).toBe(true);
   expect(readFileSync(join(f.homes.root, 'bridges', bridges.sessionName(project).slice('jv-bridge-'.length), 'start.sh'), 'utf8')).toContain("'--continue'");
   expect(existsSync(join(f.homes.root, 'plugin-dist', 'claude', 'jevellan', '.mcp.json'))).toBe(true);
+});
+
+test('a push acked by a bridge that was shutting down is sent again when the bridge starts again, unless its transcript has it', async () => {
+  f = await projectFixture({ control: true });
+  const pushes = new OwnerPushes(f.app); const since = Date.now();
+  pushes.add({ projectId: 'project', kind: 'waiting_created', key: 'seen', text: 'W1 waiting on you: seen "quoted"?' });
+  pushes.add({ projectId: 'project', kind: 'waiting_created', key: 'lost', text: 'W2 waiting on you: lost?' });
+  for (const message of pushes.messages('project')) pushes.ack('project', message.pushIds);
+  expect(pushes.messages('project')).toEqual([]);
+  const transcript = `{"type":"user","message":{"content":${JSON.stringify('<channel source="plugin:jevellan:jevellan">\n[Jevellan] W1 waiting on you: seen "quoted"?\n</channel>')}}}`;
+  expect(pushes.requeueUndelivered('project', since + 60_000, transcript)).toBe(0);
+  expect(pushes.requeueUndelivered('project', since, transcript)).toBe(1);
+  expect(pushes.messages('project').map(message => message.text)).toEqual(['[Jevellan] W2 waiting on you: lost?']);
 });

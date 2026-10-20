@@ -1,8 +1,8 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { IdSchema, TimestampSchema, buildPlugin, pluginDist, type Project } from '@jevellan/core';
+import { IdSchema, TimestampSchema, atomicWrite, buildPlugin, pluginDist, type Project } from '@jevellan/core';
 import type { Application } from './application.js';
 import { OwnerRefusal } from './owner-tools.js';
 
@@ -23,6 +23,16 @@ const DIALOGS: Array<{ text: RegExp; keys: string[] }> = [
   { text: /Do you want to use this API key\?/u, keys: ['Down', 'Enter'] },
 ];
 
+/** Trust for the bridge folder, accepted in the account's own preferences before the start: the trust dialog defaults to "No, exit",
+ * and a key sent before it takes input is lost (run log, Journey B). A preferences file that does not parse is left alone. */
+function trustFolder(configDir: string, folder: string): void {
+  const file = join(configDir, '.claude.json'); let value: Record<string, unknown> = {};
+  if (existsSync(file)) { try { value = z.record(z.string(), z.unknown()).parse(JSON.parse(readFileSync(file, 'utf8'))); } catch { return; } }
+  const projects = z.record(z.string(), z.record(z.string(), z.unknown())).safeParse(value.projects ?? {}); if (!projects.success) return;
+  const path = realpathSync(folder); if (projects.data[path]?.hasTrustDialogAccepted === true) return;
+  atomicWrite(file, `${JSON.stringify({ ...value, projects: { ...projects.data, [path]: { ...projects.data[path], hasTrustDialogAccepted: true } } }, null, 2)}\n`);
+}
+
 export type TmuxRunner = (args: string[]) => { status: number | null; stdout: string };
 export const realTmux: TmuxRunner = (args) => { const result = spawnSync('tmux', args, { encoding: 'utf8' }); return { status: result.status, stdout: result.stdout ?? '' }; };
 
@@ -35,6 +45,8 @@ export const realTmux: TmuxRunner = (args) => { const result = spawnSync('tmux',
 export class OwnerBridges {
   #timer: ReturnType<typeof setInterval> | undefined;
   #injectTimer: ReturnType<typeof setInterval> | undefined;
+  /** Projects whose bridge is starting, and when each became ready: a channel push sent before then is dropped by Claude (Journey B). */
+  readonly #starting = new Set<string>(); readonly #readyAt = new Map<string, number>();
   constructor(private readonly app: Application, readonly tmux: TmuxRunner = realTmux, readonly claude = process.env.JEVELLAN_CLAUDE_BIN || 'claude') {}
   start(): void {
     if (this.#timer) return;
@@ -44,6 +56,8 @@ export class OwnerBridges {
   close(): void { clearInterval(this.#timer); clearInterval(this.#injectTimer); this.#timer = undefined; this.#injectTimer = undefined; }
   state(projectId: string): BridgeState | null { return this.app.hub.get(NAMESPACE, projectId, BridgeStateSchema)?.document ?? null; }
   #save(state: BridgeState): void { const stored = this.app.hub.get(NAMESPACE, state.projectId, BridgeStateSchema); this.app.hub.put(NAMESPACE, state.projectId, BridgeStateSchema, state, stored?.revision ?? 0); }
+  /** Whether pushes may go to the project's bridge now: not while it starts, and three seconds after its prompt showed. */
+  accepting(projectId: string, now = Date.now()): boolean { return !this.#starting.has(projectId) && now - (this.#readyAt.get(projectId) ?? 0) >= 3000; }
   sessionName(project: Pick<Project, 'name'>): string { return `jv-bridge-${slug(project.name)}`; }
   running(session: string): boolean {
     if (this.tmux(['has-session', '-t', `=${session}`]).status !== 0) return false;
@@ -71,7 +85,9 @@ export class OwnerBridges {
     const plugin = join(pluginDist(this.app.homes), 'jevellan');
     const prompt = readFileSync(join(plugin, 'bridge', 'system-prompt.md'), 'utf8').replaceAll('{project}', project.name);
     writeFileSync(join(folder, 'system-prompt.md'), prompt, { mode: 0o600 });
-    const transport = settings.push.transport; const previous = this.#sessionFiles(dir, folder).length > 0;
+    const transport = settings.push.transport; const files = this.#sessionFiles(dir, folder); const previous = files.length > 0;
+    const before = this.state(project.id);
+    if (before && transport !== 'none') this.app.ownerPushes.requeueUndelivered(project.id, Date.parse(before.startedAt), files.map(file => readFileSync(file, 'utf8')).join('\n'));
     const name = options.remoteName ?? process.env.JEVELLAN_BRIDGE_REMOTE_NAME ?? `Jevellan · ${project.name}`;
     const args = ['--model', 'sonnet', '--effort', 'medium', '--remote-control', name, '--plugin-dir', plugin,
       ...(transport === 'channel' ? ['--dangerously-load-development-channels', 'plugin:jevellan@inline'] : []),
@@ -82,12 +98,16 @@ export class OwnerBridges {
     const script = ['#!/bin/sh', 'unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY JEVELLAN_ROLE', ...Object.entries(env).map(([key, value]) => `export ${key}=${shell(value)}`),
       `exec ${shell(this.claude)} ${args.map(shell).join(' ')}`].join('\n');
     writeFileSync(join(folder, 'start.sh'), `${script}\n`, { mode: 0o700 });
-    const started = this.tmux(['new-session', '-d', '-s', session, '-x', '200', '-y', '50', '-c', folder, join(folder, 'start.sh')]);
-    if (started.status !== 0) throw new OwnerRefusal(`tmux could not start the bridge session ${session}.`, 'tmux_failed', 500);
-    const ready = await this.#answerDialogs(session);
-    const state = this.state(project.id);
-    this.#save({ schema: 'owner-bridge-state-v1', projectId: project.id, project: project.name, tmuxSession: session, folder, configDir: dir, transport, startedAt: new Date().toISOString(), wanted: true,
-      restarts: (state?.restarts ?? 0) + (state ? 1 : 0) });
+    trustFolder(dir, folder);
+    const startedAt = new Date().toISOString(); let ready = false;
+    this.#starting.add(project.id);
+    try {
+      const started = this.tmux(['new-session', '-d', '-s', session, '-x', '200', '-y', '50', '-c', folder, join(folder, 'start.sh')]);
+      if (started.status !== 0) throw new OwnerRefusal(`tmux could not start the bridge session ${session}.`, 'tmux_failed', 500);
+      ready = await this.#answerDialogs(session);
+    } finally { this.#starting.delete(project.id); this.#readyAt.set(project.id, Date.now()); }
+    this.#save({ schema: 'owner-bridge-state-v1', projectId: project.id, project: project.name, tmuxSession: session, folder, configDir: dir, transport, startedAt, wanted: true,
+      restarts: (before?.restarts ?? 0) + (before ? 1 : 0) });
     this.app.ownerTools.updateProjectSettings(project.id, current => ({ ...current, bridge: { ...current.bridge, wanted: true } }));
     this.app.ownerEvents.publish({ projectId: project.id, source: 'jevellan', kind: 'state', text: `bridge started in tmux ${session}${ready ? '' : ' (start-up dialogs did not finish in time)'}` });
     return `Started the bridge for ${project.name} in tmux ${session}. Open the session "${name}" in the Claude app (account ${label}).${ready ? '' : ' It is still starting; check it with tmux attach -t ' + session + '.'}`;
@@ -104,14 +124,16 @@ export class OwnerBridges {
 
   /** Answers the known start-up dialogs until the prompt shows, for at most 90 seconds. */
   async #answerDialogs(session: string, timeoutMs = 90_000): Promise<boolean> {
-    const deadline = Date.now() + timeoutMs; let quiet = 0; const answered = new Map<RegExp, number>();
+    const deadline = Date.now() + timeoutMs; let quiet = 0; const answered = new Map<RegExp, number>(); let seen: RegExp | undefined;
     while (Date.now() < deadline) {
       await new Promise(resolve => setTimeout(resolve, 500));
       const pane = this.tmux(['capture-pane', '-p', '-t', `=${session}:`]).stdout;
       // A dialog just answered can stay on screen until Claude redraws; answering it again would send its keys to the next dialog
       // (Down then Enter on the channel confirmation picks Exit), so each one waits five seconds before it is answered again.
       const dialog = DIALOGS.find(entry => entry.text.test(pane) && Date.now() - (answered.get(entry.text) ?? 0) >= 5000);
-      if (dialog) { answered.set(dialog.text, Date.now()); for (const key of dialog.keys) { this.tmux(['send-keys', '-t', `=${session}:`, key]); await new Promise(resolve => setTimeout(resolve, 300)); } quiet = 0; continue; }
+      // A dialog is answered on its second sighting, once it takes input; keys sent while it is still drawing are lost.
+      if (dialog && seen !== dialog.text) { seen = dialog.text; quiet = 0; continue; }
+      if (dialog) { seen = undefined; answered.set(dialog.text, Date.now()); for (const key of dialog.keys) { this.tmux(['send-keys', '-t', `=${session}:`, key]); await new Promise(resolve => setTimeout(resolve, 300)); } quiet = 0; continue; }
       if (DIALOGS.some(entry => entry.text.test(pane))) { quiet = 0; continue; }
       if (/Claude Code v\d/u.test(pane) && /❯/u.test(pane)) { quiet++; if (quiet >= 4) return true; }
     }
