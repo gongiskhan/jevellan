@@ -1,3 +1,4 @@
+import { waitingItemsView } from './waiting-views.js';
 import { openPullRequests, checksBadge, mergeBlock, mergeHeld, mergeConfirmation, threadCardView, taskCardView, type CardPresentationOptions } from './card-views.js';
 import { createHash } from 'node:crypto';
 import { coordinatorPresentation, type CoordinatorPresentationOptions } from './coordinator-view.js';
@@ -7,7 +8,7 @@ const labels = { review: 'Ready for review', working: 'Working', landing: 'Landi
 const empty = { review: 'No pull requests waiting for review.', working: 'Nothing running.', landing: 'Nothing landing.', landed: 'Nothing waiting for deploy.', idle: 'No idle threads.', resolved: 'Nothing resolved in the last 14 days.' } as const;
 
 /** Overview decisions for every caller, independent of DOM or local browser time. */
-export function projectPageView(input: Pick<ProjectPageView, 'work' | 'tasks' | 'goals' | 'daily'>, resolvedDays = 14, now = Date.now(), options: CoordinatorPresentationOptions & CardPresentationOptions = {}): ProjectPageView {
+export function projectPageView(input: Pick<ProjectPageView, 'work' | 'tasks' | 'goals' | 'daily'>, resolvedDays = 14, now = Date.now(), options: CoordinatorPresentationOptions & CardPresentationOptions & { ackKnown?: readonly string[] | undefined } = {}): ProjectPageView {
   const { work, tasks, goals, daily } = input;
   const board = work.board ?? { waiting: [], review: [], working: [], landing: [], landed: [], idle: [], resolved: [] };
   const draftIds = tasks.filter(task => task.state === 'draft').map(task => task.id);
@@ -38,7 +39,7 @@ export function projectPageView(input: Pick<ProjectPageView, 'work' | 'tasks' | 
   const positions = new Map(tasks.filter(task => task.state === 'queued').map((task, index) => [task.id, index + 1]));
   const cards = [...work.threads.map(thread => threadCardView(thread, { ...options, held: daily.mergesHeld && !daily.mergeAllowedThreads.includes(thread.id), baseBranch: work.project.baseBranch })),
     ...tasks.map(task => taskCardView(task, positions.get(task.id)))];
-  const body = { work, tasks, goals, daily, overview, header: coordinatorPresentation(work, { ...options, now }), cards };
+  const body = { work, tasks, goals, daily, overview, header: coordinatorPresentation(work, { ...options, now }), cards, waiting: waitingItemsView(work, options.ackKnown) };
   return ProjectPageViewSchema.parse({ schema: 'project-page-view-v1', at: new Date(now).toISOString(),
     changeToken: createHash('sha256').update(stableJson(body)).digest('hex'), ...body });
 }

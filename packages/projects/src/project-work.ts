@@ -1,4 +1,6 @@
-import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction, type ProjectPageQuery } from '@jevellan/core';
+import { waitingItemsView, sentText } from './waiting-views.js';
+import { QUESTION_NOT_FOUND } from './copy.js';
+import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction, type ProjectPageRequest, type ProjectWaitingRespondRequest, ProjectWaitingResponseSchema } from '@jevellan/core';
 import { projectPageView } from './page-view.js';
 import { ProjectCleanupInventory } from './cleanup.js';
 import { ProjectDeployService } from './deploy.js';
@@ -727,7 +729,7 @@ export class ProjectWork {
   }
   async createGoal(projectId: string, raw: unknown) { await this.#coordinatorHere(projectId); return this.goals.create(projectId, raw); }
   async updateGoal(projectId: string, goalId: string, raw: unknown) { await this.#project(projectId); return this.goals.update(projectId, goalId, raw); }
-  async pageView(projectId: string, resolvedDays = 14, viewer: Pick<ProjectPageQuery, 'timeZone' | 'locale'> = {}) {
+  async pageView(projectId: string, resolvedDays = 14, viewer: Pick<ProjectPageRequest, 'timeZone' | 'locale' | 'ackKnown'> = {}) {
     const [work, tasks, goals, daily, roster] = await Promise.all([this.view(projectId), this.taskList(projectId), this.goalList(projectId), this.daily.view(projectId), this.#o.roster()]);
     const names = new Map(roster.devices.map(row => [row.device.id, row.device.name])); names.set(this.#o.deviceId, this.#o.deviceName);
     return projectPageView({ work, tasks: tasks.tasks, goals: goals.goals, daily }, resolvedDays, this.#timers.now(), { ...viewer, runtimeName: id => this.#o.runtimes.get(id)?.displayName ?? id, deviceName: id => names.get(id) ?? id });
@@ -1036,6 +1038,16 @@ export class ProjectWork {
     return decision?.projectId === projectId && (decision.merge || decision.landing) && decision.threadId ? this.threadOwner(projectId, decision.threadId) : null;
   }
   async refreshPullRequest(projectId: string, threadId: string): Promise<void> { this.#thread(projectId, threadId); await this.tracker.refresh(threadId); }
+  async waitingView(projectId: string) { return waitingItemsView(await this.view(projectId)); }
+  async respondWaiting(projectId: string, decisionId: string, input: ProjectWaitingRespondRequest) {
+    const decision = (await this.#o.hub.decision(decisionId))?.document;
+    if (!decision || decision.projectId !== projectId) throw refuse(QUESTION_NOT_FOUND, 404);
+    const result = await this.answerDecision(projectId, decisionId, input.answer);
+    const after = await this.view(projectId), titles = new Map(after.threads.map(thread => [thread.id, thread.title]));
+    const feedback = result.closed === false ? null : { text: sentText(decision, id => titles.get(id)), known: after.decisions.open.map(item => item.id) };
+    const page = await this.pageView(projectId, input.view.resolvedDays, { ...input.view, ...(feedback ? { ackKnown: feedback.known } : {}) });
+    return ProjectWaitingResponseSchema.parse({ schema: 'project-waiting-response-v1', receipt: { schema: 'decision-answered-view-v1', ...result }, page, feedback });
+  }
   answerDecision(projectId: string, decisionId: string, input: z.infer<typeof DecisionAnswerRequestSchema>): Promise<{ repeated: boolean; closed?: boolean }> {
     return this.decisions.answer(projectId, decisionId, input);
   }

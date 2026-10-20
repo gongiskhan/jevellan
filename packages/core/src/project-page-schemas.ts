@@ -5,6 +5,7 @@ import { ProjectWorkTaskSchema } from './project-loop-schemas.js';
 import { GoalViewSchema } from './project-goal-schemas.js';
 import { ProjectDailyListViewSchema } from './project-daily-schemas.js';
 import { ProjectWorkCardSchema, MergeConfirmationSchema } from './project-card-schemas.js';
+import { ProjectWaitingItemsViewSchema } from './project-waiting-schemas.js';
 
 const count = z.number().int().nonnegative();
 export const ProjectSidebarViewSchema = ProjectWorkListViewSchema.extend({ schema: z.literal('project-sidebar-view-v1'),
@@ -19,6 +20,8 @@ const timeZone = z.string().min(1).max(80).refine(value => { try { new Intl.Date
 const locale = z.string().min(1).max(80).refine(value => { try { return Intl.DateTimeFormat.supportedLocalesOf(value).length > 0; } catch { return false; } }, 'Unknown locale');
 export const ProjectPageQuerySchema = z.strictObject({ resolvedDays: z.coerce.number().int().min(14).default(14), timeZone: timeZone.optional(), locale: locale.optional() });
 export type ProjectPageQuery = z.infer<typeof ProjectPageQuerySchema>;
+export const ProjectPageRequestSchema = ProjectPageQuerySchema.extend({ schema: z.literal('project-page-request-v1'), ackKnown: z.array(IdSchema).optional() });
+export type ProjectPageRequest = z.infer<typeof ProjectPageRequestSchema>;
 export const ProjectCoordinatorUiSchema = z.strictObject({ working: z.boolean(), offline: z.boolean(),
   chip: z.strictObject({ label: z.string(), tone: z.enum(['idle', 'running', 'unavailable', 'offline']), session: z.string().nullable() }),
   contextLine: z.string().nullable(), contextNotice: z.string().nullable(), unavailableNotice: z.string().nullable(), offlineNotice: z.string().nullable(),
@@ -39,5 +42,5 @@ export type ProjectOverview = z.infer<typeof ProjectOverviewSchema>;
 export const ProjectPageViewSchema = z.strictObject({ schema: z.literal('project-page-view-v1'), at: TimestampSchema,
   changeToken: z.string().regex(/^[a-f0-9]{64}$/u), work: ProjectWorkViewSchema,
   tasks: z.array(ProjectWorkTaskSchema), goals: z.array(GoalViewSchema), daily: ProjectDailyListViewSchema, overview: ProjectOverviewSchema, header: ProjectHeaderSchema,
-  cards: z.array(ProjectWorkCardSchema) });
+  cards: z.array(ProjectWorkCardSchema), waiting: ProjectWaitingItemsViewSchema });
 export type ProjectPageView = z.infer<typeof ProjectPageViewSchema>;

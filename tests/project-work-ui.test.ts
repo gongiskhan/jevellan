@@ -1,3 +1,4 @@
+import { decisionSource, sentText, showSent, withdrawals } from '../packages/projects/dist/waiting-views.js';
 import { checksBadge, mergeBlock, openPullRequests, outcomeText, placementLine, pullRequestBadges, threadMeta } from '../packages/projects/dist/card-views.js';
 import { coordinatorChip, coordinatorLabel, working } from '../packages/projects/dist/coordinator-view.js';
 import { expect, test } from 'vitest';
@@ -12,10 +13,10 @@ import { sidebarOrder } from '../packages/projects/dist/views.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import { chatProposalIds, chatProposalGroups } from '../apps/web/src/project-work-model.js';
 import {
-  alignReports, mergeThreadToolTurns, chatItems, composerBlock, decisionSource, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
+  alignReports, mergeThreadToolTurns, chatItems, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
   lineParts, mainIsolationBlock, nearestEffort, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, projectDot,
-  projectRoute, reportBadge, restartedThread, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadActions, threadCreateRequest,
-  threadActivity, threadLiveText, threadPollDelay, threadReason, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutEchoedSummaries,
+  projectRoute, reportBadge, restartedThread, rowClockMs, settingsRequest, sidebarProjects, threadActions, threadCreateRequest,
+  threadActivity, threadLiveText, threadPollDelay, threadReason, threadStarting, toolIcon, transcriptNotice, whyFields, withoutEchoedSummaries,
   withoutReportCalls,
 } from '../apps/web/src/project-work-model.js';
 import { dateOnly, duration, relativeDuration, shortTime, timeStamp } from '../apps/web/src/time.js';

@@ -12,10 +12,10 @@ import { TerminalLauncher } from './terminal.js';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
-  CoordinatorMessageReceiptSchema, DecisionAnsweredViewSchema, EffortSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema, ProjectThreadActionsViewSchema,
+  CoordinatorMessageReceiptSchema, ProjectWaitingResponseSchema, EffortSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema, ProjectThreadActionsViewSchema,
   ProjectPageViewSchema, ProjectSidebarViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskReceiptSchema, TaskTypeSchema,
   type ProjectDecision, type ProjectLedgerEvent, type ProjectSidebarView, type ProjectWorkView,
-  type ThreadIndex, type ProjectWorkTask, type ProjectOverview, type OverviewPullRequest, type ProjectHeader, type ProjectCoordinatorActivity, type ProjectWorkCard,
+  type ThreadIndex, type ProjectWorkTask, type ProjectOverview, type OverviewPullRequest, type ProjectHeader, type ProjectCoordinatorActivity, type ProjectWorkCard, type ProjectWaitingItemsView, type ProjectWaitingItem, type ProjectWaitingResponse, type ProjectPageView, type ProjectPageRequest, type ProjectViewNotice,
 } from '@jevellan/core/client';
 import { ApiError, api, empty, isCancelled } from './api.js';
 import { clientId } from './client-id.js';
@@ -24,9 +24,9 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  PROJECT_WORK_UPDATED, chatItems, chatProposalGroups, decisionSource, deviceBlock, deviceChoices,
-  nearestEffort, projectDot, projectRoute, rowClockMs, sentText, showSent, threadCreateRequest,
-  toolIcon, withdrawals, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
+  PROJECT_WORK_UPDATED, chatItems, chatProposalGroups, deviceBlock, deviceChoices,
+  nearestEffort, projectDot, projectRoute, rowClockMs, threadCreateRequest,
+  toolIcon, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
 } from './project-work-model.js';
 import { queuedRefresh } from './refresh.js';
 import { projectHistory } from './project-history.js';
@@ -270,6 +270,10 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const [cards, setCards] = useState<ProjectWorkCard[]>([]);
   const cardModels = useMemo(() => new Map(cards.map(card => [projectCardKey(card.kind, card.id), card])), [cards]);
   const [header, setHeader] = useState<ProjectHeader>();
+  const [waiting, setWaiting] = useState<ProjectWaitingItemsView>();
+  const [notices, setNotices] = useState<ProjectViewNotice[]>([]);
+  const ackKnown = useRef<string[] | undefined>(undefined);
+  const acceptPage = useRef<(page: ProjectPageView) => void>(() => {});
   const [coordinatorActivity, setCoordinatorActivity] = useState<ProjectCoordinatorActivity>();
   const viewer = useRef({ timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale: navigator.language });
   const [goals, setGoals] = useState<GoalEntry[]>([]);
@@ -296,7 +300,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const now = useNow(rowClockMs(view?.threads ?? [], Date.now()));
 
   useEffect(() => {
-    setCoordinatorActivity(undefined);
+    setCoordinatorActivity(undefined); setNotices([]);
     let debounce: ReturnType<typeof setTimeout> | undefined;
     // The chat stream resumes by itself after a dropped connection; a refused one (the coordinator lives elsewhere) is
     // reopened from the last event with a growing delay, and the view's notices explain the coordinator meanwhile.
@@ -321,6 +325,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         if (stopped || current !== source) return;
         try {
           const document = ProjectEventFrameSchema.parse(JSON.parse(frame.data)), value = document.event;
+          if (document.notices?.length) setNotices(previous => [...new Map([...previous, ...document.notices!].map(notice => [notice.id, notice])).values()]);
           const activity = document.coordinatorActivity;
           if (activity) setCoordinatorActivity(previous => !previous || activity.seq > previous.seq ? activity : previous);
           last = Math.max(last, value.id);
@@ -342,12 +347,12 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     const restart = () => {
       source?.close(); clearTimeout(retry); last = 0; delay = 5000;
       history = projectHistory(); historyReady = false; setHistoryLoaded(false);
-      seen.current = new Set(); setEvents([]); setCoordinatorActivity(undefined);
+      seen.current = new Set(); setEvents([]); setCoordinatorActivity(undefined); setNotices([]);
       if (!stopped) open();
     };
-    const reads = queuedRefresh(
-      (signal) => api(`/api/projects/${id}/status-view?${new URLSearchParams({ ...viewer.current, resolvedDays: String(resolvedWindow.current) })}`, ProjectPageViewSchema, 'GET', undefined, { signal, waitForHub: true }),
-      (pageView) => {
+    const accept = (pageView: ProjectPageView) => {
+      if (stopped || pageView.work.project.id !== id) return;
+
         const next = pageView.work;
         const device = next.coordinator.deviceId ?? here; const moved = streaming !== undefined && device !== streaming; streaming = device;
         if (after.current === undefined) setTab(new URLSearchParams(location.search).get('view') === 'overview' ? 'overview' : pageView.overview.defaultSurface);
@@ -355,8 +360,13 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         if (moved) restart();
         if (!historyReady) publishHistory(history.snapshot(next.lastEventId));
         setView(next); setLoadError('');
-        setTasks(pageView.tasks); setGoals(pageView.goals); setDaily(pageView.daily); setOverview(pageView.overview); setHeader(pageView.header); setCards(pageView.cards);
-      },
+        setTasks(pageView.tasks); setGoals(pageView.goals); setDaily(pageView.daily); setOverview(pageView.overview); setHeader(pageView.header); setCards(pageView.cards); setWaiting(pageView.waiting);
+    };
+    acceptPage.current = accept;
+    const reads = queuedRefresh(
+      signal => api(`/api/projects/${id}/status-view`, ProjectPageViewSchema, 'POST',
+        { schema: 'project-page-request-v1', ...viewer.current, resolvedDays: resolvedWindow.current, ...(ackKnown.current ? { ackKnown: ackKnown.current } : {}) }, { signal, waitForHub: true }),
+      accept,
       (failure) => {
         if (failure instanceof ApiError && failure.status === 401) onError(failure);
         else setLoadError(failureText(failure));
@@ -369,7 +379,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     window.addEventListener(PROJECT_WORK_UPDATED, read);
     open();
     return () => {
-      stopped = true; reads.stop(); clearTimeout(debounce); clearTimeout(retry); clearInterval(poll);
+      stopped = true; if (acceptPage.current === accept) acceptPage.current = () => {}; reads.stop(); clearTimeout(debounce); clearTimeout(retry); clearInterval(poll);
       window.removeEventListener(PROJECT_WORK_UPDATED, read); source?.close();
     };
   }, [id, onError, here]);
@@ -377,11 +387,11 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const loaded = view !== undefined;
   useEffect(() => {
     if (after.current === undefined) return;
-    for (const found of withdrawals(events, seen.current, after.current)) {
-      seen.current.add(found.id);
-      message(copy.questionWithdrawn(found.reason));
+    for (const notice of notices) {
+      if (notice.id <= after.current || seen.current.has(notice.id)) continue;
+      seen.current.add(notice.id); message(notice.text);
     }
-  }, [events, loaded, message]);
+  }, [notices, loaded, message]);
 
   // Two columns or tabs follow the page width (D53); the sticky tabs and side column sit under the sticky heading.
   const page = useRef<HTMLDivElement>(null); const heading = useRef<HTMLDivElement>(null); const chat = useRef<HTMLDivElement>(null);
@@ -445,7 +455,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   useEffect(() => { if (movable) setMoveError(''); }, [movable, setMoveError]);
   const closeMenu = () => { if (menu.current) menu.current.open = false; };
 
-  if (!view || !overview || !header) {
+  if (!view || !overview || !header || !waiting) {
     return (
       <div className="conversation-page pw-page" ref={page}>
         <div className="section-heading conversation-heading" ref={heading}>
@@ -465,7 +475,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const offline = coordinatorUi.offline;
   const taskById = new Map(tasks.map(task => [task.id, task]));
   const drafts = overview.waiting.draftIds.flatMap(id => taskById.get(id) ?? []);
-  const open = view.decisions.open.filter(decision => !answered.has(decision.id));
+  const open = waiting.open.filter(item => !answered.has(item.decision.id));
   const byId = new Map(view.threads.map(thread => [thread.id, thread]));
   const rows = (ids: readonly string[]) => ids.flatMap(id => byId.get(id) ?? []);
   const waitingThreads = rows(overview.waiting.threadIds);
@@ -484,12 +494,15 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     finally { updated(); }
   };
   const move = () => void moving.run(async (signal) => { setMoveError(''); await moveHere(signal); });
-  const answeredQuestion = (decision: ProjectDecision) => {
-    const remaining = open.filter((entry) => entry.id !== decision.id).map((entry) => entry.id);
-    setAnswered((previous) => new Set([...previous, decision.id]));
-    setSent({ text: sentText(decision, titles), known: remaining });
+  const answeredQuestion = (decision: ProjectDecision, result: ProjectWaitingResponse) => {
+    acceptPage.current(result.page);
+    if (result.feedback) {
+      ackKnown.current = result.feedback.known;
+      setAnswered(previous => new Set([...previous, decision.id])); setSent(result.feedback);
+    }
     updated();
   };
+  const answerView: Omit<ProjectPageRequest, 'schema'> = { ...viewer.current, resolvedDays, ...(ackKnown.current ? { ackKnown: ackKnown.current } : {}) };
   const sectionHeading = (sectionId: string, title: string, count: number) => (
     <div className="pw-section-heading">
       <h3 id={sectionId}>{title}</h3>{' '}
@@ -584,13 +597,13 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           </div>
           <section className="pw-section" hidden={overviewTab !== 'threads'} data-tab="waiting" aria-labelledby={`${sideId}-waiting`}>
             {sectionHeading(`${sideId}-waiting`, overview.waiting.label, overview.waiting.count)}
-            {sent && showSent(sent, open) && <p className="pw-sent" role="status"><Icon name="check" size={14} />{sent.text}</p>}
+            {sent && waiting.showSent && <p className="pw-sent" role="status"><Icon name="check" size={14} />{sent.text}</p>}
             {drafts.length > 0 && <div className="pw-proposed"><h4>{copy.PROPOSED_TASKS}</h4><TaskQueue projectId={id} tasks={drafts} goals={goals} threads={view.threads} navigate={navigate} changed={updated} onError={onError} /></div>}
-            {open.length ? open.map((decision, index) => (
-              <DecisionCard key={decision.id} number={index + 1} projectId={id} decision={decision} titles={titles} now={now} answered={answeredQuestion} changed={updated} onError={onError} />
+            {open.length ? open.map((item) => (
+              <DecisionCard key={item.decision.id} item={item} query={answerView} now={now} answered={answeredQuestion} onError={onError} />
             )) : overview.waiting.isEmpty && <p className="pw-empty">{overview.waiting.emptyText}</p>}
             {waitingThreads.map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} navigate={navigate} changed={updated} onError={onError} />)}
-            {view.decisions.answered.length > 0 && <AnsweredList decisions={view.decisions.answered} titles={titles} now={now} />}
+            {waiting.answered.length > 0 && <AnsweredList items={waiting.answered} now={now} />}
           </section>
           <div hidden={overviewTab !== 'library'}>{overviewTab === 'library' && <ProjectLibraryPanel projectId={id} threadTitle={threadId => titles(threadId) ?? threadId} onError={onError} />}</div>
           <section className="pw-section" hidden={overviewTab !== 'queue'} data-tab="queue" aria-labelledby={`${sideId}-queue`}>
@@ -751,42 +764,30 @@ function Composer({ projectId, busy, offline, offlineText, behind, jump, stoppin
  * A question for the owner (12.2): its source and age, the question as Markdown, the options with their details, and an
  * answer in the owner's own words. Every answer is idempotent by its client id.
  */
-function DecisionCard({ projectId, decision, number, titles, now, answered, changed, onError }: {
-  projectId: string; decision: ProjectDecision; number: number; titles: ThreadTitles; now: number; answered(decision: ProjectDecision): void; changed(): void; onError(error: unknown): void;
+function DecisionCard({ item, query, now, answered, onError }: {
+  item: ProjectWaitingItem; query: Omit<ProjectPageRequest, 'schema'>; now: number; answered(decision: ProjectDecision, result: ProjectWaitingResponse): void; onError(error: unknown): void;
 }) {
+  const { decision, number } = item;
   const { error, setError, fail } = useLocalError(onError);
-  const task = useTask(fail);
-  const ids = useClientIds('answer');
-  const [text, setText] = useState('');
-  const questionId = useId();
-  const answer = (value: { optionLabel: string } | { text: string }) => void task.run(async (signal) => {
+  const task = useTask(fail), ids = useClientIds('answer');
+  const [text, setText] = useState(''); const questionId = useId();
+  const answer = (value: { optionLabel: string } | { text: string }) => void task.run(async signal => {
     setError('');
-    const result = await api(`/api/projects/${projectId}/decisions/${decision.id}/answer`, DecisionAnsweredViewSchema, 'POST',
-      { schema: 'decision-answer-request-v1', clientRequestId: ids.id({ decision: decision.id, revision: decision.revision, ...value }), ...(decision.deploy ? { expectedRevision: decision.revision } : {}), ...value }, { signal, waitForHub: true });
-    ids.done();
-    if (result.closed === false) changed(); else answered(decision);
+    const result = await api(item.respondPath, ProjectWaitingResponseSchema, 'POST', { schema: 'project-waiting-respond-request-v1',
+      answer: { ...item.requestBase, clientRequestId: ids.id({ decision: decision.id, revision: decision.revision, ...value }), ...value }, view: query }, { signal, waitForHub: true });
+    ids.done(); answered(decision, result);
   });
   return (
-    <OwnerCommandScope value={{ threadId: decision.threadId, decisionId: decision.id, ...(decision.from === 'thread' && decision.threadId ? { cwd: 'worktree' as const } : { deviceId: undefined, cwd: 'checkout' as const }) }}>
+    <OwnerCommandScope value={{ threadId: item.commandScope.threadId, decisionId: item.commandScope.decisionId, cwd: item.commandScope.cwd, ...(item.commandScope.clearDevice ? { deviceId: undefined } : {}) }}>
     <section className="answer-card pw-decision" aria-labelledby={questionId}>
-      <p className="pw-source"><span className="pw-question-number" aria-label={`Question ${number}`}>{number}</span> {decisionSource(decision, titles)} · <Stamp at={decision.createdAt} label={shortTime(decision.createdAt, now)} /></p>
-      <div className="pw-question" id={questionId}>{decision.deploy ? <div className="pw-deploy-question">{decision.question.split('\n').map((line, index) => <p key={index}>{index === 0 ? <strong>{line}</strong> : line}</p>)}</div> : <Markdown>{decision.question}</Markdown>}</div>
+      <p className="pw-source"><span className="pw-question-number" aria-label={`Question ${number}`}>{number}</span> {item.source} · <Stamp at={decision.createdAt} label={shortTime(decision.createdAt, now)} /></p>
+      <div className="pw-question" id={questionId}>{item.paragraphs ? <div className="pw-deploy-question">{item.paragraphs.map((line, index) => <p key={index}>{line.strong ? <strong>{line.text}</strong> : line.text}</p>)}</div> : <Markdown>{decision.question}</Markdown>}</div>
       <OwnerCommands commands={decision.ownerCommands} />
       {decision.merge?.reason && <p>{decision.merge.reason}</p>}{decision.merge?.failures?.map((failure, index) => <details key={index}><summary>{failure.what}</summary><pre>{failure.output}</pre></details>)}
-      {decision.options.length > 0 && (
-        <div className="answer-options pw-options">
-          {decision.options.map((option) => (
-            <button key={option.label} type="button" className="secondary pw-option" disabled={task.busy} onClick={() => answer({ optionLabel: option.label })}>
-              <span>{option.label}</span>
-              {option.detail && <small>{option.detail}</small>}
-            </button>
-          ))}
-        </div>
-      )}
-      {!decision.deploy && <form className="pw-answer" onSubmit={(event) => {
-        event.preventDefault();
-        if (!task.busy && text.trim()) answer({ text: text.trim() });
-      }}>
+      {decision.options.length > 0 && <div className="answer-options pw-options">{decision.options.map(option => <button key={option.label} type="button" className="secondary pw-option" disabled={task.busy} onClick={() => answer({ optionLabel: option.label })}>
+        <span>{option.label}</span>{option.detail && <small>{option.detail}</small>}
+      </button>)}</div>}
+      {item.allowsFreeText && <form className="pw-answer" onSubmit={event => { event.preventDefault(); if (!task.busy && text.trim()) answer({ text: text.trim() }); }}>
         <MessageInput value={text} change={setText} label={copy.ANSWER_IN_OWN_WORDS} placeholder={copy.ANSWER_IN_OWN_WORDS} />
         <button className="small" disabled={task.busy || !text.trim()}>{copy.SEND}</button>
       </form>}
@@ -797,20 +798,20 @@ function DecisionCard({ projectId, decision, number, titles, now, answered, chan
 }
 
 /** The last 10 answered questions, collapsed (12.2, D52). */
-function AnsweredList({ decisions, titles, now }: { decisions: readonly ProjectDecision[]; titles: ThreadTitles; now: number }) {
+function AnsweredList({ items, now }: { items: readonly ProjectWaitingItem[]; now: number }) {
   return (
     <details className="pw-answered">
-      <summary>{copy.ANSWERED} <span className="pw-count">{decisions.length}</span></summary>
+      <summary>{copy.ANSWERED} <span className="pw-count">{items.length}</span></summary>
       <ul>
-        {decisions.map((decision) => (
+        {items.map(({ decision, source, answerSummary }) => (
           <li key={decision.id}>
             <p className="pw-source">
-              {decisionSource(decision, titles)}
+              {source}
               {decision.answeredAt && <> · <Stamp at={decision.answeredAt} label={shortTime(decision.answeredAt, now)} /></>}
             </p>
             <p className="pw-answered-question">{decision.question}</p>
-            {decision.answer && (
-              <p className="pw-answered-answer"><Icon name="check" size={13} />{decision.answer.source === 'owner-chat' ? `Answered in chat: ${decision.answer.ownerMessage}` : copy.eventCopy.answer(decision.answer.optionLabel, decision.answer.text)}</p>
+            {answerSummary !== null && (
+              <p className="pw-answered-answer"><Icon name="check" size={13} />{answerSummary}</p>
             )}
           </li>
         ))}

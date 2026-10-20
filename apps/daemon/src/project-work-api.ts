@@ -1,3 +1,5 @@
+import { ProjectPageRequestSchema, ProjectWaitingRespondRequestSchema } from '@jevellan/core';
+import { projectEventNotices } from '@jevellan/projects';
 import { CoordinatorActivityProjector } from '@jevellan/projects';
 import { DeployBaselineRequestSchema, DeployRollbackRequestSchema, ProjectPageQuerySchema } from '@jevellan/core';
 import { ProjectHealthRequestSchema } from '@jevellan/core';
@@ -20,7 +22,7 @@ import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 import { readProjectImage } from '@jevellan/conversations';
 
-export type ProjectWorkRouteName = 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -31,9 +33,11 @@ type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GE
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'waiting-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/waiting-items$/, methods: ['GET'], target: 'any' },
+  { name: 'waiting-answer', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/waiting-items\/([A-Za-z0-9_-]+)\/respond$/, methods: ['POST'], target: 'any', ids: ['projectId', 'decisionId'] },
   { name: 'thread-actions-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/actions-view$/, methods: ['GET'], target: 'owner' },
   { name: 'sidebar-view', pattern: /^\/api\/project-work\/sidebar$/, methods: ['GET'], target: 'any' },
-  { name: 'page-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/status-view$/, methods: ['GET'], target: 'any' },
+  { name: 'page-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/status-view$/, methods: ['GET', 'POST'], target: 'any' },
   { name: 'setup-request', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-request$/, methods: ['POST'], target: 'coordinator' },
   { name: 'setup-get', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-proposals\/([A-Za-z0-9_-]+)$/, methods: ['GET'], target: 'any', ids: ['projectId', 'proposalId'] },
   { name: 'setup-action', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-proposals\/([A-Za-z0-9_-]+)\/actions$/, methods: ['POST'], target: 'any', ids: ['projectId', 'proposalId'] },
@@ -122,7 +126,7 @@ export function projectWorkRoute(path: string, method: string): ProjectWorkRoute
 function projectFrame(ledger: ProjectLedger, coordinator = false): LedgerStreamFrame<ProjectLedgerEvent> {
   const activity = coordinator ? new CoordinatorActivityProjector(ledger.events(), event => ledger.data(event)) : undefined;
   return { name: 'project', invalidCursor: EVENT_CURSOR_INVALID, aheadCursor: EVENT_CURSOR_AHEAD,
-    payload: (event) => ProjectEventFrameSchema.parse(ledger.redact({ schema: 'project-event-v1', event: { ...event, data: publicProjectData(ledger.data(event)) }, ...(activity ? { coordinatorActivity: activity.observe(event) } : {}) })) };
+    payload: (event) => ProjectEventFrameSchema.parse(ledger.redact({ schema: 'project-event-v1', event: { ...event, data: publicProjectData(ledger.data(event)) }, ...(activity ? { coordinatorActivity: activity.observe(event), notices: projectEventNotices({ ...event, data: publicProjectData(ledger.data(event)) }) } : {}) })) };
 }
 
 /**
@@ -216,8 +220,8 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
   const work = app.projectWork; await work.ready;
   const projectId = route.projectId ?? ''; const threadId = route.threadId ?? ''; const decisionId = route.decisionId ?? '';
   const write = request.method !== 'GET';
-  if (withClientId.has(route.name)) retryable();
-  if (route.name === 'answer') {
+  if (withClientId.has(route.name) || route.name === 'waiting-answer' || route.name === 'page-view') retryable();
+  if (route.name === 'answer' || route.name === 'waiting-answer') {
     const owner = await work.decisionOwner(projectId, decisionId);
     if (owner && owner !== app.device.deviceId) {
       if (caller.peer) throw failure(THREAD_NOT_FOUND, 404);
@@ -273,7 +277,12 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'list': send(await work.list()); return true;
     case 'sidebar-view': send(await work.views.sidebar()); return true;
     case 'view': send(await work.view(projectId)); return true;
-    case 'page-view': { const { resolvedDays, ...viewer } = ProjectPageQuerySchema.parse(Object.fromEntries(url.searchParams)); send(await work.pageView(projectId, resolvedDays, viewer)); return true; }
+    case 'page-view': {
+      const input = request.method === 'GET' ? ProjectPageQuerySchema.parse(Object.fromEntries(url.searchParams)) : ProjectPageRequestSchema.parse(await requestBody(request));
+      const { resolvedDays, ...viewer } = input; send(await work.pageView(projectId, resolvedDays, viewer)); return true;
+    }
+    case 'waiting-list': send(await work.waitingView(projectId)); return true;
+    case 'waiting-answer': send(await work.respondWaiting(projectId, decisionId, ProjectWaitingRespondRequestSchema.parse(await requestBody(request)))); return true;
     case 'events': {
       const ledger = await work.coordinatorEvents(projectId);
       streamLedger(ledger, request, response, url, caller.authenticated, projectFrame(ledger, true)); return true;

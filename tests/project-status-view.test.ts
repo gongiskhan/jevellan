@@ -42,7 +42,8 @@ test('status view combines the project page and derives its empty Overview on th
   for (const query of ['resolvedDays=13', 'resolvedDays=14.5', 'resolvedDays=NaN', 'extra=true']) {
     expect((await f.request(`/api/projects/project/status-view?${query}`)).status, query).toBe(400);
   }
-  expect((await f.request('/api/projects/project/status-view', 'POST', {})).status).toBe(405);
+  expect((await f.request('/api/projects/project/status-view', 'PUT', {})).status).toBe(405);
+  expect((await f.request('/api/projects/project/status-view', 'POST', {})).status).toBe(400);
   expect((await f.request('/api/projects/missing/status-view')).status).toBe(404);
 });
 

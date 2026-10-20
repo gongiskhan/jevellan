@@ -19,7 +19,6 @@ import {
   type Isolation,
   type PlacementField,
   type PlacementRecord,
-  type ProjectDecision,
   type ProjectLedgerData,
   type ProjectLedgerEvent,
   type ProjectLedgerEventType,
@@ -129,25 +128,6 @@ export function settingsRequest(view: Pick<ProjectWorkView, 'settings' | 'settin
     compactAtPercent: form.compactAtPercent ?? view.settings.compactAtPercent,
     perDeviceLimits: form.perDeviceLimits ?? view.settings.perDeviceLimits,
     maxRunningThreads: form.maxRunningThreads, maxRunningPerDevice: form.maxRunningPerDevice, threadTurnCap: form.threadTurnCap } };
-}
-
-/** The decision card's source line: the coordinator's own questions, or the thread a fallback question came from. */
-export function decisionSource(decision: Pick<ProjectDecision, 'from' | 'threadId'>, titles: ThreadTitles): string {
-  const title = decision.from === 'thread' && decision.threadId ? titles(decision.threadId) : undefined;
-  return decision.from === 'thread' ? copy.fromThread(title ?? copy.UNKNOWN_THREAD_NAME) : copy.FROM_COORDINATOR;
-}
-/** After answering: the coordinator's questions go to it; a thread's own question goes back to that thread (D224). */
-export function sentText(decision: Pick<ProjectDecision, 'from' | 'threadId'>, titles: ThreadTitles): string {
-  if (decision.from === 'coordinator') return copy.SENT_TO_COORDINATOR;
-  const title = decision.threadId ? titles(decision.threadId) : undefined;
-  return title ? copy.sentToThread(title) : copy.SENT_TO_THREAD;
-}
-/**
- * The section's sent line stays until a question arrives that was not open when the answer was sent (`known`), so it
- * never sits above a question it does not describe; no clock is compared.
- */
-export function showSent(sent: { known: readonly string[] } | undefined, open: readonly Pick<ProjectDecision, 'id'>[]): boolean {
-  return !!sent && open.every((decision) => sent.known.includes(decision.id));
 }
 
 const TOOL_ICONS: Record<string, IconName> = {
@@ -572,19 +552,7 @@ export function withoutEchoedSummaries(items: readonly TranscriptItem[]): Transc
   });
 }
 
-/**
- * Questions the coordinator withdrew (D84, D200): successful `jevellan_withdraw_question` calls that carry the reason.
- * Events at or below `after` (the view's `lastEventId` when the page opened) and ids already in `seen` are history, so a
- * replayed stream never toasts again; the caller adds the returned ledger ids to `seen`.
- */
-export function withdrawals(events: readonly ProjectLedgerEvent[], seen: ReadonlySet<number>, after = 0): Array<{ id: number; decisionId: string; reason: string }> {
-  return events.flatMap((event) => {
-    if (event.id <= after || seen.has(event.id)) return [];
-    const data = payload(event, 'coordinator-tool');
-    return data?.tool === 'jevellan_withdraw_question' && data.ok && data.decisionId && data.reason
-      ? [{ id: event.id, decisionId: data.decisionId, reason: data.reason }] : [];
-  });
-}
+
 
 /** Index proposal groups once for a live view, so a long chat never rescans its history for every card. */
 export function chatProposalGroups(items: readonly ChatItem[], tasks: readonly Pick<import('@jevellan/core/client').ProjectWorkTask, 'id' | 'state'>[]): Map<number, string[]> {
