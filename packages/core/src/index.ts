@@ -134,3 +134,4 @@ export * from './owner-plugin.js';
 export * from './claude-login.js';
 export * from './project-jobs-view-schemas.js';
 export * from './project-routine-editor-schemas.js';
+export * from './project-routine-settings-schemas.js';

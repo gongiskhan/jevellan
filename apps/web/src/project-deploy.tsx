@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ProjectDeploySchema, ProjectDeploySummarySchema, ProjectJobListViewSchema, type ProjectDeploySummary, type ProjectJob, type ProjectWorkSettings } from '@jevellan/core/client';
+import { ProjectDeploySchema, ProjectDeploySummarySchema, type ProjectDeploySummary, type ProjectRoutineSettingsView, type ProjectWorkSettings } from '@jevellan/core/client';
 import { api } from './api.js';
-export function DeploySettings({ projectId, value, change, fail }: { projectId: string; value: ProjectWorkSettings; change(patch: Partial<ProjectWorkSettings>): void; fail(error: unknown): void }) {
-  const [jobs, setJobs] = useState<ProjectJob[]>([]);
-  useEffect(() => { const controller = new AbortController(); void api(`/api/projects/${projectId}/jobs`, ProjectJobListViewSchema, 'GET', undefined, { signal: controller.signal }).then(view => setJobs(view.jobs.filter(job => job.run.kind === 'command'))).catch(error => { if (!controller.signal.aborted) fail(error); }); return () => controller.abort(); }, [projectId, fail]);
-  return <fieldset><legend>Deploys</legend><label>Deploy mode<select value={value.deploy.mode} disabled><option value="approve">Owner approval</option><option value="nightly">After the night's full suite</option><option value="automatic">Automatic</option></select></label>
-    {([['jobId', 'Deploy job'], ['desktopJobId', 'Desktop build job'], ['suiteJobId', 'Full suite job']] as const).map(([key, label]) => <label key={key}>{label}<select value={value.deploy[key] ?? ''} onChange={event => change({ deploy: { ...value.deploy, [key]: event.target.value || null } })}><option value="">None</option>{jobs.map(job => <option key={job.id} value={job.id}>{job.name}</option>)}</select></label>)}
+export function DeploySettings({ model, value, change }: { model: ProjectRoutineSettingsView; value: ProjectWorkSettings; change(patch: Partial<ProjectWorkSettings>): void }) {
+  const choose = (choices: ProjectRoutineSettingsView['deploy']['modes'], selected: string) => { const choice = choices.find(row => row.value === selected); if (choice && !choice.disabled) change({ deploy: { ...value.deploy, ...choice.patch } }); };
+  return <fieldset><legend>Deploys</legend><label>Deploy mode<select value={value.deploy.mode} onChange={event => choose(model.deploy.modes, event.target.value)}>{model.deploy.modes.map(row => <option key={row.value} value={row.value} disabled={row.disabled}>{row.label}</option>)}</select></label><p className="pw-field-note">{model.deploy.modeNotice}</p>
+    {model.deploy.slots.map(slot => <label key={slot.key}>{slot.label}<select value={value.deploy[slot.key] ?? ''} onChange={event => choose(slot.choices, event.target.value)}>{slot.choices.map(row => <option key={row.value} value={row.value} disabled={row.disabled}>{row.label}</option>)}</select></label>)}
     <p>Deploys build the commit shown in the owner’s message. Health checks run before and after release.</p></fieldset>;
 }
 export function LastDeploy({ projectId, fail }: { projectId: string; fail(error: unknown): void }) {

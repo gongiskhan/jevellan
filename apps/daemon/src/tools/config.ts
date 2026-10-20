@@ -1,4 +1,5 @@
-import { capLines } from '@jevellan/projects';
+import { ProjectRoutineSettingsSaveSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsRequestSchema } from '@jevellan/core';
+import { capLines, projectRoutineJobChoices, projectRoutineSettings } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
 
 const yesNo = (value: boolean) => value ? 'yes' : 'no';
@@ -16,6 +17,7 @@ async function sections(context: OwnerContext): Promise<Record<string, string>> 
     accounts: accounts.length ? accounts.map(row => `${row.account.label} budget ${row.account.ceilingPct ?? 90}%${row.account.enabled === false ? ' (disabled)' : ''}`).join(' · ') : 'none',
     limits: `maxRunningThreadsAll ${configuration.maxRunningThreadsAll} · maxRunningThreads ${settings.maxRunningThreads}`,
     deploy: `mode ${settings.deploy.mode} · paused ${yesNo(owner.deploy.paused)} · debounce ${owner.deploy.debounceMinutes} min`,
+    routines: `nightlyWindow ${settings.nightlyWindow.enabled ? `${settings.nightlyWindow.time} ${settings.nightlyWindow.timezone}` : 'off'} · refill ${settings.refill.enabled ? `every ${settings.refill.minIntervalMinutes} min` : 'off'}`,
     landing: `delivery ${settings.delivery} · autoLand ${yesNo(settings.autoLand)} · landingChecks ${settings.landingChecks.length} · smokeCheck ${settings.smokeCheck ? 'set' : 'none'} · mergeCommitPaths ${settings.mergeCommitPaths.length ? settings.mergeCommitPaths.join(', ') : 'none'}`,
     health: settings.healthChecks.length ? settings.healthChecks.map(check => `${check.name}${check.enabled === false ? ' (disabled)' : ''}`).join(' · ') : 'no checks',
     coordinator: `model ${settings.coordinator.modelId ?? 'automatic'} · effort ${settings.coordinator.effort} · coordinatorHandoffAtPercent ${settings.coordinatorHandoffAtPercent}`,
@@ -55,12 +57,12 @@ const SETTERS: Record<string, Setter> = {
   },
   'deploy.debounceMinutes': async ({ tools, project }, _key, value) => {
     const minutes = Number(value); if (!Number.isInteger(minutes) || minutes < 1 || minutes > 30) throw new OwnerRefusal('deploy.debounceMinutes must be a whole number from 1 to 30.', 'invalid_value');
-    const old = tools.projectSettings(project.id).deploy.debounceMinutes; tools.updateProjectSettings(project.id, settings => ({ ...settings, deploy: { ...settings.deploy, debounceMinutes: minutes } }));
+    const old = tools.projectSettings(project.id).deploy.debounceMinutes; tools.patchRoutineSettings(project.id, { debounceMinutes: minutes });
     return { old: String(old), new: String(minutes) };
   },
   'night.catchUpHours': async ({ tools, project }, _key, value) => {
     const hours = Number(value); if (!Number.isInteger(hours) || hours < 0 || hours > 12) throw new OwnerRefusal('night.catchUpHours must be a whole number from 0 to 12.', 'invalid_value');
-    const old = tools.projectSettings(project.id).night.catchUpHours; tools.updateProjectSettings(project.id, settings => ({ ...settings, night: { ...settings.night, catchUpHours: hours } }));
+    const old = tools.projectSettings(project.id).night.catchUpHours; tools.patchRoutineSettings(project.id, { catchUpHours: hours });
     return { old: String(old), new: String(hours) };
   },
   'heartbeat.url': async ({ tools }, _key, value) => {
@@ -90,9 +92,40 @@ const SETTERS: Record<string, Setter> = {
   },
   'deploy.paused': async ({ tools, project }, _key, value) => {
     const paused = value === true || value === 'true' || value === 'yes'; if (!paused && !(value === false || value === 'false' || value === 'no')) throw new OwnerRefusal('deploy.paused must be true or false.', 'invalid_value');
-    const old = tools.projectSettings(project.id).deploy.paused; tools.updateProjectSettings(project.id, settings => ({ ...settings, deploy: { ...settings.deploy, paused } }));
+    const old = tools.projectSettings(project.id).deploy.paused; tools.patchRoutineSettings(project.id, { deployPaused: paused });
     return { old: String(old), new: String(paused), consequence: paused ? 'No deploy runs until you turn this off; the deploy message keeps updating.' : 'Deploys can run again.' };
   },
+};
+
+const nightly = ProjectWorkSettingsSchema.shape.nightlyWindow.removeDefault().shape, refill = ProjectWorkSettingsSchema.shape.refill.removeDefault().shape;
+const routineFields = [
+  ['nightlyWindow.enabled', 'nightlyWindow', 'enabled', nightly.enabled, 'boolean'], ['nightlyWindow.time', 'nightlyWindow', 'time', nightly.time, 'string'],
+  ['nightlyWindow.timezone', 'nightlyWindow', 'timezone', nightly.timezone, 'string'], ['refill.enabled', 'refill', 'enabled', refill.enabled, 'boolean'],
+  ['refill.minIntervalMinutes', 'refill', 'minIntervalMinutes', refill.minIntervalMinutes, 'number'],
+] as const;
+for (const [key, group, field, schema, kind] of routineFields) SETTERS[`routines.${key}`] = async ({ app, project }, _key, value) => {
+  let raw: unknown = value;
+  if (kind === 'boolean') {
+    if (value === true || value === 'true' || value === 'yes') raw = true;
+    else if (value === false || value === 'false' || value === 'no') raw = false;
+    else throw new OwnerRefusal(`routines.${key} must be true or false.`, 'invalid_value');
+  } else if (kind === 'number') raw = Number(value);
+  const parsed = schema.safeParse(raw); if (!parsed.success) throw new OwnerRefusal(parsed.error.issues[0]?.message ?? 'Choose a valid routine setting.', 'invalid_value');
+  const view = await app.projectWork.settingsView(project.id), settings = view.settings, previous = settings[group];
+  const old = (previous as Record<string, unknown>)[field];
+  await app.projectWork.putSettings(project.id, ProjectWorkSettingsRequestSchema.parse({ schema: 'project-work-settings-request-v1', revision: settings.revision,
+    settings: { ...withoutIdentity(settings), [group]: { ...previous, [field]: parsed.data } } }));
+  return { old: String(old), new: String(parsed.data) };
+};
+for (const key of ['jobId', 'desktopJobId', 'suiteJobId'] as const) SETTERS[`deploy.${key}`] = async ({ app, project }, _key, value) => {
+  if (typeof value !== 'string') throw new OwnerRefusal(`deploy.${key} must be a command job id or none.`, 'invalid_value');
+  const selected = value === 'none' ? '' : value, jobs = await app.projectWork.daily.jobs(project.id);
+  const choice = projectRoutineJobChoices(project.id, jobs, key).find(row => row.value === selected);
+  if (!choice) throw new OwnerRefusal(`deploy.${key} must be a command job of this project, or none.`, 'invalid_value');
+  const view = await app.projectWork.settingsView(project.id), settings = view.settings;
+  await app.projectWork.putSettings(project.id, ProjectWorkSettingsRequestSchema.parse({ schema: 'project-work-settings-request-v1', revision: settings.revision,
+    settings: { ...withoutIdentity(settings), deploy: { ...settings.deploy, ...choice.patch } } }));
+  return { old: settings.deploy[key] ?? 'none', new: selected || 'none' };
 };
 
 /** `accounts.<label>.budgetPercent` and `accounts.<label>.enabled`. */
@@ -112,6 +145,15 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'routines': case 'routines_save': {
+      const { app, project, tools } = context;
+      if (context.action === 'routines_save') {
+        const input = ProjectRoutineSettingsSaveSchema.parse(args.request), fields = input.fields;
+        tools.patchRoutineSettings(project.id, { deployPaused: fields.deployPaused, debounceMinutes: Number(fields.debounceMinutes), catchUpHours: Number(fields.catchUpHours) }, input.expectedRevision);
+      }
+      const [jobs, missed] = await Promise.all([app.projectWork.daily.jobs(project.id), tools.missedNights(project.id, 7)]), state = tools.routineSettingsState(project.id);
+      return { text: context.action === 'routines_save' ? 'Saved automation preferences.' : 'Deploy and routine settings.', data: projectRoutineSettings(project.id, jobs, state.owner, state.revision, missed) };
+    }
     case 'get': {
       const all = await sections(context); const wanted = typeof args.section === 'string' ? args.section : undefined;
       if (wanted && !(wanted in all)) throw new OwnerRefusal(`section must be one of ${Object.keys(all).join(', ')}.`, 'invalid_section');

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { IdSchema } from './schemas.js';
 import { ThreadMutationActionSchema } from './project-card-schemas.js';
 import { RoutineEditorSaveRequestSchema } from './project-routine-editor-schemas.js';
+import { ProjectRoutineSettingsSaveSchema } from './project-routine-settings-schemas.js';
 import type { OwnerToolName, OwnerToolResult } from './owner-tool-schemas.js';
 
 /**
@@ -42,10 +43,10 @@ export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
       write('edit', { goal: id('Goal id (G1) or title.'), title: text(80).optional(), motivation: text(4000).optional(), health: z.string().max(1000).optional() }),
       write('pause', { goal: id('Goal id (G1) or title.') }), write('resume', { goal: id('Goal id (G1) or title.') }), write('done', { goal: id('Goal id (G1) or title.') })] },
   { name: 'jobs', description: 'Everything that used to run on GitHub: the night window and its ordered items, command jobs on any device, the deploy message and the last deploy, health checks, rollback, and the intake of external pull requests. See what is scheduled, running, done, failed or missed; run something now, pause, resume, change when it runs, or roll back the last deploy.',
-    actions: [read('list'), read('editor', { kind: z.enum(['job', 'daily']), id: IdSchema.optional().describe('Definition id from jobs list data; omit for a new definition.') }, true),
+    actions: [read('list', {}, true), read('editor', { kind: z.enum(['job', 'daily']), id: IdSchema.optional().describe('Definition id from jobs list data; omit for a new definition.') }, true),
       write('save', { id: IdSchema.optional().describe('Definition id for editing; omit for creation.'), request: RoutineEditorSaveRequestSchema }, true),
       read('show', { job: id('Job or night item name, slug or id.') }), read('history', { job: id('Job or night item name, slug or id.'), limit: z.number().int().min(1).max(50).optional() }),
-      read('night'), read('deploy', {}, true), read('health'),
+      read('night', {}, true), read('deploy', {}, true), read('health'),
       write('run', { job: id('Job or night item name, slug or id.') }), write('pause', { job: id('Job or night item name, slug or id.') }), write('resume', { job: id('Job or night item name, slug or id.') }),
       write('schedule', { job: id('Job, night item or "night".'), windowStart: clock.optional(), days: z.array(z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])).min(1).max(7).optional(),
         order: z.array(z.string().min(1).max(120)).min(1).max(30).optional(), everyMinutes: z.number().int().min(5).max(1440).optional(), between: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/u).optional(),
@@ -73,7 +74,7 @@ export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
       write('lesson_edit', { lesson: z.string().regex(/^[Ll][1-9][0-9]*$/u), text: text(1000).optional(), enabled: z.boolean().optional() }), write('lesson_remove', { lesson: z.string().regex(/^[Ll][1-9][0-9]*$/u) }),
       write('replay', { proposal: z.string().regex(/^[Pp][1-9][0-9]*$/u).optional(), lesson: z.string().regex(/^[Ll][1-9][0-9]*$/u).optional(), n: z.number().int().min(1).max(50).optional() })] },
   { name: 'config', description: 'Jevellan settings for a project and the installation: accounts and budgets, limits, the deploy switch, landing, health checks, the coordinator, notifications and quiet hours, cleanup, environment and secrets, remote access and the heartbeat.',
-    actions: [read('get', { section: z.string().min(1).max(40).optional() }), read('secrets'),
+    actions: [read('get', { section: z.string().min(1).max(40).optional() }), read('secrets'), read('routines', {}, true), write('routines_save', { request: ProjectRoutineSettingsSaveSchema }, true),
       write('set', { section: z.string().min(1).max(40), key: z.string().min(1).max(120), value: z.union([z.string().max(4000), z.number(), z.boolean()]) }),
       write('add_health_check', { check: z.record(z.string(), z.unknown()) }), write('edit_health_check', { check: z.record(z.string(), z.unknown()) }),
       write('add_account', { label: z.string().min(1).max(80), runtime: z.enum(['claude', 'codex']), budgetPercent: z.number().int().min(1).max(100).optional() }), write('remove_account', { label: z.string().min(1).max(80) }),

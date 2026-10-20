@@ -1,6 +1,7 @@
 import { ProjectPageRequestSchema, ProjectWaitingRespondRequestSchema } from '@jevellan/core';
 import { DailyEnabledRequestSchema, JobPausedRequestSchema } from '@jevellan/core';
 import { ProjectJobSchema, ProjectDailySchema, RoutineEditorSaveRequestSchema } from '@jevellan/core';
+import { ProjectRoutineSettingsSaveSchema, ProjectRoutineSettingsViewSchema } from '@jevellan/core';
 import { projectEventNotices } from '@jevellan/projects';
 import { CoordinatorActivityProjector } from '@jevellan/projects';
 import { DeployBaselineRequestSchema, DeployRollbackRequestSchema, ProjectDeploySchema, ProjectPageQuerySchema } from '@jevellan/core';
@@ -26,7 +27,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ProjectThreadActionsViewSchema, ThreadViewSchema, type ThreadActionRequest } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -66,6 +67,8 @@ const rows: readonly Row[] = [
   { name: 'job-run', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/run$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'jobId'] },
   { name: 'deploy-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/deploys$/, methods: ['GET'], target: 'any' },
   { name: 'deploy-summary', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/deploy-summary$/, methods: ['GET'], target: 'any' },
+  { name: 'routine-settings-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/routine-settings$/, methods: ['GET'], target: 'any' },
+  { name: 'routine-settings-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/routine-settings$/, methods: ['POST'], target: 'any' },
   { name: 'deploy-baseline', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/deploys\/baseline$/, methods: ['PUT'], target: 'coordinator' },
   { name: 'deploy-rollback', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/deploys\/([A-Za-z0-9_-]+)\/rollback$/, methods: ['POST'], target: 'coordinator' },
   { name: 'health-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/health$/, methods: ['GET'], target: 'any' },
@@ -229,6 +232,16 @@ export async function ownerDeployRollback(app: Application, projectId: string, d
   if (result.projectId !== projectId || result.id !== deployId) throw failure('The returned deploy does not match the request.', 502);
   return result;
 }
+async function ownerRoutineSettings(app: Application, projectId: string, raw?: unknown) {
+  const input = raw === undefined ? undefined : ProjectRoutineSettingsSaveSchema.parse(raw);
+  const request = { schema: 'owner-tool-request-v1' as const, caller: 'ui', action: input ? 'routines_save' : 'routines', args: { project: projectId, ...(input ? { request: input } : {}) } };
+  const result = app.member ? await app.member.ownerTool({ schema: 'owner-tool-forward-v1', name: 'config', request }) : await app.ownerTools.call('config', request);
+  if (!result.ok) {
+    const status = ({ settings_changed: 409, project_unknown: 404, invalid_arguments: 400, invalid_value: 400, hub_unavailable: 503 } as Record<string, number>)[result.error.code] ?? 500;
+    throw failure(result.error.text, status);
+  }
+  return parseReply(ProjectRoutineSettingsViewSchema, result.data);
+}
 /** Sends the request to the device that runs it (2.10): the thread's owner or the coordinator device, with the owner's session. */
 async function proxy(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, route: ProjectWorkRoute, deviceId: string, caller: Caller): Promise<void> {
   const purpose = route.target === 'owner' ? 'thread' : 'coordinator'; const row = await target(app, deviceId, purpose);
@@ -332,6 +345,8 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'ekoa-code-setup': send(await work.setupEkoaCode(projectId, EkoaCodeSetupRequestSchema.parse(await requestBody(request)))); return true;
     case 'deploy-list': send(await work.deploys.view(projectId)); return true;
     case 'deploy-summary': send(await work.deploys.summary(projectId)); return true;
+    case 'routine-settings-view': send(await ownerRoutineSettings(app, projectId)); return true;
+    case 'routine-settings-save': send(await ownerRoutineSettings(app, projectId, await requestBody(request))); return true;
     case 'deploy-baseline': { const { expectedRevision, schema: _schema, ...input } = DeployBaselineRequestSchema.parse(await requestBody(request)); void _schema; send(await work.deploys.baseline(projectId, input, expectedRevision)); return true; }
     case 'deploy-rollback': { const input = DeployRollbackRequestSchema.parse(await requestBody(request)); send(await work.deploys.rollback(projectId, threadId, input.expectedRevision), 202); return true; }
     case 'health-list': send(await app.projectHealthRequest({ schema: 'project-health-request-v1', project: projectId, operation: 'list' })); return true;

@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Areas1a–1e/2a–2c:27Overview/sidebar/coordinator/card-action/waiting/jobs-nightly/editor/deploy-summary rows migrated/refined. Canonical guards/retry receipts and member routing retained; shared baseline/current/unknown selector, health copy and rollback model. Latest source static pass,209affected backend22files6workers pass; simulated desktop-light deploy/rollback journey passes after explicit fixture monitor-clock progression, preserving final assertions.13exact images vision-not-run. Next deploy/config metadata then remaining ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1 recorded for Settings. No further release.",
+    "why": "Areas1a–1e/2a–2d:29Overview/sidebar/coordinator/card-action/waiting/jobs-nightly/editor/deploy/settings-metadata rows migrated/refined,1explicit browser-only disposition. Canonical guards/CAS/retry/member ownership retained;SPEC UI mode policy enforced,config setters share routine fields and command slots,actual MCP list/night models retained. Final static pass,245affected backend26files6workers pass with complete redacted capture;desktop-light settings policy/draft/Save journey passes after documented matcher correction.8exact images,1nonblocking direct panel inspection;others/automated vision not run. Goals then remaining ordered UI areas,intake,placement/prompt versions;full310-row parity incomplete,CM1 remains for Settings. No further release.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Areas1a–1e/2a–2c:27Overview/sidebar/coordinator/card-action/waiting/jobs-nightly/editor/deploy-summary rows migrated/refined. Canonical guards/retry receipts and member routing retained; shared baseline/current/unknown selector, health copy and rollback model. Latest source static pass,209affected backend22files6workers pass; simulated desktop-light deploy/rollback journey passes after explicit fixture monitor-clock progression, preserving final assertions.13exact images vision-not-run. Next deploy/config metadata then remaining ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1 recorded for Settings. No further release.",
+    "why": "Areas1a–1e/2a–2d:29Overview/sidebar/coordinator/card-action/waiting/jobs-nightly/editor/deploy/settings-metadata rows migrated/refined,1explicit browser-only disposition. Canonical guards/CAS/retry/member ownership retained;SPEC UI mode policy enforced,config setters share routine fields and command slots,actual MCP list/night models retained. Final static pass,245affected backend26files6workers pass with complete redacted capture;desktop-light settings policy/draft/Save journey passes after documented matcher correction.8exact images,1nonblocking direct panel inspection;others/automated vision not run. Goals then remaining ordered UI areas,intake,placement/prompt versions;full310-row parity incomplete,CM1 remains for Settings. No further release.",
     "status": "in-progress"
   },
   {

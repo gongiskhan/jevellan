@@ -2,7 +2,7 @@ import { appendFileSync, mkdirSync, readFileSync, renameSync, existsSync, writeF
 import { createHash } from 'node:crypto';
 import { dirname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { CallerLogEntrySchema, HubUnavailable, ownerClock, OwnerInstallationSettingsSchema, OwnerProjectSettingsSchema, SteeringRecordSchema, defaultOwnerInstallationSettings, defaultOwnerProjectSettings, newId,
+import { CallerLogEntrySchema, HubUnavailable, ownerClock, OwnerInstallationSettingsSchema, OwnerProjectSettingsSchema, RoutineAutomationPatchSchema, SteeringRecordSchema, defaultOwnerInstallationSettings, defaultOwnerProjectSettings, newId,
   type OwnerInstallationSettings, type OwnerProjectSettings, type SteeringRecord, OWNER_TOOLS, OwnerToolResultSchema, ownerTool, ownerToolAction, type CallerLogEntry, type OwnerToolDefinition, type OwnerToolRequest, type OwnerToolResult,
   type Project, type ProjectStatusView } from '@jevellan/core';
 import { OwnerShortIds, projectStatus, renderStatus, renderStatusLine } from '@jevellan/projects';
@@ -99,6 +99,21 @@ export class OwnerTools {
   updateProjectSettings(projectId: string, change: (settings: OwnerProjectSettings) => OwnerProjectSettings): OwnerProjectSettings {
     const stored = this.app.hub.get('owner-settings', projectId, OwnerProjectSettingsSchema);
     return this.app.hub.put('owner-settings', projectId, OwnerProjectSettingsSchema, change(stored?.document ?? defaultOwnerProjectSettings(projectId)), stored?.revision ?? 0).document;
+  }
+  routineSettingsState(projectId: string) {
+    const stored = this.app.hub.get('owner-settings', projectId, OwnerProjectSettingsSchema);
+    return { owner: stored?.document ?? defaultOwnerProjectSettings(projectId), revision: stored?.revision ?? 0 };
+  }
+  patchRoutineSettings(projectId: string, raw: unknown, expectedRevision?: number) {
+    const parsed = RoutineAutomationPatchSchema.safeParse(raw);
+    if (!parsed.success) throw new OwnerRefusal(parsed.error.issues[0]?.message ?? 'Choose valid automation preferences.', 'invalid_value');
+    const { owner, revision } = this.routineSettingsState(projectId);
+    if (expectedRevision !== undefined && revision !== expectedRevision) throw new OwnerRefusal('These automation settings changed. Reload before saving.', 'settings_changed', 409);
+    const patch = parsed.data;
+    return this.app.hub.put('owner-settings', projectId, OwnerProjectSettingsSchema, { ...owner,
+      deploy: { ...owner.deploy, ...(patch.deployPaused === undefined ? {} : { paused: patch.deployPaused }), ...(patch.debounceMinutes === undefined ? {} : { debounceMinutes: patch.debounceMinutes }) },
+      night: { ...owner.night, ...(patch.catchUpHours === undefined ? {} : { catchUpHours: patch.catchUpHours }) },
+    }, revision).document;
   }
   installationSettings(): OwnerInstallationSettings {
     return this.app.hub.get('owner-settings', 'installation', OwnerInstallationSettingsSchema)?.document ?? defaultOwnerInstallationSettings();

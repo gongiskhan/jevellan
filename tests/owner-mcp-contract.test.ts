@@ -68,3 +68,10 @@ test('editor request templates survive the official MCP transport and create one
   }
   expect((await f.app.projectWork.daily.jobs('project')).map(job => job.name)).toEqual(['MCP editor fixture']);
 });
+
+test.each(['list', 'night'])('the official MCP transport preserves the shared jobs projection for %s', async action => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const answer = await mcp.callTool({ name: 'jobs', arguments: { action } }); expect(answer.isError).toBeFalsy();
+  expect(OwnerToolResultSchema.parse(answer.structuredContent)).toMatchObject({ ok: true, data: { schema: 'project-jobs-view-v1', projectId: 'project' } });
+  expect((answer.content as Array<{ text: string }>).some(row => row.text.includes('"schema":"project-jobs-view-v1"'))).toBe(true);
+});

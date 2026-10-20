@@ -698,6 +698,7 @@ button.pw-session-badge { display: inline-flex; gap: 6px; min-height: 30px; padd
 .pw-settings-heading h1, .pw-settings-heading p { margin: 0; }
 .pw-settings-heading > .text-button { margin-left: auto; }
 .pw-settings-layout { display: grid; grid-template-columns: 185px minmax(0, 1fr); gap: 24px; align-items: start; }
+.pw-settings-content { min-width: 0; }
 .pw-settings-layout > nav { display: grid; gap: 6px; position: sticky; top: 16px; }
 .pw-settings-layout > nav a { display: block; padding: 8px 10px; border-radius: 8px; color: inherit; text-decoration: none; }
 .pw-settings-layout > nav a:hover, .pw-settings-layout > nav a:focus-visible { background: var(--bg-2); }

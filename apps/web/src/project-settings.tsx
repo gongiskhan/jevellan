@@ -11,10 +11,12 @@ import { LandingSettings } from './project-landing-settings.js';
 import { updated, useLocalError } from './project-work.js';
 import * as copy from './project-work-copy.js';
 import { ProjectUsageSection } from './project-usage.js';
+import { RoutinePreferences } from './routine-preferences.js';
+import { ProjectRoutineSettingsViewSchema, type ProjectRoutineSettingsView } from '@jevellan/core/client';
 
 const sections = [['general', copy.SETTINGS_GENERAL], ['instructions', copy.SETTINGS_INSTRUCTIONS], ['placement', copy.SETTINGS_PLACEMENT],
   ['limits', copy.SETTINGS_LIMITS], ['pull-requests', 'Landing'], ['environment', copy.SETTINGS_ENVIRONMENT], ['routines', copy.SETTINGS_ROUTINES],
-  ['health', 'Health checks'], ['notifications', copy.SETTINGS_NOTIFICATIONS], ['usage', copy.SETTINGS_USAGE]] as const;
+  ['health', 'Health checks'], ['notifications', copy.SETTINGS_NOTIFICATIONS], ['usage', copy.SETTINGS_USAGE], ['automation', 'Automation']] as const;
 const fields = (settings: ProjectWorkSettings) => {
   const { schema: _schema, projectId: _projectId, revision: _revision, ...value } = settings; void _schema; void _projectId; void _revision;
   return value;
@@ -27,16 +29,17 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const [base, setBase] = useState<ProjectWorkSettings>();
   const [draft, setDraft] = useState<ProjectWorkSettings>();
   const [work, setWork] = useState<ProjectWorkView>();
+  const [routines, setRoutines] = useState<ProjectRoutineSettingsView>();
   const [stale, setStale] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [secretValues, setSecretValues] = useState<Record<string, string>>({});
   const [secretStates, setSecretStates] = useState<Record<string, ProjectEnvSecretSummary>>({});
   const path = `/api/projects/${id}/work-settings`, secretPath = (name: string) => `/api/projects/${id}/env-secrets/${encodeURIComponent(name)}`;
   const read = useCallback(async (signal: AbortSignal) => {
-    const [settings, view] = await Promise.all([api(path, ProjectWorkSettingsViewSchema, 'GET', undefined, { signal, waitForHub: true }),
-      api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true })]);
+    const [settings, view, routineModel] = await Promise.all([api(path, ProjectWorkSettingsViewSchema, 'GET', undefined, { signal, waitForHub: true }),
+      api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/routine-settings`, ProjectRoutineSettingsViewSchema, 'GET', undefined, { signal, waitForHub: true })]);
     const states = await Promise.all(settings.settings.environment.secrets.map(name => api(`/api/projects/${id}/env-secrets/${encodeURIComponent(name)}`, ProjectEnvSecretSummarySchema, 'GET', undefined, { signal, waitForHub: true })));
-    setBase(settings.settings); setDraft(settings.settings); setWork(view); setStale(false); setSecretValues({});
+    setBase(settings.settings); setDraft(settings.settings); setWork(view); setRoutines(routineModel); setStale(false); setSecretValues({});
     setSecretStates(Object.fromEntries(states.map(state => [state.name, state]))); local.setError('');
   }, [id, path, local.setError]);
   useEffect(() => {
@@ -86,9 +89,9 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   return <div className="pw-settings-page">
     <header className="pw-settings-heading">{props.navigation}<div><h1>{copy.PROJECT_SETTINGS}</h1>{work && <p className="muted">{work.project.name}</p>}</div>
       <button type="button" className="text-button" onClick={() => navigate(`/projects/${id}`)}>{copy.BACK_TO_PROJECT}</button></header>
-    {!draft || !base || !work ? <p role="status">{copy.LOADING}</p> : <div className="pw-settings-layout">
+    {!draft || !base || !work || !routines ? <p role="status">{copy.LOADING}</p> : <div className="pw-settings-layout">
       <nav aria-label={copy.SETTINGS_SECTIONS}>{sections.map(([key, title]) => <a key={key} href={`#project-settings-${key}`}>{title}</a>)}</nav>
-      <form className="pw-settings" onSubmit={event => { event.preventDefault(); saveAll(); }}>
+      <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); saveAll(); }}>
         <fieldset disabled={task.busy} className="pw-fields">
           {section('general', <>
             <fieldset><legend>{copy.PROJECT_STATUS}</legend><div className="form-actions">{(['active', 'paused', 'archived'] as const).map(status => <button key={status} type="button" className="secondary" aria-pressed={base.status === status} onClick={() => setStatus(status)}>{copy.PROJECT_STATUS_LABELS[status]}</button>)}</div>
@@ -119,7 +122,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
             {number(copy.CHECKPOINT_MINIMUM, draft.sessionCheckpoints.checkpointMinTokens, 20000, 200000, checkpointMinTokens => change({ sessionCheckpoints: { ...draft.sessionCheckpoints, checkpointMinTokens } }))}
           </>)}
           {section('pull-requests', <>
-            <LandingSettings value={draft} change={change} /><DeploySettings projectId={id} value={draft} change={change} fail={local.fail} />
+            <LandingSettings value={draft} change={change} /><DeploySettings model={routines} value={draft} change={change} />
             {([['checks', copy.FIX_CHECKS_AUTOMATICALLY], ['conflicts', copy.FIX_CONFLICTS_AUTOMATICALLY], ['comments', copy.FIX_COMMENTS_AUTOMATICALLY]] as const).map(([kind, label]) => <label className="checkbox" key={kind}><input type="checkbox" checked={draft.prAutoFix[kind]} onChange={event => change({ prAutoFix: { ...draft.prAutoFix, [kind]: event.target.checked } })} />{label}</label>)}
             {number(copy.AUTOMATIC_FIX_LIMIT, draft.prAutoFix.maxRounds, 1, 10, maxRounds => change({ prAutoFix: { ...draft.prAutoFix, maxRounds } }))}
             <label>{copy.RISKY_AREAS}<textarea aria-label={copy.RISKY_AREAS} rows={4} maxLength={2000} value={draft.riskyAreas} onChange={event => change({ riskyAreas: event.target.value })} /></label>
@@ -142,9 +145,9 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
           </>)}
           {section('routines', <>
             <label className="checkbox"><input type="checkbox" checked={draft.nightlyWindow.enabled} onChange={event => change({ nightlyWindow: { ...draft.nightlyWindow, enabled: event.target.checked } })} />{copy.NIGHTLY_WINDOW}</label>
-            <div className="form-grid"><label>{copy.NIGHTLY_TIME}<input type="time" required value={draft.nightlyWindow.time} onChange={event => change({ nightlyWindow: { ...draft.nightlyWindow, time: event.target.value } })} /></label><label>{copy.NIGHTLY_TIMEZONE}<input required value={draft.nightlyWindow.timezone} onChange={event => change({ nightlyWindow: { ...draft.nightlyWindow, timezone: event.target.value } })} /></label></div>
+            <div className="form-grid"><label>{copy.NIGHTLY_TIME}<input type="time" required pattern={routines.routines.timePattern} value={draft.nightlyWindow.time} onChange={event => change({ nightlyWindow: { ...draft.nightlyWindow, time: event.target.value } })} /></label><label>{copy.NIGHTLY_TIMEZONE}<input required maxLength={routines.routines.timezoneMaxLength} value={draft.nightlyWindow.timezone} onChange={event => change({ nightlyWindow: { ...draft.nightlyWindow, timezone: event.target.value } })} /></label></div>
             <label className="checkbox"><input type="checkbox" checked={draft.refill.enabled} onChange={event => change({ refill: { ...draft.refill, enabled: event.target.checked } })} />{copy.REFILL_ENABLED}</label>
-            {number(copy.REFILL_INTERVAL, draft.refill.minIntervalMinutes, 10, 1440, minIntervalMinutes => change({ refill: { ...draft.refill, minIntervalMinutes } }))}<p className="pw-field-note">{copy.ROUTINES_EDIT_HELP}</p>
+            {number(copy.REFILL_INTERVAL, draft.refill.minIntervalMinutes, routines.routines.refill.min, routines.routines.refill.max, minIntervalMinutes => change({ refill: { ...draft.refill, minIntervalMinutes } }))}<p className="pw-field-note">{copy.ROUTINES_EDIT_HELP}</p>
           </>)}
           {section('health', <ProjectHealthEditor projectId={id} checks={draft.healthChecks} change={healthChecks => change({ healthChecks })} fail={local.fail} />)}
           {section('notifications', <fieldset><legend>{copy.PROJECT_NOTIFICATIONS}</legend>{(Object.entries(copy.NOTIFICATION_LEVELS) as Array<[ProjectWorkSettings['notifications']['level'], readonly [string, string]]>).map(([level, [label, help]]) => <label className="pw-notification-level" key={level}><span className="checkbox"><input type="radio" name="notification-level" checked={draft.notifications.level === level} onChange={() => change({ notifications: { ...draft.notifications, level } })} />{label}</span>{help && <span className="pw-field-note">{help}</span>}</label>)}<label className="check"><input type="checkbox" checked={draft.notifications.quietHours.enabled} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, enabled: event.target.checked } } })} />Quiet hours</label>
@@ -158,7 +161,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
           {work.project.name === 'Ekoa Code' && <button type="button" className="secondary" disabled={task.busy || !draft.coordinator.modelId} onClick={() => void task.run(async signal => { await api(`/api/projects/${id}/ekoa-code-setup`, EkoaCodeSetupReceiptSchema, 'POST', { schema: 'ekoa-code-setup-request-v1', modelId: draft.coordinator.modelId, workflowPull: 208 }, { signal, waitForHub: true }); await read(signal); updated(); })}>{copy.APPLY_EKOA_SETUP}</button>}
           <button type="button" className="secondary" onClick={() => navigate(`/projects/${id}`)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale}>{task.busy ? copy.SAVING : copy.SAVE}</button>
         </div>
-      </form>
+      </form><RoutinePreferences model={routines} saved={setRoutines} /></div>
     </div>}
     {local.error && !draft && <p role="alert" className="error">{local.error}</p>}
   </div>;
