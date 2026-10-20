@@ -1,4 +1,5 @@
 import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction } from '@jevellan/core';
+import { projectPageView } from './page-view.js';
 import { ProjectCleanupInventory } from './cleanup.js';
 import { ProjectDeployService } from './deploy.js';
 import { setupProposalId } from './setup.js';
@@ -726,6 +727,10 @@ export class ProjectWork {
   }
   async createGoal(projectId: string, raw: unknown) { await this.#coordinatorHere(projectId); return this.goals.create(projectId, raw); }
   async updateGoal(projectId: string, goalId: string, raw: unknown) { await this.#project(projectId); return this.goals.update(projectId, goalId, raw); }
+  async pageView(projectId: string, resolvedDays = 14) {
+    const [work, tasks, goals, daily] = await Promise.all([this.view(projectId), this.taskList(projectId), this.goalList(projectId), this.daily.view(projectId)]);
+    return projectPageView({ work, tasks: tasks.tasks, goals: goals.goals, daily }, resolvedDays, this.#timers.now());
+  }
   async taskList(projectId: string) { await this.#project(projectId); return TaskListViewSchema.parse({ schema: 'task-list-view-v1', projectId, tasks: await this.tasks.list(projectId) }); }
   async taskView(projectId: string, taskId: string) { return TaskViewSchema.parse({ schema: 'task-view-v1', task: await this.tasks.read(projectId, taskId) }); }
   async createTask(projectId: string, raw: unknown) {

@@ -1,4 +1,4 @@
-import { DeployBaselineRequestSchema, DeployRollbackRequestSchema } from '@jevellan/core';
+import { DeployBaselineRequestSchema, DeployRollbackRequestSchema, ProjectPageQuerySchema } from '@jevellan/core';
 import { ProjectHealthRequestSchema } from '@jevellan/core';
 import { SetupActionRequestSchema } from '@jevellan/core';
 import { parseReply, EkoaCodeSetupRequestSchema, JobCreateRequestSchema, JobUpdateRequestSchema, DailyCreateRequestSchema, DailyUpdateRequestSchema, ProjectRunRequestSchema } from '@jevellan/core';
@@ -19,7 +19,7 @@ import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 import { readProjectImage } from '@jevellan/conversations';
 
-export type ProjectWorkRouteName = 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -30,6 +30,8 @@ type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GE
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'sidebar-view', pattern: /^\/api\/project-work\/sidebar$/, methods: ['GET'], target: 'any' },
+  { name: 'page-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/status-view$/, methods: ['GET'], target: 'any' },
   { name: 'setup-request', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-request$/, methods: ['POST'], target: 'coordinator' },
   { name: 'setup-get', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-proposals\/([A-Za-z0-9_-]+)$/, methods: ['GET'], target: 'any', ids: ['projectId', 'proposalId'] },
   { name: 'setup-action', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-proposals\/([A-Za-z0-9_-]+)\/actions$/, methods: ['POST'], target: 'any', ids: ['projectId', 'proposalId'] },
@@ -266,7 +268,9 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'task-update': send(await work.updateTask(projectId, route.taskId!, TaskUpdateRequestSchema.parse(await requestBody(request)))); return true;
     case 'task-action': send(await work.taskAction(projectId, route.taskId!, TaskActionRequestSchema.parse(await requestBody(request)))); return true;
     case 'list': send(await work.list()); return true;
+    case 'sidebar-view': send(await work.views.sidebar()); return true;
     case 'view': send(await work.view(projectId)); return true;
+    case 'page-view': { const query = ProjectPageQuerySchema.parse(Object.fromEntries(url.searchParams)); send(await work.pageView(projectId, query.resolvedDays)); return true; }
     case 'events': {
       const ledger = await work.coordinatorEvents(projectId);
       streamLedger(ledger, request, response, url, caller.authenticated, projectFrame(ledger)); return true;

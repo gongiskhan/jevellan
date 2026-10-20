@@ -9,15 +9,13 @@ import { NightlyBanner, ProjectDailyPanel, type DailyView } from './project-dail
 import { MergeWhy } from './merge-route.js';
 import { OwnerCommands, OwnerCommandScope } from './owner-commands.js';
 import { TerminalLauncher } from './terminal.js';
-import { ProjectDailyListViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
-  openQuestions,
   CoordinatorMessageReceiptSchema, DecisionAnsweredViewSchema, EffortSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema,
-  GoalListViewSchema, ProjectWorkListViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskListViewSchema, TaskReceiptSchema, TaskTypeSchema, ThreadViewSchema,
-  type ProjectDecision, type ProjectLedgerEvent, type ProjectWorkListView, type ProjectWorkView, type PullRequestEntry,
-  type ThreadIndex, type ProjectWorkTask,
+  ProjectPageViewSchema, ProjectSidebarViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskReceiptSchema, TaskTypeSchema, ThreadViewSchema,
+  type ProjectDecision, type ProjectLedgerEvent, type ProjectSidebarView, type ProjectWorkView, type PullRequestEntry,
+  type ThreadIndex, type ProjectWorkTask, type ProjectOverview, type OverviewPullRequest,
 } from '@jevellan/core/client';
 import { ApiError, api, empty, isCancelled } from './api.js';
 import { clientId } from './client-id.js';
@@ -26,8 +24,8 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  PROJECT_WORK_UPDATED, chatItems, chatProposalGroups, checksBadge, coordinatorChip, decisionSource, defaultTab, deviceBlock, deviceChoices, mergeBlock,
-  nearestEffort, openPullRequests, projectDot, projectRoute, rowClockMs, sentText, showSent, sidebarProjects, threadCreateRequest,
+  PROJECT_WORK_UPDATED, chatItems, chatProposalGroups, coordinatorChip, decisionSource, deviceBlock, deviceChoices,
+  nearestEffort, projectDot, projectRoute, rowClockMs, sentText, showSent, threadCreateRequest,
   toolIcon, withdrawals, working, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
 } from './project-work-model.js';
 import { queuedRefresh } from './refresh.js';
@@ -77,7 +75,7 @@ function useSectionExpanded() {
 export function ProjectsSidebar({ navigate, onError, selected, openHome }: Pick<PageProps, 'navigate' | 'onError'> & { selected: string; openHome(projectId?: string): void }) {
   const section = useSectionExpanded();
   const listId = useId();
-  const [view, setView] = useState<ProjectWorkListView>();
+  const [view, setView] = useState<ProjectSidebarView>();
   useEffect(() => {
     let stopped = false;
     let running = false;
@@ -86,7 +84,7 @@ export function ProjectsSidebar({ navigate, onError, selected, openHome }: Pick<
       if (running) return;
       running = true;
       try {
-        const next = await api('/api/project-work', ProjectWorkListViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true });
+        const next = await api('/api/project-work/sidebar', ProjectSidebarViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true });
         if (!stopped) setView(next);
       } catch (error) {
         if (!stopped) onError(error);
@@ -105,13 +103,13 @@ export function ProjectsSidebar({ navigate, onError, selected, openHome }: Pick<
       window.removeEventListener(PROJECT_WORK_UPDATED, changed);
     };
   }, [onError, selected]);
-  const allRows = view ? sidebarProjects(view) : [];
-  const rows = allRows.filter(row => row.status !== 'archived'), archived = allRows.filter(row => row.status === 'archived');
+  const byId = new Map(view?.projects.map(row => [row.projectId, row]));
+  const rows = view?.activeIds.flatMap(id => byId.get(id) ?? []) ?? [], archived = view?.archivedIds.flatMap(id => byId.get(id) ?? []) ?? [];
   useEffect(() => {
-    if (view && selected.split('?')[0] === '/') openHome(sidebarProjects(view).find(row => row.status !== 'archived')?.projectId);
+    if (view && selected.split('?')[0] === '/') openHome(view.defaultProject ?? undefined);
   }, [view, selected, openHome]);
   const current = projectRoute(selected)?.projectId;
-  const waiting = rows.reduce((total, row) => total + row.waiting, 0);
+  const waiting = view?.waitingTotal ?? 0;
   // The list is capped, so the current project's row may sit below its fold (always in the phone drawer once a few
   // projects exist): it is scrolled into the list once per project opened, without moving the page (D244).
   const list = useRef<HTMLDivElement>(null);
@@ -271,6 +269,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const here = data.devices.currentDeviceId;
   const titleId = useId(); const tabsId = useId(); const chatId = useId(); const sideId = useId();
   const [view, setView] = useState<ProjectWorkView>();
+  const [overview, setOverview] = useState<ProjectOverview>();
   const [goals, setGoals] = useState<GoalEntry[]>([]);
   const [daily, setDaily] = useState<DailyView>();
   const [tasks, setTasks] = useState<ProjectWorkTask[]>([]);
@@ -281,6 +280,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const [tab, setTab] = useState<ProjectTab>();
   const [overviewTab, setOverviewTab] = useState<typeof OVERVIEW_TABS[number]>('threads');
   const [resolvedDays, setResolvedDays] = useState(14);
+  const resolvedWindow = useRef(resolvedDays);
   const [dialog, setDialog] = useState<'new-thread' | 'coordinator'>();
   const [notebook, setNotebook] = useState(false);
   const [merging, setMerging] = useState<PullRequestEntry>();
@@ -290,6 +290,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const after = useRef<number | undefined>(undefined);
   const seen = useRef(new Set<number>());
   const refresh = useRef(() => {});
+  useEffect(() => { resolvedWindow.current = resolvedDays; refresh.current(); }, [resolvedDays]);
   const now = useNow(rowClockMs(view?.threads ?? [], Date.now()));
 
   useEffect(() => {
@@ -340,15 +341,16 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       if (!stopped) open();
     };
     const reads = queuedRefresh(
-      (signal) => Promise.all([api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/tasks`, TaskListViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/goals`, GoalListViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/dailies`, ProjectDailyListViewSchema, 'GET', undefined, { signal, waitForHub: true })]),
-      ([next, queue, goalList, dailyList]) => {
+      (signal) => api(`/api/projects/${id}/status-view?resolvedDays=${resolvedWindow.current}`, ProjectPageViewSchema, 'GET', undefined, { signal, waitForHub: true }),
+      (pageView) => {
+        const next = pageView.work;
         const device = next.coordinator.deviceId ?? here; const moved = streaming !== undefined && device !== streaming; streaming = device;
-        if (after.current === undefined) setTab(new URLSearchParams(location.search).get('view') === 'overview' ? 'overview' : defaultTab(next, queue.tasks.filter(task => task.state === 'draft').length));
+        if (after.current === undefined) setTab(new URLSearchParams(location.search).get('view') === 'overview' ? 'overview' : pageView.overview.defaultSurface);
         if (after.current === undefined || moved) after.current = next.lastEventId;
         if (moved) restart();
         if (!historyReady) publishHistory(history.snapshot(next.lastEventId));
         setView(next); setLoadError('');
-        setTasks(queue.tasks); setGoals(goalList.goals); setDaily(dailyList);
+        setTasks(pageView.tasks); setGoals(pageView.goals); setDaily(pageView.daily); setOverview(pageView.overview);
       },
       (failure) => {
         if (failure instanceof ApiError && failure.status === 401) onError(failure);
@@ -439,7 +441,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   useEffect(() => { if (movable) setMoveError(''); }, [movable, setMoveError]);
   const closeMenu = () => { if (menu.current) menu.current.open = false; };
 
-  if (!view) {
+  if (!view || !overview) {
     return (
       <div className="conversation-page pw-page" ref={page}>
         <div className="section-heading conversation-heading" ref={heading}>
@@ -457,13 +459,13 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const coordinator = view.coordinator;
   const offline = coordinator.state === 'offline';
   const coordinatorDevice = coordinator.deviceName ?? (coordinator.deviceId ? deviceName(coordinator.deviceId) : '');
-  const drafts = tasks.filter(task => task.state === 'draft');
-  const open = openQuestions(view.decisions.open).filter((decision) => !answered.has(decision.id));
-  // The engine decides each thread's group and the order (bridge phase 2); the page only pages Resolved by age.
+  const taskById = new Map(tasks.map(task => [task.id, task]));
+  const drafts = overview.waiting.draftIds.flatMap(id => taskById.get(id) ?? []);
+  const open = view.decisions.open.filter(decision => !answered.has(decision.id));
   const byId = new Map(view.threads.map(thread => [thread.id, thread]));
-  const groups = Object.fromEntries(Object.keys(copy.BOARD_LABELS).map(group => [group, (view.board?.[group as keyof typeof copy.BOARD_LABELS] ?? [])
-    .filter(row => group !== 'resolved' || now - Date.parse(row.at) <= resolvedDays * 86_400_000).flatMap(row => byId.get(row.id) ?? [])])) as Record<keyof typeof copy.BOARD_LABELS, ThreadIndex[]>;
-  const pulls = openPullRequests(view.pullRequests), recentPulls = view.pullRequests.filter(entry => entry.pr?.state === 'merged' && Date.parse(entry.pr.updatedAt) >= now - 7 * 24 * 3_600_000);
+  const rows = (ids: readonly string[]) => ids.flatMap(id => byId.get(id) ?? []);
+  const waitingThreads = rows(overview.waiting.threadIds);
+  const pulls = overview.pullRequests, recentPulls = overview.recentlyMerged;
   const stop = () => void control.run(async (signal) => {
     setView(await api(`/api/projects/${id}/coordinator/stop`, ProjectWorkViewSchema, 'POST', empty, { signal })); updated();
   });
@@ -559,7 +561,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           <button key={name} type="button" role="tab" id={`${tabsId}-${name}`} className="pw-tab" aria-selected={current === name}
             aria-controls={name === 'chat' ? chatId : sideId} tabIndex={current === name ? 0 : -1} onClick={() => choose(name)}>
             {name === 'overview' ? copy.OVERVIEW : copy.TAB_LABELS.chat}
-            {name === 'overview' && open.length + drafts.length + groups.waiting.length > 0 && <>{' '}<span className="suggestion-count">{open.length + drafts.length + groups.waiting.length}</span></>}
+            {name === 'overview' && overview.waiting.count > 0 && <>{' '}<span className="suggestion-count">{overview.waiting.count}</span></>}
           </button>
         ))}
       </div>
@@ -580,42 +582,42 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         <div className="pw-side" id={sideId} {...sidePanel}>
           <h2 className="pw-overview-title">{copy.OVERVIEW}</h2><LastDeploy projectId={id} fail={onError} />
           <div className="pw-overview-tabs" role="tablist" aria-label={copy.OVERVIEW}>
-            {OVERVIEW_TABS.filter(name => name !== 'pull-requests' || view.threads.some(thread => thread.delivery === 'pull-request')).map(name => <button key={name} role="tab" className="pw-tab" aria-selected={overviewTab === name} onClick={() => setOverviewTab(name)}>{name === 'routines' ? copy.ROUTINES : name === 'library' ? copy.LIBRARY : copy.TAB_LABELS[name]}</button>)}
+            {OVERVIEW_TABS.filter(name => name !== 'pull-requests' || overview.showPullRequestsTab).map(name => <button key={name} role="tab" className="pw-tab" aria-selected={overviewTab === name} onClick={() => setOverviewTab(name)}>{name === 'routines' ? copy.ROUTINES : name === 'library' ? copy.LIBRARY : copy.TAB_LABELS[name]}</button>)}
           </div>
           <section className="pw-section" hidden={overviewTab !== 'threads'} data-tab="waiting" aria-labelledby={`${sideId}-waiting`}>
-            {sectionHeading(`${sideId}-waiting`, view.settings.delivery === 'land' ? 'Waiting on you' : copy.WAITING_FOR_YOU, open.length + drafts.length + groups.waiting.length)}
+            {sectionHeading(`${sideId}-waiting`, overview.waiting.label, overview.waiting.count)}
             {sent && showSent(sent, open) && <p className="pw-sent" role="status"><Icon name="check" size={14} />{sent.text}</p>}
             {drafts.length > 0 && <div className="pw-proposed"><h4>{copy.PROPOSED_TASKS}</h4><TaskQueue projectId={id} tasks={drafts} goals={goals} threads={view.threads} navigate={navigate} changed={updated} onError={onError} /></div>}
             {open.length ? open.map((decision, index) => (
               <DecisionCard key={decision.id} number={index + 1} projectId={id} decision={decision} titles={titles} now={now} answered={answeredQuestion} changed={updated} onError={onError} />
-            )) : drafts.length === 0 && groups.waiting.length === 0 && <p className="pw-empty">{copy.BOARD_EMPTY.waiting}</p>}
-            {groups.waiting.map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} deviceName={deviceName} navigate={navigate} changed={updated} onError={onError} />)}
+            )) : overview.waiting.isEmpty && <p className="pw-empty">{overview.waiting.emptyText}</p>}
+            {waitingThreads.map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} deviceName={deviceName} navigate={navigate} changed={updated} onError={onError} />)}
             {view.decisions.answered.length > 0 && <AnsweredList decisions={view.decisions.answered} titles={titles} now={now} />}
           </section>
           <div hidden={overviewTab !== 'library'}>{overviewTab === 'library' && <ProjectLibraryPanel projectId={id} threadTitle={threadId => titles(threadId) ?? threadId} onError={onError} />}</div>
           <section className="pw-section" hidden={overviewTab !== 'queue'} data-tab="queue" aria-labelledby={`${sideId}-queue`}>
-            {sectionHeading(`${sideId}-queue`, 'Queue', tasks.filter(task => ['draft', 'queued', 'active', 'in-review'].includes(task.state)).length)}
+            {sectionHeading(`${sideId}-queue`, 'Queue', overview.queueCount)}
             <TaskQueue projectId={id} tasks={tasks} goals={goals} threads={view.threads} grouped navigate={navigate} changed={updated} onError={onError} />
           </section>
-          {(['review', 'working', 'landing', 'landed', 'idle', 'resolved'] as const).filter(group => (group !== 'review' || view.settings.delivery === 'pull-request') && (group !== 'landed' || view.settings.delivery === 'land' || groups.landed.length > 0)).map(group => <section key={group} className="pw-section" hidden={overviewTab !== 'threads'} aria-labelledby={`${sideId}-${group}`}>
-            {sectionHeading(`${sideId}-${group}`, copy.BOARD_LABELS[group], groups[group].length)}
-            {groups[group].length ? <div className="pw-list">{groups[group].map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} deviceName={deviceName} navigate={navigate} changed={updated} onError={onError} />)}</div> : <p className="pw-empty">{copy.BOARD_EMPTY[group]}</p>}
-            {group === 'resolved' && <button className="secondary small" onClick={() => setResolvedDays(days => days + 14)}>{copy.SHOW_OLDER}</button>}
+          {overview.sections.filter(section => section.visible).map(section => <section key={section.id} className="pw-section" hidden={overviewTab !== 'threads'} aria-labelledby={`${sideId}-${section.id}`}>
+            {sectionHeading(`${sideId}-${section.id}`, section.label, section.threadIds.length)}
+            {section.threadIds.length ? <div className="pw-list">{rows(section.threadIds).map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} deviceName={deviceName} navigate={navigate} changed={updated} onError={onError} />)}</div> : <p className="pw-empty">{section.emptyText}</p>}
+            {section.showOlder && <button className="secondary small" onClick={() => setResolvedDays(days => days + 14)}>{copy.SHOW_OLDER}</button>}
           </section>)}
           <section className="pw-section" hidden={overviewTab !== 'pull-requests'} data-tab="pull-requests" aria-labelledby={`${sideId}-pulls`}>
             {sectionHeading(`${sideId}-pulls`, copy.PULL_REQUESTS, pulls.length)}
             {view.githubNotice && <p role="status" className="notice">{view.githubNotice}</p>}
-            {pulls.length ? pulls.map((entry) => (
-              <PullRequestRow key={entry.threadId} projectId={id} entry={entry} navigate={navigate} taskId={tasks.find(task => task.threadId === entry.threadId)?.id} shadow={!view.settings.autoLand} hold={daily?.mergesHeld === true && !daily.mergeAllowedThreads.includes(entry.threadId)} merge={() => setMerging(entry)} />
+            {pulls.length ? pulls.map((row) => (
+              <PullRequestRow key={row.entry.threadId} projectId={id} model={row} navigate={navigate} merge={() => setMerging(row.entry)} />
             )) : <p className="pw-empty">{copy.NO_OPEN_PULL_REQUESTS}</p>}
-            {recentPulls.length > 0 && <details><summary>Recently merged · last 7 days</summary>{recentPulls.map(entry => <PullRequestRow key={entry.threadId} projectId={id} entry={entry} navigate={navigate} taskId={tasks.find(task => task.threadId === entry.threadId)?.id} merge={() => undefined} />)}</details>}
+            {recentPulls.length > 0 && <details><summary>Recently merged · last 7 days</summary>{recentPulls.map(row => <PullRequestRow key={row.entry.threadId} projectId={id} model={row} navigate={navigate} merge={() => undefined} />)}</details>}
           </section>
           <section className="pw-section" hidden={overviewTab !== 'routines'} data-tab="routines" aria-labelledby={`${sideId}-daily`}>
-            {sectionHeading(`${sideId}-daily`, 'Nightly', daily?.dailies.filter(item => item.enabled).length ?? 0)}
+            {sectionHeading(`${sideId}-daily`, 'Nightly', overview.nightlyCount)}
             {daily && <ProjectDailyPanel view={daily} goals={goals} changed={updated} onError={onError} />}
           </section>
           <section className="pw-section" hidden={overviewTab !== 'routines'} data-tab="routines" aria-labelledby={`${sideId}-goals`}>
-            {sectionHeading(`${sideId}-goals`, 'Goals', goals.filter(entry => entry.goal.state !== 'done').length)}
+            {sectionHeading(`${sideId}-goals`, 'Goals', overview.goalCount)}
             <ProjectGoals projectId={id} goals={goals} changed={updated} onError={onError} />
           </section>
         </div>
@@ -823,7 +825,8 @@ function AnsweredList({ decisions, titles, now }: { decisions: readonly ProjectD
  * A pull request (12.2): the GitHub link, the checks and conflict badges, Merge (disabled with its reason on conflicts or
  * failing checks, allowed while checks run) and Open on GitHub; a branch-only thread shows its branch and reason (D58).
  */
-function PullRequestRow({ projectId, entry, navigate, merge, hold, shadow, taskId }: { projectId: string; entry: PullRequestEntry; navigate(path: string): void; merge(): void; hold?: boolean; shadow?: boolean; taskId?: string | undefined }) {
+function PullRequestRow({ projectId, model, navigate, merge }: { projectId: string; model: OverviewPullRequest; navigate(path: string): void; merge(): void }) {
+  const { entry, held: hold, shadow, taskId } = model;
   const blockId = useId();
   const thread = `/projects/${projectId}/threads/${entry.threadId}`;
   const pr = entry.pr;
@@ -836,13 +839,13 @@ function PullRequestRow({ projectId, entry, navigate, merge, hold, shadow, taskI
       </article>
     );
   }
-  const badge = checksBadge(pr); const block = hold ? 'Merges are held while the nightly window runs.' : mergeBlock(pr);
+  const badge = model.checks!; const block = model.mergeRefusal;
   return (
     <article className="pw-pr">
       <a className="pw-pr-title" href={pr.url} target="_blank" rel="noopener noreferrer">{copy.pullRequestTitle(pr.number, entry.title)}</a>
       <div className="pw-badges">
         <span className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>
-        {pr.mergeable === 'conflict' && <span className="chip pw-badge pw-tone-danger">{copy.CONFLICTS}</span>}
+        {model.conflicts && <span className="chip pw-badge pw-tone-danger">{copy.CONFLICTS}</span>}
       </div>
       {hold && <p className="pw-pr-reason">Merges are held while the nightly window runs.</p>}
       <div className="pw-pr-actions">

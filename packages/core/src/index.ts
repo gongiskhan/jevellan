@@ -61,6 +61,7 @@ export * from './git-settings.js';
 export * from './cursor-schemas.js';
 export * from './session-list-schemas.js';
 export * from './project-schemas.js';
+export * from './project-page-schemas.js';
 export * from './project-hub-schemas.js';
 export * from './project-hub.js';
 export * from './project-rules.js';

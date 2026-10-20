@@ -1,6 +1,13 @@
 import { overviewBoard } from './owner-status.js';
+import { ProjectSidebarViewSchema, type ProjectSidebarView } from '@jevellan/core';
 /** Sidebar order: by name without regard to case, so rows never move while their counts change. */
 export function sidebarOrder<T extends { name: string; projectId: string }>(rows: readonly T[]): T[] { return [...rows].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.projectId.localeCompare(b.projectId)); }
+export function sidebarView(rows: ProjectWorkListView['projects']): ProjectSidebarView {
+  const projects = sidebarOrder(rows), active = projects.filter(row => row.status !== 'archived');
+  return ProjectSidebarViewSchema.parse({ schema: 'project-sidebar-view-v1', projects,
+    activeIds: active.map(row => row.projectId), archivedIds: projects.filter(row => row.status === 'archived').map(row => row.projectId),
+    defaultProject: active[0]?.projectId ?? null, waitingTotal: active.reduce((total, row) => total + row.waiting, 0) });
+}
 import { boardGroup } from '@jevellan/core';
 import type { AccountService } from '@jevellan/accounts';
 import {
@@ -165,6 +172,7 @@ export class ProjectViews {
       waiting: summary.waiting, running: summary.running, inReview: summary.inReview, coordinator, attention: coordinator.state === 'running' ? 'running' as const : summary.waiting ? 'waiting-for-you' as const : 'idle' as const }; })
     return ProjectWorkListViewSchema.parse({ schema: 'project-work-list-view-v1', projects: sidebarOrder(rows) });
   }
+  async sidebar(): Promise<ProjectSidebarView> { return sidebarView((await this.list()).projects); }
   async #drafts(projectId: string): Promise<number> { try { const page = await this.#o.hub.tasks(projectId); return page.records.filter(task => task.state === 'draft').length; } catch { return 0; } }
   /** `GET /api/projects/:id/work`: the project page. */
   async project(projectId: string): Promise<ProjectWorkView> {

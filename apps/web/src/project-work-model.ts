@@ -10,7 +10,6 @@ import {
   PlacementFieldSchema,
   ProjectLedgerDataSchemas,
   RESTARTED_PREFIX,
-  boardGroup, concludedRecently,
   idTime,
   isTerminal,
   liveWork,
@@ -57,26 +56,6 @@ export function projectRoute(path: string): ProjectRoute | null {
 }
 
 export type ProjectTab = 'chat' | 'queue' | 'waiting' | 'threads' | 'pull-requests' | 'terminal' | 'overview' | 'routines';
-/** The tab below 840 px: Overview when something needs the owner, else Chat. Computed once, after the first view load. */
-export function defaultTab(view: Pick<ProjectWorkView, 'decisions'> & Partial<Pick<ProjectWorkView, 'threads' | 'needsOwner'>>, drafts = 0): ProjectTab {
-  // The engine counts what needs the owner (bridge phase 2); the local count is kept only for views from an older hub.
-  if (view.needsOwner !== undefined) return view.needsOwner ? 'overview' : 'chat';
-  return view.decisions.open.length + drafts + (view.threads?.filter(thread => boardGroup(thread) === 'waiting').length ?? 0) ? 'overview' : 'chat';
-}
-
-/**
- * Running lists every thread that is neither concluded nor in review (display only, D9), newest first so rows keep
- * their place while they update; Concluded lists threads that ended within 14 days, most recently ended first (D52).
- */
-export function threadSections(threads: readonly ThreadIndex[], now: number): { running: ThreadIndex[]; concluded: ThreadIndex[] } {
-  const newest = (a: string, b: string) => Date.parse(b) - Date.parse(a);
-  return {
-    running: threads.filter((thread) => runningSection(thread.state)).sort((a, b) => newest(a.createdAt, b.createdAt) || a.id.localeCompare(b.id)),
-    concluded: threads.filter((thread) => concludedRecently(thread, now))
-      .sort((a, b) => newest(a.endedAt ?? a.updatedAt, b.endedAt ?? b.updatedAt) || a.id.localeCompare(b.id)),
-  };
-}
-
 /**
  * How often the project page's clock ticks (D243): every second while a Running row is under a minute old, because its
  * age then reads in seconds (`relativeDuration`), else every 30 s, as minutes are all the rows show after that.

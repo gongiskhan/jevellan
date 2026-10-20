@@ -1992,14 +1992,13 @@ test('PAR3 Overview groups, owner actions and saved-work publication', async ({ 
   await page.locator(`.pw-side [data-thread-id="${prepared.publishThreadId}"]`).getByRole('button', { name: 'Publish', exact: true }).click();
   await expect.poll(async () => (await work(page)).threads.find(thread => thread.id === prepared.publishThreadId)?.pr?.state, LONG).toBe('open');
   await expect(region(page, 'Ready for review')).toContainText('PAR3 publish work');
-  const heldDaily = '**/api/projects/projects_fixture/dailies';
-  const dailySnapshot = ProjectDailyListViewSchema.parse(await read(page, `${PROJECT}/dailies`));
   await page.goto('about:blank');
-  await page.route(heldDaily, route => route.fulfill({ json: { ...dailySnapshot, mergesHeld: true, mergeAllowedThreads: [] } }));
+  await control('/projects/merge-hold', { schema: 'fixture-merge-hold-v1', held: true });
   await page.goto('/projects/projects_fixture'); await expect(page.getByRole('heading', { name: 'Projects fixture', exact: true })).toBeVisible(LONG); await sectionTab(page, info, 'Threads');
   const heldMerge = page.locator(`.pw-side [data-thread-id="${prepared.publishThreadId}"]`).getByRole('button', { name: 'Merge', exact: true });
   await expect(heldMerge).toBeDisabled(); await expect(heldMerge).toHaveAttribute('title', 'Merges are held while the nightly window runs.');
-  await page.unrouteAll({ behavior: 'wait' }); await page.reload(); await expect(page.getByRole('heading', { name: 'Projects fixture', exact: true })).toBeVisible(LONG); await sectionTab(page, info, 'Threads'); await expect(heldMerge).toBeEnabled();
+  await control('/projects/merge-hold', { schema: 'fixture-merge-hold-v1', held: false });
+  await page.reload(); await expect(page.getByRole('heading', { name: 'Projects fixture', exact: true })).toBeVisible(LONG); await sectionTab(page, info, 'Threads'); await expect(heldMerge).toBeEnabled();
 
   await sectionTab(page, info, 'Routines'); await expect(region(page, 'Nightly')).toBeVisible(); await expect(region(page, 'Goals')).toBeVisible();
   await sectionTab(page, info, 'Queue'); await expect(region(page, 'Queue')).toBeVisible();

@@ -821,6 +821,8 @@ const UsageReceiptSchema = z.strictObject({ schema: z.literal('fixture-usage-rec
 const AutomaticFixReceiptSchema = z.strictObject({ schema: z.literal('fixture-automatic-fix-receipt-v1'), threadId: z.string().min(1), prNumber: z.number().int().positive() });
 let automaticFixThread;
 const ControlOverviewSchema = z.strictObject({ schema: z.literal('fixture-overview-v1'), action: z.literal('prepare') });
+const ControlMergeHoldSchema = z.strictObject({ schema: z.literal('fixture-merge-hold-v1'), held: z.boolean() });
+const normalMergesHeld = application.projectWork.daily.mergesHeld.bind(application.projectWork.daily);
 const ControlReleaseSchema = z.strictObject({ schema: z.literal('fixture-release-v1'), marker: z.string().min(1).max(200) });
 const ControlNotebookSchema = z.strictObject({ schema: z.literal('fixture-notebook-v1'), content: z.string().max(65536) });
 const ControlTokenSchema = z.strictObject({ schema: z.literal('fixture-github-token-v1'), saved: z.boolean() });
@@ -835,6 +837,12 @@ async function projectControl(request, response) {
   const parse = (schema) => { const parsed = schema.safeParse(body); if (!parsed.success) send(400, { message: parsed.error.issues.map((issue) => issue.message).join(' ') }); return parsed.success ? parsed.data : undefined; };
   const pull = /^\/projects\/github\/(\d+)$/.exec(request.url);
   let input;
+  if (request.url === '/projects/merge-hold' && (input = parse(ControlMergeHoldSchema))) {
+    // Set the service boundary, so every page projection and the merge guard see the same fixture state.
+    const held = input.held;
+    application.projectWork.daily.mergesHeld = async projectId => projectId === 'projects_fixture' && held || normalMergesHeld(projectId);
+    send(200, { schema: 'empty-request-v1' }); return;
+  }
   if (request.url === '/projects/cleanup-seed' && (input = parse(ControlCleanupSchema))) {
     const file = join(application.homes.ensure('logs'), 'expired-cleanup.log'); writeFileSync(file, 'Expired fixture log.\n'.repeat(100));
     const old = new Date(Date.now() - 20 * 86400000); utimesSync(file, old, old);

@@ -10,10 +10,10 @@ import { sidebarOrder } from '../packages/projects/dist/views.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import { chatProposalIds, chatProposalGroups } from '../apps/web/src/project-work-model.js';
 import {
-  alignReports, mergeThreadToolTurns, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, defaultTab, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
+  alignReports, mergeThreadToolTurns, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
   lineParts, mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, projectDot,
   projectRoute, pullRequestBadges, reportBadge, restartedThread, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadActions, threadCreateRequest,
-  threadActivity, threadLiveText, threadMeta, threadPollDelay, threadReason, threadSections, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutEchoedSummaries,
+  threadActivity, threadLiveText, threadMeta, threadPollDelay, threadReason, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutEchoedSummaries,
   withoutReportCalls, working,
 } from '../apps/web/src/project-work-model.js';
 import { dateOnly, duration, relativeDuration, shortTime, timeStamp } from '../apps/web/src/time.js';
@@ -88,31 +88,6 @@ test('project routes accept only valid project and thread ids and drive the head
     '/projects/shop/threads/a/b', '/projects/-bad', '/projects/shop/thread/a', '/projects/sh%20op', '/conversations/shop', '/settings/projects', 'projects/shop']) {
     expect(projectRoute(path), path).toBeNull();
   }
-});
-
-test('the phone defaults to Overview when questions or proposals need the owner', () => {
-  const question = { id: 'q1' } as ProjectWorkView['decisions']['open'][number];
-  expect(defaultTab({ decisions: { open: [question], answered: [] } })).toBe('overview');
-  expect(defaultTab({ decisions: { open: [], answered: [question] } })).toBe('chat');
-  expect(defaultTab({ decisions: { open: [], answered: [] } }, 2)).toBe('overview');
-  expect(defaultTab({ decisions: { open: [], answered: [] }, threads: [thread({ state: 'failed' })] })).toBe('overview');
-});
-
-test('sections: Running holds every live, resting or waiting thread newest first; Concluded the last 14 days by end', () => {
-  const threads = [
-    thread({ id: 't_old_run', state: 'idle', createdAt: ago(300) }),
-    thread({ id: 't_new_run', state: 'waiting-for-you', createdAt: ago(10), updatedAt: ago(500) }),
-    thread({ id: 't_queued', state: 'queued', createdAt: ago(100) }),
-    thread({ id: 't_attached', state: 'attached', createdAt: ago(200) }),
-    thread({ id: 't_review', state: 'in-review', pr: pr() }),
-    thread({ id: 't_done', state: 'done', endedAt: ago(60), pr: pr({ state: 'merged' }) }),
-    thread({ id: 't_failed', state: 'failed', endedAt: ago(30) }),
-    thread({ id: 't_stopped_fallback', state: 'stopped', updatedAt: ago(10) }),
-    thread({ id: 't_ancient', state: 'done', endedAt: ago(15 * 24 * 60) }),
-  ];
-  const sections = threadSections(threads, NOW);
-  expect(sections.running.map((row) => row.id)).toEqual(['t_new_run', 't_queued', 't_attached', 't_old_run']);
-  expect(sections.concluded.map((row) => row.id)).toEqual(['t_stopped_fallback', 't_failed', 't_done']);
 });
 
 test('the page clock ticks every second only while a Running row reads its age in seconds', () => {
