@@ -450,7 +450,7 @@ test('thread branches are jv/<slug>-<six lowercase id characters> and valid git 
 test('turn launches may carry the git identity but never inherit it from the daemon environment', () => {
   const base = { PATH: '/usr/bin', HOME: '/home/owner', GIT_AUTHOR_NAME: 'Ambient', GIT_COMMITTER_EMAIL: 'ambient@example.com' };
   const identity = { GIT_AUTHOR_NAME: 'Owner', GIT_AUTHOR_EMAIL: 'owner@example.com', GIT_COMMITTER_NAME: 'Owner', GIT_COMMITTER_EMAIL: 'owner@example.com' };
-  expect(minimalEnvironment('claude', '/isolated', {}, identity, base)).toEqual({ PATH: '/usr/bin', HOME: '/isolated', CLAUDE_CONFIG_DIR: '/isolated', ...identity });
+  expect(minimalEnvironment('claude', '/isolated', {}, identity, base)).toEqual({ PATH: '/usr/bin', HOME: '/isolated', CLAUDE_CONFIG_DIR: '/isolated', ENABLE_CLAUDEAI_MCP_SERVERS: 'false', ...identity });
   expect(minimalEnvironment('codex', '/isolated', {}, {}, base)).toEqual({ PATH: '/usr/bin', HOME: '/isolated', CODEX_HOME: '/isolated' });
   expect(() => minimalEnvironment('codex', '/isolated', {}, { GIT_DIR: '/elsewhere' }, base)).toThrow('Unsupported launch environment variable.');
 });

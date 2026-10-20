@@ -92,10 +92,12 @@ export async function claudeTakesEffort(executable: string, cwd: string, env: Re
  */
 async function prepare(answer: unknown, base: NodeJS.ProcessEnv, homes: Homes, remoteControl?: string): Promise<Launch | string> {
   const parsed = ThreadAttachViewSchema.safeParse(answer); if (!parsed.success) return UNUSABLE;
-  const view = parsed.data, home = view.env.HOME, label = LABELS[view.runtime];
-  if (!home || !isAbsolute(home) || view.env[view.runtime === 'claude' ? 'CLAUDE_CONFIG_DIR' : 'CODEX_HOME'] !== home || view.env[view.runtime === 'claude' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR'] !== undefined) return UNUSABLE;
+  // The account home is the runtime's config folder; HOME is the same folder, or the owner's own for an in-place account on macOS.
+  const view = parsed.data, home = view.env[view.runtime === 'claude' ? 'CLAUDE_CONFIG_DIR' : 'CODEX_HOME'], label = LABELS[view.runtime];
+  if (!home || !isAbsolute(home) || !view.env.HOME || !isAbsolute(view.env.HOME) || view.env[view.runtime === 'claude' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR'] !== undefined) return UNUSABLE;
   const launchKeys = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE'];
-  const auth = Object.fromEntries(Object.entries(view.env).filter(([key]) => !HOME_KEYS.includes(key) && !launchKeys.includes(key)));
+  // minimalEnvironment sets the connectors switch itself; it is not an authentication variable.
+  const auth = Object.fromEntries(Object.entries(view.env).filter(([key]) => !HOME_KEYS.includes(key) && !launchKeys.includes(key) && key !== 'ENABLE_CLAUDEAI_MCP_SERVERS'));
   // The recursion guard (bridge): a taken-over thread never sees the owner tools either.
   const launch = { ...Object.fromEntries(Object.entries(view.env).filter(([key]) => launchKeys.includes(key))), JEVELLAN_ROLE: 'thread' };
   let env: Record<string, string>; try { env = minimalEnvironment(view.runtime, home, auth, launch, base); } catch { return UNUSABLE; }

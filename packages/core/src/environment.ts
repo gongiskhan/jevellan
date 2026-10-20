@@ -29,6 +29,9 @@ export function minimalEnvironment(runtime: 'claude' | 'codex', home: string, au
     result[key] = value;
   }
   result[runtime === 'claude' ? 'CLAUDE_CONFIG_DIR' : 'CODEX_HOME'] = home;
+  // Sessions Jevellan starts never load the account's claude.ai connectors (mail, calendars, documents): an account logged in to
+  // claude.ai would otherwise hand them to coordinators and threads.
+  if (runtime === 'claude') result.ENABLE_CLAUDEAI_MCP_SERVERS = 'false';
   // An in-place Claude account on macOS keeps its login in the owner's login keychain, which macOS finds through HOME: such a session keeps
   // the owner's own HOME (its configuration still comes from CLAUDE_CONFIG_DIR).
   if (runtime === 'claude' && process.platform === 'darwin' && inPlaceFolder(home, base.JEVELLAN_HOME ?? process.env.JEVELLAN_HOME)) result.HOME = homedir();

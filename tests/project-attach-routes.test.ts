@@ -78,7 +78,7 @@ test('the session a terminal left is the newest one in the thread directory afte
   expect(adoptedSession(journals, '/work/none', since)).toBeUndefined();
   // Only the account home and its own authentication variables: never the runtime's other keys or the API key Codex logged in with.
   expect(attachEnvironment('claude', { home: '/homes/claude/acc', env: { CLAUDE_CODE_OAUTH_TOKEN: 'token', ANTHROPIC_BASE_URL: 'https://example.invalid' } }))
-    .toEqual({ HOME: '/homes/claude/acc', CLAUDE_CONFIG_DIR: '/homes/claude/acc', CLAUDE_CODE_OAUTH_TOKEN: 'token' });
+    .toEqual({ HOME: '/homes/claude/acc', CLAUDE_CONFIG_DIR: '/homes/claude/acc', CLAUDE_CODE_OAUTH_TOKEN: 'token', ENABLE_CLAUDEAI_MCP_SERVERS: 'false' });
   expect(attachEnvironment('codex', { home: '/homes/codex/acc', env: { OPENAI_API_KEY: 'key' } })).toEqual({ HOME: '/homes/codex/acc', CODEX_HOME: '/homes/codex/acc' });
 });
 
@@ -172,7 +172,7 @@ test('a Claude thread attaches at rest with its session and account, queues owne
   expect(attachedResponse.status).toBe(200); expect(attachedResponse.headers.get('cache-control')).toBe('no-store');
   const view = ThreadAttachViewSchema.parse(await attachedResponse.json());
   expect(view).toEqual({ schema: 'thread-attach-v1', cwd: thread.cwd, runtime: 'claude', nativeSessionId: thread.nativeSessionId, model: 'scripted-model', effort: 'high',
-    env: { HOME: home, CLAUDE_CONFIG_DIR: home, CLAUDE_CODE_OAUTH_TOKEN: secret, JEVELLAN_STRETCH_TOKEN: expect.stringMatching(/^[A-Za-z0-9_-]{43}$/u), JEVELLAN_DAEMON_URL: f.base, JEVELLAN_PROJECT_MEMORY_MODE: 'repo' },
+    env: { HOME: home, CLAUDE_CONFIG_DIR: home, CLAUDE_CODE_OAUTH_TOKEN: secret, ENABLE_CLAUDEAI_MCP_SERVERS: 'false', JEVELLAN_STRETCH_TOKEN: expect.stringMatching(/^[A-Za-z0-9_-]{43}$/u), JEVELLAN_DAEMON_URL: f.base, JEVELLAN_PROJECT_MEMORY_MODE: 'repo' },
     integration: { bridgeCommand: process.execPath, bridgeArgs: expect.arrayContaining(['mcp-bridge']), safetyCommand: expect.stringContaining('safety-hook.js'), compactAtPercent: 70 }, deviceName: f.deviceName });
   expect(f.app.redactor.text(secret)).not.toContain(secret);
   const attached = f.thread(threadId); const startedAt = attached.attach!.startedAt;
