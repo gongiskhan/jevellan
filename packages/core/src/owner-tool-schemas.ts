@@ -114,6 +114,10 @@ export type OwnerPushMessage = z.infer<typeof OwnerPushMessageSchema>;
 export const OwnerPushAckSchema = z.strictObject({ schema: z.literal('owner-push-ack-v1'), project: z.string().min(1).max(200), pushIds: z.array(IdSchema).min(1).max(200) });
 export const OwnerBridgeRequestSchema = z.strictObject({ schema: z.literal('owner-bridge-request-v1'), operation: z.enum(['start', 'restart', 'stop']), project: z.string().max(200).optional(),
   cwd: z.string().max(4096).optional(), claudeConfigDir: z.string().startsWith('/').max(4096).optional(), remoteName: z.string().min(1).max(120).optional() });
+/** `jevellan account in-place`: an account that runs in a folder the owner already logged in, where it is. */
+export const OwnerInPlaceAccountRequestSchema = z.strictObject({ schema: z.literal('owner-in-place-account-request-v1'), label: z.string().trim().min(1).max(128),
+  runtime: z.enum(['claude', 'codex']), folder: z.string().startsWith('/').max(4096) });
+export const OwnerInPlaceAccountResultSchema = z.strictObject({ schema: z.literal('owner-in-place-account-result-v1'), ok: z.boolean(), text: z.string().max(2000) });
 export const OwnerBridgeResultSchema = z.strictObject({ schema: z.literal('owner-bridge-result-v1'), ok: z.boolean(), text: z.string().max(2000) });
 
 // Jev control (bridge specification, "Jev control"), state point hub namespaces owner-jev-rules, owner-jev-prompts, owner-jev-proposals, owner-jev-lessons.

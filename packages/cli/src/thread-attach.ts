@@ -4,7 +4,7 @@ import { constants } from 'node:os';
 import { basename, isAbsolute, join } from 'node:path';
 import { isatty } from 'node:tty';
 import { z } from 'zod';
-import { CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, atomicWrite, minimalEnvironment, projectInstructionFile, resolvedPath, runOwnedCommand } from '@jevellan/core';
+import { CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, atomicWrite, hasInteractiveClaudeLogin, minimalEnvironment, projectInstructionFile, resolvedPath, runOwnedCommand } from '@jevellan/core';
 import { LocalRequestError, localRequest } from './local-request.js';
 import { findExecutable } from './toolchain.js';
 
@@ -35,7 +35,9 @@ const sentence = (error: unknown) => error instanceof Error && error.message ? e
 
 /** Token-backed accounts already authenticated in Jevellan have no native onboarding receipt. Only their isolated account file is updated. */
 export function prepareClaudeInteractiveHome(homes: Homes, home: string, cwd: string): void {
-  if (home !== homes.at('homes', 'claude', basename(home)) || resolvedPath(home) !== home) throw new Error('Claude takeover requires its isolated account home.');
+  // An in-place account is the owner's own logged-in folder; the takeover only adds the worktree's trust to it.
+  const own = homes.isInPlaceFolder(home) && resolvedPath(home) === home;
+  if (!own && (home !== homes.at('homes', 'claude', basename(home)) || resolvedPath(home) !== home)) throw new Error('Claude takeover requires its isolated account home.');
   if (!isAbsolute(cwd)) throw new Error('Claude takeover requires its existing worktree.');
   const file = join(home, '.claude.json');
   let value: Record<string, unknown> = {};
@@ -92,10 +94,12 @@ export async function claudeTakesEffort(executable: string, cwd: string, env: Re
  */
 async function prepare(answer: unknown, base: NodeJS.ProcessEnv, homes: Homes, remoteControl?: string): Promise<Launch | string> {
   const parsed = ThreadAttachViewSchema.safeParse(answer); if (!parsed.success) return UNUSABLE;
-  const view = parsed.data, home = view.env.HOME, label = LABELS[view.runtime];
-  if (!home || !isAbsolute(home) || view.env[view.runtime === 'claude' ? 'CLAUDE_CONFIG_DIR' : 'CODEX_HOME'] !== home || view.env[view.runtime === 'claude' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR'] !== undefined) return UNUSABLE;
+  // The account home is the runtime's config folder; HOME is the same folder, or the owner's own for an in-place account on macOS.
+  const view = parsed.data, home = view.env[view.runtime === 'claude' ? 'CLAUDE_CONFIG_DIR' : 'CODEX_HOME'], label = LABELS[view.runtime];
+  if (!home || !isAbsolute(home) || !view.env.HOME || !isAbsolute(view.env.HOME) || view.env[view.runtime === 'claude' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR'] !== undefined) return UNUSABLE;
   const launchKeys = ['JEVELLAN_STRETCH_TOKEN', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE'];
-  const auth = Object.fromEntries(Object.entries(view.env).filter(([key]) => !HOME_KEYS.includes(key) && !launchKeys.includes(key)));
+  // minimalEnvironment sets the connectors switch itself; it is not an authentication variable.
+  const auth = Object.fromEntries(Object.entries(view.env).filter(([key]) => !HOME_KEYS.includes(key) && !launchKeys.includes(key) && key !== 'ENABLE_CLAUDEAI_MCP_SERVERS'));
   // The recursion guard (bridge): a taken-over thread never sees the owner tools either.
   const launch = { ...Object.fromEntries(Object.entries(view.env).filter(([key]) => launchKeys.includes(key))), JEVELLAN_ROLE: 'thread' };
   let env: Record<string, string>; try { env = minimalEnvironment(view.runtime, home, auth, launch, base); } catch { return UNUSABLE; }
@@ -109,7 +113,7 @@ async function prepare(answer: unknown, base: NodeJS.ProcessEnv, homes: Homes, r
   const hooks = integration ? { PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: integration.safetyCommand, timeout: 10 }] }] } : undefined;
   const mcp = integration ? { jevellan: { command: integration.bridgeCommand, args: integration.bridgeArgs } } : undefined;
   // Takeover from the bridge: remote control needs the folder's interactive login, which a long-lived token would override.
-  const remote = view.runtime === 'claude' && remoteControl && existsSync(join(home, '.credentials.json'));
+  const remote = view.runtime === 'claude' && remoteControl && hasInteractiveClaudeLogin(home);
   if (remote) { delete env.CLAUDE_CODE_OAUTH_TOKEN; delete env.ANTHROPIC_API_KEY; }
   const args = view.runtime === 'claude'
     ? ['--resume', view.nativeSessionId, ...(remote ? ['--remote-control', remoteControl!] : []), '--model', view.model, ...(await claudeTakesEffort(executable, view.cwd, minimalEnvironment('claude', home, {}, {}, base)) ? ['--effort', view.effort] : []),

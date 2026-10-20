@@ -5,6 +5,7 @@ import { LoginOutput } from '@jevellan/runtime-contract';
 import { minimalEnvironment, type AccountView } from '@jevellan/core';
 import type { Application } from './application.js';
 import { OwnerRefusal } from './owner-tools.js';
+import { hasInteractiveClaudeLogin } from '@jevellan/core';
 
 type Interactive = { child: pty.IPty; output: LoginOutput; state: 'pending' | 'done' | 'failed'; label: string; projectId: string };
 
@@ -22,10 +23,23 @@ export class OwnerLogins {
     if (!found) throw new OwnerRefusal(`There is no account ${label}. Accounts: ${accounts.map(row => row.account.label).join(', ') || 'none'}.`, 'not_found', 404);
     return found;
   }
-  interactiveReady(account: AccountView): boolean { return existsSync(join(this.app.homes.account(account.account.runtime as 'claude', account.account.id), '.credentials.json')); }
+  interactiveReady(account: AccountView): boolean { return hasInteractiveClaudeLogin(this.app.homes.account(account.account.runtime as 'claude', account.account.id)); }
 
+  /** Adds an account that runs in a folder the owner already logged in, where it is: nothing is copied, Rigging and logins stay out of it. */
+  async addInPlace(label: string, runtime: 'claude' | 'codex', folder: string): Promise<string> {
+    if ((await this.app.accounts.list()).some(row => row.account.label.toLowerCase() === label.toLowerCase())) throw new OwnerRefusal(`There is already an account ${label}.`, 'exists', 409);
+    if (runtime === 'claude' && !hasInteractiveClaudeLogin(folder)) throw new OwnerRefusal(`${folder} has no Claude login. Log in there first (CLAUDE_CONFIG_DIR=${folder} claude auth login).`, 'not_logged_in', 409);
+    if (runtime === 'codex' && !existsSync(join(folder, 'auth.json'))) throw new OwnerRefusal(`${folder} has no Codex login. Log in there first (CODEX_HOME=${folder} codex login).`, 'not_logged_in', 409);
+    const view = await this.app.accounts.add({ schema: 'add-account-v1', runtime, label, kind: 'subscription', credential: 'per-device', ceilingPct: 90 });
+    const path = this.app.homes.registerInPlace(runtime, view.account.id, folder);
+    const status = await this.app.accounts.check(view.account.id);
+    // Placement only offers the models an account has listed, as a token login does after its first check.
+    if (status.auth === 'ready') await this.app.accounts.discover(view.account.id).catch(() => undefined);
+    return `Added account ${view.account.label} (${runtime}) using ${path} in place: ${status.auth === 'ready' ? 'ready' : status.auth}.`;
+  }
   async start(projectId: string, label: string, interactive: boolean): Promise<string> {
     const account = await this.account(label); const runtime = account.account.runtime;
+    if (this.app.homes.inPlace(runtime, account.account.id) !== undefined) throw new OwnerRefusal(`Account ${account.account.label} uses your own folder in place; log it in there with that folder's own tool.`, 'in_place');
     if (interactive) {
       if (runtime !== 'claude') throw new OwnerRefusal('Only Claude accounts have an interactive login for remote control.', 'invalid_account');
       const home = this.app.homes.account('claude', account.account.id); const previous = this.#interactive.get(account.account.id);

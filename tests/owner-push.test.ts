@@ -77,6 +77,8 @@ test('the bridge starts in tmux with the specified flags, refuses an account wit
   expect(start).toContain(`export JEVELLAN_BRIDGE='1'`); expect(start).toContain(`export JEVELLAN_PROJECT='${project.name}'`); expect(start).toContain('unset CLAUDE_CODE_OAUTH_TOKEN'); expect(start).toContain("export ENABLE_CLAUDEAI_MCP_SERVERS='false'");
   for (const flag of [`'--model' 'sonnet' '--effort' 'medium' '--remote-control' 'Jevellan · ${project.name}'`, `'--dangerously-load-development-channels' 'plugin:jevellan@inline'`, `'--allowedTools' 'mcp__plugin_jevellan_jevellan__*' '--disallowedTools' 'Bash' 'Edit' 'Write' 'NotebookEdit'`, "'--append-system-prompt-file'"]) expect(start).toContain(flag);
   expect(start).not.toContain('--continue');
+  // The login shell tmux starts can reorder PATH; the script restores the service's PATH and runs claude by its full path.
+  expect(start).toContain(`export PATH='${process.env.PATH}'`); expect(start).toContain("exec '/usr/bin/claude' ");
   expect(await bridges.startBridge(project)).toBe(`The bridge for ${project.name} is already running (tmux ${bridges.sessionName(project)}).`);
   const prompt = readFileSync(join(f.homes.root, 'bridges', bridges.sessionName(project).slice('jv-bridge-'.length), 'system-prompt.md'), 'utf8');
   expect(prompt.startsWith(`You are the Jevellan bridge for the project ${project.name}.`)).toBe(true);

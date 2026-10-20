@@ -220,3 +220,18 @@ The parallel run ended at its release clock with its gate unaccepted: 0.6.0 was 
 Checks on the final code: typecheck and lint pass; the bridge eval 13 of 13; Journey B pass; backend suite 2583 passed, 0 failed, 15 skipped (the opt-in real-model tests); browser journeys in the desktop light layout as above (failures only from main's flaky projects file).
 
 The test installation `bridgetest` was uninstalled (its data stays in the private run folder) and the live service was checked unchanged. The owner's steps, the journeys, the eval, usage readings, the bridge's token cost, the ten decisions and the known problems are in the private handoff, `/home/ggomes/.jevellan-build/bridge/HANDOFF.md`.
+
+## In-place accounts and a macOS playground (live)
+
+Live, 2026-10-20, on a Mac, with a separate named installation built from this branch. It ran on its own port and home, as a single-machine hub that joined no mesh, with a scratch clone of a project whose origin is a local bare repository. The owner's Claude Code folder and Codex folder were registered as accounts in place: `jevellan account in-place <label> --runtime claude|codex --folder <dir>`. Nothing is copied. Jevellan never writes Rigging into such a folder and refuses its own logins for it. The registry is `homes/in-place.json` (`in-place-homes-v1`), so every check that compares a home with `Homes.account` still holds.
+
+Found on macOS and fixed, each with tests:
+- **Login detection.** Claude Code keeps a claude.ai login in the login keychain ("Claude Code-credentials-" and the first eight hex digits of the folder path's SHA-256), not in `.credentials.json`. The bridge, takeover and login status look for either. Only the entry's presence is read.
+- **HOME.** macOS finds that keychain through HOME, so a session with HOME set to the account folder was "Not logged in". An in-place Claude folder keeps the owner's HOME; its configuration still comes from `CLAUDE_CONFIG_DIR`.
+- **PATH in tmux.** tmux starts a session through the owner's login shell, whose profile put an older claude (no `--effort`) first on PATH, and the bridge exited at once. The bridge script restores the service's PATH and runs claude by its full path. Takeovers run attach with that PATH.
+- **Process name.** Claude's native build runs as a file named after its version, so the pane shows "2.1.304". The bridge counts that as running.
+- **Memory hooks.** In-place launches no longer wait for the project memory hook, which would have to be written into the owner's folder. Turn-end capture still runs.
+- **Connectors.** A claude.ai login hands its connectors (mail, calendars, documents) to every session. Every Claude session Jevellan starts now runs with `ENABLE_CLAUDEAI_MCP_SERVERS=false`.
+- **Takeover.** It accepts an in-place folder and adds only the worktree's trust to its preferences.
+
+Live results: the bridge ran under remote control. Channel pushes reached its transcript. From the bridge, `respond` answered a test question and approved two landings and a deploy, and `work add` queued three tasks, each of which landed in the local bare repository. A takeover resumed a running thread's own session under remote control, took a typed instruction, and landed it after "return as done". The bridge eval subset (status, overnight digest, a why question, add a task, take over, a push arriving), headless on Sonnet at low effort against the simulated fixture: 6 of 6.

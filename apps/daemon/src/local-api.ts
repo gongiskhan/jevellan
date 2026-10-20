@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { EmptySchema, ErrorDocumentSchema, HubUnavailable, IdSchema, ThreadAttachRequestSchema, ThreadDetachRequestSchema } from '@jevellan/core';
 import { JournalRebuildInputSchema, JournalRebuildReceiptSchema } from '@jevellan/core';
 import { ProjectSendRequestSchema, ProjectSendResultSchema } from '@jevellan/core';
-import { ProjectStatusViewSchema, OwnerBridgeRequestSchema, OwnerPushAckSchema, OwnerRemoteRequestSchema, OwnerToolRequestSchema, StatusLineRequestSchema, StatusLineViewSchema } from '@jevellan/core';
+import { ProjectStatusViewSchema, OwnerBridgeRequestSchema, OwnerInPlaceAccountRequestSchema, OwnerInPlaceAccountResultSchema, OwnerPushAckSchema, OwnerRemoteRequestSchema, OwnerToolRequestSchema, StatusLineRequestSchema, StatusLineViewSchema } from '@jevellan/core';
 import { OwnerRefusal } from './owner-tools.js';
 import { renderStatusLine } from '@jevellan/projects';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -88,6 +88,13 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
         const text = input.operation === 'stop' ? app.ownerBridges.stopBridge(project) : await app.ownerBridges.startBridge(project, { restart: input.operation === 'restart', ...(input.claudeConfigDir ? { claudeConfigDir: input.claudeConfigDir } : {}), ...(input.remoteName ? { remoteName: input.remoteName } : {}) });
         json(response, { schema: 'owner-bridge-result-v1', ok: true, text });
       } catch (error) { if (error instanceof OwnerRefusal) { json(response, { schema: 'owner-bridge-result-v1', ok: false, text: error.message }); return; } throw error; }
+      return;
+    }
+    if (path === '/api/local/accounts/in-place') {
+      if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
+      const input = OwnerInPlaceAccountRequestSchema.parse(await requestBody(request));
+      try { json(response, OwnerInPlaceAccountResultSchema.parse({ schema: 'owner-in-place-account-result-v1', ok: true, text: await app.ownerLogins.addInPlace(input.label, input.runtime, input.folder) })); }
+      catch (error) { if (error instanceof OwnerRefusal) { json(response, { schema: 'owner-in-place-account-result-v1', ok: false, text: error.message }); return; } throw error; }
       return;
     }
     if (path === '/api/local/remote') {

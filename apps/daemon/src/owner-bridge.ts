@@ -1,9 +1,10 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from 'node:fs';
+import { accessSync, constants, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { IdSchema, TimestampSchema, atomicWrite, buildPlugin, pluginDist, type Project } from '@jevellan/core';
 import type { Application } from './application.js';
+import { hasInteractiveClaudeLogin } from '@jevellan/core';
 import { OwnerRefusal } from './owner-tools.js';
 
 const NAMESPACE = 'owner-bridges';
@@ -62,13 +63,15 @@ export class OwnerBridges {
   running(session: string): boolean {
     if (this.tmux(['has-session', '-t', `=${session}`]).status !== 0) return false;
     const command = this.tmux(['list-panes', '-t', `=${session}`, '-F', '#{pane_current_command}']).stdout;
-    return /claude|node/u.test(command);
+    // Claude's native build runs as its version file (~/.local/share/claude/versions/2.1.304), so the pane shows the version number.
+    return /claude|node|^\d+\.\d+\.\d+/mu.test(command);
   }
   /** The account folder the bridge runs under: the `bridge.account` account's managed folder, or an explicit Claude config folder. */
   async #configDir(project: Project, override?: string): Promise<{ dir: string; label: string }> {
-    if (override) return { dir: override, label: override };
     const label = this.app.ownerTools.projectSettings(project.id).bridge.account;
     const account = (await this.app.accounts.list()).find(row => row.account.label === label && row.account.runtime === 'claude');
+    // A restart reuses the folder it started with; it is still named by its account when it is that account's folder.
+    if (override) return { dir: override, label: account && this.app.homes.account('claude', account.account.id) === override ? label : override };
     if (!account) throw new OwnerRefusal(`There is no Claude account ${label} for the bridge. Change it with config set bridge account <label>.`, 'no_account', 409);
     return { dir: this.app.homes.account('claude', account.account.id), label };
   }
@@ -78,7 +81,7 @@ export class OwnerBridges {
     if (this.running(session) && !options.restart) return `The bridge for ${project.name} is already running (tmux ${session}).`;
     const { dir, label } = await this.#configDir(project, options.claudeConfigDir ?? this.state(project.id)?.configDir);
     // Remote control needs an interactive claude.ai login in the folder; a long-lived token cannot start it (run log, phase 0).
-    if (!existsSync(join(dir, '.credentials.json'))) throw new OwnerRefusal(`Account ${label} has no interactive Claude login, which remote control needs. Run: jevellan login ${label} --interactive`, 'no_interactive_login', 409);
+    if (!hasInteractiveClaudeLogin(dir)) throw new OwnerRefusal(`Account ${label} has no interactive Claude login, which remote control needs. Run: jevellan login ${label} --interactive`, 'no_interactive_login', 409);
     if (options.restart && this.tmux(['has-session', '-t', `=${session}`]).status === 0) this.tmux(['kill-session', '-t', `=${session}`]);
     const folder = this.app.homes.at('bridges', slug(project.name)); mkdirSync(folder, { recursive: true, mode: 0o700 });
     buildPlugin(this.app.homes);
@@ -95,8 +98,11 @@ export class OwnerBridges {
       ...(previous && options.continue !== false ? ['--continue'] : [])];
     // The account's claude.ai connectors stay out of the bridge: their task and calendar tools would compete with Jevellan's (run log, Journey A).
     const env: Record<string, string> = { JEVELLAN_BRIDGE: '1', JEVELLAN_PROJECT: project.name, JEVELLAN_HOME: this.app.homes.root, CLAUDE_CONFIG_DIR: dir, ENABLE_CLAUDEAI_MCP_SERVERS: 'false' };
-    const script = ['#!/bin/sh', 'unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY JEVELLAN_ROLE', ...Object.entries(env).map(([key, value]) => `export ${key}=${shell(value)}`),
-      `exec ${shell(this.claude)} ${args.map(shell).join(' ')}`].join('\n');
+    // tmux starts the session through the owner's login shell, whose profile can reorder PATH and find an older claude first: the script
+    // restores the service's PATH and runs the claude that PATH finds, by its full path.
+    const path = process.env.PATH ?? '/usr/bin:/bin';
+    const script = ['#!/bin/sh', 'unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY JEVELLAN_ROLE', `export PATH=${shell(path)}`, ...Object.entries(env).map(([key, value]) => `export ${key}=${shell(value)}`),
+      `exec ${shell(executableOnPath(this.claude, path))} ${args.map(shell).join(' ')}`].join('\n');
     writeFileSync(join(folder, 'start.sh'), `${script}\n`, { mode: 0o700 });
     trustFolder(dir, folder);
     const startedAt = new Date().toISOString(); let ready = false;
@@ -171,4 +177,14 @@ export class OwnerBridges {
       this.app.ownerPushes.ack(state.projectId, message.pushIds);
     }
   }
+}
+
+/** The full path of a command on PATH (the first executable file), or the name itself when it already has a slash or is not found. */
+export function executableOnPath(name: string, path: string): string {
+  if (name.includes('/')) return name;
+  for (const directory of path.split(':').filter(entry => entry.startsWith('/'))) {
+    const file = join(directory, name);
+    try { accessSync(file, constants.X_OK); if (statSync(file).isFile()) return file; } catch { /* the next directory */ }
+  }
+  return name;
 }

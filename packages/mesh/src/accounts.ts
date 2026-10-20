@@ -27,7 +27,7 @@ export class HubAccounts implements AccountStore {
   add(input: unknown) {
     const value = AddAccountSchema.parse(input);
     const result = settingsMutation(this.hub, this.deviceId, 'account-add', value, value.clientRequestId, AccountViewSchema, () => {
-      const account = AccountSchema.parse({ schema: 'account-v2', id: newId('acc'), runtime: value.runtime, label: value.label, kind: value.kind, enabled: true, ceilingPct: value.ceilingPct, credential: value.runtime === 'codex' && value.kind === 'subscription' ? 'per-device' : 'shared', ...(value.paidUse ? { paidUse: value.paidUse } : {}), ...(value.endpoint ? { endpoint: value.endpoint } : {}) });
+      const account = AccountSchema.parse({ schema: 'account-v2', id: newId('acc'), runtime: value.runtime, label: value.label, kind: value.kind, enabled: true, ceilingPct: value.ceilingPct, credential: value.credential ?? (value.runtime === 'codex' && value.kind === 'subscription' ? 'per-device' : 'shared'), ...(value.paidUse ? { paidUse: value.paidUse } : {}), ...(value.endpoint ? { endpoint: value.endpoint } : {}) });
       this.hub.put('accounts', account.id, AccountSchema, account, 0); this.#endpointMenu();
       return value.secret ? this.capture(account.id, 1, value.secret) : this.get(account.id);
     });

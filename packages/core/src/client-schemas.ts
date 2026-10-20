@@ -12,6 +12,8 @@ export const AddAccountSchema = z.strictObject({
   schema: z.literal('add-account-v1'), runtime: IdSchema, label: z.string().trim().min(1).max(128),
   kind: z.enum(['subscription', 'api-key', 'endpoint']), ceilingPct: z.number().min(0).max(100).default(90),
   endpoint: AccountEndpointSchema.optional(), paidUse: PaidUseSchema.optional(), secret: CredentialInputSchema.optional(), clientRequestId: IdSchema.optional(),
+  /** 'per-device' for an account that logs in on each device, such as one used in place in the owner's own folder. */
+  credential: z.enum(['shared', 'per-device']).optional(),
 }).superRefine((value, ctx) => {
   if (value.kind === 'api-key' && (!value.paidUse || !value.secret)) ctx.addIssue({ code: 'custom', message: 'Enter the key and choose when Jevellan may use it.' });
   if ((value.kind === 'subscription' || value.kind === 'endpoint' && value.endpoint?.billing !== 'metered') && value.paidUse) ctx.addIssue({ code: 'custom', message: 'Paid-use policy applies only to API keys.' });

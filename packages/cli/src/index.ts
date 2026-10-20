@@ -14,7 +14,7 @@ import { serveAgentMcp } from './agent-mcp.js';
 import { hubCommand } from './hub-command.js';
 import { journalCommand } from './journal-command.js';
 import { serveOwnerMcp } from './owner-mcp.js';
-import { attachCommand, bridgeCommand, callCommand, loginCommand, remoteCommand, secretCommand, hookCommand, pluginCommand, pluginDoctorLine, statuslineCommand, watchCommand } from './owner-commands.js';
+import { attachCommand, bridgeCommand, callCommand, loginCommand, accountCommand, remoteCommand, secretCommand, hookCommand, pluginCommand, pluginDoctorLine, statuslineCommand, watchCommand } from './owner-commands.js';
 
 function printInstallation(result: Awaited<ReturnType<Installer['install']>>) {
   if (result.changedPort) console.log(`The default port was occupied. Jevellan uses ${result.port}.`);
@@ -68,6 +68,7 @@ export async function main(args: string[], options: { installer?: () => Installe
   if (args[0] === 'hook') { process.exitCode = await hookCommand(args.slice(1)); return; }
   if (args[0] === 'bridge') { process.exitCode = await bridgeCommand(args.slice(1)); return; }
   if (args[0] === 'login') { process.exitCode = await loginCommand(args.slice(1)); return; }
+  if (args[0] === 'account') { process.exitCode = await accountCommand(args.slice(1)); return; }
   if (args[0] === 'secret') { process.exitCode = await secretCommand(args.slice(1)); return; }
   if (args[0] === 'remote') { process.exitCode = await remoteCommand(args.slice(1)); return; }
   if (args[0] === 'mcp-bridge') { await serveMcpBridge(); return; }

@@ -230,6 +230,7 @@ export class AccountService {
   async #beginLogin(id: string, requestId?: string) {
     const account = (await this.#account(id)).account;
     if (account.kind !== 'subscription') throw new Error('Enter an API key in the account form.');
+    if (this.options.homes.inPlace(account.runtime, id) !== undefined) throw Object.assign(new Error('This account uses your own folder in place. Log it in there with that folder\'s own tool.'), { status: 409 });
     for (const record of this.#logins.values()) if (record.accountId === id && ['pending', 'checking'].includes(record.state)) return this.#loginView(record);
     this.#generations.set(id, (this.#generations.get(id) ?? 0) + 1); this.#probes.delete(id);
     if (requestId !== undefined) {

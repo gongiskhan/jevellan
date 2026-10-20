@@ -1,3 +1,6 @@
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { EnvNameSchema, ProjectEnvNameSchema } from './project-parity-schemas.js';
 
 export function projectEnvironment(values: Record<string, string> = {}, scope: 'runtime' | 'command' = 'runtime'): Record<string, string> {
@@ -26,7 +29,24 @@ export function minimalEnvironment(runtime: 'claude' | 'codex', home: string, au
     result[key] = value;
   }
   result[runtime === 'claude' ? 'CLAUDE_CONFIG_DIR' : 'CODEX_HOME'] = home;
+  // Sessions Jevellan starts never load the account's claude.ai connectors (mail, calendars, documents): an account logged in to
+  // claude.ai would otherwise hand them to coordinators and threads.
+  if (runtime === 'claude') result.ENABLE_CLAUDEAI_MCP_SERVERS = 'false';
+  // An in-place Claude account on macOS keeps its login in the owner's login keychain, which macOS finds through HOME: such a session keeps
+  // the owner's own HOME (its configuration still comes from CLAUDE_CONFIG_DIR).
+  if (runtime === 'claude' && process.platform === 'darwin' && inPlaceFolder(home, base.JEVELLAN_HOME ?? process.env.JEVELLAN_HOME)) result.HOME = homedir();
   return result;
+}
+
+/** Whether a folder is registered as an in-place account folder in a Jevellan home (see Homes.registerInPlace). */
+function inPlaceFolder(folder: string, root = join(homedir(), '.jevellan')): boolean {
+  const file = join(root, 'homes', 'in-place.json');
+  try {
+    if (!existsSync(file)) return false;
+    const homes = (JSON.parse(readFileSync(file, 'utf8')) as { homes?: Record<string, string> }).homes ?? {};
+    const path = realpathSync(folder);
+    return Object.values(homes).some(entry => { try { return realpathSync(entry) === path; } catch { return false; } });
+  } catch { return false; }
 }
 
 export class SecretRedactor {

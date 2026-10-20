@@ -121,7 +121,7 @@ test('a Claude thread is refused while it works, then resumes in the terminal wi
   // The flag settings keep the account home's transcripts past the CLI's 30-day retention (P8 review R-T1).
   claudeIntegration(run, stored);
   expect(run.cwd).toBe(realpathSync(f.thread(threadId).cwd));
-  expect(run.envKeys).toEqual(['CLAUDE_AUTOCOMPACT_PCT_OVERRIDE', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CONFIG_DIR', 'HOME', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'JEVELLAN_ROLE', 'JEVELLAN_STRETCH_TOKEN', 'LANG', 'PATH', 'TERM', 'TMPDIR']);
+  expect(run.envKeys).toEqual(['CLAUDE_AUTOCOMPACT_PCT_OVERRIDE', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CONFIG_DIR', 'ENABLE_CLAUDEAI_MCP_SERVERS', 'HOME', 'JEVELLAN_DAEMON_URL', 'JEVELLAN_PROJECT_MEMORY_MODE', 'JEVELLAN_ROLE', 'JEVELLAN_STRETCH_TOKEN', 'LANG', 'PATH', 'TERM', 'TMPDIR']);
   expect(run.authDigest).toBe(createHash('sha256').update(secret).digest('hex'));
   expect(run.argv!.some((arg) => arg.includes(secret) || arg.includes(CANARY))).toBe(false);
   // HOME and CLAUDE_CONFIG_DIR are the account home: the terminal's session is written there.

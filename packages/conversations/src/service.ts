@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import {
   GitBranchChangeSchema, ActionSchema, AdoptChangesSchema, CheckpointAdoptionSchema, CheckpointBlockSchema, CheckpointReceiptSchema, CheckoutOwnership, ComposerChoiceSchema, ComposerInitialSchema, ConversationChangesSchema, ConversationListSchema, ConversationMessageSchema, ConversationNoticeSchema, ConversationOperationSchema, ConversationProgressSchema, ConversationPublicSchema, CorrectStepSchema,
   ContextContinueSchema, ContextOperationSchema, ContextPanelSchema, ContextRequestSchema, ContextReviewSchema, DecisionRecordSchema, DecisionWaitSchema, FinishOutsideOperationSchema, FinishOutsideSchema, GitWorkspace, HubImportReceiptSchema, IdSchema, JevCallSchema, ManualStepSchema, PlanApprovalSchema, ProjectsListSchema, ProjectViewSchema, ProjectWriteSchema, RenameConversationSchema, readDocument,
-  OverrideRecordSchema, PROJECT_MEMORY_ID, PublicationEventSchema, RedoOperationSchema, ResumeDecisionSchema, RetryRedoSchema, SettleWorkSchema, StartComposerChoicesSchema, StartConversationSchema, StretchSchema, UndoAppliedSchema, VerificationSchema, WorkSettlementSchema, mapEffort, newId, resolveProjectPath, stableJson,
+  OverrideRecordSchema, IN_PLACE_RIGGING_REASON, PROJECT_MEMORY_ID, PublicationEventSchema, RedoOperationSchema, ResumeDecisionSchema, RetryRedoSchema, SettleWorkSchema, StartComposerChoicesSchema, StartConversationSchema, StretchSchema, UndoAppliedSchema, VerificationSchema, WorkSettlementSchema, mapEffort, newId, resolveProjectPath, stableJson,
   type Action, type CheckpointAdoption, type Configuration, type ContextOperation, type CoordinationStore, type DecisionRecord, type DecisionWait, type GitSnapshot, type Homes, type HubWait, type JevCall, type ManualStep, type Project, type PublicationLease, type PublicationLeaseService, type RedoOperation, type RiggingItem, type SecretRedactor,
 } from '@jevellan/core';
 import { applicationRoot, conversationIndex, decisionIndex, type IndexDocument, type SharedIndexes, type SharedProjects } from '@jevellan/core';
@@ -1348,7 +1348,7 @@ export class ConversationService {
       const account = await this.options.accounts.resolve(selected.account.id); this.#current(work, generation, operation);
       const rigging = await this.options.riggingItems(model.runtime, workspace.project.id); this.#current(work, generation, operation);
       const delivered = await adapter.materialiseRigging(account.home, rigging); this.#current(work, generation, operation);
-      if (adapter.riggingKinds.includes('hook') && rigging.some((item) => item.id === PROJECT_MEMORY_ID && item.enabled && item.state !== 'parked') && !delivered.some((item) => item.itemId === PROJECT_MEMORY_ID && item.applied)) throw new Error('Project memory hooks could not be delivered to this account.');
+      if (adapter.riggingKinds.includes('hook') && !delivered.some((item) => item.reason === IN_PLACE_RIGGING_REASON) && rigging.some((item) => item.id === PROJECT_MEMORY_ID && item.enabled && item.state !== 'parked') && !delivered.some((item) => item.itemId === PROJECT_MEMORY_ID && item.applied)) throw new Error('Project memory hooks could not be delivered to this account.');
       const memoryWrite = permissions === 'write' || (action === 'reply' && choice.remember);
       if (memoryWrite) await this.#admit(work, workspace);
       const memory = this.options.memory.project(workspace.project, this.options.deviceId, async () => { await this.ownership.assert(workspace.project, workspace.owner); await this.#outsideIdle(workspace); },
