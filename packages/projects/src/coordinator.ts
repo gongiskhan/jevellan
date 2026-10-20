@@ -717,8 +717,10 @@ export class Coordinator {
    * A failed turn keeps its events queued at the front (brief 8.1). Odd failures retry once after the delay; every second
    * failure in a row sets the coordinator idle with the notice and turns queued needs-decision reports into owner questions.
    * A turn whose process cleanup was not confirmed is not retried, so its process record stays until the next event's turn.
+   * A failure consumes the owner's retry also when no session started (a launch refused before it), so the sweep does not try again.
    */
   #failed(turn: number, error: string, status: 'failed' | 'timed-out', retry = true, outcome?: TurnOutcome): TurnEnd {
+    this.#ownerRetry = false;
     const text = this.c.redactor.text(error).replace(/\s+/g, ' ').trim().slice(0, 1000) || TURN_FAILED;
     const state = this.c.store.update(this.projectId, (current) => ({ ...withoutReason(current), state: 'idle', failedTurnsInARow: current.failedTurnsInARow + 1 }));
     this.#ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status, error: text, ...(outcome ? { usage: outcome.usage, ...(outcome.sessionId ? { sessionKey: createHash('sha256').update(outcome.sessionId).digest('hex') } : {}) } : {}) } });

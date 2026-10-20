@@ -359,6 +359,26 @@ test('a restart drops the running turn, keeps its events queued, and the next st
   expect(payloads(again, 'coordinator-turn-end').at(-1)).toMatchObject({ turn: 2, status: 'completed' });
 });
 
+test('an owner message after two failed turns gets one retry: a launch that fails again waits for the next message instead of retrying at every sweep', { timeout: 60_000 }, async () => {
+  const refused = 'Rigging preserved local changes: settings.json. Park or keep those items before applying.';
+  let rigging = true;
+  const work = app({}, { riggingItems: async () => { if (rigging) throw new Error(refused); return []; } }); await work.ready; work.start();
+  await message(work, 'plan the release'); await work.idle('proj_a');
+  const coordinator = work.coordinators.get('proj_a');
+  expect(coordinator.state()).toMatchObject({ state: 'idle', failedTurnsInARow: 2 });
+  // The owner's message buys one more attempt and its retry; both fail before a session starts.
+  await message(work, 'try again'); await work.idle('proj_a');
+  expect(coordinator.state()).toMatchObject({ failedTurnsInARow: 4 });
+  for (let sweep = 0; sweep < 3; sweep += 1) { await work.pulse(); await work.idle('proj_a'); }
+  expect(coordinator.state()).toMatchObject({ failedTurnsInARow: 4 });
+  expect(payloads(work, 'coordinator-turn-end').map((data) => data.error)).toEqual([refused, refused, refused, refused]);
+  expect(notices(work)).toEqual([0, 1].map(() => `The coordinator failed twice: ${refused} Send a message to try again.`));
+  // Once the cause is gone, the next message runs.
+  rigging = false; fake.enqueueTurn(say('Planned.'), forCoordinator);
+  await message(work, 'once more'); await work.idle('proj_a');
+  expect(coordinator.state()).toMatchObject({ failedTurnsInARow: 0, queue: [] });
+});
+
 test('an owner message after two failed turns still runs after a restart, also when the restart dropped its turn or came before it started (brief 8.6)', { timeout: 60_000 }, async () => {
   const work = await started();
   fake.enqueueTurn(fail('Model overloaded.'), forCoordinator); fake.enqueueTurn(fail('Model overloaded.'), forCoordinator);
