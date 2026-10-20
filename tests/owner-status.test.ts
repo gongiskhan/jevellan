@@ -62,3 +62,16 @@ test('times, durations, caps and the status line follow the output conventions',
   expect(Number(long.split('\n').at(-1)!.split(' ')[0]) + long.split('\n').length - 1).toBe(400);
   expect(renderStatusLine(projectStatus(busy(), new OwnerShortIds(new MemoryStore())))).toBe('Jevellan sandbox · 3 running · 2 queued · 0 waiting · main 41/90%');
 });
+
+test('a thread merged through its pull request with no landing record is listed as landed by its pull request', () => {
+  const pr = { number: 318, url: 'https://example.com/pull/318', state: 'merged' as const, headSha: sha('a6b29ba'), checks: 'none' as const, mergeable: 'unknown' as const, updatedAt: at(30) };
+  const merged = thread('thread_7', 'Add nightly command entrypoints', { state: 'done', delivery: 'pull-request', pr, endedAt: at(30), createdAt: at(300) });
+  const landed = thread('thread_9', 'Fix receipts rounding', { state: 'done', landing: { commit: sha('9f8e7d6'), at: at(74), method: 'squash', checks: [], route: 'land' }, endedAt: at(74), createdAt: at(200) });
+  const view = projectStatus(input({ threads: [merged, landed] }), new OwnerShortIds(new MemoryStore()));
+  expect(view.landed.map(row => [row.title, row.landing?.commit, row.pullRequest?.number])).toEqual([['Add nightly command entrypoints', undefined, 318], ['Fix receipts rounding', '9f8e7d6', undefined]]);
+  for (const options of [{}, { detail: true }, { section: 'landed' as const }]) {
+    const text = renderStatus(view, options);
+    expect(text).toContain(`Add nightly command entrypoints · merged as PR #318 at ${ownerClock(at(30), NOW, 'Europe/Lisbon')}`);
+    expect(text).toContain(`Fix receipts rounding · landed as 9f8e7d6 at ${ownerClock(at(74), NOW, 'Europe/Lisbon')}`);
+  }
+});

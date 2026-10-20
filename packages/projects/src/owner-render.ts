@@ -40,6 +40,12 @@ export function queuedLine(run: RunView, index: number): string {
   return `${run.id} ${runLabel(run)} · ${run.title}${index === 0 ? ' · next' : run.priority === 'urgent' ? ' · urgent' : ''}${run.detail ? ` · ${run.detail}` : ''}`;
 }
 
+/** How a landed run reached the default branch: its landing commit, or the pull request it was merged through. */
+function landedAs(run: RunView, view: Pick<ProjectStatusView, 'at' | 'timeZone'>): string {
+  if (run.landing) return `landed as ${run.landing.commit} at ${ownerClock(run.landing.at, view.at, view.timeZone)}`;
+  const at = run.endedAt ? ` at ${ownerClock(run.endedAt, view.at, view.timeZone)}` : '';
+  return run.pullRequest ? `merged as PR #${run.pullRequest.number}${at}` : `landed${at}`;
+}
 export function finishedLine(run: RunView, view: Pick<ProjectStatusView, 'at' | 'timeZone'>): string {
   const at = run.endedAt ? ownerClock(run.endedAt, view.at, view.timeZone) : '';
   if (run.kind === 'job') {
@@ -91,7 +97,7 @@ export function renderStatus(view: ProjectStatusView, options: { section?: 'wait
   }
   if (section('landed') && view.landed.length) {
     lines.push('', 'Landed, not deployed');
-    for (const run of view.landed) lines.push(`${run.id} ${run.title} · landed as ${run.landing!.commit} at ${ownerClock(run.landing!.at, view.at, view.timeZone)}`);
+    for (const run of view.landed) lines.push(`${run.id} ${run.title} · ${landedAs(run, view)}`);
   }
   if (section('finished') && view.finished.length) {
     lines.push('', 'Finished in the last 12 hours');

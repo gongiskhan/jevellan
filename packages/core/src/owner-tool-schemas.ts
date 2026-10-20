@@ -27,6 +27,8 @@ export const RunViewSchema = z.strictObject({ schema: z.literal('run-view-v1'), 
   waitingItem: ShortIdSchema.optional(),
   held: z.strictObject({ since: TimestampSchema, via: z.enum(['remote_control', 'tmux']), tmuxSession: z.string().max(120) }).optional(),
   landing: z.strictObject({ commit: z.string().regex(/^[a-f0-9]{7,64}$/u), at: TimestampSchema, method: z.string().max(40) }).optional(),
+  // A thread delivered by pull request: it can be merged with no landing record of its own.
+  pullRequest: z.strictObject({ number: z.number().int().positive(), url: z.url() }).optional(),
   position: z.number().int().positive().optional(), priority: z.enum(['urgent', 'normal']).optional() });
 export type RunView = z.infer<typeof RunViewSchema>;
 

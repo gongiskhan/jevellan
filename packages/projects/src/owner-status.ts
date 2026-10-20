@@ -87,12 +87,13 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
     const state = held ? 'held' : threadRunState(thread, deployedThreads.has(thread.id) && !undeployed.has(thread.id));
     const usage = thread.usage ? { inputTokens: thread.usage.inputTokens, outputTokens: thread.usage.outputTokens, cacheReadTokens: thread.usage.cacheReadTokens, costUsdEstimate: thread.usage.costUnknownTurns ? null : thread.usage.costUsd } : undefined;
     const landing = thread.landing ? { commit: thread.landing.commit.slice(0, 7), at: thread.landing.at, method: thread.landing.method } : undefined;
+    const pullRequest = thread.pr ? { number: thread.pr.number, url: thread.pr.url } : undefined;
     const detail = state === 'landing' ? thread.stateReason ?? (thread.landingStage ? `landing, ${thread.landingStage}` : 'landing') : state === 'failed' || state === 'stopped' ? thread.stateReason : undefined;
     return { schema: 'run-view-v1', id: threadShort(thread), internalId: thread.id, kind: 'thread', label: labelOfTask(task), title: thread.title, state,
       ...(detail ? { detail: detail.slice(0, 400) } : {}),
       runtime: thread.runtime, model: thread.modelLabel, effort: thread.effort, account: thread.accountLabel, device: input.deviceName(thread.ownerDeviceId),
       startedAt: thread.createdAt, ...(thread.endedAt ? { endedAt: thread.endedAt } : {}), ...(usage ? { usage } : {}),
-      ...(waitingFor.has(thread.id) ? { waitingItem: waitingFor.get(thread.id)! } : {}), ...(held ? { held } : {}), ...(landing ? { landing } : {}) } satisfies RunView;
+      ...(waitingFor.has(thread.id) ? { waitingItem: waitingFor.get(thread.id)! } : {}), ...(held ? { held } : {}), ...(landing ? { landing } : {}), ...(pullRequest ? { pullRequest } : {}) } satisfies RunView;
   });
   const jobRuns: RunView[] = input.runs.map(run => {
     const job = jobById.get(run.jobId); const daily = dailyByJob.get(run.jobId);
@@ -123,7 +124,8 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
   const all = [...threadRuns, ...jobRuns];
   const running = all.filter(run => ['held', 'running', 'landing'].includes(run.state)).sort((a, b) => order[a.state] - order[b.state] || (a.startedAt ?? '').localeCompare(b.startedAt ?? ''));
   const threadQueued = threadRuns.filter(run => run.state === 'queued');
-  const landed = threadRuns.filter(run => run.state === 'landed').sort((a, b) => (b.landing?.at ?? '').localeCompare(a.landing?.at ?? ''));
+  const landedAt = (run: RunView) => run.landing?.at ?? run.endedAt ?? '';
+  const landed = threadRuns.filter(run => run.state === 'landed').sort((a, b) => landedAt(b).localeCompare(landedAt(a)));
   const finished = all.filter(run => ['deployed', 'failed', 'stopped', 'cancelled', 'idle'].includes(run.state) && recent(run)).sort((a, b) => (b.endedAt ?? '').localeCompare(a.endedAt ?? ''));
 
   const today = ownerLocal(now, timeZone).day;
