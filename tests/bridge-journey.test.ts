@@ -3,12 +3,21 @@
 // and a logged-in Claude folder with an interactive login in JEVELLAN_BRIDGE_EVAL_CLAUDE_DIR.
 import { afterAll, beforeAll, expect, test } from 'vitest';
 import { spawnSync } from 'node:child_process';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { ProjectNotificationSchema } from '../packages/core/dist/index.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
 const enabled = process.env.JEVELLAN_BRIDGE_JOURNEY === '1' && !!process.env.JEVELLAN_BRIDGE_EVAL_CLAUDE_DIR;
 let f: ProjectFixture | undefined; let session = '';
 const pane = () => spawnSync('tmux', ['capture-pane', '-p', '-J', '-S', '-400', '-t', `=${session}:`], { encoding: 'utf8' }).stdout;
+/** The bridge's own session transcripts: the pane cuts a channel line short, the transcript keeps the whole push. */
+function transcript(): string {
+  const state = f?.app.ownerBridges.state(f.project.id); if (!state) return '';
+  const directory = join(state.configDir, 'projects', state.folder.replace(/[^A-Za-z0-9]/gu, '-'));
+  try { return readdirSync(directory).filter(name => name.endsWith('.jsonl')).map(name => readFileSync(join(directory, name), 'utf8')).join('\n'); } catch { return ''; }
+}
+const seen = () => pane() + transcript();
 const type = (text: string) => { spawnSync('tmux', ['send-keys', '-t', `=${session}:`, '-l', text]); spawnSync('tmux', ['send-keys', '-t', `=${session}:`, 'Enter']); };
 async function until(check: () => boolean, ms = 180_000): Promise<void> { const end = Date.now() + ms; while (Date.now() < end) { if (check()) return; await new Promise(resolve => setTimeout(resolve, 2000)); } throw new Error(`Timed out. Pane:\n${pane().slice(-3000)}`); }
 const bridgeWrites = () => f!.app.ownerTools.callerLog().filter(row => row.caller.startsWith('bridge:') && row.access === 'write');
@@ -33,36 +42,37 @@ test.skipIf(!enabled)('Journey B: pushes reach the bridge, it reports without ac
   const engine = f!.app.projectWork;
   // 1. A waiting item is pushed and reported; no write tool is called for it.
   await engine.decisions.ask('project', { question: 'Which fixture should the parser tests use?', options: [{ label: 'Existing fixture' }, { label: 'New fixture' }] }, 'coordinator');
-  await until(() => /W1 waiting on you: Which fixture should the parser tests use\?/u.test(pane()));
+  await until(() => /W1 waiting on you: Which fixture should the parser tests use\?/u.test(seen()));
   await new Promise(resolve => setTimeout(resolve, 30_000));
   expect(bridgeWrites()).toEqual([]);
   // 2. The owner answers in plain words: respond picks the option.
   await engine.decisions.ask('project', { question: 'Deploy 1 landed thread(s) to production at a1b2c3d?', options: [{ label: 'Deploy a1b2c3d' }, { label: 'Not now' }] }, 'coordinator');
-  await until(() => /W2 waiting on you: Deploy 1 landed/u.test(pane()));
+  await until(() => /W2 waiting on you: Deploy 1 landed/u.test(seen()));
   await new Promise(resolve => setTimeout(resolve, 15_000));
   type('deploy');
   await until(() => (f!.app.ownerTools.callerLog().some(row => row.tool === 'respond' && row.ok)));
   expect((await engine.view('project')).decisions.answered.find(row => row.question.startsWith('Deploy 1'))?.answer?.optionLabel).toBe('Deploy a1b2c3d');
   // 3. A coordinator outage is pushed with the existing copy.
   f!.app.hub.put('project-notifications', 'notify_crash', ProjectNotificationSchema, { schema: 'project-notification-v1', revision: 0, id: 'notify_crash', projectId: 'project', kind: 'coordinator-unavailable', title: 'Coordinator stopped', body: 'The coordinator crashed and restarted from its last handoff.', url: '/projects/project', tag: 'project:crash', createdAt: new Date().toISOString() }, 0);
-  await until(() => /Coordinator stopped: The coordinator crashed/u.test(pane()));
+  await until(() => /Coordinator stopped: The coordinator crashed/u.test(seen()));
   // 4. Quiet hours hold ordinary items; an urgent one goes at once; the held ones arrive as one summary when quiet hours end.
   const view = await engine.settingsView('project');
   await engine.putSettings('project', { schema: 'project-work-settings-request-v1', revision: view.settings.revision, settings: { ...view.settings, notifications: { level: 'standard', quietHours: { enabled: true, start: '00:00', end: '00:00', timezone: 'Europe/Lisbon' } } } } as never);
   await engine.decisions.ask('project', { question: 'Quiet question one?' }, 'coordinator');
   await engine.decisions.ask('project', { question: 'Quiet question two?' }, 'coordinator');
   await engine.decisions.ask('project', { question: 'Production is down. Roll back?', options: [{ label: 'Roll back' }, { label: 'Leave it' }], urgent: true }, 'coordinator');
-  await until(() => /Production is down\. Roll back\?/u.test(pane()));
-  expect(pane()).not.toMatch(/Quiet question one/u);
+  await until(() => /Production is down\. Roll back\?/u.test(seen()));
+  expect(seen()).not.toMatch(/Quiet question one/u);
   const quiet = await engine.settingsView('project');
   await engine.putSettings('project', { schema: 'project-work-settings-request-v1', revision: quiet.settings.revision, settings: { ...quiet.settings, notifications: { level: 'standard', quietHours: { enabled: false, start: '23:00', end: '08:00', timezone: 'Europe/Lisbon' } } } } as never);
-  await until(() => /2 updates while you were away/u.test(pane()));
+  await until(() => /2 updates while you were away/u.test(seen()));
   // 5. With the bridge stopped, two items wait; after a restart with --continue both arrive.
   spawnSync('tmux', ['kill-session', '-t', `=${session}`]);
   await engine.decisions.ask('project', { question: 'While you were gone, question A?' }, 'coordinator');
   await engine.decisions.ask('project', { question: 'While you were gone, question B?' }, 'coordinator');
   await new Promise(resolve => setTimeout(resolve, 5000));
   const project = (await f!.app.ownerTools.projects())[0]!;
-  expect(await f!.app.ownerBridges.startBridge(project, { claudeConfigDir: process.env.JEVELLAN_BRIDGE_EVAL_CLAUDE_DIR!, remoteName: 'jevellan-test · bridge journey' })).toMatch(/^Started the bridge/u);
-  await until(() => /question A\?/u.test(pane()) && /question B\?/u.test(pane()));
+  // The minute check may have started it again already; either way it comes back with --continue.
+  expect(await f!.app.ownerBridges.startBridge(project, { claudeConfigDir: process.env.JEVELLAN_BRIDGE_EVAL_CLAUDE_DIR!, remoteName: 'jevellan-test · bridge journey' })).toMatch(/^(Started the bridge|The bridge for .* is already running)/u);
+  await until(() => /question A\?/u.test(seen()) && /question B\?/u.test(seen()));
 }, 1_200_000);

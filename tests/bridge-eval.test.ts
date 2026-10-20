@@ -3,7 +3,7 @@
 // plugin against a test installation on the simulated runtime; the tool calls in the session's stream must match. Channels are not
 // available headless, so the push arrives as a message starting [Jevellan push], which rule 6 of the prompt covers.
 import { afterAll, beforeAll, expect, test } from 'vitest';
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -33,19 +33,25 @@ beforeAll(async () => {
 }, 120_000);
 afterAll(async () => { await f?.close(); });
 
-/** One headless bridge turn; the Jevellan tool calls it made, in order. */
-function bridge(text: string): Call[] {
-  const result = spawnSync('claude', ['-p', '--model', 'sonnet', '--effort', 'medium', '--plugin-dir', join(pluginDist(f!.homes), 'jevellan'), '--append-system-prompt-file', prompt,
+/** One headless bridge turn; the Jevellan tool calls it made, in order. Spawned without blocking: the engine answers the forwarder from this
+ * process. */
+async function bridge(text: string): Promise<Call[]> {
+  const child = spawn('claude', ['-p', '--model', 'sonnet', '--effort', 'medium', '--plugin-dir', join(pluginDist(f!.homes), 'jevellan'), '--append-system-prompt-file', prompt,
     '--allowedTools', `${PREFIX}*`, '--disallowedTools', 'Bash', 'Edit', 'Write', 'NotebookEdit', '--output-format', 'stream-json', '--verbose', '--max-turns', '6', text],
-    { cwd: folder, encoding: 'utf8', timeout: 240_000, env: { ...process.env, CLAUDE_CONFIG_DIR: process.env.JEVELLAN_BRIDGE_EVAL_CLAUDE_DIR, JEVELLAN_HOME: f!.homes.root, JEVELLAN_BRIDGE: '1', JEVELLAN_PROJECT: f!.project.name, JEVELLAN_ROLE: '', ENABLE_CLAUDEAI_MCP_SERVERS: 'false' } });
+    { cwd: folder, stdio: ['ignore', 'pipe', 'ignore'], env: { ...process.env, CLAUDE_CONFIG_DIR: process.env.JEVELLAN_BRIDGE_EVAL_CLAUDE_DIR, JEVELLAN_HOME: f!.homes.root, JEVELLAN_BRIDGE: '1', JEVELLAN_PROJECT: f!.project.name, JEVELLAN_ROLE: '', ENABLE_CLAUDEAI_MCP_SERVERS: 'false' } });
+  let stdout = '';
+  child.stdout.setEncoding('utf8').on('data', (chunk: string) => { stdout += chunk; });
+  const timer = setTimeout(() => child.kill(), 240_000);
+  await new Promise(resolve => child.on('close', resolve));
+  clearTimeout(timer);
   const calls: Call[] = [];
-  for (const line of result.stdout.split('\n')) {
+  for (const line of stdout.split('\n')) {
     let event: { type?: string; message?: { content?: Array<{ type: string; name?: string; input?: Record<string, unknown> }> } };
     try { event = JSON.parse(line); } catch { continue; }
     if (event.type !== 'assistant') continue;
     for (const block of event.message?.content ?? []) if (block.type === 'tool_use' && block.name?.startsWith(PREFIX)) calls.push({ tool: block.name.slice(PREFIX.length), input: block.input ?? {} });
   }
-  writeFileSync(join(folder, `${calls.length}-${text.slice(0, 20).replace(/\W+/gu, '_')}.jsonl`), result.stdout);
+  writeFileSync(join(folder, `${calls.length}-${text.slice(0, 20).replace(/\W+/gu, '_')}.jsonl`), stdout);
   return calls;
 }
 const writes = (calls: Call[]) => calls.filter(call => !['status', 'activity'].includes(call.tool) && !(call.tool === 'ask_coordinator' && call.input.mode === 'ask')
@@ -68,7 +74,7 @@ const CASES: Array<[string, (calls: Call[]) => boolean]> = [
   ['[Jevellan push] W14 waiting on you: PR #88 by an external contributor: build passed, 2 tests failed. Options: merge, redo, close, later', calls => writes(calls).length === 0],
 ];
 
-test.skipIf(!enabled).each(CASES)('bridge eval: %s', (utterance, check) => {
-  const calls = bridge(utterance);
+test.skipIf(!enabled).each(CASES)('bridge eval: %s', async (utterance, check) => {
+  const calls = await bridge(utterance);
   expect({ utterance, calls, pass: check(calls) }).toMatchObject({ pass: true });
 }, 300_000);

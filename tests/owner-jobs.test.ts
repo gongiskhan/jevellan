@@ -33,6 +33,7 @@ test('jobs lists the window, items and command jobs, and changes when things run
   expect(await text({ action: 'list' })).toContain('Command jobs: intake (every 10 min, 08:00 to 23:00)');
   expect(await text({ action: 'pause', job: 'intake' })).toBe("Paused Intake. It won't run until you resume it.");
   expect(await text({ action: 'show', job: 'nothing' })).toMatch(/^ERROR job_not_found: No job or night item matches "nothing"\. Known: /u);
+  expect(await text({ action: 'schedule', job: 'deploy', text: 'switch deploys to nightly' })).toMatch(/Known: .+\. To deploy, answer the deploy message waiting on you with respond\. The deploy switch \(approve, nightly, automatic\) is a setting: config set, section deploy, key mode\. Rollback is jobs rollback\.$/u);
   expect(await text({ action: 'schedule', job: 'review', text: 'whenever' })).toBe('ERROR invalid_schedule: schedule takes windowStart (HH:MM), order (night items), days (mon to sun) or everyMinutes with between (HH:MM-HH:MM).');
   expect(await text({ action: 'rollback' })).toBe('ERROR rollback_unavailable: Rollback not available: nothing was deployed through Jevellan yet.');
   expect(await text({ action: 'health' })).toBe('No health checks are configured.');

@@ -72,7 +72,8 @@ export class OwnerBridges {
     const prompt = readFileSync(join(plugin, 'bridge', 'system-prompt.md'), 'utf8').replaceAll('{project}', project.name);
     writeFileSync(join(folder, 'system-prompt.md'), prompt, { mode: 0o600 });
     const transport = settings.push.transport; const previous = this.#sessionFiles(dir, folder).length > 0;
-    const args = ['--model', 'sonnet', '--effort', 'medium', '--remote-control', options.remoteName ?? process.env.JEVELLAN_BRIDGE_REMOTE_NAME ?? `Jevellan · ${project.name}`, '--plugin-dir', plugin,
+    const name = options.remoteName ?? process.env.JEVELLAN_BRIDGE_REMOTE_NAME ?? `Jevellan · ${project.name}`;
+    const args = ['--model', 'sonnet', '--effort', 'medium', '--remote-control', name, '--plugin-dir', plugin,
       ...(transport === 'channel' ? ['--dangerously-load-development-channels', 'plugin:jevellan@inline'] : []),
       '--append-system-prompt-file', join(folder, 'system-prompt.md'), '--allowedTools', `${BRIDGE_TOOL_PREFIX}*`, '--disallowedTools', 'Bash', 'Edit', 'Write', 'NotebookEdit',
       ...(previous && options.continue !== false ? ['--continue'] : [])];
@@ -89,7 +90,7 @@ export class OwnerBridges {
       restarts: (state?.restarts ?? 0) + (state ? 1 : 0) });
     this.app.ownerTools.updateProjectSettings(project.id, current => ({ ...current, bridge: { ...current.bridge, wanted: true } }));
     this.app.ownerEvents.publish({ projectId: project.id, source: 'jevellan', kind: 'state', text: `bridge started in tmux ${session}${ready ? '' : ' (start-up dialogs did not finish in time)'}` });
-    return `Started the bridge for ${project.name} in tmux ${session}. Open the session "Jevellan · ${project.name}" in the Claude app (account ${label}).${ready ? '' : ' It is still starting; check it with tmux attach -t ' + session + '.'}`;
+    return `Started the bridge for ${project.name} in tmux ${session}. Open the session "${name}" in the Claude app (account ${label}).${ready ? '' : ' It is still starting; check it with tmux attach -t ' + session + '.'}`;
   }
 
   stopBridge(project: Project): string {
@@ -103,12 +104,15 @@ export class OwnerBridges {
 
   /** Answers the known start-up dialogs until the prompt shows, for at most 90 seconds. */
   async #answerDialogs(session: string, timeoutMs = 90_000): Promise<boolean> {
-    const deadline = Date.now() + timeoutMs; let quiet = 0;
+    const deadline = Date.now() + timeoutMs; let quiet = 0; const answered = new Map<RegExp, number>();
     while (Date.now() < deadline) {
       await new Promise(resolve => setTimeout(resolve, 500));
       const pane = this.tmux(['capture-pane', '-p', '-t', `=${session}:`]).stdout;
-      const dialog = DIALOGS.find(entry => entry.text.test(pane));
-      if (dialog) { for (const key of dialog.keys) { this.tmux(['send-keys', '-t', `=${session}:`, key]); await new Promise(resolve => setTimeout(resolve, 300)); } quiet = 0; continue; }
+      // A dialog just answered can stay on screen until Claude redraws; answering it again would send its keys to the next dialog
+      // (Down then Enter on the channel confirmation picks Exit), so each one waits five seconds before it is answered again.
+      const dialog = DIALOGS.find(entry => entry.text.test(pane) && Date.now() - (answered.get(entry.text) ?? 0) >= 5000);
+      if (dialog) { answered.set(dialog.text, Date.now()); for (const key of dialog.keys) { this.tmux(['send-keys', '-t', `=${session}:`, key]); await new Promise(resolve => setTimeout(resolve, 300)); } quiet = 0; continue; }
+      if (DIALOGS.some(entry => entry.text.test(pane))) { quiet = 0; continue; }
       if (/Claude Code v\d/u.test(pane) && /❯/u.test(pane)) { quiet++; if (quiet >= 4) return true; }
     }
     return false;

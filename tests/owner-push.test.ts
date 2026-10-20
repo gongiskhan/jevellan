@@ -57,7 +57,9 @@ test('the bridge starts in tmux with the specified flags, refuses an account wit
     if (args[0] === 'new-session') { alive = true; return { status: 0, stdout: '' }; }
     if (args[0] === 'has-session') return { status: alive ? 0 : 1, stdout: '' };
     if (args[0] === 'list-panes') return { status: 0, stdout: alive ? 'claude\n' : '' };
-    if (args[0] === 'capture-pane') return { status: 0, stdout: calls.filter(row => row[0] === 'capture-pane').length < 2 ? 'I am using this for local development' : 'Claude Code v2\n❯ ' };
+    // The trust dialog stays on screen for three captures after its answer, then the channel confirmation shows under it once.
+    if (args[0] === 'capture-pane') { const n = calls.filter(row => row[0] === 'capture-pane').length;
+      return { status: 0, stdout: n <= 3 ? '❯ No, exit\n  Yes, I trust this folder' : n === 4 ? 'Yes, I trust this folder\n❯ 1. I am using this for local development\n  2. Exit' : 'Claude Code v2\n❯ ' }; }
     return { status: 0, stdout: '' }; };
   const bridges = new OwnerBridges(f.app, tmux, '/usr/bin/claude');
   const project = (await f.app.ownerTools.projects())[0]!;
@@ -66,7 +68,7 @@ test('the bridge starts in tmux with the specified flags, refuses an account wit
   writeFileSync(join(config, '.credentials.json'), '{}');
   const text = await bridges.startBridge(project, { claudeConfigDir: config });
   expect(text).toMatch(new RegExp(`^Started the bridge for ${project.name} in tmux jv-bridge-`, 'u'));
-  expect(calls.some(row => row[0] === 'send-keys' && row.includes('Enter'))).toBe(true);
+  expect(calls.filter(row => row[0] === 'send-keys').map(row => row.at(-1))).toEqual(['Down', 'Enter', 'Enter']);
   const start = readFileSync(join(f.homes.root, 'bridges', bridges.sessionName(project).slice('jv-bridge-'.length), 'start.sh'), 'utf8');
   expect(start).toContain(`export JEVELLAN_BRIDGE='1'`); expect(start).toContain(`export JEVELLAN_PROJECT='${project.name}'`); expect(start).toContain('unset CLAUDE_CODE_OAUTH_TOKEN'); expect(start).toContain("export ENABLE_CLAUDEAI_MCP_SERVERS='false'");
   for (const flag of [`'--model' 'sonnet' '--effort' 'medium' '--remote-control' 'Jevellan · ${project.name}'`, `'--dangerously-load-development-channels' 'plugin:jevellan@inline'`, `'--allowedTools' 'mcp__plugin_jevellan_jevellan__*' '--disallowedTools' 'Bash' 'Edit' 'Write' 'NotebookEdit'`, "'--append-system-prompt-file'"]) expect(start).toContain(flag);

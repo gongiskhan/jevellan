@@ -24,7 +24,9 @@ function find(data: Awaited<ReturnType<typeof load>>, token: string): Item {
   if (exact.length === 1) return exact[0]!;
   const partial = all.filter(item => name(item).toLowerCase().includes(wanted) || slug(name(item)).includes(slug(wanted)));
   if (partial.length === 1) return partial[0]!;
-  throw new OwnerRefusal(`${exact.length + partial.length > 1 ? `"${token}" matches more than one: ` : `No job or night item matches "${token}". Known: `}${(exact.length + partial.length > 1 ? [...exact, ...partial] : all).map(name).join(', ') || 'none'}.`, 'job_not_found', 404);
+  // Deploys are not a job: the switch between approve, nightly and automatic is a setting (bridge eval).
+  const hint = exact.length + partial.length === 0 && /^deploy/u.test(wanted) ? ' To deploy, answer the deploy message waiting on you with respond. The deploy switch (approve, nightly, automatic) is a setting: config set, section deploy, key mode. Rollback is jobs rollback.' : '';
+  throw new OwnerRefusal(`${exact.length + partial.length > 1 ? `"${token}" matches more than one: ` : `No job or night item matches "${token}". Known: `}${(exact.length + partial.length > 1 ? [...exact, ...partial] : all).map(name).join(', ') || 'none'}.${hint}`, 'job_not_found', 404);
 }
 const runLine = (context: OwnerContext, run: ProjectJobRun, name: string, tz: string, now: Date) => {
   const id = context.tools.ids.one(context.project.id, 'J', run.id);
@@ -75,7 +77,7 @@ export const jobs: OwnerHandler = async (context) => {
     case 'deploy': {
       const open = (await engine.view(projectId)).decisions.open.find(row => row.deploy);
       const deployed = [...data.deploys].filter(row => row.deployedAt).sort((a, b) => b.deployedAt!.localeCompare(a.deployedAt!))[0];
-      const lines = open ? [`${tools.ids.one(projectId, 'W', open.id)} ${open.question}`, `Options: ${open.options.map(option => option.label).join(', ')}`] : ['No deploy message is open.'];
+      const lines = open ? [`${tools.ids.one(projectId, 'W', open.id)} ${open.question}`, `Options: ${open.options.map(option => option.label).join(', ')} · answer it with respond ${tools.ids.one(projectId, 'W', open.id)}`] : ['No deploy message is open.'];
       if (deployed) lines.push(`Last deploy: ${deployed.commit.slice(0, 7)}, ${ownerClock(deployed.deployedAt!, now, tz)} · health after: ${deployed.health.after.length ? deployed.health.after.map(row => `${settings.healthChecks.find(check => check.id === row.checkId)?.name ?? row.checkId} ${row.passed ? 'passed' : 'failed'}`).join(', ') : 'not run'} · rollback to ${deployed.previousCommit?.slice(0, 7) ?? 'the previous commit'}: ${rollbackAvailability(deployed, data.deploys)}`);
       lines.push(`Mode: ${settings.deploy.mode}${tools.projectSettings(projectId).deploy.paused ? ' (paused)' : ''}`);
       return { text: capLines(lines) };
