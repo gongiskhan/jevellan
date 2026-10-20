@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { rankAccounts } from '@jevellan/accounts';
 import type { AccountService } from '@jevellan/accounts';
 import { ACCOUNT_REASON_TEXT } from '@jevellan/decisions';
-import { PROJECT_MEMORY_ID, applicationRoot, deviceAllowsWork, type PlacementAccountChoice, type AccountStatus, type Effort, type Homes, type RiggingItem, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
+import { IN_PLACE_RIGGING_REASON, PROJECT_MEMORY_ID, applicationRoot, deviceAllowsWork, type PlacementAccountChoice, type AccountStatus, type Effort, type Homes, type RiggingItem, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
 import type { BridgeScopeTools, StretchBridges } from '@jevellan/conversations';
 import { TurnInputSchema, type RuntimeAdapter, type StretchRun, type TurnInput } from '@jevellan/runtime-contract';
 import { ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, accountInTerminal, libraryInstructions, cannotRunHere, noTurnAccount, waitingForAccountReason } from './copy.js';
@@ -190,7 +190,10 @@ export class TurnLauncher {
       const compactionNotice = request.runtime === 'codex' && !contextWindow ? 'Codex did not expose this model’s context window; native default auto-compaction is active until model discovery supplies it.' : undefined;
       const rigging = await this.#o.riggingItems(request.runtime, request.owner.projectId);
       const delivered = await adapter.materialiseRigging(resolved.home, rigging);
-      if (adapter.riggingKinds.includes('hook') && rigging.some((item) => item.id === PROJECT_MEMORY_ID && item.enabled && item.state !== 'parked')
+      // An in-place account is the owner's own folder, which never gets Rigging: its sessions run without the compaction and session-end
+      // memory hooks (the turn-end capture of Projects still runs).
+      const inPlace = delivered.some((item) => item.reason === IN_PLACE_RIGGING_REASON);
+      if (adapter.riggingKinds.includes('hook') && !inPlace && rigging.some((item) => item.id === PROJECT_MEMORY_ID && item.enabled && item.state !== 'parked')
         && !delivered.some((item) => item.itemId === PROJECT_MEMORY_ID && item.applied)) { await release(); return { kind: 'unavailable', reason: MEMORY_HOOKS_UNDELIVERED }; }
       const gitIdentity = request.owner.kind === 'thread' && request.gitIdentityFrom ? await this.#identity(request.gitIdentityFrom) : undefined;
       await this.#o.accounts.markUsed(account.id);

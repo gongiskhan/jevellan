@@ -33,6 +33,8 @@ export class OwnerLogins {
     const view = await this.app.accounts.add({ schema: 'add-account-v1', runtime, label, kind: 'subscription', credential: 'per-device', ceilingPct: 90 });
     const path = this.app.homes.registerInPlace(runtime, view.account.id, folder);
     const status = await this.app.accounts.check(view.account.id);
+    // Placement only offers the models an account has listed, as a token login does after its first check.
+    if (status.auth === 'ready') await this.app.accounts.discover(view.account.id).catch(() => undefined);
     return `Added account ${view.account.label} (${runtime}) using ${path} in place: ${status.auth === 'ready' ? 'ready' : status.auth}.`;
   }
   async start(projectId: string, label: string, interactive: boolean): Promise<string> {

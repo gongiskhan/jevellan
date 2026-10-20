@@ -63,7 +63,8 @@ export class OwnerBridges {
   running(session: string): boolean {
     if (this.tmux(['has-session', '-t', `=${session}`]).status !== 0) return false;
     const command = this.tmux(['list-panes', '-t', `=${session}`, '-F', '#{pane_current_command}']).stdout;
-    return /claude|node/u.test(command);
+    // Claude's native build runs as its version file (~/.local/share/claude/versions/2.1.304), so the pane shows the version number.
+    return /claude|node|^\d+\.\d+\.\d+/mu.test(command);
   }
   /** The account folder the bridge runs under: the `bridge.account` account's managed folder, or an explicit Claude config folder. */
   async #configDir(project: Project, override?: string): Promise<{ dir: string; label: string }> {

@@ -70,6 +70,8 @@ function files(root: string): string[] {
   });
 }
 
+/** The reason Rigging gives for every item of an in-place account (Homes.registerInPlace): the owner's folder is never written. */
+export const IN_PLACE_RIGGING_REASON = 'This account uses your own folder in place.';
 /** APM deploys into private staging; only verified runtime files reach an account. */
 export class RiggingDelivery {
   constructor(readonly homes: Homes, readonly runner: ApmRunner = runApm, readonly redactor = new SecretRedactor()) {}
@@ -80,7 +82,7 @@ export class RiggingDelivery {
     const accountId = basename(home);
     const items = raw.map((item) => RiggingItemSchema.parse(item)).filter((item) => item.runtime === runtime);
     // An in-place account is the owner's own folder: Jevellan never writes Rigging into it.
-    if (this.homes.isInPlaceFolder(home)) return items.map((item) => ({ itemId: item.id, applied: false, reason: 'This account uses your own folder in place.' }));
+    if (this.homes.isInPlaceFolder(home)) return items.map((item) => ({ itemId: item.id, applied: false, reason: IN_PLACE_RIGGING_REASON }));
     if (this.homes.account(runtime, accountId) !== home) throw new Error('Rigging requires an account home owned by Jevellan.');
     if (new Set(items.map((item) => item.id)).size !== items.length) throw new Error('Rigging item ids must be unique per runtime.');
     for (const item of items) {
