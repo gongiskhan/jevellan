@@ -164,7 +164,9 @@ export async function pluginDoctorLine(homes = new Homes(), env: NodeJS.ProcessE
   const built = existsSync(join(pluginDist(homes), 'jevellan', '.claude-plugin', 'plugin.json'));
   const dir = env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude');
   let installed = false; try { installed = readFileSync(join(dir, 'plugins', 'installed_plugins.json'), 'utf8').includes('jevellan@jevellan-local'); } catch { /* not installed */ }
-  const reachable = (await callOwnerTool('status', {}, { homes, caller: 'cli', timeoutMs: 5000 })).ok;
+  // Reachable means the service answered, even when it answered that no project exists yet.
+  const probe = await callOwnerTool('status', {}, { homes, caller: 'cli', timeoutMs: 5000 });
+  const reachable = probe.ok || !['not_running', 'unauthenticated'].includes(probe.error.code);
   return `INFO Plugin: ${built ? 'built' : 'not built (jevellan plugin build)'} · ${installed ? `installed for Claude Code (${dir})` : 'not installed (jevellan plugin install)'} · forwarder ${reachable ? 'reachable' : 'not reachable'}`;
 }
 

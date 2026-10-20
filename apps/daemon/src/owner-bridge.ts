@@ -76,7 +76,8 @@ export class OwnerBridges {
       ...(transport === 'channel' ? ['--dangerously-load-development-channels', 'plugin:jevellan@inline'] : []),
       '--append-system-prompt-file', join(folder, 'system-prompt.md'), '--allowedTools', `${BRIDGE_TOOL_PREFIX}*`, '--disallowedTools', 'Bash', 'Edit', 'Write', 'NotebookEdit',
       ...(previous && options.continue !== false ? ['--continue'] : [])];
-    const env: Record<string, string> = { JEVELLAN_BRIDGE: '1', JEVELLAN_PROJECT: project.name, JEVELLAN_HOME: this.app.homes.root, CLAUDE_CONFIG_DIR: dir };
+    // The account's claude.ai connectors stay out of the bridge: their task and calendar tools would compete with Jevellan's (run log, Journey A).
+    const env: Record<string, string> = { JEVELLAN_BRIDGE: '1', JEVELLAN_PROJECT: project.name, JEVELLAN_HOME: this.app.homes.root, CLAUDE_CONFIG_DIR: dir, ENABLE_CLAUDEAI_MCP_SERVERS: 'false' };
     const script = ['#!/bin/sh', 'unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY JEVELLAN_ROLE', ...Object.entries(env).map(([key, value]) => `export ${key}=${shell(value)}`),
       `exec ${shell(this.claude)} ${args.map(shell).join(' ')}`].join('\n');
     writeFileSync(join(folder, 'start.sh'), `${script}\n`, { mode: 0o700 });

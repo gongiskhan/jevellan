@@ -68,7 +68,7 @@ test('the bridge starts in tmux with the specified flags, refuses an account wit
   expect(text).toMatch(new RegExp(`^Started the bridge for ${project.name} in tmux jv-bridge-`, 'u'));
   expect(calls.some(row => row[0] === 'send-keys' && row.includes('Enter'))).toBe(true);
   const start = readFileSync(join(f.homes.root, 'bridges', bridges.sessionName(project).slice('jv-bridge-'.length), 'start.sh'), 'utf8');
-  expect(start).toContain(`export JEVELLAN_BRIDGE='1'`); expect(start).toContain(`export JEVELLAN_PROJECT='${project.name}'`); expect(start).toContain('unset CLAUDE_CODE_OAUTH_TOKEN');
+  expect(start).toContain(`export JEVELLAN_BRIDGE='1'`); expect(start).toContain(`export JEVELLAN_PROJECT='${project.name}'`); expect(start).toContain('unset CLAUDE_CODE_OAUTH_TOKEN'); expect(start).toContain("export ENABLE_CLAUDEAI_MCP_SERVERS='false'");
   for (const flag of [`'--model' 'sonnet' '--effort' 'medium' '--remote-control' 'Jevellan · ${project.name}'`, `'--dangerously-load-development-channels' 'plugin:jevellan@inline'`, `'--allowedTools' 'mcp__plugin_jevellan_jevellan__*' '--disallowedTools' 'Bash' 'Edit' 'Write' 'NotebookEdit'`, "'--append-system-prompt-file'"]) expect(start).toContain(flag);
   expect(start).not.toContain('--continue');
   expect(await bridges.startBridge(project)).toBe(`The bridge for ${project.name} is already running (tmux ${bridges.sessionName(project)}).`);

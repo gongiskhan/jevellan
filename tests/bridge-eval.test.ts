@@ -37,7 +37,7 @@ afterAll(async () => { await f?.close(); });
 function bridge(text: string): Call[] {
   const result = spawnSync('claude', ['-p', '--model', 'sonnet', '--effort', 'medium', '--plugin-dir', join(pluginDist(f!.homes), 'jevellan'), '--append-system-prompt-file', prompt,
     '--allowedTools', `${PREFIX}*`, '--disallowedTools', 'Bash', 'Edit', 'Write', 'NotebookEdit', '--output-format', 'stream-json', '--verbose', '--max-turns', '6', text],
-    { cwd: folder, encoding: 'utf8', timeout: 240_000, env: { ...process.env, CLAUDE_CONFIG_DIR: process.env.JEVELLAN_BRIDGE_EVAL_CLAUDE_DIR, JEVELLAN_HOME: f!.homes.root, JEVELLAN_BRIDGE: '1', JEVELLAN_PROJECT: f!.project.name, JEVELLAN_ROLE: '' } });
+    { cwd: folder, encoding: 'utf8', timeout: 240_000, env: { ...process.env, CLAUDE_CONFIG_DIR: process.env.JEVELLAN_BRIDGE_EVAL_CLAUDE_DIR, JEVELLAN_HOME: f!.homes.root, JEVELLAN_BRIDGE: '1', JEVELLAN_PROJECT: f!.project.name, JEVELLAN_ROLE: '', ENABLE_CLAUDEAI_MCP_SERVERS: 'false' } });
   const calls: Call[] = [];
   for (const line of result.stdout.split('\n')) {
     let event: { type?: string; message?: { content?: Array<{ type: string; name?: string; input?: Record<string, unknown> }> } };
