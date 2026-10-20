@@ -1,10 +1,10 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync, rmdirSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, rmdirSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import { parseDocument, stringify } from 'yaml';
-import { stringify as toml } from 'smol-toml';
+import { parse as parseToml, stringify as toml } from 'smol-toml';
 import { z } from 'zod';
 import { Homes, inside, resolvedPath } from './homes.js';
 import { atomicWrite, stableJson } from './files.js';
@@ -15,8 +15,66 @@ import { PROJECT_MEMORY_ID } from './project-memory-rigging.js';
 import { withRiggingHome } from './rigging-lock.js';
 
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
-export const RiggingDeliveryStateSchema = z.strictObject({ schema: z.literal('rigging-delivery-v1'), fingerprint: z.string(), files: z.record(z.string(), z.string()), claims: z.record(z.string(), z.strictObject({ schema: z.literal('rigging-claim-v1'), itemId: z.string(), sourceHash: z.string(), files: z.record(z.string(), z.string()), pending: z.boolean() })).default({}) });
+const deliveryFields = { fingerprint: z.string(), files: z.record(z.string(), z.string()), claims: z.record(z.string(), z.strictObject({ schema: z.literal('rigging-claim-v1'), itemId: z.string(), sourceHash: z.string(), files: z.record(z.string(), z.string()), pending: z.boolean() })).default({}) };
+/** What Rigging delivered to one account: the hash of each file it owns. */
+export const RiggingDeliveryStateSchema = z.strictObject({ schema: z.literal('rigging-delivery-v1'), ...deliveryFields });
+export type RiggingDeliveryState = z.infer<typeof RiggingDeliveryStateSchema>;
 const StateSchema = RiggingDeliveryStateSchema;
+/**
+ * Beside the delivery state (`<account>.keys.json`, so a version without it still reads the state): for each shared configuration file, the
+ * hash of each top-level key Rigging wrote, valid while the state still records the file as Rigging wrote it (`fileHash`).
+ */
+export const RiggingKeysSchema = z.strictObject({ schema: z.literal('rigging-keys-v1'), files: z.record(z.string(), z.strictObject({ fileHash: z.string(), keys: z.record(z.string(), z.string()) })) });
+export const riggingKeysPath = (statePath: string): string => statePath.replace(/\.json$/u, '.keys.json');
+/** The recorded keys of each shared file the state still owns as Rigging wrote it; a record the state no longer matches is ignored. */
+export function readRiggingKeys(statePath: string, state: Pick<RiggingDeliveryState, 'files'>): Record<string, Record<string, string>> {
+  let record: z.infer<typeof RiggingKeysSchema>;
+  try { record = RiggingKeysSchema.parse(JSON.parse(readFileSync(riggingKeysPath(statePath), 'utf8'))); } catch { return {}; }
+  return Object.fromEntries(Object.entries(record.files).filter(([ref, entry]) => state.files[ref] === entry.fileHash).map(([ref, entry]) => [ref, entry.keys]));
+}
+/**
+ * The configuration file each runtime also writes for itself (Claude Code its theme and onboarding, Codex its trusted folders): Rigging owns only
+ * the top-level keys it wrote there and keeps every other key.
+ */
+export const SHARED_RIGGING_FILE = { claude: 'settings.json', codex: 'config.toml' } as const;
+/** APM annotates the hook groups it deploys with `_apm_source`; a runtime that re-serializes the file drops it, which is no change. */
+function withoutApmSource(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutApmSource);
+  if (typeof value !== 'object' || value === null) return value;
+  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== '_apm_source').map(([key, entry]) => [key, withoutApmSource(entry)]));
+}
+const keyHash = (value: unknown) => hash(stableJson(withoutApmSource(value)));
+function sharedDocument(ref: string, contents: string | Buffer): Record<string, unknown> {
+  const text = contents.toString();
+  return JsonObject.parse(ref.endsWith('.toml') ? parseToml(text) : JSON.parse(text));
+}
+/** The hash of each top-level key of a shared configuration file. */
+export function sharedKeyHashes(ref: string, contents: string | Buffer): Record<string, string> {
+  return Object.fromEntries(Object.entries(sharedDocument(ref, contents)).map(([key, value]) => [key, keyHash(value)]));
+}
+/** The managed keys of a shared file that differ from what Rigging wrote; null when the file cannot be read as configuration. */
+export function changedSharedKeys(ref: string, contents: string | Buffer, recorded: Record<string, string>): string[] | null {
+  let document: Record<string, unknown>;
+  try { document = sharedDocument(ref, contents); } catch { return null; }
+  return Object.entries(recorded).filter(([key, expected]) => !Object.hasOwn(document, key) || keyHash(document[key]) !== expected).map(([key]) => key);
+}
+/**
+ * The shared file with Rigging's keys replaced by `next` and every other key kept, or null when that would overwrite a change: a key Rigging
+ * wrote that now differs from both what it wrote and what it writes next, or a key it never wrote that it would now write with another value.
+ */
+function mergeShared(ref: string, current: Buffer, next: string | Buffer, recorded: Record<string, string>): string | Buffer | null {
+  let document: Record<string, unknown>;
+  try { document = sharedDocument(ref, current); } catch { return null; }
+  const managed = sharedDocument(ref, next);
+  for (const [key, value] of Object.entries(document)) {
+    const now = keyHash(value); const wanted = Object.hasOwn(managed, key) ? keyHash(managed[key]) : undefined;
+    if (Object.hasOwn(recorded, key) ? now !== recorded[key] && now !== wanted : wanted !== undefined && now !== wanted) return null;
+  }
+  const kept = Object.entries(document).filter(([key]) => !Object.hasOwn(recorded, key) && !Object.hasOwn(managed, key));
+  if (!kept.length) return next;
+  const merged = { ...managed, ...Object.fromEntries(kept) };
+  return ref.endsWith('.toml') ? toml(merged) : `${JSON.stringify(merged, null, 2)}\n`;
+}
 const LockSchema = z.object({ lockfile_version: z.string().optional(), dependencies: z.array(z.object({ repo_url: z.string().optional(), local_path: z.string().optional(), deployed_files: z.array(z.string()).optional() })).default([]) });
 const JsonObject = z.record(z.string(), z.unknown());
 const ApmHookMetadataSchema = z.strictObject({
@@ -94,9 +152,28 @@ export class RiggingDelivery {
     const fingerprint = hash(stableJson({ selected, configured }));
     const statePath = this.homes.at('rigging', 'state', runtime, `${accountId}.json`);
     const previous = existsSync(statePath) ? StateSchema.parse(JSON.parse(readFileSync(statePath, 'utf8'))) : StateSchema.parse({ schema: 'rigging-delivery-v1', fingerprint: '', files: {} });
+    const previousKeys = readRiggingKeys(statePath, previous);
+    const shared: string = SHARED_RIGGING_FILE[runtime];
+    // The keys Rigging wrote to the shared file: from their record, else (a state from before records, or one a version without them rewrote)
+    // from the file as Rigging wrote it, still in the home or in its staging copy. Empty when Rigging never wrote it; unknown (undefined) when
+    // neither copy is left.
+    const recorded = (): Record<string, string> | undefined => {
+      if (previousKeys[shared]) return previousKeys[shared];
+      const expected = previous.files[shared]; if (!expected) return {};
+      const copies = [confined(home, shared), ...(previous.fingerprint ? [join(this.homes.at('rigging', 'stages', runtime, accountId, previous.fingerprint), `.${runtime}`, shared)] : [])];
+      for (const path of copies) {
+        try { const contents = readFileSync(path); if (hash(contents) === expected) return sharedKeyHashes(shared, contents); } catch { /* Missing, or not configuration. */ }
+      }
+      return undefined;
+    };
+    const intact = (ref: string, expected: string) => {
+      const path = confined(home, ref); if (!existsSync(path) || !lstatSync(path).isFile()) return false;
+      const contents = readFileSync(path); if (hash(contents) === expected) return true;
+      return ref === shared && !!previousKeys[ref] && changedSharedKeys(ref, contents, previousKeys[ref])?.length === 0;
+    };
     if (Object.values(previous.claims).some((claim) => claim.pending)) throw new Error('A Rigging promotion needs to finish. Retry it before applying this account.');
     const results = (): RiggingResult[] => items.map((item) => ({ itemId: item.id, applied: selected.includes(item), ...(!supportedRigging(runtime).includes(item.kind) ? { reason: `Not supported by ${runtime === 'codex' ? 'Codex' : 'Claude Code'}` } : !item.enabled || item.state === 'parked' ? { reason: 'Parked or disabled.' } : {}) }));
-    if (previous.fingerprint === fingerprint && Object.entries(previous.files).every(([ref, expected]) => { const path = confined(home, ref); return existsSync(path) && lstatSync(path).isFile() && hash(readFileSync(path)) === expected; })) return results();
+    if (previous.fingerprint === fingerprint && Object.entries(previous.files).every(([ref, expected]) => intact(ref, expected))) return results();
     const stage = this.homes.ensure('rigging', 'stages', runtime, accountId, fingerprint);
     const dependencies: Array<string | { path: string } | { repo: string }> = [...configured];
     const settings: Record<string, unknown> = {}; const servers: Record<string, unknown> = {};
@@ -173,21 +250,30 @@ export class RiggingDelivery {
       const delivered = Hooks.safeParse(JSON.parse(staged.get(runtime === 'claude' ? 'settings.json' : 'hooks.json')?.toString() ?? '{}'));
       if (!delivered.success || Object.entries(expected.hooks).some(([event, groups]) => groups.some((group) => group.hooks.some((hook) => !delivered.data.hooks[event]?.some((entry) => entry.hooks.some((actual) => actual.type === hook.type && actual.command === hook.command && actual.timeout === hook.timeout)))))) throw new Error('APM did not deliver the required Project memory hooks.');
     }
-    // A loose file, or an owned file edited outside Rigging, is never overwritten.
-    const conflicts: string[] = [];
+    // A loose file, or an owned file edited outside Rigging, is never overwritten. In the shared file only Rigging's own keys count, and the
+    // runtime's keys are kept (`rewrites`: the shared file with Rigging's keys replaced, or with them removed when it delivers none).
+    const conflicts: string[] = []; const rewrites = new Map<string, string | Buffer>();
+    const merged = (ref: string, path: string, next: string | Buffer) => {
+      if (ref !== shared || !lstatSync(path).isFile()) return null;
+      const keys = recorded(); return keys ? mergeShared(ref, readFileSync(path), next, keys) : null;
+    };
     for (const [ref, contents] of staged) {
-      const path = confined(home, ref);
-      if (existsSync(path) && (!lstatSync(path).isFile() || (hash(readFileSync(path)) !== previous.files[ref] && hash(readFileSync(path)) !== hash(contents)))) conflicts.push(ref);
+      const path = confined(home, ref); if (!existsSync(path)) continue;
+      const rewrite = merged(ref, path, contents); if (rewrite !== null) { rewrites.set(ref, rewrite); continue; }
+      if (!lstatSync(path).isFile() || (hash(readFileSync(path)) !== previous.files[ref] && hash(readFileSync(path)) !== hash(contents))) conflicts.push(ref);
     }
     for (const ref of Object.keys(previous.files)) {
-      const path = confined(home, ref);
-      if (!staged.has(ref) && existsSync(path) && (!lstatSync(path).isFile() || hash(readFileSync(path)) !== previous.files[ref])) conflicts.push(ref);
+      const path = confined(home, ref); if (staged.has(ref) || !existsSync(path)) continue;
+      const empty = ref.endsWith('.toml') ? '' : '{}';
+      const rewrite = merged(ref, path, empty); if (rewrite !== null) { if (rewrite !== empty) rewrites.set(ref, rewrite); else if (hash(readFileSync(path)) !== previous.files[ref]) rewrites.set(ref, rewrite); continue; }
+      if (!lstatSync(path).isFile() || hash(readFileSync(path)) !== previous.files[ref]) conflicts.push(ref);
     }
-    if (conflicts.length) throw new Error(`Rigging preserved local changes: ${conflicts.join(', ')}. Park or keep those items before applying.`);
+    if (conflicts.length) throw new Error(`Rigging preserved local changes: ${conflicts.join(', ')}. Park the changed copy in Rigging to apply its managed items again.`);
     const next: Record<string, string> = {};
-    for (const [ref, contents] of staged) { const path = confined(home, ref); write(path, contents, modes.get(ref)); next[ref] = hash(contents); }
+    for (const [ref, contents] of staged) { const path = confined(home, ref); const written = rewrites.get(ref) ?? contents; write(path, written, modes.get(ref)); next[ref] = hash(written); }
     for (const ref of Object.keys(previous.files)) if (!staged.has(ref)) {
       const source = confined(home, ref); if (!existsSync(source)) continue;
+      const rest = rewrites.get(ref); if (rest !== undefined) { write(source, rest); continue; }
       const destination = this.homes.at('rigging', 'parked', runtime, accountId, previous.fingerprint, ref);
       mkdirSync(dirname(destination), { recursive: true, mode: 0o700 }); renameSync(source, destination);
       let directory = dirname(source);
@@ -196,6 +282,9 @@ export class RiggingDelivery {
         directory = dirname(directory);
       }
     }
+    // The key record first: a state that names a file the record does not match ignores the record, so a crash between them is safe.
+    if (staged.has(shared)) write(riggingKeysPath(statePath), JSON.stringify(RiggingKeysSchema.parse({ schema: 'rigging-keys-v1', files: { [shared]: { fileHash: next[shared]!, keys: sharedKeyHashes(shared, staged.get(shared)!) } } })));
+    else rmSync(riggingKeysPath(statePath), { force: true });
     write(statePath, JSON.stringify(StateSchema.parse({ schema: 'rigging-delivery-v1', fingerprint, files: next, claims: previous.claims })));
     return results();
   }

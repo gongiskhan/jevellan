@@ -114,3 +114,70 @@ test('configuration APM dependencies are delivered and removing one parks its ow
   configuration.dependencies.apm = []; writeFileSync(homes.at('apm.yml'), exportConfiguration(configuration)); await delivery.materialise('claude', home, []);
   expect(existsSync(target)).toBe(false); expect(readdirSync(homes.at('rigging', 'parked'), { recursive: true }).some((ref) => String(ref).endsWith('SKILL.md'))).toBe(true);
 }, 120_000);
+
+/** APM's settings.json for the fixture memory hook of one application version, annotated with APM's source the way it ships. */
+function annotatedApm(version: { app: string }): ApmRunner {
+  return async (cwd, runtime, env) => {
+    await fakeApm(cwd, runtime, env);
+    writeFileSync(join(cwd, '.claude', 'settings.json'), JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: `node ${version.app}/jevellan.mjs memory-hook`, timeout: 3 }], _apm_source: 'fixture-package' }] } }, null, 2));
+  };
+}
+/** What Claude Code does to an account's settings.json on its first interactive run: re-serializes it without APM's annotations and adds its own keys. */
+function claudeCodeRewrites(path: string): void {
+  const settings = JSON.parse(readFileSync(path, 'utf8')) as { hooks: Record<string, Array<Record<string, unknown>>> };
+  const hooks = Object.fromEntries(Object.entries(settings.hooks).map(([event, groups]) => [event, groups.map(({ _apm_source, ...group }) => { void _apm_source; return group; })]));
+  writeFileSync(path, `${JSON.stringify({ hooks, theme: 'auto', agentPushNotifEnabled: true }, null, 2)}\n`);
+}
+const settingsOf = (home: string) => JSON.parse(readFileSync(join(home, 'settings.json'), 'utf8')) as { hooks: { Stop: Array<{ hooks: Array<{ command: string }> }> }; theme?: string; agentPushNotifEnabled?: boolean };
+
+test('Claude Code rewriting settings.json with its own keys is no conflict: managed keys compare without APM annotations and its keys are kept', async () => {
+  const version = { app: '/app/0.7.1' }; const home = homes.account('claude', 'acc_bridge'); const delivery = new RiggingDelivery(homes, annotatedApm(version));
+  await delivery.materialise('claude', home, [item('claude', version.app)]);
+  claudeCodeRewrites(join(home, 'settings.json'));
+  await delivery.materialise('claude', home, [item('claude', version.app)]);
+  expect(settingsOf(home)).toMatchObject({ theme: 'auto', agentPushNotifEnabled: true });
+  // A new application version rewrites the managed hooks and still keeps Claude Code's keys.
+  version.app = '/app/0.7.2';
+  await delivery.materialise('claude', home, [item('claude', version.app)]);
+  expect(settingsOf(home)).toMatchObject({ theme: 'auto', agentPushNotifEnabled: true });
+  expect(settingsOf(home).hooks.Stop[0]!.hooks[0]!.command).toBe('node /app/0.7.2/jevellan.mjs memory-hook');
+  // A change to a key Rigging manages is still the owner's to resolve.
+  const changed = settingsOf(home); changed.hooks.Stop[0]!.hooks[0]!.command = 'echo mine';
+  writeFileSync(join(home, 'settings.json'), JSON.stringify(changed)); version.app = '/app/0.7.3';
+  await expect(delivery.materialise('claude', home, [item('claude', version.app)])).rejects.toThrow('preserved local changes: settings.json');
+  expect(settingsOf(home).hooks.Stop[0]!.hooks[0]!.command).toBe('echo mine');
+});
+
+test('settings.json that Claude Code wrote before Rigging ever did is merged, and one from an earlier Rigging state is recognised from its staging copy', async () => {
+  const version = { app: '/app/0.7.1' }; const delivery = new RiggingDelivery(homes, annotatedApm(version));
+  // The bridge ran Claude Code in a new account before its first launch.
+  const fresh = homes.account('claude', 'acc_fresh'); writeFileSync(join(fresh, 'settings.json'), '{ "theme": "dark" }\n');
+  await delivery.materialise('claude', fresh, [item('claude', version.app)]);
+  expect(settingsOf(fresh)).toMatchObject({ theme: 'dark', hooks: { Stop: [{ hooks: [{ command: 'node /app/0.7.1/jevellan.mjs memory-hook' }] }] } });
+  // An account Rigging delivered to before it recorded its keys, then rewritten by Claude Code.
+  const home = homes.account('claude', 'acc_earlier');
+  await delivery.materialise('claude', home, [item('claude', version.app)]);
+  const statePath = homes.at('rigging', 'state', 'claude', 'acc_earlier.json'), keysPath = homes.at('rigging', 'state', 'claude', 'acc_earlier.keys.json');
+  // The state stays in the format earlier versions read; the key record sits beside it.
+  expect(JSON.parse(readFileSync(statePath, 'utf8'))).toMatchObject({ schema: 'rigging-delivery-v1' });
+  expect(JSON.parse(readFileSync(keysPath, 'utf8'))).toMatchObject({ schema: 'rigging-keys-v1', files: { 'settings.json': { keys: { hooks: expect.stringMatching(/^[a-f0-9]{64}$/u) } } } });
+  rmSync(keysPath);
+  claudeCodeRewrites(join(home, 'settings.json')); version.app = '/app/0.7.2';
+  await delivery.materialise('claude', home, [item('claude', version.app)]);
+  expect(settingsOf(home)).toMatchObject({ theme: 'auto', agentPushNotifEnabled: true, hooks: { Stop: [{ hooks: [{ command: 'node /app/0.7.2/jevellan.mjs memory-hook' }] }] } });
+  expect(existsSync(keysPath)).toBe(true);
+  // A version without key records rewrote the state (a rollback): the stale record no longer matches and is ignored.
+  writeFileSync(statePath, JSON.stringify({ ...JSON.parse(readFileSync(statePath, 'utf8')), files: { 'settings.json': 'f'.repeat(64) } }));
+  writeFileSync(join(home, 'settings.json'), JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: 'echo mine' }] }] } }));
+  await expect(delivery.materialise('claude', home, [item('claude', '/app/0.7.3')])).rejects.toThrow('preserved local changes: settings.json');
+});
+
+test('Codex trusting a folder in config.toml is no conflict with the settings Rigging manages there', async () => {
+  const home = homes.account('codex', 'acc_codex'); const delivery = new RiggingDelivery(homes, fakeApm);
+  const setting = (effort: string) => ({ ...item('codex'), id: 'settings', kind: 'setting' as const, content: JSON.stringify({ model_reasoning_effort: effort }) });
+  await delivery.materialise('codex', home, [setting('high')]);
+  writeFileSync(join(home, 'config.toml'), `${readFileSync(join(home, 'config.toml'), 'utf8')}\n[projects."/work/app"]\ntrust_level = "trusted"\n`);
+  await delivery.materialise('codex', home, [setting('medium')]);
+  const config = readFileSync(join(home, 'config.toml'), 'utf8');
+  expect(config).toContain('model_reasoning_effort = "medium"'); expect(config).toContain('trust_level = "trusted"');
+});

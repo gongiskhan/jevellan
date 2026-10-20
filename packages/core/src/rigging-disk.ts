@@ -7,7 +7,7 @@ import { Homes, resolvedPath } from './homes.js';
 import { atomicWrite, readDocument, stableJson, writeDocument } from './files.js';
 import { SecretRedactor } from './environment.js';
 import { IdSchema, type Account } from './schemas.js';
-import { McpRiggingSchema, RiggingDeliveryStateSchema } from './rigging.js';
+import { McpRiggingSchema, RiggingDeliveryStateSchema, changedSharedKeys, readRiggingKeys } from './rigging.js';
 import { withRiggingHome } from './rigging-lock.js';
 import { RiggingEntrySchema } from './client-schemas.js';
 import type { SharedRigging } from './shared-state.js';
@@ -15,13 +15,20 @@ import { RiggingAddressSchema, RiggingDiskCancelledSchema, RiggingDiskCancelSche
 
 type Runtime = 'claude' | 'codex';
 type Selector = NonNullable<RiggingAddress['selector']>;
-type Ownership = z.infer<typeof RiggingDeliveryStateSchema>;
+/** The delivery state with the keys Rigging recorded for its shared files (kept in their own file, never written back with the state). */
+type Ownership = z.infer<typeof RiggingDeliveryStateSchema> & { keys: Record<string, Record<string, string>> };
+const stateOf = ({ keys: _keys, ...state }: Ownership) => { void _keys; return state; };
 type File = { ref: string; hash: string; mode: number };
 type Snapshot = { hash: string; files: File[]; updatedAt: string; directory: boolean };
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 const missing = (error: unknown) => (error as NodeJS.ErrnoException).code === 'ENOENT';
 const failure = (message: string, status = 409) => Object.assign(new Error(message), { status });
-const emptyOwnership = (): Ownership => ({ schema: 'rigging-delivery-v1', fingerprint: '', files: {}, claims: {} });
+const emptyOwnership = (): Ownership => ({ schema: 'rigging-delivery-v1', fingerprint: '', files: {}, claims: {}, keys: {} });
+/** An owned file changed outside Rigging; in a shared configuration file only the keys Rigging wrote count. */
+function changedOutside(ownership: Ownership, ref: string, path: string): boolean {
+  const contents = readFileSync(path); if (hash(contents) === ownership.files[ref]) return false;
+  const keys = ownership.keys[ref]; return !keys || changedSharedKeys(ref, contents, keys)?.length !== 0;
+}
 const PromotionSchema = z.strictObject({
   schema: z.literal('rigging-promotion-v1'), request: RiggingPromotionInputSchema, runtime: z.enum(['claude', 'codex']), accountId: IdSchema, itemId: IdSchema,
   status: z.enum(['prepared', 'completed', 'cancelled']), source: RiggingAddressSchema, sourceHash: z.string(), files: z.record(z.string(), z.string()), entry: RiggingEntrySchema,
@@ -105,7 +112,8 @@ export class RiggingDisk {
   #path(runtime: Runtime, accountId: string, address: RiggingAddress): string { return confined(this.#root(runtime, accountId, address.bucket), address.ref); }
   #ownership(runtime: Runtime, accountId: string): Ownership {
     const path = confined(this.homes.root, `rigging/state/${runtime}/${IdSchema.parse(accountId)}.json`);
-    return existsSync(path) ? readDocument(path, RiggingDeliveryStateSchema) : emptyOwnership();
+    if (!existsSync(path)) return emptyOwnership();
+    const state = readDocument(path, RiggingDeliveryStateSchema); return { ...state, keys: readRiggingKeys(path, state) };
   }
   #alreadyActive(runtime: Runtime, accountId: string, address: RiggingAddress): boolean {
     if (!address.bucket || address.bucket.startsWith('manual_')) return false;
@@ -124,8 +132,11 @@ export class RiggingDisk {
     const path = this.#path(runtime, accountId, address); const current = snapshot(path); if (!current) throw failure('Rigging item no longer exists.', 404);
     const expected = Object.entries(ownership.files).filter(([ref]) => ref === address.ref || ref.startsWith(`${address.ref}/`));
     const actual = new Map(current.files.map((file) => [file.ref ? `${address.ref}/${file.ref}` : address.ref, file.hash]));
-    const owned = !address.bucket && expected.length > 0;
-    const drifted = owned && (expected.some(([ref, value]) => actual.get(ref) !== value) || [...actual.keys()].some((ref) => !Object.hasOwn(ownership.files, ref)));
+    // An entry of a shared configuration file is owned when Rigging wrote its top-level key; the runtime's own keys are loose.
+    const keys = !address.bucket && address.selector ? ownership.keys[address.ref] : undefined;
+    const owned = keys ? Object.hasOwn(keys, String(address.selector![0])) : !address.bucket && expected.length > 0;
+    const drifted = owned && (keys ? changedSharedKeys(address.ref, readFileSync(path), { [String(address.selector![0])]: keys[String(address.selector![0])]! })?.length !== 0
+      : expected.some(([ref, value]) => actual.get(ref) !== value) || [...actual.keys()].some((ref) => !Object.hasOwn(ownership.files, ref)));
     return RiggingDiskItemSchema.parse({ schema: 'rigging-disk-item-v1', id: `disk_${hash(stableJson({ runtime, accountId, address }))}`, runtime, accountId, kind, name, address,
       state: address.bucket ? 'parked' : owned ? 'owned' : 'loose', drifted,
       fingerprint: hash(stableJson({ address, files: current.hash, ownership: address.bucket ? null : ownership })), updatedAt: current.updatedAt, fileCount: current.files.length,
@@ -171,7 +182,7 @@ export class RiggingDisk {
             for (const name of Object.keys(object(value))) add(ref, 'mcp', name, [key, name]);
           } else add(ref, 'setting', key, [key]);
         }
-        if (!bucket && ownership.files[ref] && hash(readFileSync(path)) !== ownership.files[ref]) add(ref, 'setting', `${ref} · local changes`, undefined, 'This installed configuration was changed outside Rigging. Park the changed copy before applying its managed items again.');
+        if (!bucket && ownership.files[ref] && changedOutside(ownership, ref, path)) add(ref, 'setting', `${ref} · local changes`, undefined, 'This installed configuration was changed outside Rigging. Park the changed copy before applying its managed items again.');
       } catch (error) { add(ref, 'setting', ref, undefined, error instanceof Error ? error.message : 'Could not read this configuration.'); }
     }
     return items;
@@ -271,12 +282,12 @@ export class RiggingDisk {
       if (!claim) {
         if (snapshot(this.#path(runtime, accountId, promotion.source))?.hash !== promotion.sourceHash || Object.keys(promotion.files).some((ref) => Object.hasOwn(ownership.files, ref))) throw failure('The source changed after this promotion was prepared. Keep the current files and start again.');
         ownership.claims[promotionId] = { schema: 'rigging-claim-v1', itemId: promotion.entry.id, sourceHash: promotion.sourceHash, files: promotion.files, pending: true };
-        Object.assign(ownership.files, promotion.files); ownership.fingerprint = hash(stableJson(ownership));
-        writeDocument(statePath, RiggingDeliveryStateSchema, ownership);
+        Object.assign(ownership.files, promotion.files); ownership.fingerprint = hash(stableJson(stateOf(ownership)));
+        writeDocument(statePath, RiggingDeliveryStateSchema, stateOf(ownership));
       }
       const result = await store.addCaptured(promotion.entry);
       ownership.claims[promotionId]!.pending = false;
-      writeDocument(statePath, RiggingDeliveryStateSchema, ownership);
+      writeDocument(statePath, RiggingDeliveryStateSchema, stateOf(ownership));
       writeDocument(path, PromotionSchema, { ...promotion, status: 'completed' });
       return result;
     });

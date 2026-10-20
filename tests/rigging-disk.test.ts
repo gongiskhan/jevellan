@@ -139,3 +139,16 @@ test('delivery and account-local edits serialize so a newly installed copy canno
   const installing = delivery.materialise('claude', home, [item]); await started; const saving = edit(loose, 'Old outside edit'); const rejected = expect(saving).rejects.toThrow('changed'); release(); await installing; await rejected;
   expect(readFileSync(join(home, 'skills/local/SKILL.md'), 'utf8')).toBe('Loose.'); expect(readdirSync(home)).toEqual(['skills']);
 });
+
+test('keys Claude Code writes to a delivered settings.json are loose and raise no local-changes item, while a changed managed key does', () => {
+  const managed = { hooks: { Stop: [{ hooks: [{ type: 'command', command: 'memory hook' }], _apm_source: 'fixture' }] } };
+  const contents = JSON.stringify(managed);
+  write(join(home, 'settings.json'), JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: 'memory hook' }] }] }, theme: 'auto' }));
+  write(homes.at('rigging', 'state', 'claude', `${account.id}.json`), JSON.stringify({ schema: 'rigging-delivery-v1', fingerprint: 'fixture', files: { 'settings.json': sha(contents) } }));
+  write(homes.at('rigging', 'state', 'claude', `${account.id}.keys.json`), JSON.stringify({ schema: 'rigging-keys-v1', files: { 'settings.json': { fileHash: sha(contents),
+    keys: { hooks: sha(JSON.stringify({ Stop: [{ hooks: [{ command: 'memory hook', type: 'command' }] }] })) } } } }));
+  expect(list().items.some((item) => item.name === 'settings.json · local changes')).toBe(false);
+  expect(named('theme')).toMatchObject({ state: 'loose' }); expect(named('Stop · 1')).toMatchObject({ state: 'owned', drifted: false });
+  write(join(home, 'settings.json'), JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: 'echo mine' }] }] }, theme: 'auto' }));
+  expect(named('settings.json · local changes')).toMatchObject({ canPark: true }); expect(named('Stop · 1')).toMatchObject({ state: 'owned', drifted: true });
+});
