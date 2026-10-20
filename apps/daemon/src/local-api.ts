@@ -85,7 +85,7 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
       const input = OwnerBridgeRequestSchema.parse(await requestBody(request)); const project = await app.ownerTools.resolveProject({ project: input.project ?? '', ...(input.cwd ? { cwd: input.cwd } : {}) });
       release = app.lifecycle.enter({ kind: 'request' });
       try {
-        const text = input.operation === 'stop' ? app.ownerBridges.stopBridge(project) : await app.ownerBridges.startBridge(project, { restart: input.operation === 'restart', ...(input.claudeConfigDir ? { claudeConfigDir: input.claudeConfigDir } : {}) });
+        const text = input.operation === 'stop' ? app.ownerBridges.stopBridge(project) : await app.ownerBridges.startBridge(project, { restart: input.operation === 'restart', ...(input.claudeConfigDir ? { claudeConfigDir: input.claudeConfigDir } : {}), ...(input.remoteName ? { remoteName: input.remoteName } : {}) });
         json(response, { schema: 'owner-bridge-result-v1', ok: true, text });
       } catch (error) { if (error instanceof OwnerRefusal) { json(response, { schema: 'owner-bridge-result-v1', ok: false, text: error.message }); return; } throw error; }
       return;

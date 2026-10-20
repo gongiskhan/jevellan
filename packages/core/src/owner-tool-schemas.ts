@@ -113,7 +113,7 @@ export const OwnerPushMessageSchema = z.strictObject({ schema: z.literal('owner-
 export type OwnerPushMessage = z.infer<typeof OwnerPushMessageSchema>;
 export const OwnerPushAckSchema = z.strictObject({ schema: z.literal('owner-push-ack-v1'), project: z.string().min(1).max(200), pushIds: z.array(IdSchema).min(1).max(200) });
 export const OwnerBridgeRequestSchema = z.strictObject({ schema: z.literal('owner-bridge-request-v1'), operation: z.enum(['start', 'restart', 'stop']), project: z.string().max(200).optional(),
-  cwd: z.string().max(4096).optional(), claudeConfigDir: z.string().startsWith('/').max(4096).optional() });
+  cwd: z.string().max(4096).optional(), claudeConfigDir: z.string().startsWith('/').max(4096).optional(), remoteName: z.string().min(1).max(120).optional() });
 export const OwnerBridgeResultSchema = z.strictObject({ schema: z.literal('owner-bridge-result-v1'), ok: z.boolean(), text: z.string().max(2000) });
 
 // Jev control (bridge specification, "Jev control"), state point hub namespaces owner-jev-rules, owner-jev-prompts, owner-jev-proposals, owner-jev-lessons.

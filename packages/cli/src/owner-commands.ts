@@ -174,10 +174,10 @@ export async function pluginDoctorLine(homes = new Homes(), env: NodeJS.ProcessE
 export async function bridgeCommand(args: string[], homes = new Homes()): Promise<number> {
   const option = (name: string) => { const index = args.indexOf(name); return index >= 0 ? args[index + 1] : undefined; };
   const operation = args.includes('--stop') ? 'stop' : args.includes('--restart') ? 'restart' : 'start';
-  const project = option('--project') ?? process.env.JEVELLAN_PROJECT; const dir = option('--claude-config-dir');
+  const project = option('--project') ?? process.env.JEVELLAN_PROJECT; const dir = option('--claude-config-dir'); const remoteName = option('--remote-name');
   let control; try { control = readDocument(doctorControlPath(homes), DoctorControlSchema); } catch { console.error('Jevellan is not running on this device.'); return 3; }
   const response = await fetch(`${control.origin}/api/local/bridge`, { method: 'POST', signal: AbortSignal.timeout(180_000), headers: { Authorization: `Bearer ${control.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ schema: 'owner-bridge-request-v1', operation, ...(project ? { project } : {}), cwd: process.cwd(), ...(dir ? { claudeConfigDir: resolve(dir) } : {}) }) });
+    body: JSON.stringify({ schema: 'owner-bridge-request-v1', operation, ...(project ? { project } : {}), cwd: process.cwd(), ...(dir ? { claudeConfigDir: resolve(dir) } : {}), ...(remoteName ? { remoteName } : {}) }) });
   const body = await response.json().catch(() => null) as { ok?: boolean; text?: string; message?: string } | null;
   if (body?.ok) { console.log(body.text); return 0; }
   console.error(body?.text ?? body?.message ?? `The bridge could not start (HTTP ${response.status}).`); return 1;
