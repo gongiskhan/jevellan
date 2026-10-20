@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Area1a–1e:18Overview/sidebar/coordinator/card-action/waiting rows migrated/refined. Shared thread tools retain canonical guards and member ownership; UI/tool action-state behavior variants pass. Static pass,97affected backend cases in13files6workers pass; desktop-light publish/merge passes once. Next jobs/nightly/deploy, remaining ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1noncore twicefailed obsolete Settings selector remains recorded for Settings. No further release.",
+    "why": "Areas1a–1e/2a:24Overview/sidebar/coordinator/card-action/waiting/jobs-nightly rows migrated/refined. Versioned views, canonical guards/retry receipts and member routing retained. Latest static pass,166affected backend16files6workers pass; simulated desktop-light Routines and deploy main actions pass, with documented fixture corrections retaining state assertions. Next job/nightly editor models and deploy/config presentation, then remaining ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1 recorded for Settings. No further release.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Area1a–1e:18Overview/sidebar/coordinator/card-action/waiting rows migrated/refined. Shared thread tools retain canonical guards and member ownership; UI/tool action-state behavior variants pass. Static pass,97affected backend cases in13files6workers pass; desktop-light publish/merge passes once. Next jobs/nightly/deploy, remaining ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1noncore twicefailed obsolete Settings selector remains recorded for Settings. No further release.",
+    "why": "Areas1a–1e/2a:24Overview/sidebar/coordinator/card-action/waiting/jobs-nightly rows migrated/refined. Versioned views, canonical guards/retry receipts and member routing retained. Latest static pass,166affected backend16files6workers pass; simulated desktop-light Routines and deploy main actions pass, with documented fixture corrections retaining state assertions. Next job/nightly editor models and deploy/config presentation, then remaining ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1 recorded for Settings. No further release.",
     "status": "in-progress"
   },
   {

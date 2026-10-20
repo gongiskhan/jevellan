@@ -6,6 +6,7 @@ import { GoalViewSchema } from './project-goal-schemas.js';
 import { ProjectDailyListViewSchema } from './project-daily-schemas.js';
 import { ProjectWorkCardSchema, MergeConfirmationSchema } from './project-card-schemas.js';
 import { ProjectWaitingItemsViewSchema } from './project-waiting-schemas.js';
+import { ProjectJobsViewSchema } from './project-jobs-view-schemas.js';
 
 const count = z.number().int().nonnegative();
 export const ProjectSidebarViewSchema = ProjectWorkListViewSchema.extend({ schema: z.literal('project-sidebar-view-v1'),
@@ -42,5 +43,5 @@ export type ProjectOverview = z.infer<typeof ProjectOverviewSchema>;
 export const ProjectPageViewSchema = z.strictObject({ schema: z.literal('project-page-view-v1'), at: TimestampSchema,
   changeToken: z.string().regex(/^[a-f0-9]{64}$/u), work: ProjectWorkViewSchema,
   tasks: z.array(ProjectWorkTaskSchema), goals: z.array(GoalViewSchema), daily: ProjectDailyListViewSchema, overview: ProjectOverviewSchema, header: ProjectHeaderSchema,
-  cards: z.array(ProjectWorkCardSchema), waiting: ProjectWaitingItemsViewSchema });
+  cards: z.array(ProjectWorkCardSchema), waiting: ProjectWaitingItemsViewSchema, routines: ProjectJobsViewSchema });
 export type ProjectPageView = z.infer<typeof ProjectPageViewSchema>;

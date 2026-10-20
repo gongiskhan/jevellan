@@ -1,5 +1,5 @@
 import { newId, ownerClock, type ProjectDaily, type ProjectDeploy, type ProjectJob, type ProjectJobRun } from '@jevellan/core';
-import { capLines } from '@jevellan/projects';
+import { capLines, projectJobsView } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
 
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
@@ -10,8 +10,8 @@ type Item = { kind: 'daily'; daily: ProjectDaily; job: ProjectJob | null } | { k
 /** Everything the jobs tool reads: the night items, command jobs, runs, the window and deploys of a project. */
 async function load(context: OwnerContext) {
   const engine = context.app.projectWork; const projectId = context.project.id;
-  const [daily, deploys, view] = await Promise.all([engine.daily.view(projectId), engine.deploys.view(projectId), engine.view(projectId)]);
-  return { daily, deploys: deploys.records, settings: view.settings, tz: view.settings.nightlyWindow.timezone };
+  const [daily, deploys, view, goals] = await Promise.all([engine.daily.view(projectId), engine.deploys.view(projectId), engine.view(projectId), engine.goalList(projectId)]);
+  return { routines: projectJobsView(daily, view.settings, goals.goals), daily, deploys: deploys.records, settings: view.settings, tz: view.settings.nightlyWindow.timezone };
 }
 /** A job or night item by name, slug, id, J run id or the words "night"/"review". */
 function find(data: Awaited<ReturnType<typeof load>>, token: string): Item {
@@ -56,7 +56,7 @@ export const jobs: OwnerHandler = async (context) => {
         `Last runs: ${runs.map(run => runLine(context, run, nameOfRun(run), tz, now)).join(' · ') || 'none'}`,
         `Missed in the last 7 days: ${missed.length ? missed.join('; ') : 'none'}`,
         `Paused: ${paused.join(', ') || 'none'}`];
-      return { text: capLines(lines) };
+      return { text: capLines(lines), data: data.routines };
     }
     case 'show': case 'history': {
       const item = find(data, String(args.job)); const job = item.job;
@@ -72,7 +72,7 @@ export const jobs: OwnerHandler = async (context) => {
       const items = [...daily.dailies].sort((a, b) => a.order - b.order);
       const last = (row: ProjectDaily) => { const job = row.target.kind === 'job' ? row.target.jobId : null; const run = job ? [...daily.runs].filter(entry => entry.jobId === job).sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0] : undefined; return run ? `${run.conclusion ?? 'running'} ${ownerClock(run.endedAt ?? run.startedAt, now, tz)}` : 'no run yet'; };
       return { text: capLines([`Night window: ${settings.nightlyWindow.enabled ? `${settings.nightlyWindow.time} (${tz})` : 'off'}${daily.window ? ` · last window ${daily.window.state}${daily.window.outcome ? `: ${daily.window.outcome.split('\n')[0]!.slice(0, 160)}` : ''}` : ''}`,
-        `Tonight's order: ${nightOrder().join(', ') || 'none'}`, ...items.map(row => `${row.order}. ${row.name}${row.enabled ? '' : ' (disabled)'}${row.days ? ` (${row.days.join(', ')})` : ''} · last: ${last(row)}`)]) };
+        `Tonight's order: ${nightOrder().join(', ') || 'none'}`, ...items.map(row => `${row.order}. ${row.name}${row.enabled ? '' : ' (disabled)'}${row.days ? ` (${row.days.join(', ')})` : ''} · last: ${last(row)}`)]), data: data.routines };
     }
     case 'deploy': {
       const open = (await engine.view(projectId)).decisions.open.find(row => row.deploy);
@@ -106,10 +106,10 @@ export const jobs: OwnerHandler = async (context) => {
       const item = find(data, String(args.job)); const pause = context.action === 'pause';
       if (item.kind === 'daily') {
         const fresh = (await engine.daily.view(projectId)).dailies.find(row => row.id === item.daily.id)!;
-        await engine.daily.updateDaily(projectId, fresh.id, dailyUpdate(fresh, { enabled: !pause }));
+        await engine.daily.setEnabled(projectId, fresh.id, { schema: 'daily-enabled-request-v1', expectedRevision: fresh.revision, enabled: !pause });
       } else {
         const fresh = (await engine.daily.jobs(projectId)).find(row => row.id === item.job.id)!;
-        await engine.daily.updateJob(projectId, fresh.id, jobUpdate(fresh, { paused: pause }));
+        await engine.daily.setPaused(projectId, fresh.id, { schema: 'job-paused-request-v1', expectedRevision: fresh.revision, paused: pause });
       }
       if (pause) return { text: `Paused ${itemName(item)}. It won't run until you resume it.` };
       const next = item.kind === 'daily' ? `tonight at ${settings.nightlyWindow.time}` : item.job.interval ? `within ${item.job.interval.everyMinutes} minutes, between ${item.job.interval.start} and ${item.job.interval.end}` : 'when you run it';

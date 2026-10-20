@@ -2,6 +2,7 @@ import { waitingItemsView, sentText } from './waiting-views.js';
 import { QUESTION_NOT_FOUND } from './copy.js';
 import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction, type ProjectPageRequest, type ProjectWaitingRespondRequest, ProjectWaitingResponseSchema } from '@jevellan/core';
 import { projectPageView } from './page-view.js';
+import { projectJobsView } from './jobs-view.js';
 import { ProjectCleanupInventory } from './cleanup.js';
 import { ProjectDeployService } from './deploy.js';
 import { setupProposalId } from './setup.js';
@@ -716,6 +717,11 @@ export class ProjectWork {
   // Browser and API operations. Refusals throw Error(sentence) with a status.
   list(): Promise<ProjectWorkListView> { return this.views.list(); }
   async goalList(projectId: string) { await this.#project(projectId); return this.goals.view(projectId); }
+  async jobsView(projectId: string) {
+    await this.#project(projectId);
+    const [raw, settings, goals] = await Promise.all([this.daily.view(projectId), this.admission.settings(projectId), this.goalList(projectId)]);
+    return projectJobsView(raw, settings, goals.goals);
+  }
   runningThreads(): string[] { return this.store.all().filter(thread => liveWork(thread.state)).map(thread => thread.id); }
   async prepareDailyWork(projectId: string): Promise<void> { await this.#coordinatorHere(projectId); }
   async setupEkoaCode(projectId: string, raw: unknown) {

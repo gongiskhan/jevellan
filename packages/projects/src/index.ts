@@ -72,3 +72,4 @@ export * from './cleanup.js';
 export * from './owner-ids.js';
 export * from './owner-status.js';
 export * from './owner-render.js';
+export * from './jobs-view.js';

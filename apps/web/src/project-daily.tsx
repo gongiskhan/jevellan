@@ -1,51 +1,43 @@
 import { useState } from 'react';
-import { ProjectDailySchema, ProjectJobSchema, TaskReceiptSchema, MemoryDreamRunReceiptSchema, TaskTypeSchema, type ProjectDaily, type ProjectJob, type ProjectDailyListViewSchema } from '@jevellan/core/client';
+import { ProjectDailySchema, ProjectJobSchema, TaskReceiptSchema, MemoryDreamRunReceiptSchema, TaskTypeSchema, type ProjectDaily, type ProjectJob, type ProjectDailyListViewSchema, type ProjectJobsView } from '@jevellan/core/client';
 import { z } from 'zod';
 import { api } from './api.js';
 import { clientId } from './client-id.js';
 import { Modal, useTask } from './components.js';
 import type { GoalEntry } from './project-goals.js';
 export type DailyView = z.infer<typeof ProjectDailyListViewSchema>;
-export function NightlyBanner({ view }: { view: DailyView }) {
+export function NightlyBanner({ view }: { view: ProjectJobsView }) {
   const key = `jevellan.last-window.${view.projectId}`, [dismissed, setDismissed] = useState(() => localStorage.getItem(key));
-  if (view.mergesHeld) return <p className="notice" role="status">Nightly window · merges held until the nightly tasks finish</p>;
-  const window = view.window; if (!window || window.state !== 'finished' || dismissed === window.id) return null;
-  const passed = view.tasks.filter(task => window.taskIds.includes(task.id) && task.state === 'done').length;
-  return <div className="notice actions" role="status"><span>Last night: {passed} of {window.taskIds.length} nightly tasks passed.</span><button className="secondary small" onClick={() => { localStorage.setItem(key, window.id); setDismissed(window.id); }}>Dismiss</button></div>;
+  if (view.mergeHold.banner) return <p className="notice" role="status">{view.mergeHold.banner}</p>;
+  const banner = view.banner; if (!banner || dismissed === banner.windowId) return null;
+  return <div className="notice actions" role="status"><span>{banner.text}</span><button className="secondary small" onClick={() => { localStorage.setItem(key, banner.windowId); setDismissed(banner.windowId); }}>Dismiss</button></div>;
 }
-export function ProjectDailyPanel({ view, goals, changed, onError }: { view: DailyView; goals: readonly GoalEntry[]; changed(): void; onError(error: unknown): void }) {
+export function ProjectDailyPanel({ view, goals, changed, onError }: { view: ProjectJobsView; goals: readonly GoalEntry[]; changed(): void; onError(error: unknown): void }) {
   const [daily, setDaily] = useState<ProjectDaily | 'new'>(), [job, setJob] = useState<ProjectJob | 'new'>(), operation = useTask(onError);
-  const displayDay = view.window?.state === 'open' ? view.window.closingProjectDay : view.projectDay;
-  const run = (kind: 'jobs' | 'dailies', id: string) => void operation.run(async signal => { await api(`/api/projects/${view.projectId}/${kind}/${id}/run`, z.union([TaskReceiptSchema, MemoryDreamRunReceiptSchema]), 'POST', { schema: 'project-run-request-v1', clientRequestId: clientId() }, { signal, waitForHub: true }); changed(); });
-  const toggle = (item: ProjectDaily) => void operation.run(async signal => {
-    await api(`/api/projects/${view.projectId}/dailies/${item.id}/edit`, ProjectDailySchema, 'POST', { schema: 'daily-update-request-v1', expectedRevision: item.revision, name: item.name, goalId: item.goalId, order: item.order, target: item.target, days: item.days, enabled: !item.enabled }, { signal, waitForHub: true }); changed();
+  const jobs = view.jobs.map(row => row.definition);
+  const run = (plan: ProjectJobsView['jobs'][number]['runNow']) => void operation.run(async signal => { await api(plan.path, z.union([TaskReceiptSchema, MemoryDreamRunReceiptSchema]), 'POST', { schema: 'project-run-request-v1', clientRequestId: clientId() }, { signal, waitForHub: true }); changed(); });
+  const toggle = (plan: ProjectJobsView['dailies'][number]['toggle']) => void operation.run(async signal => {
+    await api(plan.path, ProjectDailySchema, 'POST', plan.body, { signal, waitForHub: true }); changed();
+  });
+  const pause = (plan: NonNullable<ProjectJobsView['jobs'][number]['pause']>) => void operation.run(async signal => {
+    await api(plan.path, ProjectJobSchema, 'POST', plan.body, { signal, waitForHub: true }); changed();
   });
   return <>
-    {view.mergesHeld && <p className="notice">Merges are held while the nightly window runs.</p>}
-    <p className="muted">{view.window?.state === 'open' ? 'Closing project day' : 'Project day'}: {displayDay}</p>
+    {view.mergeHold.notice && <p className="notice">{view.mergeHold.notice}</p>}
+    <p className="muted">{view.displayDay.label}: {view.displayDay.date}</p>
     <div className="actions"><button className="secondary small" onClick={() => setDaily('new')}>New nightly item</button><button className="secondary small" onClick={() => setJob('new')}>New job</button></div>
     {!view.dailies.length && <p className="pw-empty">Add checks or a review to run every night.</p>}
-    {view.dailies.map(item => {
-      const matching = view.tasks.filter(task => task.dailyId === item.id && task.projectDay === displayDay), nightly = view.tasks.filter(task => task.dailyId === item.id && view.window?.taskIds.includes(task.id));
-      const tasks = nightly.length ? nightly : matching, completed = tasks.some(task => task.state === 'done'), pending = tasks.find(task => ['queued', 'active'].includes(task.state)), failed = tasks.find(task => task.state === 'failed');
-      const receipt = view.runs.find(run => tasks.some(task => task.id === run.taskId));
-      const end = tasks.find(task => task.state === (completed ? 'done' : 'failed'))?.endedAt;
-      const time = end ? ` at ${new Date(end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '';
-      const target = item.target, definition = target.kind === 'job' ? view.jobs.find(job => job.id === target.jobId) : null;
-      return <article className="pw-goal" key={item.id} data-daily-id={item.id}><header><h4>{item.name}</h4><span className="chip">{!item.enabled ? 'Disabled' : completed ? `Done today${time}` : pending?.state === 'active' ? 'Running' : pending ? 'Queued' : failed ? `Failed${time}` : 'Not run today'}</span></header>
-        <p className="muted">{item.target.kind === 'memory-dream' ? 'Memory dream · before command jobs' : item.target.kind === 'review-since-last' ? 'Review since last' : item.target.kind === 'session' ? 'Thread' : definition?.run.kind === 'command' ? 'Command' : 'GitHub workflow (retired 19 October)'}</p>
-        {item.days && <p className="muted">{item.days.map(day => day[0]!.toUpperCase() + day.slice(1)).join(', ')}</p>}
-        {item.goalId && <p className="muted">{goals.find(entry => entry.goal.id === item.goalId)?.goal.name ?? 'Goal'}</p>}
-        {receipt && <details><summary>{receipt.summary || 'Job running'} · {receipt.commit.slice(0, 7)}</summary><pre className="pw-job-log">{receipt.logTail || 'No output recorded.'}</pre>{receipt.url && <a href={receipt.url} target="_blank" rel="noopener noreferrer">Open workflow run</a>}</details>}
-        {failed && !receipt && <p className="error">{failed.endNote}</p>}
-        <div className="actions"><button className="small" disabled={operation.busy || !item.enabled || !!pending} onClick={() => run('dailies', item.id)}>Run now</button><button className="secondary small" onClick={() => setDaily(item)}>Edit</button><label className="check"><input type="checkbox" aria-label={`Enable ${item.name}`} checked={item.enabled} disabled={operation.busy} onChange={() => toggle(item)} />Enabled</label></div>
-      </article>;
-    })}
-    {view.jobs.length > 0 && <details className="pw-jobs"><summary>Jobs ({view.jobs.length})</summary>{view.jobs.map(item => <article className="pw-goal" key={item.id}><header><h4>{item.name}</h4><span className="chip">{item.enabled ? 'Enabled' : 'Disabled'}</span></header><p className="muted">{item.run.kind === 'command' ? 'Command' : 'GitHub workflow (retired 19 October)'}{item.gate ? ` · Gate: ${view.jobs.find(job => job.id === item.gate?.jobId)?.name ?? 'Job'}` : ''}</p><div className="actions"><button className="secondary small" disabled={operation.busy || !item.enabled || item.run.kind === 'github-workflow'} onClick={() => run('jobs', item.id)}>Run now</button><button className="secondary small" onClick={() => setJob(item)}>Edit</button></div></article>)}</details>}
-    {view.window?.state === 'finished' && <details><summary>Last nightly window</summary><pre className="pw-job-log">{view.window.outcome}</pre></details>}
-    {view.lastReview && <details open className="pw-jobs"><summary>Last night's review · {view.lastReview.commit.slice(0, 7)}</summary><p>{view.lastReview.summary}</p>{view.lastReview.findings.map((finding, index) => <div key={index}><strong>{finding.what}</strong><p>{finding.detail}</p><p className="muted">{finding.files.join(', ')}</p></div>)}{!view.lastReview.findings.length && <p className="muted">No findings.</p>}</details>}
-    {daily && <DailyEditor projectId={view.projectId} item={daily === 'new' ? undefined : daily} jobs={view.jobs} goals={goals} changed={changed} onError={onError} close={() => setDaily(undefined)} />}
-    {job && <JobEditor projectId={view.projectId} item={job === 'new' ? undefined : job} jobs={view.jobs} goals={goals} changed={changed} onError={onError} close={() => setJob(undefined)} />}
+    {view.dailies.map(row => <article className="pw-goal" key={row.definition.id} data-daily-id={row.definition.id}><header><h4>{row.definition.name}</h4><span className="chip">{row.stateLabel}</span></header>
+      <p className="muted">{row.kindLabel}</p>{row.daysLabel && <p className="muted">{row.daysLabel}</p>}{row.goalLabel && <p className="muted">{row.goalLabel}</p>}
+      {row.lastRun && <details><summary>{row.lastRun.summary} · {row.lastRun.commitLabel}</summary><pre className="pw-job-log">{row.lastRun.logTail}</pre>{row.lastRun.href && <a href={row.lastRun.href} target="_blank" rel="noopener noreferrer">Open workflow run</a>}</details>}
+      {row.failure !== null && <p className="error">{row.failure}</p>}
+      <div className="actions"><button className="small" disabled={operation.busy || !row.runNow.enabled} title={row.runNow.refusal ?? undefined} onClick={() => run(row.runNow)}>Run now</button><button className="secondary small" onClick={() => setDaily(row.definition)}>Edit</button><label className="check"><input type="checkbox" aria-label={`Enable ${row.definition.name}`} checked={row.definition.enabled} disabled={operation.busy} onChange={() => toggle(row.toggle)} />Enabled</label></div>
+    </article>)}
+    {view.jobs.length > 0 && <details className="pw-jobs"><summary>Jobs ({view.jobs.length})</summary>{view.jobs.map(row => <article className="pw-goal" key={row.definition.id}><header><h4>{row.definition.name}</h4><span className="chip">{row.stateLabel}</span></header><p className="muted">{row.kindLabel}{row.gateLabel && ` · ${row.gateLabel}`}</p>{row.scheduleLine && <p className="muted">{row.scheduleLine}</p>}<div className="actions"><button className="secondary small" disabled={operation.busy || !row.runNow.enabled} title={row.runNow.refusal ?? undefined} onClick={() => run(row.runNow)}>Run now</button>{row.pause && <button className="secondary small" disabled={operation.busy} onClick={() => pause(row.pause!)}>{row.pause.label}</button>}<button className="secondary small" onClick={() => setJob(row.definition)}>Edit</button></div></article>)}</details>}
+    {view.lastWindowOutcome !== null && <details><summary>Last nightly window</summary><pre className="pw-job-log">{view.lastWindowOutcome}</pre></details>}
+    {view.review && <details open className="pw-jobs"><summary>Last night's review · {view.review.commitLabel}</summary><p>{view.review.summary}</p>{view.review.findings.map((finding, index) => <div key={index}><strong>{finding.what}</strong><p>{finding.detail}</p><p className="muted">{finding.filesLabel}</p></div>)}{view.review.emptyText && <p className="muted">{view.review.emptyText}</p>}</details>}
+    {daily && <DailyEditor projectId={view.projectId} item={daily === 'new' ? undefined : daily} jobs={jobs} goals={goals} changed={changed} onError={onError} close={() => setDaily(undefined)} />}
+    {job && <JobEditor projectId={view.projectId} item={job === 'new' ? undefined : job} jobs={jobs} goals={goals} changed={changed} onError={onError} close={() => setJob(undefined)} />}
   </>;
 }
 type EditorProps = { projectId: string; jobs: readonly ProjectJob[]; goals: readonly GoalEntry[]; changed(): void; onError(error: unknown): void; close(): void };

@@ -6,6 +6,8 @@ import type { ProjectJobRunner } from './job-runner.js';
 import { projectBoundary, projectDay, shiftProjectDate } from './project-day.js';
 import { taskRankBetween, type ProjectTasks } from './tasks.js';
 import { PROJECT_PAUSED } from './copy.js';
+import { DailyEnabledRequestSchema, JobPausedRequestSchema } from '@jevellan/core';
+import { jobRunRefusal } from './jobs-view.js';
 const refuse = (message: string, status = 409): never => { throw Object.assign(new Error(message), { status }); };
 export const dailyDueOn = (daily: Pick<ProjectDaily, 'days'>, date: string): boolean => !daily.days || daily.days.includes((['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const)[new Date(date + 'T12:00:00Z').getUTCDay()]!);
 export const NIGHTLY_MERGE_HOLD = 'Merges are held while the nightly window runs.';
@@ -126,6 +128,12 @@ export class ProjectDailyWork {
     const { schema: _schema, expectedRevision, ...fields } = input; void _schema;
     const job = (await this.o.hub.putJob(ProjectJobSchema.parse(this.o.redactor.document({ ...current, ...fields, updatedAt: this.o.tasks.at() })), expectedRevision)).document; this.o.changed(); return job;
   }
+  async setPaused(projectId: string, id: string, raw: unknown): Promise<ProjectJob> {
+    const input = JobPausedRequestSchema.parse(raw), current = (await this.o.hub.job(id))?.document;
+    if (!current || current.projectId !== projectId) return refuse('Job not found.', 404);
+    return this.updateJob(projectId, id, { schema: 'job-update-request-v1', expectedRevision: input.expectedRevision,
+      name: current.name, goalId: current.goalId, run: current.run, gate: current.gate, enabled: current.enabled, interval: current.interval, paused: input.paused });
+  }
   async #gate(projectId: string, id: string, parent?: string): Promise<void> {
     const visited = new Set([id]);
     while (parent) { if (visited.has(parent)) return refuse('Job gates cannot contain a cycle.', 400); visited.add(parent);
@@ -144,6 +152,12 @@ export class ProjectDailyWork {
     await this.#dailyTarget(projectId, input); const { schema: _schema, expectedRevision, ...fields } = input; void _schema;
     const baseline = await this.#reviewBaseline(projectId, fields, current);
     const daily = (await this.o.hub.putDaily(ProjectDailySchema.parse(this.o.redactor.document({ ...current, ...fields, days: fields.days, ...baseline, ...(!current.enabled && fields.enabled ? { enabledSince: this.o.tasks.at() } : {}), updatedAt: this.o.tasks.at() })), expectedRevision)).document; this.o.changed(); return daily;
+  }
+  async setEnabled(projectId: string, id: string, raw: unknown): Promise<ProjectDaily> {
+    const input = DailyEnabledRequestSchema.parse(raw), current = (await this.o.hub.daily(id))?.document;
+    if (!current || current.projectId !== projectId) return refuse('Daily item not found.', 404);
+    return this.updateDaily(projectId, id, { schema: 'daily-update-request-v1', expectedRevision: input.expectedRevision,
+      name: current.name, goalId: current.goalId, target: current.target, order: current.order, days: current.days, enabled: input.enabled });
   }
   async #reviewBaseline(projectId: string, input: Pick<ProjectDaily, 'target' | 'enabled'>, current?: ProjectDaily) {
     if (input.target.kind !== 'review-since-last') return {};
@@ -180,9 +194,11 @@ export class ProjectDailyWork {
       const daily = (await this.o.hub.daily(id))?.document; if (!daily || daily.projectId !== projectId || !daily.enabled) return refuse('This daily item is unavailable or disabled.');
       const tasks = await this.o.tasks.list(projectId), pending = tasks.find(task => task.dailyId === id && ['queued', 'active'].includes(task.state));
       if (pending) return { schema: 'task-receipt-v1' as const, taskId: pending.id, state: pending.state, repeated: true };
+      const settings = await this.o.settings(projectId); if (settings.status !== 'active') return refuse(PROJECT_PAUSED);
       if (daily.target.kind === 'job') await this.#ordinaryJob(projectId, daily.target.jobId);
       const job = daily.target.kind === 'job' ? (await this.o.hub.job(daily.target.jobId))?.document ?? null : null;
       if (daily.target.kind === 'job' && !job?.enabled) return refuse('This job is unavailable or disabled.');
+      if (job) { const refusal = jobRunRefusal(settings, job); if (refusal) return refuse(refusal); }
       const rank = taskRankBetween(tasks.filter(task => ['draft', 'queued', 'active'].includes(task.state)).map(task => task.rank).sort().at(-1) ?? null, null);
       const task = await this.o.tasks.save(await this.#plan(projectId, taskId, await this.day(projectId), daily, job, rank)); this.o.changed();
       return { schema: 'task-receipt-v1' as const, taskId, state: task.state, repeated: false };
@@ -195,6 +211,7 @@ export class ProjectDailyWork {
       await this.o.tasks.assertWriter(projectId); const taskId = derivedId('task', 'job-now', projectId, id, clientRequestId), existing = (await this.o.hub.task(taskId))?.document;
       if (existing) return { schema: 'task-receipt-v1' as const, taskId, state: existing.state, repeated: true };
       const job = (await this.o.hub.job(id))?.document; if (!job || job.projectId !== projectId || !job.enabled) return refuse('This job is unavailable or disabled.');
+      const refusal = jobRunRefusal(await this.o.settings(projectId), job); if (refusal) return refuse(refusal, job.run.kind === 'github-workflow' ? 400 : 409);
       if (job.run.kind === 'github-workflow') return refuse('GitHub workflow jobs retired on 19 October. Use a command job.', 400);
       const tasks = await this.o.tasks.list(projectId), pending = tasks.find(task => task.jobId === id && ['queued', 'active'].includes(task.state));
       if (pending) return { schema: 'task-receipt-v1' as const, taskId: pending.id, state: pending.state, repeated: true };

@@ -1,4 +1,5 @@
 import { waitingItemsView } from './waiting-views.js';
+import { projectJobsView } from './jobs-view.js';
 import { openPullRequests, checksBadge, mergeBlock, mergeHeld, mergeConfirmation, threadCardView, taskCardView, type CardPresentationOptions } from './card-views.js';
 import { createHash } from 'node:crypto';
 import { coordinatorPresentation, type CoordinatorPresentationOptions } from './coordinator-view.js';
@@ -10,6 +11,7 @@ const empty = { review: 'No pull requests waiting for review.', working: 'Nothin
 /** Overview decisions for every caller, independent of DOM or local browser time. */
 export function projectPageView(input: Pick<ProjectPageView, 'work' | 'tasks' | 'goals' | 'daily'>, resolvedDays = 14, now = Date.now(), options: CoordinatorPresentationOptions & CardPresentationOptions & { ackKnown?: readonly string[] | undefined } = {}): ProjectPageView {
   const { work, tasks, goals, daily } = input;
+  const routines = projectJobsView(daily, work.settings, goals);
   const board = work.board ?? { waiting: [], review: [], working: [], landing: [], landed: [], idle: [], resolved: [] };
   const draftIds = tasks.filter(task => task.state === 'draft').map(task => task.id);
   const waitingCount = work.decisions.open.length + draftIds.length + board.waiting.length;
@@ -31,7 +33,7 @@ export function projectPageView(input: Pick<ProjectPageView, 'work' | 'tasks' | 
       visible: (id !== 'review' || work.settings.delivery === 'pull-request') && (id !== 'landed' || work.settings.delivery === 'land' || board.landed.length > 0),
       threadIds: board[id].filter(thread => id !== 'resolved' || now - Date.parse(thread.at) <= resolvedDays * 86_400_000).map(thread => thread.id), showOlder: id === 'resolved' })),
     queueCount: tasks.filter(task => ['draft', 'queued', 'active', 'in-review'].includes(task.state)).length,
-    goalCount: goals.filter(entry => entry.goal.state !== 'done').length, nightlyCount: daily.dailies.filter(item => item.enabled).length,
+    goalCount: routines.counts.goals, nightlyCount: routines.counts.nightly,
     showPullRequestsTab: work.threads.some(thread => thread.delivery === 'pull-request'),
     pullRequests: openPullRequests(work.pullRequests).map(row),
     recentlyMerged: work.pullRequests.filter(entry => entry.pr?.state === 'merged' && Date.parse(entry.pr.updatedAt) >= now - 7 * 86_400_000).map(row),
@@ -39,7 +41,7 @@ export function projectPageView(input: Pick<ProjectPageView, 'work' | 'tasks' | 
   const positions = new Map(tasks.filter(task => task.state === 'queued').map((task, index) => [task.id, index + 1]));
   const cards = [...work.threads.map(thread => threadCardView(thread, { ...options, held: daily.mergesHeld && !daily.mergeAllowedThreads.includes(thread.id), baseBranch: work.project.baseBranch })),
     ...tasks.map(task => taskCardView(task, positions.get(task.id)))];
-  const body = { work, tasks, goals, daily, overview, header: coordinatorPresentation(work, { ...options, now }), cards, waiting: waitingItemsView(work, options.ackKnown) };
+  const body = { work, tasks, goals, daily, routines, overview, header: coordinatorPresentation(work, { ...options, now }), cards, waiting: waitingItemsView(work, options.ackKnown) };
   return ProjectPageViewSchema.parse({ schema: 'project-page-view-v1', at: new Date(now).toISOString(),
     changeToken: createHash('sha256').update(stableJson(body)).digest('hex'), ...body });
 }

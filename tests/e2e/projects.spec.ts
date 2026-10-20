@@ -1417,6 +1417,14 @@ test('WG3 command jobs and weekly nightly items preserve retired receipts', asyn
   await row.getByRole('button', { name: 'Run now', exact: true }).click();
   await expect.poll(async () => ProjectDailyListViewSchema.parse(await read(page, `${route}/dailies`)).runs[0]?.conclusion, LONG).toBe('passed');
   await expect(row).toContainText('Done today'); await row.locator('details summary').click(); await expect(row).toContainText('nightly-passed');
+  const enabled = row.getByRole('checkbox', { name: 'Enable Weekly checks', exact: true });
+  await enabled.click(); await expect(enabled).not.toBeChecked(); await expect(row.getByRole('button', { name: 'Run now', exact: true })).toBeDisabled();
+  await enabled.click(); await expect(enabled).toBeChecked(); await expect(row.getByRole('button', { name: 'Run now', exact: true })).toBeEnabled();
+  await page.locator('details.pw-jobs > summary').filter({ hasText: /^Jobs \(/u }).click();
+  const command = page.locator('article.pw-goal').filter({ has: page.getByRole('heading', { name: 'Night command', exact: true }) });
+  await command.getByRole('button', { name: 'Pause', exact: true }).click();
+  await expect(command.getByRole('button', { name: 'Run now', exact: true })).toBeDisabled(); await expect(command).toContainText('Paused');
+  await command.getByRole('button', { name: 'Resume', exact: true }).click(); await expect(command.getByRole('button', { name: 'Run now', exact: true })).toBeEnabled();
   const refused = await page.request.post(`${route}/jobs`, { data: { schema: 'job-create-request-v1', clientRequestId: 'retired_workflow', name: 'Retired workflow', goalId: null, enabled: true, gate: null, run: { kind: 'github-workflow', workflow: 'old.yml', mode: 'watch', timeoutMinutes: 5 } } }); expect(refused.status()).toBe(400);
   await control('/projects/daily', { schema: 'fixture-daily-control-v1', action: 'retired' }); await page.reload(); await sectionTab(page, info, 'Routines');
   await expect(page.getByText('GitHub workflow (retired 19 October)', { exact: true }).first()).toBeVisible();

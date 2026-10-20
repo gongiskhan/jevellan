@@ -1,4 +1,5 @@
 import { ProjectPageRequestSchema, ProjectWaitingRespondRequestSchema } from '@jevellan/core';
+import { DailyEnabledRequestSchema, JobPausedRequestSchema } from '@jevellan/core';
 import { projectEventNotices } from '@jevellan/projects';
 import { CoordinatorActivityProjector } from '@jevellan/projects';
 import { DeployBaselineRequestSchema, DeployRollbackRequestSchema, ProjectPageQuerySchema } from '@jevellan/core';
@@ -24,7 +25,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ProjectThreadActionsViewSchema, ThreadViewSchema, type ThreadActionRequest } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -35,6 +36,9 @@ type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GE
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'jobs-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs-view$/, methods: ['GET'], target: 'any' },
+  { name: 'daily-enabled', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/dailies\/([A-Za-z0-9_-]+)\/enabled$/, methods: ['POST'], target: 'any', ids: ['projectId', 'dailyId'] },
+  { name: 'job-paused', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/paused$/, methods: ['POST'], target: 'any', ids: ['projectId', 'jobId'] },
   { name: 'waiting-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/waiting-items$/, methods: ['GET'], target: 'any' },
   { name: 'waiting-answer', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/waiting-items\/([A-Za-z0-9_-]+)\/respond$/, methods: ['POST'], target: 'any', ids: ['projectId', 'decisionId'] },
   { name: 'thread-actions-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/actions-view$/, methods: ['GET'], target: 'owner' },
@@ -294,6 +298,9 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'deploy-rollback': { const input = DeployRollbackRequestSchema.parse(await requestBody(request)); send(await work.deploys.rollback(projectId, threadId, input.expectedRevision), 202); return true; }
     case 'health-list': send(await app.projectHealthRequest({ schema: 'project-health-request-v1', project: projectId, operation: 'list' })); return true;
     case 'health-run': { const input = ProjectHealthRequestSchema.parse(await requestBody(request)); send(await app.projectHealthRequest({ ...input, project: projectId, operation: 'run' })); return true; }
+    case 'jobs-view': send(await work.jobsView(projectId)); return true;
+    case 'daily-enabled': send(await work.daily.setEnabled(projectId, route.dailyId!, DailyEnabledRequestSchema.parse(await requestBody(request)))); return true;
+    case 'job-paused': send(await work.daily.setPaused(projectId, route.jobId!, JobPausedRequestSchema.parse(await requestBody(request)))); return true;
     case 'job-list': send({ schema: 'project-job-list-view-v1', projectId, jobs: await work.daily.jobs(projectId) }); return true;
     case 'job-create': send(await work.daily.createJob(projectId, JobCreateRequestSchema.parse(await requestBody(request))), 201); return true;
     case 'job-update': send(await work.daily.updateJob(projectId, route.jobId!, JobUpdateRequestSchema.parse(await requestBody(request)))); return true;

@@ -1,3 +1,4 @@
+import type { ProjectJobsView } from '@jevellan/core/client';
 import { LastDeploy } from './project-deploy.js';
 import { SetupCard } from './setup-card.js';
 import { EmptySchema } from '@jevellan/core/client';
@@ -278,6 +279,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const viewer = useRef({ timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale: navigator.language });
   const [goals, setGoals] = useState<GoalEntry[]>([]);
   const [daily, setDaily] = useState<DailyView>();
+  const [routines, setRoutines] = useState<ProjectJobsView>();
   const [tasks, setTasks] = useState<ProjectWorkTask[]>([]);
   const [loadError, setLoadError] = useState('');
   const [events, setEvents] = useState<ProjectLedgerEvent[]>([]);
@@ -360,7 +362,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         if (moved) restart();
         if (!historyReady) publishHistory(history.snapshot(next.lastEventId));
         setView(next); setLoadError('');
-        setTasks(pageView.tasks); setGoals(pageView.goals); setDaily(pageView.daily); setOverview(pageView.overview); setHeader(pageView.header); setCards(pageView.cards); setWaiting(pageView.waiting);
+        setTasks(pageView.tasks); setGoals(pageView.goals); setDaily(pageView.daily); setRoutines(pageView.routines); setOverview(pageView.overview); setHeader(pageView.header); setCards(pageView.cards); setWaiting(pageView.waiting);
     };
     acceptPage.current = accept;
     const reads = queuedRefresh(
@@ -455,7 +457,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   useEffect(() => { if (movable) setMoveError(''); }, [movable, setMoveError]);
   const closeMenu = () => { if (menu.current) menu.current.open = false; };
 
-  if (!view || !overview || !header || !waiting) {
+  if (!view || !overview || !header || !waiting || !routines) {
     return (
       <div className="conversation-page pw-page" ref={page}>
         <div className="section-heading conversation-heading" ref={heading}>
@@ -557,7 +559,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       <SessionsCache rows={view.sessionCache} timezone={view.settings.nightlyWindow.timezone} titles={Object.fromEntries([[id, 'Coordinator'], ...view.threads.map(thread => [thread.id, thread.title])])} />
       {coordinatorUi.contextNotice && <p className="notice" role="status">{coordinatorUi.contextNotice}</p>}
       {header.banner && <ProjectStatusBanner projectId={id} banner={header.banner} props={props} />}
-      {daily && <NightlyBanner view={daily} />}
+      {routines && <NightlyBanner view={routines} />}
       {coordinatorUi.unavailableNotice && <p className="notice">{coordinatorUi.unavailableNotice}</p>}
       {coordinatorUi.offlineNotice && <OfflineNotice text={coordinatorUi.offlineNotice} canMove={coordinatorUi.controls.canMove} enabled={coordinatorUi.controls.moveEnabled} refusal={coordinatorUi.controls.moveRefusal ?? undefined} moving={moving.busy} move={move} />}
       {moveFailure.error && <p className="error" role="alert">{moveFailure.error}</p>}
@@ -625,7 +627,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           </section>
           <section className="pw-section" hidden={overviewTab !== 'routines'} data-tab="routines" aria-labelledby={`${sideId}-daily`}>
             {sectionHeading(`${sideId}-daily`, 'Nightly', overview.nightlyCount)}
-            {daily && <ProjectDailyPanel view={daily} goals={goals} changed={updated} onError={onError} />}
+            {routines && <ProjectDailyPanel view={routines} goals={goals} changed={updated} onError={onError} />}
           </section>
           <section className="pw-section" hidden={overviewTab !== 'routines'} data-tab="routines" aria-labelledby={`${sideId}-goals`}>
             {sectionHeading(`${sideId}-goals`, 'Goals', overview.goalCount)}
