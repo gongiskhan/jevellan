@@ -68,9 +68,10 @@ export class OwnerBridges {
   }
   /** The account folder the bridge runs under: the `bridge.account` account's managed folder, or an explicit Claude config folder. */
   async #configDir(project: Project, override?: string): Promise<{ dir: string; label: string }> {
-    if (override) return { dir: override, label: override };
     const label = this.app.ownerTools.projectSettings(project.id).bridge.account;
     const account = (await this.app.accounts.list()).find(row => row.account.label === label && row.account.runtime === 'claude');
+    // A restart reuses the folder it started with; it is still named by its account when it is that account's folder.
+    if (override) return { dir: override, label: account && this.app.homes.account('claude', account.account.id) === override ? label : override };
     if (!account) throw new OwnerRefusal(`There is no Claude account ${label} for the bridge. Change it with config set bridge account <label>.`, 'no_account', 409);
     return { dir: this.app.homes.account('claude', account.account.id), label };
   }
