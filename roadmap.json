@@ -1010,8 +1010,8 @@
   {
     "id": "wg-live",
     "title": "Complete the sandbox and project live journeys",
-    "why": "The owner limits current live checks to the ERP check, a deploy message after real landing and sandbox automatic rollback. Detailed project results remain private; all other journeys are not run and planned later.",
-    "status": "in-progress"
+    "why": "The revised scoped live run is closed with private passed/blocked receipts. A required real case remains blocked with its work preserved; no deploy-message pass is claimed. Checks, environment contract and unowned processes were preserved. All omitted journeys are not run and planned later; owner acceptance is not claimed.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "bridge-codex-060",
@@ -1082,7 +1082,7 @@
   {
     "id": "br-release",
     "title": "Bridge gate, 0.7.0 and installation",
-    "why": "Frozenac98492f merged into main once;0.7.0 published fromba983982 at09:13:25UTC and installed both with doctor10/10/Online/vault sync09:24:41UTC. All five desktop-light core smokes pass. Backend2602selected:2584initial passes,3harness-induced failures cleared by exact once-reruns,15notrun. Bridge status/push remain externally authentication-blocked. One scoped closing review is complete; three essential repairs are gated for0.7.1. Essential0.7.1 repairs published10:35:59UTC and installed both/doctor10/10each10:47:15UTC; actual bridge status/push remain blocked.",
+    "why": "Frozenac98492f merged into main once;0.7.0 published fromba983982 at09:13:25UTC and installed both with doctor10/10/Online/vault sync09:24:41UTC. All five desktop-light core smokes pass. Backend2602selected:2584initial passes,3harness-induced failures cleared by exact once-reruns,15notrun. Bridge status/push remain externally authentication-blocked. One scoped closing review is complete; three essential repairs are gated for0.7.1. Essential0.7.1 repairs published10:35:59UTC and installed both/doctor10/10each10:47:15UTC; actual bridge status/push remain blocked. Final scoped verification is closed with explicit private blockers; daily-use goal not fully met, no new source/release/review phase.",
     "status": "complete-with-blockers"
   },
   {

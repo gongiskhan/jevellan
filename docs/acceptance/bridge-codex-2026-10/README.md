@@ -134,3 +134,8 @@ Managed bridge authentication remains externally blocked. No status reply, fresh
 
 
 11:00 UTC goal record: the essential patch was published and both installations passed doctor before the daily-use target. The full goal remains unmet because actual bridge authentication/status/push are blocked; no owner acceptance is inferred. Authorized scoped verification continues without interrupting valid checks, and detailed project receipts remain private. No optional feature phase was started.
+
+
+### Final scope closure
+
+The latest owner wrap instruction ends further investigation/retry, source, release, optional feature and review phases. The remaining real scoped live case is **blocked**, with its work preserved; no deploy-message pass is claimed. Its exact project-specific setup and check evidence is private. The documented checks retain the project environment and their original commands, selection and guards. No special-case environment removal, unowned-process stop, weakened check or forced landing was used. Other live results are recorded with their actual live/simulated/not-run labels privately. The full daily-use goal remains partial, and managed bridge verification remains blocked. Optional work stays planned. No production deploy/rollback message was answered.
