@@ -116,7 +116,6 @@ export const PLACEMENT_REASON = 'Placement reason';
 export const ESCALATION_HISTORY = 'Escalation history';
 export const SESSION_NOTICES = 'Session notices';
 export const RETAINED_SESSION_ACCOUNT = 'Kept the eligible account of the current session.';
-export const placementConstraintText = (models: string[] | null, effort: string | null) => `${models === null ? 'All enabled models' : models.join(', ') || 'No allowed models'} · ${effort ? `Lowest effort: ${effort}` : 'No minimum effort'}`;
 export const APPLY_EKOA_SETUP = 'Apply Ekoa Code setup';
 export const deviceLimit = (name: string) => `Limit on ${name}`;
 export const deviceDefaultLimit = (limit: number) => `Default: ${limit}`;

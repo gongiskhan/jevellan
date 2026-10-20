@@ -2,7 +2,7 @@ import { AttachmentControls, LibraryMessage, useProjectAttachments } from './pro
 import { ThreadActions } from './thread-actions.js';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  ProjectWorkViewSchema, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema, type PlacementField, type ProjectWorkView,
+  ProjectThreadWhyViewSchema, type ProjectThreadWhyView, ProjectWorkViewSchema, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema, type ProjectWorkView,
   type QueuedMessage, type ThreadIndex, type ThreadReport, type ThreadView,
 } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
@@ -16,9 +16,9 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip, lineParts, nearestEffort,
+  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, lineParts, nearestEffort,
   mergeThreadToolTurns, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, reportBadge, threadActions, threadActivity, threadLiveText,
-  threadPollDelay, threadReason, threadStarting, transcriptNotice, whyFields, withoutEchoedSummaries, withoutReportCalls, type OverrideForm, type OverrideMode,
+  threadPollDelay, threadReason, threadStarting, transcriptNotice, withoutEchoedSummaries, withoutReportCalls, type OverrideForm, type OverrideMode,
 } from './project-work-model.js';
 import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, runtimeNames, updated, useClientIds, useLocalError } from './project-work.js';
 import { TranscriptTurn } from './session-transcript.js';
@@ -169,7 +169,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const actions = threadActions(view);
   const line = view.card?.placementLine ?? '';
   const notice = transcriptNotice(view);
-  const fallback = fallbackChip(view.placement);
+  const fallback = view.placementNotice;
   const reason = threadReason(thread.stateReason);
   const allowTurns = () => void allow.run(async (signal) => {
     setActionError('');
@@ -274,7 +274,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
         sent={() => { following.current = true; kick.current(); }} refused={() => kick.current()} />
       <div ref={bottom} />
       {selectedImage && <ThreadImageGallery base={base} files={images.includes(selectedImage) ? images : [...images, selectedImage]} selected={selectedImage} select={setSelectedImage} close={() => setSelectedImage(undefined)} />}
-      {why && <WhyPanel view={view} data={data} close={() => setWhy(false)} />}
+      {why && <WhyPanel view={view} projectId={projectId} onError={props.onError} close={() => setWhy(false)} />}
       {overriding && (
         <OverrideDialog props={props} view={view} projectId={projectId} close={() => setOverriding(false)} applied={() => { updated(); kick.current(); }} />
       )}
@@ -504,118 +504,54 @@ function TakeOver({ device, command, message }: { device: string; command: strin
   );
 }
 
-const FIELD_LABELS = { isolation: copy.ISOLATION, runtime: 'Runtime', account: 'Account', model: copy.MODEL, effort: copy.EFFORT, device: copy.DEVICE } as const satisfies Record<PlacementField, string>;
 /** Model labels as the Projects pages show them: `{runtime display name} {menu label}`, or the id of a model no longer in the menu. */
 const modelNames = (data: PageProps['data']) => {
   const runtimeName = runtimeNames(data); const menu = data.config.configuration['x-jevellan'].menu;
   return (modelId: string) => { const entry = menu.find((model) => model.id === modelId); return entry ? `${runtimeName(entry.runtime)} ${entry.label}` : modelId; };
 };
 
-/**
- * Why (12.3): the placement record in the inspector. The source and the fixed fields, then each field with Jev's probabilities as
- * small bars (the value the thread holds now marked), the requested and effective effort, eligible and excluded models and
- * devices with their reasons, the account, the fallback error and the Jev calls (D255).
- */
-function WhyPanel({ view, data, close }: { view: ThreadView; data: PageProps['data']; close(): void }) {
-  const { placement, thread } = view;
-  const modelName = useMemo(() => modelNames(data), [data]);
-  const deviceName = useMemo(() => deviceNames(data), [data]);
-  const account = data.accounts.find((entry) => entry.account.id === placement.accountId)?.account.label ?? thread.accountLabel;
-  const label = (field: PlacementField, value: string) =>
-    field === 'isolation' ? value === 'main' ? copy.MAIN : copy.WORKTREE : field === 'model' ? modelName(value) : field === 'device' ? deviceName(value) : field === 'account' ? value === placement.accountId ? account : data.accounts.find((entry) => entry.account.id === value)?.account.label ?? value : field === 'runtime' ? runtimeNames(data)(value) : value;
-  const fixed = placement.fixed.map((field) => FIELD_LABELS[field]).join(', ');
-  const ranks = (field: 'model' | 'device') => field === 'model'
-    ? { chosen: placement.modelId, eligible: placement.eligibleModels, excluded: placement.excludedModels.map((entry) => ({ id: entry.modelId, reason: entry.reason })) }
-    : { chosen: placement.deviceId, eligible: placement.eligibleDevices, excluded: placement.excludedDevices.map((entry) => ({ id: entry.deviceId, reason: entry.reason })) };
-  return (
-    <Panel title={copy.WHY_TITLE} eyebrow={thread.title} close={close}>
-      <div className="pw-why">
-        {view.messageRoute && <section className="why-section"><h3>Follow-up classification</h3>
-          <p>{view.messageRoute.outcome.source === 'jev' ? `Jev: ${view.messageRoute.outcome.goal}` : 'Jev unavailable; your full request is preserved.'}</p>
-        </section>}
-        {view.memoryRecall && <section className="why-section"><h3>Project memory</h3>
-          <p>{view.memoryRecall.source === 'unavailable' ? view.memoryRecall.section : 'Recalled for the first turn or after compaction.'}</p>
-          <ul>{view.memoryRecall.notes.map(note => <li key={note.permalink}><strong>{note.title}</strong>: {note.reason}</li>)}</ul>
-        </section>}
-        <section className="why-section">
-          <h3>{copy.WHY_PLACEMENT} <span className="why-source">{copy.PLACEMENT_SOURCES[placement.source]}</span></h3>
-          <p className="why-line">{fixed ? copy.fixedFields(fixed) : copy.FIXED_NONE}</p>
-          {placement.reason && <p>{copy.PLACEMENT_REASON}: {placement.reason}</p>}
-          {placement.constraints && <p>{copy.PLACEMENT_CONSTRAINTS}: {copy.placementConstraintText(placement.constraints.allowedModelIds?.map(modelName) ?? null, placement.constraints.minEffort)}</p>}
-          {placement.source === 'fallback' && placement.error && <p className="notice pw-why-error">{copy.placedWithoutJev(placement.error.message)}</p>}
-        </section>
-        {whyFields(placement).map(({ field, value, source, bars }) => {
-          const rank = field === 'model' || field === 'device' ? ranks(field) : undefined;
-          // With bars the eligible options are the bars; without them the list names every eligible option and marks the chosen one.
-          const listed = rank ? rank.eligible.filter((id) => !bars.some((bar) => bar.option === id)) : [];
-          const mapped = field === 'effort' && placement.effortRequested !== placement.effortEffective;
-          return (
-            <section className="why-section" key={field}>
-              <h3>{FIELD_LABELS[field]} <span className="why-source">{copy.FIELD_SOURCES[source]}</span></h3>
-              {mapped && <p className="why-line">{placement.effortRequested} → <b>{placement.effortEffective}</b> {copy.NEAREST_EFFORT}</p>}
-              {bars.map((bar) => (
-                <div className={`why-option${bar.chosen ? ' win' : ''}`} key={bar.option}>
-                  <span title={label(field, bar.option)}>{label(field, bar.option)}</span>
-                  <progress aria-label={`${label(field, bar.option)} ${copy.PROBABILITY}`} max={1} value={bar.p} />
-                  <span>{bar.p.toFixed(2)}</span>
-                </div>
-              ))}
-              {!bars.length && !mapped && !listed.includes(value) && <p className="why-line"><b>{label(field, value)}</b></p>}
-              {rank && (listed.length > 0 || rank.excluded.length > 0) && (
-                <ul className="why-rank">
-                  {listed.map((id) => (
-                    <li key={id} className={id === rank.chosen ? 'chosen' : undefined}>{label(field, id)}{id === rank.chosen ? ` · ${copy.CHOSEN}` : ''}</li>
-                  ))}
-                  {/* A field the owner fixed leaves every other option out as not chosen: listed plainly, never as a failure (D257). */}
-                  {rank.excluded.map((entry) => placement.fixed.includes(field)
-                    ? <li key={entry.id}>{label(field, entry.id)}</li>
-                    : <li key={entry.id} className="excluded">{label(field, entry.id)}: {entry.reason}</li>)}
-                </ul>
-              )}
-            </section>
-          );
-        })}
-        {!placement.fixed.includes('account') && !placement.accountChoice && <section className="why-section">
-          <h3>{copy.ACCOUNT}</h3>
-          <p className="why-line"><b>{account}</b></p>
-        </section>}
-        {placement.accountChoice && <section className="why-section">
-          {placement.accountChoice.source === 'session' && <p>{copy.RETAINED_SESSION_ACCOUNT}</p>}
-          <h3>Accounts when chosen</h3>
-          {placement.accountChoice.error && <p className="notice">Account choice used the resource ranking: {placement.accountChoice.error.message}</p>}
-          <ul>{placement.accountChoice.candidates.map(candidate => <li key={candidate.accountId}>
-            <b>{candidate.label}</b>{candidate.accountId === placement.accountId ? ' · chosen' : ''}: {candidate.eligible ? 'eligible' : candidate.reason === 'model-not-served' ? copy.modelNotServed(thread.modelLabel) : candidate.reason}
-            {' · '}{candidate.credential === 'shared' ? 'Shared saved login' : 'Device-local login'}
-            {' · '}Five hours {candidate.usage?.fiveHourPct === undefined ? 'unknown' : `${candidate.usage.fiveHourPct}%`}
-            {' · '}Week {candidate.usage?.weeklyPct === undefined ? 'unknown' : `${candidate.usage.weeklyPct}%`}
-            {' · '}Ceiling {candidate.ceilingPct}%
-          </li>)}</ul>
-        </section>}
-        {!!view.escalations?.length && <section className="why-section"><h3>{copy.ESCALATION_HISTORY}</h3><ol>{view.escalations.map((entry, index) => <li key={index}>{dateTime(entry.at)}: {modelName(entry.from.modelId)} {entry.from.effort} → {modelName(entry.to.modelId)} {entry.to.effort} ({entry.reason})</li>)}</ol></section>}
-        {!!placement.deviceFacts?.length && <section className="why-section">
-          <h3>Devices when placed</h3>
-          {placement.deviceFacts.map(device => <p key={device.deviceId}><b>{device.name}</b>: {device.running} running
-            {device.facts && <>, load {Number(device.facts.load5.toFixed(1))} on {device.facts.cores} cores, {Math.floor(device.facts.freeDiskBytes / 1e9)} GB free, {Number((device.facts.freeMemoryBytes / 1e9).toFixed(1))} GB memory free</>}
-            , tags {device.tags.join(', ') || 'none'}</p>)}
-        </section>}
-        {placement.taskContext && <section className="why-section">
-          <h3>Task</h3><p>{placement.taskContext.type}{placement.taskContext.goal ? ` · ${placement.taskContext.goal.name}` : ''}</p>
-          {placement.taskContext.needs.length > 0 && <p>Needs: {placement.taskContext.needs.join(', ')}</p>}
-        </section>}
-        {!!placement.correctionsShown?.length && <section className="why-section">
-          <h3>Corrections shown to Jev</h3>
-          <ol className="why-rank">{placement.correctionsShown.map((sentence, index) => <li key={index}>{sentence}</li>)}</ol>
-        </section>}
-        <section className="why-section why-jev">
-          <h3>{copy.JEV}</h3>
-          {placement.jevCalls.length ? placement.jevCalls.map((call, index) => (
-            <p key={index}><Parts line={copy.jevCallLine(call.returnedModel, call.usage.input_tokens + call.usage.output_tokens, call.latencyMs)} /></p>
-          )) : <p>{placement.source === 'fallback' ? copy.NO_JEV_ANSWER : copy.NO_JEV_CALL}</p>}
-          <p>{copy.PLACED} <Stamp at={placement.decidedAt} /></p>
-        </section>
-      </div>
-    </Panel>
-  );
+/** Layout and value formatting only; the owner device supplies every placement explanation. */
+function WhyPanel({ view, projectId, close, onError }: { view: ThreadView; projectId: string; close(): void; onError(error: unknown): void }) {
+  const [model, setModel] = useState<ProjectThreadWhyView>(), fail = useRef(onError); fail.current = onError;
+  const threadId = view.thread.id, at = view.thread.updatedAt;
+  useEffect(() => {
+    const controller = new AbortController();
+    void api(`/api/projects/${projectId}/threads/${threadId}/why-view`, ProjectThreadWhyViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true })
+      .then(value => { if (!controller.signal.aborted) setModel(value); }).catch(error => { if (!controller.signal.aborted) fail.current(error); });
+    return () => controller.abort();
+  }, [projectId, threadId, at]);
+  return <Panel title={copy.WHY_TITLE} eyebrow={model?.title ?? view.thread.title} close={close}>
+    {!model ? <p role="status">Loading explanation…</p> : <div className="pw-why">
+      {model.followup && <section className="why-section"><h3>Follow-up classification</h3><p>{model.followup}</p></section>}
+      {model.memory && <section className="why-section"><h3>Project memory</h3><p>{model.memory.summary}</p><ul>{model.memory.notes.map(note => <li key={note.permalink}><strong>{note.title}</strong>: {note.reason}</li>)}</ul></section>}
+      <section className="why-section"><h3>{copy.WHY_PLACEMENT} <span className="why-source">{model.placement.sourceLabel}</span></h3>
+        <p className="why-line">{model.placement.fixedLine}</p>
+        {model.placement.reasonLine && <p>{model.placement.reasonLine}</p>}
+        {model.placement.constraintsLine && <p>{model.placement.constraintsLine}</p>}
+        {model.placement.fallbackNotice && <p className="notice pw-why-error">{model.placement.fallbackNotice}</p>}
+      </section>
+      {model.fields.map(field => <section className="why-section" key={field.field}>
+        <h3>{field.label} <span className="why-source">{field.sourceLabel}</span></h3>
+        {field.mappedEffort && <p className="why-line">{field.mappedEffort.requested} → <b>{field.mappedEffort.effective}</b> {field.mappedEffort.note}</p>}
+        {field.bars.map(bar => <div className={`why-option${bar.chosen ? ' win' : ''}`} key={bar.option}><span title={bar.label}>{bar.label}</span><progress aria-label={`${bar.label} ${copy.PROBABILITY}`} max={1} value={bar.p} /><span>{bar.p.toFixed(2)}</span></div>)}
+        {field.showValue && <p className="why-line"><b>{field.valueLabel}</b></p>}
+        {(field.listed.length > 0 || field.excluded.length > 0) && <ul className="why-rank">
+          {field.listed.map(row => <li key={row.id} className={row.chosen ? 'chosen' : undefined}>{row.label}{row.chosen ? ` · ${copy.CHOSEN}` : ''}</li>)}
+          {field.excluded.map(row => <li key={row.id} className={row.reason === null ? undefined : 'excluded'}>{row.label}{row.reason === null ? '' : `: ${row.reason}`}</li>)}
+        </ul>}
+      </section>)}
+      {model.account.showStandalone && <section className="why-section"><h3>{copy.ACCOUNT}</h3><p className="why-line"><b>{model.account.label}</b></p></section>}
+      {model.account.showCandidates && <section className="why-section">
+        {model.account.retainedMessage && <p>{model.account.retainedMessage}</p>}<h3>Accounts when chosen</h3>{model.account.notice && <p className="notice">{model.account.notice}</p>}
+        <ul>{model.account.candidates.map(row => <li key={row.id}><b>{row.label}</b>{row.chosen ? ' · chosen' : ''}: {row.detail}</li>)}</ul>
+      </section>}
+      {model.escalations.length > 0 && <section className="why-section"><h3>{copy.ESCALATION_HISTORY}</h3><ol>{model.escalations.map((row, index) => <li key={index}>{dateTime(row.at)}: {row.line}</li>)}</ol></section>}
+      {model.devices.length > 0 && <section className="why-section"><h3>Devices when placed</h3>{model.devices.map(row => <p key={row.id}>{row.line}</p>)}</section>}
+      {model.task && <section className="why-section"><h3>Task</h3><p>{model.task.line}</p>{model.task.needsLine && <p>{model.task.needsLine}</p>}</section>}
+      {model.corrections.length > 0 && <section className="why-section"><h3>Corrections shown to Jev</h3><ol className="why-rank">{model.corrections.map((line, index) => <li key={index}>{line}</li>)}</ol></section>}
+      <section className="why-section why-jev"><h3>{copy.JEV}</h3>{model.jev.lines.length ? model.jev.lines.map((line, index) => <p key={index}><Parts line={line} /></p>) : <p>{model.jev.emptyLine}</p>}<p>{copy.PLACED} <Stamp at={model.jev.placedAt} /></p></section>
+    </div>}
+  </Panel>;
 }
 
 /**

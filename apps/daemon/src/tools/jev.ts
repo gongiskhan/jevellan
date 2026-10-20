@@ -1,7 +1,8 @@
 import { capLines } from '@jevellan/projects';
-import type { JevRule } from '@jevellan/core';
+import { ProjectThreadWhyViewSchema, type JevRule } from '@jevellan/core';
 import { OwnerRefusal, type OwnerHandler } from '../owner-tools.js';
-import { resolveGoal } from './common.js';
+import { ownerThreadOperation } from '../project-work-api.js';
+import { resolveGoal, resolveTask } from './common.js';
 
 function describeRule(rule: JevRule, goals: Map<string, string>): string {
   const when = [rule.when.taskType ? `task type ${rule.when.taskType}` : '', rule.when.goalId ? `goal ${goals.get(rule.when.goalId) ?? rule.when.goalId}` : '', rule.when.label ? `label ${rule.when.label}` : '', rule.when.keywords?.length ? `keywords ${rule.when.keywords.join(', ')}` : ''].filter(Boolean);
@@ -15,6 +16,13 @@ export const jev: OwnerHandler = async (context) => {
   await tools.status(project); // display ids for every current thread and goal
   const goals = new Map((await app.projectWork.goalList(projectId)).goals.map(row => [row.goal.id, tools.ids.one(projectId, 'G', row.goal.id)]));
   switch (context.action) {
+    case 'why': {
+      const target = await resolveTask(context, String(args.thread));
+      if (!target.thread) throw new OwnerRefusal(`${target.id} has no thread yet.`, 'not_running', 409);
+      const view = ProjectThreadWhyViewSchema.parse(await ownerThreadOperation(app, projectId, target.thread.id, 'why'));
+      return { text: capLines([view.title, `Placement: ${view.placement.sourceLabel}`, view.placement.fixedLine,
+        ...view.fields.map(field => `${field.label}: ${field.valueLabel} · ${field.sourceLabel}`), ...(view.placement.fallbackNotice ? [view.placement.fallbackNotice] : []), ...view.jev.lines]), data: view };
+    }
     case 'rules': { const rules = control.rules(projectId); return { text: capLines([`Jev rules for ${project.name} (global and project)`, ...(rules.length ? rules.map(rule => describeRule(rule, goals)) : ['none'])]) }; }
     case 'rule_set': {
       const when = (args.when ?? {}) as { taskType?: string; goal?: string; label?: string; keywords?: string[] };

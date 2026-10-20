@@ -26,9 +26,9 @@ import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
-import { ProjectThreadActionsViewSchema, ThreadViewSchema, type ThreadActionRequest } from '@jevellan/core';
+import { ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema, type ThreadActionRequest } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -57,6 +57,7 @@ const rows: readonly Row[] = [
   { name: 'job-paused', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs\/([A-Za-z0-9_-]+)\/paused$/, methods: ['POST'], target: 'any', ids: ['projectId', 'jobId'] },
   { name: 'waiting-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/waiting-items$/, methods: ['GET'], target: 'any' },
   { name: 'waiting-answer', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/waiting-items\/([A-Za-z0-9_-]+)\/respond$/, methods: ['POST'], target: 'any', ids: ['projectId', 'decisionId'] },
+  { name: 'thread-why-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/why-view$/, methods: ['GET'], target: 'owner' },
   { name: 'thread-actions-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/actions-view$/, methods: ['GET'], target: 'owner' },
   { name: 'sidebar-view', pattern: /^\/api\/project-work\/sidebar$/, methods: ['GET'], target: 'any' },
   { name: 'page-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/status-view$/, methods: ['GET', 'POST'], target: 'any' },
@@ -178,17 +179,19 @@ async function target(app: Application, deviceId: string, purpose: 'thread' | 'c
 
 /** Authenticated owner tools reuse the browser's typed owner routes; work never moves to the state point. */
 export async function ownerThreadOperation(app: Application, projectId: string, threadId: string,
-  operation: 'actions' | 'act' | 'merge', input?: ThreadActionRequest) {
-  const work = app.projectWork, owner = await work.threadOwner(projectId, threadId);
+  operation: 'why' | 'actions' | 'act' | 'merge', input?: ThreadActionRequest) {
+  const work = app.projectWork, owner = await (operation === 'why' ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
   if (owner === null) throw failure(THREAD_NOT_FOUND, 404);
   if (owner === app.device.deviceId) {
+    if (operation === 'why') return work.views.why(projectId, threadId);
     if (operation === 'actions') return work.views.actions(projectId, threadId);
     if (operation === 'act') return work.threadAction(projectId, threadId, ThreadActionRequestSchema.parse(input));
     return work.mergePullRequest(projectId, threadId);
   }
-  const path = `${API_PREFIX}${projectId}/threads/${threadId}/${operation === 'actions' ? 'actions-view' : operation === 'act' ? 'actions' : 'pr/merge'}`;
-  const value = await ownerProjectJson(app, owner, 'thread', path, operation === 'actions' ? 'GET' : 'POST',
-    operation === 'actions' ? undefined : operation === 'act' ? ThreadActionRequestSchema.parse(input) : EmptySchema.parse({ schema: 'empty-request-v1' }));
+  const path = `${API_PREFIX}${projectId}/threads/${threadId}/${operation === 'why' ? 'why-view' : operation === 'actions' ? 'actions-view' : operation === 'act' ? 'actions' : 'pr/merge'}`;
+  const value = await ownerProjectJson(app, owner, 'thread', path, operation === 'actions' || operation === 'why' ? 'GET' : 'POST',
+    operation === 'actions' || operation === 'why' ? undefined : operation === 'act' ? ThreadActionRequestSchema.parse(input) : EmptySchema.parse({ schema: 'empty-request-v1' }));
+  if (operation === 'why') { const view = parseReply(ProjectThreadWhyViewSchema, value); if (view.projectId !== projectId || view.threadId !== threadId) throw failure('The returned explanation does not match the thread.', 502); return view; }
   if (operation === 'actions') return parseReply(ProjectThreadActionsViewSchema, value);
   if (operation === 'act') return parseReply(ThreadViewSchema, value);
   return parseReply(MergeResultViewSchema, value);
@@ -339,7 +342,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
   }
   if (route.target === 'owner') {
     const owner = await (route.name === 'thread-events' ? work.threadStreamOwner(projectId, threadId)
-      : route.name === 'thread' || route.name === 'thread-actions-view' ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
+      : route.name === 'thread' || route.name === 'thread-actions-view' || route.name === 'thread-why-view' ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
     if (owner === null) throw failure(THREAD_NOT_FOUND, 404);
     if (owner !== app.device.deviceId) {
       if (caller.peer) throw failure(THREAD_NOT_FOUND, 404);
@@ -415,6 +418,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
       const ledger = await work.coordinatorEvents(projectId);
       streamLedger(ledger, request, response, url, caller.authenticated, projectFrame(ledger, true)); return true;
     }
+    case 'thread-why-view': send(await work.views.why(projectId, threadId)); return true;
     case 'thread-actions-view': send(await work.views.actions(projectId, threadId)); return true;
     case 'thread-events': {
       // Owner routing already validates the project and hub index. The index can precede

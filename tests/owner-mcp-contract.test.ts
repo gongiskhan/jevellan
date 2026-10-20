@@ -2,8 +2,9 @@ import { afterEach, expect, test } from 'vitest';
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { OWNER_TOOLS, OwnerToolResultSchema, ProjectGoalEditorSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
-import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
+import { ThreadCreatedViewSchema, OWNER_TOOLS, OwnerToolResultSchema, ProjectGoalEditorSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
+import { forThread } from '../packages/runtime-contract/dist/index.js';
+import { reportStep, projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
 let f: ProjectFixture | undefined; let client: Client | undefined;
 afterEach(async () => { await client?.close().catch(() => undefined); client = undefined; await f?.close(); f = undefined; });
@@ -91,4 +92,15 @@ test('goal models and retry-safe editor saves reach the official MCP client', as
   const listed = await mcp.callTool({ name: 'goals', arguments: { action: 'list' } });
   expect(OwnerToolResultSchema.parse(listed.structuredContent)).toMatchObject({ ok: true, data: { schema: 'project-goal-views-v1', projectId: 'project', rows: [{ name: 'MCP goal fixture' }] } });
   expect((listed.content as Array<{ text: string }>).some(row => row.text.includes('"schema":"project-goal-views-v1"'))).toBe(true);
+});
+
+
+test('the official MCP transport preserves the shared thread placement explanation', async () => {
+  f = await projectFixture({ control: true }); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'MCP explanation fixture.' }), forThread());
+  const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'mcp_why', title: 'MCP explanation', task: 'Inspect the simulated fixture.' });
+  await f.waitFor(() => f!.thread(made.threadId), row => row.state === 'idle');
+  const ui = await (await f.request(`/api/projects/project/threads/${made.threadId}/why-view`)).json(), mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = await mcp.callTool({ name: 'jev', arguments: { action: 'why', thread: made.threadId } }); expect(result.isError).toBeFalsy();
+  expect(OwnerToolResultSchema.parse(result.structuredContent)).toMatchObject({ ok: true, data: ui });
+  expect((result.content as Array<{ text: string }>).some(row => row.text.includes('"schema":"project-thread-why-view-v1"'))).toBe(true);
 });

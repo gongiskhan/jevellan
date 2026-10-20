@@ -1,3 +1,4 @@
+import { fallbackChip, threadWhyView } from './thread-why.js';
 import { threadActionView, threadCardView } from './card-views.js';
 import { overviewBoard } from './owner-status.js';
 import { ProjectSidebarViewSchema, type ProjectSidebarView } from '@jevellan/core';
@@ -209,6 +210,15 @@ export class ProjectViews {
     return threadActionView(index, held ?? index.landingStage === 'held', thread.baseBranch);
   }
   /** `GET /api/projects/:id/threads/:tid` for a thread this device owns (D81 `canMessage`; overrides as the API allows them, D252). */
+  async why(projectId: string, threadId: string) {
+    const [view, config, accounts, roster] = await Promise.all([this.thread(projectId, threadId), this.#o.settings(), this.#o.accounts.list(), this.#o.roster()]);
+    const runtime = (id: string) => this.#o.runtimes.get(id)?.displayName ?? id;
+    return threadWhyView(projectId, view, {
+      runtime, model: id => { const entry = config.menu.find(row => row.id === id); return entry ? `${runtime(entry.runtime)} ${entry.label}` : id; },
+      device: id => id === this.#o.deviceId ? this.#o.deviceName : roster.devices.find(row => row.device.id === id)?.device.name ?? id,
+      account: id => accounts.find(row => row.account.id === id)?.account.label ?? (id === view.placement.accountId ? view.thread.accountLabel : id),
+    });
+  }
   async thread(projectId: string, threadId: string): Promise<ThreadView> {
     const thread = this.#o.store.get(threadId);
     if (!thread || thread.projectId !== projectId) throw refuse(THREAD_NOT_FOUND, 404);
@@ -223,7 +233,7 @@ export class ProjectViews {
     const routed = events.findLast(event => event.type === 'thread-message-route');
     const mergesHeld = await this.#o.mergesHeld?.(projectId, threadId).catch(() => undefined);
     const index = { ...this.#o.store.index(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt), sessionCache: sessionCacheSummaries(cacheRecords(ledger)).slice(-500) };
-    return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: index,
+    return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: index, placementNotice: fallbackChip(thread.placement),
       card: threadCardView(index, { deviceName: () => this.#o.deviceName, runtimeName: id => this.#o.runtimes.get(id)?.displayName ?? id, held: mergesHeld ?? index.landingStage === 'held', baseBranch: thread.baseBranch }),
       ...(this.#o.store.local(threadId).memoryRecall ? { memoryRecall: this.#o.store.local(threadId).memoryRecall } : {}),
       ...(this.#o.store.local(threadId).escalations ? { escalations: this.#o.store.local(threadId).escalations } : {}),

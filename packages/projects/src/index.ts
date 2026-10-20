@@ -76,4 +76,5 @@ export * from './owner-render.js';
 export * from './jobs-view.js';
 export * from './routine-editors.js';
 export * from './goal-views.js';
+export * from './thread-why.js';
 export * from './routine-settings.js';

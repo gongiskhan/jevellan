@@ -1,3 +1,4 @@
+import { fallbackChip, placementConstraintText, whyFields } from '../packages/projects/dist/thread-why.js';
 import { decisionSource, sentText, showSent, withdrawals } from '../packages/projects/dist/waiting-views.js';
 import { checksBadge, mergeBlock, openPullRequests, outcomeText, placementLine, pullRequestBadges, threadMeta } from '../packages/projects/dist/card-views.js';
 import { coordinatorChip, coordinatorLabel, working } from '../packages/projects/dist/coordinator-view.js';
@@ -13,10 +14,10 @@ import { sidebarOrder } from '../packages/projects/dist/views.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import { chatProposalIds, chatProposalGroups } from '../apps/web/src/project-work-model.js';
 import {
-  alignReports, mergeThreadToolTurns, chatItems, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
+  alignReports, mergeThreadToolTurns, chatItems, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices,
   lineParts, mainIsolationBlock, nearestEffort, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, projectDot,
   projectRoute, reportBadge, restartedThread, rowClockMs, settingsRequest, sidebarProjects, threadActions, threadCreateRequest,
-  threadActivity, threadLiveText, threadPollDelay, threadReason, threadStarting, toolIcon, transcriptNotice, whyFields, withoutEchoedSummaries,
+  threadActivity, threadLiveText, threadPollDelay, threadReason, threadStarting, toolIcon, transcriptNotice, withoutEchoedSummaries,
   withoutReportCalls,
 } from '../apps/web/src/project-work-model.js';
 import { dateOnly, duration, relativeDuration, shortTime, timeStamp } from '../apps/web/src/time.js';
@@ -671,10 +672,7 @@ test('interface copy: brief-verbatim texts, shared server texts and no conversat
     else if (typeof value === 'function') collect((value as (...args: unknown[]) => unknown)('Sample', 3, 'Sample', 'Sample'));
     else if (value && typeof value === 'object') Object.values(value).forEach(collect);
   };
-  Object.entries(copy).forEach(([name, value]) => {
-    if (name === 'placementConstraintText') collect(copy.placementConstraintText(['Sample'], 'high'));
-    else collect(value);
-  });
+  Object.values(copy).forEach(collect);
   expect(texts.length).toBeGreaterThan(120);
   for (const value of texts) {
     expect(value, value).not.toMatch(/conversation|stretch|handoff/i);
@@ -708,4 +706,11 @@ test('fix provenance labels the aligned prompt and survives transcript filtering
   expect(copy.fixTurnLabel({ ...fix, kind: 'conflicts' })).toBe('Automatic fix: conflicts');
   expect(copy.fixTurnLabel({ ...fix, kind: 'comments' })).toBe('Automatic fix: review comments');
   expect(copy.fixTurnLabel({ by: 'owner', kind: 'checks' })).toBe('Requested by you');
+});
+
+
+test('engine placement constraints distinguish no restriction, no models and a minimum effort', () => {
+  expect(placementConstraintText(null, null)).toBe('All enabled models · No minimum effort');
+  expect(placementConstraintText([], 'high')).toBe('No allowed models · Lowest effort: high');
+  expect(placementConstraintText(['Fixture model'], 'medium')).toBe('Fixture model · Lowest effort: medium');
 });

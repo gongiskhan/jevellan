@@ -5,7 +5,6 @@ import {
   OWNER_STARTED_PREFIX,
   OWNER_STOPPED_THREAD,
   OWNER_WORKED_PREFIX,
-  PlacementFieldSchema,
   ProjectLedgerDataSchemas,
   RESTARTED_PREFIX,
   idTime,
@@ -17,8 +16,6 @@ import {
   type CursorTurn,
   type Effort,
   type Isolation,
-  type PlacementField,
-  type PlacementRecord,
   type ProjectLedgerData,
   type ProjectLedgerEvent,
   type ProjectLedgerEventType,
@@ -234,10 +231,6 @@ export function reportBadge(status: ThreadReport['status']): { text: string; ton
 
 
 // ---------- placement: the fallback chip, Why and Override (12.3, 9.8; D255) ----------
-/** The 9.8 chip of a thread placed without Jev, with the recorded reason, or null. */
-export function fallbackChip(placement: Pick<PlacementRecord, 'source' | 'error'>): string | null {
-  return placement.source === 'fallback' && placement.error ? copy.placedWithoutJev(placement.error.message) : null;
-}
 /** The new thread's id in a restarted thread's reason (`Restarted as {newId}.`, brief 10), so the page can link it; else null. */
 export function restartedThread(reason: string | undefined): string | null {
   if (!reason?.startsWith(RESTARTED_PREFIX) || !reason.endsWith('.')) return null;
@@ -303,31 +296,6 @@ export function overrideReady(view: Pick<ThreadView, 'placement' | 'canOverride'
   return view.canOverride.nextTurn && ('modelId' in request || 'effort' in request);
 }
 
-/** The p-v1 question Jev answers for each placement field (brief 10). */
-export const PLACEMENT_QUESTIONS: Partial<Record<PlacementField, string>> = { isolation: 'isolation', model: 'pick_model', effort: 'effort', device: 'device', account: 'account' };
-export type FieldSource = keyof typeof copy.FIELD_SOURCES;
-export type WhyField = { field: PlacementField; value: string; source: FieldSource; bars: Array<{ option: string; p: number; chosen: boolean }> };
-const fieldValue = (placement: PlacementRecord, field: PlacementField): string =>
-  field === 'isolation' ? placement.isolation : field === 'runtime' ? placement.runtime : field === 'account' ? placement.accountId : field === 'model' ? placement.modelId : field === 'effort' ? placement.effortRequested : placement.deviceId;
-/**
- * The Why panel, field by field (12.3, D255): Jev's distribution for each question it answered, highest first, with the value the
- * thread holds now marked. A value that is not Jev's top option was changed by the owner from the next turn (the record keeps
- * Jev's probabilities, D252). Fields Jev was not asked were fixed, the only option left, or the fallback rule's.
- */
-export function whyFields(placement: PlacementRecord): WhyField[] {
-  return PlacementFieldSchema.options.filter((field) => !['runtime', 'account'].includes(field) || placement.fixed.includes(field) || field === 'account' && placement.accountChoice).map((field) => {
-    const value = fieldValue(placement, field);
-    const question = PLACEMENT_QUESTIONS[field];
-    const answered = question ? placement.probabilities?.[question] : undefined;
-    const bars = Object.entries(answered ?? {}).sort((a, b) => b[1] - a[1]).map(([option, p]) => ({ option, p, chosen: option === value }));
-    const top = Math.max(...bars.map((bar) => bar.p));
-    const source: FieldSource = answered && (answered[value] ?? -1) < top ? 'changed'
-      : placement.fixed.includes(field) ? 'fixed'
-      : answered ? 'jev'
-      : (field === 'account' ? placement.accountChoice?.source : placement.source) === 'fallback' ? 'fallback' : 'only';
-    return { field, value, source, bars };
-  });
-}
 
 function payload<T extends ProjectLedgerEventType>(event: ProjectLedgerEvent, type: T): ProjectLedgerData<T> | undefined {
   if (event.type !== type) return undefined;

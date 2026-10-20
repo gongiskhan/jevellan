@@ -4,8 +4,9 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildPlugin, callCommand, hookCommand, pluginCommand, statuslineCommand } from '../packages/cli/dist/owner-commands.js';
-import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
-import { OwnerToolResultSchema, ProjectGoalEditorSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
+import { forThread } from '../packages/runtime-contract/dist/index.js';
+import { reportStep, projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
+import { ThreadCreatedViewSchema, OwnerToolResultSchema, ProjectGoalEditorSchema, ProjectJobEditorSchema } from '../packages/core/dist/index.js';
 
 let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
@@ -107,4 +108,15 @@ test('CLI goal editor templates preserve defaults and the canonical save request
   const view = ProjectGoalEditorSchema.parse(result.data), request = { ...view.request.base, fields: { ...view.defaults, name: 'CLI goal fixture', motivation: 'Shared canonical writer.' } };
   expect(await callCommand(['goals', 'save', '--request', JSON.stringify(request)], f.homes)).toBe(0);
   expect((await f.app.projectWork.goalList('project')).goals).toMatchObject([{ goal: { name: 'CLI goal fixture', dailyRefillCap: 3, openPrCap: 2 } }]);
+});
+
+
+test('CLI Jev Why retains the same versioned placement explanation as the UI', async () => {
+  f = await projectFixture({ control: true }); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'CLI explanation fixture.' }), forThread());
+  const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'cli_why', title: 'CLI explanation', task: 'Inspect the simulated fixture.' });
+  await f.waitFor(() => f!.thread(made.threadId), row => row.state === 'idle');
+  const ui = await (await f.request(`/api/projects/project/threads/${made.threadId}/why-view`)).json(), out = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  expect(await callCommand(['jev', 'why', '--thread', made.threadId], f.homes)).toBe(0);
+  const encoded = out.mock.calls.map(row => String(row[0])).find(text => text.startsWith('{'));
+  expect(OwnerToolResultSchema.parse(encoded ? JSON.parse(encoded) : undefined)).toMatchObject({ ok: true, data: ui });
 });
