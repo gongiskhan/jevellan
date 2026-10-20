@@ -35,7 +35,9 @@ const sentence = (error: unknown) => error instanceof Error && error.message ? e
 
 /** Token-backed accounts already authenticated in Jevellan have no native onboarding receipt. Only their isolated account file is updated. */
 export function prepareClaudeInteractiveHome(homes: Homes, home: string, cwd: string): void {
-  if (home !== homes.at('homes', 'claude', basename(home)) || resolvedPath(home) !== home) throw new Error('Claude takeover requires its isolated account home.');
+  // An in-place account is the owner's own logged-in folder; the takeover only adds the worktree's trust to it.
+  const own = homes.isInPlaceFolder(home) && resolvedPath(home) === home;
+  if (!own && (home !== homes.at('homes', 'claude', basename(home)) || resolvedPath(home) !== home)) throw new Error('Claude takeover requires its isolated account home.');
   if (!isAbsolute(cwd)) throw new Error('Claude takeover requires its existing worktree.');
   const file = join(home, '.claude.json');
   let value: Record<string, unknown> = {};

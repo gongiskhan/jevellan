@@ -150,3 +150,16 @@ test('An in-place Claude session on macOS keeps the owner HOME for the keychain;
   const owned = homes.account('claude', 'acc_two');
   expect(minimalEnvironment('claude', owned, {}, {}, { PATH: '/usr/bin', JEVELLAN_HOME: homes.root }).HOME).toBe(owned);
 });
+
+test('A takeover prepares an in-place folder (worktree trust only) and still refuses any other outside folder', async () => {
+  const { prepareClaudeInteractiveHome } = await import('../packages/cli/dist/thread-attach.js');
+  const { execFileSync } = await import('node:child_process');
+  const repo = join(folder, '..', 'repo'); mkdirSync(repo, { recursive: true }); execFileSync('git', ['init', '-q', repo]);
+  const other = join(folder, '..', 'other'); mkdirSync(other, { recursive: true });
+  expect(() => prepareClaudeInteractiveHome(homes, realpathSync(folder), repo)).toThrow('Claude takeover requires its isolated account home.');
+  homes.registerInPlace('claude', 'acc_one', folder);
+  prepareClaudeInteractiveHome(homes, realpathSync(folder), repo);
+  const prefs = JSON.parse(readFileSync(join(folder, '.claude.json'), 'utf8')) as { projects: Record<string, { hasTrustDialogAccepted?: boolean }> };
+  expect(prefs.projects[realpathSync(repo)]?.hasTrustDialogAccepted).toBe(true);
+  expect(() => prepareClaudeInteractiveHome(homes, realpathSync(other), repo)).toThrow('Claude takeover requires its isolated account home.');
+});
