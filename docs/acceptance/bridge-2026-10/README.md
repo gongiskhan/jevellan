@@ -4,7 +4,7 @@ This run builds the engine side of the Jevellan bridge, the twelve tools, the pl
 
 ## Decisions
 
-- Branch: the owner chose for this run to work on the branch `bridge` instead of main until the closing merge. This is the one exception to the AGENTS.md "main only" rule. The branch is merged into main with a fast-forward push at the closing.
+- Branch: the owner chose for this run to work on the branch `bridge` instead of main until the closing merge. This is the one exception to the AGENTS.md "main only" rule. The plan was a fast-forward merge into main at the closing; it did not happen (see Closing).
 - UI edits in this run are wiring only, checked in the desktop light layout. The four layouts (desktop and phone, light and dark) with vision are left to the later pass for every screen this run rewires; `docs/surface-map.md` lists them.
 - While the parallel release run is in its release gate and live checks, this run runs no browser suites and no real-model journeys, and runs heavy commands one at a time at the lowest priority.
 
@@ -84,7 +84,7 @@ Simulated: contract tests through the official MCP client (exact twelve tools an
 
 ## P4 bridge and push
 
-Built: `jevellan bridge [--project p] [--restart] [--stop] [--claude-config-dir dir]` (tmux `jv-bridge-<project>`, Sonnet at medium effort, remote control named "Jevellan · {project}", the plugin by `--plugin-dir`, the development channel, the appended system prompt, only the Jevellan tools allowed, Bash, Edit, Write and NotebookEdit disallowed, `--continue` when a session exists, the start-up dialogs answered through tmux, a minute check that starts a wanted bridge again); the push queue with acks on the state point, fed from open decision items and the hub's notification documents (deploys, rollbacks, coordinator outages), coordinator replies and answers, failed job runs, exhausted budgets and a stalled coordinator; quiet hours held durably with one summary when they end and urgent pushes at once; more than three at a time as one message; every unacked push again on reconnect; the `inject` transport for an idle bridge.
+Built: `jevellan bridge [--project p] [--restart] [--stop] [--claude-config-dir dir] [--remote-name name]` (tmux `jv-bridge-<project>`, Sonnet at medium effort, remote control named "Jevellan · {project}", the plugin by `--plugin-dir`, the development channel, the appended system prompt, only the Jevellan tools allowed, Bash, Edit, Write and NotebookEdit disallowed, `--continue` when a session exists, the start-up dialogs answered through tmux, a minute check that starts a wanted bridge again); the push queue with acks on the state point, fed from open decision items and the hub's notification documents (deploys, rollbacks, coordinator outages), coordinator replies and answers, failed job runs, exhausted budgets and a stalled coordinator; quiet hours held durably with one summary when they end and urgent pushes at once; more than three at a time as one message; every unacked push again on reconnect; the `inject` transport for an idle bridge.
 
 Decision: the bridge refuses to start without an interactive Claude login in the account's folder (remote control needs it) and names `jevellan login <account> --interactive`.
 
@@ -170,3 +170,53 @@ Live, 02:25 to 02:27, headless sessions with the bridge system prompt and the ge
 Found and fixed: the `ask_coordinator` input schema offered `mode` only as "ask" (the merged schema took the first action's literal), so "never land parser work without asking me" could not be sent as an instruction; both modes are now offered, and the contract test checks it. A lowercase proposal id (`p1`) was refused once; rule, lesson and proposal ids are now accepted in any case.
 
 Note: the bridge answered in European Portuguese to English requests in this account; rule 10 of the specified prompt says to reply in the owner's language, and nothing in this run's folder sets a language, so this is taken to come from the account's own preferences. Left as is; the owner's own account will show which applies.
+
+## Journey B: the bridge and its pushes (live)
+
+Live, 2026-10-20 02:34 to 03:20, nine rounds; the ninth passed every step. A test bridge for a fixture project ran in tmux as a real Claude Code session (Sonnet, medium effort) under remote control named "jevellan-test · bridge journey", under this run's own logged-in folder, with the engine on the simulated runtime. Each round's session was ended by the test.
+
+1. A waiting item arrived over the channel and the bridge told the owner what it was in two sentences; in the next 30 s no write tool was called.
+2. A deploy message arrived; "deploy" typed into the session called `respond` on W2 with "Deploy a1b2c3d", and the decision was answered with that option.
+3. A coordinator outage arrived with the existing copy.
+4. With quiet hours on, two ordinary items were held and an urgent "Production is down. Roll back?" went at once; the bridge said a rollback needs the owner's words and did nothing. When quiet hours ended, "2 updates while you were away" arrived as one message.
+5. With the bridge stopped, two items waited; the bridge started again with `--continue` and both arrived.
+
+Found and fixed (each confirmed by the next round):
+- Claude's terminal cuts a channel line at about 60 characters, so the test reads the bridge's session transcript, which has every push in full.
+- The workspace trust dialog defaults to "No, exit", and a key sent before the dialog takes input is lost; one round's bridge exited there. The bridge folder is now trusted in the account's own preferences before the start (as takeover already did for worktrees), and a start-up dialog is answered on its second sighting and not again within five seconds (answering a dialog still on screen sent Down then Enter to the channel confirmation, which picks Exit).
+- Claude drops a channel message sent while it is still starting: after a restart, the first of two waiting pushes was acked by the new forwarder two seconds in, with the channel confirmation still on screen, and never reached the session. Pushes now wait until three seconds after the bridge's prompt showed, and the forwarder relays only after the session initialized the connection.
+- A bridge that is shutting down still acks. Every start now sends again each push acked since the previous start whose text is not in the bridge's transcript.
+
+## Journey D: goals through the bridge (live, in part)
+
+Live, 02:27 to 02:31, headless sessions with the bridge system prompt against the test installation. "Create a goal called Docs quality ... then tell the coordinator to give it one night item that reviews the README every night, and to plan a first task for it" called `goals create` (G1) and `ask_coordinator tell`. The coordinator queued T5 "Review README for quality" under G1 within two minutes; "what's running for Docs quality?" called `goals show` and showed T5 running with the goal's label, its landing question W3, and the coordinator's decision. "pause Docs quality" called `goals pause`: G1 paused, T5 kept running to its end, and the goal view said so. The coordinator did not add the night item it was told to add in that time, so "due" from a night item was not seen live; it is covered by the simulated goal tests. Result: pass for create, tell, labels, show and pause; the night item part not seen live.
+
+## Bridge behaviour eval (live)
+
+Headless, Sonnet at medium effort, the thirteen utterances of the specification against a fixture on the simulated runtime.
+
+- Round 1 was invalid: the test spawned Claude synchronously, which blocked the event loop of the process that also runs the engine, so every tool call waited until the 240 s limit. The eval now spawns without blocking.
+- Round 2: 11 of 13. "switch deploys to nightly" went to `jobs schedule` and "roll back" stopped after `status`.
+- Round 3: 11 of 13, different misses: "deploy" went to `jobs run`, and "never put parser work below high effort" went to the coordinator as an instruction.
+- The specified prompt and descriptions are exact, so the routing went into the forwarder's server instructions, which this run owns: a short answer such as "deploy" answers the waiting item through `respond` and deploying is never a job run; standing placement rules are `jev rule_set`; the deploy switch is `config set deploy mode`; "roll back" is `jobs rollback` without confirm. The `jobs` refusal for an unknown "deploy" item now names `respond` and the deploy switch, and the deploy view names the item to answer.
+- Round 4: 13 of 13.
+- Round 5, on the final code: 13 of 13.
+
+## Browser journeys in the desktop light layout (live, existing suites)
+
+The three desktop light projects at the bridge head: 60 passed, 3 failed, 37 did not run (the projects file runs serially and stops at its first failure). The same three fail on main at `c1248ab2` in a separate clone, so none is this branch's:
+
+- LJ2 expected `settings.autoMerge`, which version 5 of the work settings replaced with `autoLand`.
+- J8 and J11 open `/` expecting the new-conversation composer; Home now opens the first sidebar project.
+
+All three tests were updated (`autoLand`, and `/new`). Rerun with the updates: three more runs of the projects layout at the final code each stopped at a different test, never one this branch touches (an ECONNRESET in "Thread images open", PJ3b stuck on "Connecting…", LJ2 waiting for a pull request, LJ4 timing out on sign-in), and each passes alone. A probe of the fixture server's event loop found stalls of 1 to 2 s about every 15 s and requests that got no answer within 15 s; the same probe on main at `c1248ab2` (with only the LJ2 expectation fixed so it runs on) showed the same stalls and failed the same way at LJ3 with a 15 s request timeout. The flakiness is main's; the desktop light and improver layouts passed in full, and J8, J11 and LJ2 pass with the updates.
+
+## Closing
+
+Main had not moved past `c1248ab2`, which the branch already contains; the only UI change Codex made after the branch's base is one icon entry, which holds no logic, so the UI sweep moved nothing.
+
+The parallel run ended at its release clock with its gate unaccepted: 0.6.0 was never tagged or installed, and both machines run 0.5.1. Merging `bridge` into main would have put the bridge into that unfinished release, so this run did not merge, did not install on either machine and did not start the ekoa-code bridge. The Codex pass (`CODEX-PASS.md` in the private run folder) finishes 0.6.0 first, then merges `bridge`, then releases 0.7.0.
+
+Checks on the final code: typecheck and lint pass; the bridge eval 13 of 13; Journey B pass; backend suite 2583 passed, 0 failed, 15 skipped (the opt-in real-model tests); browser journeys in the desktop light layout as above (failures only from main's flaky projects file).
+
+The test installation `bridgetest` was uninstalled (its data stays in the private run folder) and the live service was checked unchanged. The owner's steps, the journeys, the eval, usage readings, the bridge's token cost, the ten decisions and the known problems are in the private handoff, `/home/ggomes/.jevellan-build/bridge/HANDOFF.md`.
