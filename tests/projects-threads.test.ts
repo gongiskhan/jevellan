@@ -11,7 +11,7 @@ import {
   type ProjectWorkSettings, type ProjectLedgerData, type ProjectLedgerEvent, type ProjectLedgerEventType,
 } from '../packages/core/dist/index.js';
 import { forThread, groupAlive, processIdentity, type FakeTurnStep } from '../packages/runtime-contract/dist/index.js';
-import { eventLine, MAIN_NOT_AVAILABLE } from '../packages/projects/dist/index.js';
+import { eventLine } from '../packages/projects/dist/index.js';
 import { commitStep, expectNoLeaks, holdStep, never, projectFixture, reportStep, threadRequestText, type ProjectFixture, type ProjectFixtureOptions, withoutFollowupRoute } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
@@ -504,17 +504,18 @@ test('explicit account overrides stay strict and a next-turn account change star
   expect((await f.request(`/api/projects/project/threads/${threadId}/override`, 'POST', auto)).status).toBe(200);
 });
 
-test('placement refusals: fixed main on a busy checkout, a device that cannot run threads and an unknown device are refused with nothing created; a main default and a stale heartbeat still place here (D8, D65, D88)', { timeout: 120_000 }, async () => {
+test('placement refuses retired Main and unavailable devices without creating work; Worktree placement accepts a stale heartbeat on its own device', { timeout: 120_000 }, async () => {
   const f = await setup();
   const refusedWith = async (extra: object, message: string) => {
     const response = await f.request('/api/projects/project/threads', 'POST', createBody('Gated', 'Try a fixed field.', undefined, extra));
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({ schema: 'error-v1', code: 'conflict', message });
   };
-  // A conversation holding the checkout keeps main threads off it (brief 10).
+  // Retired Main inputs fail validation before placement or checkout acquisition.
   const conversation = { conversationId: 'conv_other', conversationTitle: 'Other work', workId: 'work_other' };
   await f.app.conversations.ownership.acquire(f.project, conversation);
-  await refusedWith({ isolation: 'main' }, MAIN_NOT_AVAILABLE);
+  const retired = await f.request('/api/projects/project/threads', 'POST', createBody('Gated', 'Try a retired field.', undefined, { isolation: 'main' }));
+  expect(retired.status).toBe(400); expect(await retired.json()).toMatchObject({ message: 'Check the submitted fields.' });
   await f.app.conversations.ownership.release(f.project, conversation, { processesGone: true, commits: 'unchanged' });
   const at = new Date().toISOString();
   f.app.hub.put('devices', 'dev_studio', DeviceSchema, { schema: 'device-v1', id: 'dev_studio', name: 'Studio', role: 'member', url: 'http://127.0.0.1:9772', os: 'darwin', version: '0.1.0', joinedAt: at, lastHeartbeatAt: at }, 0);
@@ -523,7 +524,7 @@ test('placement refusals: fixed main on a busy checkout, a device that cannot ru
   await refusedWith({ deviceId: 'dev_unknown' }, 'Choose a registered device.');
   expect((await f.json('/api/projects/project/work', ProjectWorkViewSchema)).threads).toEqual([]);
   expect(f.fake.turnStarts).toEqual([]);
-  // A main default places main on the free checkout; this device's stale heartbeat does not exclude it.
+  // Worktree defaults still allow this device when its own heartbeat is stale.
   await settings(f, {});
   const device = f.app.hub.get('devices', f.app.device.deviceId, DeviceSchema)!;
   f.app.hub.put('devices', f.app.device.deviceId, DeviceSchema, { ...device.document, lastHeartbeatAt: new Date(Date.now() - 120_000).toISOString() }, device.revision);
@@ -538,6 +539,6 @@ test('placement refusals: fixed main on a busy checkout, a device that cannot ru
 test('a Leave git project also refuses retired main isolation without touching its checkout', async () => {
   const f = await setup({ branchPolicy: 'external' }), before = f.git(f.checkout, 'status', '--porcelain');
   const response = await f.request('/api/projects/project/threads', 'POST', createBody('Gated', 'Work on main.', undefined, { isolation: 'main' }));
-  expect(response.status).toBe(409); expect(await response.json()).toMatchObject({ message: MAIN_NOT_AVAILABLE });
+  expect(response.status).toBe(400); expect(await response.json()).toMatchObject({ message: 'Check the submitted fields.' });
   expect(f.git(f.checkout, 'status', '--porcelain')).toBe(before); expect(f.app.projectWork.store.all()).toHaveLength(0);
 });

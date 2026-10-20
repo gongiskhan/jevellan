@@ -35,6 +35,37 @@ test('APM failure changes no account files and account aliases are rejected', as
   await expect(delivery.materialise('claude', home, [item()])).rejects.toThrow('Fixture failure'); expect(readdirSync(home)).toEqual([]);
   symlinkSync(home, join(homes.at('homes', 'claude'), 'acc_alias')); expect(() => homes.account('claude', 'acc_alias')).toThrow('alias');
 });
+const reconciliationHooks = { Stop: [{ hooks: [{ type: 'command', command: 'echo fixture-hook', timeout: 3 }] }] };
+function reconciliationApm(mode: 'matching' | 'mismatched' | 'malformed' | 'wrong-source' | 'unexpected' = 'matching'): ApmRunner {
+  return async (cwd, runtime, env) => {
+    await fakeApm(cwd, runtime, env);
+    const folder = join(cwd, '.claude');
+    writeFileSync(join(folder, 'settings.json'), JSON.stringify({ hooks: reconciliationHooks }));
+    const metadata = { Stop: [{ ...reconciliationHooks.Stop[0], _apm_source: mode === 'wrong-source' ? 7 : 'fixture-package' }] };
+    if (mode === 'mismatched') metadata.Stop[0]!.hooks = [{ type: 'command', command: 'echo another-hook', timeout: 3 }];
+    writeFileSync(join(folder, 'apm-hooks.json'), mode === 'malformed' ? 'private malformed fixture metadata' : JSON.stringify(metadata));
+    if (mode === 'unexpected') writeFileSync(join(folder, 'unexpected.json'), '{}');
+  };
+}
+test('APM reconciliation sidecar stays in staging while matching native hooks reach the isolated account', async () => {
+  const home = homes.account('claude', 'acc_sidecar');
+  await new RiggingDelivery(homes, reconciliationApm()).materialise('claude', home, [item()]);
+  expect(JSON.parse(readFileSync(join(home, 'settings.json'), 'utf8'))).toEqual({ hooks: reconciliationHooks });
+  expect(existsSync(join(home, 'apm-hooks.json'))).toBe(false);
+  expect(readFileSync(join(home, 'skills/fixture/SKILL.md'), 'utf8')).toBe('Installed fixture.');
+});
+test.each(['mismatched', 'malformed', 'wrong-source'] as const)('APM reconciliation sidecar %s data is refused before changing the account', async mode => {
+  const home = homes.account('claude', 'acc_sidecar');
+  await expect(new RiggingDelivery(homes, reconciliationApm(mode)).materialise('claude', home, [item()]))
+    .rejects.toThrow('APM hook reconciliation metadata does not match its generated settings.');
+  expect(readdirSync(home)).toEqual([]);
+});
+test('APM reconciliation sidecar handling still refuses an unrelated runtime file', async () => {
+  const home = homes.account('claude', 'acc_sidecar');
+  await expect(new RiggingDelivery(homes, reconciliationApm('unexpected')).materialise('claude', home, [item()]))
+    .rejects.toThrow('APM produced an unsupported runtime file.');
+  expect(readdirSync(home)).toEqual([]);
+});
 test('incomplete APM hook output is refused before changing the account home', async () => {
   const home = homes.account('codex', 'acc_incomplete'); const delivery = new RiggingDelivery(homes, fakeApm);
   await expect(delivery.materialise('codex', home, [{ ...item('codex'), id: 'builtin_project_memory', kind: 'hook', content: JSON.stringify(projectMemoryHooks()) }])).rejects.toThrow('required Project memory hooks');

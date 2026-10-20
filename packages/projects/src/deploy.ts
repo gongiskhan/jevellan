@@ -88,8 +88,8 @@ export class ProjectDeployService {
     if (row && fingerprint(row) === fingerprint(draft)) { await this.#message(row); return; }
     row = await this.#save({ ...draft, messageHealth: await this.o.health(id, checks, 'manual', deployId) }); await this.#message(row);
   }
-  async #available(row: ProjectDeploy) {
-    if (row.monitor || row.rollbackPending && !row.rollback || (await this.records(row.projectId)).some(item => item.id !== row.id && (['approved', 'running'].includes(item.state) || item.monitor || item.rollbackPending && !item.rollback))) refuse('A deploy is already running. Wait for it to finish before approving this message.');
+  async #available(row: ProjectDeploy, allowOwnMonitor = false) {
+    if (!allowOwnMonitor && row.monitor || row.rollbackPending && !row.rollback || (await this.records(row.projectId)).some(item => item.id !== row.id && (['approved', 'running'].includes(item.state) || item.monitor || item.rollbackPending && !item.rollback))) refuse('A deploy is already running. Wait for it to finish before approving this message.');
   }
   async answer(decision: ProjectDecision, answer: DecisionAnswer, request: { clientRequestId: string; expectedRevision?: number | undefined }): Promise<{ repeated: boolean; closed: boolean }> {
     return this.#exclusive(decision.projectId, async () => {
@@ -99,6 +99,7 @@ export class ProjectDeployService {
       if (old) { if (old.digest !== digest) refuse('This request ID already answered differently.'); if (old.closed) await this.o.hub.answerDecision(decision.id, answer, this.#at(), request.clientRequestId); else await this.#message(row); return { repeated: true, closed: old.closed }; }
       const latest = (await this.o.hub.decision(decision.id))?.document;
       if (!latest || latest.revision !== request.expectedRevision) refuse('The deploy message changed. Read it again before choosing.');
+      if (latest?.answer || latest?.withdrawnAt) refuse('This deploy message is no longer waiting for an answer.');
       let closed = true;
       if (decision.deploy!.action === 'rollback') {
         if (answer.optionLabel?.startsWith('Roll back to ')) row = await this.#queueRollback(row, 'health', row.failure ?? 'health check');
@@ -166,6 +167,7 @@ export class ProjectDeployService {
       await this.#writer(id); const rows = await this.records(id), row = rows.find(row => row.id === deployId);
       if (row?.rollbackPending?.reason === 'owner') return row;
       if (!row || row.revision !== expectedRevision || !row.deployedAt || row.rollback || this.#current(rows, (await this.o.hub.deployBaseline(id))?.document ?? null).commit !== row.commit) return refuse('Only the current latest deploy can be rolled back.');
+      await this.#available(row, true);
       return this.#queueRollback(row, 'owner', 'owner request');
     });
   }

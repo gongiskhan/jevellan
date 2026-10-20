@@ -30,6 +30,7 @@ test('fixed new threads obey fresh local disk/load and hard needs with no thread
 });
 test('per-device admission serializes the last overridden slot and survives legacy defaults', async () => {
   f = await projectFixture(); const projectId = f.project.id, deviceId = f.app.device.deviceId;
+  await f.app.projectWork.prepareDailyWork(projectId);
   const current = await f.app.projectHub.settings(projectId);
   await f.app.projectHub.putSettings({ ...(current?.document ?? defaultProjectWorkSettings(projectId)), maxRunningPerDevice: 4, perDeviceLimits: { [deviceId]: 1 } }, current?.revision ?? 0);
   const admission = new Admission({ hub: f.app.projectHub, deviceId, deviceName: 'Pro', localLive: () => [], facts: healthy });

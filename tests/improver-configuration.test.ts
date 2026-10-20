@@ -19,7 +19,7 @@ afterEach(() => { hub.close(); rmSync(root, { recursive: true, force: true }); }
 
 function legacyConfiguration() {
   const current = seedConfiguration(); const settings: Record<string, unknown> = { ...current['x-jevellan'], schema: 1 };
-  delete settings.improver; delete settings.cleanup;
+  delete settings.improver; delete settings.cleanup; delete settings.maxRunningThreadsAll;
   return LegacyConfigurationSchema.parse({ ...current, 'x-jevellan': settings });
 }
 function saveLegacy() {
@@ -36,7 +36,7 @@ test('version one gains only versioned improver defaults and cannot silently con
   const legacy = legacyConfiguration(); legacy['x-jevellan'].guards.pauseAfterPlan = false;
   legacy['x-jevellan'].menu[0]!.description = 'Keep this model description.';
   const upgraded = ConfigurationSchema.parse(legacy);
-  expect(upgraded).toEqual({ ...legacy, 'x-jevellan': { ...legacy['x-jevellan'], schema: 2, cleanup: defaultCleanupSettings(), improver: defaultImproverSettings() } });
+  expect(upgraded).toEqual({ ...legacy, 'x-jevellan': { ...legacy['x-jevellan'], schema: 2, cleanup: defaultCleanupSettings(), maxRunningThreadsAll: 6, improver: defaultImproverSettings() } });
   expect(upgraded['x-jevellan'].improver).toMatchObject({ schedule: { enabled: true, time: '03:00' }, routing: { mode: 'suggest' }, context: { mode: 'suggest' }, memory: { mode: 'apply-and-tell', projects: {} } });
   expect(ConfigurationSchema.safeParse({ ...legacy, 'x-jevellan': { ...legacy['x-jevellan'], improver: defaultImproverSettings() } }).success).toBe(false);
   const independent = defaultImproverSettings(); independent.memory.projects.project = false;
@@ -94,7 +94,7 @@ test('a mismatched legacy receipt is not treated as a successfully saved request
 });
 
 test('a lost pre-cleanup version-two save reply recovers after defaults are added', () => {
-  const current = seedConfiguration(), { cleanup: _cleanup, ...settings } = current['x-jevellan']; void _cleanup;
+  const current = seedConfiguration(), { cleanup: _cleanup, maxRunningThreadsAll: _cap, ...settings } = current['x-jevellan']; void [_cleanup, _cap];
   const configuration = { ...current, 'x-jevellan': settings };
   const revision = { schema: 'config-revision-v1', revision: 1, configuration, changedBy: author, at: '2026-10-18T12:00:00.000Z' };
   const receipt = { schema: 'configuration-request-v1', id: 'before_cleanup', deviceId: author.deviceId,

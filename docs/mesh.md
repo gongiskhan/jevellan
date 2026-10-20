@@ -160,3 +160,11 @@ GitHub credentials may be scoped to a registered project in the encrypted hub va
 
 
 The installation control route for project messages uses loopback authorization and durable owner delivery. Reply queries read the hub journal and match the consuming turn within its source device ledger. OAuth sign-in operations use the existing owner-authenticated Ekoa relay; authorization codes and tokens are never public status. Registration, PKCE state and rotating tokens remain in one encrypted hub record. Quiet-hours holds and project summaries are durable at that same authority.
+
+## Project execution in 0.6
+
+Command jobs reserve project/device capacity at the hub, then execute on an eligible online device with the requested tags. The executing device fetches its own environment from the vault and records its device identifier on the receipt. Coordinator moves do not invalidate that execution. The global thread limit uses transactional live indexes and short admission claims across projects and devices; a new turn waits for its exact hub acknowledgement.
+
+Landing and deployment retain separate durable receipts. The publication lease serializes main updates. Deploy approval fixes one commit, and health runs remain at the project state point even when the command executes elsewhere. The coordinator's accounted handoff is journaled before its old session is reset; the next session reads that same journal. Historical pull-request threads retain their saved delivery and merge policy.
+
+Device cleanup requires an idle maintenance reservation and authoritative local/shared inventory. Missing inventory defers deletion. Member forwarding accepts the closed cleanup operation and never client-supplied paths. Per-device receipts and heartbeat summaries keep the last result visible when a device is offline. All participating devices must use the compatible release before the new settings and receipts are activated.

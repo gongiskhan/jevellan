@@ -11,7 +11,7 @@ import {
 } from '../packages/core/dist/index.js';
 import { PlacementStateSchema, type JevQuestions } from '../packages/decisions/dist/index.js';
 import { forCoordinator, forThread, type FakeRuntime, type FakeTurnStep, type TurnInput } from '../packages/runtime-contract/dist/index.js';
-import { PROJECT_OPERATION_NOT_FOUND, STOPPED_BY_YOU, WAITING_FOR_HUB, type ProjectWork } from '../packages/projects/dist/index.js';
+import { PROJECT_OPERATION_NOT_FOUND, STOPPED_BY_YOU, type ProjectWork } from '../packages/projects/dist/index.js';
 import { expectNoLeaks, queueThread, holdStep, projectFixture, projectMember, type ProjectFixture, type ProjectMember } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
@@ -208,7 +208,7 @@ test('PJ5 the hub coordinator runs a thread on a member through the relay', { ti
   expect(waiting[0]!.envelope.seq).toBeLessThan(waiting[1]!.envelope.seq);
   // The thread with the waiting message rests on the hub, says so once, and every sweep while the hub is away leaves it there.
   for (let sweep = 0; sweep < 3; sweep += 1) { await m.app.projectWork.pulse(); await m.app.projectWork.idle(pid); }
-  expect(m.thread(docs)).toMatchObject({ state: 'idle', stateReason: WAITING_FOR_HUB, turns: 1, queuedMessages: [{ text: 'Then add examples.' }] });
+  expect(m.thread(docs)).toMatchObject({ state: 'idle', stateReason: 'Waiting for the hub to confirm a free thread slot.', turns: 1, queuedMessages: [{ text: 'Then add examples.' }] });
   expect(m.app.projectWork.ledgers.thread(pid, docs).events().filter((event) => event.type === 'notice')).toHaveLength(1);
   expect(m.app.projectWork.outbox.pending(pid)).toHaveLength(2);
   await f.app.projectWork.pulse(); await f.app.projectWork.idle();
@@ -218,7 +218,11 @@ test('PJ5 the hub coordinator runs a thread on a member through the relay', { ti
   m.offline = false; let puts = 0;
   m.loseReply = (call) => call.endsWith(' envelope-put') && puts++ === 0;
   m.fake.enqueueTurn(sayStep('Examples added.'), forThread((input) => input.owner.id === docs));
-  await f.waitFor(async () => { await m.app.projectWork.pulse(); return m.thread(docs).turns; }, (count) => count === 2);
+  await f.waitFor(async () => { await m.app.projectWork.pulse(); return m.thread(docs).turns; }, (count) => count === 2).catch(error => {
+    const thread = m.thread(docs), pending = m.app.projectWork.store.local(docs).pendingTurn;
+    throw new Error(`Member recovery: ${JSON.stringify({ state: thread.state, reason: thread.stateReason, turns: thread.turns,
+      queuedMessages: thread.queuedMessages.length, pendingReason: pending?.reason, pendingReports: m.app.projectWork.outbox.pending(pid).length })}`, { cause: error });
+  });
   await m.app.projectWork.idle(); await f.app.projectWork.idle(); m.loseReply = null;
   expect(puts).toBeGreaterThanOrEqual(3); expect(m.app.projectWork.outbox.pending()).toEqual([]);
   expect(m.fake.turnStarts.at(-1)).toMatchObject({ owner: { id: docs }, prompt: expect.stringContaining('Then add examples.') });
@@ -239,7 +243,9 @@ test('PJ5 the hub coordinator runs a thread on a member through the relay', { ti
   expect((await f.request(`/api/projects/${pid}/coordinator/messages`, 'POST', ownerMessage('Now add filters.'))).status).toBe(202);
   await f.waitFor(() => coordinatorTurns(m.fake).length, (count) => count === 1); await m.app.projectWork.idle();
   const fresh = coordinatorTurns(m.fake)[0]!;
-  expect(fresh.resume).toBeUndefined(); expect(fresh.prompt.startsWith('Project notebook:\nShip search before filters.')).toBe(true); expect(fresh.prompt).toContain('Now add filters.');
+  expect(fresh.resume).toBeUndefined(); expect(fresh.prompt).toContain('Project notebook:\nShip search before filters.');
+  expect(fresh.prompt.indexOf('Waiting on you:')).toBeLessThan(fresh.prompt.indexOf('Project notebook:'));
+  expect(fresh.prompt).toContain('Now add filters.');
   m.fake.enqueueTurn(sayStep('Filters planned.'), forThread((input) => input.owner.id === threadId));
   expect((await f.request(route(threadId, '/messages'), 'POST', threadMessage('Plan the filters.'))).status).toBe(202);
   await f.waitFor(() => coordinatorTurns(m.fake).map((input) => input.prompt).join('\n'), (prompts) => prompts.includes(`[thread "Add search" (${threadId}) reported progress] Filters planned.`));

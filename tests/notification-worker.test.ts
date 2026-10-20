@@ -4,7 +4,7 @@ import { runInNewContext } from 'node:vm';
 const source = readFileSync(new URL('../apps/web/dist/sw.js', import.meta.url), 'utf8');
 function fixture(clients: Array<{ url: string; focused?: boolean; visibilityState?: string; focus?: () => Promise<unknown>; navigate?: (url: string) => Promise<unknown> }> = []) {
   const listeners = new Map<string, (event: unknown) => void>(), shown: unknown[] = [], opened: string[] = [];
-  const context = { URL, setTimeout, clearTimeout, self: {} as unknown, location: { origin: 'https://hub.example' },
+  const context = { URL, TextEncoder, TextDecoder, setTimeout, clearTimeout, self: {} as unknown, location: { origin: 'https://hub.example' },
     registration: { showNotification: async (title: string, options: object) => { shown.push({ title, ...options }); } },
     clients: { matchAll: async () => clients, openWindow: async (url: string) => { opened.push(url); } },
     addEventListener: (name: string, listener: (event: unknown) => void) => listeners.set(name, listener) };

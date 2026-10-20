@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { ZodError } from 'zod';
 import {
   AccountSchema, ContextPanelSchema, Homes, MergeResultViewSchema, ProjectSchema, ProjectVisibilitySchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadCreatedViewSchema,
-  ThreadIndexSchema, ThreadMessageReceiptSchema, ThreadViewSchema, type Project,
+  ThreadIndexSchema, ThreadMessageReceiptSchema, ThreadViewSchema, defaultProjectWorkSettings, type Project,
   ProjectEventFrameSchema, ProjectWorkTaskSchema, PlacementRecordSchema, ThreadSchema,
 } from '../packages/core/dist/index.js';
 import { HubProjectAccess, HubUnavailable } from '../packages/mesh/dist/index.js';
@@ -92,6 +92,8 @@ beforeEach(async () => {
   project = ProjectSchema.parse({ schema: 'project-v1', id: 'project', name: 'Shop', paths: { [app.device.deviceId]: checkout }, branchPolicy: 'main', testCommand: 'test -f greeting.txt',
     memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } });
   await app.conversations.saveProject({ schema: 'project-write-v1', revision: 0, project });
+  const workSettings = await app.projectHub.settings(project.id);
+  await app.projectHub.putSettings({ ...(workSettings?.document ?? defaultProjectWorkSettings(project.id)), delivery: 'pull-request', autoLand: false }, workSettings?.revision ?? 0);
   server = createDaemon({ application: app }); await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve)); base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   const response = await fetch(`${base}/api/auth/setup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schema: 'passphrase-input-v1', passphrase: 'disposable projects passphrase' }) });
   cookie = response.headers.get('set-cookie')!.split(';')[0]!;

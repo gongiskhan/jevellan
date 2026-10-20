@@ -1,6 +1,6 @@
 # Install and run Jevellan
 
-The installer is implemented, but this build has not been published to GitHub. The acceptance report records the publication and live-provider blockers; a public installation is not claimed here. Local acceptance installs packed tarballs into disposable homes through a fake service manager.
+Published platform archives are available in the repository’s releases. Main can contain changes that have not completed their release gate; see the acceptance report for the tested revision, publication, installation and live-check status. Local acceptance uses disposable homes and an owned fake service manager.
 
 ## Requirements
 
@@ -14,7 +14,7 @@ Jevellan installs its own Basic Memory environment and installs pinned APM when 
 
 ## First device
 
-Once the GitHub repository is available:
+To install from main:
 
 ```sh
 npx github:gongiskhan/jevellan install
@@ -75,7 +75,7 @@ jevellan uninstall --purge
 
 Doctor prints ten checks: Node, Git, APM, Basic Memory, Claude, Codex, daemon, hub, accounts and Jev. Missing setup is reported as missing, never as a pass. A non-OK result exits with status 1. Version probes use a disposable home; daemon checks use its private loopback control endpoint and do not start another daemon.
 
-Update prepares the next version alongside the running one. It reports “Waiting for {n} running conversations to finish” and switches only after admitted work finishes. Rollback selects the preceding recorded version. Agents cannot run daemon-control operations themselves.
+Update prepares the next version alongside the running one. It reports “Waiting for {n} running conversations to finish” and switches only after admitted work finishes. Rollback selects the preceding recorded version. Before reverting across changed document formats, preserve current work and restore compatible cold state as documented in that release’s handoff; retaining an older binary alone does not establish data-format compatibility. Agents cannot run daemon-control operations themselves.
 
 Uninstall refuses while conversations are running and lists the work. Once idle, it removes its recorded service, command, applications and owned installation resources, retaining application data. Purge additionally asks you to type the exact Jevellan data-home path before removing that home. Neither removes project repositories, repository memory, native agent homes or unrelated services and commands. An externally changed installation resource is preserved and reported for attention rather than overwritten.
 

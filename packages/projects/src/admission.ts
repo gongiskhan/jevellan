@@ -1,6 +1,6 @@
 import { HubUnavailable, defaultProjectWorkSettings, deviceResourceRefusal, liveWork, type DeviceFacts, type ProjectHub, type ProjectWorkSettings, type ThreadIndex } from '@jevellan/core';
 import { projectDay } from './project-day.js';
-import { queuedReason, waitingForSlotReason, waitingForResourceReason, PROJECT_PAUSED, newThreadsPerDayReached } from './copy.js';
+import { queuedReason, waitingForSlotReason, waitingForResourceReason, PROJECT_PAUSED, WAITING_FOR_HUB_SLOT, newThreadsPerDayReached } from './copy.js';
 
 export type AdmissionCounts = {
   /** Live threads of the project (remote indexes, local runners and pending dispatches, each thread once). */
@@ -145,7 +145,7 @@ export class Admission {
         if (!claim.admitted) { const reason = `Waiting for a free slot: ${claim.running} threads are running across all projects (limit ${claim.limit}).`; return { ok: false, scope: 'all', limit: claim.limit, device: null, reason, queued: reason }; }
       } catch (error) {
         if (!(error instanceof HubUnavailable)) throw error;
-        const reason = 'Waiting for the hub to confirm a free thread slot.';
+        const reason = WAITING_FOR_HUB_SLOT;
         return { ok: false, scope: 'all', limit: 0, device: null, reason, queued: reason };
       }
     }

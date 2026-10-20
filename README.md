@@ -2,13 +2,13 @@
 
 **Autonomous development, coordinated.**
 
-Jevellan runs coding agents in conversations across your runtimes, accounts and machines. Work proceeds in bounded stretches, with structured handoffs. Jev chooses the next action, model and effort; you can correct a decision afterwards, with or without undoing the work. In Projects, talk to one coordinator per repository and follow live thread cards in the Overview. Jev chooses models, effort, accounts and devices, verifies publication and opens pull requests. Threads can repair failing checks, conflicts and review comments automatically; settings control proposals, limits and merging. A shared library, project memory, owner terminals and web push support work across desktop and phone.
+Jevellan runs coding agents in conversations across your runtimes, accounts and machines. Work proceeds in bounded stretches, with structured handoffs. Jev chooses the next action, model and effort; you can correct a decision afterwards, with or without undoing the work. In Projects, talk to one coordinator per repository and follow live thread cards in the Overview. Jev chooses models, effort, accounts and devices, runs configured checks and lands threads on main. Existing pull-request threads retain their delivery. Threads can repair failing checks and conflicts automatically; settings control proposals, limits, landing and deploy approval. A shared library, project memory, owner terminals and web push support work across desktop and phone.
 
-This repository is under active development. See [the acceptance report](docs/acceptance/REPORT.md) for what is built, tested and still blocked. The complete product is not ready to install yet.
+This repository is under active development. See [the acceptance report](docs/acceptance/REPORT.md) for what is built, tested and still blocked. Published releases are available; main can contain changes that are still undergoing release checks.
 
 ## Install
 
-The installation command, once the repository is published, is:
+The installation command from main is:
 
 ```sh
 npx github:gongiskhan/jevellan install

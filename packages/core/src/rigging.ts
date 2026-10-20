@@ -19,6 +19,27 @@ export const RiggingDeliveryStateSchema = z.strictObject({ schema: z.literal('ri
 const StateSchema = RiggingDeliveryStateSchema;
 const LockSchema = z.object({ lockfile_version: z.string().optional(), dependencies: z.array(z.object({ repo_url: z.string().optional(), local_path: z.string().optional(), deployed_files: z.array(z.string()).optional() })).default([]) });
 const JsonObject = z.record(z.string(), z.unknown());
+const ApmHookMetadataSchema = z.strictObject({
+  schema: z.literal('apm-hook-metadata-v1'),
+  events: z.record(z.string().min(1).max(80), z.array(z.object({ _apm_source: z.string().min(1).max(2000) }).catchall(z.json())).max(200)),
+});
+const NativeHookGroupsSchema = z.record(z.string().min(1).max(80), z.array(z.record(z.string(), z.json())).max(200));
+
+/** APM owns this staging sidecar; only the matching native configuration reaches the account. */
+function verifyApmHookMetadata(root: string, file: string): void {
+  try {
+    const metadata = ApmHookMetadataSchema.parse({ schema: 'apm-hook-metadata-v1', events: JSON.parse(readFileSync(file, 'utf8')) });
+    const settings = JsonObject.parse(JSON.parse(readFileSync(confined(root, 'settings.json'), 'utf8')));
+    const native = NativeHookGroupsSchema.parse(settings.hooks);
+    const owned = Object.fromEntries(Object.entries(metadata.events).map(([event, groups]) => [event, groups.map(group => {
+      const { _apm_source, ...hook } = group; void _apm_source; return hook;
+    })]));
+    if (stableJson(owned) !== stableJson(native)) throw new Error('Mismatched APM hook metadata.');
+  } catch {
+    throw new Error('APM hook reconciliation metadata does not match its generated settings.');
+  }
+}
+
 export const McpRiggingSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('stdio'), command: z.string().min(1), args: z.array(z.string()).default([]) }),
   z.strictObject({ type: z.literal('http'), url: z.url({ protocol: /^https?$/ }) }),
@@ -115,6 +136,7 @@ export class RiggingDelivery {
     const prefixes = runtime === 'claude' ? ['.claude'] : ['.agents', '.codex'];
     for (const prefix of prefixes) for (const path of files(join(stage, prefix))) {
       const ref = relative(join(stage, prefix), path);
+      if (runtime === 'claude' && ref === 'apm-hooks.json') { verifyApmHookMetadata(join(stage, prefix), path); continue; }
       if (!/^(skills\/|rules\/|commands\/|hooks\/|hooks\.json$|settings\.json$|config\.toml$)/.test(ref)) throw new Error('APM produced an unsupported runtime file.');
       if (staged.has(ref)) throw new Error('APM produced conflicting runtime files.');
       staged.set(ref, readFileSync(path));
