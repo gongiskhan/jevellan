@@ -254,3 +254,23 @@ test('handoffs account for late owner events without requiring previously covere
   await write('next_handoff', [{ eventId: 'late', outcome: 'declined' }]);
   await expect(write('unknown_handoff', [{ eventId: 'invented', outcome: 'answered' }])).rejects.toThrow('Unknown owner message');
 });
+
+test('a journal sweep yields to pending requests between project batches', async () => {
+  const { engine, project } = setup();
+  const projects = Array.from({ length: 12 }, (_, index) => ({ ...project, id: `project_${index}` }));
+  const journal = new ProjectJournals({ ...engine.o, projects: async () => projects }); engines.push(journal);
+  const order: string[] = [];
+  setImmediate(() => order.push('request'));
+  await journal.syncAll(); order.push('sweep complete');
+  expect(order).toEqual(['request', 'sweep complete']);
+});
+
+test('an idle journal sweep preserves durable cursors and projection files', async () => {
+  const { engine, project } = setup();
+  await engine.sync(project.id); now += 10001; await engine.sync(project.id);
+  const files = [homes.at('project-journal-publish', `${project.id}.json`), homes.at('project-journal-state', `${project.id}.json`), join(engine.path(project.id), 'INDEX.md')];
+  const before = files.map(file => ({ text: readFileSync(file, 'utf8'), mtime: statSync(file).mtimeMs }));
+  await new Promise(resolve => setTimeout(resolve, 20));
+  await engine.sync(project.id);
+  expect(files.map(file => ({ text: readFileSync(file, 'utf8'), mtime: statSync(file).mtimeMs }))).toEqual(before);
+});

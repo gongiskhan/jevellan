@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { cpus, freemem } from 'node:os';
-import { HeartbeatSchema, gitEnvironment, resolveProjectPath, type CleanupSummary, type Heartbeat, type Project, type DeviceFacts } from '@jevellan/core';
+import { HeartbeatSchema, gitEnvironment, resolveProjectPathAsync, type CleanupSummary, type Heartbeat, type Project, type DeviceFacts } from '@jevellan/core';
 import type { ExternalSessionSensor } from './sessions.js';
 import { HEARTBEAT_INTERVAL_MS } from './devices.js';
 
@@ -20,7 +20,7 @@ export function parseProjectGitStatus(text: string): GitState | null {
 async function projectGit(project: Project, deviceId: string): Promise<Heartbeat['projects'][number] | null> {
   if (!project.paths[deviceId]) return null;
   let path: string;
-  try { const visible = { ...project }; delete visible.allowedDevices; path = resolveProjectPath(visible, deviceId); } catch { return null; }
+  try { const visible = { ...project }; delete visible.allowedDevices; path = await resolveProjectPathAsync(visible, deviceId); } catch { return null; }
   return new Promise(resolve => {
     execFile('git', ['--no-optional-locks', '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', 'status', '--porcelain=v2', '--branch'],
       { cwd: path, env: gitEnvironment(), encoding: 'utf8', timeout: 4000, maxBuffer: 2 * 1024 * 1024 }, (error, stdout) => {

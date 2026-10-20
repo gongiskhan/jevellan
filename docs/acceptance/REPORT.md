@@ -2456,3 +2456,12 @@ Without-GitHub P9: authenticated project send with owner source labels and consu
 
 
 Without-GitHub P10 ended at its 2026-10-20T00:32:57.724Z clock limit with the gate **unaccepted**. Full backend: 2,501 passed, 32 failed, one skipped of 2,534; full browser: 96 passed, 100 failed, 208 skipped of 404. The two-worker backend execution choice consumed 4,008.49 seconds. Final typecheck/lint/build and 278 distinct focused backend cases across 22 files passed; all 32 original backend failures have passing focused current cases. Twelve distinct targeted browser cases passed in four layouts with 40 matching images and ok live vision judgements. Full-run vision has 66 ok judgements but only 44 matching images; 22 temporary images are missing. Both permitted closing reviews and their fixes are complete, with no third review. Backend comparisons: 29/32 failures have six valid isolated results: 4 pre-existing and 25 original-main test failures with passing released counterparts. All 32 original failures have passing focused current cases. 9 released-counterpart attempts selected no test and are not passes. Browser comparisons: 0/100 complete, 0 usable isolated results; unfinished attempts remain incomplete. The initial isolated reporter and no-test selector attempts were invalid and excluded. Verified owned teardown completed before the cutoff. Both installations remain 0.5.1. Release, installation, switch, owner sign-in and live checks are not run; the live clock never started. Remaining work is planned. No production change or owner acceptance is claimed. See [the run report](without-github-2026-10/README.md).
+
+
+## Bridge Codex pass, 20 October 2026
+
+Fresh authorized run: 0.6.0 must complete on main before integration of the existing bridge source. Orientation is complete; fixture starvation, original gate classification and missing images are first. No new release or installation is claimed. Numbered authority and implementation decisions are in [the run log](bridge-codex-2026-10/README.md).
+
+Fixture responsiveness: failing-first process-identity, journal and heartbeat regressions reproduced request starvation; 39 affected cases, typecheck and lint now pass. Final HTTP probe and browser gate remain pending. Exact screenshot bytes are retained immediately in the private run evidence folder. See the fresh run log.
+
+The final fixture probe passes: 1,412 authenticated requests, maximum95ms, zero slow/unanswered requests, clean owned teardown.40 affected cases pass. The full gate, release and installed switch remain pending.

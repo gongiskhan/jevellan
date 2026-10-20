@@ -38,6 +38,10 @@ test('ordinary browser fixtures signal ready only through the listener bound aft
     expect(roster.status).toBe(200);
     const view = await roster.json() as { devices: Array<{ device: { name: string } }> };
     expect(view.devices.some(row => row.device.name === 'Browser member')).toBe(true);
+    const context = await fetch(`http://127.0.0.1:${port}/api/projects/improver_sandbox/context/operations`, { headers: { Cookie: cookie }, signal: AbortSignal.timeout(15_000) });
+    expect(context.status).toBe(200);
+    const panel = await context.json() as { busy: boolean };
+    expect(panel.busy, 'readiness must drain the final seeded context operation').toBe(false);
   } finally {
     child.kill('SIGTERM');
     let timeout: ReturnType<typeof setTimeout> | undefined;

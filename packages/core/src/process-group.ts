@@ -1,6 +1,7 @@
 import { spawn, execFile, execFileSync, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { promisify } from 'node:util';
+import { readFileSync } from 'node:fs';
 
 const execFileAsync = promisify(execFile);
 
@@ -50,12 +51,41 @@ function parseProcessTable(output: string): ProcessIdentity[] {
   });
 }
 
+let linuxClock: { bootSeconds: number; ticks: number } | null | undefined;
+function currentProcess(pid: number): ProcessIdentity | undefined {
+  if (process.platform !== 'linux') return processTable().find(row => row.pid === pid);
+  // Launch identity must be synchronous so a short command cannot exit before its callers attach listeners.
+  // Reading one proc entry avoids a synchronous whole-machine ps on every Git command and admission read.
+  // Preserve ps's UTC lstart representation so existing process receipts and asynchronous tree scans still agree.
+  if (linuxClock === undefined) {
+    try {
+      const bootSeconds = Number(/^btime (\d+)$/mu.exec(readFileSync('/proc/stat', 'utf8'))?.[1]);
+      const ticks = Number(execFileSync('/usr/bin/getconf', ['CLK_TCK'], PS_OPTIONS).trim());
+      linuxClock = Number.isFinite(bootSeconds) && ticks > 0 ? { bootSeconds, ticks } : null;
+    } catch { linuxClock = null; }
+  }
+  if (!linuxClock) return processTable().find(row => row.pid === pid);
+  let stat: string;
+  try { stat = readFileSync(`/proc/${pid}/stat`, 'utf8'); }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT' || (error as NodeJS.ErrnoException).code === 'ESRCH') return undefined;
+    return processTable().find(row => row.pid === pid);
+  }
+  // comm can contain spaces and parentheses; the numeric fields begin after its final closing parenthesis.
+  const fields = stat.slice(stat.lastIndexOf(')') + 2).trim().split(/\s+/u);
+  const ppid = Number(fields[1]), pgid = Number(fields[2]), ticks = Number(fields[19]);
+  if (!Number.isSafeInteger(ppid) || !Number.isSafeInteger(pgid) || !Number.isSafeInteger(ticks)) throw new Error('Process identity is unreadable.');
+  const date = new Date((linuxClock.bootSeconds + Math.floor(ticks / linuxClock.ticks)) * 1000);
+  const [weekday, day, month, year, time] = date.toUTCString().split(' ');
+  return { pid, ppid, pgid, start: `${weekday!.slice(0, 3)} ${month} ${String(Number(day)).padStart(2, ' ')} ${time} ${year}` };
+}
+
 export function processIdentity(pid: number): NativeProcess {
-  const process = processTable().find((row) => row.pid === pid);
+  const process = currentProcess(pid);
   if (process && process.pgid !== pid) throw new Error('Runtime did not start in its own process group.');
   return { pid, pgid: pid, startIdentity: process?.start ?? 'exited-before-identity-observed' };
 }
-export function processStartIdentity(pid: number): string | null { return processTable().find((row) => row.pid === pid)?.start ?? null; }
+export function processStartIdentity(pid: number): string | null { return currentProcess(pid)?.start ?? null; }
 
 /** Only for a process just created by this caller in a detached group. */
 export function identifySpawnedGroup(pid: number): NativeProcess {

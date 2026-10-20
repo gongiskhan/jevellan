@@ -66,3 +66,19 @@ test('a heartbeat carries bounded cleanup metadata so the last receipt survives 
   const { pump, sent } = create({ cleanup: () => cleanup }); await pump.pulse(); expect(sent[0]?.lastCleanup).toEqual(cleanup);
   expect(JSON.stringify(sent[0]?.lastCleanup)).not.toMatch(/path|command|token/u);
 });
+
+test('slow checkout discovery leaves the event loop available for pending requests', async () => {
+  const path = join(root, 'checkout'), bin = join(root, 'bin'), release = join(root, 'release'); mkdirSync(path); mkdirSync(bin);
+  execFileSync('/usr/bin/git', ['init', '-b', 'main', path], { stdio: 'ignore' });
+  writeFileSync(join(bin, 'git'), `#!${process.execPath}\nconst fs = require('node:fs'); const cp = require('node:child_process'); const args = process.argv.slice(2); function run() { const child = cp.spawn('/usr/bin/git', args, { stdio: 'inherit' }); child.once('exit', code => process.exit(code ?? 1)); } if (args.includes('--show-toplevel')) { const timer = setInterval(() => { if (fs.existsSync(${JSON.stringify(release)})) { clearInterval(timer); run(); } }, 10); } else run();\n`, { mode: 0o755 });
+  const project = ProjectSchema.parse({ schema: 'project-v1', id: 'project', name: 'Project', paths: { here: path }, branchPolicy: 'main', memory: { mode: 'repo', dir: '.memory' }, context: { state: 'none' } });
+  const { pump } = create({ projects: async () => [project] });
+  vi.stubEnv('PATH', `${bin}:${process.env.PATH}`);
+  let served = false;
+  const pendingRequest = setTimeout(() => { served = true; writeFileSync(release, 'ready'); }, 30);
+  try {
+    const heartbeat = await pump.pulse();
+    expect(served).toBe(true);
+    expect(heartbeat?.projects).toMatchObject([{ projectId: project.id, path }]);
+  } finally { clearTimeout(pendingRequest); vi.unstubAllEnvs(); }
+});

@@ -1,7 +1,9 @@
 import { chmodSync, lstatSync, mkdirSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
+import { realpath } from 'node:fs/promises';
+import { promisify } from 'node:util';
 import { IdSchema, type Project } from './schemas.js';
 
 export function resolvedPath(path: string): string {
@@ -71,6 +73,20 @@ export function resolveProjectPath(project: Project, deviceId: string, deviceNam
     const cwd = realpathSync(path);
     const root = execFileSync('git', ['-C', cwd, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'], env: { PATH: process.env.PATH ?? '/usr/bin:/bin', GIT_OPTIONAL_LOCKS: '0' } }).trim();
     if (realpathSync(root) !== cwd) throw failure();
+    return cwd;
+  } catch { throw failure(); }
+}
+
+/** The same checkout boundary for background discovery, without holding HTTP behind Git. */
+export async function resolveProjectPathAsync(project: Project, deviceId: string, deviceName = deviceId): Promise<string> {
+  const path = project.paths[deviceId];
+  const failure = () => new Error(notCheckedOut(project, deviceName, path));
+  const problem = projectPathProblem(project, deviceId, deviceName);
+  if (problem !== undefined || path === undefined) throw new Error(problem ?? notCheckedOut(project, deviceName, path));
+  try {
+    const cwd = await realpath(path);
+    const { stdout } = await promisify(execFile)('git', ['-C', cwd, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', timeout: 5000, env: { PATH: process.env.PATH ?? '/usr/bin:/bin', GIT_OPTIONAL_LOCKS: '0' } });
+    if (await realpath(stdout.trim()) !== cwd) throw failure();
     return cwd;
   } catch { throw failure(); }
 }

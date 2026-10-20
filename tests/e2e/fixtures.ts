@@ -1,6 +1,8 @@
 import { test as base, expect, type Page } from '@playwright/test';
 import { wholePage } from './capture.js';
 import { judgeScreenshot, visionAvailable, visionModel, writeVisionEvidence } from './vision.js';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { basename, join } from 'node:path';
 
 // Every browser test gets vision checks for free: each screenshot it takes is judged after the test
 // with the brief's rubric. Deterministic assertions still decide the behaviour; blocking visual problems
@@ -25,7 +27,16 @@ export const test = base.extend<{ page: Page }>({
           await page.setViewportSize(viewport);
         }
       } else image = await original(settled);
-      shots.push({ image, path: options?.path ?? `inline-${shots.length + 1}.png` });
+      let path = options?.path ?? `inline-${shots.length + 1}.png`;
+      const evidence = process.env.JEVELLAN_VISION_EVIDENCE_DIR;
+      if (evidence) {
+        // Preserve the exact judged bytes before another Playwright run can clear its output directory.
+        const directory = join(evidence, 'screenshots', info.project.name, info.testId, String(info.retry));
+        mkdirSync(directory, { recursive: true });
+        path = join(directory, `${shots.length + 1}-${basename(path)}`);
+        writeFileSync(path, image);
+      }
+      shots.push({ image, path });
       return image;
     };
     await use(page);
