@@ -1,3 +1,4 @@
+import { coordinatorChip, coordinatorLabel, working } from '../packages/projects/dist/coordinator-view.js';
 import { expect, test } from 'vitest';
 import {
   COORDINATOR_TOOLS, EffortSchema, MANUAL_CHECKOUT_COMPLETED, NO_CHANGES, PlacementRecordSchema, ProjectDecisionSchema, ProjectWorkListViewSchema, ProjectWorkSettingsRequestSchema,
@@ -10,11 +11,11 @@ import { sidebarOrder } from '../packages/projects/dist/views.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import { chatProposalIds, chatProposalGroups } from '../apps/web/src/project-work-model.js';
 import {
-  alignReports, mergeThreadToolTurns, chatItems, checksBadge, composerBlock, coordinatorChip, coordinatorLabel, decisionSource, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
+  alignReports, mergeThreadToolTurns, chatItems, checksBadge, composerBlock, decisionSource, deviceBlock, deviceChoices, deviceRefusal, dotClass, effortChoices, fallbackChip,
   lineParts, mainIsolationBlock, mergeBlock, nearestEffort, openPullRequests, outcomeText, overrideForm, overrideOffered, overrideReady, overrideRequest, partWords, placementLine, projectDot,
   projectRoute, pullRequestBadges, reportBadge, restartedThread, rowClockMs, sentText, settingsRequest, showSent, sidebarProjects, threadActions, threadCreateRequest,
   threadActivity, threadLiveText, threadMeta, threadPollDelay, threadReason, threadStarting, toolIcon, transcriptNotice, whyFields, withdrawals, withoutEchoedSummaries,
-  withoutReportCalls, working,
+  withoutReportCalls,
 } from '../apps/web/src/project-work-model.js';
 import { dateOnly, duration, relativeDuration, shortTime, timeStamp } from '../apps/web/src/time.js';
 

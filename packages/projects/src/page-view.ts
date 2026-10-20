@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { coordinatorPresentation, type CoordinatorPresentationOptions } from './coordinator-view.js';
 import { ProjectPageViewSchema, stableJson, concludedRecently, runningSection, type ThreadIndex, type ProjectOverview, type ProjectPageView, type OverviewPullRequest, type PullRequestEntry } from '@jevellan/core';
 
 const labels = { review: 'Ready for review', working: 'Working', landing: 'Landing', landed: 'Landed, waiting for deploy', idle: 'Idle', resolved: 'Resolved' } as const;
@@ -7,7 +8,7 @@ const checks = { passing: { text: 'Checks passing', tone: 'ok' }, failing: { tex
   pending: { text: 'Checks running', tone: 'warn' }, none: { text: 'No checks', tone: 'muted' } } as const;
 
 /** Overview decisions for every caller, independent of DOM or local browser time. */
-export function projectPageView(input: Pick<ProjectPageView, 'work' | 'tasks' | 'goals' | 'daily'>, resolvedDays = 14, now = Date.now()): ProjectPageView {
+export function projectPageView(input: Pick<ProjectPageView, 'work' | 'tasks' | 'goals' | 'daily'>, resolvedDays = 14, now = Date.now(), options: CoordinatorPresentationOptions = {}): ProjectPageView {
   const { work, tasks, goals, daily } = input;
   const board = work.board ?? { waiting: [], review: [], working: [], landing: [], landed: [], idle: [], resolved: [] };
   const draftIds = tasks.filter(task => task.state === 'draft').map(task => task.id);
@@ -34,7 +35,7 @@ export function projectPageView(input: Pick<ProjectPageView, 'work' | 'tasks' | 
     pullRequests: work.pullRequests.filter(entry => entry.pr?.state === 'open' || !entry.pr && !!entry.reason).map(row),
     recentlyMerged: work.pullRequests.filter(entry => entry.pr?.state === 'merged' && Date.parse(entry.pr.updatedAt) >= now - 7 * 86_400_000).map(row),
   };
-  const body = { work, tasks, goals, daily, overview };
+  const body = { work, tasks, goals, daily, overview, header: coordinatorPresentation(work, { ...options, now }) };
   return ProjectPageViewSchema.parse({ schema: 'project-page-view-v1', at: new Date(now).toISOString(),
     changeToken: createHash('sha256').update(stableJson(body)).digest('hex'), ...body });
 }

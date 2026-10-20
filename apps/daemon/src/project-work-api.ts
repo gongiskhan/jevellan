@@ -1,3 +1,4 @@
+import { CoordinatorActivityProjector } from '@jevellan/projects';
 import { DeployBaselineRequestSchema, DeployRollbackRequestSchema, ProjectPageQuerySchema } from '@jevellan/core';
 import { ProjectHealthRequestSchema } from '@jevellan/core';
 import { SetupActionRequestSchema } from '@jevellan/core';
@@ -117,9 +118,10 @@ export function projectWorkRoute(path: string, method: string): ProjectWorkRoute
 }
 
 /** The coordinator chat frame (brief 5.13, 11): `event: project`, blob payloads resolved, redacted again, native identities left out. */
-function projectFrame(ledger: ProjectLedger): LedgerStreamFrame<ProjectLedgerEvent> {
+function projectFrame(ledger: ProjectLedger, coordinator = false): LedgerStreamFrame<ProjectLedgerEvent> {
+  const activity = coordinator ? new CoordinatorActivityProjector(ledger.events(), event => ledger.data(event)) : undefined;
   return { name: 'project', invalidCursor: EVENT_CURSOR_INVALID, aheadCursor: EVENT_CURSOR_AHEAD,
-    payload: (event) => ProjectEventFrameSchema.parse(ledger.redact({ schema: 'project-event-v1', event: { ...event, data: publicProjectData(ledger.data(event)) } })) };
+    payload: (event) => ProjectEventFrameSchema.parse(ledger.redact({ schema: 'project-event-v1', event: { ...event, data: publicProjectData(ledger.data(event)) }, ...(activity ? { coordinatorActivity: activity.observe(event) } : {}) })) };
 }
 
 /**
@@ -270,10 +272,10 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'list': send(await work.list()); return true;
     case 'sidebar-view': send(await work.views.sidebar()); return true;
     case 'view': send(await work.view(projectId)); return true;
-    case 'page-view': { const query = ProjectPageQuerySchema.parse(Object.fromEntries(url.searchParams)); send(await work.pageView(projectId, query.resolvedDays)); return true; }
+    case 'page-view': { const { resolvedDays, ...viewer } = ProjectPageQuerySchema.parse(Object.fromEntries(url.searchParams)); send(await work.pageView(projectId, resolvedDays, viewer)); return true; }
     case 'events': {
       const ledger = await work.coordinatorEvents(projectId);
-      streamLedger(ledger, request, response, url, caller.authenticated, projectFrame(ledger)); return true;
+      streamLedger(ledger, request, response, url, caller.authenticated, projectFrame(ledger, true)); return true;
     }
     case 'thread-events': {
       // Owner routing already validates the project and hub index. The index can precede

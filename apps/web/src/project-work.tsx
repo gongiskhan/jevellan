@@ -15,7 +15,7 @@ import {
   CoordinatorMessageReceiptSchema, DecisionAnsweredViewSchema, EffortSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema,
   ProjectPageViewSchema, ProjectSidebarViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskReceiptSchema, TaskTypeSchema, ThreadViewSchema,
   type ProjectDecision, type ProjectLedgerEvent, type ProjectSidebarView, type ProjectWorkView, type PullRequestEntry,
-  type ThreadIndex, type ProjectWorkTask, type ProjectOverview, type OverviewPullRequest,
+  type ThreadIndex, type ProjectWorkTask, type ProjectOverview, type OverviewPullRequest, type ProjectHeader, type ProjectCoordinatorActivity,
 } from '@jevellan/core/client';
 import { ApiError, api, empty, isCancelled } from './api.js';
 import { clientId } from './client-id.js';
@@ -24,9 +24,9 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  PROJECT_WORK_UPDATED, chatItems, chatProposalGroups, coordinatorChip, decisionSource, deviceBlock, deviceChoices,
+  PROJECT_WORK_UPDATED, chatItems, chatProposalGroups, decisionSource, deviceBlock, deviceChoices,
   nearestEffort, projectDot, projectRoute, rowClockMs, sentText, showSent, threadCreateRequest,
-  toolIcon, withdrawals, working, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
+  toolIcon, withdrawals, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
 } from './project-work-model.js';
 import { queuedRefresh } from './refresh.js';
 import { projectHistory } from './project-history.js';
@@ -168,16 +168,13 @@ export function ProjectsSidebar({ navigate, onError, selected, openHome }: Pick<
 }
 
 
-function ProjectStatusBanner({ view, props }: { view: ProjectWorkView; props: PageProps }) {
+function ProjectStatusBanner({ projectId, banner, props }: { projectId: string; banner: NonNullable<ProjectHeader['banner']>; props: PageProps }) {
   const local = useLocalError(props.onError), task = useTask(local.fail), save = useSettingsSave();
-  const archived = view.settings.status === 'archived';
-  return <div className="pw-project-status" role="status"><p>{archived ? copy.PROJECT_ARCHIVED_BANNER : copy.PROJECT_PAUSED_BANNER}</p>
+  return <div className="pw-project-status" role="status"><p>{banner.text}</p>
     <button type="button" className="secondary" disabled={task.busy} onClick={() => void task.run(async signal => {
-      const { schema: _schema, projectId, revision, ...settings } = view.settings; void _schema;
-      await save(`/api/projects/${projectId}/work-settings`, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision,
-        settings: { ...settings, status: archived ? 'paused' : 'active' } }, signal);
+      await save(`/api/projects/${projectId}/work-settings`, ProjectWorkSettingsViewSchema, 'PUT', banner.request, signal);
       updated();
-    })}>{archived ? copy.UNARCHIVE_PROJECT : copy.RESUME_PROJECT}</button>{local.error && <p className="error">{local.error}</p>}
+    })}>{banner.actionLabel}</button>{local.error && <p className="error">{local.error}</p>}
   </div>;
 }
 
@@ -270,6 +267,9 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const titleId = useId(); const tabsId = useId(); const chatId = useId(); const sideId = useId();
   const [view, setView] = useState<ProjectWorkView>();
   const [overview, setOverview] = useState<ProjectOverview>();
+  const [header, setHeader] = useState<ProjectHeader>();
+  const [coordinatorActivity, setCoordinatorActivity] = useState<ProjectCoordinatorActivity>();
+  const viewer = useRef({ timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale: navigator.language });
   const [goals, setGoals] = useState<GoalEntry[]>([]);
   const [daily, setDaily] = useState<DailyView>();
   const [tasks, setTasks] = useState<ProjectWorkTask[]>([]);
@@ -294,6 +294,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const now = useNow(rowClockMs(view?.threads ?? [], Date.now()));
 
   useEffect(() => {
+    setCoordinatorActivity(undefined);
     let debounce: ReturnType<typeof setTimeout> | undefined;
     // The chat stream resumes by itself after a dropped connection; a refused one (the coordinator lives elsewhere) is
     // reopened from the last event with a growing delay, and the view's notices explain the coordinator meanwhile.
@@ -317,7 +318,9 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       current.addEventListener('project', (frame: MessageEvent<string>) => {
         if (stopped || current !== source) return;
         try {
-          const value = ProjectEventFrameSchema.parse(JSON.parse(frame.data)).event;
+          const document = ProjectEventFrameSchema.parse(JSON.parse(frame.data)), value = document.event;
+          const activity = document.coordinatorActivity;
+          if (activity) setCoordinatorActivity(previous => !previous || activity.seq > previous.seq ? activity : previous);
           last = Math.max(last, value.id);
           if (!historyReady) {
             if (publishHistory(history.add(value))) refresh.current();
@@ -337,11 +340,11 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     const restart = () => {
       source?.close(); clearTimeout(retry); last = 0; delay = 5000;
       history = projectHistory(); historyReady = false; setHistoryLoaded(false);
-      seen.current = new Set(); setEvents([]);
+      seen.current = new Set(); setEvents([]); setCoordinatorActivity(undefined);
       if (!stopped) open();
     };
     const reads = queuedRefresh(
-      (signal) => api(`/api/projects/${id}/status-view?resolvedDays=${resolvedWindow.current}`, ProjectPageViewSchema, 'GET', undefined, { signal, waitForHub: true }),
+      (signal) => api(`/api/projects/${id}/status-view?${new URLSearchParams({ ...viewer.current, resolvedDays: String(resolvedWindow.current) })}`, ProjectPageViewSchema, 'GET', undefined, { signal, waitForHub: true }),
       (pageView) => {
         const next = pageView.work;
         const device = next.coordinator.deviceId ?? here; const moved = streaming !== undefined && device !== streaming; streaming = device;
@@ -350,7 +353,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         if (moved) restart();
         if (!historyReady) publishHistory(history.snapshot(next.lastEventId));
         setView(next); setLoadError('');
-        setTasks(pageView.tasks); setGoals(pageView.goals); setDaily(pageView.daily); setOverview(pageView.overview);
+        setTasks(pageView.tasks); setGoals(pageView.goals); setDaily(pageView.daily); setOverview(pageView.overview); setHeader(pageView.header);
       },
       (failure) => {
         if (failure instanceof ApiError && failure.status === 401) onError(failure);
@@ -419,7 +422,6 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     else window.scrollTo({ top: 0 });
   };
 
-  const runtimeName = useMemo(() => runtimeNames(data), [data]);
   const deviceName = useMemo(() => deviceNames(data), [data]);
   const threads = view?.threads;
   const titles = useMemo<ThreadTitles>(() => {
@@ -441,7 +443,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   useEffect(() => { if (movable) setMoveError(''); }, [movable, setMoveError]);
   const closeMenu = () => { if (menu.current) menu.current.open = false; };
 
-  if (!view || !overview) {
+  if (!view || !overview || !header) {
     return (
       <div className="conversation-page pw-page" ref={page}>
         <div className="section-heading conversation-heading" ref={heading}>
@@ -454,11 +456,11 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     );
   }
 
-  const chip = coordinatorChip(view, events, runtimeName);
-  const busy = working(events, view);
+  // Select a newer engine projection; turn interpretation and eligibility stay on the server.
+  const coordinatorUi = header.live && coordinatorActivity && coordinatorActivity.seq > header.atEventId ? header.live[coordinatorActivity.state] : header.current;
+  const chip = coordinatorUi.chip, busy = coordinatorUi.working;
   const coordinator = view.coordinator;
-  const offline = coordinator.state === 'offline';
-  const coordinatorDevice = coordinator.deviceName ?? (coordinator.deviceId ? deviceName(coordinator.deviceId) : '');
+  const offline = coordinatorUi.offline;
   const taskById = new Map(tasks.map(task => [task.id, task]));
   const drafts = overview.waiting.draftIds.flatMap(id => taskById.get(id) ?? []);
   const open = view.decisions.open.filter(decision => !answered.has(decision.id));
@@ -514,12 +516,12 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             <summary aria-label={copy.PROJECT_MENU}><Icon name="more" /></summary>
             <div>
               <button type="button" onClick={() => { closeMenu(); navigate(`/projects/${id}/settings`); }}>{copy.PROJECT_SETTINGS}</button>
-              <button type="button" disabled={busy || offline || control.busy} onClick={() => { closeMenu(); void control.run(async signal => { await api(`/api/projects/${id}/setup-request`, EmptySchema, 'POST', { schema: 'project-run-request-v1', clientRequestId: `setup_${clientId()}` }, { signal, waitForHub: true }); updated(); }); }}>{copy.SUGGEST_SETUP}</button>
-              {coordinator.canMoveHere && (
-                <button type="button" disabled={moving.busy || !!coordinator.moveRefusal} aria-describedby={coordinator.moveRefusal ? menuMoveNote : undefined}
+              <button type="button" disabled={control.busy || !coordinatorUi.controls.canSuggestSetup} onClick={() => { closeMenu(); void control.run(async signal => { await api(`/api/projects/${id}/setup-request`, EmptySchema, 'POST', { schema: 'project-run-request-v1', clientRequestId: `setup_${clientId()}` }, { signal, waitForHub: true }); updated(); }); }}>{copy.SUGGEST_SETUP}</button>
+              {coordinatorUi.controls.canMove && (
+                <button type="button" disabled={moving.busy || !coordinatorUi.controls.moveEnabled} aria-describedby={coordinatorUi.controls.moveRefusal ? menuMoveNote : undefined}
                   onClick={() => { closeMenu(); move(); }}>{copy.MOVE_COORDINATOR}</button>
               )}
-              {coordinator.canMoveHere && coordinator.moveRefusal && <p className="pw-menu-note" id={menuMoveNote}>{coordinator.moveRefusal}</p>}
+              {coordinatorUi.controls.canMove && coordinatorUi.controls.moveRefusal && <p className="pw-menu-note" id={menuMoveNote}>{coordinatorUi.controls.moveRefusal}</p>}
             </div>
           </details>
         </div>
@@ -530,24 +532,19 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           {chip.session && <span className="pw-session">{chip.session}</span>}
         </div>
         <div className="conversation-meta pw-context">
-          {coordinator.session?.context && <span aria-label="Coordinator context">
-            {coordinator.session.context.tokens !== null && coordinator.session.context.contextWindow
-              ? `Context ${Math.round(coordinator.session.context.tokens / coordinator.session.context.contextWindow * 100)}%` : 'Context unavailable'}
-            {' · '}Compacted {coordinator.session.context.compactions.filter(at => new Date(at).toLocaleDateString() === new Date().toLocaleDateString()).length} times today
-            {coordinator.session.context.lastCompactionAt && <>{' · '}Last compaction {new Date(coordinator.session.context.lastCompactionAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>}
-          </span>}
-          <button type="button" className="secondary" disabled={control.busy || offline} onClick={fresh}>{copy.FRESH_COORDINATOR}</button>
+          {coordinatorUi.contextLine && <span aria-label="Coordinator context">{coordinatorUi.contextLine}</span>}
+          <button type="button" className="secondary" disabled={control.busy || !coordinatorUi.controls.canFresh} onClick={fresh}>{copy.FRESH_COORDINATOR}</button>
           <SessionCache rows={view.sessionCache} sessionKey={coordinator.session?.cacheSessionKey} timezone={view.settings.nightlyWindow.timezone} />
         </div>
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}
       <SessionHistory entries={coordinator.sessionHistory} path={`/api/projects/${id}/session-transcript`} />
       <SessionsCache rows={view.sessionCache} timezone={view.settings.nightlyWindow.timezone} titles={Object.fromEntries([[id, 'Coordinator'], ...view.threads.map(thread => [thread.id, thread.title])])} />
-      {coordinator.session?.context?.notice && <p className="notice" role="status">{coordinator.session.context.notice}</p>}
-      {view.settings.status !== 'active' && <ProjectStatusBanner view={view} props={props} />}
+      {coordinatorUi.contextNotice && <p className="notice" role="status">{coordinatorUi.contextNotice}</p>}
+      {header.banner && <ProjectStatusBanner projectId={id} banner={header.banner} props={props} />}
       {daily && <NightlyBanner view={daily} />}
-      {coordinator.state === 'unavailable' && coordinator.unavailableReason && <p className="notice">{copy.coordinatorUnavailableNotice(coordinator.unavailableReason)}</p>}
-      {offline && <OfflineNotice device={coordinatorDevice} canMove={coordinator.canMoveHere} refusal={coordinator.moveRefusal} moving={moving.busy} move={move} />}
+      {coordinatorUi.unavailableNotice && <p className="notice">{coordinatorUi.unavailableNotice}</p>}
+      {coordinatorUi.offlineNotice && <OfflineNotice text={coordinatorUi.offlineNotice} canMove={coordinatorUi.controls.canMove} enabled={coordinatorUi.controls.moveEnabled} refusal={coordinatorUi.controls.moveRefusal ?? undefined} moving={moving.busy} move={move} />}
       {moveFailure.error && <p className="error" role="alert">{moveFailure.error}</p>}
       {stream === 'reconnecting' && <p className="notice" role="status">{copy.RECONNECTING}</p>}
       <div className="pw-tabs" role="tablist" aria-label={copy.PROJECT_SECTIONS} onKeyDown={(event) => {
@@ -575,7 +572,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
                 startAll={proposalGroups.get(item.id) ?? []} />)}
             </div>
           ) : <p className="pw-chat-empty">{copy.EMPTY_CHAT}</p>}
-          <Composer projectId={id} busy={busy} offline={offline} offlineText={offline ? copy.coordinatorOfflineNotice(coordinatorDevice) : ''}
+          <Composer projectId={id} busy={busy} offline={offline} offlineText={coordinatorUi.offlineNotice ?? ''}
             behind={behind && chatShown} jump={() => { pinned.current = true; setBehind(false); window.scrollTo({ top: document.documentElement.scrollHeight }); }}
             stopping={control.busy} stop={stop} onError={onError} />
         </div>
@@ -622,7 +619,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           </section>
         </div>
       </div>
-      {dialog === 'new-thread' && <NewThreadDialog props={props} view={view} tasks={tasks} goals={goals} move={moveHere} close={() => setDialog(undefined)} />}
+      {dialog === 'new-thread' && <NewThreadDialog props={props} view={view} coordinatorUi={coordinatorUi} tasks={tasks} goals={goals} move={moveHere} close={() => setDialog(undefined)} />}
       {dialog === 'coordinator' && <CoordinatorOverrideDialog props={props} view={view} close={() => setDialog(undefined)} />}
       {merging?.pr && (
         <MergeDialog projectId={id} entry={merging} fallbackBase={view.project.baseBranch} onError={onError}
@@ -640,14 +637,14 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
  * when the move rule lets this device take the coordinator over (D80, D269, D272). When this device cannot run the coordinator the
  * button stays visible but disabled, with the reason on its own line under it (D282), so phones see why without a tooltip.
  */
-function OfflineNotice({ device, canMove, refusal, moving, move }: { device: string; canMove: boolean; refusal?: string | undefined; moving: boolean; move(): void }) {
+function OfflineNotice({ text, canMove, enabled, refusal, moving, move }: { text: string; canMove: boolean; enabled: boolean; refusal?: string | undefined; moving: boolean; move(): void }) {
   const note = useId();
   return (
     <div className="notice pw-offline">
-      <p>{copy.coordinatorOfflineNotice(device)}</p>
+      <p>{text}</p>
       {/* Both labels share one cell, so the button keeps its width while it moves and the notice never reflows. */}
       {canMove && (
-        <button type="button" className="secondary pw-move" disabled={moving || !!refusal} aria-describedby={refusal ? note : undefined} onClick={move}>
+        <button type="button" className="secondary pw-move" disabled={moving || !enabled} aria-describedby={refusal ? note : undefined} onClick={move}>
           <span aria-hidden={moving}>{copy.MOVE_COORDINATOR}</span><span aria-hidden={!moving}>{copy.MOVING_COORDINATOR}</span>
         </button>
       )}
@@ -901,7 +898,7 @@ function MergeDialog({ projectId, entry, fallbackBase, close, merged, onError }:
  * start, so the dialog says so with Move coordinator here instead of failing (D9a); after the move the form starts the thread
  * on this device's coordinator. A started thread opens its page (D74).
  */
-function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: PageProps; view: ProjectWorkView; tasks: readonly ProjectWorkTask[]; goals: readonly GoalEntry[]; move(signal: AbortSignal): Promise<void>; close(): void }) {
+function NewThreadDialog({ props, view, coordinatorUi, tasks, goals, move, close }: { props: PageProps; view: ProjectWorkView; coordinatorUi: ProjectHeader['current']; tasks: readonly ProjectWorkTask[]; goals: readonly GoalEntry[]; move(signal: AbortSignal): Promise<void>; close(): void }) {
   const { data } = props;
   const { error, setError, fail } = useLocalError(props.onError);
   const task = useTask(fail);
@@ -920,8 +917,7 @@ function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: Pa
   const here = data.devices.currentDeviceId;
   const devices = deviceChoices(view, data.roster.devices, here, form.deviceId);
   const remoteBlock = devices.map((choice) => deviceBlock(view, choice.id, here)).find((reason) => reason !== null) ?? null;
-  const offline = view.coordinator.state === 'offline';
-  const coordinatorDevice = view.coordinator.deviceName ?? deviceNames(data)(view.coordinator.deviceId ?? '');
+  const offline = coordinatorUi.offline;
   return (
     <Modal title={copy.NEW_THREAD} close={close}>
       <form className="pw-new-thread" onSubmit={(event) => {
@@ -938,7 +934,7 @@ function NewThreadDialog({ props, view, tasks, goals, move, close }: { props: Pa
           if (created.taskId) props.navigate(`/projects/${view.project.id}`);
         });
       }}>
-        {offline && <OfflineNotice device={coordinatorDevice} canMove={view.coordinator.canMoveHere} refusal={view.coordinator.moveRefusal} moving={moving.busy}
+        {coordinatorUi.offlineNotice && <OfflineNotice text={coordinatorUi.offlineNotice} canMove={coordinatorUi.controls.canMove} enabled={coordinatorUi.controls.moveEnabled} refusal={coordinatorUi.controls.moveRefusal ?? undefined} moving={moving.busy}
           move={() => void moving.run(async (signal) => { setError(''); await move(signal); })} />}
         <label>{copy.TITLE}<input required maxLength={120} value={form.title} onChange={(event) => change({ title: event.target.value })} /></label>
         <label>{copy.TASK}<textarea required maxLength={20000} rows={6} value={form.task} onChange={(event) => change({ task: event.target.value })} /></label>

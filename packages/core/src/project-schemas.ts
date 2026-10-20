@@ -430,7 +430,10 @@ export type ProjectLedgerEventType = z.infer<typeof ProjectLedgerEventTypeSchema
 export const ProjectLedgerEventSchema = z.strictObject({ schema: z.literal('project-ledger-event-v1'), t: TimestampSchema,
   id: positive, type: ProjectLedgerEventTypeSchema, turn: positive.optional(), data: z.unknown() });
 export type ProjectLedgerEvent = z.infer<typeof ProjectLedgerEventSchema>;
-export const ProjectEventFrameSchema = z.strictObject({ schema: z.literal('project-event-v1'), event: ProjectLedgerEventSchema });
+export const ProjectCoordinatorActivitySchema = z.strictObject({ schema: z.literal('project-coordinator-activity-v1'), seq: count, state: z.enum(['working', 'idle']) });
+export type ProjectCoordinatorActivity = z.infer<typeof ProjectCoordinatorActivitySchema>;
+export const ProjectEventFrameSchema = z.strictObject({ schema: z.literal('project-event-v1'), event: ProjectLedgerEventSchema,
+  coordinatorActivity: ProjectCoordinatorActivitySchema.optional() });
 export type ProjectEventFrame = z.infer<typeof ProjectEventFrameSchema>;
 
 export const CoordinatorTurnStartSchema = z.strictObject({ schema: z.literal('coordinator-turn-v1'), turn: positive, fresh: z.boolean(),

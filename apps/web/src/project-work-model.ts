@@ -16,7 +16,6 @@ import {
   runningSection,
   splitSavedCommits,
   type CoordinatorEvent,
-  type CoordinatorView,
   type CursorTurn,
   type Effort,
   type Isolation,
@@ -78,25 +77,6 @@ export function projectDot(entry: Pick<ProjectWorkListView['projects'][number], 
 export function sidebarProjects(view: ProjectWorkListView): ProjectWorkListView['projects'] {
   // The engine sends rows in sidebar order (bridge phase 2).
   return view.projects;
-}
-
-/** The coordinator chip (12.2); `none` (not assigned yet) reads Idle. */
-export function coordinatorLabel(state: CoordinatorView['state']): string {
-  return state === 'running' ? copy.COORDINATOR_WORKING_CHIP : state === 'unavailable' ? copy.COORDINATOR_UNAVAILABLE
-    : state === 'offline' ? copy.COORDINATOR_OFFLINE : copy.COORDINATOR_IDLE;
-}
-
-/**
- * The header chip and its muted session line (12.2, D91): the chat stream can be ahead of the view, so `working` decides
- * the working state; the session is the current one, else the planned one. `runtime` maps a runtime id to its display name.
- */
-export function coordinatorChip(view: Pick<ProjectWorkView, 'coordinator'> & Partial<Pick<ProjectWorkView, 'lastEventId'>>, events: readonly ProjectLedgerEvent[], runtime: (id: string) => string):
-  { label: string; tone: 'idle' | 'running' | 'unavailable' | 'offline'; session: string | null } {
-  const busy = working(events, view); const state = view.coordinator.state;
-  const shown = view.coordinator.session ?? view.coordinator.planned;
-  return { label: busy ? copy.COORDINATOR_WORKING_CHIP : coordinatorLabel(state),
-    tone: busy ? 'running' : state === 'unavailable' || state === 'offline' ? state : 'idle',
-    session: shown ? copy.coordinatorSession(runtime(shown.runtime), shown.modelLabel, shown.effort) : null };
 }
 
 /** Concluded rows: `Merged #42`, `Published to main`, `No changes`, `Stopped` or `Failed`; null while not concluded. */
@@ -548,24 +528,6 @@ export function chatItems(events: readonly ProjectLedgerEvent[], titles: ThreadT
     const replyId = reply.get(item.turn)!, cards = cardsByReply.get(replyId) ?? []; cards.push(item); cardsByReply.set(replyId, cards); moved.add(item.id);
   }
   return items.filter(item => !moved.has(item.id)).flatMap(item => [item, ...(cardsByReply.get(item.id) ?? [])]);
-}
-
-/**
- * The `Coordinator is working…` line: the view says running, or (while the view is idle or not assigned yet) the latest
- * coordinator turn beyond the view's ledger head started without ending. Replayed history cannot override a newer view.
- * An unavailable or offline coordinator never shows it.
- */
-export function working(events: readonly ProjectLedgerEvent[], view: Pick<ProjectWorkView, 'coordinator'> & Partial<Pick<ProjectWorkView, 'lastEventId'>>): boolean {
-  const state = view.coordinator.state;
-  if (state === 'running') return true;
-  if (state === 'unavailable' || state === 'offline') return false;
-  let open: number | undefined;
-  for (const event of [...events].sort((a, b) => a.id - b.id)) {
-    if (event.id <= (view.lastEventId ?? 0)) continue;
-    const started = payload(event, 'coordinator-turn-start'); if (started) open = started.turn;
-    const ended = payload(event, 'coordinator-turn-end'); if (ended && ended.turn === open) open = undefined;
-  }
-  return open !== undefined;
 }
 
 export type TranscriptItem = { kind: 'turn'; turn: CursorTurn; fix?: import('@jevellan/core/client').ThreadFix } | { kind: 'report'; report: ThreadReport };
