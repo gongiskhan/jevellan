@@ -1010,7 +1010,7 @@
   {
     "id": "wg-live",
     "title": "Complete the sandbox and project live journeys",
-    "why": "LW1–LW13 and LE1–LE3 are not run. The three-hour live clock never started because neither installation reached 0.6.0. Production deployment remains the owner’s action.",
+    "why": "Owner plan cuts this release to the ERP check, real-landing deploy message and sandbox automatic rollback; other journeys remain not run.",
     "status": "planned"
   },
   {
@@ -1083,6 +1083,36 @@
     "id": "br-release",
     "title": "Bridge gate, 0.7.0 and installation",
     "why": "Planned in this checkout, prerequisite 0.6.0 first. Existing bridge source remains isolated on origin/bridge; its historical evidence does not establish installed acceptance.",
+    "status": "planned"
+  },
+  {
+    "id": "br-ui-071",
+    "title": "Engine UI migration and component parity",
+    "why": "Owner plan defers remaining UI logic migration, all component-row parity and expanded layout/vision coverage to 0.7.1.",
+    "status": "planned"
+  },
+  {
+    "id": "br-intake-071",
+    "title": "External pull request intake",
+    "why": "Planned after the working 0.7.0 bridge release; no external contributor pull requests are inspected by this run.",
+    "status": "planned"
+  },
+  {
+    "id": "br-engine-071",
+    "title": "Remaining engine and remote features",
+    "why": "Plan p-v1/m-v1 wiring, placement rule execution, coordinator ask fork, member event/push forwarding and additional remote MCP features after 0.7.0.",
+    "status": "planned"
+  },
+  {
+    "id": "br-live-071",
+    "title": "Remaining live journeys",
+    "why": "Owner plan requires only the healthy ERP check, a deploy message after a real landing and sandbox automatic rollback now. Other live journeys remain not run.",
+    "status": "planned"
+  },
+  {
+    "id": "br-browser-071",
+    "title": "Remaining browser and visual coverage",
+    "why": "Desktop light runs once under the owner release gate; four-layout coverage and noncore browser failures are planned follow-up, with no missing evidence treated as passed.",
     "status": "planned"
   }
 ]
