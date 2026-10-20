@@ -1,6 +1,6 @@
 {
   "name": "@jevellan/accounts",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -11,8 +11,8 @@
     }
   },
   "dependencies": {
-    "@jevellan/core": "0.7.1",
-    "@jevellan/runtime-contract": "0.7.1",
+    "@jevellan/core": "0.7.2",
+    "@jevellan/runtime-contract": "0.7.2",
     "zod": "4.6.5"
   }
 }

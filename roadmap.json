@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "The afternoon owner instruction authorizes moving all remaining mapped UI logic into engine services area by area, with backend behavior tests and desktop-light main-action smokes. The full310-row inventory was read and a private area plan prepared. Implementation has not started because the ordered0.7.2 integrated-main prerequisite did not arrive in the fixed two-hour watch. Earlier planned status is not a scope refusal.",
+    "why": "Authorized immediately after both0.7.2 installations pass doctor: migrate the remaining310-row UI logic inventory area by area with backend behavior tests and desktop-light main-action smokes; fetch/rebase main and update map/context/evidence for each landing.",
     "status": "planned"
   },
   {
@@ -1088,25 +1088,25 @@
   {
     "id": "br-release-072",
     "title": "Release integrated account and connector fixes as 0.7.2",
-    "why": "The fixed12:13:08.750764\u201314:13:08.750764UTC merge watch ended with the initial observation plus12successful ten-minute polls all main336248ca. The captured advanced bridge tip29eaf1f0 was not integrated. No version/gate/archive/tag/release/install was attempted and no READY-072 file was created; both manifests remain0.7.1. The complete specification/map and verified procedure were read and private helpers prepared. Await peer integration, then the full six-worker backend/five core desktop-light gates, exact source/digests/nativePTY, strict idle proofs/cold backups and normal Madrid-before-member updates/doctor10of10. No auth/bridge process change, peer stop, extra review or guard exception.",
-    "status": "blocked"
+    "why": "Integrated main19a83fd0 includes merge47bb8565 and the three follow-up fixes. Workspace version072 prepared. Typecheck/lint/build pass; complete six-worker backend2622:2605pass,1known fixture-close flake passing its one exact isolated rerun,16not run;5desktop-light core smokes pass once.19screenshots/19vision-not-run receipts retained. Initial invalid reporter capture is recorded separately. Exact serial archive builds, source/digests/nativePTY proofs, scans/publication, both-archive Pro staging/preflights, strict cold backups and normal MRI-then-Pro updates/doctor10/10 remain. No authentication/bridge or production action; no later release or extra review.",
+    "status": "in-progress"
   },
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Authorized after both0.7.2 installations pass doctor: migrate each engine/UI area with component parity and its desktop-light smoke, updating the map and evidence per tested landing. No four-layout matrix; one nonblocking vision result per new screen. Not started because0.7.2 integration is blocked; no complete migration/parity claim.",
+    "why": "Authorized after0.7.2: engine UI migration and component parity per tested area. Desktop-light only; one nonblocking vision check per new screen. No complete migration/parity claim yet.",
     "status": "planned"
   },
   {
     "id": "br-intake-071",
     "title": "External pull request intake",
-    "why": "Authorized after the UI-to-engine area migrations: external pull request intake through configured checks, pinned owner choices and normal leased publication. Not started because the ordered0.7.2 prerequisite failed its merge-watch window. No real external contributor pull request was accessed by this afternoon pass.",
+    "why": "Authorized after UI-to-engine areas: configured external pull request intake with checks, pinned owner choices and leased publication. No real external contributor pull request accessed by this resumed pass.",
     "status": "planned"
   },
   {
     "id": "br-engine-071",
     "title": "Remaining engine and remote features",
-    "why": "Placement-rule execution inside placement and active p-v1/m-v1 prompt versions are authorized after UI migration and intake. Not started because0.7.2 integration is blocked. Coordinator ask fork, member event/push forwarding and additional remote features remain separately tracked; no implementation pass is claimed.",
+    "why": "Placement rules inside placement and active p-v1/m-v1 versions follow UI areas and intake. Coordinator fork, member event forwarding and other remote features remain separately tracked. No further release without explicit owner request.",
     "status": "planned"
   },
   {
