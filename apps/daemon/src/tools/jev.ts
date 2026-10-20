@@ -1,3 +1,5 @@
+import { ComposerInitialSchema, ConversationComposerViewSchema } from '@jevellan/core';
+import { ownerConversationComposer } from '../owner-proxy.js';
 import { ProjectRouteCorrectionRequestSchema, ProjectRouteWhyViewSchema } from '@jevellan/core';
 import { capLines } from '@jevellan/projects';
 import { ProjectThreadOverrideEditorSchema, ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, type JevRule } from '@jevellan/core';
@@ -17,6 +19,19 @@ export const jev: OwnerHandler = async (context) => {
   await tools.status(project); // display ids for every current thread and goal
   const goals = new Map((await app.projectWork.goalList(projectId)).goals.map(row => [row.goal.id, tools.ids.one(projectId, 'G', row.goal.id)]));
   switch (context.action) {
+    case 'composer_editor': case 'composer_preview': case 'composer_save': {
+      if (typeof args.conversation === 'string') {
+        if (args.initial !== undefined) throw new OwnerRefusal('Read the existing conversation without an initial draft.', 'invalid_arguments');
+        const view = await ownerConversationComposer(app, projectId, args.conversation, context.action === 'composer_save' ? args.request : undefined);
+        return { text: view.summary ?? 'Auto', data: view };
+      }
+      if (context.action === 'composer_save') throw new OwnerRefusal('Choose an existing conversation to save.', 'invalid_arguments');
+      const view = ConversationComposerViewSchema.parse(await app.conversations.composerDraft({ schema: 'conversation-composer-request-v1', projectId,
+        initial: args.initial ?? ComposerInitialSchema.parse({ schema: 'composer-initial-v1', once: {}, pins: {} }),
+        ...(context.action === 'composer_preview' ? { choice: args.request } : {}) }));
+      return { text: view.summary ?? 'Auto', data: view };
+    }
+
     case 'override_editor': case 'override_preview': case 'override_save': {
       const target = await resolveTask(context, String(args.thread));
       if (!target.thread) throw new OwnerRefusal(`${target.id} has no thread yet.`, 'not_running', 409);

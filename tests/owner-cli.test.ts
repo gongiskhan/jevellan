@@ -1,3 +1,4 @@
+import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
 import { afterEach, expect, test, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
@@ -149,4 +150,22 @@ test('CLI route models carry a reusable canonical correction request', async () 
   const request = model.correctionActions[0]!.request.body;
   for (let n = 0; n < 2; n++) expect(await callCommand(['jev', 'route_correct', '--thread', made.threadId, '--request', JSON.stringify(request)], f.homes)).toBe(0);
   expect((await f.app.projectHub.mergeDocuments('project')).records.filter(row => row.schema === 'landing-correction-v1')).toHaveLength(1);
+});
+
+
+test('CLI composer models preview draft scope and retry the same canonical conversation choice', async () => {
+  f = await projectFixture({ control: true }); const out = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  const initial = { schema: 'composer-initial-v1', once: { effort: 'high' }, pins: { effort: 'low' } };
+  const result = () => { const value = OwnerToolResultSchema.parse(JSON.parse(String(out.mock.calls.at(-1)?.[0]))); if (!value.ok) throw new Error('Expected the CLI composer model.'); return ConversationComposerViewSchema.parse(value.data); };
+  expect(await callCommand(['jev', 'composer_editor', '--initial', JSON.stringify(initial)], f.homes)).toBe(0);
+  expect(result().fields.find(field => field.id === 'effort')).toMatchObject({ selected: 'high', scope: 'once-then-pin' });
+  const keep = result().fields.find(field => field.id === 'effort')!.keep;
+  expect(await callCommand(['jev', 'composer_preview', '--initial', JSON.stringify(initial), '--request', JSON.stringify(keep)], f.homes)).toBe(0);
+  expect(result().initial).toMatchObject({ once: {}, pins: { effort: 'high' } });
+  await f.app.conversations.create({ schema: 'start-conversation-v1', id: 'cli_composer', projectId: 'project', title: 'CLI composer', message: 'Explain the fixture.', clientMessageId: 'cli_composer_first' }); await f.app.conversations.wait('cli_composer');
+  expect(await callCommand(['jev', 'composer_editor', '--conversation', 'cli_composer'], f.homes)).toBe(0);
+  const request = result().fields.find(field => field.id === 'effort')!.options.find(option => option.value === 'high')!.choice;
+  for (let attempt = 0; attempt < 2; attempt++) expect(await callCommand(['jev', 'composer_save', '--conversation', 'cli_composer', '--request', JSON.stringify(request)], f.homes)).toBe(0);
+  expect((await f.app.conversations.view('cli_composer')).composerOverrides.filter(row => row.request.clientRequestId === request.clientRequestId)).toHaveLength(1);
+  expect(f.fake.starts).toHaveLength(0);
 });

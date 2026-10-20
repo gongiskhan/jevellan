@@ -4,8 +4,8 @@ import type { Application } from './application.js';
 import { publicConversationData, streamConversation } from './conversation-events.js';
 import { json, requestBody } from './http.js';
 
-const reads = new Set(['', 'changes', 'file', 'events', 'read']);
-const writes = new Set(['messages', 'manual', 'resume', 'retry-external', 'choices', 'cancel', 'approve-plan', 'settle', 'correct', 'retry-redo', 'adopt-changes', 'rename', 'finish-outside']);
+const reads = new Set(['', 'changes', 'file', 'events', 'read', 'choices-view']);
+const writes = new Set(['messages', 'manual', 'resume', 'retry-external', 'choices', 'choices-editor', 'cancel', 'approve-plan', 'settle', 'correct', 'retry-redo', 'adopt-changes', 'rename', 'finish-outside']);
 export type ConversationRoute = { id: string; operation: string; stretch?: number };
 
 /** The same closed route table serves local and owner-relayed requests. */
@@ -23,6 +23,7 @@ export async function handleConversation(app: Application, request: IncomingMess
   const send = (value: unknown, status = 200) => json(response, app.redactor.document(value), status);
   await app.conversations.ready;
   if (!operation) { send(await app.conversations.view(id)); return; }
+  if (operation === 'choices-view') { send(await app.conversations.composerEditor(id)); return; }
   if (operation === 'changes') { send(await app.conversations.changes(id, route.stretch!)); return; }
   if (operation === 'file') {
     send(await app.conversations.file(id, { schema: 'conversation-file-request-v1', ref: url.searchParams.get('ref') ?? '', stretch: Number(url.searchParams.get('stretch')), source: url.searchParams.get('source') ?? 'step' })); return;
@@ -44,6 +45,7 @@ export async function handleConversation(app: Application, request: IncomingMess
   if (operation === 'approve-plan') { send(await app.conversations.approvePlan(id, input)); return; }
   if (operation === 'resume') { send(await app.conversations.resumeDecision(id, input), 202); return; }
   if (operation === 'retry-external') { send(await app.conversations.retryExternalActivity(id, input), 202); return; }
+  if (operation === 'choices-editor') { send(await app.conversations.saveComposerEditor(id, input)); return; }
   if (operation === 'choices') { send(await app.conversations.composerChoice(id, input)); return; }
   if (operation === 'cancel') { EmptySchema.parse(input); send(await app.conversations.cancel(id)); return; }
   throw Object.assign(new Error('Conversation operation not found.'), { status: 404 });

@@ -1,3 +1,5 @@
+import { ConversationComposerRequestSchema } from '@jevellan/core';
+import { applyComposerChoice, conversationComposerView } from './composer-view.js';
 import { existsSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
@@ -655,6 +657,23 @@ export class ConversationService {
       if (waiting && view.conversation.state !== 'running') this.#waitDecision(work, { kind: waiting.kind, text: waiting.text, calls: waiting.calls, reasons: waiting.reasons });
     }
     this.#index(work);
+  }
+  async composerDraft(raw: unknown) {
+    await this.ready;
+    const input = ConversationComposerRequestSchema.parse(raw), project = await this.#project(input.projectId), settings = await this.options.settings();
+    const initial = input.choice ? applyComposerChoice(input.initial, input.choice) : input.initial;
+    return conversationComposerView({ projectId: project.id, generation: 0, initial, settings, allowed: allowedInitialActions(settings.guards, !!project.testCommand) });
+  }
+  async composerEditor(id: string) {
+    await this.ready;
+    const view = await this.view(id), settings = await this.options.settings(), project = await this.#project(view.conversation.projectId);
+    return conversationComposerView({ projectId: project.id, conversationId: id, generation: view.conversation.generation,
+      initial: { schema: 'composer-initial-v1', once: view.conversation.once, pins: view.conversation.pins }, settings,
+      allowed: view.conversation.work ? view.allowed : allowedInitialActions(settings.guards, !!project.testCommand) });
+  }
+  async saveComposerEditor(id: string, raw: unknown) {
+    await this.composerChoice(id, raw);
+    return this.composerEditor(id);
   }
   async composerChoice(id: string, raw: unknown) {
     await this.ready; if (this.#closed) throw new Error('Conversations are closed.');

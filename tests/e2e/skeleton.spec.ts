@@ -607,6 +607,24 @@ test('composer choices apply once, keep conversation pins and explain correction
   await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('automatic_fixture');
   await page.getByRole('button', { name: /^Override/ }).click();
   const controls = page.getByRole('group', { name: 'Choices for the next step', exact: true });
+  await expect(controls.getByRole('combobox', { name: 'Model', exact: true }).locator('option[value="composer_model"]')).toHaveText('Composer Fable');
+  const refreshed = await (await page.request.get('/hub/config')).json();
+  refreshed.configuration['x-jevellan'].menu.push({ ...refreshed.configuration['x-jevellan'].menu.find((entry: { id: string }) => entry.id === 'composer_model'), id: 'composer_refreshed', label: 'Refreshed composer fixture' });
+  expect((await page.request.put('/hub/config', { data: { schema: 'config-write-v1', revision: refreshed.revision, configuration: refreshed.configuration } })).ok()).toBe(true);
+  let interruptedChoice = false;
+  await page.route('**/api/conversation-composer', async route => {
+    if (!interruptedChoice && route.request().method() === 'POST' && route.request().postDataJSON()?.choice) {
+      interruptedChoice = true;
+      await route.fulfill({ status: 409, json: { schema: 'error-v1', code: 'fixture_conflict', message: 'Fixture choices changed; reload the configuration.' } });
+    } else await route.continue();
+  });
+  await controls.getByRole('combobox', { name: 'Next step', exact: true }).selectOption('plan');
+  await expect(page.getByText('Fixture choices changed; reload the configuration.', { exact: true }).first()).toBeVisible();
+  await expect(controls.getByRole('combobox', { name: 'Model', exact: true }).locator('option[value="composer_refreshed"]')).toHaveText('Refreshed composer fixture');
+  await page.unroute('**/api/conversation-composer');
+  await page.getByRole('dialog', { name: 'Override the next step' }).getByRole('button', { name: 'Done', exact: true }).click();
+  await page.locator('.toast.error').getByRole('button', { name: 'Dismiss message', exact: true }).click();
+  await page.getByRole('button', { name: /^Override/ }).click();
   await controls.getByRole('combobox', { name: 'Next step', exact: true }).selectOption('plan');
   await controls.getByRole('combobox', { name: 'Model', exact: true }).selectOption('composer_model'); await controls.getByRole('button', { name: 'Keep model for this conversation', exact: true }).click();
   await controls.getByRole('combobox', { name: 'Effort', exact: true }).selectOption('low'); await controls.getByRole('button', { name: 'Keep effort for this conversation', exact: true }).click();

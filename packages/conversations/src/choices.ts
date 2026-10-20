@@ -1,4 +1,5 @@
 import { ComposerChoiceSchema, ComposerOverrideRecordSchema, DecisionRecordSchema, newId, stableJson, type ComposerChoice, type ComposerOverrideRecord, type Conversation, type DecisionRecord } from '@jevellan/core';
+import { applyComposerChoice } from './composer-view.js';
 import type { ConversationWork } from './work.js';
 import { correctionContext } from './corrections.js';
 
@@ -23,20 +24,8 @@ export function replayComposerChoice(conversation: Conversation, records: Map<st
   if (previous && stableJson(previous) === stableJson(value)) return;
   if (!previous) {
     if (value.status !== 'pending' || request.generation !== conversation.generation) throw new Error('This composer choice is stale.');
-    if (request.value === null) {
-      delete conversation.once[key];
-      if (key !== 'action') delete conversation.pins[key];
-    } else if (request.field === 'action') conversation.once.action = request.value;
-    else if (request.mode === 'pin') {
-      delete conversation.once[key];
-      if (request.field === 'model') conversation.pins.modelId = request.value;
-      else if (request.field === 'runtime') conversation.pins.runtimeId = request.value;
-      else if (request.field === 'account') conversation.pins.accountId = request.value;
-      else conversation.pins.effort = request.value;
-    } else if (request.field === 'model') conversation.once.modelId = request.value;
-    else if (request.field === 'runtime') conversation.once.runtimeId = request.value;
-    else if (request.field === 'account') conversation.once.accountId = request.value;
-    else conversation.once.effort = request.value;
+    const state = applyComposerChoice({ schema: 'composer-initial-v1', once: conversation.once, pins: conversation.pins }, request);
+    conversation.once = state.once; conversation.pins = state.pins;
     conversation.generation++;
   } else {
     if (previous.status !== 'pending' || value.status === 'pending' || stableJson(previous.request) !== stableJson(request) || previous.at !== value.at || stableJson(previous.changes) !== stableJson(value.changes)) throw new Error('A settled composer choice cannot be replaced.');

@@ -160,6 +160,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       }
       return;
     }
+    if (path === '/api/conversation-composer' && method === 'POST') { send(await app.conversations.composerDraft(await body(request))); return; }
     if (path === '/api/conversations' && method === 'GET') { await app.conversations.ready; send(await app.conversations.list()); return; }
     if (path === '/api/conversations' && method === 'POST') { retryable = true; send(await app.conversations.create(await body(request)), 201); return; }
     const route = conversationRoute(path, method);

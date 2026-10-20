@@ -1,7 +1,8 @@
 import { once } from 'node:events';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { z } from 'zod';
-import { DeviceOriginSchema, PeerSessionInputSchema, UiSessionTokenSchema } from '@jevellan/core';
+import { ComposerChoiceSchema, ConversationComposerViewSchema, DeviceOriginSchema, ErrorDocumentSchema, PeerSessionInputSchema, UiSessionTokenSchema, parseReply } from '@jevellan/core';
+import { UiAuth } from '@jevellan/mesh';
 import { COORDINATOR_DEVICE_REDIRECT, THREAD_DEVICE_REDIRECT, coordinatorUnreachable, threadDeviceUnreachable } from '@jevellan/projects';
 import type { Application } from './application.js';
 import { conversationRoute, handleConversation, type ConversationRoute } from './conversation-api.js';
@@ -48,6 +49,48 @@ export async function proxyConversation(app: Application, request: IncomingMessa
   const body = request.method === 'POST' ? JSON.stringify(await requestBody(request)) : undefined;
   await forwardOwner(request, response, { url: upstream, ownerName: target.device.name, sourceDeviceId: app.device.deviceId, token, stream: route.operation === 'events', ...(body === undefined ? {} : { body }) });
   return true;
+}
+
+/** Owner tools use the same closed conversation routes and temporary in-memory authority as the UI. */
+export async function ownerConversationComposer(app: Application, projectId: string, id: string, raw?: unknown) {
+  const owner = await app.conversations.ownerDevice(id);
+  const bind = (raw: unknown) => {
+    const view = parseReply(ConversationComposerViewSchema, raw);
+    if (view.projectId !== projectId || view.conversationId !== id) throw failure('This composer belongs to another conversation or project.', 409);
+    return view;
+  };
+  const choice = raw === undefined ? undefined : ComposerChoiceSchema.parse(raw);
+  if (owner === app.device.deviceId) {
+    const view = bind(await app.conversations.composerEditor(id));
+    return choice ? bind(await app.conversations.saveComposerEditor(id, choice)) : view;
+  }
+  const target = (await app.roster()).devices.find(row => row.device.id === owner);
+  if (!target || target.revoked) throw failure('The conversation owner is no longer available in this mesh.', 409);
+  const auth = app.auth;
+  if (!(auth instanceof UiAuth)) throw failure('Owner tools must run on the state point.', 409);
+  const token = auth.issue(); app.redactor.add(token);
+  const invoke = async (operation: 'choices-view' | 'choices-editor') => {
+    const method = operation === 'choices-view' ? 'GET' : 'POST';
+    if (!conversationRoute(`/api/conversations/${id}/${operation}`, method)) throw failure('Conversation operation not found.', 404);
+    const url = new URL(DeviceOriginSchema.parse(target.device.url)); url.pathname = `${peerPrefix}${id}/${operation}`;
+    let response: Response;
+    try {
+      response = await fetch(url, { method, redirect: 'manual', signal: AbortSignal.timeout(OWNER_REQUEST_TIMEOUT_MS),
+        headers: { Authorization: `Bearer ${token}`, 'X-Jevellan-Source-Device': app.device.deviceId, Accept: 'application/json', ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}) },
+        ...(method === 'POST' ? { body: JSON.stringify(choice) } : {}) });
+    } catch { throw failure(proxyCopy.conversation.unreachable(target.device.name), 502); }
+    if (response.status >= 300 && response.status < 400) { await response.body?.cancel(); throw failure(proxyCopy.conversation.redirect, 502); }
+    const value: unknown = await response.json().catch(() => null);
+    if (!response.ok) {
+      const error = ErrorDocumentSchema.safeParse(value);
+      throw failure(error.success ? error.data.message : proxyCopy.conversation.unreachable(target.device.name), error.success ? response.status : 502);
+    }
+    return bind(value);
+  };
+  try {
+    const view = await invoke('choices-view');
+    return choice ? await invoke('choices-editor') : view;
+  } finally { auth.logout(token); }
 }
 
 /** Preserve bytes and backpressure without collecting a growing conversation in memory. */

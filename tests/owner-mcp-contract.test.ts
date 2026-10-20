@@ -1,3 +1,4 @@
+import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
 import { afterEach, expect, test } from 'vitest';
 import { join } from 'node:path';
@@ -138,4 +139,24 @@ test('the official MCP transport reads route models and retries the same canonic
   for (let n = 0; n < 2; n++) expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'route_correct', thread: made.threadId, request } })).structuredContent)).toMatchObject({ ok: true, data: { kind: 'merge', savedNotice: 'Saved for future merge decisions.' } });
   expect((await f.app.projectHub.mergeDocuments('project')).records.filter(row => row.schema === 'merge-correction-v1')).toHaveLength(1);
   expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'why', kind: 'landing', thread: made.threadId } })).structuredContent)).toMatchObject({ ok: true, data: { kind: 'landing', route: { id: 'route_landing_fixture' } } });
+});
+
+
+test('the official MCP composer model preserves pins and saves through the canonical conversation writer', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const initial = { schema: 'composer-initial-v1', once: { effort: 'high' }, pins: { effort: 'low' } };
+  const draft = await mcp.callTool({ name: 'jev', arguments: { action: 'composer_editor', initial } });
+  expect(draft.isError).toBeFalsy(); const draftResult = OwnerToolResultSchema.parse(draft.structuredContent); if (!draftResult.ok) throw new Error('Expected the composer model.');
+  const model = ConversationComposerViewSchema.parse(draftResult.data);
+  expect(model.fields.find(field => field.id === 'effort')).toMatchObject({ selected: 'high', scope: 'once-then-pin', scopeLabel: 'Once, then low' });
+  expect((draft.content as Array<{ text: string }>).some(row => row.text.includes('"schema":"conversation-composer-view-v1"'))).toBe(true);
+  const preview = await mcp.callTool({ name: 'jev', arguments: { action: 'composer_preview', initial, request: model.fields.find(field => field.id === 'effort')!.keep } });
+  expect(OwnerToolResultSchema.parse(preview.structuredContent)).toMatchObject({ ok: true, data: { initial: { once: {}, pins: { effort: 'high' } } } });
+  await f.app.conversations.create({ schema: 'start-conversation-v1', id: 'mcp_composer', projectId: 'project', title: 'MCP composer', message: 'Explain the fixture.', clientMessageId: 'mcp_composer_first' }); await f.app.conversations.wait('mcp_composer');
+  const read = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'composer_editor', conversation: 'mcp_composer' } })).structuredContent);
+  if (!read.ok) throw new Error('Expected the existing composer model.');
+  const editor = ConversationComposerViewSchema.parse(read.data), request = editor.fields.find(field => field.id === 'effort')!.options.find(option => option.value === 'high')!.choice;
+  for (let attempt = 0; attempt < 2; attempt++) expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'composer_save', conversation: 'mcp_composer', request } })).structuredContent)).toMatchObject({ ok: true, data: { initial: { once: { effort: 'high' } } } });
+  expect((await f.app.conversations.view('mcp_composer')).composerOverrides.filter(row => row.request.clientRequestId === request.clientRequestId)).toHaveLength(1);
+  expect(f.fake.starts).toHaveLength(0);
 });

@@ -1,193 +1,105 @@
-import {
-  ComposerChoiceSchema,
-  ComposerInitialSchema,
-  EffortSchema,
-  type Action,
-  type Configuration,
-  type Conversation,
-} from '@jevellan/core/client';
-import { useState } from 'react';
+import { ConversationComposerViewSchema, type ComposerChoice, type ConversationComposerView, type ComposerInitialSchema } from '@jevellan/core/client';
+import { useEffect, useRef, useState } from 'react';
+import { api, isCancelled } from './api.js';
 import { Modal } from './components.js';
 import { Icon } from './icons.js';
 
-type Field = 'action' | 'model' | 'effort';
-type Mode = 'once' | 'pin';
 type Initial = ReturnType<typeof ComposerInitialSchema.parse>;
-export function changeComposerDraft(
-  current: Initial,
-  field: Field,
-  value: string | null,
-  mode: Mode,
-): Initial {
-  const choice = ComposerChoiceSchema.parse({
-    schema: 'composer-choice-v1',
-    clientRequestId: 'draft',
-    generation: 0,
-    field,
-    value,
-    mode,
+type Run = (task: (signal: AbortSignal) => Promise<void>) => Promise<void>;
+type Context = {
+  projectId: string; revision?: number; conversationId?: string; generation?: number; initial?: Initial;
+  update?(initial: Initial): void; afterSave?(signal: AbortSignal): Promise<void>; run: Run;
+};
+
+function useComposerModel(context: Context) {
+  const [view, setView] = useState<ConversationComposerView>();
+  const [loading, setLoading] = useState(false), [error, setError] = useState<string>();
+  const latest = useRef(context); latest.current = context;
+  const epoch = useRef(0), active = useRef(false);
+  useEffect(() => {
+    const current = latest.current, stamp = ++epoch.current, controller = new AbortController();
+    setView(undefined); setError(undefined);
+    if (!current.projectId) { setLoading(false); return; }
+    setLoading(true);
+    const read = current.conversationId
+      ? api(`/api/conversations/${current.conversationId}/choices-view`, ConversationComposerViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true })
+      : api('/api/conversation-composer', ConversationComposerViewSchema, 'POST', { schema: 'conversation-composer-request-v1', projectId: current.projectId, initial: current.initial }, { signal: controller.signal, waitForHub: true });
+    void read.then(value => {
+      if (stamp !== epoch.current || controller.signal.aborted) return;
+      if (value.projectId !== current.projectId || value.conversationId !== (current.conversationId ?? null)) throw new Error('The composer response belongs to another context.');
+      setView(value);
+    }).catch(cause => { if (stamp === epoch.current && !controller.signal.aborted && !isCancelled(cause)) setError(cause instanceof Error ? cause.message : 'Could not read choices.'); })
+      .finally(() => { if (stamp === epoch.current && !controller.signal.aborted) setLoading(false); });
+    return () => { ++epoch.current; controller.abort(); };
+  }, [context.projectId, context.conversationId, context.generation, context.revision]);
+  const change = (choice: ComposerChoice, accepted: () => void) => latest.current.run(async signal => {
+    if (active.current) return;
+    active.current = true;
+    const current = latest.current, stamp = ++epoch.current;
+    accepted(); setError(undefined);
+    try {
+      const value = current.conversationId
+        ? await api(`/api/conversations/${current.conversationId}/choices-editor`, ConversationComposerViewSchema, 'POST', choice, { signal, waitForHub: true })
+        : await api('/api/conversation-composer', ConversationComposerViewSchema, 'POST', { schema: 'conversation-composer-request-v1', projectId: current.projectId, initial: current.initial, choice }, { signal, waitForHub: true });
+      if (signal.aborted || stamp !== epoch.current) return;
+      if (value.projectId !== current.projectId || value.conversationId !== (current.conversationId ?? null)) throw new Error('The composer response belongs to another context.');
+      setView(value);
+      if (current.conversationId) await current.afterSave?.(signal);
+      else current.update?.(value.initial);
+    } catch (cause) {
+      if (stamp === epoch.current && !signal.aborted && !isCancelled(cause)) setError(cause instanceof Error ? cause.message : 'Could not save choices.');
+      throw cause;
+    } finally { active.current = false; }
   });
-  const next = structuredClone(current);
-  const key = field === 'model' ? 'modelId' : field;
-  if (choice.value === null) {
-    delete next.once[key];
-    if (key !== 'action') delete next.pins[key];
-  } else if (choice.field === 'action') next.once.action = choice.value;
-  else if (choice.mode === 'pin') {
-    delete next.once[key];
-    if (choice.field === 'model') next.pins.modelId = choice.value;
-    else if (choice.field === 'effort') next.pins.effort = choice.value;
-  } else if (choice.field === 'model') next.once.modelId = choice.value;
-  else if (choice.field === 'effort') next.once.effort = choice.value;
-  return ComposerInitialSchema.parse(next);
+  return { view, loading, error, change };
 }
-const choiceLabel = (config: Configuration['x-jevellan'], field: Field, value: string) =>
-  field === 'model'
-    ? (config.menu.find((model) => model.id === value)?.label ?? value)
-    : field === 'action'
-      ? value === 'ask-you'
-        ? 'Ask you'
-        : value
-            .split('-')
-            .map((part) => part[0]!.toUpperCase() + part.slice(1))
-            .join(' ')
-      : value;
-// Overrides are the exception: the composer shows one small button, and only names what is set.
-function overrideText(once: Conversation['once'], pins: Conversation['pins'], config: Configuration['x-jevellan']) {
-  const parts = (['action', 'model', 'effort'] as const).flatMap((field) => {
-    const key = field === 'model' ? 'modelId' : field;
-    const value = once[key] ?? (key === 'action' ? undefined : pins[key]);
-    return value ? [choiceLabel(config, field, value)] : [];
-  });
-  return parts.length ? parts.join(' · ') : undefined;
+
+type Model = ReturnType<typeof useComposerModel>;
+function ChoiceFields({ model, disabled }: { model: Model; disabled: boolean }) {
+  const [raw, setRaw] = useState<{ field: string; value: string }>();
+  const choose = (choice: ComposerChoice) => {
+    void model.change(choice, () => setRaw({ field: choice.field, value: choice.value ?? '' })).finally(() => setRaw(undefined));
+  };
+  return <>
+    {model.error && <p className="notice" role="alert">{model.error}</p>}
+    {!model.view && model.loading && <p className="muted">Loading choices…</p>}
+    {model.view && <div className="composer-choices" role="group" aria-label="Choices for the next step">
+      {model.view.fields.map(field => <div className="composer-choice" key={field.id} data-field={field.id}>
+        <label>{field.label}
+          <select disabled={disabled || model.loading} value={raw?.field === field.id ? raw.value : field.selected}
+            onChange={event => { const option = field.options.find(row => row.value === event.target.value); if (option) choose(option.choice); }}>
+            {field.options.map(option => <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}</option>)}
+          </select>
+        </label>
+        <div className="composer-choice-mode">
+          {field.scopeLabel && <small>{field.scopeLabel}</small>}
+          {field.keep && <button type="button" className="text-button" disabled={disabled || model.loading} aria-label={`Keep ${field.id} for this conversation`}
+            onClick={() => choose(field.keep!)}>Keep for this conversation</button>}
+          {field.clear && <button type="button" className="text-button" disabled={disabled || model.loading} aria-label={`${field.label} back to Auto`}
+            onClick={() => choose(field.clear!)}>Back to Auto</button>}
+        </div>
+      </div>)}
+    </div>}
+  </>;
 }
-export function ComposerOverride(props: {
-  once: Conversation['once'];
-  pins: Conversation['pins'];
-  config: Configuration['x-jevellan'];
-  actions: Action[];
-  disabled: boolean;
-  change(field: Field, value: string | null, mode: Mode): void;
-}) {
-  const [open, setOpen] = useState(false);
-  const set = overrideText(props.once, props.pins, props.config);
-  return (
-    <>
-      <button
-        type="button"
-        className={`override-button${set ? ' set' : ''}`}
-        aria-label={set ? `Override: ${set}` : 'Override'}
-        title="Override the next step, model or effort"
-        onClick={() => setOpen(true)}
-      >
-        <Icon name="tune" />
-        <span>{set ?? 'Auto'}</span>
-      </button>
-      {open && (
-        <Modal title="Override the next step" close={() => setOpen(false)}>
-          <p className="muted small-text">Jev chooses automatically. Set a value only to override it.</p>
-          <ComposerChoices {...props} />
-          <div className="form-actions">
-            <button type="button" onClick={() => setOpen(false)}>
-              Done
-            </button>
-          </div>
-        </Modal>
-      )}
-    </>
-  );
+
+export function ComposerOverride(props: { projectId: string; revision: number; initial: Initial; update(initial: Initial): void; disabled: boolean; run: Run }) {
+  const model = useComposerModel(props), [open, setOpen] = useState(false);
+  const summary = model.view?.summary;
+  return <>
+    <button type="button" className={`override-button${summary ? ' set' : ''}`} disabled={props.disabled || model.loading || !model.view}
+      aria-label={summary ? `Override: ${summary}` : 'Override'} title="Override the next step, model or effort" onClick={() => setOpen(true)}>
+      <Icon name="tune" /><span>{summary ?? 'Auto'}</span>
+    </button>
+    {model.error && !open && <p className="notice" role="alert">{model.error}</p>}
+    {open && <Modal title="Override the next step" close={() => setOpen(false)}>
+      <p className="muted small-text">Jev chooses automatically. Set a value only to override it.</p>
+      <ChoiceFields model={model} disabled={props.disabled} />
+      <div className="form-actions"><button type="button" onClick={() => setOpen(false)}>Done</button></div>
+    </Modal>}
+  </>;
 }
-export function ComposerChoices({
-  once,
-  pins,
-  config,
-  actions,
-  disabled,
-  change,
-}: {
-  once: Conversation['once'];
-  pins: Conversation['pins'];
-  config: Configuration['x-jevellan'];
-  actions: Action[];
-  disabled: boolean;
-  change(field: Field, value: string | null, mode: Mode): void;
-}) {
-  const label = (field: Field, value: string) => choiceLabel(config, field, value);
-  return (
-    <div className="composer-choices" role="group" aria-label="Choices for the next step">
-      {(['action', 'model', 'effort'] as const).map((field) => {
-        const key = field === 'model' ? 'modelId' : field;
-        const pinned = key === 'action' ? undefined : pins[key];
-        const selected = once[key] ?? pinned ?? '';
-        const kept = !!pinned && once[key] === undefined;
-        const options =
-          field === 'action'
-            ? actions.filter((action) => action !== 'integrate').map((value) => ({ value, disabled: false }))
-            : field === 'effort'
-              ? EffortSchema.options.map((value) => ({ value, disabled: false }))
-              : config.menu.map((model) => ({
-                  value: model.id,
-                  disabled: !model.enabled || !config.runtimes[model.runtime]?.enabled,
-                }));
-        return (
-          <div className="composer-choice" key={field} data-field={field}>
-            <label>
-              {field === 'action' ? 'Next step' : field === 'model' ? 'Model' : 'Effort'}
-              <select
-                disabled={disabled}
-                value={selected}
-                onChange={(event) => change(field, event.target.value || null, 'once')}
-              >
-                <option value="">Auto</option>
-                {selected && !options.some((option) => option.value === selected) && (
-                  <option value={selected} disabled>
-                    {label(field, selected)} · unavailable
-                  </option>
-                )}
-                {options.map((option) => (
-                  <option key={option.value} value={option.value} disabled={option.disabled}>
-                    {label(field, option.value)}
-                    {option.disabled ? ' · unavailable' : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="composer-choice-mode">
-              {selected && (
-                <small>
-                  {kept
-                    ? 'Kept for this conversation'
-                    : pinned
-                      ? `Once, then ${label(field, pinned)}`
-                      : 'Next decision only'}
-                </small>
-              )}
-              {field !== 'action' && selected && !kept && (
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={disabled}
-                  aria-label={`Keep ${field} for this conversation`}
-                  onClick={() => change(field, selected, 'pin')}
-                >
-                  Keep for this conversation
-                </button>
-              )}
-              {(selected || pinned) && (
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={disabled}
-                  aria-label={`${field === 'action' ? 'Next step' : field === 'model' ? 'Model' : 'Effort'} back to Auto`}
-                  onClick={() => change(field, null, field === 'action' ? 'once' : 'pin')}
-                >
-                  Back to Auto
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+
+export function ComposerChoices(props: { projectId: string; revision: number; conversationId: string; generation: number; afterSave(signal: AbortSignal): Promise<void>; disabled: boolean; run: Run }) {
+  return <ChoiceFields model={useComposerModel(props)} disabled={props.disabled} />;
 }

@@ -35,6 +35,8 @@ The application composition lives in `apps/daemon/src/application.ts`, which wir
 
 `packages/conversations/src/service.ts` connects these operations. Dedicated modules implement guards, execution, checkpoints, publication, corrections, recovery and context changes. Decisions belong in `packages/decisions`; guards belong in `packages/conversations`. There is no heuristic model routing.
 
+Composer drafts and existing-conversation editors share a versioned engine model for options, unavailable selections, scope text and prepared requests. Unsaved previews use the same pure transition as durable choice replay without creating work. Existing saves retain the canonical generation checks, idempotent intent receipts and decision binding. UI, CLI and MCP reads use the same projection; conversation writes stay on the indexed owner device through the normal authenticated relay.
+
 ## Project work
 
 `packages/projects` runs one `ProjectWork` per daemon beside the conversation service. It reuses the runtime adapters, account ranking and usage accounting, Jev, the bridge registry and project memory, but not the conversation service itself. Behavior, limits and prompts are described in [projects](projects.md).

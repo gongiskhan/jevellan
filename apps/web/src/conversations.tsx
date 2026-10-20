@@ -14,7 +14,6 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
   GitBranchChangeSchema, type GitBranchChange,
-  ActionSchema,
   ComposerInitialSchema,
   CorrectionsListSchema,
   ConversationChangesSchema,
@@ -34,7 +33,7 @@ import { api, empty } from './api.js';
 import { ProjectForm } from './projects.js';
 import { waitForProjectSetup } from './project-setup.js';
 import { queuedRefresh } from './refresh.js';
-import { changeComposerDraft, ComposerOverride, ComposerChoices } from './composer-choices.js';
+import { ComposerOverride, ComposerChoices } from './composer-choices.js';
 import { Icon } from './icons.js';
 import { useCursorSessions, sessionRuntimeLabel } from './cursor-sessions.js';
 import { MessageDelivery, MessageInput, LatestUserMessage } from './message-delivery.js';
@@ -425,14 +424,7 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
           />
         </label>
         <ComposerOverride
-          once={choices.once}
-          pins={choices.pins}
-          config={props.data.config.configuration['x-jevellan']}
-          actions={ActionSchema.options.filter(
-            (action) => action !== 'integrate' && action !== 'done' && (action !== 'test' || !!project?.testCommand),
-          )}
-          disabled={task.busy}
-          change={(field, value, mode) => setChoices((current) => changeComposerDraft(current, field, value, mode))}
+          projectId={projectId} revision={props.data.config.revision} initial={choices} update={setChoices} disabled={task.busy} run={task.run}
         />
         <button disabled={task.busy || !available || !props.data.accounts.length || !message.trim()}>
           {task.busy ? 'Starting…' : 'Start'}
@@ -987,35 +979,10 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
       </form>
       {settingsOpen && <Panel title="Conversation settings" close={() => setSettingsOpen(false)}>
           <ComposerChoices
-              once={view.conversation.once}
-              pins={view.conversation.pins}
-              config={props.data.config.configuration['x-jevellan']}
-              actions={
-                view.conversation.work
-                  ? view.allowed
-                  : ActionSchema.options.filter(
-                      (action) =>
-                        action !== 'integrate' &&
-                        action !== 'done' &&
-                        (action !== 'test' || !!project?.testCommand),
-                    )
-              }
-              disabled={task.busy || !!finishing}
-              change={(field, value, mode) =>
-                void task.run(async () =>
-                  setView(
-                    await api(`/api/conversations/${id}/choices`, ConversationPublicSchema, 'POST', {
-                      schema: 'composer-choice-v1',
-                      clientRequestId: `choice_${clientId()}`,
-                      generation: view.conversation.generation,
-                      field,
-                      value,
-                      mode,
-                    }),
-                  ),
-                )
-              }
-            />
+            projectId={view.conversation.projectId} revision={props.data.config.revision} conversationId={id} generation={view.conversation.generation}
+            disabled={task.busy || !!finishing} run={task.run}
+            afterSave={async signal => setView(await api(`/api/conversations/${id}`, ConversationPublicSchema, 'GET', undefined, { signal, waitForHub: true }))}
+          />
             {!running && !finishing && canSettle && (
               <button
                 type="button"
