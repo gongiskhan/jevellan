@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Frozen source moves Overview grouping and owner-facing services into the engine. Remaining UI logic and component-row parity remain planned0.7.1; no complete migration claim.",
+    "why": "The afternoon owner instruction authorizes moving all remaining mapped UI logic into engine services area by area, with backend behavior tests and desktop-light main-action smokes. The full310-row inventory was read and a private area plan prepared. Implementation has not started because the ordered0.7.2 integrated-main prerequisite did not arrive in the fixed two-hour watch. Earlier planned status is not a scope refusal.",
     "status": "planned"
   },
   {
@@ -1082,25 +1082,31 @@
   {
     "id": "br-release",
     "title": "Bridge gate, 0.7.0 and installation",
-    "why": "Frozenac98492f merged into main once;0.7.0 published fromba983982 at09:13:25UTC and installed both with doctor10/10/Online/vault sync09:24:41UTC. All five desktop-light core smokes pass. Backend2602selected:2584initial passes,3harness-induced failures cleared by exact once-reruns,15notrun. Bridge status/push remain externally authentication-blocked. One scoped closing review is complete; three essential repairs are gated for0.7.1. Essential0.7.1 repairs published10:35:59UTC and installed both/doctor10/10each10:47:15UTC; actual bridge status/push remain blocked. Final scoped verification is closed with explicit private blockers; daily-use goal not fully met, no new source/release/review phase.",
+    "why": "Frozenac98492f merged into main once;0.7.0 published fromba983982 at09:13:25UTC and installed both with doctor10/10/Online/vault sync09:24:41UTC. All five desktop-light core smokes pass. Backend2602selected:2584initial passes,3harness-induced failures cleared by exact once-reruns,15notrun. Bridge status/push remain externally authentication-blocked. One scoped closing review is complete; three essential repairs are gated for0.7.1. Essential0.7.1 repairs published10:35:59UTC and installed both/doctor10/10each10:47:15UTC; actual bridge status/push remain blocked. Morning scoped verification closed with explicit private blockers and the daily-use goal not fully met. The afternoon owner instruction supersedes that STOP, requesting0.7.2 then ordered source work; see br-release-072 for its blocked integration prerequisite.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "br-release-072",
+    "title": "Release integrated account and connector fixes as 0.7.2",
+    "why": "The fixed12:13:08.750764\u201314:13:08.750764UTC merge watch ended with the initial observation plus12successful ten-minute polls all main336248ca. The captured advanced bridge tip29eaf1f0 was not integrated. No version/gate/archive/tag/release/install was attempted and no READY-072 file was created; both manifests remain0.7.1. The complete specification/map and verified procedure were read and private helpers prepared. Await peer integration, then the full six-worker backend/five core desktop-light gates, exact source/digests/nativePTY, strict idle proofs/cold backups and normal Madrid-before-member updates/doctor10of10. No auth/bridge process change, peer stop, extra review or guard exception.",
+    "status": "blocked"
   },
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Remaining UI logic migration, all component-row parity and expanded layout/vision coverage stay planned after the essential0.7.1 repair release.",
+    "why": "Authorized after both0.7.2 installations pass doctor: migrate each engine/UI area with component parity and its desktop-light smoke, updating the map and evidence per tested landing. No four-layout matrix; one nonblocking vision result per new screen. Not started because0.7.2 integration is blocked; no complete migration/parity claim.",
     "status": "planned"
   },
   {
     "id": "br-intake-071",
     "title": "External pull request intake",
-    "why": "Planned after essential daily-use repairs; no external contributor pull requests are inspected by this run.",
+    "why": "Authorized after the UI-to-engine area migrations: external pull request intake through configured checks, pinned owner choices and normal leased publication. Not started because the ordered0.7.2 prerequisite failed its merge-watch window. No real external contributor pull request was accessed by this afternoon pass.",
     "status": "planned"
   },
   {
     "id": "br-engine-071",
     "title": "Remaining engine and remote features",
-    "why": "Plan p-v1/m-v1 wiring, placement rule execution, coordinator ask fork, member event/push forwarding and additional remote MCP features after the essential daily-use repairs.",
+    "why": "Placement-rule execution inside placement and active p-v1/m-v1 prompt versions are authorized after UI migration and intake. Not started because0.7.2 integration is blocked. Coordinator ask fork, member event/push forwarding and additional remote features remain separately tracked; no implementation pass is claimed.",
     "status": "planned"
   },
   {
