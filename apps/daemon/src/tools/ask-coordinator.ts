@@ -44,9 +44,13 @@ export const askCoordinator: OwnerHandler = async (context) => {
   tools.coordinatorReplyDelivered(clientMessageId);
   return { text: `Coordinator: ${answer.length > 8000 ? `${answer.slice(0, 7997)}...` : answer}` };
 };
+const RESTART_WAIT_SECONDS = 60;
+/** How long a restarted turn that started is watched for an early failure before the reply says it runs. */
+const RESTART_RUNNING_SECONDS = 15;
 /**
  * `ask_coordinator` mode restart: a coordinator that failed two turns in a row waits for the owner. The restart is an owner message through the
- * durable delivery, so it reaches the coordinator's device and retries the queued work there; `fresh` drops the session first.
+ * durable delivery, so it reaches the coordinator's device and retries the queued work there; `fresh` drops the session first. When the
+ * coordinator runs on this device the reply says what the first attempt did (started, or failed with its error); a later failure is a push.
  */
 async function restart(context: OwnerContext): Promise<{ text: string }> {
   const { app, project, args } = context; const engine = app.projectWork; const fresh = args.fresh === true;
@@ -54,12 +58,22 @@ async function restart(context: OwnerContext): Promise<{ text: string }> {
   if (coordinator.state === 'running') throw new OwnerRefusal('The coordinator is running a turn now. Nothing to restart.', 'running', 409);
   if (coordinator.state === 'unavailable') throw new OwnerRefusal(`The coordinator can't run: ${coordinator.unavailableReason ?? 'no model or account is available'}. A restart does not change that.`, 'unavailable', 409);
   if (coordinator.state === 'offline') throw new OwnerRefusal(`The coordinator's device${coordinator.deviceName ? ` ${coordinator.deviceName}` : ''} is offline. It runs again when that device is back.`, 'offline', 409);
-  const stopped = await engine.coordinatorStopped(project.id);
+  const stopped = await engine.coordinatorStop(project.id) !== null;
   if (!stopped && !fresh) throw new OwnerRefusal(`The coordinator is ${coordinator.state === 'none' ? 'starting' : coordinator.state} and not stopped. To give it a new session, restart with fresh.`, 'not_stopped', 409);
   if (fresh) await engine.freshCoordinator(project.id);
   if (!stopped) return { text: 'The coordinator starts a fresh session at its next turn.' };
+  const here = await engine.coordinatorHere(project.id); const position = here ? engine.coordinatorPosition(project.id) : 0;
   await engine.sendOwnerMessage(project.id, { schema: 'project-send-request-v1', clientMessageId: clientId('owner_restart'), via: 'bridge', waitSeconds: 0,
     text: `[Jevellan] The owner restarted the coordinator after it stopped.${fresh ? ' This is a fresh session.' : ''} Carry on with what is queued.` });
-  return { text: `Restarted the coordinator${fresh ? ' with a fresh session' : ''}. It retries its queued work now; if it fails again, that arrives as a push.` };
+  const restarted = `Restarted the coordinator${fresh ? ' with a fresh session' : ''}`;
+  if (!here) return { text: `${restarted} on its device. It retries its queued work there; if it fails again, that arrives as a push.` };
+  let running: number | undefined;
+  for (const deadline = Date.now() + RESTART_WAIT_SECONDS * 1000; ; await delay(500)) {
+    const turn = engine.coordinatorTurnAfter(project.id, position);
+    if (turn?.kind === 'completed') return { text: `${restarted}: its first turn completed.` };
+    if (turn?.kind === 'started' && (running ??= Date.now()) + RESTART_RUNNING_SECONDS * 1000 <= Date.now()) return { text: `${restarted}: it is running its queued work now.` };
+    if (turn?.kind === 'failed') return { text: `The restart failed: ${turn.error.replace(/\s+/g, ' ').trim().replace(/\.$/u, '')}. The coordinator tries once more, then waits for you again.` };
+    if (Date.now() >= deadline && running === undefined) return { text: `${restarted}. No turn has started yet (it may be waiting for a free slot); if it fails, that arrives as a push.` };
+  }
 }
 export { reply as coordinatorReply, REPLY_LIMIT };

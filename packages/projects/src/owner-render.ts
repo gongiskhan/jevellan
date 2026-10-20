@@ -65,6 +65,7 @@ export function renderStatus(view: ProjectStatusView, options: { section?: 'wait
   else {
     const coordinator = view.coordinator.model ? `${view.coordinator.state} (${[view.coordinator.model, view.coordinator.effort].filter(Boolean).join(' ')}${view.coordinator.account ? `, ${view.coordinator.account}` : ''})` : view.coordinator.state;
     lines.push(`${view.project} · coordinator ${coordinator} · ${runningCount} running · ${landing} landing · ${view.queued.length} queued · ${view.waiting.length} waiting on you`);
+    if (view.coordinator.state === 'stopped') lines.push(`Coordinator stopped${view.coordinator.reason ? `: ${view.coordinator.reason.replace(/\.$/u, '')}.` : '.'} Fix the cause, then restart it with ask_coordinator mode restart.`);
     if (view.budgets.length) lines.push(`Budgets: ${view.budgets.map(budget => `${budget.label} ${budget.usedPercent === null ? '?' : Math.round(budget.usedPercent)}% of ${budget.budgetPercent}%`).join(' · ')}`);
     if (view.deploy) {
       const parts = [view.deploy.mode + (view.deploy.paused ? ' (paused)' : ''), view.deploy.undeployed ? `${view.deploy.undeployed} landed thread${view.deploy.undeployed === 1 ? '' : 's'} not deployed${view.deploy.message ? ` (${view.deploy.message})` : ''}` : 'nothing waiting to deploy'];

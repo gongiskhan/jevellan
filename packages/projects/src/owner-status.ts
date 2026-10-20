@@ -40,7 +40,8 @@ export function waitingKind(decision: Pick<ProjectDecision, 'deploy' | 'accountI
 export type StatusInput = {
   project: { id: string; name: string }; now: Date; settings: ProjectWorkSettings; coordinator: CoordinatorView; coordinatorStalled: boolean;
   /** Two turns failed in a row: the coordinator waits for the owner (a message or a restart) before it runs again. */
-  coordinatorStopped?: boolean;
+  /** The coordinator waits for the owner after two failed turns; the reason is the last failed turn's error when known. */
+  coordinatorStop?: { reason?: string } | null;
   threads: readonly ThreadIndex[]; tasks: readonly ProjectWorkTask[]; goals: readonly ProjectGoal[]; decisions: readonly ProjectDecision[];
   jobs: readonly ProjectJob[]; dailies: readonly ProjectDaily[]; runs: readonly ProjectJobRun[]; windows: readonly ProjectWindow[]; deploys: readonly ProjectDeploy[];
   budgets: ProjectStatusView['budgets']; deviceName: (deviceId: string) => string; deployPaused: boolean;
@@ -140,7 +141,7 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
     return { id: goalIds.get(goal.id)!, internalId: goal.id, title: goal.name, state: goal.state, counts, due };
   });
 
-  const coordinatorState = input.coordinatorStalled ? 'stalled' : input.coordinator.state === 'running' ? 'running' : input.coordinator.state === 'unavailable' ? 'crashed' : input.coordinatorStopped ? 'stopped'
+  const coordinatorState = input.coordinatorStalled ? 'stalled' : input.coordinator.state === 'running' ? 'running' : input.coordinator.state === 'unavailable' ? 'crashed' : input.coordinatorStop ? 'stopped'
     : input.coordinator.state === 'none' ? 'starting' : 'idle';
   const session = input.coordinator.session ?? input.coordinator.planned;
   const deployLine = settings.deploy.jobId || input.deploys.length ? {
@@ -151,7 +152,8 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
   const quiet = settings.notifications.quietHours;
   let filtered: ProjectStatusView['goalFilter'];
   const view: ProjectStatusView = { schema: 'project-status-view-v1', projectId, project: project.name, at: now.toISOString(), timeZone,
-    coordinator: { state: coordinatorState, model: session?.modelLabel ?? null, effort: session?.effort ?? null, account: input.coordinator.session?.accountLabel ?? null },
+    coordinator: { state: coordinatorState, model: session?.modelLabel ?? null, effort: session?.effort ?? null, account: input.coordinator.session?.accountLabel ?? null,
+      ...(coordinatorState === 'stopped' && input.coordinatorStop?.reason ? { reason: input.coordinatorStop.reason.replace(/\s+/g, ' ').trim().slice(0, 400) } : {}) },
     budgets: input.budgets, deploy: deployLine,
     night: nightly.enabled ? [`next at ${nightly.time}`, ...(input.windows.length ? [(() => { const last = [...input.windows].sort((a, b) => b.openedAt.localeCompare(a.openedAt))[0]!; return last.state === 'finished' ? (last.failed ? 'last night had failures' : 'last night complete') : 'night running'; })()] : []),
       ...(input.missedThisWeek !== undefined ? [`${input.missedThisWeek} missed this week`] : [])].join(' · ') : null,

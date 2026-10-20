@@ -42,7 +42,7 @@ import { ProjectJobRunner } from './job-runner.js';
 import { join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { atomicWrite, deviceAllowsWork } from '@jevellan/core';
+import { atomicWrite, deviceAllowsWork, type ProjectLedgerEvent } from '@jevellan/core';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
@@ -903,14 +903,39 @@ export class ProjectWork {
     this.relayArrived();
   }
   /** Interrupts the running coordinator turn (brief 8.1); its events count as delivered (D33). Nothing to stop before assignment. */
-  /** Whether the coordinator failed two turns in a row and waits for the owner: its local state here, else the status it published. */
-  async coordinatorStopped(projectId: string): Promise<boolean> {
+  /**
+   * Whether the coordinator failed two turns in a row and waits for the owner, from its local state here (with the last failed turn's
+   * error as the reason), else from the status it published. Null when it is not stopped.
+   */
+  async coordinatorStop(projectId: string): Promise<{ reason?: string } | null> {
     await this.#project(projectId);
-    const deviceId = await this.coordinators.deviceOf(projectId); if (deviceId === null) return false;
-    if (deviceId === this.#o.deviceId) return this.coordinators.get(projectId).state().failedTurnsInARow >= 2;
-    const published = (await this.#o.hub.coordinatorStatus(projectId))?.document;
-    return published?.deviceId === deviceId && published.failedTurnsInARow >= 2;
+    const deviceId = await this.coordinators.deviceOf(projectId); if (deviceId === null) return null;
+    if (deviceId !== this.#o.deviceId) {
+      const published = (await this.#o.hub.coordinatorStatus(projectId))?.document;
+      return published?.deviceId === deviceId && published.failedTurnsInARow >= 2 ? {} : null;
+    }
+    if (this.coordinators.get(projectId).state().failedTurnsInARow < 2) return null;
+    const ledger = this.ledgers.coordinator(projectId);
+    const last = ledger.events().findLast(event => event.type === 'coordinator-turn-end');
+    const reason = last ? ledger.payload(last as ProjectLedgerEvent & { type: 'coordinator-turn-end' }).error : undefined;
+    return reason ? { reason } : {};
   }
+  /** The coordinator ledger position here, for `coordinatorTurnAfter`. */
+  coordinatorPosition(projectId: string): number { return this.ledgers.coordinator(projectId).lastId(); }
+  /** The first coordinator turn on this device after a ledger position: how it ended (a launch refused before it started ends too), else whether it started. */
+  coordinatorTurnAfter(projectId: string, position: number): { kind: 'started' | 'completed' } | { kind: 'failed'; error: string } | null {
+    const ledger = this.ledgers.coordinator(projectId); let started = false;
+    for (const event of ledger.events()) {
+      if (event.id <= position) continue;
+      if (event.type === 'coordinator-turn-start') started = true;
+      if (event.type !== 'coordinator-turn-end') continue;
+      const end = ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-turn-end' });
+      return end.status === 'failed' || end.status === 'timed-out' ? { kind: 'failed', error: end.error ?? end.status } : { kind: 'completed' };
+    }
+    return started ? { kind: 'started' } : null;
+  }
+  /** Whether this device runs the project's coordinator. */
+  async coordinatorHere(projectId: string): Promise<boolean> { return await this.coordinators.deviceOf(projectId) === this.#o.deviceId; }
   async stopCoordinator(projectId: string): Promise<void> { await (await this.#assignedHere(projectId))?.stop(); }
   /** The next coordinator turn starts a fresh session (D77). Before assignment there is no session, and Fresh assigns nothing (D206). */
   async freshCoordinator(projectId: string): Promise<void> { (await this.#assignedHere(projectId))?.fresh(); }

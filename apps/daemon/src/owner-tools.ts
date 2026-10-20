@@ -187,15 +187,15 @@ export class OwnerTools {
   /** The engine's status of a project, shared by the status tool, the status line and the UI. */
   async status(project: Project, goal?: string): Promise<ProjectStatusView> {
     const work = this.app.projectWork; const projectId = project.id;
-    const [view, tasks, goals, daily, deploys, accounts, roster, coordinatorStopped] = await Promise.all([
-      work.view(projectId), work.taskList(projectId), work.goalList(projectId), work.daily.view(projectId), work.deploys.view(projectId), this.app.accounts.list(), this.app.roster(), work.coordinatorStopped(projectId)]);
+    const [view, tasks, goals, daily, deploys, accounts, roster, coordinatorStop] = await Promise.all([
+      work.view(projectId), work.taskList(projectId), work.goalList(projectId), work.daily.view(projectId), work.deploys.view(projectId), this.app.accounts.list(), this.app.roster(), work.coordinatorStop(projectId)]);
     const names = new Map(roster.devices.map(row => [row.device.id, row.device.name]));
     const budgets = accounts.filter(row => row.account.enabled !== false).map(row => {
       const usage = [...row.statuses].sort((a, b) => (b.usage?.observedAt ?? '').localeCompare(a.usage?.observedAt ?? ''))[0]?.usage;
       const used = usage ? Math.max(usage.weeklyPct ?? 0, usage.fiveHourPct ?? 0) : null;
       return { label: row.account.label, usedPercent: usage && (usage.weeklyPct !== undefined || usage.fiveHourPct !== undefined) ? used : null, budgetPercent: row.account.ceilingPct ?? 90 };
     });
-    const view_ = projectStatus({ project: { id: projectId, name: project.name }, now: this.now(), settings: view.settings, coordinator: view.coordinator, coordinatorStalled: false, coordinatorStopped,
+    const view_ = projectStatus({ project: { id: projectId, name: project.name }, now: this.now(), settings: view.settings, coordinator: view.coordinator, coordinatorStalled: false, coordinatorStop,
       threads: view.threads, tasks: tasks.tasks, goals: goals.goals.map(row => row.goal), decisions: view.decisions.open, jobs: daily.jobs, dailies: daily.dailies, runs: daily.runs,
       windows: daily.window ? [daily.window] : [], deploys: deploys.records,
       budgets, deviceName: id => names.get(id) ?? id, deployPaused: this.projectSettings(projectId).deploy.paused, missedThisWeek: this.app.ownerSchedules.missed(projectId, 7).length, ...(goal ? { goalFilter: goal } : {}),

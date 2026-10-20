@@ -66,11 +66,18 @@ test('status shows a coordinator stopped after two failed turns, and ask_coordin
   expect(await text('ask_coordinator', { mode: 'restart' })).toMatch(/^ERROR not_stopped: The coordinator is (idle|starting) and not stopped\./u);
   await text('ask_coordinator', { mode: 'tell', text: 'Plan the release.' });
   await f.waitFor(() => f!.coordinatorState(), state => state.failedTurnsInARow === 2 && state.state === 'idle');
-  expect((await text('status')).split('\n')[0]).toMatch(/ · coordinator stopped \(/u);
+  const stopped = (await text('status')).split('\n');
+  expect(stopped[0]).toMatch(/ · coordinator stopped \(/u);
+  expect(stopped[1]).toBe('Coordinator stopped: A journal projection cannot replace earlier entries. Fix the cause, then restart it with ask_coordinator mode restart.');
+
+  // A restart reports what its first attempt did: failing again names the error instead of claiming success.
+  f.fake.enqueueTurn(failed, forCoordinator); f.fake.enqueueTurn(failed, forCoordinator);
+  expect(await text('ask_coordinator', { mode: 'restart' })).toBe('The restart failed: A journal projection cannot replace earlier entries. The coordinator tries once more, then waits for you again.');
+  await f.waitFor(() => f!.coordinatorState(), state => state.failedTurnsInARow === 4 && state.state === 'idle');
 
   f.fake.enqueueTurn(async turn => { turn.say('Back on track.'); return { status: 'completed' }; }, forCoordinator);
   const starts = f.fake.turnStarts.length;
-  expect(await text('ask_coordinator', { mode: 'restart', fresh: true })).toBe('Restarted the coordinator with a fresh session. It retries its queued work now; if it fails again, that arrives as a push.');
+  expect(await text('ask_coordinator', { mode: 'restart', fresh: true })).toBe('Restarted the coordinator with a fresh session: its first turn completed.');
   await f.waitFor(() => f!.coordinatorState(), state => state.failedTurnsInARow === 0 && state.queue.length === 0);
   const prompt = f.fake.turnStarts.slice(starts).at(-1)?.prompt ?? '';
   expect(prompt).toContain('Plan the release.');

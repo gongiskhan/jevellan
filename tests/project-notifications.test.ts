@@ -144,6 +144,18 @@ test('coordinator replies strip Markdown, uncounted retries do not notify failur
   expect(docs.filter(row => row.kind === 'coordinator-unavailable'), JSON.stringify(docs.map(row => row.kind))).toHaveLength(1); expect(docs.find(row => row.kind === 'coordinator-unavailable')?.body).toBe('The coordinator stopped: Provider unavailable.');
   await f.restart(); expect(f.app.hub.list('project-notifications', ProjectNotificationSchema)).toHaveLength(docs.length);
 });
+test('an owner message after the coordinator stopped starts a new count, so failing again after a restart notifies again', async () => {
+  const f = fixture = await projectFixture(); const ledger = f.app.projectWork.ledgers.coordinator('project');
+  const fail = (turn: number) => ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status: 'failed', error: 'Rigging preserved local changes: settings.json.' } });
+  fail(1); fail(2);
+  ledger.append({ type: 'coordinator-event', data: { schema: 'coordinator-event-v1', kind: 'user-message', id: 'cev_restart', at: new Date().toISOString(), text: 'Carry on.', clientMessageId: 'owner_restart_1', via: 'bridge' } });
+  fail(3); fail(4); fail(5);
+  await f.app.projectWork.notifications.flush();
+  const stopped = () => f.app.hub.list('project-notifications', ProjectNotificationSchema).map(row => row.document).filter(row => row.kind === 'coordinator-unavailable');
+  expect(stopped().map(row => row.body)).toEqual(['The coordinator stopped: Rigging preserved local changes: settings.json.', 'The coordinator stopped: Rigging preserved local changes: settings.json.']);
+  await f.restart(); expect(stopped()).toHaveLength(2);
+});
+
 test('a question creates a single needs-you notification and uses high urgency', async () => {
   const f = fixture = await projectFixture(); const sent: string[] = [];
   const service = new HubNotifications(f.app.hub, () => 'https://fixture.example', async (_sub, payload, options) => { sent.push(String(payload)); expect(options?.urgency).toBe('high'); return { statusCode: 201, body: '', headers: {} }; }); services.push(service); subscribe(service);

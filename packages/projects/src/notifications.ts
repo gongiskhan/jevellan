@@ -32,10 +32,12 @@ export class ProjectNotifications {
     await this.flush().catch(() => undefined);
   }
   #consume(ledger: ProjectLedger, event: ProjectLedgerEvent): void {
-    if (!['coordinator-text', 'coordinator-turn-end', 'thread-state', 'thread-report'].includes(event.type) || Date.parse(event.t) < this.o.now() - week) return;
+    if (!['coordinator-text', 'coordinator-turn-end', 'coordinator-event', 'thread-state', 'thread-report'].includes(event.type) || Date.parse(event.t) < this.o.now() - week) return;
     const source = `${ledger.projectId}:${ledger.threadId ?? 'coordinator'}`;
     if (event.id <= (this.#seen.get(source) ?? 0)) return;
     this.#seen.set(source, event.id);
+    // An owner message is the owner's retry of a stopped coordinator: the failures after it are a new episode with its own notification.
+    if (event.type === 'coordinator-event') { if (ledger.payload(event as typeof event & { type: 'coordinator-event' }).kind === 'user-message') this.#failures.delete(source); return; }
     const key = `${source}:${event.turn ?? 0}`;
     if (event.type === 'coordinator-text') { this.#text.set(key, ((this.#text.get(key) ?? '') + ledger.payload(event as typeof event & { type: 'coordinator-text' }).text).slice(0, 8000)); return; }
     const enqueue = (kind: Pending['kind'], body: string) => {
