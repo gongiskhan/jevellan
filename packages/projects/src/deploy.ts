@@ -5,6 +5,7 @@ import type { ProjectJobRunner } from './job-runner.js';
 import type { ProjectTasks } from './tasks.js';
 import { derivedId } from './decision-items.js';
 import { taskRankBetween } from './tasks.js';
+import { currentProjectDeploy, deployBusy, DEPLOY_BUSY, projectDeploySummary, projectRollbackRefusal } from './deploy-summary.js';
 const short = (sha: string | null) => sha?.slice(0, 7) ?? 'unknown';
 const time = (at: string, timezone: string) => new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(at));
 const refuse = (message: string, status = 409): never => { throw Object.assign(new Error(message), { status }); };
@@ -33,6 +34,7 @@ export class ProjectDeployService {
     return rows.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
   }
   async view(id: string) { return ProjectDeployViewSchema.parse({ schema: 'project-deploy-view-v1', projectId: id, records: await this.records(id), baseline: (await this.o.hub.deployBaseline(id))?.document ?? null }); }
+  async summary(id: string) { const [view, settings] = await Promise.all([this.view(id), this.o.settings(id)]); return projectDeploySummary(id, view.records, view.baseline, settings.nightlyWindow.timezone); }
   async baseline(id: string, raw: Omit<ProjectDeployBaseline, 'schema' | 'id' | 'projectId' | 'revision' | 'updatedAt'>, revision: number) {
     await this.#writer(id); return (await this.o.hub.putDeployBaseline(ProjectDeployBaselineSchema.parse({ ...raw, schema: 'project-deploy-baseline-v1', id, projectId: id, revision, updatedAt: this.#at() }), revision)).document;
   }
@@ -46,12 +48,7 @@ export class ProjectDeployService {
     return paths.some(path => baseline?.migrationPaths.some(prefix => path === prefix || path.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`)) ?? false);
   }
   #current(rows: ProjectDeploy[], baseline: ProjectDeployBaseline | null): { commit: string | null; rollbackAvailable: boolean } {
-    const events = rows.flatMap(row => [
-      ...(row.deployedAt ? [{ at: row.deployedAt, commit: row.releaseUncertain ? null : row.commit, rollbackAvailable: !row.releaseUncertain }] : []),
-      ...(row.rollback ? [{ at: row.rollback.at, commit: row.rollback.result === 'done' ? row.rollback.toCommit : null, rollbackAvailable: row.rollback.result === 'done' }] : []),
-    ]).sort((a, b) => b.at.localeCompare(a.at));
-    if (baseline && (!events[0] || Date.parse(baseline.updatedAt) > Date.parse(events[0].at))) return { commit: baseline.commit, rollbackAvailable: baseline.rollbackAvailable };
-    return events[0] ?? { commit: baseline?.commit ?? null, rollbackAvailable: baseline?.rollbackAvailable ?? false };
+    return currentProjectDeploy(rows, baseline) ?? { commit: null, rollbackAvailable: false };
   }
   async #threads(id: string): Promise<ThreadIndex[]> { const rows: ThreadIndex[] = []; let after: string | undefined; do { const page = await this.o.hub.threads(id, after); rows.push(...page.records); after = page.next ?? undefined; } while (after); return rows; }
   #question(row: ProjectDeploy): string {
@@ -97,7 +94,7 @@ export class ProjectDeployService {
     row = await this.#save({ ...draft, messageHealth: await this.o.health(id, checks, 'manual', deployId) }); await this.#message(row);
   }
   async #available(row: ProjectDeploy, allowOwnMonitor = false) {
-    if (!allowOwnMonitor && row.monitor || row.rollbackPending && !row.rollback || (await this.records(row.projectId)).some(item => item.id !== row.id && (['approved', 'running'].includes(item.state) || item.monitor || item.rollbackPending && !item.rollback))) refuse('A deploy is already running. Wait for it to finish before approving this message.');
+    if (deployBusy(await this.records(row.projectId), row, allowOwnMonitor)) refuse(DEPLOY_BUSY);
   }
   async answer(decision: ProjectDecision, answer: DecisionAnswer, request: { clientRequestId: string; expectedRevision?: number | undefined }): Promise<{ repeated: boolean; closed: boolean }> {
     return this.#exclusive(decision.projectId, async () => {
@@ -175,9 +172,9 @@ export class ProjectDeployService {
     return this.#exclusive(id, async () => {
       await this.#writer(id); const rows = await this.records(id), row = rows.find(row => row.id === deployId);
       if (row?.rollbackPending?.reason === 'owner') return row;
-      if (!row || row.revision !== expectedRevision || !row.deployedAt || row.rollback || this.#current(rows, (await this.o.hub.deployBaseline(id))?.document ?? null).commit !== row.commit) return refuse('Only the current latest deploy can be rolled back.');
-      await this.#available(row, true);
-      return this.#queueRollback(row, 'owner', 'owner request');
+      const refusal = projectRollbackRefusal(rows, (await this.o.hub.deployBaseline(id))?.document ?? null, row, expectedRevision);
+      if (refusal) return refuse(refusal);
+      return this.#queueRollback(row!, 'owner', 'owner request');
     });
   }
   async #broken(row: ProjectDeploy, checkName: string): Promise<ProjectDeploy> {

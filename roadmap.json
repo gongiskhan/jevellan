@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Areas1a–1e/2a–2b:26Overview/sidebar/coordinator/card-action/waiting/jobs-nightly/editor rows migrated/refined. Versioned engine models, canonical guards/retry receipts and member routing retained; structured editor templates survive official MCP/CLI/remote with redaction. Latest static pass,200affected backend21files6workers pass; simulated desktop-light editor/Routines journey passes once,3exact images vision-not-run. Next deploy/config then remaining ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1 recorded for Settings. No further release.",
+    "why": "Areas1a–1e/2a–2c:27Overview/sidebar/coordinator/card-action/waiting/jobs-nightly/editor/deploy-summary rows migrated/refined. Canonical guards/retry receipts and member routing retained; shared baseline/current/unknown selector, health copy and rollback model. Latest source static pass,209affected backend22files6workers pass; simulated desktop-light deploy/rollback journey passes after explicit fixture monitor-clock progression, preserving final assertions.13exact images vision-not-run. Next deploy/config metadata then remaining ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1 recorded for Settings. No further release.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Areas1a–1e/2a–2b:26Overview/sidebar/coordinator/card-action/waiting/jobs-nightly/editor rows migrated/refined. Versioned engine models, canonical guards/retry receipts and member routing retained; structured editor templates survive official MCP/CLI/remote with redaction. Latest static pass,200affected backend21files6workers pass; simulated desktop-light editor/Routines journey passes once,3exact images vision-not-run. Next deploy/config then remaining ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1 recorded for Settings. No further release.",
+    "why": "Areas1a–1e/2a–2c:27Overview/sidebar/coordinator/card-action/waiting/jobs-nightly/editor/deploy-summary rows migrated/refined. Canonical guards/retry receipts and member routing retained; shared baseline/current/unknown selector, health copy and rollback model. Latest source static pass,209affected backend22files6workers pass; simulated desktop-light deploy/rollback journey passes after explicit fixture monitor-clock progression, preserving final assertions.13exact images vision-not-run. Next deploy/config metadata then remaining ordered UI areas, intake and placement/prompt versions. Full310-row parity incomplete; CM1 recorded for Settings. No further release.",
     "status": "in-progress"
   },
   {

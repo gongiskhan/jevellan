@@ -2493,8 +2493,19 @@ test('WG5 pinned deploy message, Not now and confirmed rollback', async ({ page 
     await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 6 }); await pulse();
     await expect.poll(async () => (await threadView(page, threadId)).thread.resolution?.by, { timeout: 60_000 }).toBe('deploy');
     await page.reload(); await sectionTab(page, info, 'Threads'); const overview = page.locator('.pw-last-deploy'); await expect(overview.getByText(new RegExp(`Last deploy: ${commit.slice(0, 7)}`))).toBeVisible(LONG); await overview.scrollIntoViewIfNeeded(); await page.screenshot({ path: info.outputPath(`deploy-last-${layout(info)}.png`) });
-    await overview.getByRole('button', { name: `Roll back to ${base.slice(0, 7)}`, exact: true }).click(); await expect(overview.getByRole('button', { name: 'Confirm rollback', exact: true })).toBeVisible(); await page.screenshot({ path: info.outputPath(`deploy-rollback-confirm-${layout(info)}.png`) });
-    await overview.getByRole('button', { name: 'Cancel', exact: true }).click(); expect(errors).toEqual([]);
+    const rollbackModel = await read(page, `${PROJECT}/deploy-summary`) as { rollback: { confirmation: string; body: { expectedRevision: number } } };
+    await overview.getByRole('button', { name: `Roll back to ${base.slice(0, 7)}`, exact: true }).click(); await expect(overview.getByRole('button', { name: 'Confirm rollback', exact: true })).toBeVisible();
+    await expect(overview.getByText(rollbackModel.rollback.confirmation, { exact: true })).toBeVisible(); await page.screenshot({ path: info.outputPath(`deploy-rollback-confirm-${layout(info)}.png`) });
+    await overview.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await overview.getByRole('button', { name: `Roll back to ${base.slice(0, 7)}`, exact: true }).click(); await overview.getByRole('button', { name: 'Confirm rollback', exact: true }).click();
+    const rollbackStage = async () => ProjectDeployViewSchema.parse(await read(page, `${PROJECT}/deploys`)).records.find(row => row.commit === commit)?.monitor?.stage;
+    await expect.poll(rollbackStage, { timeout: 60_000 }).toBe('rollback-one');
+    await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 1 }); await pulse();
+    await expect.poll(rollbackStage, { timeout: 60_000 }).toBe('rollback-five');
+    await control('/projects/clock', { schema: 'fixture-project-clock-v1', advanceMinutes: 4 }); await pulse();
+    await expect.poll(async () => ProjectDeployViewSchema.parse(await read(page, `${PROJECT}/deploys`)).records.find(row => row.commit === commit)?.rollback?.result, { timeout: 60_000 }).toBe('done');
+    await page.reload(); await sectionTab(page, info, 'Threads'); await expect(page.locator('.pw-last-deploy').getByText(new RegExp(`Last deploy: ${base.slice(0, 7)}`))).toBeVisible(LONG);
+    await page.screenshot({ path: info.outputPath(`deploy-rollback-result-${layout(info)}.png`) }); expect(errors).toEqual([]);
   } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
 });
 

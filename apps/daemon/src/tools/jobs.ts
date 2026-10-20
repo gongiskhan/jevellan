@@ -1,7 +1,7 @@
-import { newId, ownerClock, type ProjectDaily, type ProjectDeploy, type ProjectJob, type ProjectJobRun } from '@jevellan/core';
+import { newId, ownerClock, type ProjectDaily, type ProjectJob, type ProjectJobRun } from '@jevellan/core';
 import { capLines, projectJobsView } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
-import { ownerRoutineSave } from '../project-work-api.js';
+import { ownerDeployRollback, ownerRoutineSave } from '../project-work-api.js';
 
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 const dayNames: Record<string, string> = { mon: 'Mondays', tue: 'Tuesdays', wed: 'Wednesdays', thu: 'Thursdays', fri: 'Fridays', sat: 'Saturdays', sun: 'Sundays' };
@@ -11,8 +11,8 @@ type Item = { kind: 'daily'; daily: ProjectDaily; job: ProjectJob | null } | { k
 /** Everything the jobs tool reads: the night items, command jobs, runs, the window and deploys of a project. */
 async function load(context: OwnerContext) {
   const engine = context.app.projectWork; const projectId = context.project.id;
-  const [daily, deploys, view, goals] = await Promise.all([engine.daily.view(projectId), engine.deploys.view(projectId), engine.view(projectId), engine.goalList(projectId)]);
-  return { routines: projectJobsView(daily, view.settings, goals.goals), daily, deploys: deploys.records, settings: view.settings, tz: view.settings.nightlyWindow.timezone };
+  const [daily, deploy, view, goals] = await Promise.all([engine.daily.view(projectId), engine.deploys.summary(projectId), engine.view(projectId), engine.goalList(projectId)]);
+  return { routines: projectJobsView(daily, view.settings, goals.goals), daily, deploy, settings: view.settings, tz: view.settings.nightlyWindow.timezone };
 }
 /** A job or night item by name, slug, id, J run id or the words "night"/"review". */
 function find(data: Awaited<ReturnType<typeof load>>, token: string): Item {
@@ -85,11 +85,10 @@ export const jobs: OwnerHandler = async (context) => {
     }
     case 'deploy': {
       const open = (await engine.view(projectId)).decisions.open.find(row => row.deploy);
-      const deployed = [...data.deploys].filter(row => row.deployedAt).sort((a, b) => b.deployedAt!.localeCompare(a.deployedAt!))[0];
       const lines = open ? [`${tools.ids.one(projectId, 'W', open.id)} ${open.question}`, `Options: ${open.options.map(option => option.label).join(', ')} · answer it with respond ${tools.ids.one(projectId, 'W', open.id)}`] : ['No deploy message is open.'];
-      if (deployed) lines.push(`Last deploy: ${deployed.commit.slice(0, 7)}, ${ownerClock(deployed.deployedAt!, now, tz)} · health after: ${deployed.health.after.length ? deployed.health.after.map(row => `${settings.healthChecks.find(check => check.id === row.checkId)?.name ?? row.checkId} ${row.passed ? 'passed' : 'failed'}`).join(', ') : 'not run'} · rollback to ${deployed.previousCommit?.slice(0, 7) ?? 'the previous commit'}: ${rollbackAvailability(deployed, data.deploys)}`);
+      if (data.deploy.toolLine) lines.push(data.deploy.toolLine, ...(data.deploy.desktopLine ? [data.deploy.desktopLine] : []));
       lines.push(`Mode: ${settings.deploy.mode}${tools.projectSettings(projectId).deploy.paused ? ' (paused)' : ''}`);
-      return { text: capLines(lines) };
+      return { text: capLines(lines), data: data.deploy };
     }
     case 'health': {
       const view = await app.projectHealthRequest({ schema: 'project-health-request-v1', project: projectId, operation: 'list' });
@@ -161,26 +160,18 @@ export const jobs: OwnerHandler = async (context) => {
     }
     case 'rollback': {
       if (context.request.caller.startsWith('remote:')) throw new OwnerRefusal('Deploys and rollbacks are not available remotely.', 'remote_refused', 403);
-      const deployed = [...data.deploys].filter(row => row.deployedAt && !row.rollback).sort((a, b) => b.deployedAt!.localeCompare(a.deployedAt!))[0];
-      if (!deployed) throw new OwnerRefusal('Rollback not available: nothing was deployed through Jevellan yet.', 'rollback_unavailable', 409);
-      const availability = rollbackAvailability(deployed, data.deploys);
-      if (availability !== 'available') throw new OwnerRefusal(`Rollback not available: ${availability.replace(/^not available \((.*)\)$/u, '$1')}.`, 'rollback_unavailable', 409);
-      if (args.confirm !== true) return { text: `Rolling production back to ${deployed.previousCommit!.slice(0, 7)} replaces ${deployed.commit.slice(0, 7)} (deployed ${ownerClock(deployed.deployedAt!, now, tz)}, ${deployed.threads.length} threads). Call again with confirm to do it.` };
-      const row = await engine.deploys.rollback(projectId, deployed.id, deployed.revision);
+      const plan = data.deploy.rollback;
+      if (!plan) throw new OwnerRefusal(data.deploy.current ? 'Rollback not available: no current deployment has an available rollback record.' : 'Rollback not available: nothing was deployed through Jevellan yet.', 'rollback_unavailable', 409);
+      if (!plan.enabled && !(args.confirm === true && plan.pending)) throw new OwnerRefusal(`Rollback not available: ${plan.refusal}`, 'rollback_unavailable', 409);
+      if (args.confirm !== true) return { text: plan.detail };
+      const row = await ownerDeployRollback(app, projectId, plan.deployId, plan.body);
       const run = row.rollbackPending?.taskId ? undefined : row.rollback?.jobRunId;
-      return { text: `Rolling back to ${deployed.previousCommit!.slice(0, 7)}${run ? ` (${tools.ids.one(projectId, 'J', run)})` : ''}. Health checks run after; the result is pushed.` };
+      return { text: `Rolling back to ${row.previousCommit!.slice(0, 7)}${run ? ` (${tools.ids.one(projectId, 'J', run)})` : ''}. Health checks run after; the result is pushed.` };
     }
   }
   throw new OwnerRefusal('jobs takes list, show, history, night, deploy, health, run, pause, resume, schedule, health_run, rollback.', 'unknown_action');
 };
 
-function rollbackAvailability(deployed: ProjectDeploy, all: readonly ProjectDeploy[]): string {
-  const latest = [...all].filter(row => row.deployedAt).sort((a, b) => b.deployedAt!.localeCompare(a.deployedAt!))[0];
-  if (latest?.id !== deployed.id) return 'not available (a later deploy replaced it)';
-  if (deployed.rollback) return 'not available (it was already rolled back)';
-  if (!deployed.rollbackAvailable || !deployed.previousCommit) return `not available (no image for ${deployed.previousCommit?.slice(0, 7) ?? 'the previous commit'})`;
-  return 'available';
-}
 const withoutIdentity = <T extends { schema?: unknown; projectId?: unknown; revision?: unknown }>(value: T) => { const { schema: _s, projectId: _p, revision: _r, ...rest } = value; void _s; void _p; void _r; return rest; };
 function dailyUpdate(row: ProjectDaily, change: Partial<Pick<ProjectDaily, 'enabled' | 'order' | 'days'>>) {
   const { schema: _s, id: _i, projectId: _p, revision, createdAt: _c, updatedAt: _u, requestDigest: _d, reviewFromVersion: _v, reviewFromOwner: _o, enabledSince: _e, ...fields } = row; void _s; void _i; void _p; void _c; void _u; void _d; void _v; void _o; void _e;

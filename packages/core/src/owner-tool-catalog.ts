@@ -45,7 +45,7 @@ export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
     actions: [read('list'), read('editor', { kind: z.enum(['job', 'daily']), id: IdSchema.optional().describe('Definition id from jobs list data; omit for a new definition.') }, true),
       write('save', { id: IdSchema.optional().describe('Definition id for editing; omit for creation.'), request: RoutineEditorSaveRequestSchema }, true),
       read('show', { job: id('Job or night item name, slug or id.') }), read('history', { job: id('Job or night item name, slug or id.'), limit: z.number().int().min(1).max(50).optional() }),
-      read('night'), read('deploy'), read('health'),
+      read('night'), read('deploy', {}, true), read('health'),
       write('run', { job: id('Job or night item name, slug or id.') }), write('pause', { job: id('Job or night item name, slug or id.') }), write('resume', { job: id('Job or night item name, slug or id.') }),
       write('schedule', { job: id('Job, night item or "night".'), windowStart: clock.optional(), days: z.array(z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])).min(1).max(7).optional(),
         order: z.array(z.string().min(1).max(120)).min(1).max(30).optional(), everyMinutes: z.number().int().min(5).max(1440).optional(), between: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/u).optional(),

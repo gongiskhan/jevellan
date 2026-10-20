@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ProjectDeploySchema, ProjectDeployViewSchema, ProjectJobListViewSchema, type ProjectDeploy, type ProjectJob, type ProjectWorkSettings } from '@jevellan/core/client';
+import { ProjectDeploySchema, ProjectDeploySummarySchema, ProjectJobListViewSchema, type ProjectDeploySummary, type ProjectJob, type ProjectWorkSettings } from '@jevellan/core/client';
 import { api } from './api.js';
 export function DeploySettings({ projectId, value, change, fail }: { projectId: string; value: ProjectWorkSettings; change(patch: Partial<ProjectWorkSettings>): void; fail(error: unknown): void }) {
   const [jobs, setJobs] = useState<ProjectJob[]>([]);
@@ -9,14 +9,13 @@ export function DeploySettings({ projectId, value, change, fail }: { projectId: 
     <p>Deploys build the commit shown in the owner’s message. Health checks run before and after release.</p></fieldset>;
 }
 export function LastDeploy({ projectId, fail }: { projectId: string; fail(error: unknown): void }) {
-  const [rows, setRows] = useState<ProjectDeploy[]>([]), [confirm, setConfirm] = useState(false), [busy, setBusy] = useState(false), [refresh, setRefresh] = useState(0);
-  useEffect(() => { const controller = new AbortController(); const read = () => { void api(`/api/projects/${projectId}/deploys`, ProjectDeployViewSchema, 'GET', undefined, { signal: controller.signal }).then(view => setRows(view.records)).catch(error => { if (!controller.signal.aborted) fail(error); }); }; read(); const timer = setInterval(read, 15000); return () => { clearInterval(timer); controller.abort(); }; }, [projectId, fail, refresh]);
-  const events = rows.flatMap(row => [...(row.deployedAt ? [{ at: row.deployedAt, commit: row.releaseUncertain ? null : row.commit, source: row }] : []), ...(row.rollback ? [{ at: row.rollback.at, commit: row.rollback.result === 'done' ? row.rollback.toCommit : null, source: row }] : [])]).sort((a, b) => b.at.localeCompare(a.at));
-  const current = events[0], latest = current?.commit ? rows.findLast(row => row.commit === current.commit && row.deployedAt && !row.rollback) : undefined;
-  if (!current) return null;
-  return <div className="pw-last-deploy"><p>Last deploy: {current.commit?.slice(0, 7) ?? 'unknown'}, {new Date(current.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: current.source.timezone })}</p>
-    {current.source.checks.map(check => { const run = current.source.messageHealth.find(run => run.checkId === check.id), step = run?.steps.find(step => !step.passed); return <p key={check.id}>{check.name}: {run ? `${run.passed ? 'passed' : 'failed'} at ${new Date(run.at).toLocaleTimeString('en-GB', { timeZone: current.source.timezone, hour: '2-digit', minute: '2-digit' })}${step ? `: ${step.name}: ${step.reason ?? 'failed'}` : ''}` : 'not run yet'}</p>; })}
-    {current.source.desktop?.state === 'skipped' && <p>Desktop build skipped: {current.source.desktop.reason}</p>}
-    {latest?.previousCommit && latest.rollbackAvailable && !latest.rollbackPending && (confirm ? <div role="group" aria-label="Confirm rollback"><p>Roll back production to {latest.previousCommit.slice(0, 7)}?</p><button type="button" disabled={busy} onClick={() => { setBusy(true); void api(`/api/projects/${projectId}/deploys/${latest.id}/rollback`, ProjectDeploySchema, 'POST', { schema: 'project-deploy-rollback-request-v1', clientRequestId: `rollback_${latest.id}_${latest.revision}`, expectedRevision: latest.revision }).then(() => { setConfirm(false); setRefresh(value => value + 1); }).catch(fail).finally(() => setBusy(false)); }}>Confirm rollback</button><button type="button" className="secondary" onClick={() => setConfirm(false)}>Cancel</button></div> : <button type="button" className="secondary small" onClick={() => setConfirm(true)}>Roll back to {latest.previousCommit.slice(0, 7)}</button>)}
+  const [view, setView] = useState<ProjectDeploySummary | null>(null), [confirm, setConfirm] = useState<string | null>(null), [busy, setBusy] = useState(false), [refresh, setRefresh] = useState(0);
+  useEffect(() => { const controller = new AbortController(); const read = () => { void api(`/api/projects/${projectId}/deploy-summary`, ProjectDeploySummarySchema, 'GET', undefined, { signal: controller.signal }).then(setView).catch(error => { if (!controller.signal.aborted) fail(error); }); }; read(); const timer = setInterval(read, 15000); return () => { clearInterval(timer); controller.abort(); }; }, [projectId, fail, refresh]);
+  if (!view?.current) return null;
+  const plan = view.rollback;
+  return <div className="pw-last-deploy"><p>{view.current.label}</p>
+    {view.healthLines.map((line, i) => <p key={i}>{line}</p>)}
+    {view.desktopLine && <p>{view.desktopLine}</p>}
+    {plan && (plan.enabled && confirm === plan.body.clientRequestId ? <div role="group" aria-label="Confirm rollback"><p>{plan.confirmation}</p><button type="button" disabled={busy} onClick={() => { setBusy(true); void api(plan.path, ProjectDeploySchema, 'POST', plan.body).then(() => { setConfirm(null); setRefresh(value => value + 1); }).catch(fail).finally(() => setBusy(false)); }}>Confirm rollback</button><button type="button" className="secondary" onClick={() => setConfirm(null)}>Cancel</button></div> : <><button type="button" className="secondary small" disabled={busy || !plan.enabled} onClick={() => setConfirm(plan.body.clientRequestId)}>{plan.label}</button>{plan.refusal && <p>{plan.refusal}</p>}</>)}
   </div>;
 }
