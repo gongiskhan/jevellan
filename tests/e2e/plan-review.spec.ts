@@ -1,3 +1,4 @@
+import { planContentView } from '../../packages/core/dist/client.js';
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { ConversationEventSchema, ConversationPublicSchema, HandoffSchema, StretchSchema } from '../../packages/core/dist/client.js';
@@ -36,7 +37,7 @@ test('plans are readable, wait for acceptance, and offer revision with stale-pla
   await page.context().route(`**/api/conversations/${id}`, route => route.fulfill({ json: snapshot }));
   await page.context().route(`**/api/conversations/${id}/events`, route => route.fulfill({ contentType: 'text/event-stream', body: payloads.map(payload => `id: ${payload.event.id}\nevent: conversation\ndata: ${JSON.stringify(payload)}\n\n`).join('') }));
   let failRead = true;
-  await page.context().route(`**/api/conversations/${id}/read?*`, route => failRead ? route.fulfill({ status: 400, json: { error: 'Simulated plan load failure' } }) : route.fulfill({ json: { schema: 'conversation-read-v1', pointer, content } }));
+  await page.context().route(`**/api/conversations/${id}/plan-read`, route => failRead ? route.fulfill({ status: 400, json: { error: 'Simulated plan load failure' } }) : route.fulfill({ json: { schema: 'conversation-plan-read-v1', projectId: 'browser_fixture', conversationId: id, pointer, view: planContentView(content) } }));
   let change: Record<string, unknown> | undefined;
   await page.context().route(`**/api/conversations/${id}/messages`, async route => { change = route.request().postDataJSON() as Record<string, unknown>; await route.fulfill({ json: snapshot }); });
   let approval: Record<string, unknown> | undefined;
@@ -48,6 +49,7 @@ test('plans are readable, wait for acceptance, and offer revision with stale-pla
   await page.goto(`/conversations/${id}`);
   const plan = page.getByRole('region', { name: 'Plan from step 1' });
   await expect(plan.getByRole('button', { name: 'Approve plan', exact: true })).toBeDisabled();
+  await expect(plan.getByRole('button', { name: 'Retry loading plan', exact: true })).toBeVisible();
   failRead = false; await plan.getByRole('button', { name: 'Retry loading plan', exact: true }).click();
   await expect(plan.getByRole('heading', { name: 'Goal', exact: true })).toBeVisible();
   await expect(plan.locator('strong')).toHaveText('explicit consent');

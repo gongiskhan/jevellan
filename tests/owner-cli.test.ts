@@ -1,3 +1,4 @@
+import { conversationPlanFixture } from './helpers/conversation-plan-fixture.js';
 import { accountEditorFixture } from './helpers/account-editor-fixture.js';
 import { ProjectEnvironmentEditorSchema } from '../packages/core/dist/index.js';
 import { ProjectPlacementEditorSchema } from '../packages/core/dist/index.js';
@@ -435,4 +436,12 @@ test('CLI conversation Why and step correction templates retain the canonical re
   const preview = StepCorrectionEditorSchema.parse(result());
   for (let attempt = 0; attempt < 2; attempt++) expect(await callCommand(['jev', 'correction_save', '--conversation', id, '--request', JSON.stringify(preview.requests.noted)], f.homes)).toBe(0);
   expect((await f.app.conversations.view(id)).overrides.filter(row => row.request.clientRequestId === preview.requests.noted!.clientRequestId)).toHaveLength(1); expect(f.fake.starts.length).toBe(1);
+});
+
+test('CLI plan reader shares the typed plan model without starting more work', async () => {
+  const made = await conversationPlanFixture(true); f = made.f; const starts = f.fake.starts.length;
+  const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['jev', 'plan_read', '--project', 'project', '--conversation', made.id, '--request', JSON.stringify({ schema: 'conversation-plan-read-request-v1', pointer: made.pointer })], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
+  expect(result).toMatchObject({ ok: true, data: { schema: 'conversation-plan-read-v1', projectId: 'project', conversationId: made.id, pointer: made.pointer, view: { schema: 'plan-content-view-v1', root: { kind: 'fields' } } } }); expect(f.fake.starts).toHaveLength(starts);
 });

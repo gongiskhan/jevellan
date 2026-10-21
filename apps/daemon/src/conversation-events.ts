@@ -2,16 +2,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { ConversationEventSchema, type LedgerEvent } from '@jevellan/core';
 import type { ConversationLedger } from '@jevellan/conversations';
 
-/** Process identities are recovery data, never browser timeline content. */
-export function publicConversationData(value: unknown): unknown {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
-  const data = value as Record<string, unknown>;
-  if (data.schema === 'work-control-v1' && data.kind === 'native') return { schema: 'conversation-process-v1', stretch: data.n };
-  if (data.schema === 'stretch-v2') { const copy = { ...data }; delete copy.native; return copy; }
-  if (data.schema === 'stretch-finished-v1') return { ...data, stretch: publicConversationData(data.stretch) };
-  if ('id' in data && 't' in data && 'type' in data && 'data' in data) return { ...data, data: publicConversationData(data.data) };
-  return value;
-}
+import { publicConversationData } from '@jevellan/core';
+export { publicConversationData } from '@jevellan/core';
 
 /** A ledger an event stream follows: replay after a cursor, then a wake-up after every durable append. */
 export type StreamedLedger<E extends { id: number }> = { events(afterId?: number, limit?: number): E[]; subscribe(listener: () => void): () => void };

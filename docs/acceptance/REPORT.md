@@ -2521,3 +2521,5 @@ Bridge continuation area 6f: decisions 149–150 record the shared calendar-day 
 Bridge continuation area 6g: decisions 151–152 record shared transcript/history presentation, additive acyclic schemas, the map/current-focus difference, exact helper parity and simulated gates. Legacy CACHE2 remains failed twice; its later steps are not run. Scoped recorded-history UI evidence does not qualify checkpoint lifecycle or live acceptance.
 
 Bridge continuation area 6h: decisions 153–154 record shared interrupt availability/choice policy, deliberately local retry identity, unchanged canonical writers and simulated backend/desktop/image/source evidence.
+
+Bridge continuation area 7a: decisions 155–156 record shared plan-content projection, the explicit scoped reader choice and unchanged public-data boundary, with pre-product flaky-baseline evidence, backend/member/tool gates and the complete existing desktop plan journey. Approval row 168 remains planned for area 7b.

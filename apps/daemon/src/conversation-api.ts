@@ -5,7 +5,7 @@ import { publicConversationData, streamConversation } from './conversation-event
 import { json, requestBody } from './http.js';
 
 const reads = new Set(['', 'changes', 'file', 'events', 'read', 'choices-view', 'step-editor']);
-const readPosts = new Set(['decision-why', 'step-preview']);
+const readPosts = new Set(['decision-why', 'step-preview', 'plan-read']);
 const writes = new Set(['messages', 'manual', 'resume', 'retry-external', 'choices', 'choices-editor', 'cancel', 'approve-plan', 'settle', 'correct', 'retry-redo', 'adopt-changes', 'rename', 'finish-outside']);
 export type ConversationRoute = { id: string; operation: string; stretch?: number };
 
@@ -36,6 +36,7 @@ export async function handleConversation(app: Application, request: IncomingMess
     send(ConversationReadSchema.parse({ schema: 'conversation-read-v1', pointer, content: publicConversationData(app.conversations.ledger(id).read(pointer)) })); return;
   }
   const input = await requestBody(request);
+  if (operation === 'plan-read') { send(await app.conversations.planRead(id, input)); return; }
   if (operation === 'decision-why') { send(await app.conversations.decisionWhy(id, input)); return; }
   if (operation === 'step-preview') { send(await app.conversations.previewStepCorrection(id, input)); return; }
   if (operation === 'rename') { send(await app.conversations.rename(id, input)); return; }

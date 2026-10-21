@@ -1,3 +1,4 @@
+import { conversationPlanFixture } from './helpers/conversation-plan-fixture.js';
 import { accountEditorFixture } from './helpers/account-editor-fixture.js';
 import { ProjectEnvironmentEditorSchema } from '../packages/core/dist/index.js';
 import { ProjectPlacementEditorSchema } from '../packages/core/dist/index.js';
@@ -403,4 +404,10 @@ test('the official MCP transport exposes recorded conversation Why and canonical
   expect(preview.requests).toEqual(ui.requests);
   for (let attempt = 0; attempt < 2; attempt++) expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'correction_save', conversation: id, request: preview.requests.noted } })).structuredContent)).toMatchObject({ ok: true });
   expect((await f.app.conversations.view(id)).overrides.filter(row => row.request.clientRequestId === preview.requests.noted!.clientRequestId)).toHaveLength(1); expect(f.fake.starts.length).toBe(1);
+});
+
+test('MCP plan reader shares the typed plan model without starting more work', async () => {
+  const made = await conversationPlanFixture(true); f = made.f; const starts = f.fake.starts.length, mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'plan_read', project: 'project', conversation: made.id, request: { schema: 'conversation-plan-read-request-v1', pointer: made.pointer } } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'conversation-plan-read-v1', projectId: 'project', conversationId: made.id, pointer: made.pointer, view: { schema: 'plan-content-view-v1', root: { kind: 'fields' } } } }); expect(f.fake.starts).toHaveLength(starts);
 });

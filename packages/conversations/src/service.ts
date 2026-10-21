@@ -1,3 +1,4 @@
+import { ConversationPlanReadRequestSchema, ConversationPlanReadSchema, planContentView, publicConversationData } from '@jevellan/core';
 import { ConversationLocationSchema, ConversationDecisionWhyRequestSchema, StepCorrectionPreviewSchema } from '@jevellan/core';
 import { conversationStepPresentation } from './step-presentation.js';
 import { conversationDecisionWhy } from './decision-view.js';
@@ -571,6 +572,12 @@ export class ConversationService {
     const ledger = this.#load(id).ledger; const decisions = new Map<string, DecisionRecord>();
     for (const event of ledger.events().filter((entry) => entry.type === 'decision')) { const decision = DecisionRecordSchema.parse(ledger.data(event)); decisions.set(decision.id, decision); }
     return [...decisions.values()];
+  }
+  async planRead(id: string, raw: unknown) {
+    await this.ready;
+    const input = ConversationPlanReadRequestSchema.parse(raw), work = this.#load(id), source = work.load().conversation;
+    const content = publicConversationData(work.ledger.read(input.pointer));
+    return ConversationPlanReadSchema.parse({ schema: 'conversation-plan-read-v1', projectId: source.projectId, conversationId: id, pointer: input.pointer, view: planContentView(content) });
   }
   async view(id: string) {
     const work = this.#load(id); const view = work.load();

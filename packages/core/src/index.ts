@@ -207,3 +207,6 @@ export * from './transcript-turn-presentation.js';
 export * from './session-history-view.js';
 
 export * from './project-thread-steering.js';
+
+export * from './plan-content-view.js';
+export * from './public-conversation-data.js';

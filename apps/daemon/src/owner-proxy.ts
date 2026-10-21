@@ -1,3 +1,4 @@
+import { ConversationPlanReadSchema, ConversationPlanReadRequestSchema } from '@jevellan/core';
 import { ConversationDecisionWhyRequestSchema, ConversationDecisionWhyViewSchema, ConversationPublicSchema, CorrectStepSchema, StepCorrectionEditorSchema, StepCorrectionPreviewSchema } from '@jevellan/core';
 import { once } from 'node:events';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -52,7 +53,7 @@ export async function proxyConversation(app: Application, request: IncomingMessa
   return true;
 }
 
-export type OwnerConversationOperation = 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
+export type OwnerConversationOperation = 'plan-read' | 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
 
 /** Closed owner operations bind the indexed resource before issuing temporary peer authority. */
 export async function ownerConversationOperation(app: Application, projectId: string, id: string, operation: OwnerConversationOperation, raw?: unknown) {
@@ -60,6 +61,7 @@ export async function ownerConversationOperation(app: Application, projectId: st
   if (location.projectId !== projectId) throw failure('This composer or decision belongs to another conversation or project.', 409);
   const spec = (() => {
     switch (operation) {
+      case 'plan-read': { const body = ConversationPlanReadRequestSchema.parse(raw); return { suffix: 'plan-read', method: 'POST' as const, body, local: () => app.conversations.planRead(id, body) }; }
       case 'composer-editor': return { suffix: 'choices-view', method: 'GET' as const, body: undefined, local: () => app.conversations.composerEditor(id) };
       case 'composer-save': { const body = ComposerChoiceSchema.parse(raw); return { suffix: 'choices-editor', method: 'POST' as const, body, local: () => app.conversations.saveComposerEditor(id, body) }; }
       case 'decision-why': { const body = ConversationDecisionWhyRequestSchema.parse(raw); return { suffix: 'decision-why', method: 'POST' as const, body, local: () => app.conversations.decisionWhy(id, body) }; }
@@ -72,11 +74,12 @@ export async function ownerConversationOperation(app: Application, projectId: st
   const path = `/api/conversations/${id}/${spec.suffix}`;
   if (!conversationRoute(path, spec.method)) throw failure('Conversation operation not found.', 404);
   const bind = (received: unknown) => {
-    const value = operation === 'correction-save' ? parseReply(ConversationPublicSchema, received)
+    const value = operation === 'plan-read' ? parseReply(ConversationPlanReadSchema, received) : operation === 'correction-save' ? parseReply(ConversationPublicSchema, received)
       : operation === 'decision-why' ? parseReply(ConversationDecisionWhyViewSchema, received)
         : operation === 'step-editor' || operation === 'step-preview' ? parseReply(StepCorrectionEditorSchema, received) : parseReply(ConversationComposerViewSchema, received);
     const actual = 'conversation' in value ? { project: value.conversation.projectId, id: value.conversation.id } : { project: value.projectId, id: value.conversationId };
     if (actual.project !== projectId || actual.id !== id) throw failure('The returned model belongs to another conversation or project.', 502);
+    if (operation === 'plan-read' && 'pointer' in value && value.pointer !== ConversationPlanReadRequestSchema.parse(spec.body).pointer) throw failure('The returned plan does not match the request.', 502);
     if (operation === 'decision-why' && 'decisionId' in value && value.decisionId !== ConversationDecisionWhyRequestSchema.parse(spec.body).decisionId) throw failure('The returned decision does not match the request.', 502);
     if ('stretch' in value) {
       const wanted = operation === 'step-editor' ? z.number().int().positive().parse(raw) : StepCorrectionPreviewSchema.parse(spec.body).stretch;

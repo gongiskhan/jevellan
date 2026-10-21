@@ -35,6 +35,7 @@ export const jev: OwnerHandler = async (context) => {
       return { text: context.action === 'correction_save' ? 'Recorded correction.' : context.action === 'conversation_why' ? 'Why this step.' : 'Change this step.', data };
     }
 
+    case 'plan_read': return { text: 'Recorded plan.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'plan-read', args.request) };
     case 'composer_editor': case 'composer_preview': case 'composer_save': {
       if (typeof args.conversation === 'string') {
         if (args.initial !== undefined) throw new OwnerRefusal('Read the existing conversation without an initial draft.', 'invalid_arguments');
