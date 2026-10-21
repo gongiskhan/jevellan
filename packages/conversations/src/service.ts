@@ -1,3 +1,4 @@
+import { ConversationRecoveryCommandSchema, conversationRecoveryEditor, conversationRecoveryDraft } from '@jevellan/core';
 import { ConversationSettlementCommandSchema, conversationSettlementEditor, conversationSettlementDraft } from '@jevellan/core';
 import { ConversationControlCommandSchema, conversationControlEditor, conversationControlDraft } from '@jevellan/core';
 import { ConversationMessageCommandSchema, conversationMessageDraft } from '@jevellan/core';
@@ -502,6 +503,15 @@ export class ConversationService {
   }
   async ownerDevice(id: string): Promise<string> { return (await this.location(id)).ownerDeviceId; }
   async corrections(ids?: string[]) { await this.indexes.flush(); const records = await this.options.indexes.corrections(); return ids ? records.filter(record => ids.includes(record.id)) : records; }
+  async recoveryEditor(id: string, raw: unknown) { await this.ready; return conversationRecoveryEditor(await this.view(id), raw); }
+  async recoveryDraft(id: string, raw: unknown) {
+    await this.ready;
+    return conversationRecoveryDraft(await this.view(id), raw, prefix => `${prefix}_${randomUUID()}`, value => createHash('sha256').update(value).digest('hex'));
+  }
+  async recoveryCommand(id: string, raw: unknown) {
+    const command = ConversationRecoveryCommandSchema.parse(raw);
+    return command.operation === 'adopt' ? this.adoptChanges(id, command.body) : this.retryRedo(id, command.body);
+  }
   async settlementEditor(id: string, raw: unknown) {
     await this.ready; const view = await this.view(id);
     return conversationSettlementEditor(view, await this.#project(view.conversation.projectId), raw);

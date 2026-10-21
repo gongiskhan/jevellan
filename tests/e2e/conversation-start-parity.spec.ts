@@ -1,4 +1,6 @@
 import { join } from 'node:path';
+import { ConversationRecoveryCommandSchema, ConversationRecoveryEditorSchema } from '../../packages/core/dist/index.js';
+import { blockedConversationReview, blockedConversationRedo, enqueueConversationHandoff } from '../helpers/conversation-recovery-fixture.js';
 import { ConversationSettlementCommandSchema, ConversationSettlementEditorSchema } from '../../packages/core/dist/index.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -6,6 +8,46 @@ import { ConversationControlCommandSchema, ConversationMessageCommandSchema, Con
 import { projectFixture } from '../helpers/project-fixture.js';
 import { expect, test } from './fixtures.js';
 import { closeConversationSettings, openConversationSettings } from './navigation.js';
+
+for (const branchPolicy of ['main', 'external'] as const) test(`ADOPTPAR1 browser acceptance and MCP share the original reviewed checkpoint (${branchPolicy})`, async ({ page, context }, info) => {
+  const f = await projectFixture({ control: true, branchPolicy }); let client: Client | undefined;
+  try {
+    const { view, changes, head } = await blockedConversationReview(f, 'adoption_parity'), id = view.conversation.id, refs = f.git(f.checkout, 'show-ref'), status = f.git(f.checkout, 'status', '--porcelain');
+    const separator = f.cookie.indexOf('='); await context.addCookies([{ name: f.cookie.slice(0, separator), value: f.cookie.slice(separator + 1), url: f.base, httpOnly: true, sameSite: 'Lax' }]);
+    await page.goto(f.base + '/conversations/' + id);
+    const transport = new StdioClientTransport({ command: process.execPath, args: [join(import.meta.dirname, '..', '..', 'bin', 'jevellan.mjs'), 'mcp'], cwd: f.checkout,
+      env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', JEVELLAN_HOME: f.homes.root }, stderr: 'ignore' });
+    client = new Client({ name: 'adoption-parity-fixture', version: '1' }); await client.connect(transport);
+    const read = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_recovery_editor', conversation: id, request: { schema: 'conversation-recovery-editor-request-v1', kind: 'adopt', changes } } })).structuredContent);
+    expect(read.ok).toBe(true); if (!read.ok) throw new Error('The canonical adoption editor was refused.'); const editor = ConversationRecoveryEditorSchema.parse(read.data); expect(editor.enabled).toBe(true);
+    await page.getByRole('button', { name: 'Changes', exact: true }).click(); const panel = page.getByRole('dialog', { name: 'Changes', exact: true }); await expect(panel.getByRole('heading', { name: editor.title, exact: true })).toBeVisible(); await expect(panel).toContainText(editor.text); await expect(panel.getByRole('button', { name: editor.refreshLabel!, exact: true })).toBeEnabled();
+    await page.screenshot({ path: info.outputPath('reviewed-adoption.png'), fullPage: true });
+    const submission = page.waitForRequest(request => request.url() === f.base + '/api/conversations/' + id + '/recovery-command' && request.method() === 'POST');
+    await panel.getByRole('button', { name: editor.submitLabel, exact: true }).click(); await expect(panel).toHaveCount(0); await f.app.conversations.wait(id);
+    const command = ConversationRecoveryCommandSchema.parse((await submission).postDataJSON()); expect(command.operation).toBe('adopt'); if (command.operation !== 'adopt') throw new Error('Expected the exact reviewed adoption command.'); expect(command.body.fingerprint).toBe(changes.recovery!.fingerprint);
+    const accepted = await f.app.conversations.view(id), count = f.app.conversations.ledger(id).events().length; expect(accepted.checkpointBlocks).toHaveLength(0);
+    const replay = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_recover', conversation: id, request: command } })).structuredContent); expect(replay.ok).toBe(true); if (!replay.ok) throw new Error('The canonical adoption receipt was refused.'); expect(ConversationPublicSchema.parse(replay.data).conversation).toEqual(accepted.conversation); expect(f.app.conversations.ledger(id).events()).toHaveLength(count); expect(f.fake.starts).toHaveLength(1); expect(f.git(f.origin, 'rev-parse', 'main')).toBe(head);
+    if (branchPolicy === 'external') { expect(f.git(f.checkout, 'show-ref')).toBe(refs); expect(f.git(f.checkout, 'status', '--porcelain')).toBe(status); } else { expect(f.git(f.checkout, 'rev-parse', 'HEAD')).not.toBe(head); expect(f.git(f.checkout, 'status', '--porcelain')).toBe(''); }
+    await page.screenshot({ path: info.outputPath('accepted-review.png'), fullPage: true });
+  } finally { await client?.close().catch(() => undefined); await f.close(); }
+});
+
+test('REDOPAR1 browser recovery and MCP retry run recorded undo only once', async ({ page, context }, info) => {
+  const f = await projectFixture({ control: true }); let client: Client | undefined;
+  try {
+    const { view, entry, initial } = await blockedConversationRedo(f, 'redo_parity'), id = view.conversation.id;
+    const separator = f.cookie.indexOf('='); await context.addCookies([{ name: f.cookie.slice(0, separator), value: f.cookie.slice(separator + 1), url: f.base, httpOnly: true, sameSite: 'Lax' }]);
+    await page.goto(f.base + '/conversations/' + id);
+    const transport = new StdioClientTransport({ command: process.execPath, args: [join(import.meta.dirname, '..', '..', 'bin', 'jevellan.mjs'), 'mcp'], cwd: f.checkout,
+      env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', JEVELLAN_HOME: f.homes.root }, stderr: 'ignore' });
+    client = new Client({ name: 'redo-parity-fixture', version: '1' }); await client.connect(transport);
+    const read = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_recovery_editor', conversation: id, request: { schema: 'conversation-recovery-editor-request-v1', kind: 'redo', id: entry.id } } })).structuredContent); expect(read.ok).toBe(true); if (!read.ok) throw new Error('The canonical redo editor was refused.'); const editor = ConversationRecoveryEditorSchema.parse(read.data);
+    const heading = page.getByRole('heading', { name: editor.title, exact: true }); await expect(heading).toBeVisible(); const card = heading.locator('..'); await expect(card).toContainText(editor.reason!); await expect(card).toContainText(editor.text); await page.screenshot({ path: info.outputPath('blocked-redo.png'), fullPage: true });
+    enqueueConversationHandoff(f); const submission = page.waitForRequest(request => request.url() === f.base + '/api/conversations/' + id + '/recovery-command' && request.method() === 'POST'); await card.getByRole('button', { name: editor.submitLabel, exact: true }).click(); await expect(heading).toHaveCount(0); await f.app.conversations.wait(id);
+    const command = ConversationRecoveryCommandSchema.parse((await submission).postDataJSON()); expect(command.operation).toBe('redo'); const done = await f.app.conversations.view(id), count = f.app.conversations.ledger(id).events().length; expect(done.redos.at(-1)).toMatchObject({ status: 'completed', retries: [command.body] }); expect(f.git(f.checkout, 'rev-parse', 'HEAD')).toBe(initial); expect(f.fake.starts).toHaveLength(2);
+    const replay = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_recover', conversation: id, request: command } })).structuredContent); expect(replay.ok).toBe(true); if (!replay.ok) throw new Error('The canonical redo receipt was refused.'); expect(ConversationPublicSchema.parse(replay.data).redos).toEqual(done.redos); expect(f.app.conversations.ledger(id).events()).toHaveLength(count); expect(f.fake.starts).toHaveLength(2); expect(f.app.conversations.ledger(id).events().filter(event => event.type === 'undo')).toHaveLength(1); await page.screenshot({ path: info.outputPath('recovered-redo.png'), fullPage: true });
+  } finally { await client?.close().catch(() => undefined); await f.close(); }
+});
 
 for (const branchPolicy of ['main', 'external'] as const) test(`SETTLEPAR1 browser settlement and MCP receipts preserve later work (${branchPolicy})`, async ({ page, context }, info) => {
   const f = await projectFixture({ control: true, branchPolicy }); let client: Client | undefined;

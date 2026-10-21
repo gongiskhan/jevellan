@@ -1,3 +1,4 @@
+import { ConversationRecoveryDraftSchema, ConversationRecoveryPendingSchema, conversationRecoveryEditor } from '@jevellan/core/client';
 import { ConversationSettlementContextSchema, ConversationSettlementEditorSchema, ConversationSettlementDraftSchema, ConversationSettlementPendingSchema, conversationSettlementContext, conversationSettlementEditor } from '@jevellan/core/client';
 import { ConversationControlContextSchema, ConversationControlEditorSchema, ConversationControlDraftSchema, ConversationControlPendingSchema, conversationControlContext, conversationControlEditor, conversationControlPreview } from '@jevellan/core/client';
 import { ConversationMessageDraftRequestSchema, ConversationMessageDraftSchema, ConversationMessagePendingSchema, conversationMessageEditor } from '@jevellan/core/client';
@@ -1095,59 +1096,29 @@ function AcceptChanges({
   onError(error: unknown): void;
 }) {
   const task = useTask(onError);
-  const request = useRef<{ fingerprint: string; id: string } | undefined>(undefined);
-  const review = changes.recovery!;
-  const step = view.stretches.find((entry) => entry.n === changes.stretch)!;
+  const pending = useRef<z.infer<typeof ConversationRecoveryPendingSchema> | undefined>(undefined);
+  const editor = conversationRecoveryEditor(view, { schema: 'conversation-recovery-editor-request-v1', kind: 'adopt', changes });
   return (
     <section className="card">
-      <h3>Accept reviewed changes</h3>
-      <p>
-        {review.mode === 'acknowledge'
-          ? 'Continue acknowledges the files shown here. This project follows its own Git rules; Jevellan will not commit or push these changes.'
-          : 'Continue saves the files shown here as this work’s checkpoint. You can then choose the next step or publish after verification.'}
-      </p>
-      {review.reason && <p className="notice">{review.reason}</p>}
+      <h3>{editor.title}</h3>
+      <p>{editor.text}</p>
+      {editor.reason && <p className="notice">{editor.reason}</p>}
       <div className="actions">
-        <button
-          disabled={
-            task.busy ||
-            view.busy ||
-            !review.fingerprint ||
-            review.generation !== view.conversation.generation
-          }
-          onClick={() =>
-            void task.run(async () => {
-              const fingerprint = review.fingerprint!;
-              if (request.current?.fingerprint !== fingerprint)
-                request.current = { fingerprint, id: `adopt_${clientId()}` };
-              update(
-                await api(
-                  `/api/conversations/${view.conversation.id}/adopt-changes`,
-                  ConversationPublicSchema,
-                  'POST',
-                  {
-                    schema: 'adopt-changes-v1',
-                    clientRequestId: request.current.id,
-                    workId: step.workId,
-                    stretch: step.n,
-                    generation: review.generation,
-                    fingerprint,
-                  },
-                ),
-              );
-              close();
-            })
-          }
-        >
-          {task.busy ? 'Accepting…' : 'Continue'}
-        </button>
-        <button className="secondary" disabled={task.busy} onClick={() => void task.run(refresh)}>
-          Refresh changes
-        </button>
+        <button disabled={task.busy || !editor.enabled} onClick={() => void task.run(async signal => {
+          const draft = await api(`/api/conversations/${view.conversation.id}/recovery-draft`, ConversationRecoveryDraftSchema, 'POST', {
+            schema: 'conversation-recovery-draft-request-v1', request: editor.request, ...(pending.current ? { pending: pending.current } : {}),
+          }, { signal });
+          pending.current = draft.pending ?? undefined;
+          if (!draft.command) return;
+          update(await api(`/api/conversations/${view.conversation.id}/recovery-command`, ConversationPublicSchema, 'POST', draft.command, { signal }));
+          close();
+        })}>{task.busy ? editor.busyLabel : editor.submitLabel}</button>
+        <button className="secondary" disabled={task.busy} onClick={() => void task.run(refresh)}>{editor.refreshLabel}</button>
       </div>
     </section>
   );
 }
+
 function RetryRedo({
   entry,
   view,
@@ -1160,42 +1131,26 @@ function RetryRedo({
   onError(error: unknown): void;
 }) {
   const task = useTask(onError);
-  const request = useRef<{ generation: number; id: string } | undefined>(undefined);
+  const pending = useRef<z.infer<typeof ConversationRecoveryPendingSchema> | undefined>(undefined);
+  const editor = conversationRecoveryEditor(view, { schema: 'conversation-recovery-editor-request-v1', kind: 'redo', id: entry.id, generation: view.conversation.generation });
   return (
     <section className="card">
-      <h2>Resume correction · step {entry.fromStretch}</h2>
-      <p>{entry.reason ?? 'Undo and redo did not finish.'}</p>
-      <p className="muted">
-        Completed undo changes are kept. A redo step that already started will not run twice.
-      </p>
-      <button
-        disabled={task.busy}
-        onClick={() =>
-          void task.run(async () => {
-            if (request.current?.generation !== view.conversation.generation)
-              request.current = { generation: view.conversation.generation, id: `retry_${clientId()}` };
-            update(
-              await api(
-                `/api/conversations/${view.conversation.id}/retry-redo`,
-                ConversationPublicSchema,
-                'POST',
-                {
-                  schema: 'retry-redo-v1',
-                  clientRequestId: request.current.id,
-                  id: entry.id,
-                  generation: request.current.generation,
-                },
-              ),
-            );
-            request.current = undefined;
-          })
-        }
-      >
-        {task.busy ? 'Resuming…' : 'Retry undo and redo'}
-      </button>
+      <h2>{editor.title}</h2>
+      <p>{editor.reason}</p>
+      <p className="muted">{editor.text}</p>
+      <button disabled={task.busy || !editor.enabled} onClick={() => void task.run(async signal => {
+        const draft = await api(`/api/conversations/${view.conversation.id}/recovery-draft`, ConversationRecoveryDraftSchema, 'POST', {
+          schema: 'conversation-recovery-draft-request-v1', request: editor.request, ...(pending.current ? { pending: pending.current } : {}),
+        }, { signal });
+        pending.current = draft.pending ?? undefined;
+        if (!draft.command) return;
+        update(await api(`/api/conversations/${view.conversation.id}/recovery-command`, ConversationPublicSchema, 'POST', draft.command, { signal }));
+        pending.current = undefined;
+      })}>{task.busy ? editor.busyLabel : editor.submitLabel}</button>
     </section>
   );
 }
+
 function SettleWork({
   view,
   project,
