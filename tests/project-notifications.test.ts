@@ -164,7 +164,8 @@ test('a coordinator that stopped and runs again says so once, and a completed tu
   ledger.append({ type: 'coordinator-event', data: { schema: 'coordinator-event-v1', kind: 'user-message', id: 'cev_restart', at: new Date().toISOString(), text: 'Carry on.', clientMessageId: 'owner_restart_1', via: 'bridge' } });
   end(4, 'completed'); end(5, 'completed');
   await f.app.projectWork.notifications.flush();
-  const rows = f.app.hub.list('project-notifications', ProjectNotificationSchema).map(row => row.document).filter(row => row.kind === 'coordinator-unavailable');
+  // General lists sort by hashed id. This assertion verifies the causal stop/recovery sequence.
+  const rows = f.app.hub.listByField('project-notifications', 'projectId', 'project', ProjectNotificationSchema, { order: 'insertion-desc' }).reverse().map(row => row.document).filter(row => row.kind === 'coordinator-unavailable');
   expect(rows.map(row => row.body)).toEqual(['The coordinator stopped: Provider unavailable.', 'The coordinator is running again.']);
 });
 

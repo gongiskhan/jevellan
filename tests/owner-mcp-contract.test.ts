@@ -26,6 +26,17 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP config notification editor shares unknown browser state and notification actions', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'notification_editor' } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'notification-editor-v1', active: null, canEnable: false, devices: [], actions: { test: { path: '/api/notifications/test', method: 'POST' } } } });
+  expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'notification_test' } })).structuredContent)).toMatchObject({ ok: true, data: { schema: 'notification-editor-v1' } });
+  const subscribed = await f.request('/api/notifications/subscriptions', 'POST', { schema: 'push-subscription-input-v1', endpoint: 'https://push.example/mcp-fixture', keys: { p256dh: 'fixture_public', auth: 'fixture_auth' }, label: 'MCP fixture' }); expect(subscribed.status).toBe(200);
+  const id = (await subscribed.json()).subscriptions[0].id;
+  expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'notification_remove', id } })).structuredContent)).toMatchObject({ ok: true, data: { schema: 'notification-editor-v1', devices: [] } });
+  expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP config environment editor exposes canonical limits without password values', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const reply = await mcp.callTool({ name: 'config', arguments: { action: 'environment_editor' } }); expect(reply.isError).toBeFalsy();

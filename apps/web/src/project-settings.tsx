@@ -1,7 +1,6 @@
 import { DeploySettings } from './project-deploy.js';
 import { ProjectHealthEditor } from './project-health.js';
-import { browserPushId } from './notifications.js';
-import { NotificationsViewSchema } from '@jevellan/core/client';
+import { browserNotificationEditor } from './notifications.js';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { EkoaCodeSetupReceiptSchema, ProjectWorkViewSchema, ProjectEnvSecretSummarySchema, ProjectSettingsEditorSchema, ProjectSettingsEditorSavedSchema,
   type ProjectSettingsEditor, type ProjectSettingsSectionKey, type ProjectConfigurationInfo, type ProjectEnvSecretSummary, type ProjectWorkSettings, type ProjectWorkView } from '@jevellan/core/client';
@@ -32,7 +31,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const [work, setWork] = useState<ProjectWorkView>();
   const [routines, setRoutines] = useState<ProjectRoutineSettingsView>();
   const [stale, setStale] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState<boolean | null>(null);
   const [secretValues, setSecretValues] = useState<Record<string, string>>({});
   const [secretStates, setSecretStates] = useState<Record<string, ProjectEnvSecretSummary>>({});
   const path = `/api/projects/${id}/config/editor`;
@@ -47,9 +46,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   }, [read, local.fail]);
   useEffect(() => {
     const controller = new AbortController();
-    void Promise.all([browserPushId(), api('/api/notifications/subscriptions', NotificationsViewSchema, 'GET', undefined, { signal: controller.signal })]).then(([id, view]) => {
-      if (!controller.signal.aborted) setPushEnabled(Boolean(id && view.subscriptions.some(sub => sub.id === id)));
-    }).catch(() => undefined);
+    void browserNotificationEditor(controller.signal).then(view => { if (!controller.signal.aborted) setPushEnabled(view.active); }).catch(() => undefined);
     return () => controller.abort();
   }, []);
   const change = (patch: Partial<ProjectWorkSettings>) => setDraft(value => value && { ...value, ...patch });
@@ -126,10 +123,10 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
             {number('refill', draft.refill.minIntervalMinutes, minIntervalMinutes => change({ refill: { ...draft.refill, minIntervalMinutes } }))}<p className="pw-field-note">{copy.ROUTINES_EDIT_HELP}</p>
           </>)}
           {section('health', <ProjectHealthEditor projectId={id} checks={draft.healthChecks} change={healthChecks => change({ healthChecks })} fail={local.fail} />)}
-          {section('notifications', <fieldset><legend>{copy.PROJECT_NOTIFICATIONS}</legend>{(Object.entries(copy.NOTIFICATION_LEVELS) as Array<[ProjectWorkSettings['notifications']['level'], readonly [string, string]]>).map(([level, [label, help]]) => <label className="pw-notification-level" key={level}><span className="checkbox"><input type="radio" name="notification-level" checked={draft.notifications.level === level} onChange={() => change({ notifications: { ...draft.notifications, level } })} />{label}</span>{help && <span className="pw-field-note">{help}</span>}</label>)}<label className="check"><input type="checkbox" checked={draft.notifications.quietHours.enabled} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, enabled: event.target.checked } } })} />Quiet hours</label>
-            <div className="form-grid"><label>Quiet hours start<input type="time" value={draft.notifications.quietHours.start} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, start: event.target.value } } })} /></label><label>Quiet hours end<input type="time" value={draft.notifications.quietHours.end} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, end: event.target.value } } })} /></label></div>
-            <label>Quiet hours timezone<input value={draft.notifications.quietHours.timezone} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, timezone: event.target.value } } })} /></label>
-            <p className="pw-field-note">Updates wait until quiet hours end, then arrive as one summary. Urgent production questions arrive immediately.</p><>{!pushEnabled && <p className="pw-field-note">{copy.NOTIFICATION_DEVICE_HELP}</p>}</></fieldset>)}
+          {section('notifications', editor.notificationInfo ? <fieldset><legend>{copy.PROJECT_NOTIFICATIONS}</legend>{editor.notificationInfo.levels.map(({ value: level, label, help }) => <label className="pw-notification-level" key={level}><span className="checkbox"><input type="radio" name="notification-level" aria-label={label} aria-describedby={help ? `notification-${level}-help` : undefined} checked={draft.notifications.level === level} onChange={() => change({ notifications: { ...draft.notifications, level } })} />{label}</span>{help && <span id={`notification-${level}-help`} className="pw-field-note">{help}</span>}</label>)}<label className="check"><input type="checkbox" checked={draft.notifications.quietHours.enabled} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, enabled: event.target.checked } } })} />{editor.notificationInfo.quietHours.label}</label>
+            <div className="form-grid"><label>{editor.notificationInfo.quietHours.startLabel}<input type="time" required pattern={editor.notificationInfo.quietHours.timePattern} value={draft.notifications.quietHours.start} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, start: event.target.value } } })} /></label><label>{editor.notificationInfo.quietHours.endLabel}<input type="time" required pattern={editor.notificationInfo.quietHours.timePattern} value={draft.notifications.quietHours.end} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, end: event.target.value } } })} /></label></div>
+            <label>{editor.notificationInfo.quietHours.timezoneLabel}<input required maxLength={editor.notificationInfo.quietHours.timezoneMaxLength} value={draft.notifications.quietHours.timezone} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, timezone: event.target.value } } })} /></label>
+            <p className="pw-field-note">{editor.notificationInfo.quietHours.help}</p>{pushEnabled === false && <p className="pw-field-note">{editor.notificationInfo.deviceHelp}</p>}</fieldset> : <p role="status">Notification controls are unavailable. Reload and try again.</p>)}
           {section('usage', <ProjectUsageSection projectId={id} />)}
         </fieldset>
         {local.error && <p role="alert" className="error">{local.error}{stale && <button type="button" className="text-button" disabled={task.busy} onClick={() => void task.run(read)}>{copy.RELOAD}</button>}</p>}

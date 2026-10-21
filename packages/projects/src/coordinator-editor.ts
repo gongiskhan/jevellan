@@ -24,7 +24,7 @@ export function coordinatorEditor(view: ProjectWorkView, configuration: Configur
     efforts: EffortSchema.options.map(value => ({ value, label: input?.presentation ? ({ low: 'Low', medium: 'Medium', high: 'High', xhigh: 'Extra high', max: 'Max' })[value] : value })), effectiveEffort: { requested: fields.effort, actual,
       line: actual === fields.effort ? null : `${fields.effort} → ${actual}: nearest effort this model supports.` }, freshEnabled,
     help: 'These choices apply from the next turn. The current turn can finish.',
-    sessionHelp: 'A model or effort change starts a fresh session when needed. The project notebook and recent conversation carry over.',
+    sessionHelp: 'A model or effort change starts a fresh session when needed. The project notebook and recent messages carry over.',
     savedNotice: 'Coordinator choices saved. They apply from the next turn.', apply: { enabled: refusal === null, refusal },
     request: { previewPath: `${path}/preview`, savePath: path, base },
     saveRequest: refusal ? null : { schema: 'project-coordinator-editor-save-v1', projectId: view.project.id,

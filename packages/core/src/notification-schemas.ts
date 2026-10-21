@@ -22,6 +22,7 @@ export const PushKeysSchema = z.strictObject({ schema: z.literal('web-push-keys-
 export const PushDeliverySchema = z.strictObject({ schema: z.literal('push-delivery-v1'), revision, id: IdSchema, notificationId: IdSchema, subscriptionId: IdSchema,
   attempts: z.number().int().nonnegative(), nextAt: TimestampSchema, sentAt: TimestampSchema.optional(), dropped: z.string().max(200).optional() });
 export const NotificationSubscribeSchema = z.strictObject({ schema: z.literal('push-subscription-input-v1'), endpoint: z.url(), keys, label: PushSubscriptionSchema.shape.label });
+export const NotificationBrowserSubscribeSchema = z.strictObject({ schema: z.literal('push-subscription-input-v2'), endpoint: z.url(), keys, userAgent: z.string().max(4000) });
 export const NotificationOwnerRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ schema: z.literal('notifications-owner-request-v1'), operation: z.literal('view'), ownerSession: z.string().min(1).max(4096) }),
   z.strictObject({ schema: z.literal('notifications-owner-request-v1'), operation: z.literal('subscribe'), ownerSession: z.string().min(1).max(4096), input: NotificationSubscribeSchema }),

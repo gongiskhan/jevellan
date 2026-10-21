@@ -87,3 +87,4 @@ export * from './route-why.js';
 export * from './routine-settings.js';
 export * from './placement-editor.js';
 export * from './environment-editor.js';
+export * from './notification-editor.js';

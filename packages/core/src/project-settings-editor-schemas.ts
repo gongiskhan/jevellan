@@ -3,6 +3,7 @@ import { IdSchema } from './schemas.js';
 import { ProjectWorkSettingsSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema } from './project-schemas.js';
 import { ProjectEnvNameSchema, ProjectEnvSecretSummarySchema } from './project-parity-schemas.js';
 import { ProjectRoutineSettingsViewSchema } from './project-routine-settings-schemas.js';
+import { ProjectNotificationInfoSchema } from './notification-editor-schemas.js';
 
 export const ProjectSettingsSectionKeySchema = z.enum(['general', 'instructions', 'placement', 'limits', 'pull-requests', 'environment', 'routines', 'health', 'notifications', 'usage', 'automation']);
 export const ProjectSettingsNumberKeySchema = z.enum(['maxRunningThreads', 'maxRunningPerDevice', 'threadTurnCap', 'maxNewThreadsPerDay', 'compactAtPercent', 'coordinatorHandoffAtPercent', 'checkpointMinTokens', 'perDeviceLimit', 'maxRounds']);
@@ -22,7 +23,7 @@ export const ProjectSettingsEditorBaseSchema = z.strictObject({ schema: z.litera
 export const ProjectSettingsRiggingSchema = z.strictObject({ schema: z.literal('project-settings-rigging-v1'), names: z.array(z.string().min(1).max(128)).max(10000),
   message: z.string().min(1).max(2 * 1024 * 1024), editPath: z.string().min(1).max(1000) });
 export const ProjectSettingsEditorSchema = ProjectSettingsEditorBaseSchema.extend({ schema: z.literal('project-settings-editor-v1'), routines: ProjectRoutineSettingsViewSchema,
-  secretStates: z.array(ProjectEnvSecretSummarySchema).max(100), rigging: ProjectSettingsRiggingSchema.optional() });
+  secretStates: z.array(ProjectEnvSecretSummarySchema).max(100), rigging: ProjectSettingsRiggingSchema.optional(), notificationInfo: ProjectNotificationInfoSchema.optional() });
 const presence = z.record(z.string().max(64), z.boolean()).refine(value => Object.keys(value).length <= 2000, 'Too many pending secret inputs.');
 export const ProjectSettingsEditorSaveRequestSchema = z.discriminatedUnion('schema', [
   z.strictObject({ schema: z.literal('project-settings-editor-save-v1'), clientRequestId: IdSchema, base: ProjectWorkSettingsSchema, draft: ProjectWorkSettingsSchema, secretPresence: presence.default({}) }),

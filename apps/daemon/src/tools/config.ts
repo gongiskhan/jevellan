@@ -1,5 +1,5 @@
-import { ProjectRoutineSettingsSaveSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsRequestSchema } from '@jevellan/core';
-import { capLines, projectRoutineJobChoices, projectRoutineSettings, settingsEditorRigging, environmentSecretSummary } from '@jevellan/projects';
+import { ProjectRoutineSettingsSaveSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsRequestSchema, NotificationBrowserFactsSchema } from '@jevellan/core';
+import { capLines, projectRoutineJobChoices, projectRoutineSettings, settingsEditorRigging, environmentSecretSummary, notificationEditor, projectNotificationInfo } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
 import { ownerCoordinatorEditorSave } from '../project-work-api.js';
 import { ProjectSettingsUndoRequestSchema } from '@jevellan/core';
@@ -152,10 +152,17 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'notification_editor': case 'notification_remove': case 'notification_test': {
+      const notifications = context.app.notifications;
+      if (!notifications) throw new OwnerRefusal('Notification settings are unavailable here.');
+      const view = context.action === 'notification_remove' ? notifications.remove(String(args.id)) : context.action === 'notification_test' ? notifications.test() : notifications.view();
+      const data = notificationEditor(view, args.browser ? NotificationBrowserFactsSchema.parse(args.browser) : null);
+      return { text: context.action === 'notification_test' ? data.labels.testSent : data.statusText, data };
+    }
     case 'settings_editor': {
       const { app, project } = context, base = await app.projectWork.settingsEditor(project.id);
       const [routines, secretStates, rigging] = await Promise.all([routineView(context), Promise.all(base.settingsView.settings.environment.secrets.map(async name => environmentSecretSummary(await app.state.environment.summary(project.id, name)))), app.rigging.list()]);
-      return { text: 'Project settings.', data: ProjectSettingsEditorSchema.parse({ ...base, schema: 'project-settings-editor-v1', routines, secretStates, rigging: settingsEditorRigging(project.id, rigging) }) };
+      return { text: 'Project settings.', data: ProjectSettingsEditorSchema.parse({ ...base, schema: 'project-settings-editor-v1', routines, secretStates, rigging: settingsEditorRigging(project.id, rigging), notificationInfo: projectNotificationInfo() }) };
     }
     case 'settings_save': {
       const data = await context.app.projectWork.saveSettingsEditor(context.project.id, args.request);

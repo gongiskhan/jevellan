@@ -1928,6 +1928,15 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     await check.getByLabel('Name', { exact: true }).fill('Fixture landing check');
     await check.getByLabel('Paths', { exact: true }).fill('src\n\n spaced path \n');
     await check.getByLabel('Command', { exact: true }).fill('true');
+    const notificationSection = settings.locator('#project-settings-notifications');
+    const notificationInfo = (await (await page.request.get(`${PROJECT}/config/editor`)).json()).notificationInfo;
+    for (const level of notificationInfo.levels) await expect(notificationSection.getByRole('radio', { name: level.label, exact: true })).toBeVisible();
+    await notificationSection.getByRole('radio', { name: 'Only what needs me', exact: true }).check();
+    await notificationSection.getByRole('checkbox', { name: 'Quiet hours', exact: true }).check();
+    await notificationSection.getByLabel('Quiet hours start', { exact: true }).fill('22:30');
+    await notificationSection.getByLabel('Quiet hours end', { exact: true }).fill('07:30');
+    await expect(notificationSection.getByLabel('Quiet hours timezone', { exact: true })).toHaveAttribute('maxlength', String(notificationInfo.quietHours.timezoneMaxLength));
+    await expect(notificationSection).toContainText(notificationInfo.quietHours.help);
     await settings.getByLabel('Keep commits for these paths', { exact: true }).fill('docs\n\n notes \n');
     await expect(settings.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
     await expect(check.getByLabel('Paths', { exact: true })).toHaveValue('src\n\n spaced path \n');
@@ -1954,6 +1963,7 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     expect((await work(page)).settings.coordinator).toMatchObject({ modelId: coordinatorModel.value, effort: 'low' });
     expect((await work(page)).settings.placement).toEqual({ allowedModelIds: placementEditor.restrictedModelIds, minEffort: 'high', guidance: 'Choose a careful model for UI work.' });
     expect((await work(page)).settings).toMatchObject({ setupCommand: '  ', environment: { copyFiles: ['.env.local', 'config/local'] } });
+    expect((await work(page)).settings.notifications).toMatchObject({ level: 'needs-you', quietHours: { enabled: true, start: '22:30', end: '07:30', timezone: 'Europe/Lisbon' } });
     settings = await openSettings(page);
     await expect(settings.getByLabel('Project instructions', { exact: true })).toHaveValue('Keep changes small and explain the result.');
     await expect(settings.getByLabel('Secret 1 value', { exact: true })).toHaveValue('');
@@ -2272,6 +2282,34 @@ test('PAR6 Notifications subscribe, receive a browser push, suppress the focused
   await page.goto('/projects/projects_fixture/settings'); await expect(page.getByText('Turn on notifications for this device in Settings → Notifications.', { exact: true })).toHaveCount(0);
   await page.goto('/settings/notifications'); await page.getByRole('button', { name: 'Turn off for this device', exact: true }).click(); await expect(page.getByText('Off for this device.', { exact: true })).toBeVisible();
   await expect(page.getByText('No devices have notifications turned on.', { exact: true })).toBeVisible(); await cdp.detach(); expect(errors).toEqual([]);
+});
+
+test('Notifications editor main actions preserve the canonical subscription writer and device state', async ({ page, context }, info) => {
+  await context.grantPermissions(['notifications'], { origin: info.project.use.baseURL! });
+  // Only the push service subscription is simulated; native display remains the separate PAR6 check.
+  await page.addInitScript(() => {
+    const stored = () => localStorage.getItem('notification-editor-push') === 'on';
+    const subscription = () => ({ endpoint: 'https://push.example/notification-editor-browser', toJSON: () => ({ keys: { p256dh: 'fixture_public_key', auth: 'fixture_auth' } }), unsubscribe: async () => { localStorage.removeItem('notification-editor-push'); return true; } });
+    Object.defineProperty(PushManager.prototype, 'getSubscription', { configurable: true, value: async () => stored() ? subscription() : null });
+    Object.defineProperty(PushManager.prototype, 'subscribe', { configurable: true, value: async () => { localStorage.setItem('notification-editor-push', 'on'); return subscription(); } });
+  });
+  const errors = await begin(page); await page.goto('/settings/notifications');
+  await expect(page.getByText('Off for this device.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Turn on for this device', exact: true }).click();
+  await expect(page.getByText('On for this device.', { exact: true })).toBeVisible();
+  const view = await (await page.request.get('/api/notifications/subscriptions')).json();
+  expect(view.subscriptions).toHaveLength(1); await expect(page.getByText(view.subscriptions[0].label, { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Send a test notification', exact: true }).click();
+  await expect(page.getByText('Test notification queued.', { exact: true })).toBeVisible();
+  const receipt = await control('/projects/notifications', { schema: 'fixture-notifications-v1', action: 'sweep' }) as { sent: Array<{ body: string }> };
+  expect(receipt.sent.some(item => item.body === 'Notifications work on this device.')).toBe(true);
+  await page.screenshot({ path: `test-results/notification-editor-on-${layout(info)}.png` });
+  await page.goto('/projects/projects_fixture/settings'); await expect(page.getByText('Turn on notifications for this device in Settings → Notifications.', { exact: true })).toHaveCount(0);
+  await page.goto('/settings/notifications'); await page.getByRole('button', { name: 'Turn off for this device', exact: true }).click();
+  await expect(page.getByText('Off for this device.', { exact: true })).toBeVisible();
+  await expect(page.getByText('No devices have notifications turned on.', { exact: true })).toBeVisible();
+  expect((await (await page.request.get('/api/notifications/subscriptions')).json()).subscriptions).toEqual([]);
+  await page.screenshot({ path: `test-results/notification-editor-off-${layout(info)}.png` }); expect(errors).toEqual([]);
 });
 
 test('PAR7 library uploads, attachments in both composers, images and project rigging', async ({ page }, info) => {

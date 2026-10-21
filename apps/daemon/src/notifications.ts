@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import webpush from 'web-push';
-import { NotificationsViewSchema, PushSubscriptionSchema, ProjectNotificationSchema, PushDeliverySchema, PushKeysSchema, NotificationOwnerRequestSchema,
+import { NotificationsViewSchema, PushSubscriptionSchema, ProjectNotificationSchema, PushDeliverySchema, PushKeysSchema, NotificationOwnerRequestSchema, IdSchema, notificationSubscriptionId,
   ProjectDecisionSchema, ProjectSchema, StoredProjectWorkSettingsSchema, clipRedacted, type ProjectNotification, type DocumentSchema } from '@jevellan/core';
 import { defaultProjectNotifications, type QuietHoursSchema } from '@jevellan/core';
 import type { z } from 'zod';
@@ -46,11 +46,19 @@ export class HubNotifications {
   request(raw: unknown) {
     const input = NotificationOwnerRequestSchema.parse(raw);
     if (input.operation === 'subscribe') {
-      const id = `push_${key(input.input.endpoint)}`, current = this.hub.get('push-subscriptions', id, PushSubscriptionSchema);
+      const id = notificationSubscriptionId(key(input.input.endpoint)), current = this.hub.get('push-subscriptions', id, PushSubscriptionSchema);
       this.#put('push-subscriptions', id, PushSubscriptionSchema, { schema: 'push-subscription-v1', revision: 0, id, endpoint: input.input.endpoint, keys: input.input.keys, label: input.input.label, createdAt: current?.document.createdAt ?? time(this.now()), failures: current?.document.failures ?? 0 }, current?.revision ?? 0);
-    } else if (input.operation === 'remove') this.hub.delete('push-subscriptions', input.id);
-    else if (input.operation === 'test') this.enqueue({ schema: 'project-notification-v1', revision: 0, id: `notify_${key(time(this.now()), String(Math.random()))}`, projectId: null,
+    } else if (input.operation === 'remove') return this.remove(input.id);
+    else if (input.operation === 'test') return this.test();
+    return this.view();
+  }
+  remove(id: string) { this.hub.delete('push-subscriptions', IdSchema.parse(id)); return this.view(); }
+  test() {
+    this.enqueue({ schema: 'project-notification-v1', revision: 0, id: `notify_${key(time(this.now()), String(Math.random()))}`, projectId: null,
       kind: 'test', title: NOTIFICATION_TEST_TITLE, body: NOTIFICATION_TEST_BODY, url: '/', tag: 'jevellan:test', createdAt: time(this.now()) });
+    return this.view();
+  }
+  view() {
     return NotificationsViewSchema.parse({ schema: 'notifications-view-v1', publicKey: this.#vapid().publicKey, httpsUrl: this.url().startsWith('https://') ? this.url() : null,
       subscriptions: this.hub.list('push-subscriptions', PushSubscriptionSchema).map(({ document }) => { const { keys, endpoint, ...view } = document; void keys; void endpoint; return view; }) });
   }
