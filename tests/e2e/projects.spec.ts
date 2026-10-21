@@ -1910,6 +1910,12 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     await settings.getByLabel('Fix failing checks automatically', { exact: true }).uncheck();
     await settings.getByLabel('Automatic fixes per pull request', { exact: true }).fill('4');
     await settings.getByLabel('Risky areas', { exact: true }).fill('Fixture-sensitive paths.');
+    const environmentRoute = `**${PROJECT}/config/environment-editor`; let passwordInPreview = false;
+    await page.route(environmentRoute, async route => { if (route.request().method() === 'POST' && (route.request().postData() ?? '').includes('fixture-private-environment-value')) passwordInPreview = true; await route.continue(); });
+    await expect(settings.getByLabel('Worktree setup command', { exact: true })).toHaveAttribute('maxlength', '500');
+    await settings.getByLabel('Worktree setup command', { exact: true }).fill('  ');
+    await settings.getByLabel('Copy these untracked files into new worktrees', { exact: true }).fill(' .env.local \n\n config/local \n');
+    await expect(settings.getByLabel('Copy these untracked files into new worktrees', { exact: true })).toHaveValue(' .env.local \n\n config/local \n');
     await settings.getByRole('button', { name: 'Add variable', exact: true }).click();
     await settings.getByLabel('Variable 1 name', { exact: true }).fill('PARITY_DATA');
     await settings.getByLabel('Variable 1 value', { exact: true }).fill('/tmp/parity-data');
@@ -1941,11 +1947,13 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     await settings.locator('form.pw-settings').evaluate((form: HTMLFormElement) => { form.requestSubmit(); form.requestSubmit(); });
     await expect(page).toHaveURL(/\/projects\/projects_fixture$/);
     expect(settingsWrites).toBe(1); await page.unroute(settingsRoute);
+    expect(passwordInPreview, 'Password values use only the normal vault writer.').toBe(false); await page.unroute(environmentRoute);
     await expect.poll(async () => (await work(page)).settings.maxNewThreadsPerDay).toBe(17);
     expect((await work(page)).settings).toMatchObject({ landingChecks: [{ name: 'Fixture landing check', paths: ['src', ' spaced path '], command: 'true' }], smokeCheck: 'true', mergeCommitPaths: ['docs', ' notes '] });
     expect((await work(page)).settings).toMatchObject({ threadTurnCap: 41, startMode: 'propose', perDeviceLimits: { [limitDevice.id]: 2 }, prAutoFix: { checks: false, maxRounds: 4 }, riskyAreas: 'Fixture-sensitive paths.' });
     expect((await work(page)).settings.coordinator).toMatchObject({ modelId: coordinatorModel.value, effort: 'low' });
     expect((await work(page)).settings.placement).toEqual({ allowedModelIds: placementEditor.restrictedModelIds, minEffort: 'high', guidance: 'Choose a careful model for UI work.' });
+    expect((await work(page)).settings).toMatchObject({ setupCommand: '  ', environment: { copyFiles: ['.env.local', 'config/local'] } });
     settings = await openSettings(page);
     await expect(settings.getByLabel('Project instructions', { exact: true })).toHaveValue('Keep changes small and explain the result.');
     await expect(settings.getByLabel('Secret 1 value', { exact: true })).toHaveValue('');
@@ -1964,6 +1972,7 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     await settings.getByLabel('Smoke check', { exact: true }).fill('echo unsaved draft');
     await settings.getByLabel('Coordinator effort', { exact: true }).selectOption('max');
     await settings.getByLabel('Guidance for Jev', { exact: true }).fill('Unsaved placement guidance.');
+    await settings.getByLabel('Copy these untracked files into new worktrees', { exact: true }).fill(' raw local path \n\n');
     await expect(settings.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
     await settings.getByRole('button', { name: 'Paused', exact: true }).click();
     await expect(settings.getByRole('button', { name: 'Paused', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -1972,6 +1981,8 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     expect((await work(page)).settings.coordinator.effort).toBe('low');
     await expect(settings.getByLabel('Guidance for Jev', { exact: true })).toHaveValue('Unsaved placement guidance.');
     expect((await work(page)).settings.placement.guidance).toBe('Choose a careful model for UI work.');
+    await expect(settings.getByLabel('Copy these untracked files into new worktrees', { exact: true })).toHaveValue(' raw local path \n\n');
+    expect((await work(page)).settings.environment.copyFiles).toEqual(['.env.local', 'config/local']);
     await settings.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(page.getByText('This project is paused. Nothing new starts until you resume it.', { exact: true })).toBeVisible();
     await page.screenshot({ path: `test-results/PAR1-paused-${layout(info)}.png`, fullPage: true });

@@ -1,0 +1,59 @@
+import { useEffect, useRef, useState } from 'react';
+import { ProjectEnvironmentEditorSchema, type ProjectEnvironmentEditor, type ProjectEnvironmentEditorFields, type ProjectWorkSettings, type ProjectEnvSecretSummary } from '@jevellan/core/client';
+import { ApiError, api } from './api.js';
+import { dateTime } from './components.js';
+import * as copy from './project-work-copy.js';
+
+/** Passwords are separate raw state and never enter the readonly editor protocol. */
+export function ProjectEnvironmentFields({ projectId, revision, change, ready, conflict, fail, secretValues, secretStates, secretValue }: {
+  projectId: string; revision: number; change(value: Pick<ProjectWorkSettings, 'setupCommand' | 'environment'>): void;
+  ready(value: boolean): void; conflict(): void; fail(error: unknown): void;
+  secretValues: Record<string, string>; secretStates: Record<string, ProjectEnvSecretSummary>; secretValue(name: string, value: string): void;
+}) {
+  const path = `/api/projects/${projectId}/config/environment-editor`;
+  const [template, setTemplate] = useState<ProjectEnvironmentEditor>(), [editor, setEditor] = useState<ProjectEnvironmentEditor>();
+  const [fields, setFields] = useState<ProjectEnvironmentEditorFields>();
+  const callbacks = useRef({ change, ready, conflict, fail }); callbacks.current = { change, ready, conflict, fail };
+  useEffect(() => {
+    const controller = new AbortController(); callbacks.current.ready(false);
+    void api(path, ProjectEnvironmentEditorSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true }).then(next => {
+      if (controller.signal.aborted) return;
+      setTemplate(next); setFields(next.fields);
+    }).catch(error => { if (!controller.signal.aborted) callbacks.current.fail(error); });
+    return () => controller.abort();
+  }, [path]);
+  const body = template && fields ? JSON.stringify({ ...template.request.base, revision, fields }) : null;
+  const previewPath = template?.request.previewPath;
+  useEffect(() => {
+    callbacks.current.ready(false); if (!body || !previewPath) return;
+    const controller = new AbortController();
+    void api(previewPath, ProjectEnvironmentEditorSchema, 'POST', JSON.parse(body), { signal: controller.signal, waitForHub: true }).then(next => {
+      if (controller.signal.aborted) return;
+      setEditor(next); if (next.patch) callbacks.current.change(next.patch); callbacks.current.ready(next.apply.enabled);
+    }).catch(error => {
+      if (controller.signal.aborted) return;
+      if (error instanceof ApiError && error.status === 409) callbacks.current.conflict();
+      callbacks.current.fail(error);
+    });
+    return () => controller.abort();
+  }, [body, previewPath]);
+  const edit = (patch: Partial<ProjectEnvironmentEditorFields>) => { callbacks.current.ready(false); setFields(current => current && { ...current, ...patch }); };
+  const confirmed = Boolean(editor && fields && JSON.stringify(editor.fields) === JSON.stringify(fields));
+  return !editor || !fields ? <p role="status">Loading environment controls…</p> : <>
+    <label>{copy.SETUP_COMMAND}<input aria-label={copy.SETUP_COMMAND} maxLength={editor.limits.setupCommand} placeholder={copy.SETUP_COMMAND_PLACEHOLDER} value={fields.setupCommand} onChange={event => edit({ setupCommand: event.target.value })} /></label>
+    <label>{copy.COPY_UNTRACKED}<textarea aria-label={copy.COPY_UNTRACKED} rows={4} value={fields.copyFiles} onChange={event => edit({ copyFiles: event.target.value })} /></label><p className="pw-field-note">{editor.copyHelp}</p>
+    <fieldset><legend>{copy.ENV_VARIABLES}</legend><div className="pw-env-head" aria-hidden="true"><span>{copy.ENV_NAME}</span><span>{copy.ENV_VALUE}</span></div>
+      {fields.variables.map((variable, index) => <div className="pw-env-row" key={index}><input aria-label={copy.variableName(index)} value={variable.name} maxLength={editor.limits.name} onChange={event => edit({ variables: fields.variables.map((row, at) => at === index ? { ...row, name: event.target.value } : row) })} />
+        <input aria-label={copy.variableValue(index)} value={variable.value} maxLength={editor.limits.value} onChange={event => edit({ variables: fields.variables.map((row, at) => at === index ? { ...row, value: event.target.value } : row) })} />
+        <button type="button" className="text-button" aria-label={copy.removeVariable(index)} onClick={() => edit({ variables: fields.variables.filter((_, at) => at !== index) })}>{copy.REMOVE_ENV}</button></div>)}
+      <button type="button" className="secondary" disabled={!confirmed || !editor.canAddVariable} onClick={() => edit({ variables: [...fields.variables, editor.newVariable] })}>{copy.ADD_VARIABLE}</button></fieldset>
+    <fieldset><legend>{copy.ENV_SECRETS}</legend>{fields.secrets.map((name, index) => {
+      const state = secretStates[name], presentation = state ? state.presentation ?? editor.unavailableStatus : editor.notSetStatus;
+      return <div className="pw-secret-row" key={index}><div className="pw-env-row"><input aria-label={copy.secretName(index)} value={name} maxLength={editor.limits.name} onChange={event => edit({ secrets: fields.secrets.map((row, at) => at === index ? event.target.value : row) })} />
+        <input type="password" autoComplete="new-password" aria-label={copy.secretValue(index)} value={secretValues[name] ?? ''} onChange={event => secretValue(name, event.target.value)} />
+        <button type="button" className="text-button" aria-label={copy.removeSecret(index)} onClick={() => edit({ secrets: fields.secrets.filter((_, at) => at !== index) })}>{copy.REMOVE_ENV}</button></div>
+        <p className="pw-field-note">{presentation.parts.map((part, at) => <span key={at}>{part.kind === 'time' ? dateTime(part.at) : part.text}</span>)}</p></div>;
+    })}<button type="button" className="secondary" disabled={!confirmed || !editor.canAddSecret} onClick={() => edit({ secrets: [...fields.secrets, editor.newSecret] })}>{copy.ADD_SECRET}</button><p className="pw-field-note">{editor.secretHelp}</p></fieldset>
+    {editor.apply.errors.map((error, index) => <p key={`${error.field}:${index}`} role="status">{error.message}</p>)}
+  </>;
+}

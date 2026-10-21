@@ -1,5 +1,5 @@
 import { ProjectRoutineSettingsSaveSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsRequestSchema } from '@jevellan/core';
-import { capLines, projectRoutineJobChoices, projectRoutineSettings, settingsEditorRigging } from '@jevellan/projects';
+import { capLines, projectRoutineJobChoices, projectRoutineSettings, settingsEditorRigging, environmentSecretSummary } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
 import { ownerCoordinatorEditorSave } from '../project-work-api.js';
 import { ProjectSettingsUndoRequestSchema } from '@jevellan/core';
@@ -154,7 +154,7 @@ export const config: OwnerHandler = async (context) => {
   switch (context.action) {
     case 'settings_editor': {
       const { app, project } = context, base = await app.projectWork.settingsEditor(project.id);
-      const [routines, secretStates, rigging] = await Promise.all([routineView(context), Promise.all(base.settingsView.settings.environment.secrets.map(name => app.state.environment.summary(project.id, name))), app.rigging.list()]);
+      const [routines, secretStates, rigging] = await Promise.all([routineView(context), Promise.all(base.settingsView.settings.environment.secrets.map(async name => environmentSecretSummary(await app.state.environment.summary(project.id, name)))), app.rigging.list()]);
       return { text: 'Project settings.', data: ProjectSettingsEditorSchema.parse({ ...base, schema: 'project-settings-editor-v1', routines, secretStates, rigging: settingsEditorRigging(project.id, rigging) }) };
     }
     case 'settings_save': {
@@ -164,6 +164,8 @@ export const config: OwnerHandler = async (context) => {
     case 'remove_secret': {
       const name = String(args.name); await context.app.state.environment.remove(context.project.id, name); return { text: `Removed ${name}.` };
     }
+    case 'environment_editor': case 'environment_preview': return { text: 'Project environment.', data: await context.app.projectWork.environmentEditor(context.project.id, context.action === 'environment_preview' ? args.request : undefined) };
+    case 'environment_save': return { text: 'Project environment settings saved.', data: await context.app.projectWork.saveEnvironmentEditor(context.project.id, args.request) };
     case 'placement_editor': case 'placement_preview': return { text: 'Project placement choices.', data: await context.app.projectWork.placementEditor(context.project.id, context.action === 'placement_preview' ? args.request : undefined) };
     case 'placement_save': return { text: 'Project placement settings saved.', data: await context.app.projectWork.savePlacementEditor(context.project.id, args.request) };
     case 'landing_editor': case 'landing_preview': return { text: 'Landing settings.', data: await context.app.projectWork.landingEditor(context.project.id, context.action === 'landing_preview' ? args.request : undefined) };

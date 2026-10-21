@@ -383,7 +383,7 @@ test('a Rigging conflict in one account folder moves the coordinator turn to the
   // The conflicted folder ranks first (labels break the tie between unknown usages).
   accounts = [account('acc_work', 'Alpha'), account('acc_other', 'Beta')];
   const refused = 'Rigging preserved local changes: settings.json. Park the changed copy in Rigging to apply its managed items again.';
-  fake.materialiseRigging = async (home: string) => { if (home.endsWith('acc_work')) throw new Error(refused); return []; };
+  fake.materialiseRigging = async (home?: string) => { if (home?.endsWith('acc_work')) throw new Error(refused); return []; };
   const work = await started();
   fake.enqueueTurn(say('Planned.'), forCoordinator);
   await message(work, 'plan the release'); await work.idle('proj_a');

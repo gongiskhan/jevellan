@@ -105,3 +105,4 @@ export * from './conversation-step-presentation-schemas.js';
 export * from './conversation-decision-view-schemas.js';
 export * from './account-copy.js';
 export * from './project-placement-editor-schemas.js';
+export * from './project-environment-editor-schemas.js';

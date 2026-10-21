@@ -207,7 +207,11 @@ test('a terminal session keeps its Jevellan tools across a daemon restart while 
   claude.enqueueTurn(reportStep({ status: 'progress', summary: 'Terminal work next.' }), forThread());
   const threadId = await start(f, 'Terminal'); await rest(f, threadId);
   const token = (await f.app.projectWork.attach(threadId)).env.JEVELLAN_STRETCH_TOKEN!;
-  const list = async () => f.app.bridges.request(token, { schema: 'bridge-request-v1', operation: 'list' });
+  const list = async () => {
+    const reply = await f.app.bridges.request(token, { schema: 'bridge-request-v1', operation: 'list' });
+    if (reply.schema !== 'bridge-tools-v1') throw new Error('Expected the terminal tool list.');
+    return reply;
+  };
   expect((await list()).tools.map((tool: { name: string }) => tool.name)).toContain('memory_search');
   await f.restart();
   expect(f.thread(threadId).state).toBe('attached');

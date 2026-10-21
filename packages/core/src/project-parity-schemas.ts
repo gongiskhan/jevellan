@@ -6,7 +6,8 @@ const RESERVED_ENV_PREFIXES = ['CLAUDE_', 'CODEX_', 'ANTHROPIC_', 'OPENAI_', 'JE
 export const EnvNameSchema = z.string().regex(/^[A-Z_][A-Z0-9_]{0,63}$/u, 'Use capital letters, digits and underscores.')
   .refine(name => !RESERVED_ENV.has(name) && !RESERVED_ENV_PREFIXES.some(prefix => name.startsWith(prefix)),
     { error: issue => `${String(issue.input)} is reserved for Jevellan and the runtimes.` });
-export const ProjectEnvNameSchema = z.string().regex(/^[A-Z_][A-Z0-9_]{0,63}$/u, 'Use capital letters, digits and underscores.')
+export const PROJECT_ENV_NAME_MAX_LENGTH = 64;
+export const ProjectEnvNameSchema = z.string().regex(new RegExp(`^[A-Z_][A-Z0-9_]{0,${PROJECT_ENV_NAME_MAX_LENGTH - 1}}$`, 'u'), 'Use capital letters, digits and underscores.')
   .refine(name => !RESERVED_ENV.has(name) && !['JEVELLAN_', 'GIT_'].some(prefix => name.startsWith(prefix)) && !['CODEX_HOME', 'CLAUDE_CONFIG_DIR'].includes(name),
     { error: issue => `${String(issue.input)} is reserved for Jevellan and the runtimes.` });
 export const ProjectRelativePathSchema = z.string().min(1).max(300)
@@ -18,7 +19,10 @@ export const ProjectEnvironmentSchema = z.strictObject({
   variables: z.array(z.strictObject({ name: ProjectEnvNameSchema, value: z.string().max(4000) })).max(200),
   secrets: z.array(ProjectEnvNameSchema).max(100), copyFiles: z.array(ProjectRelativePathSchema).max(20),
 }).refine(environment => new Set([...environment.variables.map(variable => variable.name), ...environment.secrets]).size === environment.variables.length + environment.secrets.length, 'Each name can appear once.');
-export const ProjectEnvSecretSummarySchema = z.strictObject({ schema: z.literal('project-env-secret-summary-v1'), name: ProjectEnvNameSchema, saved: z.boolean(), updatedAt: TimestampSchema.optional() });
+export const ProjectEnvSecretPresentationSchema = z.strictObject({ schema: z.literal('project-env-secret-presentation-v1'), parts: z.array(z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('text'), text: z.string().max(1000) }), z.strictObject({ kind: z.literal('time'), at: TimestampSchema }),
+])).min(1).max(3) });
+export const ProjectEnvSecretSummarySchema = z.strictObject({ schema: z.literal('project-env-secret-summary-v1'), name: ProjectEnvNameSchema, saved: z.boolean(), updatedAt: TimestampSchema.optional(), presentation: ProjectEnvSecretPresentationSchema.optional() });
 export type ProjectEnvSecretSummary = z.infer<typeof ProjectEnvSecretSummarySchema>;
 
 export const ProjectSettingsUpdateSchema = z.strictObject({

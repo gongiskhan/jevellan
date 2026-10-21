@@ -1,3 +1,5 @@
+import { ProjectEnvironmentEditorSaveSchema } from '@jevellan/core';
+import { environmentEditor } from './environment-editor.js';
 import { ProjectPlacementEditorSaveSchema } from '@jevellan/core';
 import { placementEditor } from './placement-editor.js';
 import { MergeCorrectionInputSchema } from '@jevellan/core';
@@ -955,6 +957,12 @@ export class ProjectWork {
   async coordinatorEditor(projectId: string, preview?: unknown) {
     const [view, configuration] = await Promise.all([this.view(projectId), this.#o.settings()]);
     return coordinatorEditor(view, configuration, id => this.#o.runtimes.get(id)?.displayName ?? id, preview);
+  }
+  async environmentEditor(projectId: string, raw?: unknown) { return environmentEditor((await this.settingsView(projectId)).settings, raw); }
+  async saveEnvironmentEditor(projectId: string, raw: unknown) {
+    const input = ProjectEnvironmentEditorSaveSchema.parse(raw);
+    if (input.projectId !== projectId) throw refuse('The environment belongs to another project.', 400);
+    return this.putSettings(projectId, input.settingsRequest);
   }
   async placementEditor(projectId: string, raw?: unknown) {
     const [view, configuration] = await Promise.all([this.settingsView(projectId), this.#o.settings()]);

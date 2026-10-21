@@ -6,10 +6,11 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { EkoaCodeSetupReceiptSchema, ProjectWorkViewSchema, ProjectEnvSecretSummarySchema, ProjectSettingsEditorSchema, ProjectSettingsEditorSavedSchema,
   type ProjectSettingsEditor, type ProjectSettingsSectionKey, type ProjectConfigurationInfo, type ProjectEnvSecretSummary, type ProjectWorkSettings, type ProjectWorkView } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
-import { dateTime, useSettingsSave, useTask, type PageProps } from './components.js';
+import { useSettingsSave, useTask, type PageProps } from './components.js';
 import { LandingSettings } from './project-landing-settings.js';
 import { ProjectCoordinatorFields } from './project-coordinator-fields.js';
 import { ProjectPlacementFields } from './project-placement-fields.js';
+import { ProjectEnvironmentFields } from './project-environment-fields.js';
 import { updated, useLocalError } from './project-work.js';
 import * as copy from './project-work-copy.js';
 import { ProjectUsageSection } from './project-usage.js';
@@ -27,6 +28,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const [landingReady, setLandingReady] = useState(false), [loadEpoch, setLoadEpoch] = useState(0);
   const [coordinatorReady, setCoordinatorReady] = useState(false);
   const [placementReady, setPlacementReady] = useState(false);
+  const [environmentReady, setEnvironmentReady] = useState(false);
   const [work, setWork] = useState<ProjectWorkView>();
   const [routines, setRoutines] = useState<ProjectRoutineSettingsView>();
   const [stale, setStale] = useState(false);
@@ -84,7 +86,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
       <button type="button" className="text-button" onClick={() => navigate(editor?.backPath ?? `/projects/${id}`)}>{copy.BACK_TO_PROJECT}</button></header>
     {!draft || !base || !work || !routines || !editor ? <p role="status">{copy.LOADING}</p> : !configuration || !controls || !editor.rigging ? <p role="status">Project configuration metadata is unavailable. Reload after the daemon is updated.</p> : <div className="pw-settings-layout">
       <nav aria-label={copy.SETTINGS_SECTIONS}>{editor.sections.map(row => <a key={row.key} href={`#project-settings-${row.key}`}>{row.label}</a>)}</nav>
-      <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); if (landingReady && coordinatorReady && placementReady && !stale) saveAll(); }}>
+      <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); if (landingReady && coordinatorReady && placementReady && environmentReady && !stale) saveAll(); }}>
         <fieldset disabled={task.busy} className="pw-fields">
           {section('general', <>
             <fieldset><legend>{copy.PROJECT_STATUS}</legend><div className="form-actions">{editor.statusOptions.map(option => <button key={option.value} type="button" className="secondary" aria-pressed={base.status === option.value} onClick={() => setStatus(option.value)}>{option.label}</button>)}</div>
@@ -114,19 +116,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
             <label>{copy.RISKY_AREAS}<textarea aria-label={copy.RISKY_AREAS} rows={4} maxLength={controls.riskyAreasMaxLength} value={draft.riskyAreas} onChange={event => change({ riskyAreas: event.target.value })} /></label>
           </>)}
           {section('environment', <>
-            <label>{copy.SETUP_COMMAND}<input maxLength={500} placeholder={copy.SETUP_COMMAND_PLACEHOLDER} value={draft.setupCommand ?? ''} onChange={event => change({ setupCommand: event.target.value || null })} /></label>
-            <label>{copy.COPY_UNTRACKED}<textarea aria-label={copy.COPY_UNTRACKED} rows={4} value={draft.environment.copyFiles.join('\n')} onChange={event => change({ environment: { ...draft.environment, copyFiles: event.target.value.split('\n').map(line => line.trim()).filter(Boolean) } })} /></label><p className="pw-field-note">{copy.COPY_UNTRACKED_HELP}</p>
-            <fieldset><legend>{copy.ENV_VARIABLES}</legend><div className="pw-env-head" aria-hidden="true"><span>{copy.ENV_NAME}</span><span>{copy.ENV_VALUE}</span></div>
-              {draft.environment.variables.map((variable, index) => <div className="pw-env-row" key={index}><input aria-label={copy.variableName(index)} value={variable.name} maxLength={64} onChange={event => change({ environment: { ...draft.environment, variables: draft.environment.variables.map((row, at) => at === index ? { ...row, name: event.target.value } : row) } })} />
-                <input aria-label={copy.variableValue(index)} value={variable.value} maxLength={4000} onChange={event => change({ environment: { ...draft.environment, variables: draft.environment.variables.map((row, at) => at === index ? { ...row, value: event.target.value } : row) } })} />
-                <button type="button" className="text-button" aria-label={copy.removeVariable(index)} onClick={() => change({ environment: { ...draft.environment, variables: draft.environment.variables.filter((_, at) => at !== index) } })}>{copy.REMOVE_ENV}</button></div>)}
-              <button type="button" className="secondary" disabled={draft.environment.variables.length >= 50} onClick={() => change({ environment: { ...draft.environment, variables: [...draft.environment.variables, { name: '', value: '' }] } })}>{copy.ADD_VARIABLE}</button></fieldset>
-            <fieldset><legend>{copy.ENV_SECRETS}</legend>{draft.environment.secrets.map((name, index) => <div className="pw-secret-row" key={index}>
-              <div className="pw-env-row"><input aria-label={copy.secretName(index)} value={name} maxLength={64} onChange={event => change({ environment: { ...draft.environment, secrets: draft.environment.secrets.map((row, at) => at === index ? event.target.value : row) } })} />
-                <input type="password" autoComplete="new-password" aria-label={copy.secretValue(index)} value={secretValues[name] ?? ''} onChange={event => setSecretValues(values => ({ ...values, [name]: event.target.value }))} />
-                <button type="button" className="text-button" aria-label={copy.removeSecret(index)} onClick={() => change({ environment: { ...draft.environment, secrets: draft.environment.secrets.filter((_, at) => at !== index) } })}>{copy.REMOVE_ENV}</button></div>
-              <p className="pw-field-note">{secretStates[name]?.saved ? copy.secretSavedAt(dateTime(secretStates[name]!.updatedAt!)) : copy.SECRET_NOT_SET}</p></div>)}
-              <button type="button" className="secondary" disabled={draft.environment.secrets.length >= 50} onClick={() => change({ environment: { ...draft.environment, secrets: [...draft.environment.secrets, ''] } })}>{copy.ADD_SECRET}</button><p className="pw-field-note">{copy.SECRET_HELP}</p></fieldset>
+            <ProjectEnvironmentFields key={loadEpoch} projectId={id} revision={base.revision} change={change} ready={setEnvironmentReady} conflict={() => setStale(true)} fail={local.fail} secretValues={secretValues} secretStates={secretStates} secretValue={(name, value) => setSecretValues(values => ({ ...values, [name]: value }))} />
             <p className="pw-field-note">{editor.rigging.message}</p><a href={editor.rigging.editPath} onClick={event => { event.preventDefault(); navigate(editor.rigging!.editPath); }}>{copy.EDIT_RIGGING}</a>
           </>)}
           {section('routines', <>
@@ -145,7 +135,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
         {local.error && <p role="alert" className="error">{local.error}{stale && <button type="button" className="text-button" disabled={task.busy} onClick={() => void task.run(read)}>{copy.RELOAD}</button>}</p>}
         <div className="form-actions pw-settings-savebar">
           {work.project.name === 'Ekoa Code' && <button type="button" className="secondary" disabled={task.busy || !draft.coordinator.modelId} onClick={() => void task.run(async signal => { await api(`/api/projects/${id}/ekoa-code-setup`, EkoaCodeSetupReceiptSchema, 'POST', { schema: 'ekoa-code-setup-request-v1', modelId: draft.coordinator.modelId, workflowPull: 208 }, { signal, waitForHub: true }); await read(signal); updated(); })}>{copy.APPLY_EKOA_SETUP}</button>}
-          <button type="button" className="secondary" onClick={() => navigate(editor.backPath)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale || !landingReady || !coordinatorReady || !placementReady}>{task.busy ? copy.SAVING : copy.SAVE}</button>
+          <button type="button" className="secondary" onClick={() => navigate(editor.backPath)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale || !landingReady || !coordinatorReady || !placementReady || !environmentReady}>{task.busy ? copy.SAVING : copy.SAVE}</button>
         </div>
       </form><RoutinePreferences model={routines} saved={setRoutines} /></div>
     </div>}

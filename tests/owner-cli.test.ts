@@ -1,3 +1,4 @@
+import { ProjectEnvironmentEditorSchema } from '../packages/core/dist/index.js';
 import { ProjectPlacementEditorSchema } from '../packages/core/dist/index.js';
 import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
 import { ConfigRevisionSchema, DecisionsSettingsEditorSchema } from '../packages/core/dist/index.js';
@@ -22,6 +23,19 @@ import { ProjectRouteWhyViewSchema, ProjectThreadOverrideEditorSchema, ThreadCre
 let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
+
+test('CLI config environment editor exposes canonical limits without password values', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['config', 'environment_editor'], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-environment-editor-v1', limits: { variables: 200, secrets: 100, name: 64 }, fields: { variables: [], secrets: [] } } });
+  if (!result.ok) throw new Error('Expected environment editor.'); const view = ProjectEnvironmentEditorSchema.parse(result.data);
+  output.mockClear(); expect(await callCommand(['config', 'environment_preview', '--request', JSON.stringify({ ...view.request.base, fields: { ...view.fields, copyFiles: ' local.env \n', variables: [{ name: 'FIXTURE_VAR', value: 'CLI value' }] } })], f.homes)).toBe(0);
+  const preview = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); if (!preview.ok) throw new Error('Expected environment preview.');
+  output.mockClear(); expect(await callCommand(['config', 'environment_save', '--request', JSON.stringify(ProjectEnvironmentEditorSchema.parse(preview.data).saveRequest)], f.homes)).toBe(0);
+  expect((await f.app.projectWork.settingsView('project')).settings.environment).toMatchObject({ copyFiles: ['local.env'], variables: [{ name: 'FIXTURE_VAR', value: 'CLI value' }] });
+  expect(f.fake.runs).toHaveLength(0);
+});
 
 test('CLI config placement editor exposes the shared constraint form', async () => {
   f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);

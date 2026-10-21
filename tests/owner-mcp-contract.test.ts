@@ -1,3 +1,4 @@
+import { ProjectEnvironmentEditorSchema } from '../packages/core/dist/index.js';
 import { ProjectPlacementEditorSchema } from '../packages/core/dist/index.js';
 import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
 import { ConfigRevisionSchema, DecisionsSettingsEditorSchema } from '../packages/core/dist/index.js';
@@ -24,6 +25,18 @@ async function connect(env: Record<string, string>): Promise<Client> {
     env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', ...env }, cwd: f!.checkout, stderr: 'ignore' });
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
+
+test('MCP config environment editor exposes canonical limits without password values', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const reply = await mcp.callTool({ name: 'config', arguments: { action: 'environment_editor' } }); expect(reply.isError).toBeFalsy();
+  const result = OwnerToolResultSchema.parse(reply.structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-environment-editor-v1', limits: { variables: 200, secrets: 100, name: 64 }, fields: { variables: [], secrets: [] } } });
+  if (!result.ok) throw new Error('Expected environment editor.'); const view = ProjectEnvironmentEditorSchema.parse(result.data);
+  const preview = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'environment_preview', request: { ...view.request.base, fields: { ...view.fields, copyFiles: ' local.env \n', variables: [{ name: 'FIXTURE_VAR', value: 'MCP value' }] } } } })).structuredContent); if (!preview.ok) throw new Error('Expected environment preview.');
+  expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'environment_save', request: ProjectEnvironmentEditorSchema.parse(preview.data).saveRequest } })).structuredContent)).toMatchObject({ ok: true });
+  expect((await f.app.projectWork.settingsView('project')).settings.environment).toMatchObject({ copyFiles: ['local.env'], variables: [{ name: 'FIXTURE_VAR', value: 'MCP value' }] });
+  expect(f.fake.runs).toHaveLength(0);
+});
 
 test('MCP config placement editor exposes the shared constraint form', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
