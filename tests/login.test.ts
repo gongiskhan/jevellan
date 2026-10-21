@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { AccountSchema, Homes, HubUnavailable } from '../packages/core/dist/index.js';
 import { LoginOutput, beginTerminalLogin, loginCallback, type LoginSession } from '../packages/runtime-contract/dist/index.js';
-import { claudeUsage, probeClaude } from '../runtimes/claude/dist/control.js';
+import { claudeStreamUsage, claudeUsage, probeClaude } from '../runtimes/claude/dist/control.js';
 import { probeCodex } from '../runtimes/codex/dist/control.js';
 
 const token = ['sk', 'ant', 'oat01', 'abC9_'.repeat(19) + 'Z'].join('-');
@@ -119,6 +119,16 @@ const headers = () => new Headers({ 'anthropic-ratelimit-unified-5h-utilization'
 test('usage header windows convert fractions and reset seconds while preserving unknown values', () => {
   const value = claudeUsage(headers())!; expect(value.fiveHourPct).toBe(46); expect(value.weeklyPct).toBe(17); expect(value.fiveHourResetsAt).toBe(new Date(1784659200 * 1000).toISOString());
   expect(claudeUsage(new Headers())).toBeUndefined(); const partial = headers(); partial.delete('anthropic-ratelimit-unified-7d-utilization'); expect(claudeUsage(partial)?.weeklyPct).toBeUndefined();
+});
+test('a turn reads the account usage from Claude Code rate-limit events, so an account without a token to probe (in place) has it too', () => {
+  // As Claude Code 2.1.305 sends it: fractions with reset seconds, per unified window.
+  const event = { type: 'rate_limit_event', rate_limit_info: { status: 'allowed', resetsAt: 1792543800, rateLimitType: 'five_hour', overageStatus: 'rejected', isUsingOverage: false,
+    unifiedWindows: { five_hour: { utilization: 0.13, resetsAt: 1792543800 }, seven_day: { utilization: 0.29, resetsAt: 1792990800 } } }, uuid: 'u', session_id: 's' };
+  expect(claudeStreamUsage(event)).toEqual({ type: 'rate-limit', fiveHourPct: 13, weeklyPct: 29, fiveHourResetsAt: new Date(1792543800 * 1000).toISOString(), weeklyResetsAt: new Date(1792990800 * 1000).toISOString() });
+  // Without the unified windows only the event's own window counts, and a per-model weekly window is not the account's week.
+  expect(claudeStreamUsage({ type: 'rate_limit_event', rate_limit_info: { status: 'allowed_warning', rateLimitType: 'seven_day', utilization: 0.91, resetsAt: 1792990800 } })).toEqual({ type: 'rate-limit', weeklyPct: 91, weeklyResetsAt: new Date(1792990800 * 1000).toISOString() });
+  expect(claudeStreamUsage({ type: 'rate_limit_event', rate_limit_info: { status: 'allowed', rateLimitType: 'seven_day_opus', utilization: 0.95 } })).toBeNull();
+  expect(claudeStreamUsage({ type: 'assistant' })).toBeNull();
 });
 test.each([200, 429, 401, 403, 500])('Claude probe separates authentication from unavailable billing data (HTTP %i)', async (status) => {
   const value = account(); const resolved = { account: value, home: homes.account('claude', value.id), env: { CLAUDE_CODE_OAUTH_TOKEN: token } };

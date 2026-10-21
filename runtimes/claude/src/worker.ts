@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CLAUDE_FLAG_SETTINGS, StableMcpSchema, projectToolNames } from '@jevellan/core';
+import { claudeStreamUsage } from './control.js';
 
 const Envelope = z.object({ type: z.string(), session_id: z.string().optional() }).passthrough();
 const TextDelta = z.object({ type: z.literal('content_block_delta'), delta: z.object({ type: z.literal('text_delta'), text: z.string() }) });
@@ -47,6 +48,8 @@ async function execute(control: Control, message: string, timeoutMs: number, lau
     for await (const raw of control.current) {
       const event = Envelope.parse(raw);
       if (event.session_id) session(event.session_id);
+      // The account's plan usage as Claude Code reports it with each request; an in-place account has no token for the probe to read it with.
+      const plan = claudeStreamUsage(event); if (plan) emit(plan);
       const compact = Compact.safeParse(event);
       if (compact.success && separate) { contextTokens = compact.data.compact_metadata.post_tokens; emit({ type: 'compacted', beforeTokens: compact.data.compact_metadata.pre_tokens, afterTokens: contextTokens ?? null }); }
       const context = ContextUsage.safeParse(event);

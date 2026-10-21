@@ -31,6 +31,27 @@ export function claudeUsage(headers: Headers, now = new Date()): AccountStatus['
   return { source: 'probe', observedAt: now.toISOString(), ...(five.pct === undefined ? {} : { fiveHourPct: five.pct }), ...(week.pct === undefined ? {} : { weeklyPct: week.pct }), ...(five.reset ? { fiveHourResetsAt: five.reset } : {}), ...(week.reset ? { weeklyResetsAt: week.reset } : {}) };
 }
 
+const StreamWindow = z.object({ utilization: z.number().min(0).nullable().optional(), resetsAt: z.number().nonnegative().nullable().optional() }).nullable().optional();
+const RateLimitEvent = z.object({ type: z.literal('rate_limit_event'), rate_limit_info: z.object({ rateLimitType: z.string().optional(), utilization: z.number().min(0).optional(), resetsAt: z.number().nonnegative().optional(),
+  unifiedWindows: z.object({ five_hour: StreamWindow, seven_day: StreamWindow }).optional() }) });
+/**
+ * The account's usage from a Claude Code `rate_limit_event` (fractions and reset seconds, like the probe's headers): the unified five-hour and
+ * seven-day windows, else the event's own window when it is one of them. A per-model window is never the account's week. Null otherwise.
+ */
+export function claudeStreamUsage(raw: unknown): { type: 'rate-limit'; fiveHourPct?: number; weeklyPct?: number; fiveHourResetsAt?: string; weeklyResetsAt?: string } | null {
+  const parsed = RateLimitEvent.safeParse(raw); if (!parsed.success) return null;
+  const info = parsed.data.rate_limit_info;
+  const own = (type: string) => info.rateLimitType === type ? { utilization: info.utilization, resetsAt: info.resetsAt } : undefined;
+  const pct = (value: number | null | undefined) => typeof value === 'number' ? Math.min(100, Math.round(value * 1000) / 10) : undefined;
+  const at = (value: number | null | undefined) => typeof value === 'number' && value < 8.64e12 ? new Date(value * 1000).toISOString() : undefined;
+  const five = info.unifiedWindows?.five_hour ?? own('five_hour'), week = info.unifiedWindows?.seven_day ?? own('seven_day');
+  const fiveHourPct = pct(five?.utilization), weeklyPct = pct(week?.utilization);
+  if (fiveHourPct === undefined && weeklyPct === undefined) return null;
+  const fiveHourResetsAt = fiveHourPct === undefined ? undefined : at(five?.resetsAt), weeklyResetsAt = weeklyPct === undefined ? undefined : at(week?.resetsAt);
+  return { type: 'rate-limit', ...(fiveHourPct === undefined ? {} : { fiveHourPct }), ...(weeklyPct === undefined ? {} : { weeklyPct }),
+    ...(fiveHourResetsAt ? { fiveHourResetsAt } : {}), ...(weeklyResetsAt ? { weeklyResetsAt } : {}) };
+}
+
 export async function probeClaude(account: ResolvedAccount, fetcher: typeof fetch = fetch): Promise<{ auth: AccountStatus['auth']; usage?: AccountStatus['usage']; error?: string }> {
   if (account.account.kind === 'endpoint') {
     const token = account.env.ANTHROPIC_AUTH_TOKEN; if (!token) return { auth: 'needs-login', error: 'Key refused' };
