@@ -82,7 +82,7 @@ export class OwnerTakeover {
       runtime: thread.placement.runtime, configDir: thread.placement.runtime === 'claude' ? account.home : null, cwd: thread.cwd }), row.id);
     context.tools.steering(project.id, { thread: id, threadId: row.id, kind: 'takeover', by: context.tools.steeringBy(context.request.caller) });
     const device = app.device.name;
-    const hand = `While you hold it, the coordinator won't send it work, land it or touch its worktree.\nTo hand it back, say return ${id} to resume it, return ${id} as done to send it to landing, or stop ${id}.`;
+    const hand = `While you hold it, the coordinator won't send it work, land it or touch its worktree. Its Jevellan tools there read memory and GitHub; it sends no report, and what it did reaches the coordinator when you return it.\nTo hand it back, say return ${id} to resume it, return ${id} as done to send it to landing, or stop ${id}.`;
     if (thread.placement.runtime === 'codex') return { text: `${id} is yours in the terminal on ${device}: ${commandName(this.app.homes)} attach ${id} (tmux session ${session}). Codex threads have no phone view.\n${hand}` };
     if (!remote) return { text: `${id} is yours in the terminal on ${device}: ${commandName(this.app.homes)} attach ${id} (tmux session ${session}). Remote control is not available: account ${row.accountLabel} has no interactive Claude login, so it does not show in the Claude app.\n${hand}` };
     return { text: `${id} is yours. In the Claude app, open the session "${id} · ${title}" (account ${row.accountLabel}; it shows only when the app is signed in to that account). In a terminal on ${device}: ${commandName(this.app.homes)} attach ${id}.\n${hand}` };

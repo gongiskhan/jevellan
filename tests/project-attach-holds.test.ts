@@ -200,3 +200,20 @@ test('a coordinator on the held account waits as Unavailable without a failed tu
   expect(coordinatorTurns(claude)).toHaveLength(before + 1);
   expect(f.coordinatorState().failedTurnsInARow).toBe(0); expect(f.coordinatorState()).not.toHaveProperty('unavailableReason');
 });
+
+test('a terminal session keeps its Jevellan tools across a daemon restart while it holds the thread, and loses them once it is handed back', { timeout: 120_000 }, async () => {
+  const claude = named(); const f = await setup(claude);
+  await account(f, 'acc_claude_a', 'Claude A');
+  claude.enqueueTurn(reportStep({ status: 'progress', summary: 'Terminal work next.' }), forThread());
+  const threadId = await start(f, 'Terminal'); await rest(f, threadId);
+  const token = (await f.app.projectWork.attach(threadId)).env.JEVELLAN_STRETCH_TOKEN!;
+  const list = async () => f.app.bridges.request(token, { schema: 'bridge-request-v1', operation: 'list' });
+  expect((await list()).tools.map((tool: { name: string }) => tool.name)).toContain('memory_search');
+  await f.restart();
+  expect(f.thread(threadId).state).toBe('attached');
+  expect((await list()).tools.map((tool: { name: string }) => tool.name)).toContain('memory_search');
+  await f.app.projectWork.detach(threadId);
+  await expect(list()).rejects.toThrow('Invalid or expired stretch token.');
+  await f.restart();
+  await expect(list()).rejects.toThrow('Invalid or expired stretch token.');
+});

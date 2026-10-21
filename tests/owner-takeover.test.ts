@@ -40,6 +40,7 @@ test('thread open holds a working thread at its safe point, return resumes it wi
   writeFileSync(join(f.homes.root, 'install.json'), JSON.stringify({ command: { definition: { path: command } } }));
   const opened = await call('thread', { action: 'open', thread: 'T1' });
   release();
+  expect(opened).toContain('it sends no report, and what it did reaches the coordinator when you return it.');
   expect(opened).toMatch(/^T1 is yours in the terminal on .+: jevellan-playground attach T1 \(tmux session jv-T1\)\. Remote control is not available: account .+ has no interactive Claude login/u);
   expect(f.thread(threadId).state).toBe('attached');
   expect(await call('status', {})).toMatch(/T1 manual · Rename button · .* · held by you for 0 min/u);

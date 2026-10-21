@@ -115,17 +115,26 @@ export class StretchTools implements BridgeScopeTools {
   }
 }
 
-/** Tokens live only in memory. A restart invalidates every outstanding grant. */
+/**
+ * Tokens live only in memory: a restart invalidates every outstanding grant, except a terminal takeover's, whose session outlives the daemon;
+ * its owner keeps the grant's hash and restores it (`restoreTools`).
+ */
 export class StretchBridges {
   readonly #scopes = new Map<string, BridgeScopeTools>();
   constructor(readonly redactor: SecretRedactor) {}
   #key(token: string): string { return createHash('sha256').update(token).digest('hex'); }
   issue(scope: Scope): { token: string; tools: StretchTools; close(): Promise<void> } { return this.issueTools(new StretchTools(scope)); }
   /** Same token rules for every scope: 32 random bytes, only the hash kept, redacted everywhere, dropped on close. */
-  issueTools<T extends BridgeScopeTools>(tools: T): { token: string; tools: T; close(): Promise<void> } {
+  issueTools<T extends BridgeScopeTools>(tools: T): { token: string; key: string; tools: T; close(): Promise<void> } {
     const token = randomBytes(32).toString('base64url');
     const key = this.#key(token); this.#scopes.set(key, tools); this.redactor.add(token);
-    return { token, tools, close: async () => { this.#scopes.delete(key); await tools.close(); } };
+    return { token, key, tools, close: async () => { this.#scopes.delete(key); await tools.close(); } };
+  }
+  /** A grant issued before a restart, by the hash `issueTools` returned; the token itself was never stored. */
+  restoreTools<T extends BridgeScopeTools>(key: string, tools: T): { close(): Promise<void> } {
+    if (!/^[a-f0-9]{64}$/u.test(key)) throw new Error('Invalid stretch grant.');
+    this.#scopes.set(key, tools);
+    return { close: async () => { this.#scopes.delete(key); await tools.close(); } };
   }
   async request(token: string | undefined, raw: unknown) {
     const tools = token && token.length < 256 ? this.#scopes.get(this.#key(token)) : undefined;

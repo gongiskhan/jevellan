@@ -617,3 +617,6 @@ export const ThreadAttachViewSchema = z.strictObject({ schema: z.literal('thread
     compactAtPercent: z.number().int().min(50).max(90), contextWindow: z.number().int().positive().optional() }).optional() });
 export const ThreadDetachRequestSchema = z.strictObject({ schema: z.literal('thread-detach-request-v1'), exitCode: z.number().int().nullable() });
 export const ThreadDetachViewSchema = z.strictObject({ schema: z.literal('thread-detach-v1'), adopted: z.boolean(), state: ThreadStateSchema });
+
+/** project-work/<project>/attached-grants/<thread>.json: the hash of a terminal takeover's tool grant, so a daemon restart restores it. */
+export const AttachedGrantSchema = z.strictObject({ schema: z.literal('attached-grant-v1'), threadId: IdSchema, key: z.string().regex(/^[a-f0-9]{64}$/u) });

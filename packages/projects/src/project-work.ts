@@ -43,14 +43,14 @@ import { EkoaCodeSetupRequestSchema, collectDeviceFacts, deviceResourceRefusal, 
 import { ProjectDailyWork } from './daily.js';
 import { ProjectJobRunner } from './job-runner.js';
 import { join } from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { atomicWrite, deviceAllowsWork, type ProjectLedgerEvent } from '@jevellan/core';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  HubUnavailable, IdSchema, ProjectRequestOutcomeSchema, readDocument, writeDocument, ProjectNotebookSchema, ProjectNotebookViewSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsViewSchema, ThreadCreatedViewSchema, ThreadOverrideViewSchema, defaultProjectWorkSettings, newId,
+  AttachedGrantSchema, HubUnavailable, IdSchema, ProjectRequestOutcomeSchema, readDocument, writeDocument, ProjectNotebookSchema, ProjectNotebookViewSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsViewSchema, ThreadCreatedViewSchema, ThreadOverrideViewSchema, defaultProjectWorkSettings, newId,
   type CheckoutOwnership, type Configuration, type CoordinatorMessageRequestSchema, type DecisionAnswerRequestSchema, type Homes, type NotebookRequestSchema, type Project,
   type ProjectHub, type ProjectWorkListView, type ProjectWorkSettings, type ProjectWorkSettingsRequestSchema, type ProjectWorkView, type PublicationLeaseService,
   type RiggingItem, type SecretRedactor, type SharedProjects, type ThreadCreateRequestSchema, type ThreadMessageRequestSchema, type ThreadOverrideRequestSchema,
@@ -137,7 +137,7 @@ export type ProjectWorkOptions = {
   /** Main isolation (phase 6) publishes under these; worktree threads need neither. */
   ownership?: CheckoutOwnership | undefined; leases?: PublicationLeaseService | undefined;
   outside?: { assertIdle(project: Project, path: string): Promise<void> } | undefined;
-  bridges: Pick<StretchBridges, 'issueTools'>; memory: Pick<BasicMemory, 'project'>;
+  bridges: Pick<StretchBridges, 'issueTools' | 'restoreTools'>; memory: Pick<BasicMemory, 'project'>;
   sendCapture?(request: ProjectMemoryRequest): Promise<void>;
   hubMemory?: import('@jevellan/memory').HubMemoryStore;
   switchMemory?(projectId: string, mode: Project['memory']['mode'], requestId: string): Promise<Project>;
@@ -184,7 +184,7 @@ export class ProjectWork {
   readonly #timers: ProjectTimers;
   readonly #publisher: ThreadIndexPublisher;
   readonly #attach: ThreadAttach;
-  readonly #attachedGrants = new Map<string, { token: string; close(): Promise<void> }>();
+  readonly #attachedGrants = new Map<string, { close(): Promise<void> }>();
   #sweepTimer: ReturnType<typeof setInterval> | undefined;
   #taskSweep: Promise<void> | undefined;
   #taskSweepAgain = false;
@@ -585,8 +585,9 @@ export class ProjectWork {
   start(): void {
     if (this.#started || this.#closing) return;
     this.#started = true;
-    void this.ready.then(() => {
+    void this.ready.then(async () => {
       if (this.#closing) return;
+      await this.#restoreAttachedGrants();
       this.journal?.start(this.#timers.periodic);
       if (!deviceAllowsWork(this.#o.homes)) { this.inbox.start(); return; }
       this.threads.begin();
@@ -1200,33 +1201,54 @@ export class ProjectWork {
    * Terminal takeover (brief phase 7), for the local control routes only: the answer carries the native session id and the account's
    * credentials, so it never goes through the redactor and never leaves the loopback socket.
    */
+  /** The tools a terminal takeover gets (memory, GitHub reads, its terminal): never the thread's report or other turn tools. */
+  #attachedScope(project: Project, threadId: string, runtime: 'claude' | 'codex'): BridgeScopeTools {
+    const thread = this.store.get(threadId)!; const view = { runtime };
+    const allowed = ['memory_search', 'memory_read', ...(project.memory.mode === 'hub' ? ['memory_write', 'memory_edit'] as const : []), 'jevellan_github', 'jevellan_terminal_read'] as const;
+    const tools = new ProjectTools({ kind: 'thread', projectId: project.id, threadId, turn: thread.turns, isolation: thread.isolation, memoryMode: project.memory.mode,
+      provenance: { source: 'thread', runtime: thread.placement.runtime, model: thread.placement.model, threadId } }, {
+      isCurrent: () => this.store.get(threadId)?.state === 'attached',
+      memory: scope => this.#o.memory.project(project, this.#o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'thread', id: threadId, provenance: scope.provenance }),
+      call: (scope, name, input, signal) => {
+        if (name === 'jevellan_github') return this.#github.read(scope, input, signal);
+        if (name === 'jevellan_terminal_read' && this.#o.terminalRead) return this.#o.terminalRead(scope, input);
+        throw refuse('This tool is not available during terminal takeover.', 403);
+      },
+      capture: async (_scope, payload) => {
+        const current = this.store.get(threadId); if (current?.state !== 'attached') throw refuse('The terminal takeover has ended.', 401);
+        const sessionId = payload?.sessionId ?? current.nativeSessionId;
+        const home = this.#o.homes.account(view.runtime, current.placement.accountId);
+        const journal = (await listNativeSessions({ runtime: nativeFormat(view.runtime), root: home })).find(row => row.nativeId === sessionId);
+        if (!journal || journal.cwd === null || resolvedPath(journal.cwd) !== resolvedPath(current.cwd)) throw refuse('Capture needs this thread’s isolated session.', 403);
+        await this.#capture(project, { scope: 'attached', threadId, runtime: view.runtime, model: current.placement.model, accountId: current.placement.accountId, sessionId });
+      },
+    }, this.#o.redactor);
+    const scoped: BridgeScopeTools = { list: () => { tools.list(); return bridgeTools([...allowed]); },
+      call: (name, input) => { if (!(allowed as readonly string[]).includes(name)) throw refuse('This tool is not available during terminal takeover.', 403); return tools.call(name, input); },
+      capture: payload => tools.capture(payload), close: () => tools.close() };
+    return scoped;
+  }
+  #grantPath(projectId: string, threadId: string): string { return this.#o.homes.at('project-work', projectId, 'attached-grants', `${threadId}.json`); }
+  /** A daemon restart keeps a terminal session's tools: each thread still attached here gets its grant back; a handed-back thread's file goes. */
+  async #restoreAttachedGrants(): Promise<void> {
+    for (const thread of this.store.all()) {
+      const path = this.#grantPath(thread.projectId, thread.id); if (!existsSync(path)) continue;
+      try {
+        const saved = readDocument(path, AttachedGrantSchema);
+        if (thread.state !== 'attached' || saved.threadId !== thread.id || this.#attachedGrants.has(thread.id)) { if (thread.state !== 'attached') rmSync(path, { force: true }); continue; }
+        const runtime = thread.placement.runtime === 'codex' ? 'codex' : 'claude';
+        this.#attachedGrants.set(thread.id, this.#o.bridges.restoreTools(saved.key, this.#attachedScope(await this.#project(thread.projectId), thread.id, runtime)));
+      } catch { /* An unreadable grant leaves that session without tools, as before. */ }
+    }
+  }
   async attach(threadId: string): Promise<ThreadAttachView> {
     await this.ready; const view = await this.#attach.attach(threadId), thread = this.store.get(threadId)!;
     try {
       const project = await this.#project(thread.projectId), settings = await this.admission.settings(project.id);
-      const allowed = ['memory_search', 'memory_read', ...(project.memory.mode === 'hub' ? ['memory_write', 'memory_edit'] as const : []), 'jevellan_github', 'jevellan_terminal_read'] as const;
-      const tools = new ProjectTools({ kind: 'thread', projectId: project.id, threadId, turn: thread.turns, isolation: thread.isolation, memoryMode: project.memory.mode,
-        provenance: { source: 'thread', runtime: thread.placement.runtime, model: thread.placement.model, threadId } }, {
-        isCurrent: () => this.store.get(threadId)?.state === 'attached',
-        memory: scope => this.#o.memory.project(project, this.#o.deviceId, () => { throw new Error(THREAD_MEMORY_READ_ONLY); }, { kind: 'thread', id: threadId, provenance: scope.provenance }),
-        call: (scope, name, input, signal) => {
-          if (name === 'jevellan_github') return this.#github.read(scope, input, signal);
-          if (name === 'jevellan_terminal_read' && this.#o.terminalRead) return this.#o.terminalRead(scope, input);
-          throw refuse('This tool is not available during terminal takeover.', 403);
-        },
-        capture: async (_scope, payload) => {
-          const current = this.store.get(threadId); if (current?.state !== 'attached') throw refuse('The terminal takeover has ended.', 401);
-          const sessionId = payload?.sessionId ?? current.nativeSessionId;
-          const home = this.#o.homes.account(view.runtime, current.placement.accountId);
-          const journal = (await listNativeSessions({ runtime: nativeFormat(view.runtime), root: home })).find(row => row.nativeId === sessionId);
-          if (!journal || journal.cwd === null || resolvedPath(journal.cwd) !== resolvedPath(current.cwd)) throw refuse('Capture needs this thread’s isolated session.', 403);
-          await this.#capture(project, { scope: 'attached', threadId, runtime: view.runtime, model: current.placement.model, accountId: current.placement.accountId, sessionId });
-        },
-      }, this.#o.redactor);
-      const scoped: BridgeScopeTools = { list: () => { tools.list(); return bridgeTools([...allowed]); },
-        call: (name, input) => { if (!(allowed as readonly string[]).includes(name)) throw refuse('This tool is not available during terminal takeover.', 403); return tools.call(name, input); },
-        capture: payload => tools.capture(payload), close: () => tools.close() };
+      const scoped = this.#attachedScope(project, threadId, view.runtime);
       const grant = this.#o.bridges.issueTools(scoped); this.#attachedGrants.set(threadId, grant);
+      this.#o.homes.ensure('project-work', project.id, 'attached-grants');
+      writeDocument(this.#grantPath(project.id, threadId), AttachedGrantSchema, { schema: 'attached-grant-v1', threadId, key: grant.key });
       const account = await this.#o.accounts.resolve(thread.placement.accountId), models = await this.#o.runtimes.get(view.runtime)?.listModels(account).catch(() => []);
       const contextWindow = models?.find(model => model.id === thread.placement.model)?.contextWindow;
       const roster = await this.#o.roster(), protectedPaths = thread.isolation === 'worktree' ? [...new Set([
@@ -1238,7 +1260,7 @@ export class ProjectWork {
         { JEVELLAN_STRETCH_TOKEN: grant.token, JEVELLAN_DAEMON_URL: this.daemonUrl, JEVELLAN_PROJECT_MEMORY_MODE: project.memory.mode }, {}),
         integration: { bridgeCommand: process.execPath, bridgeArgs: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], safetyCommand,
           compactAtPercent: settings.compactAtPercent, ...(contextWindow ? { contextWindow } : {}) } };
-    } catch (error) { await this.#attachedGrants.get(threadId)?.close(); this.#attachedGrants.delete(threadId); await this.#attach.detach(threadId); throw error; }
+    } catch (error) { await this.#attachedGrants.get(threadId)?.close(); this.#attachedGrants.delete(threadId); rmSync(this.#grantPath(thread.projectId, threadId), { force: true }); await this.#attach.detach(threadId); throw error; }
   }
   /**
    * Detach also frees the thread's account (phase 8): threads waiting for it and coordinators waiting as `Unavailable` are checked now,
@@ -1259,6 +1281,7 @@ export class ProjectWork {
     };
     if (attached?.state === 'attached') await capture(attached);
     await this.#attachedGrants.get(threadId)?.close(); this.#attachedGrants.delete(threadId);
+    const detaching = this.store.get(threadId); if (detaching) rmSync(this.#grantPath(detaching.projectId, threadId), { force: true });
     const detached = await this.#attach.detach(threadId);
     const adopted = this.store.get(threadId);
     if (detached.adopted && adopted?.nativeSessionId !== attached?.nativeSessionId && adopted) await capture(adopted);
