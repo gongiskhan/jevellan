@@ -2541,3 +2541,5 @@ Bridge continuation area 7g: decisions 169–170 record shared owner-command sco
 Bridge continuation area 7h: decisions 171–172 record shared serialized refresh, newer-push freshness, strict optional prepared status over existing streams, unchanged canonical readers/writers, failing-first regressions, backend verification and four desktop gates. Row 179 closes; 145 phase 10 rows remain before intake and placement/p-v1/m-v1. Source stays unreleased.
 
 Bridge continuation area 7i: decisions 173–174 record shared conversation labels, typed recorded pause/picker/notice presentation, canonical reader and live notice parity, unchanged writer methods and failing-first/static/backend/desktop evidence. Rows 185–186 close; 143 phase 10 rows remain before intake and placement/p-v1/m-v1. Source stays unreleased.
+
+Bridge continuation area7j: decisions175–176 record the shared owner-sidebar read/refresh policy, strict canonical HTTP/CLI/MCP source, the conversation-id route conflict, and failing-first/static/backend/two desktop gates. Row187 closes;142 phase10 rows remain before intake and placement/p-v1/m-v1. Source stays unreleased.

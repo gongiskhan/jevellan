@@ -35,6 +35,8 @@ import { handleAgentAccessApi } from './agent-access-api.js';
 import { handleAgentPeer } from './agent-mcp-api.js';
 import { DEVICE_WORKTREES_ROUTE, handleDeviceWorktrees } from './device-worktrees-api.js';
 import { handleTerminalApi, handleTerminalPeer } from './terminal-api.js';
+import { ConversationListReadRequestSchema } from '@jevellan/core';
+import { conversationListSource } from './conversation-list-source.js';
 
 export { json } from './http.js';
 function failure(message: string, status: number) { return Object.assign(new Error(message), { status }); }
@@ -179,6 +181,11 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       return;
     }
     if (path === '/api/conversation-composer' && method === 'POST') { send(await app.conversations.composerDraft(await body(request))); return; }
+    if (path === '/api/conversation-list/view') {
+      if (method !== 'GET') throw failure('This conversation list operation does not support that method.', 405);
+      ConversationListReadRequestSchema.parse({ schema: 'conversation-list-read-request-v1', ...Object.fromEntries(url.searchParams) });
+      send(await conversationListSource(app)); return;
+    }
     if (path === '/api/conversations' && method === 'GET') { await app.conversations.ready; send(await app.conversations.list()); return; }
     if (path === '/api/conversations' && method === 'POST') { retryable = true; send(await app.conversations.create(await body(request)), 201); return; }
     const route = conversationRoute(path, method);

@@ -1,3 +1,4 @@
+import { ConversationListSourceSchema, conversationListRefresh, conversationListUpdateKey, CONVERSATION_LIST_POLL_MS, CONVERSATION_UPDATED_EVENT } from '@jevellan/core/client';
 import { conversationStateLabel as stateLabel, conversationActionLabel as actionLabel, conversationPagePresentation, conversationPagePresentationForStream } from '@jevellan/core/client';
 import { ConversationTranscriptViewSchema, conversationTranscriptProjection, selectConversationTranscriptView, conversationNoticeHidden, type ConversationTranscriptView } from '@jevellan/core/client';
 import { ConversationStatusStreamRequestSchema, ConversationStatusEventSchema, STATUS_REFRESH_WINDOW_MS } from '@jevellan/core/client';
@@ -73,47 +74,20 @@ export function ConversationSidebar({
   const [conversations, setConversations] = useState<z.infer<typeof ConversationListSchema>['conversations']>(
     [],
   );
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<Array<Pick<Project, 'id' | 'name'>>>([]);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   useEffect(() => {
-    let stopped = false;
-    let running = false;
-    const controller = new AbortController();
-    const load = async () => {
-      if (running) return;
-      running = true;
-      try {
-        const [list, projects] = await Promise.all([
-          api('/api/conversations', ConversationListSchema, 'GET', undefined, {
-            signal: controller.signal,
-            waitForHub: true,
-          }),
-          api('/hub/projects', ProjectsListSchema, 'GET', undefined, {
-            signal: controller.signal,
-            waitForHub: true,
-          }),
-        ]);
-        if (!stopped) {
-          setConversations(list.conversations);
-          setProjects(projects.projects.map((row) => row.project));
-        }
-      } catch (error) {
-        if (!stopped) onError(error);
-      } finally {
-        running = false;
-      }
-    };
-    const changed = () => void load();
-    window.addEventListener('jevellan-conversation-updated', changed);
-    void load();
-    const timer = setInterval(changed, 5000);
-    return () => {
-      stopped = true;
-      controller.abort();
-      clearInterval(timer);
-      window.removeEventListener('jevellan-conversation-updated', changed);
-    };
+    const refresh = conversationListRefresh(
+      signal => api('/api/conversation-list/view', ConversationListSourceSchema, 'GET', undefined, { signal, waitForHub: true }),
+      value => { setConversations(value.conversations); setProjects(value.projects); },
+      onError,
+    );
+    const changed = () => void refresh.request();
+    window.addEventListener(CONVERSATION_UPDATED_EVENT, changed);
+    changed();
+    const timer = setInterval(changed, CONVERSATION_LIST_POLL_MS);
+    return () => { refresh.stop(); clearInterval(timer); window.removeEventListener(CONVERSATION_UPDATED_EVENT, changed); };
   }, [onError, selected]);
   const inFilter = (label: string, state: string) =>
     label === 'All' ||
@@ -247,7 +221,7 @@ export function ConversationSidebar({
             await api(`/api/conversations/${renaming.id}/rename`, ConversationPublicSchema, 'POST', {
               schema: 'rename-conversation-v1', clientRequestId: `rename_${clientId()}`, previousTitle: renaming.title, title: title.trim(),
             });
-            window.dispatchEvent(new Event('jevellan-conversation-updated'));
+            window.dispatchEvent(new Event(CONVERSATION_UPDATED_EVENT));
           }
           setRenaming(undefined);
         }); }}>
@@ -510,9 +484,10 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
   const task = useTask(props.onError);
   const input = useRef<HTMLTextAreaElement>(null);
   const messageId = useRef(`message_${clientId()}`);
+  const listUpdateKey = conversationListUpdateKey(view?.conversation);
   useEffect(() => {
-    if (view) window.dispatchEvent(new Event('jevellan-conversation-updated'));
-  }, [view?.conversation.id, view?.conversation.state, view?.conversation.title]);
+    if (listUpdateKey !== null) window.dispatchEvent(new Event(CONVERSATION_UPDATED_EVENT));
+  }, [listUpdateKey]);
   useEffect(() => {
     void api('/hub/projects', ProjectsListSchema)
       .then((value) => setProjects(value.projects.map((entry) => entry.project)))
