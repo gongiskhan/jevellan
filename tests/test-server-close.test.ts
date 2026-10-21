@@ -1,5 +1,5 @@
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
-import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -46,9 +46,9 @@ const fixtureEntries = (tmp: string) => readdirSync(tmp).filter(name => name !==
  * Starts the fixture server in a process group of its own, as Playwright's shell does, with a private temporary folder, and
  * waits until it is ready (its control listener binds after all seeding) or, with `ready: false`, until it has its root.
  */
-async function start({ ready = true } = {}) {
+async function start({ ready = true, closeMs }: { ready?: boolean; closeMs?: number } = {}) {
   const tmp = mkdtempSync(join(tmpdir(), 'jevellan-fixture-close-')); const port = await ports();
-  const launcher = spawn(process.execPath, ['scripts/test-server.mjs', '--port', String(port)], { detached: true, env: { ...process.env, TMPDIR: tmp }, stdio: ['ignore', 'ignore', 'pipe'] });
+  const launcher = spawn(process.execPath, ['scripts/test-server.mjs', '--port', String(port)], { detached: true, env: { ...process.env, TMPDIR: tmp, ...(closeMs ? { JEVELLAN_FIXTURE_CLOSE_MS: String(closeMs) } : {}) }, stdio: ['ignore', 'ignore', 'pipe'] });
   started.push({ launcher, tmp });
   let stderr = ''; launcher.stderr!.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
   const exited = new Promise<number | null>((resolve) => launcher.once('exit', (code) => resolve(code)));
@@ -83,3 +83,13 @@ test('a fixture server whose launcher is killed closes and removes its root, als
     await until(() => released(server.port), 30_000, `the ports to be released (ready: ${ready})`);
   }
 }, 150_000);
+
+test('a fixture server that cannot finish starting before its close deadline still removes its root, read-only folders included', async () => {
+  // The deadline path runs when startup outlasts it (a loaded machine); the project library leaves read-only folders in the root.
+  const server = await start({ ready: false, closeMs: 300 });
+  const [root] = fixtureEntries(server.tmp); const locked = join(server.tmp, root!, 'locked-fixture');
+  mkdirSync(locked); writeFileSync(join(locked, 'file.txt'), 'read-only'); chmodSync(locked, 0o500);
+  process.kill(-server.launcher.pid!, 'SIGKILL');
+  await server.exited;
+  await until(() => fixtureEntries(server.tmp).length === 0, 20_000, 'the temporary root to be removed');
+}, 90_000);

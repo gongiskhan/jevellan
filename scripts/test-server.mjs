@@ -3,7 +3,6 @@ import { ProjectJobSchema, ProjectDailySchema, DeviceSchema, DeviceFactsSchema, 
 import { chmodSync, lstatSync, readdirSync, existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { execFileSync, spawn } from 'node:child_process';
-import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
@@ -48,10 +47,21 @@ const terminalOptions = { env: { PATH: terminalPath, SHELL: '/bin/bash', LANG: '
 // A signal or a lost launcher closes the server, once it is ready: closing an application that is still starting would fail
 // the startup and leave the root. Whatever happens next, the server ends and its root goes, since no group SIGKILL reaches it.
 let ready = false; let closing = false;
+/** The root goes whatever state it is in: the project library leaves read-only folders, so every folder is made writable first. */
+function removeRoot() {
+  const writable = path => { if (lstatSync(path).isSymbolicLink() || !lstatSync(path).isDirectory()) return; chmodSync(path, 0o700); for (const child of readdirSync(path)) writable(join(path, child)); };
+  try { writable(root); } catch { /* removed meanwhile */ }
+  rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+}
 function requestClose() {
   if (closing) return;
   closing = true;
-  globalThis.setTimeout(() => { console.error('The fixture server did not close within 30 seconds.'); rmSync(root, { recursive: true, force: true }); process.exit(1); }, 30_000).unref();
+  // JEVELLAN_FIXTURE_CLOSE_MS shortens the deadline in the test of this path.
+  globalThis.setTimeout(() => {
+    console.error('The fixture server did not close within 30 seconds.');
+    try { removeRoot(); } catch (error) { console.error('The fixture root could not be removed:', error); }
+    process.exit(1);
+  }, Number(process.env.JEVELLAN_FIXTURE_CLOSE_MS) || 30_000).unref();
   if (ready) void close();
 }
 process.once('SIGINT', requestClose); process.once('SIGTERM', requestClose); process.once('disconnect', requestClose);
@@ -647,8 +657,7 @@ async function close() {
   } catch (error) {
     failure = error; console.error('The fixture server did not close cleanly:', error);
   } finally {
-    const writable = path => { if (lstatSync(path).isSymbolicLink() || !lstatSync(path).isDirectory()) return; chmodSync(path, 0o700); for (const child of readdirSync(path)) writable(join(path, child)); };
-    writable(root); await rm(root, { recursive: true, force: true });
+    removeRoot();
   }
   process.exit(failure ? 1 : 0);
 }
