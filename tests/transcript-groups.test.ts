@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import type { CursorTurn } from '../packages/core/dist/client.js';
-import { mergeTranscriptTurns, toolAwaitingResult, transcriptGroups } from '../apps/web/src/transcript-groups.js';
-import { mergeThreadToolTurns } from '../apps/web/src/project-work-model.js';
+import { mergeTranscriptTurns, toolAwaitingResult, transcriptGroups } from '../packages/core/dist/transcript-groups.js';
+import { mergeThreadToolTurns } from '../packages/projects/dist/thread-timeline.js';
 const tool = (id: string, name = 'Read', state: 'running' | 'completed' | 'failed' = 'completed'): CursorTurn['blocks'][number] => ({ type: 'tool', id, name, input: id, output: `result ${id}`, state });
 const turn = (id: string, blocks: CursorTurn['blocks'], role: CursorTurn['role'] = 'assistant'): CursorTurn => ({ id, blocks, role });
 

@@ -17,7 +17,8 @@ import { SessionTurnCacheSchema, SessionCacheSummarySchema } from './session-cac
 import { CoordinatorHandoffSchema, JournalConfigSchema, JournalDocumentSchema, JournalThreadSchema, ProjectJournalRecordSchema } from './project-journal-schemas.js';
 import { OwnerCommandsSchema } from './owner-command-schemas.js';
 import { ProjectReviewReportSchema } from './project-review-schemas.js';
-import { CursorTranscriptSchema } from './cursor-schemas.js';
+import { CursorTranscriptSchema, CursorTurnSchema } from './cursor-schemas.js';
+import { PreparedTranscriptGroupSchema } from './transcript-presentation-schemas.js';
 import { AccountUsageSchema, AuthSchema, DeviceFactsSchema, DeviceTagsSchema, EffortSchema, IdSchema, JevCallSchema, TimestampSchema, UsageSchema } from './schemas.js';
 import { TaskPlacementContextSchema, TaskTypeSchema } from './task-types.js';
 import { ProjectMemorySettingsSchema, MemoryRecallSchema } from './memory-note-schemas.js';
@@ -534,8 +535,22 @@ export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project
   needsOwner: count.optional(),
   board: z.strictObject(Object.fromEntries(['waiting', 'review', 'working', 'landing', 'landed', 'idle', 'resolved'].map(group => [group, z.array(z.strictObject({ id: IdSchema, at: TimestampSchema }))])) as Record<'waiting' | 'review' | 'working' | 'landing' | 'landed' | 'idle' | 'resolved', z.ZodArray<z.ZodObject<{ id: typeof IdSchema; at: typeof TimestampSchema }, z.core.$strict>>>).optional() });
 export type ProjectWorkView = z.infer<typeof ProjectWorkViewSchema>;
+export const ThreadReportPresentationSchema = z.strictObject({ schema: z.literal('project-thread-report-presentation-v1'), projectId: IdSchema,
+  heading: z.string(), badge: z.strictObject({ text: z.string(), tone: z.enum(['muted', 'ok', 'jev', 'warn']) }),
+  fixLabel: z.string().nullable(), synthesizedNotice: z.string().nullable(), preview: z.string(),
+  tests: z.strictObject({ label: z.string(), tone: z.enum(['ok', 'danger']), icon: z.enum(['check', 'close']) }).nullable() });
+export type ThreadReportPresentation = z.infer<typeof ThreadReportPresentationSchema>;
+export const ThreadQueuedPresentationSchema = z.strictObject({ schema: z.literal('project-thread-queued-presentation-v1'),
+  sourceLabel: z.string(), interruptsLabel: z.string().nullable(), preview: z.string() });
+export type ThreadQueuedPresentation = z.infer<typeof ThreadQueuedPresentationSchema>;
+export const ThreadTimelineSchema = z.strictObject({ schema: z.literal('project-thread-timeline-v1'), projectId: IdSchema, threadId: IdSchema,
+  items: z.array(z.discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('turn'), turn: CursorTurnSchema, fix: ThreadFixSchema.optional(), fixLabel: z.string().nullable(), active: z.boolean(), groups: z.array(PreparedTranscriptGroupSchema) }),
+    z.strictObject({ kind: z.literal('report'), report: ThreadReportSchema, presentation: ThreadReportPresentationSchema }),
+  ])), queued: z.array(z.strictObject({ message: QueuedMessageSchema, presentation: ThreadQueuedPresentationSchema })) });
+export type ThreadTimeline = z.infer<typeof ThreadTimelineSchema>;
 export const ThreadViewSchema = z.strictObject({ overrideEditorPath: z.string().nullable().optional(), placementNotice: z.string().nullable().optional(), sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-thread-view-v1'),
-  card: ProjectWorkCardSchema.optional(), presentation: ThreadPresentationSchema.optional(),
+  card: ProjectWorkCardSchema.optional(), presentation: ThreadPresentationSchema.optional(), timeline: ThreadTimelineSchema.optional(),
   notices: z.array(z.strictObject({ at: TimestampSchema, text: z.string().max(4000), kind: z.enum(['info', 'error']) })).max(20).optional(),
   escalations: ThreadLocalSchema.shape.escalations,
   fixTurns: z.array(z.strictObject({ turn: positive, fix: ThreadFixSchema })).optional(),

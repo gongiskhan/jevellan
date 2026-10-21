@@ -90,3 +90,5 @@ export * from './environment-editor.js';
 export * from './notification-editor.js';
 
 export * from './thread-presentation.js';
+
+export * from './thread-timeline.js';

@@ -312,16 +312,10 @@ export const THREAD_ENDED = 'This thread has ended. Start a new thread for new w
 /** The composer's live line while a turn, the preparation or the publication runs. */
 export const TRANSCRIPT_LABEL = 'Thread transcript';
 /** Report cards (12.3): the turn they report, their status chip and the tests they ran. */
-export const reportHeading = (turn: number): string => `Report · turn ${turn}`;
-export const REPORT_STATUS = { progress: 'Progress', done: 'Done', 'needs-decision': 'Needs a decision', blocked: 'Blocked' } as const;
 /** A report Jevellan wrote because the turn ended without one or failed (brief 8.2). */
-export const SYNTHESIZED_REPORT = 'Recorded by Jevellan';
-export const TESTS_PASSED = 'Tests passed';
-export const TESTS_FAILED = 'Tests failed';
 /** Messages that wait for the thread's next turn (D81). */
 export const QUEUED_MESSAGES = 'Waiting for the next turn';
 export const COORDINATOR = 'Coordinator';
-export const INTERRUPTS_TURN = 'Interrupts the current turn';
 /** The thread header's pull request chip and its state once it is no longer open. */
 export const pullRequestNumber = (n: number): string => `#${n}`;
 export const PR_MERGED = 'Merged';
@@ -419,8 +413,6 @@ export const BASE_BRANCH = 'the base branch';
 export const MERGE_HELD = 'Merges are held while the nightly window runs.';
 export const PROPOSED_TASKS = 'Proposed tasks';
 
-export const fixTurnLabel = (fix: import('@jevellan/core/client').ThreadFix) => fix.by === 'owner' ? 'Requested by you'
-  : fix.kind === 'checks' ? 'Automatic fix: failing checks' : fix.kind === 'conflicts' ? 'Automatic fix: conflicts' : 'Automatic fix: review comments';
 
 export const NOTIFICATIONS_TITLE = 'Notifications';
 export const NOTIFICATIONS_ON = 'On for this device.';

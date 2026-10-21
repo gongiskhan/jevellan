@@ -680,3 +680,13 @@ export const PUBLISHING = 'Publishing…';
 export const TRANSCRIPT_TRUNCATED = 'Showing the most recent part of the transcript.';
 export const NO_TRANSCRIPT_YET = 'Nothing here yet. The transcript appears once the first turn starts.';
 export const TRANSCRIPT_UNAVAILABLE = 'The transcript cannot be read right now. Reports are shown on their own.';
+
+// Thread timeline presentation.
+export const reportHeading = (turn: number): string => `Report · turn ${turn}`;
+export const REPORT_STATUS = { progress: 'Progress', done: 'Done', 'needs-decision': 'Needs a decision', blocked: 'Blocked' } as const;
+export const SYNTHESIZED_REPORT = 'Recorded by Jevellan';
+export const TESTS_PASSED = 'Tests passed';
+export const TESTS_FAILED = 'Tests failed';
+export const INTERRUPTS_TURN = 'Interrupts the current turn';
+export const fixTurnLabel = (fix: import('@jevellan/core').ThreadFix) => fix.by === 'owner' ? 'Requested by you'
+  : fix.kind === 'checks' ? 'Automatic fix: failing checks' : fix.kind === 'conflicts' ? 'Automatic fix: conflicts' : 'Automatic fix: review comments';

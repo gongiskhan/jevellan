@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useR
 import {
   THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, threadPollDelay, threadStarting, deviceRefusal,
   ProjectWorkViewSchema, ProjectThreadOverrideEditorSchema, type ProjectThreadOverrideEditor, type ThreadOverrideEditorFields, ProjectThreadWhyViewSchema, type ProjectThreadWhyView, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema,
-  type QueuedMessage, type ThreadIndex, type ThreadReport, type ThreadView,
+  type ThreadTimeline, type ThreadIndex, type ThreadReport, type ThreadReportPresentation, type ThreadView,
 } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
 import { copyText, selectText } from './clipboard.js';
@@ -17,9 +17,8 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  alignReports, dotClass, lineParts,
-  mergeThreadToolTurns, partWords, reportBadge, withoutEchoedSummaries, withoutReportCalls,
-} from './project-work-model.js';
+  dotClass, lineParts,
+  partWords, } from './project-work-model.js';
 import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, updated, useClientIds, useLocalError } from './project-work.js';
 import { TranscriptTurn } from './session-transcript.js';
 import { shortTime } from './time.js';
@@ -131,16 +130,12 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const { error: actionError, setError: setActionError, fail } = useLocalError(onError);
   const allow = useTask((failure) => { fail(failure); kick.current(); });
   const turns = view?.transcript?.turns; const reports = view?.reports;
-  const state = view?.thread.state; const finished = view?.thread.turns ?? 0;
-  const items = useMemo(() => withoutEchoedSummaries(withoutReportCalls(alignReports(turns ?? [], reports ?? [], state === 'running' ? finished + 1 : finished, view?.fixTurns), reports ?? [])),
-    [turns, reports, state, finished, view?.fixTurns]);
 
   const images = useMemo(() => sessionImages(turns ?? [], reports ?? []), [turns, reports]);
   const openImage = useCallback((ref: string) => { if (imageReferences(ref).length) { following.current = false; setBehind(true); setSelectedImage(ref); } }, []);
 
-  const transcriptItems = useMemo(() => mergeThreadToolTurns(items), [items]);
-  const activeTurn = state === 'running' ? transcriptItems.at(-1) : undefined;
-  const activeTurnId = activeTurn?.kind === 'turn' ? activeTurn.turn.id : undefined;
+  const transcriptItems = view?.timeline?.items ?? [];
+
 
   const back = <RouteLink className="text-button pw-back" href={project} navigate={navigate}><Icon name="back" size={14} />{copy.BACK_TO_PROJECT}</RouteLink>;
   if (!view) {
@@ -263,12 +258,12 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       <div className="cursor-transcript pw-transcript" aria-label={copy.TRANSCRIPT_LABEL}>
         {notice && <p className="pw-transcript-note">{notice}</p>}
         {transcriptItems.map((item) => item.kind === 'turn'
-          ? <Fragment key={item.turn.id}>{item.fix && <p className="pw-fix-label">{copy.fixTurnLabel(item.fix)}</p>}<TranscriptTurn projectId={view.thread.projectId} turn={item.turn} onOpenImage={openImage} focus active={item.turn.id === activeTurnId} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} /><ThreadImageStrip base={base} files={turnImages(item.turn)} open={openImage} /></Fragment>
-          : <ReportCard key={`report-${item.report.turn}-${item.report.synthesized ? 'synthesized' : 'recorded'}`} report={item.report} base={base} openImage={openImage} />)}
-        {view.queuedMessages.length > 0 && (
+          ? <Fragment key={item.turn.id}>{item.fixLabel && <p className="pw-fix-label">{item.fixLabel}</p>}<TranscriptTurn projectId={view.thread.projectId} turn={item.turn} onOpenImage={openImage} focus active={item.active} prepared={item.groups} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} /><ThreadImageStrip base={base} files={turnImages(item.turn)} open={openImage} /></Fragment>
+          : <ReportCard key={`report-${item.report.turn}-${item.report.synthesized ? 'synthesized' : 'recorded'}`} report={item.report} presentation={item.presentation} base={base} openImage={openImage} />)}
+        {!!view.timeline?.queued.length && (
           <section className="pw-queued" aria-labelledby={queuedId}>
             <h3 id={queuedId}>{copy.QUEUED_MESSAGES}</h3>
-            {view.queuedMessages.map((queued) => <QueuedEntry projectId={view.thread.projectId} key={queued.id} queued={queued} />)}
+            {view.timeline.queued.map((queued) => <QueuedEntry projectId={view.thread.projectId} key={queued.message.id} queued={queued} />)}
           </section>
         )}
       </div>
@@ -330,23 +325,23 @@ function ConfirmAction({ title, action, body, run, close, onError }: {
 }
 
 /** A report card (12.3): the turn and status, the summary, a question with its options, and the tests the turn ran. */
-function ReportCard({ report, base, openImage }: { report: ThreadReport; base: string; openImage(ref: string): void }) {
+function ReportCard({ report, presentation, base, openImage }: { report: ThreadReport; presentation: ThreadReportPresentation; base: string; openImage(ref: string): void }) {
   const headingId = useId();
   const [expanded, setExpanded] = useState(false);
-  const badge = reportBadge(report.status);
+  const badge = presentation.badge;
   const tests = report.testsRun; const options = report.options ?? [];
   return (
     <section className={`pw-report pw-report-${report.status}`} aria-labelledby={headingId}>
-      {report.fix && <p className="pw-fix-label">{copy.fixTurnLabel(report.fix)}</p>}
+      {presentation.fixLabel && <p className="pw-fix-label">{presentation.fixLabel}</p>}
       <details className="pw-report-disclosure" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="pw-report-head">
-        <h3 id={headingId}>{copy.reportHeading(report.turn)}</h3>
-        {report.synthesized && <span className="pw-report-note">{copy.SYNTHESIZED_REPORT}</span>}
+        <h3 id={headingId}>{presentation.heading}</h3>
+        {presentation.synthesizedNotice && <span className="pw-report-note">{presentation.synthesizedNotice}</span>}
         <span className={`chip pw-badge pw-tone-${badge.tone}`}>{badge.text}</span>
-        {!expanded && <span className="pw-report-preview">{report.summary.split('\n').find(line => line.trim())?.slice(0, 220)}</span>}
+        {!expanded && <span className="pw-report-preview">{presentation.preview}</span>}
       </summary>
       {expanded && <>
-      <LibraryMessage projectId={base.split('/')[3]!} text={report.summary} onOpenImage={openImage} />
+      <LibraryMessage projectId={presentation.projectId} text={report.summary} onOpenImage={openImage} />
       <ThreadImageStrip base={base} files={imageReferences(report.summary)} open={openImage} />
       <OwnerCommands commands={report.ownerCommands} />
       {(report.question || options.length > 0) && (
@@ -361,8 +356,8 @@ function ReportCard({ report, base, openImage }: { report: ThreadReport; base: s
       )}
       {tests && (
         <div className="pw-report-tests">
-          <strong className={`pw-tone-${tests.passed ? 'ok' : 'danger'}`}>
-            <Icon name={tests.passed ? 'check' : 'close'} size={14} />{tests.passed ? copy.TESTS_PASSED : copy.TESTS_FAILED}
+          <strong className={`pw-tone-${presentation.tests?.tone}`}>
+            <Icon name={presentation.tests?.icon ?? 'check'} size={14} />{presentation.tests?.label}
           </strong>
           <code>{tests.command}</code>
           {tests.summary && <p>{tests.summary}</p>}
@@ -375,15 +370,16 @@ function ReportCard({ report, base, openImage }: { report: ThreadReport; base: s
 }
 
 /** A message that waits for the thread's next turn (D81, D231). */
-function QueuedEntry({ queued, projectId }: { queued: QueuedMessage; projectId: string }) {
+function QueuedEntry({ queued: item, projectId }: { queued: ThreadTimeline['queued'][number]; projectId: string }) {
+  const { message: queued, presentation } = item;
   return (
     <details className="pw-queued-message">
       <summary>
       <span className="pw-source">
-        {queued.from === 'owner' ? copy.YOU : copy.COORDINATOR} · <Stamp at={queued.at} label={shortTime(queued.at)} />
-        {queued.interrupt && <> · {copy.INTERRUPTS_TURN}</>}
+        {presentation.sourceLabel} · <Stamp at={queued.at} label={shortTime(queued.at)} />
+        {presentation.interruptsLabel && <> · {presentation.interruptsLabel}</>}
       </span>
-        <span className="pw-queued-preview">{queued.text.trim().split('\n')[0]?.slice(0, 160)}</span>
+        <span className="pw-queued-preview">{presentation.preview}</span>
       </summary>
       <LibraryMessage projectId={projectId} text={queued.text} />
     </details>

@@ -191,3 +191,6 @@ export * from './project-task-editor.js';
 export * from './thread-form.js';
 
 export * from './project-thread-presentation-schemas.js';
+
+export * from './transcript-groups.js';
+export * from './transcript-presentation-schemas.js';

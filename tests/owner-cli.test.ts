@@ -33,6 +33,7 @@ test('CLI thread view returns the shared presentation without steering work', as
   expect(await callCommand(['thread', 'view', '--thread', made.threadId], f.homes)).toBe(0);
   const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
   expect(result).toMatchObject({ ok: true, data: { schema: 'project-thread-view-v1', presentation: { schema: 'project-thread-presentation-v1', actions: { allowTurnsStep: 10 }, composer: { block: null } } } }); expect(f.thread(made.threadId)).toEqual(before);
+  expect(result).toMatchObject({ ok: true, data: { timeline: { schema: 'project-thread-timeline-v1', projectId: 'project', threadId: made.threadId } } });
 });
 
 test('CLI task compose editor shares defaults and explicit form normalization', async () => {

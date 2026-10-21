@@ -33,6 +33,7 @@ test('MCP thread view shares header and composer presentation without steering w
   await f.waitFor(() => f!.thread(made.threadId), row => row.state === 'idle'); const before = structuredClone(f.thread(made.threadId)), mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'thread', arguments: { action: 'view', thread: made.threadId } })).structuredContent);
   expect(result).toMatchObject({ ok: true, data: { schema: 'project-thread-view-v1', presentation: { schema: 'project-thread-presentation-v1', actions: { allowTurnsStep: 10 }, composer: { block: null } } } }); expect(f.thread(made.threadId)).toEqual(before);
+  expect(result).toMatchObject({ ok: true, data: { timeline: { schema: 'project-thread-timeline-v1', projectId: 'project', threadId: made.threadId } } });
 });
 
 test('MCP task compose editor preserves Automatic placement and performs no work', async () => {

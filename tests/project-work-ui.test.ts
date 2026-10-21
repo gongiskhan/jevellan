@@ -1,3 +1,4 @@
+import { alignReports, mergeThreadToolTurns, reportBadge, withoutEchoedSummaries, withoutReportCalls } from '../packages/projects/dist/thread-timeline.js';
 import { composerBlock, threadActions, threadActivity, threadLiveText, transcriptNotice, restartedThread, threadReason } from '../packages/projects/dist/thread-presentation.js';
 import { deviceRefusal, threadPollDelay, threadStarting } from '../packages/core/dist/index.js';
 import { settingsRequest } from '../packages/projects/dist/project-configuration.js';
@@ -18,12 +19,10 @@ import { sidebarOrder } from '../packages/projects/dist/views.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import { chatProposalIds, chatProposalGroups } from '../apps/web/src/project-work-model.js';
 import {
-  alignReports, mergeThreadToolTurns, chatItems, deviceBlock, deviceChoices, dotClass,
+  chatItems, deviceBlock, deviceChoices, dotClass,
   lineParts, mainIsolationBlock, partWords, projectDot,
-  projectRoute, reportBadge, rowClockMs, sidebarProjects, threadCreateRequest,
-  toolIcon, withoutEchoedSummaries,
-  withoutReportCalls,
-} from '../apps/web/src/project-work-model.js';
+  projectRoute, rowClockMs, sidebarProjects, threadCreateRequest,
+  toolIcon, } from '../apps/web/src/project-work-model.js';
 import { dateOnly, duration, relativeDuration, shortTime, timeStamp } from '../apps/web/src/time.js';
 
 const NOW = Date.parse('2026-10-04T12:00:00.000Z');
@@ -706,10 +705,10 @@ test('fix provenance labels the aligned prompt and survives transcript filtering
   const shown = mergeThreadToolTurns(withoutEchoedSummaries(withoutReportCalls(aligned, [report])));
   expect(shown.find(item => item.kind === 'turn' && item.turn.id === 'fix-prompt')).toMatchObject({ fix });
   expect(shown.find(item => item.kind === 'report' && item.report.turn === 2)).toMatchObject({ report: { fix } });
-  expect(copy.fixTurnLabel(fix)).toBe('Automatic fix: failing checks');
-  expect(copy.fixTurnLabel({ ...fix, kind: 'conflicts' })).toBe('Automatic fix: conflicts');
-  expect(copy.fixTurnLabel({ ...fix, kind: 'comments' })).toBe('Automatic fix: review comments');
-  expect(copy.fixTurnLabel({ by: 'owner', kind: 'checks' })).toBe('Requested by you');
+  expect(server.fixTurnLabel(fix)).toBe('Automatic fix: failing checks');
+  expect(server.fixTurnLabel({ ...fix, kind: 'conflicts' })).toBe('Automatic fix: conflicts');
+  expect(server.fixTurnLabel({ ...fix, kind: 'comments' })).toBe('Automatic fix: review comments');
+  expect(server.fixTurnLabel({ by: 'owner', kind: 'checks' })).toBe('Requested by you');
 });
 
 
