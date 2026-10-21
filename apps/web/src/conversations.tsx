@@ -1,3 +1,4 @@
+import { conversationControlsView } from '@jevellan/core/client';
 import { ConversationStartResultSchema } from '@jevellan/core/client';
 import { PROJECT_SETUP_WAITING_LABEL } from '@jevellan/core/client';
 import { ConversationCreationDraftSchema, type ConversationCreationPending } from '@jevellan/core/client';
@@ -531,23 +532,15 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
       </p>
     );
   const device = props.data.devices.devices.find((entry) => entry.id === view.conversation.ownerDeviceId);
-  const running = view.busy || view.conversation.state === 'running';
+  const controls = view.controls ?? conversationControlsView(view);
+  const running = controls.running;
   const plans = view.plans ?? conversationPlansView(view, props.data.config.configuration['x-jevellan'].guards.pauseAfterPlan);
   const project = projects.find((entry) => entry.id === view.conversation.projectId);
-  const settlementTarget = view.conversation.work ?? view.closedWorks.at(-1);
-  const latestSettlement = view.settlements.filter((entry) => entry.workId === settlementTarget?.id).at(-1);
-  const canSettle =
-    !!settlementTarget &&
-    settlementTarget.closedAs !== 'done' &&
-    (!!view.conversation.work ||
-      !latestSettlement ||
-      latestSettlement.status !== 'completed' ||
-      latestSettlement.retained);
-  const kept = !view.conversation.work && canSettle;
-  const checkpointBlock = view.checkpointBlocks
-    .filter((entry) => entry.workId === settlementTarget?.id)
-    .at(-1);
-  const finishing = view.finishes.find((entry) => entry.status !== 'completed');
+  const settlementTarget = controls.settlement.target;
+  const kept = controls.settlement.kept;
+  const checkpointBlock = controls.recovery.checkpoint;
+  const finishing = controls.finishing;
+  const blockedFinish = controls.blockedFinish;
   const pagePresentation = conversationPagePresentationForStream(view, events);
   const pickerShown = pagePresentation.picker.shown;
   const branchChange = events.map(event => GitBranchChangeSchema.safeParse(event.data)).findLast(change => change.success)?.data;
@@ -568,8 +561,8 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
         <div className="conversation-meta" aria-label="Conversation details">
           <span className="chip">{project?.name ?? view.conversation.projectId}</span>
           <span className="chip">{device?.name ?? view.conversation.ownerDeviceId}</span>
-          <span className={`chip state-${running ? 'running' : view.conversation.state}`}>
-            {running && <span className="activity-spinner" aria-hidden="true" />}{running ? 'Working' : pagePresentation.stateLabel}
+          <span className={`chip state-${controls.state}`}>
+            {running && <span className="activity-spinner" aria-hidden="true" />}{controls.stateLabel}
           </span>
         </div>
         <div className="actions">
@@ -602,7 +595,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                 Rename
               </button>
               <button
-                disabled={!!finishing || !!view.conversation.outcome}
+                disabled={!controls.canFinishOutside}
                 onClick={(event) => {
                   event.currentTarget.closest('details')?.removeAttribute('open');
                   setEditingConversation('finish');
@@ -627,10 +620,10 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           {view.conversation.outcome.reason && <p>{view.conversation.outcome.reason}</p>}
         </section>
       )}
-      {finishing?.status === 'blocked' && (
+      {blockedFinish && (
         <section className="card">
           <h2>Finish outside Jevellan</h2>
-          <p>{finishing.reason}</p>
+          <p>{blockedFinish.reason}</p>
           <button
             disabled={task.busy}
             onClick={() =>
@@ -640,7 +633,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                     `/api/conversations/${id}/finish-outside`,
                     ConversationPublicSchema,
                     'POST',
-                    finishing.request,
+                    blockedFinish.request,
                   ),
                 ),
               )
@@ -661,19 +654,19 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                 </div>
                 {editingMessage?.id === event.id ? <form className="message-editor" onSubmit={edit => {
                   edit.preventDefault();
-                  if (!running && !kept && !finishing && !checkpointBlock) void task.run(signal => resendMessage(event.id, editingMessage.text, signal));
+                  if (controls.messageActions.canEdit) void task.run(signal => resendMessage(event.id, editingMessage.text, signal));
                 }}>
                   <label htmlFor={`edit-message-${event.id}`}>Edit message</label>
                   <textarea id={`edit-message-${event.id}`} autoFocus value={editingMessage.text} onChange={change => setEditingMessage({ id: event.id, text: change.target.value })} />
                   <p className="muted small-text">Sends a revised message. Earlier messages and work stay in the history.</p>
                   <div className="user-message-actions">
-                    <button type="submit" disabled={task.busy || running || kept || !!finishing || !!checkpointBlock || !editingMessage.text.trim()}>Send edited message</button>
+                    <button type="submit" disabled={task.busy || !controls.messageActions.canEdit || !editingMessage.text.trim()}>Send edited message</button>
                     <button type="button" className="secondary" disabled={task.busy} onClick={() => setEditingMessage(undefined)}>Cancel</button>
                   </div>
                 </form> : <>
                   <Markdown>{String(object(event.data).text ?? '')}</Markdown>
                   <div className="user-message-actions">
-                    <button type="button" className="secondary" disabled={task.busy || running || kept || !!finishing || !!checkpointBlock || !!view.pause?.guard}
+                    <button type="button" className="secondary" disabled={task.busy || !controls.messageActions.canRetry}
                       aria-label="Retry message"
                       title="Retry this request; previous work stays in the history"
                       onClick={() => void task.run(async signal => {
@@ -689,7 +682,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                           await resendMessage(event.id, String(object(event.data).text ?? ''), signal);
                         }
                       })}>Retry</button>
-                    <button type="button" className="secondary" disabled={task.busy || running || kept || !!finishing || !!checkpointBlock}
+                    <button type="button" className="secondary" disabled={task.busy || !controls.messageActions.canEdit}
                       aria-label="Edit message"
                       onClick={() => setEditingMessage({ id: event.id, text: String(object(event.data).text ?? '') })}>Edit</button>
                   </div>
@@ -748,7 +741,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
       {/* A "Pick the next step:" pause heads the picker. Without the picker it keeps only its cause,
           and while work runs again it no longer applies. */}
       {pagePresentation.pause.notice !== null && <p className="notice">{pagePresentation.pause.notice}</p>}
-      {!running && view.externalWait && !checkpointBlock && !finishing && (
+      {controls.recovery.externalRetry && (
         <div className="actions">
           <button
             disabled={task.busy || view.busy}
@@ -768,7 +761,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           </button>
         </div>
       )}
-      {!running && view.decisionWait && !view.pause?.guard && !checkpointBlock && (
+      {controls.recovery.decision && (
         <div className="actions decision-recovery">
           <button
             className="secondary"
@@ -786,7 +779,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           >
             Try automatic again
           </button>
-          {[...new Set(view.decisionWait.reasons.flatMap((reason) => reason.accountIds))].map((accountId) => (
+          {controls.recovery.accountIds.map((accountId) => (
             <button
               key={accountId}
               className="text-button"
@@ -799,7 +792,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           ))}
         </div>
       )}
-      {!running && checkpointBlock && (
+      {checkpointBlock && (
         <section className="card">
           <h2>Changes need your review</h2>
           <p>Check the files before accepting them as this work’s changes.</p>
@@ -820,34 +813,24 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           </button>
         </section>
       )}
-      {!running &&
-        view.redos
-          .filter(
-            (entry) =>
-              entry.status === 'blocked' &&
-              (entry.workId === (view.conversation.work ?? view.closedWorks.at(-1))?.id ||
-                (entry.followingWorkId &&
-                  entry.followingWorkId === view.conversation.work?.id &&
-                  entry.workId === view.closedWorks.at(-1)?.id)),
-          )
-          .map((entry) => (
-            <RetryRedo key={entry.id} entry={entry} view={view} update={setView} onError={props.onError} />
-          ))}
+      {controls.recovery.redos.map((entry) => (
+        <RetryRedo key={entry.id} entry={entry} view={view} update={setView} onError={props.onError} />
+      ))}
       {plans.notice && (
         <p className="plan-waiting" role="status">{plans.notice.text} <button className="text-button" onClick={() => document.getElementById(plans.notice!.target ?? '')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{plans.notice.label}</button></p>
       )}
-      {view.openQuestion && view.openQuestion.options.length > 0 && (
+      {controls.question && (
         <section className="answer-card" aria-label="Answer the question">
-          <p className="answer-question">{view.openQuestion.text}</p>
+          <p className="answer-question">{controls.question.text}</p>
           <div className="answer-options">
-            {view.openQuestion.options.map((option, index) => (
+            {controls.question.options.map((option) => (
               <button
                 key={option.label}
                 type="button"
-                className={index === 0 ? '' : 'secondary'}
+                className={option.primary ? '' : 'secondary'}
                 disabled={task.busy}
                 title={option.detail}
-                onClick={() => void answer(index)}
+                onClick={() => void answer(option.index)}
               >
                 {option.label}
               </button>
@@ -886,14 +869,14 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
             disabled={task.busy || !!finishing} run={task.run}
             afterSave={async signal => setView(await api(`/api/conversations/${id}`, ConversationPublicSchema, 'GET', undefined, { signal, waitForHub: true }))}
           />
-            {!running && !finishing && canSettle && (
+            {controls.settlement.shown && (
               <button
                 type="button"
                 className="secondary"
                 disabled={!project}
                 onClick={() => setSettling(true)}
               >
-                {view.conversation.work ? 'Close this work' : 'Settle kept changes'}
+                {controls.settlement.label}
               </button>
             )}
       </Panel>}

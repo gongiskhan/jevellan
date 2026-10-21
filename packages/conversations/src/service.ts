@@ -1,3 +1,4 @@
+import { conversationControlsView } from '@jevellan/core';
 import { ConversationTranscriptRequestSchema, conversationStepTranscriptView, conversationTranscriptSources } from '@jevellan/core';
 import { conversationPagePresentation, latestConversationNotice, MANUAL_PICK_NOTICE as MANUAL_NOTICE } from '@jevellan/core';
 import { branchChangeView, changesDiffView, messageDeliveryView } from '@jevellan/core';
@@ -621,7 +622,7 @@ export class ConversationService {
       settlements: this.#settlements(work), overrides: savedOverrides, composerOverrides: composerOverrides(work), redos: redoOperations(work), checkpointBlocks: checkpointBlocks(work), decisions: this.decisions(id), busy, allowed };
     const notice = latestConversationNotice(work.ledger.events(), event => event.type === 'notice' ? work.ledger.redact(publicConversationData(work.ledger.data(event))) : event.data);
     const facts = { ...result, ...(result.pause ? { pause: this.options.redactor.document(result.pause) } : {}), ...(result.openQuestion ? { openQuestion: this.options.redactor.document(result.openQuestion) } : {}) };
-    return ConversationPublicSchema.parse({ ...result, presentation: conversationPagePresentation(facts, notice?.text, notice?.id ?? null) });
+    return ConversationPublicSchema.parse({ ...result, controls: conversationControlsView(facts), presentation: conversationPagePresentation(facts, notice?.text, notice?.id ?? null) });
   }
   #settlements(work: ConversationWork) {
     const results = new Map<string, ReturnType<typeof WorkSettlementSchema.parse>>();

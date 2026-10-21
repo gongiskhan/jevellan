@@ -1,3 +1,4 @@
+import { ConversationControlsViewSchema } from './conversation-controls-view.js';
 import { ConversationPagePresentationSchema, ConversationProgressPhaseSchema } from './conversation-page-view.js';
 import { ConversationTranscriptSourceSchema } from './conversation-transcript-view-schemas.js';
 import { BranchChangeViewSchema, ChangesDiffViewSchema, MessageDeliveryViewSchema } from './conversation-reading-view-schemas.js';
@@ -85,7 +86,7 @@ export const CheckpointAdoptionSchema = z.strictObject({
 export type CheckpointAdoption = z.infer<typeof CheckpointAdoptionSchema>;
 export const ConversationProgressSchema = z.strictObject({ schema: z.literal('conversation-progress-v1'), phase: ConversationProgressPhaseSchema, since: z.iso.datetime() });
 export const ConversationPublicSchema = z.strictObject({
-  schema: z.literal('conversation-view-v1'), presentation: ConversationPagePresentationSchema.optional(), transcriptSources: z.array(ConversationTranscriptSourceSchema).optional(), delivery: MessageDeliveryViewSchema.optional(), branchChanges: z.array(z.strictObject({ eventId: z.number().int().positive(), view: BranchChangeViewSchema })).optional(), evidenceReferences: EvidenceReferencesViewSchema.optional(), plans: ConversationPlansViewSchema.optional(), progress: ConversationProgressSchema.optional(), conversation: ConversationSchema, summary: SummarySchema, closedWorks: z.array(WorkSchema),
+  schema: z.literal('conversation-view-v1'), controls: ConversationControlsViewSchema.optional(), presentation: ConversationPagePresentationSchema.optional(), transcriptSources: z.array(ConversationTranscriptSourceSchema).optional(), delivery: MessageDeliveryViewSchema.optional(), branchChanges: z.array(z.strictObject({ eventId: z.number().int().positive(), view: BranchChangeViewSchema })).optional(), evidenceReferences: EvidenceReferencesViewSchema.optional(), plans: ConversationPlansViewSchema.optional(), progress: ConversationProgressSchema.optional(), conversation: ConversationSchema, summary: SummarySchema, closedWorks: z.array(WorkSchema),
   stretches: z.array(StretchSchema.omit({ native: true }).extend({ presentation: ConversationStepPresentationSchema.optional() })), handoffs: z.array(HandoffSchema),
   messages: z.array(z.strictObject({ id: z.number().int().positive(), type: z.enum(['user-message', 'note']), clientMessageId: IdSchema, text: z.string(), workId: IdSchema,
     answer: z.strictObject({ stretch: z.number().int().positive(), option: z.number().int().min(0).max(3), label: z.string() }).optional() })),

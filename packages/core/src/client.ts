@@ -187,3 +187,5 @@ export * from './status-stream.js';
 export * from './conversation-page-view.js';
 
 export * from './conversation-list-source.js';
+
+export * from './conversation-controls-view.js';
