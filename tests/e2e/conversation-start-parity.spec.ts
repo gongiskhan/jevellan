@@ -12,6 +12,25 @@ import { projectFixture, FIXTURE_MENU } from '../helpers/project-fixture.js';
 import { expect, test } from './fixtures.js';
 import { closeConversationSettings, openConversationSettings } from './navigation.js';
 
+test('RESULTPAR1 browser recorded result and effort usage labels match canonical MCP views', async ({ page, context }, info) => {
+  const made = await conversationReadingFixture(true, { inputTokens: 1250, outputTokens: 250, costUsd: 0.12349 }, 'xhigh'), f = made.f; let client: Client | undefined;
+  try {
+    const view = await made.finish(), pointer = view.handoffs[0]!.result!.ref, count = f.app.conversations.ledger(made.id).events().length;
+    const separator = f.cookie.indexOf('='); await context.addCookies([{ name: f.cookie.slice(0, separator), value: f.cookie.slice(separator + 1), url: f.base, httpOnly: true, sameSite: 'Lax' }]);
+    const transport = new StdioClientTransport({ command: process.execPath, args: [join(import.meta.dirname, '..', '..', 'bin', 'jevellan.mjs'), 'mcp'], cwd: f.checkout, env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', JEVELLAN_HOME: f.homes.root }, stderr: 'ignore' });
+    client = new Client({ name: 'result-parity-fixture', version: '1' }); await client.connect(transport);
+    const detailResult = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_read_view', conversation: made.id, request: { schema: 'conversation-reading-request-v1', kind: 'step', step: 1 } } })).structuredContent); expect(detailResult.ok).toBe(true); if (!detailResult.ok) throw new Error('Canonical step details refused.'); const reading = ConversationReadingViewSchema.parse(detailResult.data); if (reading.kind !== 'step' || !reading.details) throw new Error('Expected canonical step detail labels.');
+    expect(reading.details).toMatchObject({ effortLabel: 'xhigh → high', tokens: 1500, usageLabel: '1.5k tokens · $0.123' });
+    const request = { schema: 'conversation-reading-request-v1', kind: 'result', pointer, displayKind: 'answer', fallback: view.handoffs[0]!.summary };
+    const result = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_read_view', conversation: made.id, request } })).structuredContent); expect(result.ok).toBe(true); if (!result.ok) throw new Error('Canonical result refused.'); const resultView = ConversationReadingViewSchema.parse(result.data); if (resultView.kind !== 'result') throw new Error('Expected canonical result presentation.');
+    const browserRequest = page.waitForRequest(row => row.url() === f.base + '/api/conversations/' + made.id + '/reading-view' && row.method() === 'POST' && row.postDataJSON().kind === 'result'); await page.goto(f.base + '/conversations/' + made.id); expect((await browserRequest).postDataJSON()).toEqual(request);
+    const step = page.locator('.stretch-block').filter({ has: page.getByRole('heading', { name: 'Step 1 · Reply', exact: true }) }); await expect(step.locator('.answer-result').getByRole('heading', { name: 'Recorded reading result', exact: true })).toBeVisible(); expect(resultView.presentation.text).toBe('# Recorded reading result\n\nThe fixture result is saved.'); await expect(step.locator('.answer-result')).toContainText('The fixture result is saved.');
+    await step.locator('.step-details > summary').click(); await expect(step.getByRole('button', { name: 'Change effort for step 1', exact: true })).toHaveText(reading.details.effortLabel); await expect(step.locator('.model-chips .chip.dim')).toHaveText(reading.details.usageLabel!); await page.screenshot({ path: info.outputPath('result-shared-text-and-details.png'), fullPage: true });
+    await step.getByRole('button', { name: 'Read full result', exact: true }).click(); const panel = page.getByRole('dialog', { name: 'Full result', exact: true }); await expect(panel).toContainText('Recorded reading result'); await page.screenshot({ path: info.outputPath('result-canonical-full-read.png'), fullPage: true }); await panel.getByRole('button', { name: 'Close panel', exact: true }).click();
+    expect(f.app.conversations.ledger(made.id).events()).toHaveLength(count); expect(f.fake.starts).toHaveLength(1);
+  } finally { made.release(); await client?.close().catch(() => undefined); await f.close(); }
+});
+
 test('READPAR1 browser tool activity and recorded reading actions match canonical MCP views', async ({ page, context }, info) => {
   const made = await conversationReadingFixture(true), f = made.f; let client: Client | undefined;
   try {

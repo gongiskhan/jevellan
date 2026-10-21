@@ -115,6 +115,7 @@ export async function ownerConversationOperation(app: Application, projectId: st
     if (operation === 'reading-view') {
       const wanted = ConversationReadingRequestSchema.parse(spec.body), reading = ConversationReadingViewSchema.parse(value);
       if (reading.kind !== wanted.kind || (wanted.kind === 'step' || wanted.kind === 'changes') && (!('step' in reading) || reading.step !== wanted.step) || wanted.kind === 'notice' && (!('eventId' in reading) || reading.eventId !== wanted.eventId)) throw failure('The returned reading does not match the request.', 502);
+      if (wanted.kind === 'result' && (reading.kind !== 'result' || reading.pointer !== wanted.pointer || reading.presentation.kind !== wanted.displayKind)) throw failure('The returned result does not match the request.', 502);
     }
     if (operation === 'transcript-view'  && ConversationTranscriptViewSchema.parse(value).step !== ConversationTranscriptRequestSchema.parse(spec.body).step) throw failure('The returned transcript does not match the request.', 502);
     if (operation === 'changes' && ConversationChangesSchema.parse(value).stretch !== z.number().int().positive().parse(raw)) throw failure('The returned changes do not match the request.', 502);

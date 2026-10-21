@@ -1,4 +1,4 @@
-import { ConversationReadingRequestSchema, conversationActivityReading, conversationStepReading, conversationNoticeReading, conversationChangesReading } from '@jevellan/core';
+import { ConversationReadingRequestSchema, ConversationResultReadingSchema, conversationResultPresentation, conversationActivityReading, conversationStepReading, conversationNoticeReading, conversationChangesReading } from '@jevellan/core';
 import { ConversationManualCommandSchema, conversationManualEditor, conversationManualDraft } from '@jevellan/core';
 import { ConversationRecoveryCommandSchema, conversationRecoveryEditor, conversationRecoveryDraft } from '@jevellan/core';
 import { ConversationSettlementCommandSchema, conversationSettlementEditor, conversationSettlementDraft } from '@jevellan/core';
@@ -508,6 +508,10 @@ export class ConversationService {
   async readingView(id: string, raw: unknown) {
     await this.ready; const input = ConversationReadingRequestSchema.parse(raw);
     if (input.kind === 'changes') return (await this.changes(id, input.step)).reading!;
+    if (input.kind === 'result') {
+      const work = this.#load(id), source = work.load().conversation, content = publicConversationData(work.ledger.read(input.pointer));
+      return ConversationResultReadingSchema.parse({ schema: 'conversation-reading-view-v1', projectId: source.projectId, conversationId: id, kind: 'result', pointer: input.pointer, presentation: conversationResultPresentation({ schema: 'conversation-result-input-v1', kind: input.displayKind, fallback: input.fallback, content }) });
+    }
     const work = this.#load(id), view = await this.view(id), records = work.ledger.events();
     const hydrate = (event: typeof records[number]) => ({ ...event, data: publicConversationData(work.ledger.data(event)) });
     if (input.kind === 'activity') return conversationActivityReading(view, records.map(event => ['tool-start', 'tool-end'].includes(event.type) ? hydrate(event) : event));

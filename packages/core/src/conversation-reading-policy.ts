@@ -5,6 +5,7 @@ import type {ConversationTranscriptView} from './conversation-transcript-view-sc
 import {ConversationNoticeSchema} from './conversation-notice-schemas.js';
 import {conversationPagePresentation} from './conversation-page-view.js';
 import {conversationNoticeHidden} from './conversation-transcript-view.js';
+import {conversationStepDetails} from './conversation-result-policy.js';
 import {ConversationActivityReadingSchema,ConversationStepReadingSchema,ConversationNoticeReadingSchema,ConversationChangesReadingSchema,ConversationTranscriptReadingSchema} from './conversation-reading-policy-schemas.js';
 
 type View=z.infer<typeof ConversationPublicSchema>;
@@ -32,7 +33,7 @@ export function conversationStepReading(view:View,n:number,events:readonly Ledge
  const editable=step.status!=='undone'&&[view.conversation.work?.id,view.closedWorks.at(-1)?.id].includes(step.workId);
  const findings=[...events.filter(event=>event.type==='finding').map(event=>({claim:String(object(event.data).claim??''),pointer:String(object(event.data).pointer??'')})),...(handoff?.findings??[])].filter((finding,index,all)=>all.findIndex(entry=>entry.claim===finding.claim&&entry.pointer===finding.pointer)===index);
  const recordedAnswer=handoff?.result?.type==='answer'?{ref:handoff.result.ref,fallback:handoff.summary}:null;
- return ConversationStepReadingSchema.parse({...scope(view),kind:'step',step:n,actionable,editable,findings,blockers:actionable?handoff?.blockers??[]:[],question:actionable&&handoff?.question&&view.openQuestion?.stretch!==n?handoff.question:null,recordedAnswer,fullResult:handoff?.result&&handoff.result.type!=='plan'?handoff.result.ref:null,planResult:handoff?.result?.type==='plan'?handoff.result.ref:null,transcript:transcript?conversationTranscriptReading(transcript,recordedAnswer!==null):null});
+ return ConversationStepReadingSchema.parse({...scope(view),kind:'step',step:n,actionable,editable,findings,blockers:actionable?handoff?.blockers??[]:[],question:actionable&&handoff?.question&&view.openQuestion?.stretch!==n?handoff.question:null,recordedAnswer,fullResult:handoff?.result&&handoff.result.type!=='plan'?handoff.result.ref:null,planResult:handoff?.result?.type==='plan'?handoff.result.ref:null,transcript:transcript?conversationTranscriptReading(transcript,recordedAnswer!==null):null,details:conversationStepDetails(step)});
 }
 
 export function conversationNoticeReading(view:View,event:LedgerEvent,events:readonly LedgerEvent[],transcripts:Readonly<Record<number,ConversationTranscriptView|undefined>>={}){

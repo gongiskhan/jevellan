@@ -38,7 +38,6 @@ import {
   ConversationListSchema,
   ProjectsListSchema,
   ConversationPublicSchema,
-  ConversationReadSchema,
   type DecisionRecord,
   type Effort,
   type LedgerEvent,
@@ -1287,7 +1286,7 @@ function StepBlock({
   const presentation = step.presentation;
   const review = (view.plans ?? conversationPlansView(view, props.data.config.configuration['x-jevellan'].guards.pauseAfterPlan)).reviews.find(entry => entry.step === step.n);
   const findings = reading.findings;
-  const tokens = step.usage.inputTokens + step.usage.outputTokens;
+  const details = reading.details ?? conversationStepDetails(step);
   return (
     <article
       id={`stretch-${step.n}`}
@@ -1348,14 +1347,11 @@ function StepBlock({
           <button className="chip action" disabled={!editable} onClick={correct} aria-label={`Change action for step ${step.n}`}>{step.action}</button>
           <button className="chip model" disabled={!editable} onClick={correct} aria-label={`Change model for step ${step.n}`}>{model?.label ?? step.modelId}</button>
           <button className="chip" disabled={!editable} onClick={correct} aria-label={`Change effort for step ${step.n}`}>
-            {step.effortRequested === step.effortEffective ? step.effortEffective : `${step.effortRequested} → ${step.effortEffective}`}
+            {details.effortLabel}
           </button>
           <span className="chip">{account?.account.label ?? step.accountId}</span>
           <span className="chip">{props.data.devices.devices.find((entry) => entry.id === step.deviceId)?.name ?? step.deviceId}</span>
-          {(tokens > 0 || step.usage.costUsd !== undefined) && <span className="chip dim">
-            {tokens > 0 && `${compactNumber(tokens)} tokens`}
-            {step.usage.costUsd !== undefined && `${tokens > 0 ? ' · ' : ''}$${step.usage.costUsd.toFixed(3)}${step.usage.costSource === 'estimated' ? ' est.' : ''}`}
-          </span>}
+          {details.usageLabel !== null && <span className="chip dim">{details.usageLabel}</span>}
         </div>
         {handoff && (
           <div className="handoff">
@@ -1419,12 +1415,6 @@ const duration = (seconds: number) =>
     : seconds < 3600
       ? `${Math.floor(seconds / 60)}m ${seconds % 60}s`
       : `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m ${seconds % 60}s`;
-const compactNumber = (value: number) =>
-  value < 1000
-    ? String(value)
-    : value < 1_000_000
-      ? `${(value / 1000).toFixed(value < 10_000 ? 1 : 0)}k`
-      : `${(value / 1_000_000).toFixed(1)}M`;
 function StepResult({
   kind,
   fallback,
@@ -1443,21 +1433,21 @@ function StepResult({
   const [content, setContent] = useState('');
   useEffect(() => {
     let stopped = false;
-    void api(`/api/conversations/${id}/read?pointer=${encodeURIComponent(pointer)}`, ConversationReadSchema)
+    void api(`/api/conversations/${id}/reading-view`, ConversationReadingViewSchema, 'POST', { schema: 'conversation-reading-request-v1', kind: 'result', pointer, displayKind: kind, ...(fallback !== undefined ? { fallback } : {}) })
       .then((value) => {
-        if (!stopped)
-          setContent(
-            typeof value.content === 'string' ? value.content : JSON.stringify(value.content, null, 2),
-          );
+        if (value.kind !== 'result') throw new Error('Expected recorded result presentation.');
+        if (!stopped) setContent(value.presentation.contentText);
       })
       .catch(onError);
     return () => {
       stopped = true;
     };
-  }, [id, pointer, onError]);
+  }, [id, pointer, kind, fallback, onError]);
+  const presentation = conversationResultPresentation({ schema: 'conversation-result-input-v1', kind, fallback, content });
   return (
-    <div className={kind === 'plan' ? 'plan-result' : 'answer-result'}>
-      <Markdown onOpen={open}>{content || fallback || `Loading the full ${kind}…`}</Markdown>
+    <div className={presentation.className}>
+      <Markdown onOpen={open}>{presentation.text}</Markdown>
     </div>
   );
 }
+import { ConversationReadingViewSchema, conversationStepDetails, conversationResultPresentation } from '@jevellan/core/client';
