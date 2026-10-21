@@ -5,6 +5,7 @@ import {
   ConfigHistorySchema,
   ConfigPreviewSchema,
   ConfigRevisionSchema,
+  DeviceAboutViewSchema, type DeviceAboutView,
 } from '@jevellan/core/client';
 import { api } from './api.js';
 import { PwaInstallCard } from './pwa.js';
@@ -170,6 +171,12 @@ export function ConfigurationPage(props: PageProps) {
 }
 export { DecisionsPage } from './decisions-settings.js';
 export function AboutPage(props: PageProps) {
+  const [view, setView] = useState<DeviceAboutView>();
+  useEffect(() => {
+    const controller = new AbortController();
+    void api('/api/config/about', DeviceAboutViewSchema, 'GET', undefined, { signal: controller.signal }).then(result => { if (!controller.signal.aborted) setView(result); }).catch(error => { if (!controller.signal.aborted) props.onError(error); });
+    return () => controller.abort();
+  }, [props.data.devices, props.onError]);
   return (
     <>
       <SectionHeading title="About" />
@@ -179,18 +186,15 @@ export function AboutPage(props: PageProps) {
         <p>Autonomous development, coordinated.</p>
         <p className="muted">
           Version{' '}
-          {
-            props.data.devices.devices.find((device) => device.id === props.data.devices.currentDeviceId)
-              ?.version
-          }
+          {view?.currentVersion}
         </p>
         <button className="secondary" onClick={() => props.navigate('/setup')}>
           Open setup guide
         </button>
         <h3>Update</h3>
-        <code>jevellan update</code>
+        <code>{view?.commands.update}</code>
         <h3>Uninstall</h3>
-        <code>jevellan uninstall</code>
+        <code>{view?.commands.uninstall}</code>
       </section>
     </>
   );

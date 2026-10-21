@@ -15,7 +15,7 @@ import { projectFolders } from './project-folders.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { z } from 'zod';
 import { nativeSetup, CorrectionsListSchema, CorrectionsReadSchema, ErrorDocumentSchema, GitHubTokenStateSchema, IdSchema, ProjectWriteSchema, SecretSummarySchema, EmptySchema, ConfigWriteSchema, ImportSchema, SecretInputSchema, AccountListSchema, RiggingListSchema, RuntimeListSchema, exportConfiguration, parseConfiguration, stableJson } from '@jevellan/core';
-import { HubUnavailable, clearSessionCookie, sessionCookie, sessionFromCookie } from '@jevellan/mesh';
+import { HubUnavailable, clearSessionCookie, sessionCookie, sessionFromCookie, deviceAboutView } from '@jevellan/mesh';
 import { AddAccountSchema, AddRiggingSchema, ReplaceCredentialSchema, UpdateAccountSchema, UpdateRiggingSchema } from '@jevellan/core';
 import { Application } from './application.js';
 import { conversationRoute, handleConversation } from './conversation-api.js';
@@ -174,6 +174,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       EmptySchema.parse(await body(request)); await app.auth.logout(token); response.setHeader('Set-Cookie', clearSessionCookie(secureCookies)); send(await app.auth.state(undefined)); return;
     }
     if (path === '/hub/config' && method === 'GET') { send(await app.configuration()); return; }
+    if (path === '/api/config/about' && method === 'GET') { send(deviceAboutView(await app.roster(), app.device.deviceId)); return; }
     if (['/api/config/decisions', '/api/jev/menu-candidates', '/api/jev/effort-guide'].includes(path) && method === 'GET') { send(await app.state.configuration.decisionsEditor()); return; }
     if (['/api/config/decisions/preview', '/api/jev/menu', '/api/jev/effort-guide/reset'].includes(path) && method === 'POST') {
       const input = DecisionsSettingsPreviewSchema.parse(await body(request)); retryable = true;

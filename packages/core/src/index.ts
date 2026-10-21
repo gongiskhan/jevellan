@@ -154,3 +154,4 @@ export * from './account-copy.js';
 export * from './project-placement-editor-schemas.js';
 export * from './project-environment-editor-schemas.js';
 export * from './notification-editor-schemas.js';
+export * from './device-about-schemas.js';

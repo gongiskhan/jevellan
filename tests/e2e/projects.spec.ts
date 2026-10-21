@@ -2312,6 +2312,18 @@ test('Notifications editor main actions preserve the canonical subscription writ
   await page.screenshot({ path: `test-results/notification-editor-off-${layout(info)}.png` }); expect(errors).toEqual([]);
 });
 
+test('About renders the engine device version and maintenance text and opens the setup guide', async ({ page }, info) => {
+  const errors = await begin(page); await page.goto('/settings/about');
+  const response = await page.request.get('/api/config/about'); expect(response.ok()).toBe(true); const view = await response.json();
+  const devices = await (await page.request.get('/hub/devices')).json(); expect(view.currentDeviceId).toBe(devices.currentDeviceId);
+  await expect(page.getByRole('heading', { name: 'About', exact: true })).toBeVisible();
+  await expect(page.getByText(`Version ${view.currentVersion}`, { exact: true })).toBeVisible();
+  await expect(page.locator('code').filter({ hasText: view.commands.update })).toHaveText(view.commands.update);
+  await expect(page.locator('code').filter({ hasText: view.commands.uninstall })).toHaveText(view.commands.uninstall);
+  await page.screenshot({ path: `test-results/ABOUT-device-${layout(info)}.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Open setup guide', exact: true }).click(); await expect(page).toHaveURL(/\/setup$/); expect(errors).toEqual([]);
+});
+
 test('PAR7 library uploads, attachments in both composers, images and project rigging', async ({ page }, info) => {
   const errors = await begin(page);
   await page.goto('/projects/projects_fixture'); if (phone(info)) await tab(page, 'Overview').click();

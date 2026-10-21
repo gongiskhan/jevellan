@@ -21,3 +21,4 @@ export type { NativeRuntime } from './native-transcript.js';
 export * from './native-transcript-reader.js';
 
 export { settingsMutation } from './settings-mutation.js';
+export * from './device-about.js';

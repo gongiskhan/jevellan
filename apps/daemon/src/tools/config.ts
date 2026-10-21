@@ -4,6 +4,7 @@ import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-too
 import { ownerCoordinatorEditorSave } from '../project-work-api.js';
 import { ProjectSettingsUndoRequestSchema } from '@jevellan/core';
 import { ProjectSettingsEditorSchema } from '@jevellan/core';
+import { deviceAboutView } from '@jevellan/mesh';
 
 const yesNo = (value: boolean) => value ? 'yes' : 'no';
 async function routineView({ app, tools, project }: OwnerContext) {
@@ -152,6 +153,10 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'about': {
+      const data = deviceAboutView(await context.app.roster(), context.request.deviceId ?? context.app.device.deviceId);
+      return { text: `Jevellan ${data.currentVersion ?? 'version unavailable'}.`, data };
+    }
     case 'usage': return { text: 'Project usage.', data: await context.app.projectWork.usage.view(context.project.id, args.range) };
     case 'notification_editor': case 'notification_remove': case 'notification_test': {
       const notifications = context.app.notifications;
