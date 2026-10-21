@@ -158,7 +158,9 @@ export class AccountService {
     const value = AccountStatusSchema.parse({
       schema: 'account-status-v2', accountId: id, deviceId: this.options.deviceId,
       auth: account.kind !== 'endpoint' && probe.auth === 'unknown' && before.auth === 'ready' ? 'ready' : probe.auth,
-      usage: probe.usage ?? { source: 'unknown', observedAt: now }, observedAt: now,
+      // A probe that succeeds without reading usage (an account used in place has no token for it) keeps what its turns recorded; a failed
+      // probe's usage is unknown. Readings whose window has reset stop counting by themselves (currentUsage).
+      usage: probe.usage ?? (probe.auth === 'ready' && !probe.error && before.usage?.source === 'stream' ? before.usage : { source: 'unknown', observedAt: now }), observedAt: now,
       ...(before.coolingUntil && Date.parse(before.coolingUntil) > Date.now() ? { coolingUntil: before.coolingUntil } : {}),
       ...(Object.entries(before.modelCooling ?? {}).some(([, until]) => Date.parse(until) > Date.now()) ? { modelCooling: Object.fromEntries(Object.entries(before.modelCooling!).filter(([, until]) => Date.parse(until) > Date.now())) } : {}),
       ...(probe.error ? { lastError: this.options.redactor.text(probe.error) } : {}),

@@ -68,6 +68,14 @@ test('a failed usage query preserves authenticated readiness and reports unknown
   (await service.recordError(id, 'auth')); expect((await service.status(id)).auth).toBe('needs-login');
 });
 
+test('a check that can read no usage itself (an account used in place) keeps the reading its turns recorded', async () => {
+  const account = (await add()); const id = account.account.id;
+  const later = new Date(Date.now() + 3_600_000).toISOString();
+  await service.recordUsage(id, { source: 'stream', fiveHourPct: 13, weeklyPct: 29, fiveHourResetsAt: later, weeklyResetsAt: later, observedAt: new Date().toISOString() });
+  claude.probe = vi.fn<RuntimeAdapter['probe']>(async () => ({ auth: 'ready' }));
+  expect((await service.check(id)).usage).toMatchObject({ source: 'stream', fiveHourPct: 13, weeklyPct: 29 });
+});
+
 test('model discovery retains settings edited while the provider was answering', async () => {
   const account = (await add()); const models = deferred<Awaited<ReturnType<RuntimeAdapter['listModels']>>>(); const started = deferred<void>();
   claude.listModels = vi.fn<RuntimeAdapter['listModels']>(async () => { started.resolve(); return models.promise; });
