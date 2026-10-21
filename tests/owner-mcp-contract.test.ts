@@ -26,6 +26,15 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP runtime settings share the engine reader and scoped enable writer', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'runtimes_editor' } })).structuredContent); expect(result.ok).toBe(true);
+  const view = result.ok ? result.data as { rows: Array<{ write: { body: object } }> } : undefined;
+  const request = { ...view!.rows[0]!.write.body, patch: { enabled: false }, clientRequestId: 'runtime_mcp_save' };
+  const saved = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'runtimes_save', request } })).structuredContent); expect(saved).toMatchObject({ ok: true, data: { configuration: { 'x-jevellan': { runtimes: { fake: { enabled: false } } } } } });
+  expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP account read model shares runtime grouping and eligibility without checking accounts', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'accounts_view' } })).structuredContent);

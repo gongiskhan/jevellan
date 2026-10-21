@@ -2324,6 +2324,22 @@ test('About renders the engine device version and maintenance text and opens the
   await page.getByRole('button', { name: 'Open setup guide', exact: true }).click(); await expect(page).toHaveURL(/\/setup$/); expect(errors).toEqual([]);
 });
 
+test('Runtime settings keep cache, own setup and enable writes scoped', async ({ page }, info) => {
+  const errors = await begin(page); await page.goto('/settings/runtimes');
+  const before = await (await page.request.get('/hub/config')).json(), editor = await (await page.request.get('/api/config/runtimes')).json();
+  const row = editor.rows.find((entry: { id: string }) => entry.id === 'claude'), runtime = page.locator('.runtime-card').filter({ has: page.getByRole('heading', { name: 'Claude Code', exact: true }) });
+  const save = async (action: () => Promise<void>) => { const response = page.waitForResponse(result => new URL(result.url()).pathname === '/api/config/runtimes' && result.request().method() === 'PUT'); await action(); expect((await response).ok()).toBe(true); };
+  const cache = runtime.getByRole('spinbutton', { name: row.cache.ariaLabel, exact: true }); await expect(cache).toHaveAttribute('min', String(row.cache.min)); await expect(cache).toHaveAttribute('max', String(row.cache.max));
+  const target = row.cache.value < row.cache.max ? row.cache.value + 1 : row.cache.value - 1;
+  await cache.fill(String(target)); await save(() => cache.blur());
+  const toggle = async (control: Locator, checked: boolean) => { await save(() => control.click()); if (checked) await expect(control).toBeChecked(); else await expect(control).not.toBeChecked(); };
+  const own = runtime.getByRole('checkbox', { name: row.ownSetup.label, exact: true }); await toggle(own, !row.ownSetup.checked);
+  const enabled = runtime.getByRole('checkbox', { name: row.enabled.ariaLabel, exact: true }); await toggle(enabled, !row.enabled.checked); await toggle(enabled, row.enabled.checked);
+  const after = await (await page.request.get('/hub/config')).json(); expect(after.configuration['x-jevellan'].runtimes.claude).toMatchObject({ enabled: row.enabled.checked, cacheWindowMinutes: target, useOwnSetup: !row.ownSetup.checked });
+  expect(after.configuration['x-jevellan'].guards).toEqual(before.configuration['x-jevellan'].guards);
+  await page.screenshot({ path: `test-results/RUNTIMES-settings-${layout(info)}.png`, fullPage: true }); expect(errors).toEqual([]);
+});
+
 test('Runtime account views share model chips and preserve Check now', async ({ page }, info) => {
   const errors = await begin(page); await page.goto('/settings/runtimes');
   const claude = page.locator('.runtime-card').filter({ has: page.getByRole('heading', { name: 'Claude Code', exact: true }) });

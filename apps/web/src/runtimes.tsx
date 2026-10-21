@@ -4,7 +4,7 @@ import { clientId } from './client-id.js';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import {
-  AccountViewSchema,
+  AccountViewSchema, ConfigRevisionSchema, type RuntimeSettingsRow, type RuntimeSettingsSave,
   AccountsSettingsViewSchema, ACCOUNT_VIEW_REFRESH_MS, type AccountsSettingsView, type AccountSettingsRow,
   LoginViewSchema,
   type AccountView,
@@ -440,6 +440,7 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
   }, [props.data.accounts, props.data.runtimes, props.data.offered, props.data.roster, props.onError]);
   const save = useSettingsSave();
   const { data } = props;
+  const runtimeRequestId = useRequestId();
   const [adding, setAdding] = useState<string>();
   const [editing, setEditing] = useState<AccountView>();
   const [replacing, setReplacing] = useState<AccountView>();
@@ -457,6 +458,11 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
       throw new Error('The login returned for a different account or device. Reload Settings.');
     setLogin(result);
   };
+  const updateRuntime = (row: RuntimeSettingsRow, patch: RuntimeSettingsSave['patch']) => task.run(async signal => {
+    const body = { ...row.write.body, patch };
+    await api(row.write.path, ConfigRevisionSchema, row.write.method, { ...body, clientRequestId: `runtime_${runtimeRequestId(body)}` }, { signal, waitForHub: true });
+    await props.reload(signal); props.message(row.savedNotice);
+  });
   const openedAccount = useRef(false);
   useEffect(() => {
     if (openedAccount.current) return;
@@ -480,7 +486,9 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
           <p className="intro">Choose the runtimes and accounts your agents can use.</p>
         </>
       )}
-      {data.runtimes.map((runtime) => (
+      {data.runtimes.map((runtime) => {
+        const settings = data.runtimeSettings?.rows.find(row => row.id === runtime.id);
+        return (
         <section className="card runtime-card" key={runtime.id}>
           <div className="card-heading">
             <div>
@@ -491,52 +499,25 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
                   : 'Read-only actions unavailable'}
               </p>
             </div>
-            <label className="toggle">
-              <input
-                type="checkbox"
-                aria-label={`Enable ${runtime.displayName}`}
-                checked={runtime.enabled}
-                disabled={task.busy}
-                onChange={(event) => {
-                  const configuration = structuredClone(data.config.configuration);
-                  configuration['x-jevellan'].runtimes[runtime.id] = { ...configuration['x-jevellan'].runtimes[runtime.id], enabled: event.target.checked };
-                  void task.run((signal) => props.saveConfig(configuration, signal));
-                }}
-              />
-              <span>Enabled</span>
-            </label>
+            {settings && <label className="toggle">
+              <input type="checkbox" aria-label={settings.enabled.ariaLabel} checked={settings.enabled.checked} disabled={task.busy}
+                onChange={event => { void updateRuntime(settings, { enabled: event.target.checked }); }} />
+              <span>{settings.enabled.label}</span>
+            </label>}
+
           </div>
-          <label className="runtime-cache-window">Cache window (minutes)
-            <input type="number" min={1} max={1440} aria-label={`${runtime.displayName} cache window (minutes)`}
-              key={data.config.configuration['x-jevellan'].runtimes[runtime.id]?.cacheWindowMinutes ?? 'default'}
-              defaultValue={data.config.configuration['x-jevellan'].runtimes[runtime.id]?.cacheWindowMinutes ?? (runtime.id === 'claude' ? 60 : 10)}
-              disabled={task.busy} onBlur={event => {
+          {settings && <label className="runtime-cache-window">{settings.cache.label}
+            <input type="number" min={settings.cache.min} max={settings.cache.max} step={settings.cache.step} aria-label={settings.cache.ariaLabel}
+              key={settings.cache.value} defaultValue={settings.cache.value} disabled={task.busy} onBlur={event => {
                 if (!event.currentTarget.validity.valid || !event.currentTarget.value) return;
-                const value = Number(event.currentTarget.value);
-                const configuration = structuredClone(data.config.configuration);
-                const before = configuration['x-jevellan'].runtimes[runtime.id];
-                if (value === (before?.cacheWindowMinutes ?? (runtime.id === 'claude' ? 60 : 10))) return;
-                configuration['x-jevellan'].runtimes[runtime.id] = { ...before!, cacheWindowMinutes: value };
-                void task.run(signal => props.saveConfig(configuration, signal));
+                void updateRuntime(settings, { cacheWindowMinutes: event.currentTarget.value });
               }} />
-          </label>
-          {runtime.nativeSetup && <div className="native-setup">
-            <label className="toggle">
-              <input type="checkbox" aria-label={`Use my own ${runtime.displayName} setup`}
-                checked={data.config.configuration['x-jevellan'].runtimes[runtime.id]?.useOwnSetup !== false}
-                disabled={task.busy} onChange={event => {
-                  const configuration = structuredClone(data.config.configuration);
-                  configuration['x-jevellan'].runtimes[runtime.id] = { ...configuration['x-jevellan'].runtimes[runtime.id]!, useOwnSetup: event.target.checked };
-                  void task.run(signal => props.saveConfig(configuration, signal));
-                }} />
-              <span>Use my own {runtime.displayName} setup</span>
-            </label>
-            <p className="muted">Sessions use the skills, agents, commands, plugins, MCP servers and instructions from your own {runtime.displayName} setup on each device. Jevellan only reads them. Permissions, logins and model choices stay with Jevellan.</p>
-            <details><summary>Applied from this device</summary>
-              {runtime.nativeSetup.items.map((item, index) => <p key={index} className="muted">
-                {item.applied ? 'Applied from' : 'Not applied'} {item.path} · {item.item}{item.reason ? ` · ${item.reason}` : ''}
-              </p>)}
-            </details>
+          </label>}
+          {settings?.ownSetup && <div className="native-setup">
+            <label className="toggle"><input type="checkbox" aria-label={settings.ownSetup.label} checked={settings.ownSetup.checked} disabled={task.busy}
+              onChange={event => { void updateRuntime(settings, { useOwnSetup: event.target.checked }); }} /><span>{settings.ownSetup.label}</span></label>
+            <p className="muted">{settings.ownSetup.help}</p>
+            <details><summary>{settings.ownSetup.inventoryTitle}</summary>{settings.ownSetup.lines.map((line, index) => <p key={index} className="muted">{line}</p>)}</details>
           </div>}
           <div className="model-chips">
             {settingsView?.runtimes.find(row => row.id === runtime.id)?.models.map(model => <span className="chip" key={model.id} title={model.title}>{model.label}</span>)}
@@ -646,8 +627,8 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
           >
             Rigging for {runtime.displayName} →
           </button>
-        </section>
-      ))}
+        </section>);
+      })}
       {(adding || editing) && (
         <AccountForm
           runtime={adding ?? editing!.account.runtime}

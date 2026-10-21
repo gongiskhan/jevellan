@@ -153,6 +153,8 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'runtimes_editor': return { text: 'Runtime settings.', data: await context.app.runtimeSettings() };
+    case 'runtimes_save': return { text: 'Settings saved.', data: await context.app.saveRuntimeSettings(args.request, context.request.deviceId ?? context.app.device.deviceId) };
     case 'accounts_view': return { text: 'Runtime account views.', data: await context.app.accountsSettings(context.request.deviceId ?? context.app.device.deviceId) };
     case 'configuration_editor': return { text: 'Configuration history.', data: await context.app.configurationEditor() };
     case 'configuration_yaml': return { text: 'Configuration YAML.', data: await context.app.configurationYaml() };

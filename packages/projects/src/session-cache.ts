@@ -4,7 +4,7 @@ import { SessionCacheSummarySchema, SessionTurnCacheSchema, type Homes, type Ses
 import type { RuntimeEvent, StretchRun, TurnInput } from '@jevellan/runtime-contract';
 import type { ProjectLedger } from './ledger.js';
 
-export const defaultCacheWindow = (runtime: string): number => runtime === 'claude' ? 60 : 10;
+export { defaultRuntimeCacheWindow as defaultCacheWindow } from '@jevellan/core';
 export function cacheWindowMinutes(configured: number, homes: Homes, environment: NodeJS.ProcessEnv = process.env): number {
   const override = environment.JEVELLAN_TEST_CACHE_WINDOW_MINUTES;
   if (override === undefined) return configured;

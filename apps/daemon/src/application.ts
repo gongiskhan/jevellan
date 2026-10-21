@@ -1,3 +1,4 @@
+import { RuntimeListSchema, RuntimeSettingsEditorSchema, runtimeSettingsEditor, nativeSetup } from '@jevellan/core';
 import { CleanupService } from '@jevellan/core';
 import { ConfigWriteSchema, ImportSchema, ConfigurationYamlViewSchema, configurationEditorView, configurationImportView, parseConfiguration, exportConfiguration } from '@jevellan/core';
 import { ProjectHealthRequestSchema, ProjectHealthRunSchema, ProjectHealthViewSchema, type ProjectHealthRequest, type ProjectHealthRun } from '@jevellan/core';
@@ -383,6 +384,18 @@ export class Application {
     return this.member ? this.member.projectMemory(request) : this.projectMemoryRequest(request, this.device.deviceId);
   }
   async improverRequest(input: unknown) { return this.member ? this.member.improver(input) : this.routingImprover!.request(input, this.device.deviceId); }
+  async runtimeList() {
+    const revision = await this.configuration(), config = revision.configuration['x-jevellan'];
+    const runtimes = [...this.runtimes.values()].map(runtime => ({ id: runtime.id, displayName: runtime.displayName, enabled: config.runtimes[runtime.id]?.enabled === true,
+      accountKinds: runtime.accountKinds, riggingKinds: runtime.riggingKinds, capabilities: runtime.capabilities,
+      ...(['claude', 'codex'].includes(runtime.id) ? { nativeSetup: nativeSetup(this.homes, runtime.id as 'claude' | 'codex', undefined, config.runtimes[runtime.id]?.useOwnSetup !== false).inventory } : {}) }));
+    return RuntimeListSchema.parse({ schema: 'runtimes-list-v1', runtimes, offered: await this.accounts.offered(), settings: runtimeSettingsEditor(revision, runtimes) });
+  }
+  async runtimeSettings() { return RuntimeSettingsEditorSchema.parse((await this.runtimeList()).settings); }
+  async saveRuntimeSettings(input: unknown, deviceId = this.device.deviceId) {
+    const state = !this.member && deviceId !== this.device.deviceId ? new HubState(this.hub, deviceId, [...this.runtimes.keys()]) : this.state;
+    const saved = await state.configuration.runtimesPut(input); await this.configuration(); await this.applyRigging(); return saved;
+  }
   async accountsSettings(deviceId = this.device.deviceId) {
     const [accounts, offered, revision, roster] = await Promise.all([this.accounts.list(), this.accounts.offered(), this.configuration(), this.roster()]);
     return accountsSettingsView({ accounts, offered, runtimeIds: [...this.runtimes.keys()], configuration: revision.configuration, roster, deviceId });

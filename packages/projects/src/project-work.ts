@@ -1,3 +1,4 @@
+import { defaultRuntimeCacheWindow } from '@jevellan/core';
 import { ProjectEnvironmentEditorSaveSchema } from '@jevellan/core';
 import { environmentEditor } from './environment-editor.js';
 import { ProjectPlacementEditorSaveSchema } from '@jevellan/core';
@@ -225,7 +226,7 @@ export class ProjectWork {
     const launcher = new TurnLauncher({ accounts: o.accounts, runtimes: o.runtimes, accountRuns: o.accountRuns, riggingItems: o.riggingItems, bridges: o.bridges, homes: o.homes,
       deviceId: o.deviceId, deviceName: o.deviceName, daemonUrl: () => this.daemonUrl, redactor: o.redactor, held, projectEnvironment, library: o.library, projectSettings: projectId => this.admission.settings(projectId),
       sessionLedger: projectId => this.ledgers.coordinator(projectId), now, useOwnSetup: async runtime => (await o.settings()).runtimes[runtime]?.useOwnSetup !== false,
-      cacheWindowMinutes: async runtime => (await o.settings()).runtimes[runtime]?.cacheWindowMinutes ?? (runtime === 'claude' ? 60 : 10),
+      cacheWindowMinutes: async runtime => (await o.settings()).runtimes[runtime]?.cacheWindowMinutes ?? defaultRuntimeCacheWindow(runtime),
       chooseAccount: async (request, ranking) => {
         const settings = await o.settings();
         const thread = request.owner.kind === 'thread' ? this.store.get(request.owner.id) : undefined;

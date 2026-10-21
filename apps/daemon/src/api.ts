@@ -1,3 +1,4 @@
+import { RuntimeSettingsSaveSchema } from '@jevellan/core';
 import { environmentSecretSummary } from '@jevellan/projects';
 import { EkoaOAuthStartSchema, EkoaOAuthCallbackSchema } from '@jevellan/core';
 import { DEVICE_CLEANUP_ROUTE, handleDeviceCleanup } from './device-cleanup-api.js';
@@ -14,7 +15,7 @@ import { handleCursorApi } from './cursor-api.js';
 import { projectFolders } from './project-folders.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { z } from 'zod';
-import { nativeSetup, CorrectionsListSchema, CorrectionsReadSchema, ErrorDocumentSchema, GitHubTokenStateSchema, IdSchema, ProjectWriteSchema, SecretSummarySchema, EmptySchema, ConfigWriteSchema, SecretInputSchema, AccountListSchema, RiggingListSchema, RuntimeListSchema, CONFIGURATION_EXPORT_FILENAME } from '@jevellan/core';
+import { CorrectionsListSchema, CorrectionsReadSchema, ErrorDocumentSchema, GitHubTokenStateSchema, IdSchema, ProjectWriteSchema, SecretSummarySchema, EmptySchema, ConfigWriteSchema, SecretInputSchema, AccountListSchema, RiggingListSchema, CONFIGURATION_EXPORT_FILENAME } from '@jevellan/core';
 import { HubUnavailable, clearSessionCookie, sessionCookie, sessionFromCookie, deviceAboutView } from '@jevellan/mesh';
 import { AddAccountSchema, AddRiggingSchema, ReplaceCredentialSchema, UpdateAccountSchema, UpdateRiggingSchema } from '@jevellan/core';
 import { Application } from './application.js';
@@ -190,10 +191,9 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       const view = await app.configurationYaml(); response.writeHead(200, { 'Content-Type': 'application/yaml; charset=utf-8', 'Content-Disposition': `attachment; filename="${CONFIGURATION_EXPORT_FILENAME}"`, 'Cache-Control': 'no-store' }); response.end(view.yaml); return;
     }
     if (path === '/hub/config/import-preview' && method === 'POST') { send((await app.configurationImportPreview(await body(request))).preview); return; }
-    if (path === '/api/runtimes' && method === 'GET') {
-      const config = (await app.configuration()).configuration['x-jevellan'];
-      send(RuntimeListSchema.parse({ schema: 'runtimes-list-v1', runtimes: [...app.runtimes.values()].map((runtime) => ({ id: runtime.id, displayName: runtime.displayName, enabled: config.runtimes[runtime.id]?.enabled === true, accountKinds: runtime.accountKinds, riggingKinds: runtime.riggingKinds, capabilities: runtime.capabilities, ...(['claude', 'codex'].includes(runtime.id) ? { nativeSetup: nativeSetup(app.homes, runtime.id as 'claude' | 'codex', undefined, config.runtimes[runtime.id]?.useOwnSetup !== false).inventory } : {}) })), offered: (await app.accounts.offered()) })); return;
-    }
+    if (path === '/api/runtimes' && method === 'GET') { send(await app.runtimeList()); return; }
+    if (path === '/api/config/runtimes' && method === 'GET') { send(await app.runtimeSettings()); return; }
+    if (path === '/api/config/runtimes' && method === 'PUT') { const input = RuntimeSettingsSaveSchema.parse(await body(request)); retryable = true; send(await app.saveRuntimeSettings(input)); return; }
     if (path === '/api/accounts/view' && method === 'GET') { send(await app.accountsSettings()); return; }
     if (path === '/hub/accounts' && method === 'GET') { send(AccountListSchema.parse({ schema: 'accounts-list-v1', accounts: (await app.accounts.list()) })); return; }
     if (path === '/hub/accounts' && method === 'POST') {

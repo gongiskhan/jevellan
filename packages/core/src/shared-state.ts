@@ -1,3 +1,4 @@
+import { RuntimeSettingsSaveSchema } from './runtime-settings-schemas.js';
 import { z } from 'zod';
 import { ProjectEnvNameSchema, ProjectEnvImportSourceSchema, ProjectEnvSecretSummarySchema, type ProjectEnvSecretSummary } from './project-parity-schemas.js';
 import { AddRiggingSchema, ConfigWriteSchema, CredentialInputSchema, GitHubTokenStateSchema, RiggingEntrySchema, RiggingViewSchema, SecretStateSchema, SecretSummarySchema, UpdateRiggingSchema, type GitHubTokenState } from './client-schemas.js';
@@ -13,6 +14,7 @@ export interface SharedConfiguration {
   put(input: unknown): Available<ConfigRevision>;
   decisionsEditor(input?: unknown): Available<DecisionsSettingsEditor>;
   decisionsPut(input: unknown): Available<ConfigRevision>;
+  runtimesPut(input: unknown): Available<ConfigRevision>;
 }
 export interface SharedRigging {
   get(id: string): Available<z.infer<typeof RiggingViewSchema>>;
@@ -63,6 +65,7 @@ export const SharedStateRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...base, operation: z.literal('configuration-put'), input: ConfigWriteSchema }),
   z.strictObject({ ...base, operation: z.literal('decisions-editor'), input: DecisionsSettingsPreviewSchema.optional() }),
   z.strictObject({ ...base, operation: z.literal('decisions-put'), input: DecisionsSettingsSaveSchema }),
+  z.strictObject({ ...base, operation: z.literal('runtimes-put'), input: RuntimeSettingsSaveSchema }),
   z.strictObject({ ...base, operation: z.enum(['jev-check-generation', 'jev-connection']) }),
   z.strictObject({ ...base, operation: z.literal('jev-check-record'), input: JevCheckRecordSchema }),
   z.strictObject({ ...base, operation: z.literal('project'), id: IdSchema }),

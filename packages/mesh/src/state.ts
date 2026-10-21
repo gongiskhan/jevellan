@@ -1,3 +1,4 @@
+import { RuntimeSettingsSaveSchema, normalizeRuntimeSettings, stableJson } from '@jevellan/core';
 import {
   ProjectEnvNameSchema, StoredProjectWorkSettingsSchema, ProjectEnvSecretSummarySchema, CheckoutClaimSchema, ConfigWriteSchema, ConversationIndexSchema, CredentialInputSchema, GitHubTokenStateSchema, IdSchema, ProjectSchema, ProjectViewSchema, RiggingEntrySchema, RiggingStore, SecretSummarySchema, SharedStateRequestSchema, SharedStateResultSchema, ThreadIndexSchema, isTerminal,
   type SharedProjectEnvironment, type GitHubTokenState, type Project, type SharedConfiguration, type SharedGitHub, type SharedJev, type SharedProjects, type SharedRigging,
@@ -35,6 +36,14 @@ export class HubState {
         const input = raw === undefined ? undefined : DecisionsSettingsPreviewSchema.parse(raw), latest = current(), base = input ? hub.configuration.revision(input.revision) : latest;
         if (!base) throw Object.assign(new Error('The configuration revision is unavailable. Reload decisions settings.'), { status: 409 });
         return decisionsSettingsEditor(base, latest.revision, offers(), checked(), input);
+      },
+      runtimesPut: raw => {
+        const input = RuntimeSettingsSaveSchema.parse(raw); clean(input);
+        return settingsMutation(hub, deviceId, 'runtimes-put', input, input.clientRequestId, ConfigRevisionSchema, () => {
+          const latest = current(); if (input.revision !== latest.revision) throw Object.assign(new Error('Settings changed elsewhere. Reload runtime settings before saving.'), { status: 409 });
+          const configuration = normalizeRuntimeSettings(latest, input);
+          return stableJson(configuration) === stableJson(latest.configuration) ? latest : hub.configuration.put(configuration, latest.revision, { deviceId, source: 'ui' });
+        });
       },
       decisionsPut: raw => {
         const input = DecisionsSettingsSaveSchema.parse(raw); clean(input);
@@ -160,6 +169,7 @@ export class HubState {
       case 'configuration-history': result = { schema: 'shared-configuration-history-v1', revisions: await this.configuration.history() }; break;
       case 'configuration-put': result = { schema: 'shared-configuration-v1', revision: await this.configuration.put(request.input) }; break;
       case 'decisions-editor': result = { schema: 'shared-decisions-editor-v1', editor: await this.configuration.decisionsEditor(request.input) }; break;
+      case 'runtimes-put': result = { schema: 'shared-configuration-v1', revision: await this.configuration.runtimesPut(request.input) }; break;
       case 'decisions-put': result = { schema: 'shared-configuration-v1', revision: await this.configuration.decisionsPut(request.input) }; break;
       case 'jev-connection': result = { schema: 'shared-jev-connection-v1', view: await this.jev.connection() }; break;
       case 'jev-check-generation': result = { schema: 'shared-jev-generation-v1', value: { schema: 'jev-key-generation-v1', generation: await this.jev.checkGeneration() } }; break;
@@ -206,6 +216,7 @@ export class MemberState {
       history: async () => (await request('configuration-history', 'shared-configuration-history-v1')).revisions,
       put: async input => (await request('configuration-put', 'shared-configuration-v1', { input })).revision,
       decisionsEditor: async input => (await request('decisions-editor', 'shared-decisions-editor-v1', input === undefined ? {} : { input })).editor,
+      runtimesPut: async input => (await request('runtimes-put', 'shared-configuration-v1', { input })).revision,
       decisionsPut: async input => (await request('decisions-put', 'shared-configuration-v1', { input })).revision,
     };
     const writtenProject = async (operation: string, fields: object, id: string, revision: number) => { const result = (await request(operation, 'shared-project-v1', fields)).project; if (!result || result.project.id !== id || result.revision !== revision + 1) throw new HubProtocolError(); return result; };

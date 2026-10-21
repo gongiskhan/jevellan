@@ -141,6 +141,7 @@ export async function loadSettings(signal?: AbortSignal) {
       config,
       accounts: accounts.accounts,
       runtimes: runtimes.runtimes,
+      runtimeSettings: runtimes.settings,
       offered: runtimes.offered,
       rigging,
       roster,

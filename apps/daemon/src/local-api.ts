@@ -111,8 +111,12 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
       if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);
       const input = OwnerToolRequestSchema.parse(await requestBody(request));
       release = app.lifecycle.enter({ kind: 'request' });
-      // A member forwards to the state point, where the tools run; the hub fills in this device for folder lookups.
-      if (app.member) { json(response, app.redactor.document(await app.member.ownerTool({ schema: 'owner-tool-forward-v1', name: tool[1]!, request: input }))); return; }
+      // Keep hub validation, project resolution and caller logging; inventory facts belong to this device.
+      const localRuntimeEditor = tool[1] === 'config' && (input.action ?? input.args.action) === 'runtimes_editor';
+      if (app.member) {
+        const result = await app.member.ownerTool({ schema: 'owner-tool-forward-v1', name: tool[1]!, request: input });
+        json(response, app.redactor.document(localRuntimeEditor && result.ok ? { ...result, data: await app.runtimeSettings() } : result)); return;
+      }
       json(response, app.redactor.document(await app.ownerTools.call(tool[1]!, input))); return;
     }
     if (path === '/api/local/statusline') {
