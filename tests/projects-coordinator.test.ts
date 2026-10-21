@@ -71,12 +71,15 @@ async function stream(f: ProjectFixture, last: number, headers: Record<string, s
   const reader = response.body!.getReader(); const decoder = new TextDecoder(); const frames: ProjectEventFrame[] = [];
   let text = ''; let consumed = 0;
   try {
-    while (frames.at(-1)?.event.id !== last) {
+    let cursor = 0;
+    while (frames.at(-1)?.event.id !== last && cursor < last) {
       const chunk = await reader.read(); if (chunk.done) throw new Error('The stream ended early.');
       text += decoder.decode(chunk.value, { stream: true });
       for (let end = text.indexOf('\n\n', consumed); end >= 0; end = text.indexOf('\n\n', consumed)) {
         const block = text.slice(consumed, end); consumed = end + 2;
         if (block === ': keepalive') continue;
+        // The journal's copies of records are left out of the chat; a cursor frame says how far the stream reached.
+        const skipped = /^id: (\d+)\nevent: cursor\ndata: \{"id":\d+\}$/.exec(block); if (skipped) { cursor = Math.max(cursor, Number(skipped[1])); continue; }
         const match = /^id: (\d+)\nevent: project\ndata: (.+)$/.exec(block); expect(match, block).not.toBeNull();
         const frame = ProjectEventFrameSchema.parse(JSON.parse(match![2]!)); expect(frame.event.id).toBe(Number(match![1])); frames.push(frame);
       }
@@ -169,11 +172,13 @@ test('PJ2 one owner message starts two threads and the publications arrive batch
 
   // 6. The chat stream: ledger ids in order, resumable by Last-Event-ID, cursor refusals, the session required, no native session id.
   const ledger = f.app.projectWork.coordinatorLedger(pid); const all = ledger.events(); const last = all.at(-1)!.id;
+  // The chat leaves out the journal's copies of records.
+  const chat = (events: typeof all) => events.filter(event => event.type !== 'journal-source' && event.type !== 'journal-document');
   const whole = await stream(f, last);
-  expect(whole.frames.map((frame) => frame.event.id)).toEqual(all.map((event) => event.id));
-  expect(whole.frames.map((frame) => frame.event.type)).toEqual(ledgerTypes(f));
+  expect(whole.frames.map((frame) => frame.event.id)).toEqual(chat(all).map((event) => event.id));
+  expect(whole.frames.map((frame) => frame.event.type)).toEqual(chat(all).map(event => event.type));
   const resumed = await stream(f, last, { 'Last-Event-ID': '4' });
-  expect(resumed.frames.map((frame) => frame.event.id)).toEqual(all.slice(4).map((event) => event.id));
+  expect(resumed.frames.map((frame) => frame.event.id)).toEqual(chat(all.slice(4)).map((event) => event.id));
   expect(await call(f, route(f, '/coordinator/events?after=999999'), 'GET', undefined, 400)).toEqual(refused('request-failed', EVENT_CURSOR_AHEAD));
   expect((await fetch(`${f.base}${route(f, '/coordinator/events')}`)).status).toBe(401);
   // Neither coordinator session nor either thread session appears in any frame.

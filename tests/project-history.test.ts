@@ -25,3 +25,11 @@ test('an empty project loads immediately and a moved coordinator gets an indepen
   const moved = projectHistory(); expect(moved.snapshot(2)).toBeUndefined();
   expect(moved.add(event(1))).toBeUndefined(); expect(moved.add(event(2))).toEqual([event(1), event(2)]);
 });
+
+test('history whose head is a skipped journal record completes when the stream reports its cursor there', () => {
+  const history = projectHistory();
+  expect(history.snapshot(6)).toBeUndefined();
+  for (const id of [1, 3]) expect(history.add(event(id))).toBeUndefined();
+  expect(history.advance(4)).toBeUndefined();
+  expect(history.advance(6)).toEqual([1, 3].map(event));
+});

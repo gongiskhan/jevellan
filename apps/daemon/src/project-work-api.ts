@@ -175,7 +175,8 @@ export function projectWorkRoute(path: string, method: string): ProjectWorkRoute
 /** The coordinator chat frame (brief 5.13, 11): `event: project`, blob payloads resolved, redacted again, native identities left out. */
 function projectFrame(ledger: ProjectLedger, coordinator = false): LedgerStreamFrame<ProjectLedgerEvent> {
   const activity = coordinator ? new CoordinatorActivityProjector(ledger.events(), event => ledger.data(event)) : undefined;
-  return { name: 'project', invalidCursor: EVENT_CURSOR_INVALID, aheadCursor: EVENT_CURSOR_AHEAD,
+  // The coordinator chat never shows the journal's copies of ledger records, most of a long project's ledger (#19).
+  return { name: 'project', invalidCursor: EVENT_CURSOR_INVALID, aheadCursor: EVENT_CURSOR_AHEAD, ...(coordinator ? { skip: (event: ProjectLedgerEvent) => event.type === 'journal-source' || event.type === 'journal-document' } : {}),
     payload: (event) => ProjectEventFrameSchema.parse(ledger.redact({ schema: 'project-event-v1', event: { ...event, data: publicProjectData(ledger.data(event)) }, ...(activity ? { coordinatorActivity: activity.observe(event), notices: projectEventNotices({ ...event, data: publicProjectData(ledger.data(event)) }) } : {}) })) };
 }
 

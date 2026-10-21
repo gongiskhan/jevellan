@@ -325,6 +325,12 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         setStream('closed');
         if (!stopped) { retry = setTimeout(open, delay); delay = Math.min(delay * 2, 60_000); }
       };
+      current.addEventListener('cursor', (frame: MessageEvent<string>) => {
+        if (stopped || current !== source) return;
+        const id = Number((JSON.parse(frame.data) as { id?: unknown }).id); if (!Number.isSafeInteger(id)) return;
+        last = Math.max(last, id);
+        if (!historyReady && publishHistory(history.advance(id))) refresh.current();
+      });
       current.addEventListener('project', (frame: MessageEvent<string>) => {
         if (stopped || current !== source) return;
         try {

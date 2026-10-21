@@ -16,7 +16,8 @@ export function publicConversationData(value: unknown): unknown {
 /** A ledger an event stream follows: replay after a cursor, then a wake-up after every durable append. */
 export type StreamedLedger<E extends { id: number }> = { events(afterId?: number, limit?: number): E[]; subscribe(listener: () => void): () => void };
 /** The SSE event name, the browser document for one event, and the two cursor refusals (answered 400 before any header). */
-export type LedgerStreamFrame<E> = { name: string; payload(event: E): unknown; invalidCursor: string; aheadCursor: string };
+/** `skip`: events the stream's reader never shows; the cursor passes them without a frame. */
+export type LedgerStreamFrame<E> = { name: string; payload(event: E): unknown; invalidCursor: string; aheadCursor: string; skip?(event: E): boolean };
 
 /**
  * Server-sent events over an append-only ledger: `Last-Event-ID`, else `?after=`, else 0 as the cursor; one frame per event
@@ -28,7 +29,7 @@ export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>
   if (typeof supplied !== 'string' || !/^\d+$/.test(supplied) || !Number.isSafeInteger(Number(supplied))) throw new Error(frame.invalidCursor);
   let cursor = Number(supplied);
   if (cursor > (ledger.events().at(-1)?.id ?? 0)) throw new Error(frame.aheadCursor);
-  let stopped = false; let pending = false; let paused = false; let flushing = false; let queued = false; let keepalive = false;
+  let stopped = false; let pending = false; let paused = false; let flushing = false; let queued = false; let keepalive = false; let skipped = false;
   let unsubscribe = () => {};
   const close = () => { if (stopped) return; stopped = true; unsubscribe(); clearInterval(heartbeat); response.off('drain', drained); };
   const schedule = () => {
@@ -38,7 +39,8 @@ export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>
   };
   const drained = () => { paused = false; schedule(); };
   const write = (event: E) => {
-    const payload = frame.payload(event);
+    if (frame.skip?.(event)) { cursor = event.id; skipped = true; return true; }
+    skipped = false; const payload = frame.payload(event);
     const accepted = response.write(`id: ${event.id}\nevent: ${frame.name}\ndata: ${JSON.stringify(payload)}\n\n`);
     cursor = event.id; return accepted;
   };
@@ -50,6 +52,8 @@ export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>
       if (!allowed) { close(); response.end(); return; }
       const batch = ledger.events(cursor, 64);
       for (const event of batch) { if (!write(event)) { paused = true; return; } }
+      // Skipped events at the end of a batch: a cursor frame says how far the stream reached, so a reader waiting for the ledger's head stops waiting.
+      if (skipped) { skipped = false; if (!response.write(`id: ${cursor}\nevent: cursor\ndata: ${JSON.stringify({ id: cursor })}\n\n`)) { paused = true; return; } }
       if (keepalive) { keepalive = false; paused = !response.write(': keepalive\n\n'); }
       if (batch.length === 64) queued = true;
     } catch { close(); response.destroy(); }

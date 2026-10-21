@@ -193,6 +193,23 @@ test('a dispatched thread stream opens from its owner index before the local thr
   } finally { abort.abort(); }
 });
 
+test('the coordinator chat stream leaves out the journal records it never shows, so a long project history loads quickly', { timeout: 60000 }, async () => {
+  const ledger = app.projectWork.ledgers.coordinator('project');
+  const turn = ledger.append({ type: 'coordinator-text', turn: 1, data: { schema: 'coordinator-text-v1', text: 'Before the journal copy.' } });
+  ledger.append({ type: 'journal-source', data: { schema: 'project-journal-record-v1', deviceId: app.device.deviceId, ledgerId: 'coordinator', event: turn } });
+  ledger.append({ type: 'notice', data: { schema: 'project-notice-v1', text: 'After the journal copy.', kind: 'info' } });
+  const abort = new AbortController();
+  try {
+    const response = await fetch(`${base}/api/projects/project/coordinator/events`, { headers: { Cookie: cookie }, signal: abort.signal });
+    const reader = response.body!.getReader(); let text = '';
+    while (!text.includes('After the journal copy.')) { const value = await reader.read(); expect(value.done).toBe(false); text += new TextDecoder().decode(value.value); }
+    expect(text).toContain('Before the journal copy.'); expect(text).not.toContain('journal-source');
+    // The ledger's newest event is often a journal copy: a cursor frame tells the page the history reached it.
+    const copy = ledger.append({ type: 'journal-source', data: { schema: 'project-journal-record-v1', deviceId: app.device.deviceId, ledgerId: 'coordinator', event: turn } });
+    while (!text.includes(`event: cursor\ndata: {"id":${copy.id}}`)) { const value = await reader.read(); expect(value.done).toBe(false); text += new TextDecoder().decode(value.value); }
+  } finally { abort.abort(); }
+});
+
 test('the owner thread ledger stream authenticates, checks project ownership and replays prompts and hashed usage evidence', { timeout: 60000 }, async () => {
   fake.enqueueTurn(async turn => {
     turn.emit({ type: 'usage', inputTokens: 90, outputTokens: 12, costUsd: 0.02, costSource: 'reported' });

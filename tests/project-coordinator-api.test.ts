@@ -50,7 +50,10 @@ function holdTurn(f: ProjectFixture): Promise<FakeTurn> {
 }
 
 type Stream = { text(): string; through(last: number): Promise<ProjectEventFrame[]>; ended(): Promise<void> };
-/** The coordinator chat stream read as raw bytes: every frame must be exactly `id`, `event: project` and one `data` line. */
+/**
+ * The coordinator chat stream read as raw bytes: every frame must be exactly `id`, `event: project` and one `data` line, or a cursor frame
+ * where the journal records the chat leaves out end a batch.
+ */
 async function watch(f: ProjectFixture, options: { query?: string; headers?: Record<string, string>; cookie?: string } = {}): Promise<Stream> {
   const abort = new AbortController(); streams.push(abort);
   // A dedicated connection avoids the idle pooled-socket close race while retaining raw SSE assertions.
@@ -63,12 +66,14 @@ async function watch(f: ProjectFixture, options: { query?: string; headers?: Rec
   expect(response.headers['content-type']).toBe('text/event-stream; charset=utf-8');
   expect(response.headers['cache-control']).toBe('no-store');
   const reader = (Readable.toWeb(response) as ReadableStream<Uint8Array>).getReader(); const decoder = new TextDecoder();
-  let text = ''; let consumed = 0; let taken = 0; const frames: ProjectEventFrame[] = [];
+  let text = ''; let consumed = 0; let taken = 0; let cursor = 0; const frames: ProjectEventFrame[] = [];
   const read = async () => { const chunk = await reader.read(); if (chunk.done) return false; text += decoder.decode(chunk.value, { stream: true }); return true; };
   const parse = () => {
     for (let end = text.indexOf('\n\n', consumed); end >= 0; end = text.indexOf('\n\n', consumed)) {
       const block = text.slice(consumed, end); consumed = end + 2;
       if (block === ': keepalive') continue;
+      const skipped = /^id: (\d+)\nevent: cursor\ndata: \{"id":(\d+)\}$/.exec(block);
+      if (skipped) { expect(skipped[2]).toBe(skipped[1]); cursor = Math.max(cursor, Number(skipped[1])); continue; }
       const match = /^id: (\d+)\nevent: project\ndata: (.+)$/.exec(block); expect(match, block).not.toBeNull();
       const frame = ProjectEventFrameSchema.parse(JSON.parse(match![2]!)); expect(frame.event.id).toBe(Number(match![1])); frames.push(frame);
     }
@@ -80,13 +85,16 @@ async function watch(f: ProjectFixture, options: { query?: string; headers?: Rec
       for (;;) {
         parse();
         while (taken < frames.length) { const frame = frames[taken++]!; out.push(frame); if (frame.event.id >= last) return out; }
+        if (cursor >= last) return out;
         if (!await read()) throw new Error('The stream ended early.');
       }
     },
     async ended() { while (await read()); parse(); },
   };
 }
-const resolved = (f: ProjectFixture, events: readonly ProjectLedgerEvent[]) => { const ledger = f.app.projectWork.coordinatorLedger(f.project.id); return events.map((event) => ({ ...event, data: publicProjectData(ledger.data(event)) })); };
+/** What the chat shows of the ledger: everything but the journal's copies of records. */
+const shown = (events: readonly ProjectLedgerEvent[]) => events.filter(event => event.type !== 'journal-source' && event.type !== 'journal-document');
+const resolved = (f: ProjectFixture, events: readonly ProjectLedgerEvent[]) => { const ledger = f.app.projectWork.coordinatorLedger(f.project.id); return shown(events).map((event) => ({ ...event, data: publicProjectData(ledger.data(event)) })); };
 
 test('the phase 2 rows of the route table: coordinator, settings, notebook and answers, with their ids, methods and stream flag', () => {
   const project = (suffix: string) => `/api/projects/proj_a${suffix}`;
@@ -224,11 +232,11 @@ test('coordinator routes: session required, assignment by the first message, ide
 
   // Resume: Last-Event-ID, else ?after=; the header wins; a resumed stream continues live.
   const resumed = await watch(f, { headers: { 'Last-Event-ID': '2' } });
-  expect((await resumed.through(lastOne)).map((frame) => frame.event.id)).toEqual(turnOne.slice(2).map((event) => event.id));
+  expect((await resumed.through(lastOne)).map((frame) => frame.event.id)).toEqual(shown(turnOne.slice(2)).map((event) => event.id));
   const byQuery = await watch(f, { query: '?after=3' });
-  expect((await byQuery.through(lastOne)).map((frame) => frame.event.id)).toEqual(turnOne.slice(3).map(event => event.id));
+  expect((await byQuery.through(lastOne)).map((frame) => frame.event.id)).toEqual(shown(turnOne.slice(3)).map(event => event.id));
   const headerWins = await watch(f, { query: '?after=0', headers: { 'Last-Event-ID': '3' } });
-  expect((await headerWins.through(lastOne)).map((frame) => frame.event.id)).toEqual(turnOne.slice(3).map(event => event.id));
+  expect((await headerWins.through(lastOne)).map((frame) => frame.event.id)).toEqual(shown(turnOne.slice(3)).map(event => event.id));
 
   // Stop interrupts the running turn and answers the project view; the turn's events count as delivered (D33).
   const held = holdTurn(f);

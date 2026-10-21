@@ -15,6 +15,8 @@ export function projectHistory() {
       pending.set(event.id, event); cursor = Math.max(cursor, event.id);
       return complete();
     },
+    /** The stream reached this id without an event to show (a cursor frame for skipped journal records). */
+    advance(id: number) { cursor = Math.max(cursor, id); return complete(); },
     snapshot(lastEventId: number) {
       // Polls may advance while replay is arriving; only the first snapshot defines this replay boundary.
       head ??= lastEventId;
