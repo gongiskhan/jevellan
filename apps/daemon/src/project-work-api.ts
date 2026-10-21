@@ -29,6 +29,7 @@ import {
 } from '@jevellan/projects';
 import type { Application } from './application.js';
 import { streamLedger, type LedgerStreamFrame } from './conversation-events.js';
+import { ProjectStatusStreamRequestSchema, ProjectStatusEventSchema } from '@jevellan/core';
 import { json, requestBody } from './http.js';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 import { readProjectImage } from '@jevellan/conversations';
@@ -533,8 +534,15 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'waiting-list': send(await work.waitingView(projectId)); return true;
     case 'waiting-answer': send(await work.respondWaiting(projectId, decisionId, ProjectWaitingRespondRequestSchema.parse(await requestBody(request)))); return true;
     case 'events': {
+      const raw = url.searchParams.get('statusView');
+      const input = raw === null ? undefined : ProjectStatusStreamRequestSchema.parse(JSON.parse(raw));
       const ledger = await work.coordinatorEvents(projectId);
-      streamLedger(ledger, request, response, url, caller.authenticated, projectFrame(ledger, true)); return true;
+      streamLedger(ledger, request, response, url, caller.authenticated, projectFrame(ledger, true), input ? {
+        read: async () => {
+          const { resolvedDays, ...viewer } = input.page;
+          return ProjectStatusEventSchema.parse(app.redactor.document({ schema: 'project-status-event-v1', request: input.page, view: await work.pageView(projectId, resolvedDays, viewer) }));
+        },
+      } : undefined); return true;
     }
     case 'landing-why': send(await work.landingWhy(projectId, threadId)); return true;
     case 'merge-why': send(await work.mergeWhy(projectId, threadId, ProjectMergeWhyRequestSchema.parse(await requestBody(request)))); return true;

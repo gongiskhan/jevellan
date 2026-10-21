@@ -452,3 +452,11 @@ test('MCP owner-command view reads presentation without executing the command', 
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'owner_command_view', command: { command: 'printf fixture', why: 'Simulated owner command.', cwd: 'checkout' }, device: f.app.device.deviceId } })).structuredContent);
   expect(result).toMatchObject({ ok: true, data: { schema: 'owner-command-view-v1', projectId: 'project', presentation: { copyOnly: false, receipt: null, header: `${f.app.device.name} · checkout` } } }); expect(f.app.terminals.manager.list()).toHaveLength(0); expect(f.fake.runs).toHaveLength(0);
 });
+
+test('MCP project page reads the canonical viewer-bound status without starting work', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const request = { schema: 'project-page-request-v1', resolvedDays: 28, timeZone: 'UTC', locale: 'en', ackKnown: ['known'] };
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'project_page', request } })).structuredContent);
+  const ordinary = await (await f.request('/api/projects/project/status-view', 'POST', request)).json();
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-page-view-v1', changeToken: ordinary.changeToken, overview: ordinary.overview } }); expect(f.fake.starts).toHaveLength(0);
+});

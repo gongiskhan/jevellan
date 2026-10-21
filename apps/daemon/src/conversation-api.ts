@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { ConversationReadSchema, EmptySchema, IdSchema } from '@jevellan/core';
+import { ConversationStatusStreamRequestSchema, ConversationStatusEventSchema } from '@jevellan/core';
 import type { Application } from './application.js';
 import { publicConversationData, streamConversation } from './conversation-events.js';
 import { json, requestBody } from './http.js';
@@ -30,7 +31,13 @@ export async function handleConversation(app: Application, request: IncomingMess
   if (operation === 'file') {
     send(await app.conversations.file(id, { schema: 'conversation-file-request-v1', ref: url.searchParams.get('ref') ?? '', stretch: Number(url.searchParams.get('stretch')), source: url.searchParams.get('source') ?? 'step' })); return;
   }
-  if (operation === 'events') { streamConversation(app.conversations.ledger(id), request, response, url, authenticated); return; }
+  if (operation === 'events') {
+    const raw = url.searchParams.get('statusView');
+    const input = raw === null ? undefined : ConversationStatusStreamRequestSchema.parse(JSON.parse(raw));
+    streamConversation(app.conversations.ledger(id), request, response, url, authenticated, input ? {
+      read: async () => ConversationStatusEventSchema.parse(app.redactor.document({ schema: 'conversation-status-event-v1', view: await app.conversations.view(id) })),
+    } : undefined); return;
+  }
   if (operation === 'read') {
     const pointer = url.searchParams.get('pointer') ?? '';
     send(ConversationReadSchema.parse({ schema: 'conversation-read-v1', pointer, content: publicConversationData(app.conversations.ledger(id).read(pointer)) })); return;

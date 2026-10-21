@@ -1,4 +1,5 @@
 import { ProjectTaskEditorSchema, taskEditorCommand, type ProjectTaskEditor, type ProjectTaskEditorFields } from '@jevellan/core/client';
+import { ProjectPageRequestSchema, ProjectStatusEventSchema, ProjectStatusStreamRequestSchema, matchingProjectStatusView, STATUS_REFRESH_WINDOW_MS } from '@jevellan/core/client';
 import { CoordinatorOverrideDialog } from './coordinator-editor.js';
 import type { ProjectGoalViews, ProjectJobsView } from '@jevellan/core/client';
 import { LastDeploy } from './project-deploy.js';
@@ -311,6 +312,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     // The chat stream resumes by itself after a dropped connection; a refused one (the coordinator lives elsewhere) is
     // reopened from the last event with a growing delay, and the view's notices explain the coordinator meanwhile.
     let source: EventSource | undefined; let retry: ReturnType<typeof setTimeout> | undefined; let last = 0; let delay = 5000; let stopped = false;
+    const pageRequest = () => ProjectPageRequestSchema.parse({ schema: 'project-page-request-v1', ...viewer.current, resolvedDays: resolvedWindow.current, ...(ackKnown.current ? { ackKnown: ackKnown.current } : {}) });
     let history = projectHistory(); let historyReady = false;
     const publishHistory = (snapshot: ProjectLedgerEvent[] | undefined) => {
       if (!snapshot) return false;
@@ -318,7 +320,9 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       return true;
     };
     const open = () => {
-      const current = new EventSource(`/api/projects/${id}/coordinator/events${last ? `?after=${last}` : ''}`);
+      const query = new URLSearchParams({ statusView: JSON.stringify(ProjectStatusStreamRequestSchema.parse({ schema: 'project-status-stream-request-v1', page: pageRequest() })) });
+      if (last) query.set('after', String(last));
+      const current = new EventSource(`/api/projects/${id}/coordinator/events?${query}`);
       source = current; setStream('connecting');
       current.onopen = () => { if (stopped || current !== source) return; delay = 5000; setStream('open'); };
       current.onerror = () => {
@@ -327,6 +331,13 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         setStream('closed');
         if (!stopped) { retry = setTimeout(open, delay); delay = Math.min(delay * 2, 60_000); }
       };
+      current.addEventListener('status-view', (frame: MessageEvent<string>) => {
+        if (stopped || current !== source) return;
+        try {
+          const value = ProjectStatusEventSchema.parse(JSON.parse(frame.data));
+          if (matchingProjectStatusView(value, pageRequest())) reads.push(value.view);
+        } catch (failure) { stopped = true; current.close(); setStream('closed'); onError(failure); }
+      });
       current.addEventListener('cursor', (frame: MessageEvent<string>) => {
         if (stopped || current !== source) return;
         const id = Number((JSON.parse(frame.data) as { id?: unknown }).id); if (!Number.isSafeInteger(id)) return;
@@ -377,7 +388,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     acceptPage.current = accept;
     const reads = queuedRefresh(
       signal => api(`/api/projects/${id}/status-view`, ProjectPageViewSchema, 'POST',
-        { schema: 'project-page-request-v1', ...viewer.current, resolvedDays: resolvedWindow.current, ...(ackKnown.current ? { ackKnown: ackKnown.current } : {}) }, { signal, waitForHub: true }),
+        pageRequest(), { signal, waitForHub: true }),
       accept,
       (failure) => {
         if (failure instanceof ApiError && failure.status === 401) onError(failure);
@@ -385,7 +396,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       },
     );
     const read = () => void reads.request();
-    refresh.current = () => { clearTimeout(debounce); debounce = setTimeout(read, 40); };
+    refresh.current = () => { clearTimeout(debounce); debounce = setTimeout(read, STATUS_REFRESH_WINDOW_MS); };
     read();
     const poll = setInterval(read, 5000);
     window.addEventListener(PROJECT_WORK_UPDATED, read);

@@ -1,4 +1,5 @@
 import { ConversationTranscriptViewSchema, conversationTranscriptProjection, selectConversationTranscriptView, conversationNoticeHidden, type ConversationTranscriptView } from '@jevellan/core/client';
+import { ConversationStatusStreamRequestSchema, ConversationStatusEventSchema, STATUS_REFRESH_WINDOW_MS } from '@jevellan/core/client';
 import { conversationPlansView, planApprovalRequest, planChangesMessage } from '@jevellan/core/client';
 import { ConversationCorrectionDialog as ChangeStep, ConversationWhyPanel as Why } from './conversation-decision-panels.js';
 import { PlanReview, type PlanReviewActions } from './plan-review.js';
@@ -536,15 +537,24 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
   }, [props.onError]);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let stopped = false; let initialReady = false;
     const refresh = queuedRefresh(
       (signal) => api(`/api/conversations/${id}`, ConversationPublicSchema, 'GET', undefined, { signal }),
-      setView,
+      value => { initialReady = true; setView(value); },
       props.onError,
     );
     void refresh.request();
-    const stream = new EventSource(`/api/conversations/${id}/events`);
+    const query = new URLSearchParams({ statusView: JSON.stringify(ConversationStatusStreamRequestSchema.parse({ schema: 'conversation-status-stream-request-v1' })) });
+    const stream = new EventSource(`/api/conversations/${id}/events?${query}`);
     stream.onopen = () => setConnected(true);
     stream.onerror = () => setConnected(false);
+    stream.addEventListener('status-view', (event: MessageEvent<string>) => {
+      if (stopped || !initialReady) return;
+      try {
+        const value = ConversationStatusEventSchema.parse(JSON.parse(event.data));
+        if (value.view.conversation.id === id) refresh.push(value.view);
+      } catch (error) { stream.close(); props.onError(error); }
+    });
     stream.addEventListener('conversation', (event: MessageEvent<string>) => {
       try {
         const value = ConversationEventSchema.parse(JSON.parse(event.data));
@@ -554,13 +564,14 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
             : [...previous, value.event].sort((a, b) => a.id - b.id),
         );
         clearTimeout(timer);
-        timer = setTimeout(() => void refresh.request(), 40);
+        timer = setTimeout(() => void refresh.request(), STATUS_REFRESH_WINDOW_MS);
       } catch (error) {
         stream.close();
         props.onError(error);
       }
     });
     return () => {
+      stopped = true;
       refresh.stop();
       clearTimeout(timer);
       stream.close();

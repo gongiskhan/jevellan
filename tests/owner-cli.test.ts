@@ -493,3 +493,12 @@ test('CLI owner-command view reads presentation without executing the command', 
   const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
   expect(result).toMatchObject({ ok: true, data: { schema: 'owner-command-view-v1', projectId: 'project', presentation: { copyOnly: false, receipt: null, header: `${f.app.device.name} · checkout` } } }); expect(f.app.terminals.manager.list()).toHaveLength(0); expect(f.fake.runs).toHaveLength(0);
 });
+
+test('CLI project page reads the canonical viewer-bound status without starting work', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  const request = { schema: 'project-page-request-v1', resolvedDays: 28, timeZone: 'UTC', locale: 'en', ackKnown: ['known'] };
+  expect(await callCommand(['jev', 'project_page', '--request', JSON.stringify(request)], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
+  const ordinary = await (await f.request('/api/projects/project/status-view', 'POST', request)).json();
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-page-view-v1', changeToken: ordinary.changeToken, overview: ordinary.overview } }); expect(f.fake.starts).toHaveLength(0);
+});

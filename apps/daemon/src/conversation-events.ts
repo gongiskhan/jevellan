@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { ConversationEventSchema, type LedgerEvent } from '@jevellan/core';
+import { ConversationEventSchema, queuedRefresh, STATUS_REFRESH_WINDOW_MS, type LedgerEvent } from '@jevellan/core';
 import type { ConversationLedger } from '@jevellan/conversations';
 
 import { publicConversationData } from '@jevellan/core';
@@ -10,25 +10,32 @@ export type StreamedLedger<E extends { id: number }> = { events(afterId?: number
 /** The SSE event name, the browser document for one event, and the two cursor refusals (answered 400 before any header). */
 /** `skip`: events the stream's reader never shows; the cursor passes them without a frame. */
 export type LedgerStreamFrame<E> = { name: string; payload(event: E): unknown; invalidCursor: string; aheadCursor: string; skip?(event: E): boolean };
+export type LedgerStatusView = { read(signal: AbortSignal): Promise<unknown> };
 
 /**
  * Server-sent events over an append-only ledger: `Last-Event-ID`, else `?after=`, else 0 as the cursor; one frame per event
  * (`id: N`, `event: <name>`, `data: <payload>`); 64-event batches with backpressure; authentication checked again on every
  * flush; a keepalive comment every 15 s.
  */
-export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>, request: IncomingMessage, response: ServerResponse, url: URL, authenticated: () => boolean | Promise<boolean>, frame: LedgerStreamFrame<E>): void {
+export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>, request: IncomingMessage, response: ServerResponse, url: URL, authenticated: () => boolean | Promise<boolean>, frame: LedgerStreamFrame<E>, statusView?: LedgerStatusView): void {
   const supplied = request.headers['last-event-id'] ?? url.searchParams.get('after') ?? '0';
   if (typeof supplied !== 'string' || !/^\d+$/.test(supplied) || !Number.isSafeInteger(Number(supplied))) throw new Error(frame.invalidCursor);
   let cursor = Number(supplied);
   if (cursor > (ledger.events().at(-1)?.id ?? 0)) throw new Error(frame.aheadCursor);
   let stopped = false; let pending = false; let paused = false; let flushing = false; let queued = false; let keepalive = false; let skipped = false;
+  let statusHead = ledger.events().at(-1)?.id ?? 0;
+  let statusTimer: ReturnType<typeof setTimeout> | undefined;
+  const statusFrames: unknown[] = [];
   let unsubscribe = () => {};
-  const close = () => { if (stopped) return; stopped = true; unsubscribe(); clearInterval(heartbeat); response.off('drain', drained); };
+  const close = () => { if (stopped) return; stopped = true; unsubscribe(); status?.stop(); statusFrames.length = 0; clearTimeout(statusTimer); clearInterval(heartbeat); response.off('drain', drained); };
   const schedule = () => {
     queued = true;
     if (stopped || pending || paused || flushing) return;
     pending = true; setImmediate(() => { pending = false; void flush(); });
   };
+  // View reads run independently of raw-event delivery. Replay uses the initial HTTP snapshot;
+  // subsequent journal heads share the same serialized catch-up and cancellation policy as fallback reads.
+  const status = statusView ? queuedRefresh(statusView.read, value => { statusFrames.push(value); schedule(); }, () => {}) : undefined;
   const drained = () => { paused = false; schedule(); };
   const write = (event: E) => {
     if (frame.skip?.(event)) { cursor = event.id; skipped = true; return true; }
@@ -46,6 +53,15 @@ export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>
       for (const event of batch) { if (!write(event)) { paused = true; return; } }
       // Skipped events at the end of a batch: a cursor frame says how far the stream reached, so a reader waiting for the ledger's head stops waiting.
       if (skipped) { skipped = false; if (!response.write(`id: ${cursor}\nevent: cursor\ndata: ${JSON.stringify({ id: cursor })}\n\n`)) { paused = true; return; } }
+      const head = ledger.events().at(-1)?.id ?? 0;
+      if (status && cursor >= head && head > statusHead) {
+        statusHead = head;
+        if (!statusTimer) statusTimer = setTimeout(() => { statusTimer = undefined; void status.request(); }, STATUS_REFRESH_WINDOW_MS);
+      }
+      while (statusFrames.length) {
+        const value = statusFrames.shift();
+        if (!response.write(`event: status-view\ndata: ${JSON.stringify(value)}\n\n`)) { paused = true; return; }
+      }
       if (keepalive) { keepalive = false; paused = !response.write(': keepalive\n\n'); }
       if (batch.length === 64) queued = true;
     } catch { close(); response.destroy(); }
@@ -63,7 +79,7 @@ export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>
   schedule();
 }
 
-export function streamConversation(ledger: ConversationLedger, request: IncomingMessage, response: ServerResponse, url: URL, authenticated: () => boolean | Promise<boolean>): void {
+export function streamConversation(ledger: ConversationLedger, request: IncomingMessage, response: ServerResponse, url: URL, authenticated: () => boolean | Promise<boolean>, statusView?: LedgerStatusView): void {
   streamLedger(ledger, request, response, url, authenticated, { name: 'conversation', invalidCursor: 'Invalid conversation event cursor.', aheadCursor: 'Conversation event cursor is ahead of its history.',
-    payload: (event: LedgerEvent) => ConversationEventSchema.parse(ledger.redact({ schema: 'conversation-event-v1', event: { ...event, data: publicConversationData(ledger.data(event)) } })) });
+    payload: (event: LedgerEvent) => ConversationEventSchema.parse(ledger.redact({ schema: 'conversation-event-v1', event: { ...event, data: publicConversationData(ledger.data(event)) } })) }, statusView);
 }

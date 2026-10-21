@@ -92,3 +92,18 @@ test('opening a folder in the picker selects it and names the project after it',
   await expect(dialog).not.toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Project', exact: true }).locator('option', { hasText: 'picked-project' })).toHaveCount(1);
 });
+
+test('conversation accepts a pushed canonical status while a fallback read is pending', async ({ page }) => {
+  await page.request.post('/api/auth/login', { data: { schema: 'passphrase-input-v1', passphrase: 'jevellan-browser-fixture' } });
+  const id = `pushed_${randomUUID()}`;
+  const created = await page.request.post('/api/conversations', { data: { schema: 'start-conversation-v1', id, clientMessageId: `message_${randomUUID()}`, projectId: 'browser_fixture', title: 'Pushed status fixture', message: 'Wait for my next step.' } });
+  expect(created.status()).toBe(201); const original = ConversationPublicSchema.parse(await created.json());
+  let release!: () => void; let releaseLater!: () => void; const held = new Promise<void>(done => { release = done; }); const later = new Promise<void>(done => { releaseLater = done; }); let reads = 0;
+  await page.context().route(`**/api/conversations/${id}`, async route => { const number = ++reads; if (number > 2) { await later; await route.continue(); return; } if (number === 2) await held; await route.fulfill({ json: original }); });
+  try {
+    await page.goto(`/conversations/${id}`); await expect(page.getByRole('heading', { name: 'Pushed status fixture', exact: true })).toBeVisible();
+    const response = await page.request.post(`/api/conversations/${id}/rename`, { data: { schema: 'rename-conversation-v1', clientRequestId: `rename_${randomUUID()}`, previousTitle: original.conversation.title, title: 'Canonical pushed title' } }); expect(response.ok()).toBe(true);
+    await expect(page.getByRole('heading', { name: 'Canonical pushed title', exact: true })).toBeVisible();
+    await expect.poll(() => reads).toBeGreaterThanOrEqual(2); const fallback = page.waitForResponse(response => response.request().method() === 'GET' && new URL(response.url()).pathname === `/api/conversations/${id}`); release(); await fallback; await page.evaluate(() => new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done())))); await expect(page.getByRole('heading', { name: 'Canonical pushed title', exact: true })).toBeVisible(); await page.screenshot({ path: `test-results/conversation-pushed-status-${test.info().project.name}.png`, fullPage: true });
+  } finally { release(); releaseLater(); await page.request.post(`/api/conversations/${id}/cancel`, { data: { schema: 'empty-request-v1' } }); }
+});
