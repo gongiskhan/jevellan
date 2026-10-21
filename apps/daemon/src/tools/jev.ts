@@ -75,6 +75,7 @@ export const jev: OwnerHandler = async (context) => {
     case 'conversation_message_draft': return { text: 'Conversation message draft.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'message-draft', args.request) };
     case 'conversation_message': return { text: 'Conversation updated.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'message-command', args.request) };
     case 'conversation_read_view': return { text: 'Conversation reading view.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'reading-view', args.request) };
+    case 'conversation_stream': return { text: 'Conversation stream source.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'stream-source', args.request) };
     case 'conversation_manual_editor': return { text: 'Manual step editor.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'manual-editor') };
     case 'conversation_manual_draft': return { text: 'Manual step draft.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'manual-draft', args.request) };
     case 'conversation_manual': return { text: 'Manual step requested.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'manual-command', args.request) };

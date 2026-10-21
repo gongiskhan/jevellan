@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { ConversationReadingViewSchema } from '../../packages/core/dist/index.js';
 import { conversationReadingFixture } from '../helpers/conversation-reading-fixture.js';
 import { ConversationManualCommandSchema, ConversationManualEditorSchema } from '../../packages/core/dist/index.js';
@@ -11,6 +12,23 @@ import { ConversationControlCommandSchema, ConversationMessageCommandSchema, Con
 import { projectFixture, FIXTURE_MENU } from '../helpers/project-fixture.js';
 import { expect, test } from './fixtures.js';
 import { closeConversationSettings, openConversationSettings } from './navigation.js';
+
+test('STREAMPAR1 browser reconnect replays canonical events once and preserves the recorded result', async ({ page, context }, info) => {
+  const made = await conversationReadingFixture(true), f = made.f; let client: Client | undefined;
+  const streams = new Set<ServerResponse>(), track = (request: IncomingMessage, response: ServerResponse) => { if (request.method === 'GET' && request.url?.split('?')[0] === '/api/conversations/' + made.id + '/events') { streams.add(response); response.once('close', () => streams.delete(response)); } }; f.server.on('request', track);
+  try {
+    const separator = f.cookie.indexOf('='); await context.addCookies([{ name: f.cookie.slice(0, separator), value: f.cookie.slice(separator + 1), url: f.base, httpOnly: true, sameSite: 'Lax' }]);
+    const transport = new StdioClientTransport({ command: process.execPath, args: [join(import.meta.dirname, '..', '..', 'bin', 'jevellan.mjs'), 'mcp'], cwd: f.checkout, env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', JEVELLAN_HOME: f.homes.root }, stderr: 'ignore' }); client = new Client({ name: 'stream-parity-fixture', version: '1' }); await client.connect(transport);
+    const readSource = async (afterId = 0) => { const result = OwnerToolResultSchema.parse((await client!.callTool({ name: 'jev', arguments: { action: 'conversation_stream', conversation: made.id, request: { schema: 'conversation-stream-request-v1', afterId, limit: 64 } } })).structuredContent); expect(result.ok).toBe(true); if (!result.ok) throw new Error('The canonical stream source was refused.'); return ConversationStreamSourceSchema.parse(result.data); };
+    const initial = await readSource(); expect(initial.policy).toMatchObject({ refreshWindowMs: 40, duplicate: 'first-id-wins', order: 'ascending', malformed: 'close' });
+    await page.goto(f.base + '/conversations/' + made.id); const reconnecting = page.getByRole('status').filter({ hasText: 'Reconnecting…' }); await expect(page.locator('.conversation-activity p')).toHaveText('Using Read fixture…'); await expect(reconnecting).toHaveCount(0);
+    await expect.poll(() => streams.size).toBe(1); [...streams][0]!.end(); await expect(reconnecting).toBeVisible();
+    const claim = 'Replay the fixture finding once.', ledger = f.app.conversations.ledger(made.id), finding = ledger.append({ type: 'finding', stretch: 1, data: { claim, pointer: 'value.txt' } }), pending = await readSource(initial.head); expect(pending.events.map(row => row.id)).toEqual([finding.id]);
+    await expect(reconnecting).toHaveCount(0); await expect(page.locator('.conversation-activity p')).toHaveText('Using Read fixture…'); await page.screenshot({ path: info.outputPath('stream-reconnected-running.png'), fullPage: true });
+    await made.finish(); await expect(page.getByRole('heading', { name: 'Recorded reading result', exact: true })).toBeVisible(); const step = page.locator('.stretch-block').filter({ has: page.getByRole('heading', { name: 'Step 1 · Reply', exact: true }) }); await step.locator('.step-details > summary').click(); await expect(step.locator('.findings li').filter({ hasText: claim })).toHaveCount(1); await expect(step.locator('.findings li')).toHaveCount(2);
+    const count = ledger.events().length, final = await readSource(); expect(final.events.map(row => row.id)).toEqual(ledger.events().map(row => row.id)); expect(new Set(final.events.map(row => row.id)).size).toBe(final.events.length); await page.screenshot({ path: info.outputPath('stream-replayed-finding.png'), fullPage: true }); expect(ledger.events()).toHaveLength(count); expect(f.fake.starts).toHaveLength(1);
+  } finally { made.release(); f.server.off('request', track); await client?.close().catch(() => undefined); await f.close(); }
+});
 
 test('RESULTPAR1 browser recorded result and effort usage labels match canonical MCP views', async ({ page, context }, info) => {
   const made = await conversationReadingFixture(true, { inputTokens: 1250, outputTokens: 250, costUsd: 0.12349 }, 'xhigh'), f = made.f; let client: Client | undefined;
@@ -299,3 +317,4 @@ test('CONTROLSWRITEPAR1 browser rename and finish commands match MCP receipts an
     await page.screenshot({ path: info.outputPath('control-replay-later-work.png'), fullPage: true });
   } finally { await client?.close().catch(() => undefined); await f.close(); }
 });
+import { ConversationStreamSourceSchema } from '../../packages/core/dist/index.js';

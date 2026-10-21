@@ -199,3 +199,4 @@ export * from './conversation-manual-editor.js';
 export * from './conversation-reading-policy-schemas.js';
 export * from './conversation-reading-policy.js';
 export * from './conversation-result-policy.js';
+export * from './conversation-stream-policy.js';

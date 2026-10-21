@@ -14,7 +14,7 @@ import { conversationSidebarView, type ConversationSidebarFilter } from '@jevell
 import { ConversationListSourceSchema, conversationListRefresh, conversationListUpdateKey, CONVERSATION_LIST_POLL_MS, CONVERSATION_UPDATED_EVENT } from '@jevellan/core/client';
 import { conversationActionLabel as actionLabel, conversationPagePresentationForStream } from '@jevellan/core/client';
 import { ConversationTranscriptViewSchema, conversationTranscriptProjection, selectConversationTranscriptView, type ConversationTranscriptView } from '@jevellan/core/client';
-import { ConversationStatusStreamRequestSchema, ConversationStatusEventSchema, STATUS_REFRESH_WINDOW_MS } from '@jevellan/core/client';
+import { ConversationStatusStreamRequestSchema } from '@jevellan/core/client';
 import { conversationPlansView, planApprovalRequest, planChangesMessage } from '@jevellan/core/client';
 import { ConversationCorrectionDialog as ChangeStep, ConversationWhyPanel as Why } from './conversation-decision-panels.js';
 import { PlanReview, type PlanReviewActions } from './plan-review.js';
@@ -34,7 +34,6 @@ import {
   GitBranchChangeSchema, type GitBranchChange,
   ComposerInitialSchema,
   ConversationChangesSchema,
-  ConversationEventSchema,
   ConversationListSchema,
   ProjectsListSchema,
   ConversationPublicSchema,
@@ -454,22 +453,17 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
     stream.onopen = () => setConnected(true);
     stream.onerror = () => setConnected(false);
     stream.addEventListener('status-view', (event: MessageEvent<string>) => {
-      if (stopped || !initialReady) return;
       try {
-        const value = ConversationStatusEventSchema.parse(JSON.parse(event.data));
-        if (value.view.conversation.id === id) refresh.push(value.view);
+        const value = conversationStreamStatusView(event.data, { stopped, initialReady, conversationId: id });
+        if (value) refresh.push(value);
       } catch (error) { stream.close(); props.onError(error); }
     });
     stream.addEventListener('conversation', (event: MessageEvent<string>) => {
       try {
-        const value = ConversationEventSchema.parse(JSON.parse(event.data));
-        setEvents((previous) =>
-          previous.some((entry) => entry.id === value.event.id)
-            ? previous
-            : [...previous, value.event].sort((a, b) => a.id - b.id),
-        );
+        const value = conversationStreamFrame(event.data);
+        setEvents(previous => conversationStreamEvents(previous, value.event));
         clearTimeout(timer);
-        timer = setTimeout(() => void refresh.request(), STATUS_REFRESH_WINDOW_MS);
+        timer = setTimeout(() => void refresh.request(), value.refreshWindowMs);
       } catch (error) {
         stream.close();
         props.onError(error);
@@ -1451,3 +1445,4 @@ function StepResult({
   );
 }
 import { ConversationReadingViewSchema, conversationStepDetails, conversationResultPresentation } from '@jevellan/core/client';
+import { conversationStreamFrame, conversationStreamEvents, conversationStreamStatusView } from '@jevellan/core/client';

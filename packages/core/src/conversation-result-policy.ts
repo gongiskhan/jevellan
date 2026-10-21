@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import type {Stretch} from './schemas.js';
 
-export const ConversationStepDetailsSchema=z.strictObject({schema:z.literal('conversation-step-details-v1'),effortLabel:z.string(),tokens:z.number().int().nonnegative(),usageLabel:z.string().nullable()});
+export const ConversationStepDetailsSchema=z.strictObject({schema:z.literal('conversation-step-details-v1'),effortLabel:z.string(),tokens:z.number().nonnegative().multipleOf(1),usageLabel:z.string().nullable()});
 export const ConversationResultInputSchema=z.strictObject({schema:z.literal('conversation-result-input-v1'),kind:z.enum(['plan','answer']),fallback:z.string().optional(),content:z.unknown().optional()});
 export const ConversationResultPresentationSchema=z.strictObject({schema:z.literal('conversation-result-presentation-v1'),kind:z.enum(['plan','answer']),contentText:z.string(),text:z.string(),source:z.enum(['content','fallback','loading']),className:z.enum(['plan-result','answer-result'])});
 

@@ -505,6 +505,11 @@ export class ConversationService {
   }
   async ownerDevice(id: string): Promise<string> { return (await this.location(id)).ownerDeviceId; }
   async corrections(ids?: string[]) { await this.indexes.flush(); const records = await this.options.indexes.corrections(); return ids ? records.filter(record => ids.includes(record.id)) : records; }
+  async streamSource(id: string, raw?: unknown) {
+    await this.ready; const input = conversationStreamRequest(raw), work = this.#load(id), source = work.load().conversation;
+    const records = work.ledger.events(input.afterId, input.limit), head = work.ledger.lastId();
+    return conversationStreamSource({ projectId: source.projectId, conversationId: id, head, events: records.map(event => work.ledger.redact({ ...event, data: publicConversationData(work.ledger.data(event)) })) }, input);
+  }
   async readingView(id: string, raw: unknown) {
     await this.ready; const input = ConversationReadingRequestSchema.parse(raw);
     if (input.kind === 'changes') return (await this.changes(id, input.step)).reading!;
@@ -1850,3 +1855,4 @@ export class ConversationService {
     if (failures.length) throw new AggregateError(failures, 'Conversation shutdown did not complete.');
   }
 }
+import { conversationStreamRequest, conversationStreamSource } from '@jevellan/core';

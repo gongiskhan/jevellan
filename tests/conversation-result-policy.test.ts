@@ -16,6 +16,12 @@ test('conversation result policy preserves effort and exact token cost boundarie
  expect(details({...facts,usage:{inputTokens:1,outputTokens:2,costUsd:0.1235,costSource:'reported'}}).usageLabel).toBe('3 tokens · $0.123');
 });
 
+test('conversation result policy sums valid maximum directional counts without a new aggregate cap',()=>{
+ const usage=core.UsageSchema.parse({inputTokens:Number.MAX_SAFE_INTEGER,outputTokens:Number.MAX_SAFE_INTEGER,costSource:'unknown'});
+ expect(core.conversationStepDetails({effortRequested:'high',effortEffective:'high',usage})).toMatchObject({tokens:18014398509481982,usageLabel:'18014398509.5M tokens'});
+ expect(()=>core.ConversationStepDetailsSchema.parse({schema:'conversation-step-details-v1',effortLabel:'high',tokens:0.5,usageLabel:null})).toThrow();
+});
+
 test('conversation result policy preserves content serialization and exact fallback loading order',()=>{
  const present=Reflect.get(core,'conversationResultPresentation');expect(present).toBeTypeOf('function');
  const input={schema:'conversation-result-input-v1',kind:'answer',fallback:'Recorded fallback.'};

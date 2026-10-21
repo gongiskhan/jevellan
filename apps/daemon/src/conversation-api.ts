@@ -6,7 +6,7 @@ import { publicConversationData, streamConversation } from './conversation-event
 import { json, requestBody } from './http.js';
 
 const reads = new Set(['manual-editor', '', 'changes', 'file', 'events', 'read', 'choices-view', 'step-editor']);
-const readPosts = new Set(['reading-view', 'manual-draft', 'recovery-editor', 'recovery-draft', 'settlement-editor', 'settlement-draft', 'control-editor', 'control-draft', 'message-draft', 'decision-why', 'step-preview', 'plan-read', 'evidence-read', 'transcript-view']);
+const readPosts = new Set(['stream-source', 'reading-view', 'manual-draft', 'recovery-editor', 'recovery-draft', 'settlement-editor', 'settlement-draft', 'control-editor', 'control-draft', 'message-draft', 'decision-why', 'step-preview', 'plan-read', 'evidence-read', 'transcript-view']);
 const writes = new Set(['manual-command', 'recovery-command', 'settlement-command', 'control-command', 'message-command', 'messages', 'manual', 'resume', 'retry-external', 'choices', 'choices-editor', 'cancel', 'approve-plan', 'settle', 'correct', 'retry-redo', 'adopt-changes', 'rename', 'finish-outside']);
 export type ConversationRoute = { id: string; operation: string; stretch?: number };
 
@@ -44,6 +44,7 @@ export async function handleConversation(app: Application, request: IncomingMess
     send(ConversationReadSchema.parse({ schema: 'conversation-read-v1', pointer, content: publicConversationData(app.conversations.ledger(id).read(pointer)) })); return;
   }
   const input = await requestBody(request);
+  if (operation === 'stream-source') { send(await app.conversations.streamSource(id, input)); return; }
   if (operation === 'reading-view') { send(await app.conversations.readingView(id, input)); return; }
   if (operation === 'manual-draft') { send(await app.conversations.manualDraft(id, input)); return; }
   if (operation === 'manual-command') { send(await app.conversations.manualCommand(id, input)); return; }
