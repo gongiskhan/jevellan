@@ -1,3 +1,4 @@
+import { ProjectSetupPresentationSchema } from './project-setup-copy-schemas.js';
 import { z } from 'zod';
 import { IdSchema, ProjectSchema, TimestampSchema, type Project } from './schemas.js';
 import { ProjectWorkSettingsSchema, type ProjectWorkSettings } from './project-schemas.js';
@@ -12,7 +13,7 @@ export const ProjectSetupProposalSchema = z.strictObject({ schema: z.literal('pr
 export type ProjectSetupProposal = z.infer<typeof ProjectSetupProposalSchema>;
 export const SetupProposeInputSchema = z.strictObject({ items: ProjectSetupItemsSchema });
 export const SetupProposalResultSchema = z.strictObject({ schema: z.literal('setup-proposal-result-v1'), proposal: ProjectSetupProposalSchema });
-export const SetupProposalViewSchema = z.strictObject({ schema: z.literal('setup-proposal-view-v1'), proposal: ProjectSetupProposalSchema, settingsRevision: revision, projectRevision: revision });
+export const SetupProposalViewSchema = z.strictObject({ schema: z.literal('setup-proposal-view-v1'), proposal: ProjectSetupProposalSchema, settingsRevision: revision, projectRevision: revision, presentation: ProjectSetupPresentationSchema.optional() });
 const selection = z.array(z.strictObject({ index: z.number().int().min(0).max(11), value: ProjectSetupItemSchema.shape.value })).min(1).max(12)
   .refine(items => new Set(items.map(item => item.index)).size === items.length, 'Choose each setup item once.');
 const base = { schema: z.literal('setup-action-request-v1'), clientRequestId: IdSchema, expectedRevision: revision };

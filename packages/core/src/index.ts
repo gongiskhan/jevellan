@@ -180,3 +180,6 @@ export * from './cleanup-editor.js';
 
 export * from './ekoa-editor-schemas.js';
 export * from './ekoa-editor.js';
+
+export * from './project-setup-copy-schemas.js';
+export * from './project-setup-copy.js';

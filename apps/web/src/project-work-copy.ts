@@ -486,7 +486,5 @@ export const APPLY_SETUP = 'Apply setup';
 export const SETUP_NOT_NOW = 'Not now';
 export const SETUP_DISMISSED = 'Setup dismissed.';
 export const SETUP_FILL_VALUES = 'Fill in their values in Project settings → Environment.';
-export const SETUP_LABELS = { testCommand: 'Test command', setupCommand: 'Worktree setup command', instructions: 'Project instructions', copyFiles: 'Copy into new worktrees', variables: 'Variables to fill in', secrets: 'Secrets to fill in' };
-export const setupGoalLabel = (value: string) => `Goal: ${value.split('\n')[0]}`;
-export const setupApplied = (count: number) => `Setup applied: ${count} changes.`;
+export { SETUP_LABELS, setupGoalLabel, setupApplied } from '@jevellan/core/client';
 export const SETUP_REQUESTED_EVENT = 'Setup recommendations requested';

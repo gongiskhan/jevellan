@@ -155,6 +155,7 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'setup_view': return { text: 'Suggested setup.', data: await context.app.projectWork.setupView(context.project.id, String(args.proposal)) };
     case 'mirror_editor': return { text: 'Task mirror settings.', data: ekoaEditor(context.app.ekoa!.state()) };
     case 'mirror_preview': return { text: 'Task mirror settings.', data: ekoaEditor(context.app.ekoa!.state(), args.request) };
     case 'mirror_save': return { text: 'Ekoa settings saved.', data: ekoaEditor(context.app.ekoa!.save(prepareEkoaEditorSave(args.request), context.request.deviceId ?? context.app.device.deviceId)) };

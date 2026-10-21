@@ -25,6 +25,14 @@ let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
 
+test('CLI setup proposal reader shares engine labels without applying work', async () => {
+  f = await projectFixture({ control: true }); await f.app.projectHub.assignCoordinator(f.project.id, f.app.device.deviceId, 0);
+  const { proposal } = await f.app.projectWork.proposeSetup(f.project.id, 'cli_setup_copy', { items: [{ key: 'testCommand', value: 'npm test' }] });
+  const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['config', 'setup_view', '--proposal', proposal.id], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); expect(result).toMatchObject({ ok: true, data: { presentation: { schema: 'project-setup-presentation-v1', appliedLine: null, items: [{ index: 0, label: 'Test command' }] } } }); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('CLI task mirror editor shares nonsecret defaults and the canonical scoped save', async () => {
   f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
   expect(await callCommand(['config', 'mirror_editor'], f.homes)).toBe(0);

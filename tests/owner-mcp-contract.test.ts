@@ -27,6 +27,13 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP setup proposal reader shares first-line goal labels without applying work', async () => {
+  f = await projectFixture({ control: true }); await f.app.projectHub.assignCoordinator(f.project.id, f.app.device.deviceId, 0);
+  const { proposal } = await f.app.projectWork.proposeSetup(f.project.id, 'mcp_setup_copy', { items: [{ key: 'goal', value: 'Keep the fixture tidy\nMaintain predictable state.' }] });
+  const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'setup_view', proposal: proposal.id } })).structuredContent); expect(result).toMatchObject({ ok: true, data: { presentation: { schema: 'project-setup-presentation-v1', items: [{ index: 0, label: 'Goal: Keep the fixture tidy' }] } } }); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP task mirror preview owns token-removal disabling without writing or starting login', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const request = { schema: 'ekoa-editor-preview-v1', revision: 0, fields: { url: '', enabled: true }, operation: 'remove-token', credentialPresent: false };

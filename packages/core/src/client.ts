@@ -127,3 +127,6 @@ export { settingsPage } from './settings-workspace.js';
 
 export * from './ekoa-editor-schemas.js';
 export { ekoaCallbackInput, ekoaUrlRequired } from './ekoa-editor.js';
+
+export * from './project-setup-copy-schemas.js';
+export * from './project-setup-copy.js';

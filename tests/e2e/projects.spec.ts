@@ -2602,10 +2602,10 @@ test('PAR9 suggested setup lets the owner edit, choose, apply and dismiss withou
   };
   let card = await request();
   await expect(card.getByRole('checkbox', { name: 'Test command', exact: true })).toBeChecked();
-  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-9/screenshots/PAR9-suggested-${layout(info)}.png`, fullPage: true });
+  await page.screenshot({ path: info.outputPath(`PAR9-suggested-${layout(info)}.png`), fullPage: true });
   for (const name of ['Test command', 'Worktree setup command', 'Copy into new worktrees']) await card.getByRole('checkbox', { name, exact: true }).uncheck();
   await card.getByRole('textbox', { name: 'Project instructions', exact: true }).fill('Use narrow tests and keep the work focused.');
-  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-9/screenshots/PAR9-edited-${layout(info)}.png`, fullPage: true });
+  await page.screenshot({ path: info.outputPath(`PAR9-edited-${layout(info)}.png`), fullPage: true });
   await card.getByRole('button', { name: 'Apply setup', exact: true }).click();
   await expect(page.getByText('Setup applied: 4 changes.', { exact: true })).toBeVisible(LONG);
   await expect(page.getByText('Fill in their values in Project settings → Environment.', { exact: true })).toBeVisible();
@@ -2614,10 +2614,10 @@ test('PAR9 suggested setup lets the owner edit, choose, apply and dismiss withou
   const expectedVariables = original.environment.variables.some(row => row.name === 'SANDBOX_DATA_DIR') ? original.environment.variables : [...original.environment.variables, { name: 'SANDBOX_DATA_DIR', value: '' }];
   expect(applied.environment).toEqual({ variables: expectedVariables, secrets: [...new Set([...original.environment.secrets, 'SERVICE_TOKEN'])], copyFiles: original.environment.copyFiles });
   const goals = await read(page, `${PROJECT}/goals`) as { goals: Array<{ goal: { name: string; state: string; autonomy: string } }> }; expect(goals.goals.some(row => row.goal.name === 'Keep the fixture tidy' && row.goal.state === 'paused' && row.goal.autonomy === 'propose')).toBe(true);
-  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-9/screenshots/PAR9-applied-${layout(info)}.png` });
+  await page.screenshot({ path: info.outputPath(`PAR9-applied-${layout(info)}.png`) });
   card = await request(); await card.getByRole('button', { name: 'Not now', exact: true }).click(); await expect(page.getByText('Setup dismissed.', { exact: true })).toBeVisible(LONG);
   expect(ProjectWorkViewSchema.parse(await read(page, `${PROJECT}/work`)).settings).toEqual(applied);
-  await page.screenshot({ path: `docs/acceptance/projects-parity-2026-10/phase-9/screenshots/PAR9-dismissed-${layout(info)}.png` });
+  await page.screenshot({ path: info.outputPath(`PAR9-dismissed-${layout(info)}.png`) });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const { schema, projectId, revision, ...fields } = applied; void schema; void projectId;
   expect((await page.request.put(`${PROJECT}/work-settings`, { data: { schema: 'project-work-settings-request-v1', revision, settings: { ...fields, instructions: original.instructions, environment: original.environment } } })).ok()).toBe(true);

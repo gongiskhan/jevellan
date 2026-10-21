@@ -1,3 +1,4 @@
+import { projectSetupPresentation } from '@jevellan/core';
 import { defaultRuntimeCacheWindow } from '@jevellan/core';
 import { ProjectEnvironmentEditorSaveSchema } from '@jevellan/core';
 import { environmentEditor } from './environment-editor.js';
@@ -1091,7 +1092,7 @@ export class ProjectWork {
   async setupView(projectId: string, id: string) {
     const project = await this.#o.projects.get(projectId), proposal = (await this.#o.hub.setupProposal(id))?.document;
     if (!project || !proposal || proposal.projectId !== projectId) throw refuse('Setup proposal not found.', 404);
-    return SetupProposalViewSchema.parse({ schema: 'setup-proposal-view-v1', proposal, projectRevision: project.revision, settingsRevision: (await this.#o.hub.settings(projectId))?.revision ?? 0 });
+    return SetupProposalViewSchema.parse({ schema: 'setup-proposal-view-v1', proposal, presentation: projectSetupPresentation(proposal), projectRevision: project.revision, settingsRevision: (await this.#o.hub.settings(projectId))?.revision ?? 0 });
   }
   async setupAction(projectId: string, id: string, raw: unknown) {
     const input = SetupActionRequestSchema.parse(raw), before = (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId);
