@@ -1,13 +1,13 @@
 import { expect, test } from 'vitest';
-import { SecretRedactor, defaultProjectWorkSettings, parseReply } from '../packages/core/dist/index.js';
+import { SecretRedactor, VERSION, defaultProjectWorkSettings, parseReply } from '../packages/core/dist/index.js';
 import { HubProtocolError, MemberAccounts, MemberHubClient } from '../packages/mesh/dist/index.js';
 import { z } from 'zod';
 
 const projectId = 'project_tolerance';
-function fakeHub(reply: (body: Record<string, unknown>) => unknown) {
+function fakeHub(reply: (body: Record<string, unknown>) => unknown, hubVersion?: string) {
   const fetch = (async (_url: string, init: RequestInit) => {
     const body = JSON.parse(String(init.body)) as Record<string, unknown>;
-    return new Response(JSON.stringify(reply(body)), { status: 200, headers: { 'content-type': 'application/json' } });
+    return new Response(JSON.stringify(reply(body)), { status: 200, headers: { 'content-type': 'application/json', ...(hubVersion ? { 'x-jevellan-version': hubVersion } : {}) } });
   }) as typeof globalThis.fetch;
   return new MemberHubClient({ hubUrl: 'https://hub.tailtest.ts.net', hubName: 'Fixture hub', deviceId: 'dev_member', token: () => 'a'.repeat(43), redactor: new SecretRedactor(), fetch });
 }
@@ -29,6 +29,16 @@ test('other reply problems remain protocol errors', async () => {
   const document = { ...defaultProjectWorkSettings(projectId), revision: 1 } as Record<string, unknown>;
   const client = fakeHub(() => settingsReply({ ...document, laterSetting: true, maxRunningThreads: 'many' }));
   await expect(client.projects('settings', { schema: 'project-hub-request-v1', operation: 'settings-get', projectId })).rejects.toBeInstanceOf(HubProtocolError);
+});
+
+test('a reply this member cannot read from a newer hub says to update this device instead of a protocol error', async () => {
+  // A newer hub's journal manifest (a later schema version) is the case: the member's mirror stopped with a bare protocol error.
+  const state = { schema: 'project-journal-state-v9', renderer: 7, files: {}, lastLedgerEventId: null, indexUpdatedAt: '2026-10-20T00:00:00.000Z' };
+  const client = fakeHub(() => ({ schema: 'project-journal-result-v1', operation: 'state', state }), '99.0.0');
+  await expect(client.projectJournal({ schema: 'project-journal-request-v1', projectId, operation: 'state' }))
+    .rejects.toThrow(`This device runs ${VERSION}. The hub runs 99.0.0. Update this device with \`jevellan update\`.`);
+  // The same reply from a hub of this version is still a protocol error.
+  await expect(fakeHub(() => ({ schema: 'project-journal-result-v1', operation: 'state', state }), VERSION).projectJournal({ schema: 'project-journal-request-v1', projectId, operation: 'state' })).rejects.toBeInstanceOf(HubProtocolError);
 });
 
 test('parseReply removes only reported keys, at most ten levels deep, and leaves the input untouched', () => {
