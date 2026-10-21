@@ -502,3 +502,11 @@ test('CLI project page reads the canonical viewer-bound status without starting 
   const ordinary = await (await f.request('/api/projects/project/status-view', 'POST', request)).json();
   expect(result).toMatchObject({ ok: true, data: { schema: 'project-page-view-v1', changeToken: ordinary.changeToken, overview: ordinary.overview } }); expect(f.fake.starts).toHaveLength(0);
 });
+
+test('CLI conversation presentation uses the canonical recorded page metadata without starting work', async () => {
+  const made = await conversationPlanReviewFixture(true); f = made.f; const starts = f.fake.starts.length;
+  const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['jev', 'conversation_view', '--conversation', made.id], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
+  expect(result).toMatchObject({ ok: true, data: { presentation: { schema: 'conversation-page-presentation-v1', picker: { shown: false } } } }); expect(f.fake.starts).toHaveLength(starts);
+});

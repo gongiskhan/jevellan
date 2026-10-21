@@ -2539,3 +2539,5 @@ Bridge continuation area 7f: decisions 167–168 record exact shared transcript 
 Bridge continuation area 7g: decisions 169–170 record shared owner-command scope/fence/presentation policy, the read-only normal receipt facade, unchanged terminal writers, exact failing-first scope/render corrections and backend/CM4/CM5 gates. Rows 177–178 close; 146 phase10 rows remain before intake and placement/p-v1/m-v1. Source stays unreleased.
 
 Bridge continuation area 7h: decisions 171–172 record shared serialized refresh, newer-push freshness, strict optional prepared status over existing streams, unchanged canonical readers/writers, failing-first regressions, backend verification and four desktop gates. Row 179 closes; 145 phase 10 rows remain before intake and placement/p-v1/m-v1. Source stays unreleased.
+
+Bridge continuation area 7i: decisions 173–174 record shared conversation labels, typed recorded pause/picker/notice presentation, canonical reader and live notice parity, unchanged writer methods and failing-first/static/backend/desktop evidence. Rows 185–186 close; 143 phase 10 rows remain before intake and placement/p-v1/m-v1. Source stays unreleased.

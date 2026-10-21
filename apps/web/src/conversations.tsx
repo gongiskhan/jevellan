@@ -1,3 +1,4 @@
+import { conversationStateLabel as stateLabel, conversationActionLabel as actionLabel, conversationPagePresentation, conversationPagePresentationForStream } from '@jevellan/core/client';
 import { ConversationTranscriptViewSchema, conversationTranscriptProjection, selectConversationTranscriptView, conversationNoticeHidden, type ConversationTranscriptView } from '@jevellan/core/client';
 import { ConversationStatusStreamRequestSchema, ConversationStatusEventSchema, STATUS_REFRESH_WINDOW_MS } from '@jevellan/core/client';
 import { conversationPlansView, planApprovalRequest, planChangesMessage } from '@jevellan/core/client';
@@ -44,24 +45,6 @@ import { Markdown, Modal, Panel, composerClearance, followOnScroll, repinAtEnd, 
 
 type View = z.infer<typeof ConversationPublicSchema>;
 type Step = View['stretches'][number];
-// The daemon's pause text when no decision client is configured (packages/conversations MANUAL_NOTICE).
-const MANUAL_PICK_NOTICE = 'Pick the next step, model and effort.';
-const stateLabel = (state: string) =>
-  ({
-    'waiting-for-you': 'Waiting for you',
-    running: 'Running',
-    done: 'Done',
-    cancelled: 'Cancelled',
-    blocked: 'Blocked',
-    idle: 'Ready',
-  })[state] ?? state;
-const actionLabel = (action: string) =>
-  action === 'ask-you'
-    ? 'Ask you'
-    : action
-        .split('-')
-        .map((word) => word[0]!.toUpperCase() + word.slice(1))
-        .join(' ');
 const object = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 const shortTime = (at: string) => {
@@ -647,19 +630,9 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
     .filter((entry) => entry.workId === settlementTarget?.id)
     .at(-1);
   const finishing = view.finishes.find((entry) => entry.status !== 'completed');
-  const pickerShown = !!(
-    !running &&
-    !finishing &&
-    view.conversation.work &&
-    !view.pause?.guard &&
-    !checkpointBlock &&
-    // A manual pick is offered only when Jevellan cannot decide; otherwise the next message goes to Auto.
-    (view.pause?.reason.endsWith('Pick the next step:') || view.pause?.reason === MANUAL_PICK_NOTICE)
-  );
+  const pagePresentation = conversationPagePresentationForStream(view, events);
+  const pickerShown = pagePresentation.picker.shown;
   const branchChange = events.map(event => GitBranchChangeSchema.safeParse(event.data)).findLast(change => change.success)?.data;
-  const lastNotice = events
-    .map((event) => ConversationNoticeSchema.safeParse(event.data))
-    .findLast((notice) => notice.success)?.data?.text;
   return (
     <div className="conversation-page" ref={page}>
       <div className="section-heading conversation-heading">
@@ -678,7 +651,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           <span className="chip">{project?.name ?? view.conversation.projectId}</span>
           <span className="chip">{device?.name ?? view.conversation.ownerDeviceId}</span>
           <span className={`chip state-${running ? 'running' : view.conversation.state}`}>
-            {running && <span className="activity-spinner" aria-hidden="true" />}{running ? 'Working' : stateLabel(view.conversation.state)}
+            {running && <span className="activity-spinner" aria-hidden="true" />}{running ? 'Working' : pagePresentation.stateLabel}
           </span>
         </div>
         <div className="actions">
@@ -856,13 +829,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
       </div>
       {/* A "Pick the next step:" pause heads the picker. Without the picker it keeps only its cause,
           and while work runs again it no longer applies. */}
-      {view.pause &&
-        !(view.pause.reason.endsWith('Pick the next step:') && (pickerShown || running)) &&
-        // A question already posted in the timeline, or shown with its answers below, is not repeated.
-        view.pause.reason !== lastNotice &&
-        view.pause.reason !== view.openQuestion?.text && (
-        <p className="notice">{view.pause.reason.replace(/\s*Pick the next step:$/, '')}</p>
-      )}
+      {pagePresentation.pause.notice !== null && <p className="notice">{pagePresentation.pause.notice}</p>}
       {!running && view.externalWait && !checkpointBlock && !finishing && (
         <div className="actions">
           <button
@@ -976,7 +943,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           view={view}
           props={props}
           update={setView}
-          heading={view.pause?.reason.endsWith('Pick the next step:') ? view.pause.reason : undefined}
+          heading={pagePresentation.picker.heading ?? undefined}
         />
       )}
       {kept && <p className="notice">Settle this work’s changes before starting another request.</p>}
@@ -1142,16 +1109,6 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
     </div>
   );
 }
-const progressLabels = {
-  preparing: ['Preparing your request', 'Checking the project and available accounts.'],
-  deciding: ['Jev is choosing the next step', 'Classifying the request and selecting a model and effort.'],
-  memory: ['Preparing context', 'Selecting relevant project memory for this step.'],
-  starting: ['Starting the agent', 'The step is selected. Waiting for its first response.'],
-  running: ['Agent is working', 'Responses and tool activity appear below as they arrive.'],
-  saving: ['Saving this step', 'Checking changes and recording the handoff.'],
-  verifying: ['Checking the result', 'Validating the work before marking it complete.'],
-  publishing: ['Verifying and publishing', 'Running the final checks and saving the result.'],
-} as const;
 function ConversationActivity({ view, events }: { view: View; events: LedgerEvent[] }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -1159,9 +1116,7 @@ function ConversationActivity({ view, events }: { view: View; events: LedgerEven
     return () => clearInterval(timer);
   }, []);
   const step = view.stretches.findLast((entry) => entry.status === 'running');
-  const phase = view.progress?.phase ?? (step ? 'running' : 'preparing');
-  const [title, description] = progressLabels[phase];
-  const since = view.progress?.since ?? step?.startedAt ?? view.conversation.updatedAt;
+  const { phase, title, description, since } = (view.presentation ?? conversationPagePresentation(view)).activity;
   const elapsed = Math.max(0, Math.floor((now - Date.parse(since)) / 1000));
   const latestTool =
     step && events.findLast((event) => event.stretch === step.n && event.type === 'tool-start');

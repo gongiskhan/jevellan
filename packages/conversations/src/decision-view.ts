@@ -1,7 +1,8 @@
+import { conversationActionLabel } from '@jevellan/core';
 import { ConversationDecisionWhyViewSchema, modelNotServed, type Configuration, type ComposerOverrideRecord, type DecisionRecord, type OverrideRecord, type Stretch } from '@jevellan/core';
 import { recordedDecisionNotice } from './step-presentation.js';
 
-export const conversationActionLabel = (action: string) => action === 'ask-you' ? 'Ask you' : action.split('-').map(word => word[0]!.toUpperCase() + word.slice(1)).join(' ');
+export { conversationActionLabel } from '@jevellan/core';
 const sourceLabel = (source: string) => ({ jev: 'Jev', 'only-option': 'only option', guard: 'guard', override: 'your override', redo: 'redo', manual: 'picked manually', kept: 'kept', pin: 'kept for this conversation' })[source] ?? source;
 
 export function conversationDecisionWhy(input: {

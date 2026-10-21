@@ -177,3 +177,5 @@ export * from './owner-command-view.js';
 
 export * from './queued-refresh.js';
 export * from './status-stream.js';
+
+export * from './conversation-page-view.js';

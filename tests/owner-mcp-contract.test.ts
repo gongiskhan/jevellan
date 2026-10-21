@@ -460,3 +460,9 @@ test('MCP project page reads the canonical viewer-bound status without starting 
   const ordinary = await (await f.request('/api/projects/project/status-view', 'POST', request)).json();
   expect(result).toMatchObject({ ok: true, data: { schema: 'project-page-view-v1', changeToken: ordinary.changeToken, overview: ordinary.overview } }); expect(f.fake.starts).toHaveLength(0);
 });
+
+test('MCP conversation presentation uses the canonical recorded page metadata without starting work', async () => {
+  const made = await conversationPlanReviewFixture(true); f = made.f; const starts = f.fake.starts.length, mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'conversation_view', conversation: made.id } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { presentation: { schema: 'conversation-page-presentation-v1', picker: { shown: false } } } }); expect(f.fake.starts).toHaveLength(starts);
+});

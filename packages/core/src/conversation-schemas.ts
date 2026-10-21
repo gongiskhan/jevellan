@@ -1,3 +1,4 @@
+import { ConversationPagePresentationSchema, ConversationProgressPhaseSchema } from './conversation-page-view.js';
 import { ConversationTranscriptSourceSchema } from './conversation-transcript-view-schemas.js';
 import { BranchChangeViewSchema, ChangesDiffViewSchema, MessageDeliveryViewSchema } from './conversation-reading-view-schemas.js';
 import { EvidenceReferencesViewSchema } from './evidence-reference-schemas.js';
@@ -82,9 +83,9 @@ export const CheckpointAdoptionSchema = z.strictObject({
   status: z.enum(['requested', 'prepared', 'completed', 'blocked']), plan: GitCheckpointPlanSchema.optional(), reason: z.string().optional(),
 });
 export type CheckpointAdoption = z.infer<typeof CheckpointAdoptionSchema>;
-export const ConversationProgressSchema = z.strictObject({ schema: z.literal('conversation-progress-v1'), phase: z.enum(['preparing', 'deciding', 'memory', 'starting', 'running', 'saving', 'verifying', 'publishing']), since: z.iso.datetime() });
+export const ConversationProgressSchema = z.strictObject({ schema: z.literal('conversation-progress-v1'), phase: ConversationProgressPhaseSchema, since: z.iso.datetime() });
 export const ConversationPublicSchema = z.strictObject({
-  schema: z.literal('conversation-view-v1'), transcriptSources: z.array(ConversationTranscriptSourceSchema).optional(), delivery: MessageDeliveryViewSchema.optional(), branchChanges: z.array(z.strictObject({ eventId: z.number().int().positive(), view: BranchChangeViewSchema })).optional(), evidenceReferences: EvidenceReferencesViewSchema.optional(), plans: ConversationPlansViewSchema.optional(), progress: ConversationProgressSchema.optional(), conversation: ConversationSchema, summary: SummarySchema, closedWorks: z.array(WorkSchema),
+  schema: z.literal('conversation-view-v1'), presentation: ConversationPagePresentationSchema.optional(), transcriptSources: z.array(ConversationTranscriptSourceSchema).optional(), delivery: MessageDeliveryViewSchema.optional(), branchChanges: z.array(z.strictObject({ eventId: z.number().int().positive(), view: BranchChangeViewSchema })).optional(), evidenceReferences: EvidenceReferencesViewSchema.optional(), plans: ConversationPlansViewSchema.optional(), progress: ConversationProgressSchema.optional(), conversation: ConversationSchema, summary: SummarySchema, closedWorks: z.array(WorkSchema),
   stretches: z.array(StretchSchema.omit({ native: true }).extend({ presentation: ConversationStepPresentationSchema.optional() })), handoffs: z.array(HandoffSchema),
   messages: z.array(z.strictObject({ id: z.number().int().positive(), type: z.enum(['user-message', 'note']), clientMessageId: IdSchema, text: z.string(), workId: IdSchema,
     answer: z.strictObject({ stretch: z.number().int().positive(), option: z.number().int().min(0).max(3), label: z.string() }).optional() })),
@@ -97,7 +98,7 @@ export const ConversationPublicSchema = z.strictObject({
   checkpointBlocks: z.array(CheckpointBlockSchema.extend({ eventId: z.number().int().positive() })).default([]),
 });
 export const ConversationListSchema = z.strictObject({ schema: z.literal('conversations-list-v2'), conversations: z.array(ConversationIndexSchema) });
-export const ConversationNoticeSchema = z.strictObject({ schema: z.literal('conversation-notice-v1'), text: z.string().min(1), kind: z.enum(['info', 'error', 'closing', 'steer']) });
+export { ConversationNoticeSchema } from './conversation-notice-schemas.js';
 export const ConversationEventSchema = z.strictObject({ schema: z.literal('conversation-event-v1'), event: LedgerEventSchema });
 export const ConversationReadSchema = z.strictObject({ schema: z.literal('conversation-read-v1'), pointer: z.string().min(1), content: z.unknown() });
 export const ConversationFileRequestSchema = z.strictObject({ schema: z.literal('conversation-file-request-v1'), ref: z.string().min(1).max(4000), stretch: z.number().int().positive(), source: z.enum(['step', 'working-tree']).default('step') });

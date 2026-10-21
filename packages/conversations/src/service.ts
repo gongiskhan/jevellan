@@ -1,4 +1,5 @@
 import { ConversationTranscriptRequestSchema, conversationStepTranscriptView, conversationTranscriptSources } from '@jevellan/core';
+import { conversationPagePresentation, latestConversationNotice, MANUAL_PICK_NOTICE as MANUAL_NOTICE } from '@jevellan/core';
 import { branchChangeView, changesDiffView, messageDeliveryView } from '@jevellan/core';
 import { ConversationEvidenceRequestSchema, ConversationEvidenceViewSchema, conversationEvidenceReferences, evidenceDocumentView, evidenceFilePresentation, evidenceSourceSwitching, evidenceReference, storedPointer } from '@jevellan/core';
 import { conversationPlansView } from '@jevellan/core';
@@ -64,7 +65,6 @@ export type ConversationServiceOptions = {
   enterOperation?: (id: string, title: string) => () => void;
   accountRuns?: Set<string>;
 };
-const MANUAL_NOTICE = 'Pick the next step, model and effort.';
 // Ask you runs as a read-only reply that writes one question. An answer the user already gave, including one that
 // leaves the choice to the agent, turns the next question into a concrete proposal to confirm instead of a repeat.
 const ASK_YOU_APPEND = 'Write the one question needed to unblock this work, and include it in the handoff question field. '
@@ -612,13 +612,16 @@ export class ConversationService {
     for (const row of savedOverrides) { const rows = correctionsByStep.get(row.request.stretch) ?? []; rows.push(row); correctionsByStep.set(row.request.stretch, rows); }
     const settings = view.conversation.work ? await this.options.settings() : undefined, busy = this.#operations.has(id) || this.#correcting.has(id);
     const allowed = view.conversation.work ? allowedActions(view.conversation.work, settings!.guards, !!(await this.#project(view.conversation.projectId)).testCommand, decisions.filter((decision) => decision.workId === view.conversation.work!.id).length, latestMessageNeedsResponse(work, decisions)) : [];
-    return ConversationPublicSchema.parse({ schema: 'conversation-view-v1', ...view, transcriptSources: conversationTranscriptSources(work.ledger.events(), view.stretches), delivery: messageDeliveryView({ running: busy || view.conversation.state === 'running' }), branchChanges: work.ledger.events().filter(event => event.type === 'git').flatMap(event => { const change = GitBranchChangeSchema.safeParse(work.ledger.data(event)); return change.success ? [{ eventId: event.id, view: branchChangeView(change.data) }] : []; }), evidenceReferences: conversationEvidenceReferences(view.handoffs), plans: conversationPlansView({ ...view, busy }, settings?.guards.pauseAfterPlan ?? false), progress: this.#operations.get(id)?.progress,
+    const result = { schema: 'conversation-view-v1', ...view, transcriptSources: conversationTranscriptSources(work.ledger.events(), view.stretches), delivery: messageDeliveryView({ running: busy || view.conversation.state === 'running' }), branchChanges: work.ledger.events().filter(event => event.type === 'git').flatMap(event => { const change = GitBranchChangeSchema.safeParse(work.ledger.data(event)); return change.success ? [{ eventId: event.id, view: branchChangeView(change.data) }] : []; }), evidenceReferences: conversationEvidenceReferences(view.handoffs), plans: conversationPlansView({ ...view, busy }, settings?.guards.pauseAfterPlan ?? false), progress: this.#operations.get(id)?.progress,
       stretches: view.stretches.map((step) => { const result = { ...step, presentation: conversationStepPresentation(step, correctionsByStep.get(step.n) ?? [], byId.get(step.decisionId)) }; delete result.native; return result; }),
       ...(this.#decisionWait(work) ? { decisionWait: this.#decisionWait(work) } : {}),
       ...(() => { const open = view.conversation.state === 'waiting-for-you' && !this.#operations.has(id) ? this.#lastQuestion(work) : undefined;
         return open && !open.answered ? { openQuestion: { stretch: open.stretch, text: open.text, options: open.options } } : {}; })(),
       ...(this.#externalWait(work) ? { externalWait: this.#externalWait(work) } : {}),
-      settlements: this.#settlements(work), overrides: savedOverrides, composerOverrides: composerOverrides(work), redos: redoOperations(work), checkpointBlocks: checkpointBlocks(work), decisions: this.decisions(id), busy, allowed });
+      settlements: this.#settlements(work), overrides: savedOverrides, composerOverrides: composerOverrides(work), redos: redoOperations(work), checkpointBlocks: checkpointBlocks(work), decisions: this.decisions(id), busy, allowed };
+    const notice = latestConversationNotice(work.ledger.events(), event => event.type === 'notice' ? work.ledger.redact(publicConversationData(work.ledger.data(event))) : event.data);
+    const facts = { ...result, ...(result.pause ? { pause: this.options.redactor.document(result.pause) } : {}), ...(result.openQuestion ? { openQuestion: this.options.redactor.document(result.openQuestion) } : {}) };
+    return ConversationPublicSchema.parse({ ...result, presentation: conversationPagePresentation(facts, notice?.text, notice?.id ?? null) });
   }
   #settlements(work: ConversationWork) {
     const results = new Map<string, ReturnType<typeof WorkSettlementSchema.parse>>();
