@@ -2,6 +2,7 @@ import { ProjectMergeWhyRequestSchema, ProjectRouteWhyViewSchema } from '@jevell
 import { ProjectCoordinatorEditorPreviewSchema, ProjectCoordinatorEditorSaveSchema, ProjectWorkSettingsViewSchema } from '@jevellan/core';
 import { ProjectSettingsChangeViewRequestSchema } from '@jevellan/core';
 import { ProjectLandingEditorRequestSchema, ProjectLandingEditorSaveSchema } from '@jevellan/core';
+import { ProjectSettingsEditorSchema } from '@jevellan/core';
 import { ProjectThreadOverrideEditorSchema, ThreadOverrideEditorPreviewSchema, ThreadOverrideEditorSaveSchema } from '@jevellan/core';
 import { ProjectPageRequestSchema, ProjectWaitingRespondRequestSchema } from '@jevellan/core';
 import { DailyEnabledRequestSchema, JobPausedRequestSchema } from '@jevellan/core';
@@ -33,7 +34,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -84,6 +85,8 @@ const rows: readonly Row[] = [
   { name: 'settings-change-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/config\/change-view$/, methods: ['POST'], target: 'any' },
   { name: 'landing-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/config\/landing-editor$/, methods: ['POST'], target: 'any' },
   { name: 'landing-editor-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/config\/landing-save$/, methods: ['POST'], target: 'any' },
+  { name: 'settings-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/config\/editor$/, methods: ['GET'], target: 'any' },
+  { name: 'settings-editor-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/config\/editor$/, methods: ['POST'], target: 'any' },
   { name: 'session-history', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/session-transcript$/, methods: ['GET'], target: 'coordinator' },
   { name: 'ekoa-code-setup', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/ekoa-code-setup$/, methods: ['POST'], target: 'coordinator' },
   { name: 'job-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs$/, methods: ['GET'], target: 'any' },
@@ -144,7 +147,7 @@ const rows: readonly Row[] = [
  * Requests carrying a client id repeat safely, so a hub outage during them is reported as retryable (settings only when the body has
  * one); so does Move coordinator here, whose repeat completes the first one (D269).
  */
-const withClientId = new Set<ProjectWorkRouteName>(['setup-request', 'setup-action', 'thread-action', 'message', 'move', 'thread-create', 'thread-message', 'thread-override', 'answer', 'landing-correction', 'pr-correction', 'task-create', 'goal-create', 'job-create', 'daily-create', 'job-run', 'daily-run']);
+const withClientId = new Set<ProjectWorkRouteName>(['settings-editor-save', 'setup-request', 'setup-action', 'thread-action', 'message', 'move', 'thread-create', 'thread-message', 'thread-override', 'answer', 'landing-correction', 'pr-correction', 'task-create', 'goal-create', 'job-create', 'daily-create', 'job-run', 'daily-run']);
 const failure = (message: string, status: number) => Object.assign(new Error(message), { status });
 const API_PREFIX = '/api/projects/';
 /** UI-proxied requests from another device (phase 5, D41, D266): the owner and coordinator routes of the table. */
@@ -329,6 +332,15 @@ async function ownerRoutineSettings(app: Application, projectId: string, raw?: u
   }
   return parseReply(ProjectRoutineSettingsViewSchema, result.data);
 }
+async function ownerSettingsEditor(app: Application, projectId: string) {
+  const request = { schema: 'owner-tool-request-v1' as const, caller: 'ui', action: 'settings_editor', args: { project: projectId } };
+  const result = app.member ? await app.member.ownerTool({ schema: 'owner-tool-forward-v1', name: 'config', request }) : await app.ownerTools.call('config', request);
+  if (!result.ok) {
+    const status = ({ project_unknown: 404, invalid_arguments: 400, hub_unavailable: 503 } as Record<string, number>)[result.error.code] ?? 500;
+    throw failure(result.error.text, status);
+  }
+  return parseReply(ProjectSettingsEditorSchema, result.data);
+}
 /** Sends the request to the device that runs it (2.10): the thread's owner or the coordinator device, with the owner's session. */
 async function proxy(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, route: ProjectWorkRoute, deviceId: string, caller: Caller): Promise<void> {
   const purpose = route.target === 'owner' ? 'thread' : 'coordinator'; const row = await target(app, deviceId, purpose);
@@ -462,6 +474,8 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'daily-run': send(await work.daily.runDaily(projectId, route.dailyId!, ProjectRunRequestSchema.parse(await requestBody(request))), 202); return true;
 
     case 'goal-views': send(await work.goalViews(projectId)); return true;
+    case 'settings-editor': send(await ownerSettingsEditor(app, projectId)); return true;
+    case 'settings-editor-save': send(await work.saveSettingsEditor(projectId, await requestBody(request))); return true;
     case 'landing-editor': send(await work.landingEditor(projectId, ProjectLandingEditorRequestSchema.parse(await requestBody(request)))); return true;
     case 'landing-editor-save': send(await work.saveLandingEditor(projectId, ProjectLandingEditorSaveSchema.parse(await requestBody(request)))); return true;
     case 'settings-change-view': send(await work.settingsChangeView(projectId, ProjectSettingsChangeViewRequestSchema.parse(await requestBody(request)))); return true;

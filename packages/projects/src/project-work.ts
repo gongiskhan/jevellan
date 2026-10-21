@@ -4,6 +4,7 @@ import { projectConfigurationInfo } from './project-configuration.js';
 import { coordinatorEditor } from './coordinator-editor.js';
 import { settingsChangeView } from './settings-change-views.js';
 import { landingEditor } from './landing-editor.js';
+import { settingsEditorBase, settingsEditorRequest, settingsEditorSaved } from './settings-editor.js';
 import { ProjectLandingEditorRequestSchema, ProjectLandingEditorSaveSchema } from '@jevellan/core';
 import { ProjectSettingsChangeViewRequestSchema } from '@jevellan/core';
 import { ProjectCoordinatorEditorSaveSchema } from '@jevellan/core';
@@ -957,6 +958,14 @@ export class ProjectWork {
     const input = ProjectLandingEditorRequestSchema.parse(raw ?? { schema: 'project-landing-editor-request-v1', settings: (await this.settingsView(projectId)).settings });
     if (input.settings.projectId !== projectId) throw refuse('The landing settings belong to another project.', 400);
     return landingEditor(input);
+  }
+  async settingsEditor(projectId: string) {
+    const [settings, view] = await Promise.all([this.settingsView(projectId), this.view(projectId)]);
+    return settingsEditorBase(settings, view);
+  }
+  async saveSettingsEditor(projectId: string, raw: unknown) {
+    const input = settingsEditorRequest(projectId, raw), saved = await this.putSettings(projectId, input.request);
+    return settingsEditorSaved(input.base, saved, input.presence, input.statusOnly);
   }
   async saveLandingEditor(projectId: string, raw: unknown) {
     const input = ProjectLandingEditorSaveSchema.parse(raw);

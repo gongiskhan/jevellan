@@ -32,6 +32,7 @@ export * from './project-configuration-schemas.js';
 export * from './project-coordinator-editor-schemas.js';
 export * from './project-settings-change-view-schemas.js';
 export * from './project-landing-editor-schemas.js';
+export * from './project-settings-editor-schemas.js';
 export * from './project-page-schemas.js';
 export * from './project-card-schemas.js';
 export * from './project-waiting-schemas.js';

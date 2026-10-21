@@ -4,6 +4,7 @@ import { ImproverStateSchema } from '../packages/core/dist/index.js';
 import { ProjectCoordinatorEditorSchema } from '../packages/core/dist/index.js';
 import { ProjectSettingsChangeViewSchema } from '../packages/core/dist/index.js';
 import { ProjectLandingEditorSchema } from '../packages/core/dist/index.js';
+import { ProjectSettingsEditorSchema, ProjectSettingsEditorSavedSchema } from '../packages/core/dist/index.js';
 import { seedConversationDecision } from './helpers/conversation-decision-fixture.js';
 import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
@@ -20,6 +21,20 @@ import { ProjectRouteWhyViewSchema, ProjectThreadOverrideEditorSchema, ThreadCre
 let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
+
+test('CLI config settings editor exposes the shared project form and value-free summaries', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  const settings = (await f.app.projectWork.settingsView('project')).settings;
+  expect(await callCommand(['config', 'settings_editor'], f.homes)).toBe(0);
+  const encoded = output.mock.calls.map(row => String(row[0])).find(text => text.startsWith('{')), result = OwnerToolResultSchema.parse(encoded ? JSON.parse(encoded) : undefined);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-settings-editor-v1', settingsView: { settings }, secretStates: [], savePath: '/api/projects/project/config/editor' } }); expect(f.fake.runs).toHaveLength(0);
+  if (!result.ok) throw new Error('Expected project settings editor.'); const view = ProjectSettingsEditorSchema.parse(result.data);
+  output.mockClear(); expect(await callCommand(['config', 'settings_save', '--request', JSON.stringify({ schema: 'project-settings-editor-save-v1', clientRequestId: 'cli_form_settings', base: view.settingsView.settings, draft: { ...view.settingsView.settings, instructions: 'CLI draft.' }, secretPresence: {} })], f.homes)).toBe(0);
+  const saved = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); if (!saved.ok) throw new Error('Expected project settings save.');
+  expect(ProjectSettingsEditorSavedSchema.parse(saved.data).settingsView.settings.instructions).toBe('CLI draft.');
+  await f.app.state.environment.put('project', 'CLI_SECRET', 'owned fixture value');
+  expect(await callCommand(['config', 'remove_secret', '--name', 'CLI_SECRET'], f.homes)).toBe(0); expect((await f.app.state.environment.summary('project', 'CLI_SECRET')).saved).toBe(false);
+});
 
 test('CLI config landing editor exposes raw draft constraints and canonical save data', async () => {
   f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);

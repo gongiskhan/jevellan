@@ -3,8 +3,13 @@ import { capLines, projectRoutineJobChoices, projectRoutineSettings } from '@jev
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
 import { ownerCoordinatorEditorSave } from '../project-work-api.js';
 import { ProjectSettingsUndoRequestSchema } from '@jevellan/core';
+import { ProjectSettingsEditorSchema } from '@jevellan/core';
 
 const yesNo = (value: boolean) => value ? 'yes' : 'no';
+async function routineView({ app, tools, project }: OwnerContext) {
+  const [jobs, missed] = await Promise.all([app.projectWork.daily.jobs(project.id), tools.missedNights(project.id, 7)]), state = tools.routineSettingsState(project.id);
+  return projectRoutineSettings(project.id, jobs, state.owner, state.revision, missed);
+}
 type Setter = (context: OwnerContext, key: string, value: string | number | boolean) => Promise<{ old: string; new: string; consequence?: string }>;
 
 /** Every section `config get` prints, one line each (bridge specification, `config`). */
@@ -147,6 +152,18 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'settings_editor': {
+      const { app, project } = context, base = await app.projectWork.settingsEditor(project.id);
+      const [routines, secretStates] = await Promise.all([routineView(context), Promise.all(base.settingsView.settings.environment.secrets.map(name => app.state.environment.summary(project.id, name)))]);
+      return { text: 'Project settings.', data: ProjectSettingsEditorSchema.parse({ ...base, schema: 'project-settings-editor-v1', routines, secretStates }) };
+    }
+    case 'settings_save': {
+      const data = await context.app.projectWork.saveSettingsEditor(context.project.id, args.request);
+      return { text: data.secretSteps.length ? `Project settings saved; ${data.secretSteps.length} secret changes remain.` : data.savedNotice, data };
+    }
+    case 'remove_secret': {
+      const name = String(args.name); await context.app.state.environment.remove(context.project.id, name); return { text: `Removed ${name}.` };
+    }
     case 'landing_editor': case 'landing_preview': return { text: 'Landing settings.', data: await context.app.projectWork.landingEditor(context.project.id, context.action === 'landing_preview' ? args.request : undefined) };
     case 'landing_save': return { text: 'Landing settings saved.', data: await context.app.projectWork.saveLandingEditor(context.project.id, args.request) };
     case 'settings_change': return { text: 'Recorded settings changes.', data: await context.app.projectWork.settingsChangeView(context.project.id, args.request) };
@@ -157,13 +174,12 @@ export const config: OwnerHandler = async (context) => {
     }
     case 'coordinator_save': return { text: 'Coordinator choices saved. They apply from the next turn.', data: await ownerCoordinatorEditorSave(context.app, context.project.id, args.request) };
     case 'routines': case 'routines_save': {
-      const { app, project, tools } = context;
+      const { project, tools } = context;
       if (context.action === 'routines_save') {
         const input = ProjectRoutineSettingsSaveSchema.parse(args.request), fields = input.fields;
         tools.patchRoutineSettings(project.id, { deployPaused: fields.deployPaused, debounceMinutes: Number(fields.debounceMinutes), catchUpHours: Number(fields.catchUpHours) }, input.expectedRevision);
       }
-      const [jobs, missed] = await Promise.all([app.projectWork.daily.jobs(project.id), tools.missedNights(project.id, 7)]), state = tools.routineSettingsState(project.id);
-      return { text: context.action === 'routines_save' ? 'Saved automation preferences.' : 'Deploy and routine settings.', data: projectRoutineSettings(project.id, jobs, state.owner, state.revision, missed) };
+      return { text: context.action === 'routines_save' ? 'Saved automation preferences.' : 'Deploy and routine settings.', data: await routineView(context) };
     }
     case 'get': {
       if (args.section === 'project') return { text: 'Project configuration.', data: await context.app.projectWork.settingsView(context.project.id) };

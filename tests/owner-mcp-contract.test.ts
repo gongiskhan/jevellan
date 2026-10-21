@@ -4,6 +4,7 @@ import { ImproverStateSchema } from '../packages/core/dist/index.js';
 import { ProjectCoordinatorEditorSchema } from '../packages/core/dist/index.js';
 import { ProjectSettingsChangeViewSchema } from '../packages/core/dist/index.js';
 import { ProjectLandingEditorSchema } from '../packages/core/dist/index.js';
+import { ProjectSettingsEditorSchema } from '../packages/core/dist/index.js';
 import { seedConversationDecision } from './helpers/conversation-decision-fixture.js';
 import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
@@ -22,6 +23,16 @@ async function connect(env: Record<string, string>): Promise<Client> {
     env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', ...env }, cwd: f!.checkout, stderr: 'ignore' });
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
+
+test('MCP config settings editor exposes the shared project form and value-free summaries', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root }), settings = (await f.app.projectWork.settingsView('project')).settings;
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'settings_editor' } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-settings-editor-v1', settingsView: { settings }, secretStates: [], savePath: '/api/projects/project/config/editor' } }); expect(f.fake.runs).toHaveLength(0);
+  if (!result.ok) throw new Error('Expected project settings editor.'); const view = ProjectSettingsEditorSchema.parse(result.data);
+  expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'settings_save', request: { schema: 'project-settings-editor-save-v1', clientRequestId: 'mcp_form_settings', base: view.settingsView.settings, draft: { ...view.settingsView.settings, instructions: 'MCP draft.' }, secretPresence: {} } } })).structuredContent)).toMatchObject({ ok: true, data: { settingsView: { settings: { instructions: 'MCP draft.' } } } });
+  await f.app.state.environment.put('project', 'MCP_SECRET', 'owned fixture value');
+  expect((await mcp.callTool({ name: 'config', arguments: { action: 'remove_secret', name: 'MCP_SECRET' } })).isError).toBeFalsy(); expect((await f.app.state.environment.summary('project', 'MCP_SECRET')).saved).toBe(false);
+});
 
 test('MCP config landing editor exposes raw draft constraints and canonical save data', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root }), settings = (await f.app.projectWork.settingsView('project')).settings;

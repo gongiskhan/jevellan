@@ -1896,8 +1896,8 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     await expect(settings.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
     await expect(check.getByLabel('Paths', { exact: true })).toHaveValue('src\n\n spaced path \n');
     let settingsWrites = 0;
-    const settingsRoute = `**${PROJECT}/work-settings`, landingRoute = `**${PROJECT}/config/landing-editor`;
-    await page.route(settingsRoute, async route => { if (route.request().method() === 'PUT') settingsWrites++; await route.continue(); });
+    const settingsRoute = `**${PROJECT}/config/editor`, landingRoute = `**${PROJECT}/config/landing-editor`;
+    await page.route(settingsRoute, async route => { if (route.request().method() === 'POST') settingsWrites++; await route.continue(); });
     let releasePreview!: () => void, previewStarted!: () => void;
     const release = new Promise<void>(resolve => { releasePreview = resolve; }), started = new Promise<void>(resolve => { previewStarted = resolve; });
     await page.route(landingRoute, async route => { previewStarted(); await release; await route.continue(); });

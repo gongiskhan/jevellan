@@ -3,8 +3,8 @@ import { ProjectHealthEditor } from './project-health.js';
 import { browserPushId } from './notifications.js';
 import { NotificationsViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { EkoaCodeSetupReceiptSchema, EffortSchema, EmptySchema, ProjectEnvSecretSummarySchema, ProjectWorkSettingsSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema,
-  type ProjectConfigurationInfo, type ProjectEnvSecretSummary, type ProjectWorkSettings, type ProjectWorkView } from '@jevellan/core/client';
+import { EkoaCodeSetupReceiptSchema, EffortSchema, EmptySchema, ProjectEnvSecretSummarySchema, ProjectSettingsEditorSchema, ProjectSettingsEditorSavedSchema,
+  type ProjectSettingsEditor, type ProjectSettingsSectionKey, type ProjectConfigurationInfo, type ProjectEnvSecretSummary, type ProjectWorkSettings, type ProjectWorkView } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
 import { dateTime, useSettingsSave, useTask, type PageProps } from './components.js';
 import { LandingSettings } from './project-landing-settings.js';
@@ -12,15 +12,7 @@ import { updated, useLocalError } from './project-work.js';
 import * as copy from './project-work-copy.js';
 import { ProjectUsageSection } from './project-usage.js';
 import { RoutinePreferences } from './routine-preferences.js';
-import { ProjectRoutineSettingsViewSchema, type ProjectRoutineSettingsView } from '@jevellan/core/client';
-
-const sections = [['general', copy.SETTINGS_GENERAL], ['instructions', copy.SETTINGS_INSTRUCTIONS], ['placement', copy.SETTINGS_PLACEMENT],
-  ['limits', copy.SETTINGS_LIMITS], ['pull-requests', 'Landing'], ['environment', copy.SETTINGS_ENVIRONMENT], ['routines', copy.SETTINGS_ROUTINES],
-  ['health', 'Health checks'], ['notifications', copy.SETTINGS_NOTIFICATIONS], ['usage', copy.SETTINGS_USAGE], ['automation', 'Automation']] as const;
-const fields = (settings: ProjectWorkSettings) => {
-  const { schema: _schema, projectId: _projectId, revision: _revision, ...value } = settings; void _schema; void _projectId; void _revision;
-  return value;
-};
+import { type ProjectRoutineSettingsView } from '@jevellan/core/client';
 
 /** Project settings share one revision and one Save; secret values use the vault-only owner routes. */
 export function ProjectSettingsPage(props: PageProps & { id: string; navigation: ReactNode }) {
@@ -29,6 +21,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const [base, setBase] = useState<ProjectWorkSettings>();
   const [draft, setDraft] = useState<ProjectWorkSettings>();
   const [configuration, setConfiguration] = useState<ProjectConfigurationInfo>();
+  const [editor, setEditor] = useState<ProjectSettingsEditor>();
   const [landingReady, setLandingReady] = useState(false), [loadEpoch, setLoadEpoch] = useState(0);
   const [work, setWork] = useState<ProjectWorkView>();
   const [routines, setRoutines] = useState<ProjectRoutineSettingsView>();
@@ -36,13 +29,11 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const [pushEnabled, setPushEnabled] = useState(false);
   const [secretValues, setSecretValues] = useState<Record<string, string>>({});
   const [secretStates, setSecretStates] = useState<Record<string, ProjectEnvSecretSummary>>({});
-  const path = `/api/projects/${id}/work-settings`, secretPath = (name: string) => `/api/projects/${id}/env-secrets/${encodeURIComponent(name)}`;
+  const path = `/api/projects/${id}/config/editor`;
   const read = useCallback(async (signal: AbortSignal) => {
-    const [settings, view, routineModel] = await Promise.all([api(path, ProjectWorkSettingsViewSchema, 'GET', undefined, { signal, waitForHub: true }),
-      api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/routine-settings`, ProjectRoutineSettingsViewSchema, 'GET', undefined, { signal, waitForHub: true })]);
-    const states = await Promise.all(settings.settings.environment.secrets.map(name => api(`/api/projects/${id}/env-secrets/${encodeURIComponent(name)}`, ProjectEnvSecretSummarySchema, 'GET', undefined, { signal, waitForHub: true })));
-    setBase(settings.settings); setDraft(settings.settings); setConfiguration(settings.configuration); setWork(view); setRoutines(routineModel); setStale(false); setSecretValues({}); setLoadEpoch(value => value + 1);
-    setSecretStates(Object.fromEntries(states.map(state => [state.name, state]))); local.setError('');
+    const next = await api(path, ProjectSettingsEditorSchema, 'GET', undefined, { signal, waitForHub: true }), settings = next.settingsView;
+    setEditor(next); setBase(settings.settings); setDraft(settings.settings); setConfiguration(settings.configuration); setWork(next.work); setRoutines(next.routines); setStale(false); setSecretValues({}); setLoadEpoch(value => value + 1);
+    setSecretStates(Object.fromEntries(next.secretStates.map(state => [state.name, state]))); local.setError('');
   }, [id, path, local.setError]);
   useEffect(() => {
     const controller = new AbortController(); void read(controller.signal).catch(error => { if (!controller.signal.aborted) local.fail(error); });
@@ -56,47 +47,42 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
     return () => controller.abort();
   }, []);
   const change = (patch: Partial<ProjectWorkSettings>) => setDraft(value => value && { ...value, ...patch });
-  const write = async (value: ProjectWorkSettings, signal: AbortSignal, _statusOnly = false) => {
-    void _statusOnly;
-    const parsed = ProjectWorkSettingsSchema.safeParse(value);
-    if (!parsed.success) throw new Error(parsed.error.issues[0]?.message);
+  const write = async (request: Record<string, unknown>, signal: AbortSignal) => {
     try {
-      const result = await save(path, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision: base!.revision, settings: fields(parsed.data) }, signal);
-      setBase(result.settings); setConfiguration(result.configuration); updated(); return result.settings;
+      const result = await save(editor!.savePath, ProjectSettingsEditorSavedSchema, 'POST', request, signal);
+      setBase(result.settingsView.settings); setConfiguration(result.settingsView.configuration); updated(); return result;
     } catch (error) { if (error instanceof ApiError && error.status === 409) setStale(true); throw error; }
   };
   const setStatus = (status: ProjectWorkSettings['status']) => void task.run(async signal => {
-    const saved = await write({ ...base!, status }, signal, true);
-    setDraft(value => value && { ...value, status, revision: saved.revision });
+    const saved = await write({ schema: 'project-settings-editor-status-v1', base: base!, status }, signal);
+    setDraft(value => value && { ...value, ...saved.statusPatch });
   });
   const saveAll = () => void task.run(async signal => {
-    const previous = base!, saved = await write(draft!, signal); setDraft(saved);
-    for (const name of previous.environment.secrets.filter(name => !saved.environment.secrets.includes(name))) {
-      await api(secretPath(name), ProjectEnvSecretSummarySchema, 'DELETE', empty, { signal, waitForHub: true });
+    const saved = await write({ schema: 'project-settings-editor-save-v1', base: base!, draft: draft!, secretPresence: Object.fromEntries(Object.entries(secretValues).map(([name, value]) => [name, value.length > 0])) }, signal);
+    setDraft(saved.settingsView.settings);
+    for (const step of saved.secretSteps) {
+      const body = step.kind === 'write' ? { ...step.body, value: secretValues[step.name] ?? '' } : step.body;
+      const state = await api(step.path, ProjectEnvSecretSummarySchema, step.method, body, { signal, waitForHub: true });
+      setSecretStates(states => ({ ...states, [step.name]: state }));
+      if (step.kind === 'write') setSecretValues(values => { const next = { ...values }; delete next[step.name]; return next; });
     }
-    for (const name of saved.environment.secrets) {
-      const value = secretValues[name]; if (!value) continue;
-      const state = await api(secretPath(name), ProjectEnvSecretSummarySchema, 'PUT', { schema: 'save-secret-v1', value }, { signal, waitForHub: true });
-      setSecretStates(states => ({ ...states, [name]: state }));
-      setSecretValues(values => { const next = { ...values }; delete next[name]; return next; });
-    }
-    props.message(copy.SETTINGS_SAVED); navigate(`/projects/${id}`);
+    props.message(saved.savedNotice); navigate(saved.backPath);
   });
   const enabledModels = data.config.configuration['x-jevellan'].menu.filter(model => model.enabled);
   const models = data.config.configuration['x-jevellan'].menu.filter(model => model.enabled || model.id === draft?.coordinator.modelId);
   const rigging = data.rigging.items.filter(row => row.item.state === 'owned' && (!row.item.projects?.length || row.item.projects.includes(id))).map(row => row.item.name);
-  const section = (key: typeof sections[number][0], children: ReactNode) => <section id={`project-settings-${key}`} className="pw-settings-section" aria-labelledby={`project-settings-title-${key}`}>
-    <h2 id={`project-settings-title-${key}`}>{sections.find(row => row[0] === key)![1]}</h2>{children}</section>;
+  const section = (key: ProjectSettingsSectionKey, children: ReactNode) => <section id={`project-settings-${key}`} className="pw-settings-section" aria-labelledby={`project-settings-title-${key}`}>
+    <h2 id={`project-settings-title-${key}`}>{editor!.sections.find(row => row.key === key)!.label}</h2>{children}</section>;
   const number = (label: string, value: number, min: number, max: number, onChange: (value: number) => void) => <label>{label}<input type="number" required min={min} max={max} step={1} value={Number.isNaN(value) ? '' : value} onChange={event => onChange(event.target.valueAsNumber)} /></label>;
   return <div className="pw-settings-page">
     <header className="pw-settings-heading">{props.navigation}<div><h1>{copy.PROJECT_SETTINGS}</h1>{work && <p className="muted">{work.project.name}</p>}</div>
-      <button type="button" className="text-button" onClick={() => navigate(`/projects/${id}`)}>{copy.BACK_TO_PROJECT}</button></header>
-    {!draft || !base || !work || !routines ? <p role="status">{copy.LOADING}</p> : !configuration ? <p role="status">Project configuration metadata is unavailable. Reload after the daemon is updated.</p> : <div className="pw-settings-layout">
-      <nav aria-label={copy.SETTINGS_SECTIONS}>{sections.map(([key, title]) => <a key={key} href={`#project-settings-${key}`}>{title}</a>)}</nav>
+      <button type="button" className="text-button" onClick={() => navigate(editor?.backPath ?? `/projects/${id}`)}>{copy.BACK_TO_PROJECT}</button></header>
+    {!draft || !base || !work || !routines || !editor ? <p role="status">{copy.LOADING}</p> : !configuration ? <p role="status">Project configuration metadata is unavailable. Reload after the daemon is updated.</p> : <div className="pw-settings-layout">
+      <nav aria-label={copy.SETTINGS_SECTIONS}>{editor.sections.map(row => <a key={row.key} href={`#project-settings-${row.key}`}>{row.label}</a>)}</nav>
       <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); if (landingReady && !stale) saveAll(); }}>
         <fieldset disabled={task.busy} className="pw-fields">
           {section('general', <>
-            <fieldset><legend>{copy.PROJECT_STATUS}</legend><div className="form-actions">{(['active', 'paused', 'archived'] as const).map(status => <button key={status} type="button" className="secondary" aria-pressed={base.status === status} onClick={() => setStatus(status)}>{copy.PROJECT_STATUS_LABELS[status]}</button>)}</div>
+            <fieldset><legend>{copy.PROJECT_STATUS}</legend><div className="form-actions">{editor.statusOptions.map(option => <button key={option.value} type="button" className="secondary" aria-pressed={base.status === option.value} onClick={() => setStatus(option.value)}>{option.label}</button>)}</div>
               <p className="pw-field-note">{configuration.pauseHelp}</p><p className="pw-field-note">{configuration.archiveHelp}</p></fieldset>
             <div className="form-grid"><label>{copy.COORDINATOR_MODEL}<select value={draft.coordinator.modelId ?? ''} onChange={event => change({ coordinator: { ...draft.coordinator, modelId: event.target.value || null } })}>
               <option value="">{copy.AUTOMATIC_FIRST_AVAILABLE}</option>{models.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}</select></label>
@@ -161,7 +147,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
         {local.error && <p role="alert" className="error">{local.error}{stale && <button type="button" className="text-button" disabled={task.busy} onClick={() => void task.run(read)}>{copy.RELOAD}</button>}</p>}
         <div className="form-actions pw-settings-savebar">
           {work.project.name === 'Ekoa Code' && <button type="button" className="secondary" disabled={task.busy || !draft.coordinator.modelId} onClick={() => void task.run(async signal => { await api(`/api/projects/${id}/ekoa-code-setup`, EkoaCodeSetupReceiptSchema, 'POST', { schema: 'ekoa-code-setup-request-v1', modelId: draft.coordinator.modelId, workflowPull: 208 }, { signal, waitForHub: true }); await read(signal); updated(); })}>{copy.APPLY_EKOA_SETUP}</button>}
-          <button type="button" className="secondary" onClick={() => navigate(`/projects/${id}`)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale || !landingReady}>{task.busy ? copy.SAVING : copy.SAVE}</button>
+          <button type="button" className="secondary" onClick={() => navigate(editor.backPath)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale || !landingReady}>{task.busy ? copy.SAVING : copy.SAVE}</button>
         </div>
       </form><RoutinePreferences model={routines} saved={setRoutines} /></div>
     </div>}
