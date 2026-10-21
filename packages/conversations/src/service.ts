@@ -1,3 +1,4 @@
+import { ConversationControlCommandSchema, conversationControlEditor, conversationControlDraft } from '@jevellan/core';
 import { ConversationMessageCommandSchema, conversationMessageDraft } from '@jevellan/core';
 import { conversationControlsView } from '@jevellan/core';
 import { ConversationTranscriptRequestSchema, conversationStepTranscriptView, conversationTranscriptSources } from '@jevellan/core';
@@ -500,6 +501,17 @@ export class ConversationService {
   }
   async ownerDevice(id: string): Promise<string> { return (await this.location(id)).ownerDeviceId; }
   async corrections(ids?: string[]) { await this.indexes.flush(); const records = await this.options.indexes.corrections(); return ids ? records.filter(record => ids.includes(record.id)) : records; }
+  async controlEditor(id: string, raw: unknown) { await this.ready; return conversationControlEditor(await this.view(id), raw); }
+  async controlDraft(id: string, raw: unknown) {
+    await this.ready;
+    return conversationControlDraft(await this.view(id), raw, prefix => `${prefix}_${randomUUID()}`, value => createHash('sha256').update(value).digest('hex'));
+  }
+  async controlCommand(id: string, raw: unknown) {
+    await this.ready; const command = ConversationControlCommandSchema.parse(raw);
+    if (command.operation === 'rename') return this.rename(id, command.body);
+    if (command.operation === 'finish') return this.finishOutside(id, command.body);
+    return this.cancel(id);
+  }
   async rename(id: string, raw: unknown) {
     await this.ready; if (this.#closed) throw new Error('Conversations are closed.');
     const input = RenameConversationSchema.parse(raw); const work = this.#load(id);

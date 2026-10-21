@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { ConversationMessageCommandSchema, ConversationControlsViewSchema, ConversationPublicSchema, ConversationStartRequestSchema, ConversationStartResultSchema, OwnerToolResultSchema } from '../../packages/core/dist/index.js';
+import { ConversationControlCommandSchema, ConversationMessageCommandSchema, ConversationControlsViewSchema, ConversationPublicSchema, ConversationStartRequestSchema, ConversationStartResultSchema, OwnerToolResultSchema } from '../../packages/core/dist/index.js';
 import { projectFixture } from '../helpers/project-fixture.js';
 import { expect, test } from './fixtures.js';
 import { closeConversationSettings, openConversationSettings } from './navigation.js';
@@ -96,5 +96,46 @@ test('CONTROLSPAR1 recorded question controls match MCP and the browser answer p
     expect(repeatedView.messages).toEqual(answered.messages); expect(repeatedView.controls).toEqual(answered.controls);
     expect(f.app.conversations.ledger(id).events()).toHaveLength(afterCount); expect(f.fake.starts).toHaveLength(1);
     await page.screenshot({ path: info.outputPath('controls-answer.png'), fullPage: true });
+  } finally { await client?.close().catch(() => undefined); await f.close(); }
+});
+
+test('CONTROLSWRITEPAR1 browser rename and finish commands match MCP receipts and preserve later work', async ({ page, context }, info) => {
+  const f = await projectFixture({ control: true }); let client: Client | undefined;
+  try {
+    const id = 'control_write_parity';
+    await f.app.conversations.create({ schema: 'start-conversation-v1', id, projectId: 'project', title: 'Controls parity', message: 'Preserve the fixture history.', clientMessageId: 'control_parity_first' }); await f.app.conversations.wait(id);
+    const separator = f.cookie.indexOf('='); await context.addCookies([{ name: f.cookie.slice(0, separator), value: f.cookie.slice(separator + 1), url: f.base, httpOnly: true, sameSite: 'Lax' }]);
+    await page.goto(f.base + '/conversations/' + id);
+    const transport = new StdioClientTransport({ command: process.execPath, args: [join(import.meta.dirname, '..', '..', 'bin', 'jevellan.mjs'), 'mcp'], cwd: f.checkout,
+      env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', JEVELLAN_HOME: f.homes.root }, stderr: 'ignore' });
+    client = new Client({ name: 'control-write-parity-fixture', version: '1' }); await client.connect(transport);
+    await page.getByRole('button', { name: 'Controls parity', exact: true }).click();
+    const rename = page.getByRole('dialog', { name: 'Rename conversation', exact: true }); await expect(rename).toBeVisible();
+    await expect(rename.getByLabel('Title', { exact: true })).toHaveAttribute('maxlength', '200'); await rename.getByLabel('Title', { exact: true }).fill('  Browser renamed  ');
+    await page.screenshot({ path: info.outputPath('rename-control-editor.png'), fullPage: true });
+    const renamedRequest = page.waitForRequest(request => request.url() === f.base + '/api/conversations/' + id + '/control-command' && request.method() === 'POST');
+    await rename.getByRole('button', { name: 'Save title', exact: true }).click(); await expect(rename).toHaveCount(0);
+    const renameCommand = ConversationControlCommandSchema.parse((await renamedRequest).postDataJSON()), renamed = await f.app.conversations.view(id), renamedCount = f.app.conversations.ledger(id).events().length;
+    expect(renamed.conversation.title).toBe('Browser renamed');
+    const renameReplay = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_control', conversation: id, request: renameCommand } })).structuredContent);
+    expect(renameReplay.ok).toBe(true); if (!renameReplay.ok) throw new Error('The canonical rename replay was refused.');
+    expect(ConversationPublicSchema.parse(renameReplay.data).conversation).toEqual(renamed.conversation); expect(f.app.conversations.ledger(id).events()).toHaveLength(renamedCount);
+    await page.locator('summary[aria-label="Conversation menu"]').click(); await page.getByRole('button', { name: 'Finished outside Jevellan', exact: true }).click();
+    const finish = page.getByRole('dialog', { name: 'Finished outside Jevellan', exact: true }); await expect(finish).toBeVisible(); await expect(finish.locator('textarea')).toHaveAttribute('maxlength', '2000'); await finish.locator('textarea').fill('  Completed the fixture elsewhere.  ');
+    await page.screenshot({ path: info.outputPath('finish-control-editor.png'), fullPage: true });
+    const finishedRequest = page.waitForRequest(request => request.url() === f.base + '/api/conversations/' + id + '/control-command' && request.method() === 'POST');
+    await finish.getByRole('button', { name: 'Mark finished', exact: true }).click(); await expect(finish).toHaveCount(0); await f.app.conversations.wait(id);
+    const finishCommand = ConversationControlCommandSchema.parse((await finishedRequest).postDataJSON()), finished = await f.app.conversations.view(id), finishedCount = f.app.conversations.ledger(id).events().length;
+    expect(finished.conversation).toMatchObject({ state: 'done', work: null, outcome: { kind: 'finished-elsewhere', reason: 'Completed the fixture elsewhere.' } });
+    const finishReplay = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_control', conversation: id, request: finishCommand } })).structuredContent);
+    expect(finishReplay.ok).toBe(true); if (!finishReplay.ok) throw new Error('The canonical finish replay was refused.');
+    expect(ConversationPublicSchema.parse(finishReplay.data).conversation).toEqual(finished.conversation); expect(f.app.conversations.ledger(id).events()).toHaveLength(finishedCount);
+    await f.app.conversations.message(id, { schema: 'conversation-message-v1', clientMessageId: 'preserve_later_control', text: 'Preserve the later fixture request.' }); await f.app.conversations.wait(id);
+    const later = await f.app.conversations.view(id), laterCount = f.app.conversations.ledger(id).events().length;
+    const oldReplay = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_control', conversation: id, request: finishCommand } })).structuredContent);
+    expect(oldReplay.ok).toBe(true); if (!oldReplay.ok) throw new Error('The old canonical finish receipt was refused.');
+    expect(ConversationPublicSchema.parse(oldReplay.data).conversation).toEqual(later.conversation); expect(later.conversation.work?.request).toBe('Preserve the later fixture request.'); expect(later.conversation.outcome).toBeUndefined(); expect(f.app.conversations.ledger(id).events()).toHaveLength(laterCount); expect(f.fake.starts).toHaveLength(0);
+    await expect(page.getByText('Preserve the later fixture request.', { exact: true }).first()).toBeVisible();
+    await page.screenshot({ path: info.outputPath('control-replay-later-work.png'), fullPage: true });
   } finally { await client?.close().catch(() => undefined); await f.close(); }
 });

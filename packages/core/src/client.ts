@@ -191,3 +191,5 @@ export * from './conversation-list-source.js';
 export * from './conversation-controls-view.js';
 
 export * from './conversation-message-draft.js';
+
+export * from './conversation-control-editor.js';

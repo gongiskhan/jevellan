@@ -1,3 +1,4 @@
+import { ConversationControlContextSchema, ConversationControlEditorSchema, ConversationControlDraftSchema, ConversationControlPendingSchema, conversationControlContext, conversationControlEditor, conversationControlPreview } from '@jevellan/core/client';
 import { ConversationMessageDraftRequestSchema, ConversationMessageDraftSchema, ConversationMessagePendingSchema, conversationMessageEditor } from '@jevellan/core/client';
 import { conversationControlsView } from '@jevellan/core/client';
 import { ConversationStartResultSchema } from '@jevellan/core/client';
@@ -567,7 +568,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
               onClick={() =>
                 void task.run(async () =>
                   setView(
-                    await api(`/api/conversations/${id}/cancel`, ConversationPublicSchema, 'POST', empty),
+                    await api(`/api/conversations/${id}/control-command`, ConversationPublicSchema, 'POST', { schema: 'conversation-control-command-v1', operation: 'cancel', body: empty }),
                   ),
                 )
               }
@@ -624,10 +625,10 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
               void task.run(async () =>
                 setView(
                   await api(
-                    `/api/conversations/${id}/finish-outside`,
+                    `/api/conversations/${id}/control-command`,
                     ConversationPublicSchema,
                     'POST',
-                    blockedFinish.request,
+                    { schema: 'conversation-control-command-v1', operation: 'finish', body: blockedFinish.request },
                   ),
                 ),
               )
@@ -1032,87 +1033,51 @@ function EditConversation({
   close(): void;
   onError(error: unknown): void;
 }) {
-  const [value, setValue] = useState(kind === 'rename' ? view.conversation.title : '');
+  const [context] = useState<z.infer<typeof ConversationControlContextSchema>>(() => conversationControlContext(view));
+  const [editor, setEditor] = useState(() => conversationControlEditor(view, { schema: 'conversation-control-editor-request-v1', kind, context }));
+  const [value, setValue] = useState(editor.initialValue);
   const task = useTask(onError);
-  const original = useRef({ title: view.conversation.title, generation: view.conversation.generation });
-  const pending = useRef<{ value: string; id: string } | undefined>(undefined);
+  const pending = useRef<z.infer<typeof ConversationControlPendingSchema> | undefined>(undefined);
+  const preview = conversationControlPreview(editor, value);
+  useEffect(() => {
+    const controller = new AbortController();
+    void api(`/api/conversations/${view.conversation.id}/control-editor`, ConversationControlEditorSchema, 'POST', {
+      schema: 'conversation-control-editor-request-v1', kind, context,
+    }, { signal: controller.signal }).then(model => { if (!controller.signal.aborted) setEditor(model); }).catch(error => { if (!controller.signal.aborted) onError(error); });
+    return () => controller.abort();
+  }, [view.conversation.id, kind, context, onError]);
   return (
-    <Modal title={kind === 'rename' ? 'Rename conversation' : 'Finished outside Jevellan'} close={close}>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          void task.run(async () => {
-            const text = value.trim();
-            if (pending.current?.value !== text)
-              pending.current = { value: text, id: `${kind}_${clientId()}` };
-            const body =
-              kind === 'rename'
-                ? {
-                    schema: 'rename-conversation-v1',
-                    clientRequestId: pending.current.id,
-                    previousTitle: original.current.title,
-                    title: text,
-                  }
-                : {
-                    schema: 'finish-outside-v1',
-                    clientRequestId: pending.current.id,
-                    generation: original.current.generation,
-                    ...(text ? { reason: text } : {}),
-                  };
-            update(
-              await api(
-                `/api/conversations/${view.conversation.id}/${kind === 'rename' ? 'rename' : 'finish-outside'}`,
-                ConversationPublicSchema,
-                'POST',
-                body,
-              ),
-            );
-            close();
-          });
-        }}
-      >
-        {kind === 'rename' ? (
-          <label>
-            Title
-            <input
-              required
-              maxLength={200}
-              autoFocus
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
-            />
+    <Modal title={editor.dialogTitle} close={close}>
+      <form onSubmit={event => {
+        event.preventDefault();
+        void task.run(async signal => {
+          const draft = await api(`/api/conversations/${view.conversation.id}/control-draft`, ConversationControlDraftSchema, 'POST', {
+            schema: 'conversation-control-draft-request-v1', kind: editor.kind, context: editor.context, value, ...(pending.current ? { pending: pending.current } : {}),
+          }, { signal });
+          pending.current = draft.pending ?? undefined;
+          if (!draft.command) return;
+          update(await api(`/api/conversations/${view.conversation.id}/control-command`, ConversationPublicSchema, 'POST', draft.command, { signal }));
+          close();
+        });
+      }}>
+        {editor.multiline ? <>
+          {editor.help && <p>{editor.help}</p>}
+          <label>{editor.label}
+            <textarea rows={4} maxLength={editor.maxLength} required={editor.required} autoFocus value={value} onChange={event => setValue(event.target.value)} />
+            {editor.optionalLabel && <span className="muted small-text">{editor.optionalLabel}</span>}
           </label>
-        ) : (
-          <>
-            <p>
-              This stops the active step and keeps repository changes. Kept changes remain available to
-              settle.
-            </p>
-            <label>
-              What made you finish elsewhere?
-              <textarea
-                rows={4}
-                maxLength={2000}
-                autoFocus
-                value={value}
-                onChange={(event) => setValue(event.target.value)}
-              />
-              <span className="muted small-text">Optional</span>
-            </label>
-          </>
-        )}
+        </> : <label>{editor.label}
+          <input required={editor.required} maxLength={editor.maxLength} autoFocus value={value} onChange={event => setValue(event.target.value)} />
+        </label>}
         <div className="form-actions">
-          <button type="button" className="secondary" disabled={task.busy} onClick={close}>
-            Cancel
-          </button>
-          <button disabled={task.busy || (kind === 'rename' && !value.trim())}>
-            {task.busy ? 'Saving…' : kind === 'rename' ? 'Save title' : 'Mark finished'}
-          </button>
+          <button type="button" className="secondary" disabled={task.busy} onClick={close}>Cancel</button>
+          <button disabled={task.busy || !preview.canSave}>{task.busy ? 'Saving…' : editor.submitLabel}</button>
         </div>
       </form>
     </Modal>
   );
 }
+
 function AcceptChanges({
   changes,
   view,
