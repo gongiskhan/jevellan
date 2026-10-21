@@ -113,7 +113,7 @@ export class ProjectDeployService {
       } else if (decision.deploy!.action === 'retry') {
         if (row.state !== 'failed' || row.failureDecisionId !== decision.id) return refuse('This failed deploy is no longer waiting for a retry.');
         if (answer.optionLabel === 'Try again') {
-          await this.#available(row); const baseline = (await this.o.hub.deployBaseline(row.projectId))?.document ?? null;
+          await this.#available(row); await this.#runnable(row.projectId); const baseline = (await this.o.hub.deployBaseline(row.projectId))?.document ?? null;
           const current = this.#current(await this.records(row.projectId), baseline); if (!current.commit) return refuse('The current production commit is unknown. Complete the deploy preflight first.');
           const paths = current.commit === row.commit ? [] : await this.o.diff(row.projectId, current.commit, row.commit);
           row = { ...row, state: 'approved', previousCommit: current.commit, rollbackAvailable: current.rollbackAvailable, migrationChanged: paths.some(path => baseline?.migrationPaths.some(prefix => path === prefix || path.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`))), releaseUncertain: false, approvedAt: this.#at(), jobTaskId: derivedId('task', row.id, request.clientRequestId) };
@@ -125,7 +125,7 @@ export class ProjectDeployService {
         if (answer.optionLabel === 'Not now') { closed = false; row = { ...row, notNowAt: this.#at() }; }
         else if (answer.optionLabel === `Deploy ${short(row.commit)}`) {
           await this.#available(row);
-          if (!(await this.o.settings(row.projectId)).deploy.jobId) refuse('Choose a deploy job in Settings first.');
+          await this.#runnable(row.projectId);
           await this.o.onMain(row.projectId, row.commit);
           const current = this.#current(await this.records(row.projectId), (await this.o.hub.deployBaseline(row.projectId))?.document ?? null);
           if (!current.commit) refuse('The current production commit is unknown. Complete the deploy preflight first.');
@@ -138,6 +138,13 @@ export class ProjectDeployService {
       if (closed) await this.o.hub.answerDecision(decision.id, answer, this.#at(), request.clientRequestId); else await this.#message(row);
       this.o.changed(); return { repeated: false, closed };
     });
+  }
+  /** An approval needs a deploy job that can run now: a disabled one would only fail after the approval, as a deploy without a result. */
+  async #runnable(projectId: string): Promise<void> {
+    const jobId = (await this.o.settings(projectId)).deploy.jobId; if (!jobId) return refuse('Choose a deploy job in Settings first.');
+    const job = (await this.o.hub.job(jobId))?.document;
+    if (!job || job.run.kind !== 'command') return refuse('The deploy command job is unavailable. Choose a deploy job in Settings.');
+    if (!job.enabled) return refuse(`The deploy job ${job.name} is disabled. Enable it in Jobs, then approve the deploy again.`);
   }
   async #job(row: ProjectDeploy, taskId: string, mode: 'deploy' | 'rollback' | 'desktop', commit: string): Promise<void> {
     await this.o.tasks.exclusive(row.projectId, async () => {
