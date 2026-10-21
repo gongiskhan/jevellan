@@ -1,3 +1,4 @@
+import { ConversationCreationDraftSchema, type ConversationCreationPending } from '@jevellan/core/client';
 import { ConversationNewSourceSchema, conversationNewSource, conversationNewView, type ConversationNewSource } from '@jevellan/core/client';
 import { conversationSidebarDrop, conversationSidebarRename, conversationSidebarCanRename } from '@jevellan/core/client';
 import { conversationSidebarView, type ConversationSidebarFilter } from '@jevellan/core/client';
@@ -218,7 +219,7 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
   const [choices, setChoices] = useState(() =>
     ComposerInitialSchema.parse({ schema: 'composer-initial-v1', once: {}, pins: {} }),
   );
-  const pending = useRef<{ signature: string; id: string; clientMessageId: string } | undefined>(undefined);
+  const pending = useRef<ConversationCreationPending | undefined>(undefined);
   const device = props.data.devices.devices.find((entry) => entry.id === props.data.devices.currentDeviceId)!;
   useEffect(() => {
     const controller = new AbortController();
@@ -251,13 +252,11 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
         onSubmit={(event) => {
           event.preventDefault();
           void task.run(async (signal) => {
-            const signature = JSON.stringify({ projectId, message, choices });
-            if (pending.current?.signature !== signature)
-              pending.current = {
-                signature,
-                id: `conversation_${clientId()}`,
-                clientMessageId: `message_${clientId()}`,
-              };
+            const draft = await api('/api/conversation-new/draft', ConversationCreationDraftSchema, 'POST', {
+              schema: 'conversation-creation-intent-v1', projectId, message, choices, ...(pending.current ? { previous: pending.current } : {}),
+            }, { signal, waitForHub: true });
+            pending.current = draft.pending;
+            if (!draft.request) throw new Error(draft.refusal ?? 'The request could not be prepared.');
             try {
               await waitForProjectSetup(projectId, signal, () => setWaitingForSetup(true), change => {
                 setBranchChange({ projectId, change });
@@ -270,15 +269,7 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
               '/api/conversations',
               ConversationPublicSchema,
               'POST',
-              {
-                schema: 'start-conversation-v1',
-                id: pending.current.id,
-                clientMessageId: pending.current.clientMessageId,
-                projectId,
-                title: message.split('\n')[0]!.slice(0, 100),
-                message,
-                ...(Object.keys(choices.once).length || Object.keys(choices.pins).length ? { choices } : {}),
-              },
+              draft.request,
               { signal, waitForHub: true },
             );
             props.navigate(`/conversations/${created.conversation.id}`);

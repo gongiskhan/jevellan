@@ -1,3 +1,4 @@
+import { readConversationCreationDraft } from './conversation-creation-draft.js';
 import { ConversationNewSourceRequestSchema } from '@jevellan/core';
 import { readConversationNewSource, readConversationNewView } from './conversation-new-view.js';
 import { ownerConversationSidebarDrop, ownerConversationSidebarRename } from './conversation-sidebar-actions.js';
@@ -186,6 +187,10 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       return;
     }
     if (path === '/api/conversation-composer' && method === 'POST') { send(await app.conversations.composerDraft(await body(request))); return; }
+    if (path === '/api/conversation-new/draft') {
+      if (method !== 'POST') throw failure('This creation draft read does not support that method.', 405);
+      send(await readConversationCreationDraft(app, await body(request))); return;
+    }
     if (path === '/api/conversation-new/source' || path === '/api/conversation-new/view') {
       ConversationNewSourceRequestSchema.parse({ schema: 'conversation-new-source-request-v1', ...Object.fromEntries(url.searchParams) });
       if (path.endsWith('/source')) {
