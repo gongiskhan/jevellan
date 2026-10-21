@@ -1,5 +1,6 @@
 import { afterEach, expect, test } from 'vitest';
 import { mkdirSync, readdirSync, utimesSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { FakeRuntime, forThread } from '../packages/runtime-contract/dist/index.js';
 import { OwnerTakeover } from '../apps/daemon/dist/owner-takeover.js';
 import { holdStep, projectFixture, reportStep, type ProjectFixture } from './helpers/project-fixture.js';
@@ -34,9 +35,12 @@ test('thread open holds a working thread at its safe point, return resumes it wi
   const terminal = fakeTmux(f); const now = { value: Date.now() };
   const takeover = new OwnerTakeover(f.app, terminal.tmux, () => now.value, 20_000);
   Object.defineProperty(f.app.ownerTools, 'takeover', { value: takeover });
+  // A named installation runs as its own command, and the copy names that command.
+  const command = join(f.root, 'jevellan-playground'); writeFileSync(command, '#!/bin/sh\n', { mode: 0o700 });
+  writeFileSync(join(f.homes.root, 'install.json'), JSON.stringify({ command: { definition: { path: command } } }));
   const opened = await call('thread', { action: 'open', thread: 'T1' });
   release();
-  expect(opened).toMatch(/^T1 is yours in the terminal on .+: jevellan attach T1 \(tmux session jv-T1\)\. Remote control is not available: account .+ has no interactive Claude login/u);
+  expect(opened).toMatch(/^T1 is yours in the terminal on .+: jevellan-playground attach T1 \(tmux session jv-T1\)\. Remote control is not available: account .+ has no interactive Claude login/u);
   expect(f.thread(threadId).state).toBe('attached');
   expect(await call('status', {})).toMatch(/T1 manual · Rename button · .* · held by you for 0 min/u);
   expect(await call('thread', { action: 'say', thread: 'T1', text: 'hello' })).toBe('ERROR held: T1 is held by you. Write to it in its session.');

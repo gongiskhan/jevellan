@@ -1,5 +1,5 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { z } from 'zod';
 import { Homes } from './homes.js';
 import { applicationRoot } from './app-paths.js';
@@ -14,6 +14,10 @@ export function installedCommand(homes: Homes): string[] {
     const path = record.command?.definition?.path; if (typeof path === 'string' && existsSync(path)) return [path];
   } catch { /* not installed: run this copy */ }
   return [process.execPath, join(applicationRoot(), 'bin', 'jevellan.mjs')];
+}
+/** The name the owner types to run this installation: its installed command (`jevellan-playground` for a named one), else `jevellan`. */
+export function commandName(homes: Homes): string {
+  const [command] = installedCommand(homes); return command && command !== process.execPath ? basename(command) : 'jevellan';
 }
 export const quote = (part: string) => /^[A-Za-z0-9_./:=@-]+$/u.test(part) ? part : `'${part.replace(/'/gu, `'\\''`)}'`;
 /** Where the generated plugin lives: the installation's data folder, never the repository. */
