@@ -1,3 +1,4 @@
+import { threadMessageInterrupt, threadSteeringView } from '@jevellan/core/client';
 import { AttachmentControls, LibraryMessage, useProjectAttachments } from './project-library.js';
 import { ThreadActions } from './thread-actions.js';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
@@ -408,6 +409,7 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
   const live = view.presentation?.live.text;
   const activity = view.presentation?.live.activity;
   const block = view.presentation?.composer.block ?? (view.presentation ? null : 'Thread details are unavailable. Refresh to continue.');
+  const steering = view.presentation?.composer.steering ?? threadSteeringView({ running, block });
   const ended = view.presentation?.composer.ended ?? true;
   const continuation = view.presentation?.composer.continueNotice;
   return (
@@ -418,7 +420,7 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
       void send.run(async (signal) => {
         setError('');
         const prepared = await attachments.prepare(typed, signal);
-        const body = { text: prepared.text, interrupt: running && interrupt };
+        const body = { text: prepared.text, interrupt: threadMessageInterrupt(running, interrupt) };
         await api(`${base}/messages`, ThreadMessageReceiptSchema, 'POST',
           { schema: 'thread-message-request-v1', clientMessageId: ids.id(body), ...body }, { signal, waitForHub: true });
         ids.done(); prepared.clear();
@@ -430,11 +432,11 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
       {(live || behind) && (
         <div className="cursor-live-bar ordinary-live-bar">
           {live && <span role="status"><span className="pw-live-title"><span className="activity-spinner" aria-hidden="true" />{live}</span>{activity && <small className="pw-live-activity">{activity}</small>}</span>}
-          {((running && !block) || behind) && (
+          {((steering.offered) || behind) && (
             <span className="pw-live-end">
-              {running && !block && (
+              {steering.offered && (
                 <label className="toggle pw-interrupt">
-                  <input type="checkbox" checked={interrupt} onChange={(event) => setInterrupt(event.target.checked)} />{copy.INTERRUPT_TURN}
+                  <input type="checkbox" checked={interrupt} onChange={(event) => setInterrupt(event.target.checked)} />{steering.label}
                 </label>
               )}
               {behind && <button type="button" className="text-button pw-jump jump-latest" onClick={jump}>{copy.JUMP_TO_LATEST}<Icon name="chevron" size={14} /></button>}

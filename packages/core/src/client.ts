@@ -152,3 +152,5 @@ export * from './session-cache-view.js';
 export * from './transcript-turn-presentation-schema.js';
 export * from './transcript-turn-presentation.js';
 export * from './session-history-view.js';
+
+export * from './project-thread-steering.js';

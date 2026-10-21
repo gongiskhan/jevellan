@@ -271,7 +271,7 @@ export const WHY = 'Why';
 export const OVERRIDE = 'Override';
 export const DISCARD = 'Discard';
 export const THREAD_PLACEHOLDER = 'Message this thread';
-export const INTERRUPT_TURN = 'Interrupt current turn';
+export { THREAD_INTERRUPT_LABEL as INTERRUPT_TURN } from '@jevellan/core/client';
 /** The takeover line's words before the command; the page shows the command itself as code, with its copy button. */
 export const takeOverLead = (device: string): string => `Take over in a terminal on ${device}:`;
 /** `command` is the thread view's `attachCommand` (`jevellan thread attach {threadId}`), never retyped here. */

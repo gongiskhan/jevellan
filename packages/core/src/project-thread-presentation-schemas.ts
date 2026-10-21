@@ -1,3 +1,4 @@
+import { ThreadSteeringViewSchema } from './project-thread-steering.js';
 import { z } from 'zod';
 import { IdSchema } from './schemas.js';
 import { idTime, liveWork } from './project-rules.js';
@@ -14,7 +15,7 @@ export type ThreadControls = z.infer<typeof ThreadControlsSchema>;
 export const ThreadPresentationSchema = z.strictObject({ schema: z.literal('project-thread-presentation-v1'),
   actions: z.strictObject({ stop: z.boolean(), stopRefusal: z.string().nullable(), discard: z.boolean(), allowTurns: z.boolean(),
     allowTurnsStep: z.number().int().positive(), allowTurnsLabel: z.string(), allowedNotice: z.string() }),
-  composer: z.strictObject({ running: z.boolean(), ended: z.boolean(), block: z.string().nullable(), continueNotice: z.string().nullable() }),
+  composer: z.strictObject({ steering: ThreadSteeringViewSchema.optional(), running: z.boolean(), ended: z.boolean(), block: z.string().nullable(), continueNotice: z.string().nullable() }),
   live: z.strictObject({ text: z.string().nullable(), activity: z.string().nullable() }), transcriptNotice: z.string().nullable(),
   reason: z.strictObject({ text: z.string(), restartedAs: IdSchema.nullable(), savedRef: z.string().nullable() }).nullable(),
   readPolicy: ThreadReadPolicySchema, controls: ThreadControlsSchema.optional() });

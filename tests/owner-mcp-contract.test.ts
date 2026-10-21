@@ -43,6 +43,7 @@ test('MCP thread view shares header and composer presentation without steering w
   expect(result).toMatchObject({ ok: true, data: { timeline: { schema: 'project-thread-timeline-v1', projectId: 'project', threadId: made.threadId } } });
   expect(result).toMatchObject({ ok: true, data: { presentation: { controls: { schema: 'project-thread-controls-v1', browserTakeover: true, attachPanel: true, stop: { title: 'Stop this thread?' } } } } });
   expect(result).toMatchObject({ ok: true, data: { images: { schema: 'project-thread-images-v1', projectId: 'project', threadId: made.threadId } } });
+  expect(result).toMatchObject({ ok: true, data: { presentation: { composer: { steering: { schema: 'project-thread-steering-view-v1', offered: false, label: 'Interrupt current turn' } } } } });
   expect(result).toMatchObject({ ok: true, data: { historyView: { schema: 'session-history-view-v1', projectId: 'project', visible: false, entries: [] } } });
 });
 

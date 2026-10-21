@@ -2519,3 +2519,5 @@ Bridge continuation area 6e: decisions 147–148 record shared image policy/meta
 Bridge continuation area 6f: decisions 149–150 record the shared calendar-day cache view, strict additive compatibility, structured status adapter choice and exact helper parity, with honest failed-first/repeat and corrected simulated backend/desktop/image/source evidence.
 
 Bridge continuation area 6g: decisions 151–152 record shared transcript/history presentation, additive acyclic schemas, the map/current-focus difference, exact helper parity and simulated gates. Legacy CACHE2 remains failed twice; its later steps are not run. Scoped recorded-history UI evidence does not qualify checkpoint lifecycle or live acceptance.
+
+Bridge continuation area 6h: decisions 153–154 record shared interrupt availability/choice policy, deliberately local retry identity, unchanged canonical writers and simulated backend/desktop/image/source evidence.
