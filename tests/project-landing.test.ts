@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { createServer, type AddressInfo } from 'node:net';
 import { GitHubClient, SecretRedactor, StoredProjectWorkSettingsSchema, LandingRouteSchema, ProjectWorkSettingsSchema, ThreadIndexSchema, defaultProjectWorkSettings, type LandingRoute, type ProjectWorkSettings } from '../packages/core/dist/index.js';
 import { selectedLandingChecks } from '../packages/projects/dist/landing.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
@@ -63,6 +64,20 @@ test('landing checks fail three times with the exact repair prompt then leave th
   f.fake.enqueueTurn(commitStep({ 'README.md': 'Broken\n' }, { status: 'done', summary: 'Done.' }), forThread());
   for (let n = 1; n <= 2; n++) f.fake.enqueueTurn(async turn => { expect(turn.input.prompt).toContain(`Landing checks failed (attempt ${n} of 3). Gate: deterministic-failure`); expect(turn.input.prompt).toContain('Fix the cause, run the relevant tests and report done.'); await turn.bridge('jevellan_thread_report', { status: 'done', summary: 'Still done.' }); return { status: 'completed' }; }, forThread());
   const result = await start(f), thread = await done(f, result.threadId); expect(thread.state).toBe('idle'); expect(thread.stateReason).toBe('Landing checks failed three times.'); expect(thread.turns).toBe(3); expect(thread.landing).toBeUndefined();
+}, 120_000);
+test('a landing check that cannot bind its port waits without a repair turn, names the holder, and lands by itself once the port is free', async () => {
+  const holder = createServer(); await new Promise<void>(resolve => holder.listen(0, '127.0.0.1', resolve)); const port = (holder.address() as AddressInfo).port;
+  const listen = `node -e "require('net').createServer().listen(${port}, '127.0.0.1', () => process.exit(0))"`;
+  const f = await setup({ landingChecks: [{ name: 'API tests', paths: [], command: listen }] });
+  f.fake.enqueueTurn(commitStep({ 'README.md': 'A change\n' }, { status: 'done', summary: 'Done.' }), forThread());
+  const result = await start(f); let thread = await done(f, result.threadId);
+  expect(thread).toMatchObject({ state: 'in-review', turns: 1, verificationAttempts: 0 });
+  expect(thread.stateReason).toMatch(new RegExp(`^API tests could not start: port ${port} is in use by node \\(pid ${process.pid}\\)\\. It lands by itself once the port is free\\.$`, 'u'));
+  // While the port stays held the sweep does not run the checks again.
+  await f.app.projectWork.pulse(); await f.app.projectWork.idle(); expect(f.thread(result.threadId).state).toBe('in-review');
+  await new Promise<void>(resolve => holder.close(() => resolve()));
+  await f.app.projectWork.pulse(); thread = await f.waitFor(() => f.thread(result.threadId), t => t.state === 'done');
+  expect(thread.landing).toMatchObject({ checks: [{ name: 'API tests', passed: true }] }); expect(thread.turns).toBe(1);
 }, 120_000);
 test('autoLand off asks with the checked route, and owner Land now resumes without another author turn', async () => {
   const f = await setup({ autoLand: false }); f.fake.enqueueTurn(commitStep({ 'README.md': 'Ask\n' }, { status: 'done', summary: 'A checked change.' }), forThread());
