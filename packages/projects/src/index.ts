@@ -92,3 +92,5 @@ export * from './notification-editor.js';
 export * from './thread-presentation.js';
 
 export * from './thread-timeline.js';
+
+export * from './thread-image-view.js';

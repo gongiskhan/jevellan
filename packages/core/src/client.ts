@@ -143,3 +143,6 @@ export * from './transcript-groups.js';
 export * from './transcript-presentation-schemas.js';
 
 export * from './thread-display.js';
+
+export * from './thread-image-refs.js';
+export * from './thread-image-view-schemas.js';

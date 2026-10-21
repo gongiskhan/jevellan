@@ -1,4 +1,4 @@
-import { joinToolTurns, prepareTranscriptGroups, ThreadReportPresentationSchema, ThreadTimelineSchema,
+import { imageReferences, turnImages, joinToolTurns, prepareTranscriptGroups, ThreadReportPresentationSchema, ThreadTimelineSchema,
   type CursorTurn, type QueuedMessage, type ThreadReport, type ThreadReportPresentation, type ThreadTimeline, type ThreadView } from '@jevellan/core';
 import * as copy from './copy.js';
 type BadgeTone = ThreadReportPresentation['badge']['tone'];
@@ -104,7 +104,7 @@ export function withoutEchoedSummaries(items: readonly TranscriptItem[]): Transc
 
 export function reportPresentation(projectId: string, report: ThreadReport): ThreadReportPresentation {
   return ThreadReportPresentationSchema.parse({ schema: 'project-thread-report-presentation-v1', projectId,
-    heading: copy.reportHeading(report.turn), badge: reportBadge(report.status), fixLabel: report.fix ? copy.fixTurnLabel(report.fix) : null,
+    images: imageReferences(report.summary), heading: copy.reportHeading(report.turn), badge: reportBadge(report.status), fixLabel: report.fix ? copy.fixTurnLabel(report.fix) : null,
     synthesizedNotice: report.synthesized ? copy.SYNTHESIZED_REPORT : null, preview: report.summary.split('\n').find(line => line.trim())?.slice(0, 220) ?? '',
     tests: report.testsRun ? { label: report.testsRun.passed ? copy.TESTS_PASSED : copy.TESTS_FAILED, tone: report.testsRun.passed ? 'ok' : 'danger', icon: report.testsRun.passed ? 'check' : 'close' } : null });
 }
@@ -119,7 +119,7 @@ export function threadTimeline(view: ThreadView): ThreadTimeline {
   const items = mergeThreadToolTurns(aligned);
   return ThreadTimelineSchema.parse({ schema: 'project-thread-timeline-v1', projectId: view.thread.projectId, threadId: view.thread.id,
     items: items.map((item, index) => item.kind === 'turn'
-      ? { ...item, fixLabel: item.fix ? copy.fixTurnLabel(item.fix) : null, active: running && index === items.length - 1,
+      ? { ...item, images: turnImages(item.turn), fixLabel: item.fix ? copy.fixTurnLabel(item.fix) : null, active: running && index === items.length - 1,
         groups: prepareTranscriptGroups(item.turn, running && index === items.length - 1) }
       : { ...item, presentation: reportPresentation(view.thread.projectId, item.report) }),
     queued: view.queuedMessages.map(message => ({ message, presentation: queuedPresentation(message) })) });

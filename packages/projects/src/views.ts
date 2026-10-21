@@ -1,3 +1,4 @@
+import { threadImagesView } from './thread-image-view.js';
 import { threadTimeline } from './thread-timeline.js';
 import { threadPresentation } from './thread-presentation.js';
 import { overrideOffered, overrideEditorView, overrideEditorRequest } from './override-editor.js';
@@ -260,6 +261,6 @@ export class ProjectViews {
       canOverride, atTurnLimit: atTurnLimit(thread),
       canDiscard: (thread.state === 'stopped' || thread.state === 'failed') && thread.isolation === 'worktree' && !isDiscarded(thread.stateReason),
       ...(thread.state === 'attached' ? { stopRefusal: attachedRefusal(threadId) } : {}), ...(kept ? { checkoutHeld: checkoutStillHeld(kept) } : {}) });
-    return ThreadViewSchema.parse({ ...view, presentation: threadPresentation(view), timeline: threadTimeline(view) });
+    return ThreadViewSchema.parse({ ...view, presentation: threadPresentation(view), timeline: threadTimeline(view), images: threadImagesView(view) });
   }
 }

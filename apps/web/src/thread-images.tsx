@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ConversationFileSchema } from '@jevellan/core/client';
+import { ConversationFileSchema, threadImageDataUrl } from '@jevellan/core/client';
 import { api } from './api.js';
 import { Modal } from './components.js';
 import './thread-images.css';
@@ -10,9 +10,8 @@ function ImageFile({ base, file, alt }: { base: string; file: string; alt: strin
   useEffect(() => {
     const controller = new AbortController();
     void api(`${base}/image?ref=${encodeURIComponent(file)}`, ConversationFileSchema, 'GET', undefined, { signal: controller.signal }).then(result => {
-      if (result.kind !== 'image' || !result.mime) throw new Error('This file is not an image.');
       if (controller.signal.aborted) return;
-      setState({ file, url: `data:${result.mime};base64,${result.content}` });
+      setState({ file, url: threadImageDataUrl(result) });
     }).catch(error => { if (!controller.signal.aborted) setState({ file, error: error instanceof Error ? error.message : 'Image unavailable.' }); });
     return () => controller.abort();
   }, [base, file]);

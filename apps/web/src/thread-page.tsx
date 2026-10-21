@@ -1,6 +1,6 @@
 import { AttachmentControls, LibraryMessage, useProjectAttachments } from './project-library.js';
 import { ThreadActions } from './thread-actions.js';
-import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
   formatThreadUsage, THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, threadPollDelay, threadStarting, deviceRefusal,
   ProjectWorkViewSchema, ProjectThreadOverrideEditorSchema, type ProjectThreadOverrideEditor, type ThreadOverrideEditorFields, ProjectThreadWhyViewSchema, type ProjectThreadWhyView, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema,
@@ -24,7 +24,7 @@ import { TranscriptTurn } from './session-transcript.js';
 import { shortTime } from './time.js';
 import { SessionHistory } from './session-history.js';
 import { SessionCache } from './session-cache.js';
-import { imageReferences, sessionImages, turnImages } from './thread-image-refs.js';
+import { imageReferences } from './thread-image-refs.js';
 import { ThreadImageGallery, ThreadImageStrip } from './thread-images.js';
 const readableSessionText = (text: string) => text.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/gu, at => dateTime(at));
 
@@ -129,9 +129,8 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
 
   const { error: actionError, setError: setActionError, fail } = useLocalError(onError);
   const allow = useTask((failure) => { fail(failure); kick.current(); });
-  const turns = view?.transcript?.turns; const reports = view?.reports;
 
-  const images = useMemo(() => sessionImages(turns ?? [], reports ?? []), [turns, reports]);
+  const images = view?.images?.refs ?? [];
   const openImage = useCallback((ref: string) => { if (imageReferences(ref).length) { following.current = false; setBehind(true); setSelectedImage(ref); } }, []);
 
   const transcriptItems = view?.timeline?.items ?? [];
@@ -259,7 +258,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       <div className="cursor-transcript pw-transcript" aria-label={copy.TRANSCRIPT_LABEL}>
         {notice && <p className="pw-transcript-note">{notice}</p>}
         {transcriptItems.map((item) => item.kind === 'turn'
-          ? <Fragment key={item.turn.id}>{item.fixLabel && <p className="pw-fix-label">{item.fixLabel}</p>}<TranscriptTurn projectId={view.thread.projectId} turn={item.turn} onOpenImage={openImage} focus active={item.active} prepared={item.groups} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} /><ThreadImageStrip base={base} files={turnImages(item.turn)} open={openImage} /></Fragment>
+          ? <Fragment key={item.turn.id}>{item.fixLabel && <p className="pw-fix-label">{item.fixLabel}</p>}<TranscriptTurn projectId={view.thread.projectId} turn={item.turn} onOpenImage={openImage} focus active={item.active} prepared={item.groups} userLabel={copy.PROMPT} collapseLongUser={thread.state === 'attached' ? 0 : copy.PROMPT_COLLAPSE_CHARACTERS} /><ThreadImageStrip base={base} files={item.images ?? []} open={openImage} /></Fragment>
           : <ReportCard key={`report-${item.report.turn}-${item.report.synthesized ? 'synthesized' : 'recorded'}`} report={item.report} presentation={item.presentation} base={base} openImage={openImage} />)}
         {!!view.timeline?.queued.length && (
           <section className="pw-queued" aria-labelledby={queuedId}>
@@ -344,7 +343,7 @@ function ReportCard({ report, presentation, base, openImage }: { report: ThreadR
       </summary>
       {expanded && <>
       <LibraryMessage projectId={presentation.projectId} text={report.summary} onOpenImage={openImage} />
-      <ThreadImageStrip base={base} files={imageReferences(report.summary)} open={openImage} />
+      <ThreadImageStrip base={base} files={presentation.images ?? []} open={openImage} />
       <OwnerCommands commands={report.ownerCommands} />
       {(report.question || options.length > 0) && (
         <div className="pw-report-question">

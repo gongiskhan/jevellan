@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { imageReferences, turnImages } from '../apps/web/src/thread-image-refs.js';
+import { ConversationFileSchema, imageReferences, turnImages, threadImageDataUrl } from '../packages/core/dist/index.js';
 
 test('finds Claude Read, Codex view_image and screenshot tool paths without dropping spaces', () => {
   for (const key of ['file_path', 'path', 'filename']) expect(imageReferences(JSON.stringify({ [key]: '/work/shots/home phone.png' }))).toContain('/work/shots/home phone.png');
@@ -31,4 +31,12 @@ test('library attachments and library metadata stay out of the worktree image vi
   expect(turnImages({ id: 'library', role: 'assistant', blocks: [{ type: 'tool', id: 'files', name: 'mcp__jevellan__jevellan_library_list', input: '{}', output: JSON.stringify({ items: [{ path: 'uploads/2026-10-18/phone view.png', name: 'phone view.png' }] }), state: 'completed' }] })).toEqual([]);
   expect(imageReferences('/data/library/project/uploads/2026-10-18/screen.png')).toEqual([]);
   expect(imageReferences('![Preview](<library/outputs/thread_a/phone view.png>)')).toEqual([]);
+});
+
+
+test('image data preparation preserves supported metadata and the existing non-image error', () => {
+  const image = ConversationFileSchema.parse({ schema: 'conversation-file-v1', path: 'screen.png', source: 'working-tree', kind: 'image', encoding: 'base64', mime: 'image/png', content: 'Zml4dHVyZQ==', bytes: 7 });
+  expect(threadImageDataUrl(image)).toBe('data:image/png;base64,Zml4dHVyZQ==');
+  expect(() => threadImageDataUrl({ ...image, kind: 'text' })).toThrow('This file is not an image.');
+  expect(() => threadImageDataUrl({ ...image, mime: undefined })).toThrow('This file is not an image.');
 });

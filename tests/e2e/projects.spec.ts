@@ -1,3 +1,6 @@
+import { threadImagesView } from '../../packages/projects/dist/thread-image-view.js';
+import { threadPresentation } from '../../packages/projects/dist/thread-presentation.js';
+import { threadTimeline } from '../../packages/projects/dist/thread-timeline.js';
 import { ekoaEditor } from '../../packages/core/dist/index.js';
 import { basename } from 'node:path';
 import type { Locator, Page, TestInfo } from '@playwright/test';
@@ -1164,6 +1167,8 @@ test('Thread images open from folded history and reports, with mobile swiping an
   const turns: CursorTurn[] = files.map((file, i) => ({ id: `image_${i}`, role: 'assistant', blocks: [{ type: 'tool', id: `read_${i}`, name: 'Read', input: JSON.stringify({ file_path: file }), output: '[Image attachment]', state: 'completed' }] }));
   view.transcript = { schema: 'cursor-transcript-v1', session: { schema: 'cursor-session-v1', id: 'claude_00000000000000000000000000000000', ownerDeviceId: thread.ownerDeviceId, deviceName: view.deviceName, title: thread.title, cwd: null, project: 'Projects fixture', state: 'idle', lastActivityAt: new Date().toISOString(), connected: false, canSteer: false, canSend: false }, turns, messages: [], activity: [], truncated: false, observedAt: new Date().toISOString() };
   view.reports = [{ schema: 'thread-report-v1', turn: 1, status: 'done', summary: 'Customers now see one clear next step.\n\nOpen Customers to try the new screen.\n\n![Phone result](shots/phone.png)', changedFiles: ['src/customers.tsx'], synthesized: false }];
+  // Raw transcript/report fixtures refresh the same engine projections as the normal reader.
+  view.presentation = threadPresentation(view); view.timeline = threadTimeline(view); view.images = threadImagesView(view);
   await page.context().route(`**${PROJECT}/threads/${thread.id}`, route => route.fulfill({ json: view }));
   const pixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==';
   await page.context().route(`**${PROJECT}/threads/${thread.id}/image?*`, route => new URL(route.request().url()).searchParams.get('ref') === files[2]
