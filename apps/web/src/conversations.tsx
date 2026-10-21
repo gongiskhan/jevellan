@@ -1,3 +1,4 @@
+import { ConversationMessageDraftRequestSchema, ConversationMessageDraftSchema, ConversationMessagePendingSchema, conversationMessageEditor } from '@jevellan/core/client';
 import { conversationControlsView } from '@jevellan/core/client';
 import { ConversationStartResultSchema } from '@jevellan/core/client';
 import { PROJECT_SETUP_WAITING_LABEL } from '@jevellan/core/client';
@@ -420,14 +421,14 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
   const [settling, setSettling] = useState(false);
   const [editingConversation, setEditingConversation] = useState<'rename' | 'finish'>();
   const [editingMessage, setEditingMessage] = useState<{ id: number; text: string }>();
-  const messageAction = useRef<{ signature: string; id: string } | undefined>(undefined);
+  const messageAction = useRef<z.infer<typeof ConversationMessagePendingSchema> | undefined>(undefined);
   const [message, setMessage] = useState('');
   const [why, setWhy] = useState<DecisionRecord>();
   const [changes, setChanges] = useState<z.infer<typeof ConversationChangesSchema>>();
   const [content, setContent] = useState<EvidenceTarget>();
   const task = useTask(props.onError);
   const input = useRef<HTMLTextAreaElement>(null);
-  const messageId = useRef(`message_${clientId()}`);
+  const messageId = useRef<z.infer<typeof ConversationMessagePendingSchema> | undefined>(undefined);
   const listUpdateKey = conversationListUpdateKey(view?.conversation);
   useEffect(() => {
     if (listUpdateKey !== null) window.dispatchEvent(new Event(CONVERSATION_UPDATED_EVENT));
@@ -479,44 +480,35 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
       stream.close();
     };
   }, [id, props.onError]);
+  const prepareMessage = (intent: z.infer<typeof ConversationMessageDraftRequestSchema>['intent'], pending: z.infer<typeof ConversationMessagePendingSchema> | undefined, signal: AbortSignal) =>
+    api(`/api/conversations/${id}/message-draft`, ConversationMessageDraftSchema, 'POST', {
+      schema: 'conversation-message-draft-request-v1', intent, ...(pending ? { pending } : {}),
+    }, { signal });
   const submit = (kind: 'message' | 'note') =>
-    task.run(async () => {
-      if (!message.trim()) return;
-      const value = await api(`/api/conversations/${id}/messages`, ConversationPublicSchema, 'POST', {
-        schema: 'conversation-message-v1',
-        clientMessageId: messageId.current,
-        text: message,
-        kind,
-      });
-      messageId.current = `message_${clientId()}`;
+    task.run(async signal => {
+      const draft = await prepareMessage({ mode: 'compose', kind, text: message }, messageId.current, signal);
+      messageId.current = draft.pending ?? undefined;
+      if (!draft.command) return;
+      const value = await api(`/api/conversations/${id}/message-command`, ConversationPublicSchema, 'POST', draft.command, { signal });
+      messageId.current = undefined;
       setView(value);
       setMessage('');
     });
-  const resendMessage = async (eventId: number, text: string, signal: AbortSignal) => {
-    if (!text.trim()) return;
-    const signature = JSON.stringify({ eventId, text });
-    if (messageAction.current?.signature !== signature) messageAction.current = { signature, id: `message_${clientId()}` };
-    const value = await api(`/api/conversations/${id}/messages`, ConversationPublicSchema, 'POST', {
-      schema: 'conversation-message-v1', clientMessageId: messageAction.current.id, text, kind: 'message',
-    }, { signal });
-    messageAction.current = undefined;
+  const resendMessage = async (eventId: number, text: string, signal: AbortSignal, mode: 'resend' | 'retry' = 'resend') => {
+    const draft = await prepareMessage({ mode, eventId, text }, messageAction.current, signal);
+    if (draft.command?.operation === 'message') messageAction.current = draft.pending ?? undefined;
+    if (!draft.command) return;
+    const value = await api(`/api/conversations/${id}/message-command`, ConversationPublicSchema, 'POST', draft.command, { signal });
+    if (draft.command.operation === 'message') {
+      messageAction.current = undefined;
+      setEditingMessage(undefined);
+    }
     setView(value);
-    setEditingMessage(undefined);
   };
-  // Picking an offered answer sends it as the message and records which option it was.
-  const answer = (option: number) =>
-    task.run(async () => {
-      const open = view?.openQuestion; const label = open?.options[option]?.label; if (!open || !label) return;
-      setView(
-        await api(`/api/conversations/${id}/messages`, ConversationPublicSchema, 'POST', {
-          schema: 'conversation-message-v1',
-          clientMessageId: `answer_${clientId()}`,
-          text: label,
-          kind: 'message',
-          answer: { stretch: open.stretch, option },
-        }),
-      );
-    });
+  const answer = (option: number) => task.run(async signal => {
+    const draft = await prepareMessage({ mode: 'answer', option }, undefined, signal);
+    if (draft.command) setView(await api(`/api/conversations/${id}/message-command`, ConversationPublicSchema, 'POST', draft.command, { signal }));
+  });
   const read = (
     ref: string,
     title: string,
@@ -533,6 +525,8 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
     );
   const device = props.data.devices.devices.find((entry) => entry.id === view.conversation.ownerDeviceId);
   const controls = view.controls ?? conversationControlsView(view);
+  const messageEditor = conversationMessageEditor(view, message);
+  const editedMessageEditor = conversationMessageEditor(view, editingMessage?.text ?? '');
   const running = controls.running;
   const plans = view.plans ?? conversationPlansView(view, props.data.config.configuration['x-jevellan'].guards.pauseAfterPlan);
   const project = projects.find((entry) => entry.id === view.conversation.projectId);
@@ -654,13 +648,13 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                 </div>
                 {editingMessage?.id === event.id ? <form className="message-editor" onSubmit={edit => {
                   edit.preventDefault();
-                  if (controls.messageActions.canEdit) void task.run(signal => resendMessage(event.id, editingMessage.text, signal));
+                  if (editedMessageEditor.canSendEdited) void task.run(signal => resendMessage(event.id, editingMessage.text, signal));
                 }}>
                   <label htmlFor={`edit-message-${event.id}`}>Edit message</label>
                   <textarea id={`edit-message-${event.id}`} autoFocus value={editingMessage.text} onChange={change => setEditingMessage({ id: event.id, text: change.target.value })} />
                   <p className="muted small-text">Sends a revised message. Earlier messages and work stay in the history.</p>
                   <div className="user-message-actions">
-                    <button type="submit" disabled={task.busy || !controls.messageActions.canEdit || !editingMessage.text.trim()}>Send edited message</button>
+                    <button type="submit" disabled={task.busy || !editedMessageEditor.canSendEdited}>Send edited message</button>
                     <button type="button" className="secondary" disabled={task.busy} onClick={() => setEditingMessage(undefined)}>Cancel</button>
                   </div>
                 </form> : <>
@@ -669,19 +663,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                     <button type="button" className="secondary" disabled={task.busy || !controls.messageActions.canRetry}
                       aria-label="Retry message"
                       title="Retry this request; previous work stays in the history"
-                      onClick={() => void task.run(async signal => {
-                        if (event.id === view.messages.at(-1)?.id && view.decisionWait) {
-                          setView(await api(`/api/conversations/${id}/resume`, ConversationPublicSchema, 'POST', {
-                            schema: 'resume-decision-v1', generation: view.conversation.generation,
-                          }, { signal }));
-                        } else if (event.id === view.messages.at(-1)?.id && view.externalWait) {
-                          setView(await api(`/api/conversations/${id}/retry-external`, ConversationPublicSchema, 'POST', {
-                            schema: 'retry-external-activity-v1', waitId: view.externalWait.id, generation: view.conversation.generation,
-                          }, { signal }));
-                        } else {
-                          await resendMessage(event.id, String(object(event.data).text ?? ''), signal);
-                        }
-                      })}>Retry</button>
+                      onClick={() => void task.run(signal => resendMessage(event.id, String(object(event.data).text ?? ''), signal, 'retry'))}>Retry</button>
                     <button type="button" className="secondary" disabled={task.busy || !controls.messageActions.canEdit}
                       aria-label="Edit message"
                       onClick={() => setEditingMessage({ id: event.id, text: String(object(event.data).text ?? '') })}>Edit</button>
@@ -850,7 +832,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
       {kept && <p className="notice">Settle this work’s changes before starting another request.</p>}
       <form className="composer card" ref={composerClearance} onSubmit={event => {
         event.preventDefault();
-        if (!task.busy && !kept && !finishing) void submit('message');
+        if (!task.busy && messageEditor.canSend) void submit('message');
       }}>
         {(running || behind) && <div className="cursor-live-bar ordinary-live-bar">
           {running && <ConversationActivity view={view} events={events} />}
@@ -859,7 +841,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
         <div className="message-input-row">
           <MessageInput inputRef={input} value={message} change={setMessage} label="Message"
             placeholder={running ? 'Steer this work…' : 'What would you like to do next?'} />
-          <MessageDelivery running={running} presentation={view.delivery} disabled={task.busy || kept || !!finishing || !message.trim()}
+          <MessageDelivery running={running} presentation={view.delivery} disabled={task.busy || !messageEditor.canSend}
             queue={() => void submit('note')} />
         </div>
       </form>

@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { ConversationControlsViewSchema, ConversationPublicSchema, ConversationStartRequestSchema, ConversationStartResultSchema, OwnerToolResultSchema } from '../../packages/core/dist/index.js';
+import { ConversationMessageCommandSchema, ConversationControlsViewSchema, ConversationPublicSchema, ConversationStartRequestSchema, ConversationStartResultSchema, OwnerToolResultSchema } from '../../packages/core/dist/index.js';
 import { projectFixture } from '../helpers/project-fixture.js';
 import { expect, test } from './fixtures.js';
 import { closeConversationSettings, openConversationSettings } from './navigation.js';
@@ -85,8 +85,16 @@ test('CONTROLSPAR1 recorded question controls match MCP and the browser answer p
     await expect(card.getByRole('button').nth(0)).toHaveAttribute('title', options[0]!.detail!);
     expect(f.app.conversations.ledger(id).events()).toHaveLength(count); expect(f.fake.starts).toHaveLength(1);
     await page.screenshot({ path: info.outputPath('controls-question.png'), fullPage: true });
+    const submitted = page.waitForRequest(request => request.url() === f.base + '/api/conversations/' + id + '/message-command' && request.method() === 'POST');
     await card.getByRole('button', { name: options[0]!.label, exact: true }).click(); await expect(card).toHaveCount(0); await f.app.conversations.wait(id);
+    const command = ConversationMessageCommandSchema.parse((await submitted).postDataJSON());
     const answered = await f.app.conversations.view(id); expect(answered.messages.at(-1)).toMatchObject({ text: options[0]!.label, answer: { stretch: 1, option: 0, label: options[0]!.label } }); expect(answered.controls?.question).toBeNull(); expect(answered.handoffs).toEqual(before.handoffs); expect(f.fake.starts).toHaveLength(1);
+    const afterCount = f.app.conversations.ledger(id).events().length;
+    const repeated = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_message', conversation: id, request: command } })).structuredContent);
+    expect(repeated.ok).toBe(true); if (!repeated.ok) throw new Error('The canonical answer-command retry was refused.');
+    const repeatedView = ConversationPublicSchema.parse(repeated.data);
+    expect(repeatedView.messages).toEqual(answered.messages); expect(repeatedView.controls).toEqual(answered.controls);
+    expect(f.app.conversations.ledger(id).events()).toHaveLength(afterCount); expect(f.fake.starts).toHaveLength(1);
     await page.screenshot({ path: info.outputPath('controls-answer.png'), fullPage: true });
   } finally { await client?.close().catch(() => undefined); await f.close(); }
 });

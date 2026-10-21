@@ -6,8 +6,8 @@ import { publicConversationData, streamConversation } from './conversation-event
 import { json, requestBody } from './http.js';
 
 const reads = new Set(['', 'changes', 'file', 'events', 'read', 'choices-view', 'step-editor']);
-const readPosts = new Set(['decision-why', 'step-preview', 'plan-read', 'evidence-read', 'transcript-view']);
-const writes = new Set(['messages', 'manual', 'resume', 'retry-external', 'choices', 'choices-editor', 'cancel', 'approve-plan', 'settle', 'correct', 'retry-redo', 'adopt-changes', 'rename', 'finish-outside']);
+const readPosts = new Set(['message-draft', 'decision-why', 'step-preview', 'plan-read', 'evidence-read', 'transcript-view']);
+const writes = new Set(['message-command', 'messages', 'manual', 'resume', 'retry-external', 'choices', 'choices-editor', 'cancel', 'approve-plan', 'settle', 'correct', 'retry-redo', 'adopt-changes', 'rename', 'finish-outside']);
 export type ConversationRoute = { id: string; operation: string; stretch?: number };
 
 /** The same closed route table serves local and owner-relayed requests. */
@@ -43,6 +43,8 @@ export async function handleConversation(app: Application, request: IncomingMess
     send(ConversationReadSchema.parse({ schema: 'conversation-read-v1', pointer, content: publicConversationData(app.conversations.ledger(id).read(pointer)) })); return;
   }
   const input = await requestBody(request);
+  if (operation === 'message-draft') { send(await app.conversations.messageDraft(id, input)); return; }
+  if (operation === 'message-command') { send(await app.conversations.messageCommand(id, input)); return; }
   if (operation === 'transcript-view') { send(await app.conversations.transcriptView(id, input)); return; }
   if (operation === 'evidence-read') { send(await app.conversations.evidenceRead(id, input)); return; }
   if (operation === 'plan-read') { send(await app.conversations.planRead(id, input)); return; }

@@ -72,6 +72,8 @@ export const jev: OwnerHandler = async (context) => {
       return { text: 'Project page.', data: await app.projectWork.pageView(projectId, resolvedDays, viewer) };
     }
     case 'conversation_transcript': return { text: 'Recorded conversation transcript.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'transcript-view', args.request) };
+    case 'conversation_message_draft': return { text: 'Conversation message draft.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'message-draft', args.request) };
+    case 'conversation_message': return { text: 'Conversation updated.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'message-command', args.request) };
     case 'conversation_view': return { text: 'Conversation view.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'conversation-view') };
     case 'conversation_changes': return { text: 'Recorded changes.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'changes', args.stretch) };
     case 'evidence_read': return { text: 'Recorded evidence.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'evidence-read', args.request) };

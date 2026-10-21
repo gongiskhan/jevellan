@@ -1,3 +1,4 @@
+import { ConversationMessageCommandSchema, conversationMessageDraft } from '@jevellan/core';
 import { conversationControlsView } from '@jevellan/core';
 import { ConversationTranscriptRequestSchema, conversationStepTranscriptView, conversationTranscriptSources } from '@jevellan/core';
 import { conversationPagePresentation, latestConversationNotice, MANUAL_PICK_NOTICE as MANUAL_NOTICE } from '@jevellan/core';
@@ -12,7 +13,7 @@ import { stepCorrectionEditor, stepCorrectionTarget } from './correction-editor.
 import { ConversationComposerRequestSchema } from '@jevellan/core';
 import { applyComposerChoice, conversationComposerView } from './composer-view.js';
 import { existsSync, readdirSync } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import {
   GitBranchChangeSchema, ActionSchema, AdoptChangesSchema, CheckpointAdoptionSchema, CheckpointBlockSchema, CheckpointReceiptSchema, CheckoutOwnership, ComposerChoiceSchema, ComposerInitialSchema, ConversationChangesSchema, ConversationListSchema, ConversationMessageSchema, ConversationNoticeSchema, ConversationOperationSchema, ConversationProgressSchema, ConversationPublicSchema, CorrectStepSchema,
@@ -633,6 +634,16 @@ export class ConversationService {
       if (finish.success && finish.data.status === 'completed' && finish.data.workId) results.set(finish.data.request.clientRequestId, WorkSettlementSchema.parse({ schema: 'work-settlement-v1', id: finish.data.request.clientRequestId, workId: finish.data.workId, choice: 'keep', status: 'completed', closedAs: 'closed-by-you', reclose: false, retained: finish.data.retained }));
     }
     return [...results.values()];
+  }
+  async messageDraft(id: string, raw: unknown) {
+    await this.ready;
+    return conversationMessageDraft(await this.view(id), raw, prefix => `${prefix}_${randomUUID()}`, value => createHash('sha256').update(value).digest('hex'));
+  }
+  async messageCommand(id: string, raw: unknown) {
+    await this.ready; const command = ConversationMessageCommandSchema.parse(raw);
+    if (command.operation === 'message') return this.message(id, command.body);
+    if (command.operation === 'resume') return this.resumeDecision(id, command.body);
+    return this.retryExternalActivity(id, command.body);
   }
   async message(id: string, raw: unknown) {
     await this.ready; if (this.#closed) throw new Error('Conversations are closed.');
