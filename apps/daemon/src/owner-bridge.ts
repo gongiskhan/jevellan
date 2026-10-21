@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { IdSchema, TimestampSchema, atomicWrite, buildPlugin, pluginDist, type Project } from '@jevellan/core';
 import type { Application } from './application.js';
-import { hasInteractiveClaudeLogin } from '@jevellan/core';
+import { CLAUDE_FIRST_RUN_SETTLED, claudeFirstRunSettled, hasInteractiveClaudeLogin } from '@jevellan/core';
 import { OwnerRefusal } from './owner-tools.js';
 
 const NAMESPACE = 'owner-bridges';
@@ -24,14 +24,25 @@ const DIALOGS: Array<{ text: RegExp; keys: string[] }> = [
   { text: /Do you want to use this API key\?/u, keys: ['Down', 'Enter'] },
 ];
 
-/** Trust for the bridge folder, accepted in the account's own preferences before the start: the trust dialog defaults to "No, exit",
- * and a key sent before it takes input is lost (run log, Journey B). A preferences file that does not parse is left alone. */
-function trustFolder(configDir: string, folder: string): void {
+/**
+ * The bridge's own settings over whatever its account folder has (flag settings win over the folder's): no advisor, whose extra model
+ * call every turn the bridge, a relay, does not need. An empty advisor model turns it off.
+ */
+const BRIDGE_SETTINGS = { advisorModel: '' };
+/** Claude Code screens that wait for a person before the prompt shows; none of them is answered blind. */
+const STARTUP_SCREENS = [/Choose the text style[^\n]*/u, /Security notes[^\n]*/u, /Select login method[^\n]*/u, /fullscreen renderer[^\n]*/iu, /Press Enter to continue[^\n]*/u];
+
+/**
+ * The account's own preferences before the start: the first-run answers (CLAUDE_FIRST_RUN_SETTLED), so an account folder that never ran
+ * Claude Code interactively does not wait at the theme picker, security notes or renderer offer, and trust for the bridge folder, whose dialog defaults to "No, exit" and loses a key sent
+ * before it takes input (run log, Journey B). A preferences file that does not parse is left alone.
+ */
+function prepareAccount(configDir: string, folder: string): void {
   const file = join(configDir, '.claude.json'); let value: Record<string, unknown> = {};
   if (existsSync(file)) { try { value = z.record(z.string(), z.unknown()).parse(JSON.parse(readFileSync(file, 'utf8'))); } catch { return; } }
   const projects = z.record(z.string(), z.record(z.string(), z.unknown())).safeParse(value.projects ?? {}); if (!projects.success) return;
-  const path = realpathSync(folder); if (projects.data[path]?.hasTrustDialogAccepted === true) return;
-  atomicWrite(file, `${JSON.stringify({ ...value, projects: { ...projects.data, [path]: { ...projects.data[path], hasTrustDialogAccepted: true } } }, null, 2)}\n`);
+  const path = realpathSync(folder); if (claudeFirstRunSettled(value) && projects.data[path]?.hasTrustDialogAccepted === true) return;
+  atomicWrite(file, `${JSON.stringify({ ...value, ...CLAUDE_FIRST_RUN_SETTLED, projects: { ...projects.data, [path]: { ...projects.data[path], hasTrustDialogAccepted: true } } }, null, 2)}\n`);
 }
 
 export type TmuxRunner = (args: string[]) => { status: number | null; stdout: string };
@@ -48,7 +59,7 @@ export class OwnerBridges {
   #injectTimer: ReturnType<typeof setInterval> | undefined;
   /** Projects whose bridge is starting, and when each became ready: a channel push sent before then is dropped by Claude (Journey B). */
   readonly #starting = new Set<string>(); readonly #readyAt = new Map<string, number>();
-  constructor(private readonly app: Application, readonly tmux: TmuxRunner = realTmux, readonly claude = process.env.JEVELLAN_CLAUDE_BIN || 'claude') {}
+  constructor(private readonly app: Application, readonly tmux: TmuxRunner = realTmux, readonly claude = process.env.JEVELLAN_CLAUDE_BIN || 'claude', readonly startupMs = 90_000) {}
   start(): void {
     if (this.#timer) return;
     this.#timer = setInterval(() => { void this.check().catch(() => undefined); }, 60_000); this.#timer.unref();
@@ -92,7 +103,7 @@ export class OwnerBridges {
     const before = this.state(project.id);
     if (before && transport !== 'none') this.app.ownerPushes.requeueUndelivered(project.id, Date.parse(before.startedAt), files.map(file => readFileSync(file, 'utf8')).join('\n'));
     const name = options.remoteName ?? process.env.JEVELLAN_BRIDGE_REMOTE_NAME ?? `Jevellan · ${project.name}`;
-    const args = ['--model', 'sonnet', '--effort', 'medium', '--remote-control', name, '--plugin-dir', plugin,
+    const args = ['--model', 'sonnet', '--effort', 'medium', '--settings', JSON.stringify(BRIDGE_SETTINGS), '--remote-control', name, '--plugin-dir', plugin,
       ...(transport === 'channel' ? ['--dangerously-load-development-channels', 'plugin:jevellan@inline'] : []),
       '--append-system-prompt-file', join(folder, 'system-prompt.md'), '--allowedTools', `${BRIDGE_TOOL_PREFIX}*`, '--disallowedTools', 'Bash', 'Edit', 'Write', 'NotebookEdit',
       ...(previous && options.continue !== false ? ['--continue'] : [])];
@@ -104,17 +115,21 @@ export class OwnerBridges {
     const script = ['#!/bin/sh', 'unset CLAUDE_CODE_OAUTH_TOKEN ANTHROPIC_API_KEY JEVELLAN_ROLE', `export PATH=${shell(path)}`, ...Object.entries(env).map(([key, value]) => `export ${key}=${shell(value)}`),
       `exec ${shell(executableOnPath(this.claude, path))} ${args.map(shell).join(' ')}`].join('\n');
     writeFileSync(join(folder, 'start.sh'), `${script}\n`, { mode: 0o700 });
-    trustFolder(dir, folder);
-    const startedAt = new Date().toISOString(); let ready = false;
+    prepareAccount(dir, folder);
+    const startedAt = new Date().toISOString(); let ready = false; let screen: string | undefined;
     this.#starting.add(project.id);
     try {
       const started = this.tmux(['new-session', '-d', '-s', session, '-x', '200', '-y', '50', '-c', folder, join(folder, 'start.sh')]);
       if (started.status !== 0) throw new OwnerRefusal(`tmux could not start the bridge session ${session}.`, 'tmux_failed', 500);
-      ready = await this.#answerDialogs(session);
+      ({ ready, screen } = await this.#answerDialogs(session, this.startupMs));
     } finally { this.#starting.delete(project.id); this.#readyAt.set(project.id, Date.now()); }
     this.#save({ schema: 'owner-bridge-state-v1', projectId: project.id, project: project.name, tmuxSession: session, folder, configDir: dir, transport, startedAt, wanted: true,
       restarts: (before?.restarts ?? 0) + (before ? 1 : 0) });
     this.app.ownerTools.updateProjectSettings(project.id, current => ({ ...current, bridge: { ...current.bridge, wanted: true } }));
+    if (screen) {
+      this.app.ownerEvents.publish({ projectId: project.id, source: 'jevellan', kind: 'state', text: `bridge held at a Claude Code start-up screen in tmux ${session}: ${screen}` });
+      return `The bridge for ${project.name} is held at a Claude Code start-up screen: "${screen}". Answer it in tmux attach -t ${session}, then it registers with the Claude app.`;
+    }
     this.app.ownerEvents.publish({ projectId: project.id, source: 'jevellan', kind: 'state', text: `bridge started in tmux ${session}${ready ? '' : ' (start-up dialogs did not finish in time)'}` });
     return `Started the bridge for ${project.name} in tmux ${session}. Open the session "${name}" in the Claude app (account ${label}).${ready ? '' : ' It is still starting; check it with tmux attach -t ' + session + '.'}`;
   }
@@ -128,12 +143,17 @@ export class OwnerBridges {
     return `Stopping the bridge for ${project.name}. It stays off until you start it again.`;
   }
 
-  /** Answers the known start-up dialogs until the prompt shows, for at most 90 seconds. */
-  async #answerDialogs(session: string, timeoutMs = 90_000): Promise<boolean> {
-    const deadline = Date.now() + timeoutMs; let quiet = 0; const answered = new Map<RegExp, number>(); let seen: RegExp | undefined;
+  /**
+   * Answers the known start-up dialogs until the prompt shows, for at most `timeoutMs`. A screen that waits for a person (the theme picker
+   * also shows a version header and a selection marker, like a ready prompt) is never ready; the last one seen is returned.
+   */
+  async #answerDialogs(session: string, timeoutMs: number): Promise<{ ready: boolean; screen?: string }> {
+    const deadline = Date.now() + timeoutMs; let quiet = 0; const answered = new Map<RegExp, number>(); let seen: RegExp | undefined; let screen: string | undefined;
     while (Date.now() < deadline) {
       await new Promise(resolve => setTimeout(resolve, 500));
       const pane = this.tmux(['capture-pane', '-p', '-t', `=${session}:`]).stdout;
+      screen = STARTUP_SCREENS.map(text => text.exec(pane)?.[0]?.trim()).find(Boolean);
+      if (screen) { quiet = 0; continue; }
       // A dialog just answered can stay on screen until Claude redraws; answering it again would send its keys to the next dialog
       // (Down then Enter on the channel confirmation picks Exit), so each one waits five seconds before it is answered again.
       const dialog = DIALOGS.find(entry => entry.text.test(pane) && Date.now() - (answered.get(entry.text) ?? 0) >= 5000);
@@ -141,9 +161,9 @@ export class OwnerBridges {
       if (dialog && seen !== dialog.text) { seen = dialog.text; quiet = 0; continue; }
       if (dialog) { seen = undefined; answered.set(dialog.text, Date.now()); for (const key of dialog.keys) { this.tmux(['send-keys', '-t', `=${session}:`, key]); await new Promise(resolve => setTimeout(resolve, 300)); } quiet = 0; continue; }
       if (DIALOGS.some(entry => entry.text.test(pane))) { quiet = 0; continue; }
-      if (/Claude Code v\d/u.test(pane) && /❯/u.test(pane)) { quiet++; if (quiet >= 4) return true; }
+      if (/Claude Code v\d/u.test(pane) && /❯/u.test(pane)) { quiet++; if (quiet >= 4) return { ready: true }; }
     }
-    return false;
+    return { ready: false, ...(screen ? { screen } : {}) };
   }
 
   #sessionFiles(configDir: string, folder: string): string[] {

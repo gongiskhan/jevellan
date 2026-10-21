@@ -75,7 +75,8 @@ test('the bridge starts in tmux with the specified flags, refuses an account wit
   const trusted = JSON.parse(readFileSync(join(config, '.claude.json'), 'utf8')) as { projects: Record<string, { hasTrustDialogAccepted?: boolean }> };
   expect(trusted.projects[realpathSync(join(f.homes.root, 'bridges', bridges.sessionName(project).slice('jv-bridge-'.length)))]?.hasTrustDialogAccepted).toBe(true);
   expect(start).toContain(`export JEVELLAN_BRIDGE='1'`); expect(start).toContain(`export JEVELLAN_PROJECT='${project.name}'`); expect(start).toContain('unset CLAUDE_CODE_OAUTH_TOKEN'); expect(start).toContain("export ENABLE_CLAUDEAI_MCP_SERVERS='false'");
-  for (const flag of [`'--model' 'sonnet' '--effort' 'medium' '--remote-control' 'Jevellan · ${project.name}'`, `'--dangerously-load-development-channels' 'plugin:jevellan@inline'`, `'--allowedTools' 'mcp__plugin_jevellan_jevellan__*' '--disallowedTools' 'Bash' 'Edit' 'Write' 'NotebookEdit'`, "'--append-system-prompt-file'"]) expect(start).toContain(flag);
+  // The account folder's advisor stays out of the bridge.
+  for (const flag of [`'--model' 'sonnet' '--effort' 'medium' '--settings' '{"advisorModel":""}' '--remote-control' 'Jevellan · ${project.name}'`, `'--dangerously-load-development-channels' 'plugin:jevellan@inline'`, `'--allowedTools' 'mcp__plugin_jevellan_jevellan__*' '--disallowedTools' 'Bash' 'Edit' 'Write' 'NotebookEdit'`, "'--append-system-prompt-file'"]) expect(start).toContain(flag);
   expect(start).not.toContain('--continue');
   // The login shell tmux starts can reorder PATH; the script restores the service's PATH and runs claude by its full path.
   expect(start).toContain(`export PATH='${process.env.PATH}'`); expect(start).toContain("exec '/usr/bin/claude' ");
@@ -88,6 +89,27 @@ test('the bridge starts in tmux with the specified flags, refuses an account wit
   expect(alive).toBe(true);
   expect(readFileSync(join(f.homes.root, 'bridges', bridges.sessionName(project).slice('jv-bridge-'.length), 'start.sh'), 'utf8')).toContain("'--continue'");
   expect(existsSync(join(f.homes.root, 'plugin-dist', 'claude', 'jevellan', '.mcp.json'))).toBe(true);
+});
+
+test('a bridge in an account folder that never ran Claude Code starts with onboarding done, and one held at a start-up screen says so instead of started', async () => {
+  f = await projectFixture({ control: true });
+  // Claude Code's theme picker: its header and selection marker look like a ready prompt.
+  const picker = 'Welcome to Claude Code v2.1.305\n Let\'s get started.\n Choose the text style that looks best with your terminal\n ❯ 1. Dark mode ✔\n   2. Light mode';
+  let alive = false; const tmux = (args: string[]) => {
+    if (args[0] === 'new-session') { alive = true; return { status: 0, stdout: '' }; }
+    if (args[0] === 'has-session') return { status: alive ? 0 : 1, stdout: '' };
+    if (args[0] === 'list-panes') return { status: 0, stdout: alive ? 'claude\n' : '' };
+    if (args[0] === 'capture-pane') return { status: 0, stdout: picker };
+    return { status: 0, stdout: '' }; };
+  const bridges = new OwnerBridges(f.app, tmux, '/usr/bin/claude', 3000);
+  const project = (await f.app.ownerTools.projects())[0]!;
+  const config = join(f.root, 'new-account'); mkdirSync(config, { recursive: true }); writeFileSync(join(config, '.credentials.json'), '{}');
+  writeFileSync(join(config, '.claude.json'), JSON.stringify({ userID: 'fixture', projects: { '/elsewhere': { hasTrustDialogAccepted: false } } }));
+  const text = await bridges.startBridge(project, { claudeConfigDir: config });
+  expect(text).toBe(`The bridge for ${project.name} is held at a Claude Code start-up screen: "Choose the text style that looks best with your terminal". Answer it in tmux attach -t ${bridges.sessionName(project)}, then it registers with the Claude app.`);
+  const preferences = JSON.parse(readFileSync(join(config, '.claude.json'), 'utf8')) as { userID: string; hasCompletedOnboarding?: boolean; projects: Record<string, { hasTrustDialogAccepted?: boolean }> };
+  expect(preferences).toMatchObject({ userID: 'fixture', hasCompletedOnboarding: true, fullscreenUpsellSeenCount: 100, projects: { '/elsewhere': { hasTrustDialogAccepted: false } } });
+  expect(preferences.projects[realpathSync(join(f.homes.root, 'bridges', bridges.sessionName(project).slice('jv-bridge-'.length)))]?.hasTrustDialogAccepted).toBe(true);
 });
 
 test('a push acked by a bridge that was shutting down is sent again when the bridge starts again, unless its transcript has it', async () => {

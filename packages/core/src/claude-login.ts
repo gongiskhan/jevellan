@@ -17,3 +17,13 @@ export function hasInteractiveClaudeLogin(dir: string, platform: NodeJS.Platform
 export function keychainEntryExists(service: string): boolean {
   return spawnSync('/usr/bin/security', ['find-generic-password', '-s', service], { stdio: 'ignore', timeout: 5000 }).status === 0;
 }
+
+/**
+ * The first-run answers an interactive Claude Code session Jevellan starts (the bridge, a takeover) needs in its account's `.claude.json`, so
+ * it reaches its prompt without a person: onboarding (theme picker, security notes) done, and the fullscreen-renderer offer already seen
+ * (Claude Code 2.1.305 stops offering it once `fullscreenUpsellSeenCount` reaches its limit).
+ */
+export const CLAUDE_FIRST_RUN_SETTLED = { hasCompletedOnboarding: true, fullscreenUpsellSeenCount: 100 } as const;
+/** Whether an account's preferences already carry the first-run answers. */
+export const claudeFirstRunSettled = (value: Record<string, unknown>): boolean =>
+  value.hasCompletedOnboarding === true && typeof value.fullscreenUpsellSeenCount === 'number' && value.fullscreenUpsellSeenCount >= CLAUDE_FIRST_RUN_SETTLED.fullscreenUpsellSeenCount;

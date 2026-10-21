@@ -58,9 +58,9 @@ test('Claude takeover preferences are confined, validated and preserve completed
   expect(() => prepareClaudeInteractiveHome(homes, home, root)).toThrow('preferences'); expect(readFileSync(native, 'utf8')).toBe('{"owner":true}\n');
   rmSync(file); writeFileSync(file, 'not json');
   expect(() => prepareClaudeInteractiveHome(homes, home, root)).toThrow(); expect(readFileSync(file, 'utf8')).toBe('not json');
-  writeFileSync(file, `  { "hasCompletedOnboarding": true, "theme":"light", "projects": { ${JSON.stringify(root)}: { "hasTrustDialogAccepted": true } } }\n`);
+  writeFileSync(file, `  { "hasCompletedOnboarding": true, "fullscreenUpsellSeenCount": 100, "theme":"light", "projects": { ${JSON.stringify(root)}: { "hasTrustDialogAccepted": true } } }\n`);
   const before = readFileSync(file); prepareClaudeInteractiveHome(homes, home, root); expect(readFileSync(file)).toEqual(before);
-  rmSync(file); prepareClaudeInteractiveHome(homes, home, root); expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ hasCompletedOnboarding: true, projects: { [root]: { hasTrustDialogAccepted: true } } });
+  rmSync(file); prepareClaudeInteractiveHome(homes, home, root); expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ hasCompletedOnboarding: true, fullscreenUpsellSeenCount: 100, projects: { [root]: { hasTrustDialogAccepted: true } } });
 });
 
 test('an authenticated isolated Claude takeover skips first-run onboarding and preserves account preferences', { timeout: 120_000 }, async () => {
@@ -76,7 +76,8 @@ test('an authenticated isolated Claude takeover skips first-run onboarding and p
   const trustRoot = realpathSync(f.checkout);
   expect(run.cwd).not.toBe(trustRoot);
   expect(JSON.parse(readFileSync(file, 'utf8')).projects[trustRoot]?.hasTrustDialogAccepted).toBe(true);
-  expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ ...preferences, hasCompletedOnboarding: true,
+  // Claude Code's fullscreen-renderer offer also waits for a person; the takeover settles it like onboarding.
+  expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ ...preferences, hasCompletedOnboarding: true, fullscreenUpsellSeenCount: 100,
     projects: { ...preferences.projects, [trustRoot]: { hasTrustDialogAccepted: true } } });
   command.send('exit 0\n'); expect((await finished(command)).code).toBe(0);
 });

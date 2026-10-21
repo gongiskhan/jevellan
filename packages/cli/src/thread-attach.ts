@@ -4,7 +4,7 @@ import { constants } from 'node:os';
 import { basename, isAbsolute, join } from 'node:path';
 import { isatty } from 'node:tty';
 import { z } from 'zod';
-import { CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, atomicWrite, hasInteractiveClaudeLogin, minimalEnvironment, projectInstructionFile, resolvedPath, runOwnedCommand } from '@jevellan/core';
+import { CLAUDE_FIRST_RUN_SETTLED, CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, atomicWrite, claudeFirstRunSettled, hasInteractiveClaudeLogin, minimalEnvironment, projectInstructionFile, resolvedPath, runOwnedCommand } from '@jevellan/core';
 import { LocalRequestError, localRequest } from './local-request.js';
 import { findExecutable } from './toolchain.js';
 
@@ -59,8 +59,8 @@ export function prepareClaudeInteractiveHome(homes: Homes, home: string, cwd: st
     path = resolvedPath(first.slice(9));
   } catch { throw new Error('Claude takeover could not determine its repository trust root.'); }
   const project = projects[path] ?? {};
-  if (value.hasCompletedOnboarding === true && project.hasTrustDialogAccepted === true) return;
-  atomicWrite(file, `${JSON.stringify({ ...value, hasCompletedOnboarding: true,
+  if (claudeFirstRunSettled(value) && project.hasTrustDialogAccepted === true) return;
+  atomicWrite(file, `${JSON.stringify({ ...value, ...CLAUDE_FIRST_RUN_SETTLED,
     projects: { ...projects, [path]: { ...project, hasTrustDialogAccepted: true } } }, null, 2)}\n`);
 }
 
