@@ -662,9 +662,9 @@ test('interface copy: brief-verbatim texts, shared server texts and no conversat
   expect(`${copy.takeOverLead('Mac mini')} ${server.attachCommand('thread_a')}`).toBe(copy.takeOverLine('Mac mini', server.attachCommand('thread_a')));
   expect(copy.savedUpdated('Oct 4, 2026')).toBe('Saved · updated Oct 4, 2026');
   expect([copy.NOTEBOOK_CHANGED, server.ALLOW_MORE_TURNS, copy.MERGE_BLOCKED_CONFLICTS, copy.MERGE_BLOCKED_CHECKS, copy.THREAD_ENDED,
-    copy.WORKTREE_DISCARDED]).toEqual([server.NOTEBOOK_CHANGED, server.ALLOW_MORE_TURNS, server.MERGE_CONFLICTS,
-    server.MERGE_CHECKS_FAILING, server.THREAD_ENDED, server.WORKTREE_DISCARDED.trim()]);
-  expect(copy.discardQuestion('jv/fix-login-abc123')).toBe('Remove the worktree and local branch jv/fix-login-abc123?');
+    server.WORKTREE_DISCARDED.trim()]).toEqual([server.NOTEBOOK_CHANGED, server.ALLOW_MORE_TURNS, server.MERGE_CONFLICTS,
+    server.MERGE_CHECKS_FAILING, server.THREAD_ENDED, 'Worktree discarded.']);
+  expect(server.discardQuestion('jv/fix-login-abc123')).toBe('Remove the worktree and local branch jv/fix-login-abc123?');
   expect(copy.GITHUB_TOKEN_HELP).toBe('Used only to open, read and merge pull requests for Jevellan threads. A fine-grained token with Pull requests read and write, Contents read and write, Checks read and Commit statuses read on your repositories is enough.');
   expect([copy.NOT_SET, copy.REPLACE, copy.REMOVE, copy.INTERRUPT_TURN, copy.THREAD_PLACEHOLDER]).toEqual(['Not set', 'Replace', 'Remove', 'Interrupt current turn', 'Message this thread']);
   expect([copy.coordinatorUnavailableNotice('x'), copy.coordinatorOfflineNotice('Mac mini'), copy.placedWithoutJev('timeout')])

@@ -1,5 +1,5 @@
-import { IdSchema, RESTARTED_PREFIX, THREAD_READ_POLICY, ThreadPresentationSchema, isTerminal, splitSavedCommits,
-  type ThreadIndex, type ThreadPresentation, type ThreadView } from '@jevellan/core';
+import { IdSchema, RESTARTED_PREFIX, THREAD_READ_POLICY, ThreadControlsSchema, ThreadPresentationSchema, isTerminal, splitSavedCommits,
+  type ThreadControls, type ThreadIndex, type ThreadPresentation, type ThreadView } from '@jevellan/core';
 import * as copy from './copy.js';
 
 /**
@@ -67,5 +67,15 @@ export function threadPresentation(view: ThreadView): ThreadPresentation {
     composer: { running, ended: !view.canMessage && view.thread.state !== 'attached', block: composerBlock(view),
       continueNotice: ['done', 'stopped', 'failed'].includes(view.thread.state) && view.canMessage ? copy.THREAD_CONTINUE : null },
     live: { text: threadLiveText(view.thread), activity: threadActivity(view) }, transcriptNotice: transcriptNotice(view),
-    reason: threadReason(view.thread.stateReason), readPolicy: THREAD_READ_POLICY });
+    reason: threadReason(view.thread.stateReason), readPolicy: THREAD_READ_POLICY, controls: threadControls(view) });
+}
+
+/** Existing browser control policy; canonical writers still enforce current resources. */
+export function threadControls(view: ThreadView): ThreadControls {
+  const thread = view.thread;
+  return ThreadControlsSchema.parse({ schema: 'project-thread-controls-v1',
+    browserTakeover: !['done', 'stopped', 'failed', 'running', 'attached'].includes(thread.state), attachPanel: !['done', 'stopped', 'failed'].includes(thread.state),
+    stop: { title: copy.STOP_THREAD_TITLE, action: 'Stop', body: `${copy.STOP_THREAD_BODY} ${thread.isolation === 'worktree' ? copy.STOP_KEEPS_WORKTREE : thread.gitPolicy === 'external' ? copy.STOP_KEEPS_CHECKOUT : copy.STOP_SAVES_MAIN_COMMITS}` },
+    discard: { title: thread.branch ? copy.discardQuestion(thread.branch) : copy.DISCARD_NO_BRANCH, action: 'Discard', body: copy.DISCARD_BODY, notice: copy.WORKTREE_DISCARDED.trim() },
+    usage: thread.usage ? { schema: 'project-thread-usage-badge-v1', tokens: thread.usage.inputTokens + thread.usage.outputTokens, costUsd: thread.usage.costUsd } : null });
 }

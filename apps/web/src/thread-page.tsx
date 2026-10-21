@@ -2,7 +2,7 @@ import { AttachmentControls, LibraryMessage, useProjectAttachments } from './pro
 import { ThreadActions } from './thread-actions.js';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, threadPollDelay, threadStarting, deviceRefusal,
+  formatThreadUsage, THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, threadPollDelay, threadStarting, deviceRefusal,
   ProjectWorkViewSchema, ProjectThreadOverrideEditorSchema, type ProjectThreadOverrideEditor, type ThreadOverrideEditorFields, ProjectThreadWhyViewSchema, type ProjectThreadWhyView, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema,
   type ThreadTimeline, type ThreadIndex, type ThreadReport, type ThreadReportPresentation, type ThreadView,
 } from '@jevellan/core/client';
@@ -163,6 +163,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const thread = view.thread;
   const details = view.presentation;
   const actions = details?.actions;
+  const controls = details?.controls;
   const line = view.card?.placementLine ?? '';
   const notice = details?.transcriptNotice;
   const fallback = view.placementNotice;
@@ -186,13 +187,13 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           </button>
           {images.length > 0 && <button type="button" className="secondary pw-head-button pw-keep-label" onClick={() => openImage(images[0]!)}>Images <span className="chip">{images.length}</span></button>}
           {actions?.stop && (
-            <button type="button" className="secondary pw-head-button" disabled={!!actions.stopRefusal} title={actions.stopRefusal ?? undefined}
+            <button type="button" className="secondary pw-head-button" disabled={!controls || !!actions.stopRefusal} title={actions.stopRefusal ?? (!controls ? 'Thread controls are unavailable. Refresh to continue.' : undefined)}
               aria-describedby={actions.stopRefusal ? stopNoteId : undefined} onClick={() => setConfirming('stop')}>
               <Icon name="stop" size={15} /><span className="pw-head-label">{copy.STOP}</span>
             </button>
           )}
           {actions?.discard && (
-            <button type="button" className="secondary pw-head-button" onClick={() => setConfirming('discard')}>
+            <button type="button" className="secondary pw-head-button" disabled={!controls} onClick={() => setConfirming('discard')}>
               <Icon name="trash" size={15} /><span className="pw-head-label">{copy.DISCARD}</span>
             </button>
           )}
@@ -232,7 +233,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           {actions?.stopRefusal && <p className="pw-thread-note" id={stopNoteId}>{actions.stopRefusal}</p>}
           {view.checkoutHeld && <p className="pw-thread-note pw-tone-warn" role="status">{view.checkoutHeld}</p>}
           <div className="pw-session-badges">
-            {thread.usage && <span className="chip pw-session-badge">{copy.usageBadge(thread.usage.inputTokens + thread.usage.outputTokens, thread.usage.costUsd)}</span>}
+            {controls?.usage && <span className="chip pw-session-badge">{formatThreadUsage(controls.usage.tokens, controls.usage.costUsd)}</span>}
             <button type="button" className="chip pw-session-badge" aria-label="Model and account details" aria-expanded={sessionOpen} onClick={() => { if (!sessionOpen) { following.current = false; setBehind(true); } setSessionOpen(!sessionOpen); }}>
               <Icon name="agents" size={13} />{thread.modelLabel}<span className="pw-session-account">{thread.accountLabel}</span><Icon name="chevron" size={12} />
             </button>
@@ -242,11 +243,11 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
             <p className="pw-placement-line"><Parts line={line} /></p>
             <div className="actions pw-session-actions">
               <OpenTerminalButton props={props} projectId={projectId} threadId={threadId} deviceId={thread.ownerDeviceId} />
-              {!['done', 'stopped', 'failed', 'running', 'attached'].includes(thread.state) && <OpenTerminalButton props={props} projectId={projectId} threadId={threadId} deviceId={thread.ownerDeviceId} takeover label="Take over in browser" />}
+              {controls?.browserTakeover && <OpenTerminalButton props={props} projectId={projectId} threadId={threadId} deviceId={thread.ownerDeviceId} takeover label="Take over in browser" />}
               <button type="button" className="secondary" aria-pressed={why} onClick={() => setWhy(!why)}><Icon name="why" size={15} />{copy.WHY}</button>
               {!!view.overrideEditorPath && <button type="button" className="secondary" onClick={() => setOverriding(true)}><Icon name="tune" size={15} />{copy.OVERRIDE}</button>}
             </div>
-            {!['done', 'stopped', 'failed'].includes(thread.state) && <TakeOver device={view.deviceName} command={view.attachCommand} message={message} />}
+            {controls?.attachPanel && <TakeOver device={view.deviceName} command={view.attachCommand} message={message} />}
             <SessionCache rows={thread.sessionCache} sessionKey={thread.cacheSessionKey} timezone={thread.sessionCache?.at(-1)?.timezone ?? 'UTC'} />
             <SessionHistory entries={view.sessionHistory} path={`/api/projects/${projectId}/threads/${thread.id}`} />
             {!!view.notices?.length && <details><summary>{copy.SESSION_NOTICES} ({view.notices.length})</summary><ol>{view.notices.map((notice, index) => <li key={index}><time dateTime={notice.at}>{dateTime(notice.at)}</time>: {readableSessionText(notice.text)}</li>)}</ol></details>}
@@ -275,17 +276,18 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
       {overriding && (
         <OverrideDialog props={props} view={view} projectId={projectId} close={() => setOverriding(false)} applied={() => { updated(); kick.current(); }} />
       )}
-      {confirming === 'stop' && (
-        <ConfirmAction title={copy.STOP_THREAD_TITLE} action={copy.STOP} onError={onError} close={() => setConfirming(undefined)}
-          body={`${copy.STOP_THREAD_BODY} ${thread.isolation === 'worktree' ? copy.STOP_KEEPS_WORKTREE : thread.gitPolicy === 'external' ? copy.STOP_KEEPS_CHECKOUT : copy.STOP_SAVES_MAIN_COMMITS}`}
+      {confirming === 'stop' && controls && (
+        <ConfirmAction title={controls.stop.title} action={controls.stop.action} onError={onError} close={() => setConfirming(undefined)}
+          body={controls.stop.body}
           run={async (signal) => acted(await api(`${base}/stop`, ThreadViewSchema, 'POST', { schema: 'thread-stop-request-v1' }, { signal }))} />
       )}
-      {confirming === 'discard' && (
-        <ConfirmAction title={thread.branch ? copy.discardQuestion(thread.branch) : copy.DISCARD_NO_BRANCH} action={copy.DISCARD} body={copy.DISCARD_BODY}
+      {confirming === 'discard' && controls && (
+        <ConfirmAction title={controls.discard.title} action={controls.discard.action} body={controls.discard.body}
           onError={onError} close={() => setConfirming(undefined)}
           run={async (signal) => {
-            acted(await api(`${base}/discard`, ThreadViewSchema, 'POST', empty, { signal }));
-            afterDialogs(message, copy.WORKTREE_DISCARDED);
+            const next = await api(`${base}/discard`, ThreadViewSchema, 'POST', empty, { signal });
+            acted(next);
+            afterDialogs(message, next.presentation?.controls?.discard.notice ?? controls.discard.notice);
           }} />
       )}
     </div>

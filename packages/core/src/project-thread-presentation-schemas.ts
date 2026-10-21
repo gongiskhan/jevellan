@@ -6,13 +6,18 @@ import type { ThreadState } from './project-schemas.js';
 export const ThreadReadPolicySchema = z.strictObject({ schema: z.literal('project-thread-read-policy-v1'),
   liveMs: z.number().int().positive(), restMs: z.number().int().positive(), afterActionMs: z.number().int().positive(), startingMs: z.number().int().positive() });
 export const THREAD_READ_POLICY = ThreadReadPolicySchema.parse({ schema: 'project-thread-read-policy-v1', liveMs: 1500, restMs: 10000, afterActionMs: 6000, startingMs: 120000 });
+export const ThreadUsageBadgeSchema = z.strictObject({ schema: z.literal('project-thread-usage-badge-v1'), tokens: z.number().int().nonnegative(), costUsd: z.number().nonnegative() });
+export const ThreadControlsSchema = z.strictObject({ schema: z.literal('project-thread-controls-v1'), browserTakeover: z.boolean(), attachPanel: z.boolean(),
+  stop: z.strictObject({ title: z.string(), action: z.string(), body: z.string() }),
+  discard: z.strictObject({ title: z.string(), action: z.string(), body: z.string(), notice: z.string() }), usage: ThreadUsageBadgeSchema.nullable() });
+export type ThreadControls = z.infer<typeof ThreadControlsSchema>;
 export const ThreadPresentationSchema = z.strictObject({ schema: z.literal('project-thread-presentation-v1'),
   actions: z.strictObject({ stop: z.boolean(), stopRefusal: z.string().nullable(), discard: z.boolean(), allowTurns: z.boolean(),
     allowTurnsStep: z.number().int().positive(), allowTurnsLabel: z.string(), allowedNotice: z.string() }),
   composer: z.strictObject({ running: z.boolean(), ended: z.boolean(), block: z.string().nullable(), continueNotice: z.string().nullable() }),
   live: z.strictObject({ text: z.string().nullable(), activity: z.string().nullable() }), transcriptNotice: z.string().nullable(),
   reason: z.strictObject({ text: z.string(), restartedAs: IdSchema.nullable(), savedRef: z.string().nullable() }).nullable(),
-  readPolicy: ThreadReadPolicySchema });
+  readPolicy: ThreadReadPolicySchema, controls: ThreadControlsSchema.optional() });
 export type ThreadPresentation = z.infer<typeof ThreadPresentationSchema>;
 
 export const THREAD_POLL_LIVE_MS = THREAD_READ_POLICY.liveMs;

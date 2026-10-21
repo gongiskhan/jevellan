@@ -690,3 +690,14 @@ export const TESTS_FAILED = 'Tests failed';
 export const INTERRUPTS_TURN = 'Interrupts the current turn';
 export const fixTurnLabel = (fix: import('@jevellan/core').ThreadFix) => fix.by === 'owner' ? 'Requested by you'
   : fix.kind === 'checks' ? 'Automatic fix: failing checks' : fix.kind === 'conflicts' ? 'Automatic fix: conflicts' : 'Automatic fix: review comments';
+
+// Thread control confirmation copy.
+export const MANUAL_MAIN_HELP = 'Main edits your existing project files. Commits and pushes stay with you.';
+export const STOP_KEEPS_CHECKOUT = 'Your edits stay in the project checkout. Git is left to you.';
+export const discardQuestion = (branch: string): string => `Remove the worktree and local branch ${branch}?`;
+export const STOP_THREAD_TITLE = 'Stop this thread?';
+export const STOP_THREAD_BODY = 'The current turn ends and the thread takes no more work.';
+export const STOP_KEEPS_WORKTREE = 'Its worktree and branch stay until you discard them.';
+export const STOP_SAVES_MAIN_COMMITS = 'Commits it has not published are saved under refs/jevellan/discard, and the project checkout returns to main.';
+export const DISCARD_NO_BRANCH = 'Remove the worktree?';
+export const DISCARD_BODY = 'Uncommitted work and commits that were not pushed are lost.';

@@ -1,11 +1,9 @@
-import { MANUAL_CHECKOUT_COMPLETED, NO_CHANGES, ProjectThreadActionsViewSchema, ProjectWorkCardSchema, boardGroup,
+import { THREAD_STATE_LABELS as stateLabels, MANUAL_CHECKOUT_COMPLETED, NO_CHANGES, ProjectThreadActionsViewSchema, ProjectWorkCardSchema, boardGroup,
   type MergeConfirmationSchema, type ProjectThreadActionsView, type ProjectWorkCard, type ProjectWorkTask, type PullRequestEntry,
   type PullRequestState, type ThreadActionItem, type ThreadIndex, type ThreadView } from '@jevellan/core';
 import type { z } from 'zod';
 
 const boardLabels = { waiting: 'Waiting for you', review: 'Ready for review', working: 'Working', landing: 'Landing', landed: 'Landed, waiting for deploy', idle: 'Idle', resolved: 'Resolved' } as const;
-const stateLabels = { queued: 'Queued', preparing: 'Preparing', running: 'Running', idle: 'Idle', publishing: 'Publishing', 'in-review': 'In review',
-  'waiting-for-you': 'Waiting for you', attached: 'Attached', done: 'Done', stopped: 'Stopped', failed: 'Failed' } as const;
 const landingLabels = { verifying: 'Verifying', merging: 'Merging', held: 'Held for the nightly window' } as const;
 const checks = { passing: { text: 'Checks passing', tone: 'ok' }, failing: { text: 'Checks failing', tone: 'danger' },
   pending: { text: 'Checks running', tone: 'warn' }, none: { text: 'No checks', tone: 'muted' } } as const;

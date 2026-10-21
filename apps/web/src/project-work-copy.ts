@@ -103,7 +103,6 @@ export const USAGE_TABLES = { byThread: 'By thread', byModel: 'By model', byAcco
 export const USAGE_KINDS = { coordinator: 'Coordinator', thread: 'Threads', verification: 'Verification', review: 'Review', memory: 'Memory' } as const;
 export const USAGE_COLUMNS = { byThread: 'Thread', byModel: 'Model', byAccount: 'Account', byKind: 'Kind', models: 'Models', turns: 'Turns', tokens: 'Tokens', cost: 'Cost' } as const;
 export const usageUnknownCost = (n: number) => `${n} turns without a reported cost`;
-export const usageBadge = (tokens: number, cost: number) => `${new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(tokens)} tokens · $${cost.toFixed(2)}`;
 export const PLACEMENT_CONSTRAINTS = 'Project placement constraints';
 export const PLACEMENT_REASON = 'Placement reason';
 export const ESCALATION_HISTORY = 'Escalation history';
@@ -203,16 +202,9 @@ export const threadMetaText = (p: { runtime: string; modelLabel: string; effort:
   `${p.runtime} · ${p.modelLabel} · ${p.effort} · ${p.isolation} · ${p.device}`;
 export const placementLineText = (p: { runtime: string; modelLabel: string; effort: string; accountLabel: string; isolation: string; device: string }): string =>
   `${p.runtime} · ${p.modelLabel} · ${p.effort} effort · ${p.accountLabel} · ${p.isolation} · ${p.device}`;
-/** Thread states in words, for the dot's tooltip and screen readers (the dots carry the color, D54). */
-export const STATE_LABELS = {
-  queued: 'Queued', preparing: 'Preparing', running: 'Running', idle: 'Idle', publishing: 'Publishing', 'in-review': 'In review',
-  'waiting-for-you': 'Waiting for you', attached: 'Attached', done: 'Done', stopped: 'Stopped', failed: 'Failed',
-} as const;
 export const mergedOutcome = (n: number): string => `Merged #${n}`;
 export const PUBLISHED_TO_MAIN = 'Published to main';
 export const CHECKOUT_COMPLETED = 'Completed';
-export const MANUAL_MAIN_HELP = 'Main edits your existing project files. Commits and pushes stay with you.';
-export const STOP_KEEPS_CHECKOUT = 'Your edits stay in the project checkout. Git is left to you.';
 export const NO_CHANGES_OUTCOME = 'No changes';
 export const STOPPED = 'Stopped';
 export const FAILED = 'Failed';
@@ -278,7 +270,6 @@ export const SETTINGS_SAVED = 'Project settings saved.';
 export const WHY = 'Why';
 export const OVERRIDE = 'Override';
 export const DISCARD = 'Discard';
-export const discardQuestion = (branch: string): string => `Remove the worktree and local branch ${branch}?`;
 export const THREAD_PLACEHOLDER = 'Message this thread';
 export const INTERRUPT_TURN = 'Interrupt current turn';
 /** The takeover line's words before the command; the page shows the command itself as code, with its copy button. */
@@ -297,16 +288,6 @@ export const JUMP_TO_LATEST = 'Jump to latest';
 export const PROMPT = 'Prompt';
 /** Prompts longer than this collapse in thread transcripts (D56). */
 export const PROMPT_COLLAPSE_CHARACTERS = 1200;
-export const STOP_THREAD_TITLE = 'Stop this thread?';
-export const STOP_THREAD_BODY = 'The current turn ends and the thread takes no more work.';
-export const STOP_KEEPS_WORKTREE = 'Its worktree and branch stay until you discard them.';
-/** A main thread's stop (D29): its unpublished commits move to a saved ref so the project checkout is a clean main again. */
-export const STOP_SAVES_MAIN_COMMITS = 'Commits it has not published are saved under refs/jevellan/discard, and the project checkout returns to main.';
-/** Discard of a worktree thread that failed before it had a branch. */
-export const DISCARD_NO_BRANCH = 'Remove the worktree?';
-export const DISCARD_BODY = 'Uncommitted work and commits that were not pushed are lost.';
-/** The toast after Discard; the server appends the same words to the state reason. */
-export const WORKTREE_DISCARDED = 'Worktree discarded.';
 /** The composer of a concluded thread; the server refuses messages to it with the same sentence (D81). */
 export const THREAD_ENDED = 'This thread has ended. Start a new thread for new work.';
 /** The composer's live line while a turn, the preparation or the publication runs. */
@@ -468,3 +449,5 @@ export const SETUP_DISMISSED = 'Setup dismissed.';
 export const SETUP_FILL_VALUES = 'Fill in their values in Project settings → Environment.';
 export { SETUP_LABELS, setupGoalLabel, setupApplied } from '@jevellan/core/client';
 export const SETUP_REQUESTED_EVENT = 'Setup recommendations requested';
+
+export { THREAD_STATE_LABELS as STATE_LABELS } from '@jevellan/core/client';
