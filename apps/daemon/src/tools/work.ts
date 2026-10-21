@@ -1,3 +1,5 @@
+import { prepareTaskEditorSave } from '@jevellan/core';
+import { ownerCreateTask } from '../project-work-api.js';
 import { ownerClock, ownerDuration } from '@jevellan/core';
 import { capLines, runLabel } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerHandler } from '../owner-tools.js';
@@ -7,6 +9,10 @@ import { clientId, resolveGoal, resolveTask } from './common.js';
 export const work: OwnerHandler = async (context) => {
   const { app, tools, project, args, now } = context; const projectId = project.id; const engine = app.projectWork;
   switch (context.action) {
+    case 'editor': return { text: 'New task.', data: await engine.taskEditor(projectId, context.request.deviceId ?? app.device.deviceId) };
+    case 'preview': return { text: 'New task.', data: await engine.taskEditor(projectId, context.request.deviceId ?? app.device.deviceId, args.request) };
+    case 'save': return { text: 'Task queued.', data: await ownerCreateTask(app, projectId, prepareTaskEditorSave(args.request)) };
+
     case 'list': {
       let view = await tools.status(project);
       if (typeof args.goal === 'string') view = await tools.status(project, args.goal);
@@ -17,7 +23,7 @@ export const work: OwnerHandler = async (context) => {
       const goal = typeof args.goal === 'string' ? await resolveGoal(context, args.goal) : null;
       const urgent = args.priority === 'urgent' || args.position === 'next';
       const title = String(args.title); const brief = typeof args.description === 'string' ? args.description : `${title}.`;
-      const created = await engine.createTask(projectId, { schema: 'task-create-request-v1', clientRequestId: clientId('owner_task'), title, brief, type: 'feature', goalId: goal?.goal.id ?? null, now: urgent, after: [], needs: [], fixed: {},
+      const created = await ownerCreateTask(app, projectId, { schema: 'task-create-request-v1', clientRequestId: clientId('owner_task'), title, brief, type: 'feature', goalId: goal?.goal.id ?? null, now: urgent, after: [], needs: [], fixed: {},
         ...(typeof args.fromBranch === 'string' ? { fromBranch: args.fromBranch } : {}) });
       let view = await tools.status(project);
       const id = tools.ids.shortOf(projectId, created.taskId) ?? created.taskId;
@@ -69,7 +75,7 @@ export const work: OwnerHandler = async (context) => {
       return { text: capLines(lines), data: { task, thread } };
     }
   }
-  throw new OwnerRefusal(`work takes list, add, reorder, cancel, inspect.`, 'unknown_action');
+  throw new OwnerRefusal(`work takes list, add, reorder, cancel, inspect, editor, preview, save.`, 'unknown_action');
 };
 
 /** Moves a queued task to a 1-based position among the queued tasks; returns where it ended. */

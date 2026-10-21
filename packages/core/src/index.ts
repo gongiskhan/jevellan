@@ -183,3 +183,9 @@ export * from './ekoa-editor.js';
 
 export * from './project-setup-copy-schemas.js';
 export * from './project-setup-copy.js';
+
+export * from './project-device-choices.js';
+export * from './project-task-editor-schemas.js';
+export * from './project-task-editor.js';
+
+export * from './thread-form.js';

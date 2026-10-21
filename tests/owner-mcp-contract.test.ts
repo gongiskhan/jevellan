@@ -27,6 +27,14 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP task compose editor preserves Automatic placement and performs no work', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const read = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'work', arguments: { action: 'editor' } })).structuredContent); expect(read.ok).toBe(true);
+  if (!read.ok) throw new Error('Expected task compose editor.'); const fields = (read.data as { fields: object }).fields;
+  const request = { schema: 'project-task-editor-preview-v1', fields: { ...fields, title: 'MCP draft', task: 'Preserve all default guards.' } };
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'work', arguments: { action: 'preview', request } })).structuredContent); expect(result).toMatchObject({ ok: true, data: { schema: 'project-task-editor-v1', canSave: true, plan: { body: { fixed: {}, goalId: null, now: false } } } }); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP setup proposal reader shares first-line goal labels without applying work', async () => {
   f = await projectFixture({ control: true }); await f.app.projectHub.assignCoordinator(f.project.id, f.app.device.deviceId, 0);
   const { proposal } = await f.app.projectWork.proposeSetup(f.project.id, 'mcp_setup_copy', { items: [{ key: 'goal', value: 'Keep the fixture tidy\nMaintain predictable state.' }] });
@@ -222,7 +230,7 @@ test('the forwarder lists exactly the twelve tools with their descriptions and f
   const listed = (await mcp.listTools()).tools;
   expect(listed.map(tool => tool.name)).toEqual(['status', 'activity', 'ask_coordinator', 'work', 'goals', 'jobs', 'thread', 'respond', 'override', 'jev', 'config', 'login']);
   for (const tool of OWNER_TOOLS) expect(listed.find(row => row.name === tool.name)?.description).toBe(tool.description);
-  expect((listed.find(row => row.name === "work")!.inputSchema as unknown as { properties: { action: { enum: string[] } } }).properties.action.enum).toEqual(['list', 'add', 'reorder', 'cancel', 'inspect']);
+  expect((listed.find(row => row.name === "work")!.inputSchema as unknown as { properties: { action: { enum: string[] } } }).properties.action.enum).toEqual(['list', 'add', 'reorder', 'cancel', 'inspect', 'editor', 'preview', 'save']);
   expect((listed.find(row => row.name === 'ask_coordinator')!.inputSchema as unknown as { properties: { mode: { enum: string[] } } }).properties.mode.enum).toEqual(['ask', 'tell', 'restart']);
   expect(mcp.getServerCapabilities()?.experimental).toBeUndefined();
   const status = await mcp.callTool({ name: 'status', arguments: {} });

@@ -1,3 +1,4 @@
+import { ProjectTaskEditorPreviewSchema, ProjectTaskEditorSaveSchema } from './project-task-editor-schemas.js';
 import { EkoaEditorPreviewSchema, EkoaEditorSaveSchema } from './ekoa-editor-schemas.js';
 import { CleanupSettingsSaveSchema } from './cleanup-editor-schemas.js';
 import { GlobalThreadLimitSaveSchema, ProjectDefinitionPreviewSchema, ProjectDefinitionSaveSchema } from './project-definition-schemas.js';
@@ -60,7 +61,7 @@ export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
         position: z.string().regex(/^(?:next|last|[1-9][0-9]{0,3})$/u).optional().describe('next, last or a position number.'), fromBranch: z.string().min(1).max(200).optional() }),
       write('reorder', { task: id('Task id (T36).'), position: z.string().regex(/^(?:next|last|[1-9][0-9]{0,3})$/u) }),
       write('cancel', { task: id('Task id (T36).'), reason: text(400).optional() }),
-      read('inspect', { task: id('Task id (T31).') })] },
+      read('inspect', { task: id('Task id (T31).') }), read('editor', {}, true), read('preview', { request: ProjectTaskEditorPreviewSchema }, true), write('save', { request: ProjectTaskEditorSaveSchema }, true)] },
   { name: 'goals', description: "Project goals: list them, see one in detail (its tasks by state, what is due, the coordinator's recent decisions), create, edit, pause, resume or mark one done. Act on a goal's tasks with work, thread and override.",
     actions: [read('editor', { id: IdSchema.optional() }, true), write('save', { id: IdSchema.optional(), request: GoalEditorSaveRequestSchema }, true), read('list', {}, true), read('show', { goal: id('Goal id (G1) or title.') }),
       write('create', { title: text(80), motivation: text(4000), health: z.string().max(1000).optional() }),

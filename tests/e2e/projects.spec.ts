@@ -2793,6 +2793,35 @@ test('WG6 coordinator session settings and durable save', async ({ page }, info)
   expect(errors).toEqual([]);
 });
 
+test('Task compose choices follow normal project refreshes without changing the draft', async ({ page }, info) => {
+  const errors = await begin(page); await page.goto('/projects/projects_fixture'); await page.getByRole('button', { name: 'New task', exact: true }).click();
+  const dialog = page.getByRole('dialog'); await dialog.getByLabel('Title', { exact: true }).fill('Unsaved title stays here'); await dialog.getByLabel('Brief', { exact: true }).fill('Keep this raw draft while the project changes.');
+  await expect(dialog.getByRole('button', { name: 'Add to queue', exact: true })).toBeEnabled();
+  const response = await page.request.post(`${PROJECT}/goals`, { data: { schema: 'goal-create-request-v1', clientRequestId: 'compose_refresh_goal', name: 'Newly available fixture goal', motivation: 'Verify the normal project refresh boundary.', state: 'paused', autonomy: 'propose' } }); expect(response.ok()).toBe(true);
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('jevellan-project-work-updated')));
+  await expect(dialog.getByRole('combobox', { name: 'Goal', exact: true }).locator('option').filter({ hasText: 'Newly available fixture goal' })).toHaveCount(1);
+  await expect(dialog.getByLabel('Title', { exact: true })).toHaveValue('Unsaved title stays here'); await expect(dialog.getByLabel('Brief', { exact: true })).toHaveValue('Keep this raw draft while the project changes.');
+  await page.screenshot({ path: info.outputPath(`task-compose-refreshed-${layout(info)}.png`), fullPage: true }); expect(errors).toEqual([]);
+});
+
+test('Task draft request identity changes when only its goal changes', async ({ page }, info) => {
+  const errors = await begin(page), goals: string[] = [], received: Array<{ clientRequestId: string; goalId?: string; fields?: { goalId: string } }> = [];
+  for (const name of ['Goal A', 'Goal B']) {
+    const response = await page.request.post(`${PROJECT}/goals`, { data: { schema: 'goal-create-request-v1', clientRequestId: `identity_${name.replace(' ', '_')}`, name, motivation: 'Keep this disposable queue test explicit.', state: 'paused', autonomy: 'propose' } }); expect(response.ok()).toBe(true);
+    const value = await response.json(); goals.push(value.goal?.id ?? value.id);
+  }
+  await page.route('**/api/projects/projects_fixture/tasks', async route => {
+    if (route.request().method() !== 'POST') return route.continue(); received.push(route.request().postDataJSON());
+    await route.fulfill({ status: 400, json: { schema: 'error-v1', code: 'request-failed', message: 'Fixture save refused; keep the draft.' } });
+  });
+  await page.goto('/projects/projects_fixture'); await page.getByRole('button', { name: 'New task', exact: true }).click();
+  const dialog = page.getByRole('dialog'); await dialog.getByLabel('Title', { exact: true }).fill('Receipt identity fixture'); await dialog.getByLabel('Brief', { exact: true }).fill('Keep the same task text while changing only its goal.');
+  await dialog.getByRole('combobox', { name: 'Goal', exact: true }).selectOption(goals[0]!); await dialog.getByRole('button', { name: 'Add to queue', exact: true }).click(); await expect(dialog.getByText('Fixture save refused; keep the draft.', { exact: true })).toBeVisible();
+  await dialog.getByRole('combobox', { name: 'Goal', exact: true }).selectOption(goals[1]!); await dialog.getByRole('button', { name: 'Add to queue', exact: true }).click(); await expect.poll(() => received.length).toBe(2);
+  expect(received[0]!.goalId ?? received[0]!.fields?.goalId).toBe(goals[0]); expect(received[1]!.goalId ?? received[1]!.fields?.goalId).toBe(goals[1]); expect(received[0]!.clientRequestId === received[1]!.clientRequestId).toBe(false);
+  await page.screenshot({ path: info.outputPath(`task-goal-receipt-${layout(info)}.png`), fullPage: true }); expect(errors).toEqual([]);
+});
+
 test('Settings navigation keeps engine order and the runtimes fallback', async ({ page }, info) => {
   const errors = await begin(page); await page.goto('/settings/not-a-page');
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();

@@ -1,3 +1,5 @@
+import { MAIN_NOT_AVAILABLE, REMOTE_NOT_AVAILABLE } from '@jevellan/core';
+export { MAIN_NOT_AVAILABLE, REMOTE_NOT_AVAILABLE } from '@jevellan/core';
 import { z } from 'zod';
 import { rankAccounts, type RankedAccount } from '@jevellan/accounts';
 import { DeviceFactsSchema, DeviceTagsSchema, deviceResourceRefusal, EffortSchema, IsolationSchema, mapEffort, PlacementRecordSchema, type DeviceFacts, type Account, type AccountStatus, type Configuration, type DevicePresence, type Effort, type ExclusionReason, type Isolation, type JevCall, type ModelOption, type PlacementField, type PlacementOverride, type PlacementRecord, type Project, type SecretRedactor } from '@jevellan/core';
@@ -16,8 +18,6 @@ export const PROJECT_MODEL_NOT_ALLOWED = "Not allowed in this project's settings
 export const PROJECT_MODEL_EFFORT = "No supported effort meets this project's minimum.";
 export const NO_PROJECT_MODEL = 'No model allowed in this project can run';
 export const LEAVE_GIT_MAIN = 'This project is set to Leave git to me, so threads cannot work on main.';
-export const MAIN_NOT_AVAILABLE = 'Main isolation is not available yet.';
-export const REMOTE_NOT_AVAILABLE = 'Threads run only on this device for now.';
 export const UNKNOWN_PLACEMENT_MODEL = 'Choose a model from the configuration.';
 export const UNKNOWN_PLACEMENT_DEVICE = 'Choose a registered device.';
 export const UNKNOWN_PLACEMENT_RUNTIME = 'Choose an installed runtime.';

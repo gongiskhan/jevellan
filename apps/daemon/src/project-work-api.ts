@@ -1,3 +1,4 @@
+import { ProjectTaskEditorPreviewSchema, ProjectTaskEditorSaveSchema, prepareTaskEditorSave, TaskReceiptSchema } from '@jevellan/core';
 import { ProjectMergeWhyRequestSchema, ProjectRouteWhyViewSchema } from '@jevellan/core';
 import { ProjectCoordinatorEditorPreviewSchema, ProjectCoordinatorEditorSaveSchema, ProjectWorkSettingsViewSchema } from '@jevellan/core';
 import { ProjectSettingsChangeViewRequestSchema } from '@jevellan/core';
@@ -34,7 +35,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -116,6 +117,8 @@ const rows: readonly Row[] = [
   { name: 'goal-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals$/, methods: ['POST'], target: 'coordinator' },
   { name: 'goal-update', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goals\/([A-Za-z0-9_-]+)\/edit$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'goalId'] },
   { name: 'task-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks$/, methods: ['GET'], target: 'any' },
+  { name: 'task-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks\/editor$/, methods: ['GET'], target: 'any' },
+  { name: 'task-editor-preview', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks\/editor\/preview$/, methods: ['POST'], target: 'any' },
   { name: 'task-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks$/, methods: ['POST'], target: 'coordinator' },
   { name: 'task', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks\/([A-Za-z0-9_-]+)$/, methods: ['GET'], target: 'any', ids: ['projectId', 'taskId'] },
   { name: 'task-update', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/tasks\/([A-Za-z0-9_-]+)\/edit$/, methods: ['POST'], target: 'coordinator', ids: ['projectId', 'taskId'] },
@@ -203,6 +206,13 @@ async function target(app: Application, deviceId: string, purpose: 'thread' | 'c
   if (!row || row.revoked) throw failure(THREAD_DEVICE_GONE, 409);
   if (row.status === 'offline') throw failure(threadDeviceOffline(row.device.name), 409);
   return row;
+}
+
+/** Owner task writes use the already registered coordinator task route. */
+export async function ownerCreateTask(app: Application, projectId: string, raw: unknown) {
+  const input = TaskCreateRequestSchema.parse(raw), coordinator = await app.projectWork.coordinatorDevice(projectId);
+  if (coordinator === null || coordinator === app.device.deviceId) return app.projectWork.createTask(projectId, input);
+  return TaskReceiptSchema.parse(await ownerProjectJson(app, coordinator, 'coordinator', `/api/projects/${projectId}/tasks`, 'POST', input));
 }
 
 /** Authenticated owner tools reuse the browser's typed owner routes; work never moves to the state point. */
@@ -501,7 +511,12 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'goal-create': send(await work.createGoal(projectId, GoalCreateRequestSchema.parse(await requestBody(request))), 201); return true;
     case 'goal-update': send(await work.updateGoal(projectId, route.goalId!, GoalUpdateRequestSchema.parse(await requestBody(request)))); return true;
     case 'task-list': send(await work.taskList(projectId)); return true;
-    case 'task-create': send(await work.createTask(projectId, TaskCreateRequestSchema.parse(await requestBody(request))), 201); return true;
+    case 'task-editor': send(await work.taskEditor(projectId, caller.sourceDeviceId)); return true;
+    case 'task-editor-preview': retryable(); send(await work.taskEditor(projectId, caller.sourceDeviceId, ProjectTaskEditorPreviewSchema.parse(await requestBody(request)))); return true;
+    case 'task-create': {
+      const input = TaskCreateRequestSchema.or(ProjectTaskEditorSaveSchema).parse(await requestBody(request));
+      send(await work.createTask(projectId, input.schema === 'project-task-editor-save-v1' ? prepareTaskEditorSave(input) : input), 201); return true;
+    }
     case 'task': send(await work.taskView(projectId, route.taskId!)); return true;
     case 'task-update': send(await work.updateTask(projectId, route.taskId!, TaskUpdateRequestSchema.parse(await requestBody(request)))); return true;
     case 'task-action': send(await work.taskAction(projectId, route.taskId!, TaskActionRequestSchema.parse(await requestBody(request)))); return true;

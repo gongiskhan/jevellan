@@ -1,3 +1,4 @@
+import { ProjectTaskEditorSchema, taskEditorCommand, type ProjectTaskEditor, type ProjectTaskEditorFields } from '@jevellan/core/client';
 import { CoordinatorOverrideDialog } from './coordinator-editor.js';
 import type { ProjectGoalViews, ProjectJobsView } from '@jevellan/core/client';
 import { LastDeploy } from './project-deploy.js';
@@ -14,8 +15,8 @@ import { TerminalLauncher } from './terminal.js';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
-  CoordinatorMessageReceiptSchema, ProjectWaitingResponseSchema, EffortSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema, ProjectThreadActionsViewSchema,
-  ProjectPageViewSchema, ProjectSidebarViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskReceiptSchema, TaskTypeSchema,
+  CoordinatorMessageReceiptSchema, ProjectWaitingResponseSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema, ProjectThreadActionsViewSchema,
+  ProjectPageViewSchema, ProjectSidebarViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskReceiptSchema,
   type ProjectDecision, type ProjectLedgerEvent, type ProjectSidebarView, type ProjectWorkView,
   type ThreadIndex, type ProjectWorkTask, type ProjectOverview, type OverviewPullRequest, type ProjectHeader, type ProjectCoordinatorActivity, type ProjectWorkCard, type ProjectWaitingItemsView, type ProjectWaitingItem, type ProjectWaitingResponse, type ProjectPageView, type ProjectPageRequest, type ProjectViewNotice,
 } from '@jevellan/core/client';
@@ -26,9 +27,9 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  PROJECT_WORK_UPDATED, chatItems, chatProposalGroups, deviceBlock, deviceChoices,
-  projectDot, projectRoute, rowClockMs, threadCreateRequest,
-  toolIcon, type ChatItem, type ProjectTab, type ThreadForm, type ThreadTitles,
+  PROJECT_WORK_UPDATED, chatItems, chatProposalGroups,
+  projectDot, projectRoute, rowClockMs,
+  toolIcon, type ChatItem, type ProjectTab, type ThreadTitles,
 } from './project-work-model.js';
 import { queuedRefresh } from './refresh.js';
 import { projectHistory } from './project-history.js';
@@ -272,6 +273,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const [cards, setCards] = useState<ProjectWorkCard[]>([]);
   const cardModels = useMemo(() => new Map(cards.map(card => [projectCardKey(card.kind, card.id), card])), [cards]);
   const [header, setHeader] = useState<ProjectHeader>();
+  const [taskEditorRevision, setTaskEditorRevision] = useState('');
   const [waiting, setWaiting] = useState<ProjectWaitingItemsView>();
   const [notices, setNotices] = useState<ProjectViewNotice[]>([]);
   const ackKnown = useRef<string[] | undefined>(undefined);
@@ -369,7 +371,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         if (after.current === undefined || moved) after.current = next.lastEventId;
         if (moved) restart();
         if (!historyReady) publishHistory(history.snapshot(next.lastEventId));
-        setView(next); setLoadError('');
+        setView(next); setTaskEditorRevision(pageView.changeToken); setLoadError('');
         setTasks(pageView.tasks); setGoals(pageView.goals); setGoalViews(pageView.goalViews); setDaily(pageView.daily); setRoutines(pageView.routines); setOverview(pageView.overview); setHeader(pageView.header); setCards(pageView.cards); setWaiting(pageView.waiting);
     };
     acceptPage.current = accept;
@@ -643,7 +645,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
           </section>
         </div>
       </div>
-      {dialog === 'new-thread' && <NewThreadDialog props={props} view={view} coordinatorUi={coordinatorUi} tasks={tasks} goals={goals} move={moveHere} close={() => setDialog(undefined)} />}
+      {dialog === 'new-thread' && <NewThreadDialog props={props} view={view} refreshRevision={taskEditorRevision} coordinatorUi={coordinatorUi} move={moveHere} close={() => setDialog(undefined)} />}
       {dialog === 'coordinator' && <CoordinatorOverrideDialog props={props} view={view} close={() => setDialog(undefined)} />}
       {merging?.entry.pr && (
         <MergeDialog projectId={id} model={merging} onError={onError}
@@ -910,90 +912,60 @@ function MergeDialog({ projectId, model, close, merged, onError }: {
  * start, so the dialog says so with Move coordinator here instead of failing (D9a); after the move the form starts the thread
  * on this device's coordinator. A started thread opens its page (D74).
  */
-function NewThreadDialog({ props, view, coordinatorUi, tasks, goals, move, close }: { props: PageProps; view: ProjectWorkView; coordinatorUi: ProjectHeader['current']; tasks: readonly ProjectWorkTask[]; goals: readonly GoalEntry[]; move(signal: AbortSignal): Promise<void>; close(): void }) {
-  const { data } = props;
-  const { error, setError, fail } = useLocalError(props.onError);
-  const task = useTask(fail);
-  const moving = useTask(fail);
-  const ids = useClientIds('thread_req');
-  const [form, setForm] = useState<ThreadForm>({ title: '', task: '', isolation: '', modelId: '', effort: '', deviceId: '' });
-  const [type, setType] = useState<'feature' | 'fix' | 'finding' | 'refactor' | 'docs' | 'analysis' | 'review' | 'ops' | 'memory'>('feature');
-  const [goalId, setGoalId] = useState('');
-  const [now, setNow] = useState(false), [after, setAfter] = useState<string[]>([]), [needs, setNeeds] = useState('');
-  const [fromBranch, setFromBranch] = useState('');
-  const change = (fields: Partial<ThreadForm>) => setForm((previous) => ({ ...previous, ...fields }));
-   const deviceNote = useId();
-  const runtimeName = runtimeNames(data);
-  const models = data.config.configuration['x-jevellan'].menu.filter((entry) => entry.enabled);
-  const efforts = models.find((entry) => entry.id === form.modelId)?.efforts ?? EffortSchema.options;
-  const here = data.devices.currentDeviceId;
-  const devices = deviceChoices(view, data.roster.devices, here, form.deviceId);
-  const remoteBlock = devices.map((choice) => deviceBlock(view, choice.id, here)).find((reason) => reason !== null) ?? null;
-  const offline = coordinatorUi.offline;
-  return (
-    <Modal title={copy.NEW_THREAD} close={close}>
-      <form className="pw-new-thread" onSubmit={(event) => {
-        event.preventDefault();
-        if (offline) return;
-        void task.run(async (signal) => {
-          setError('');
-          const request = threadCreateRequest(ids.id({ form, type, now, after, needs, fromBranch }), form);
-          const { schema: _schema, clientRequestId, title, task: brief, ...fixed } = request; void _schema;
-          const created = await api(`/api/projects/${view.project.id}/tasks`, TaskReceiptSchema, 'POST',
-            { schema: 'task-create-request-v1', clientRequestId, title, brief, ...(fromBranch.trim() ? { fromBranch: fromBranch.trim() } : {}), fixed, type, goalId: goalId || null, now, after, needs: needs.split(',').map(value => value.trim()).filter(Boolean) }, { signal, waitForHub: true });
-          ids.done(); updated();
-          afterDialogs(props.message, `Queued task "${form.title}".`); close();
-          if (created.taskId) props.navigate(`/projects/${view.project.id}`);
-        });
-      }}>
-        {coordinatorUi.offlineNotice && <OfflineNotice text={coordinatorUi.offlineNotice} canMove={coordinatorUi.controls.canMove} enabled={coordinatorUi.controls.moveEnabled} refusal={coordinatorUi.controls.moveRefusal ?? undefined} moving={moving.busy}
-          move={() => void moving.run(async (signal) => { setError(''); await move(signal); })} />}
-        <label>{copy.TITLE}<input required maxLength={120} value={form.title} onChange={(event) => change({ title: event.target.value })} /></label>
-        <label>{copy.TASK}<textarea required maxLength={20000} rows={6} value={form.task} onChange={(event) => change({ task: event.target.value })} /></label>
-        <label>Type<select value={type} onChange={event => setType(TaskTypeSchema.parse(event.target.value))}>{TaskTypeSchema.options.map(value => <option key={value}>{value}</option>)}</select></label>
-        <label>Goal<select value={goalId} onChange={event => setGoalId(event.target.value)}><option value="">Asks</option>{goals.filter(entry => entry.goal.state !== 'done').map(entry => <option key={entry.goal.id} value={entry.goal.id}>{entry.goal.name}</option>)}</select></label>
-        <label className="check"><input type="checkbox" checked={now} onChange={event => setNow(event.target.checked)} />Start now</label>
-        <label>After<select multiple value={after} onChange={event => setAfter(Array.from(event.target.selectedOptions, option => option.value))}>{tasks.filter(task => task.state !== 'done' && task.state !== 'cancelled').map(task => <option value={task.id} key={task.id}>{task.title}</option>)}</select></label>
-        <label>From branch<input maxLength={200} value={fromBranch} onChange={event => setFromBranch(event.target.value)} placeholder="Optional existing branch on origin" /></label>
-        <label>Needs<input value={needs} placeholder="residential, mac" onChange={event => setNeeds(event.target.value)} /></label>
-        <details className="pw-placement" onToggle={event => { if (event.currentTarget.open) event.currentTarget.querySelector('.pw-placement-fields')?.scrollIntoView({ block: 'nearest' }); }}>
-          <summary>Choose where it runs</summary>
-          <div className="form-grid pw-placement-fields">
-            <label>{copy.MODEL}
-              <select value={form.modelId} onChange={(event) => {
-                const next = models.find((entry) => entry.id === event.target.value);
-                change({ modelId: event.target.value, ...(next && form.effort && !next.efforts.includes(form.effort) ? { effort: '' as const } : {}) });
-              }}>
-                <option value="">{copy.AUTOMATIC}</option>
-                {models.map((entry) => <option key={entry.id} value={entry.id}>{`${runtimeName(entry.runtime)} ${entry.label}`}</option>)}
-              </select>
-            </label>
-            <label>{copy.EFFORT}
-              <select value={form.effort} onChange={(event) => change({ effort: event.target.value as ThreadForm['effort'] })}>
-                <option value="">{copy.AUTOMATIC}</option>
-                {efforts.map((effort) => <option key={effort} value={effort}>{effort}</option>)}
-              </select>
-            </label>
-            <div className="pw-field">
-              <label>{copy.DEVICE}
-                <select value={form.deviceId} aria-describedby={remoteBlock ? deviceNote : undefined} onChange={(event) => change({ deviceId: event.target.value })}>
-                  <option value="">{copy.AUTOMATIC}</option>
-                  {devices.map((choice) => <option key={choice.id} value={choice.id} disabled={choice.disabled}>{choice.label}</option>)}
-                </select>
-              </label>
-              {remoteBlock && <p className="pw-field-note" id={deviceNote}>{remoteBlock}</p>}
-            </div>
-          </div>
-        </details>
-        {error && <p className="error">{error}</p>}
-        <div className="form-actions">
-
-          <button type="button" className="secondary" onClick={close}>{copy.CANCEL}</button>
-          <button disabled={task.busy || offline}>{task.busy ? copy.STARTING : copy.START_THREAD}</button>
+function NewThreadDialog({ props, view, refreshRevision, coordinatorUi, move, close }: { props: PageProps; view: ProjectWorkView; refreshRevision: string; coordinatorUi: ProjectHeader['current']; move(signal: AbortSignal): Promise<void>; close(): void }) {
+  const { error, setError, fail } = useLocalError(props.onError), task = useTask(fail), moving = useTask(fail), ids = useClientIds('thread_req');
+  const [draft, setDraft] = useState<ProjectTaskEditorFields>(), [model, setModel] = useState<ProjectTaskEditor>(), [confirmed, setConfirmed] = useState('');
+  const path = `/api/projects/${view.project.id}/tasks/editor`, snapshot = draft ? JSON.stringify(draft) : '', deviceNote = useId();
+  useEffect(() => {
+    const controller = new AbortController();
+    void api(path, ProjectTaskEditorSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true }).then(next => {
+      setModel(next); setDraft(next.fields); setConfirmed(JSON.stringify(next.fields));
+    }).catch(reason => { if (!controller.signal.aborted) fail(reason); });
+    return () => controller.abort();
+  }, [path, fail]);
+  useEffect(() => {
+    if (!snapshot) return;
+    const controller = new AbortController();
+    void api(`${path}/preview`, ProjectTaskEditorSchema, 'POST', { schema: 'project-task-editor-preview-v1', fields: JSON.parse(snapshot) }, { signal: controller.signal, waitForHub: true }).then(next => {
+      if (!controller.signal.aborted) { setModel(next); setConfirmed(snapshot); }
+    }).catch(reason => { if (!controller.signal.aborted) fail(reason); });
+    return () => controller.abort();
+  }, [path, snapshot, fail, refreshRevision, props.data.config.revision, props.data.roster]);
+  const change = (patch: Partial<ProjectTaskEditorFields>) => setDraft(previous => previous ? { ...previous, ...patch } : previous);
+  return <Modal title={copy.NEW_THREAD} close={close}>
+    {!draft || !model ? <p role="status">{copy.LOADING}</p> : <form className="pw-new-thread" onSubmit={event => {
+      event.preventDefault(); if (coordinatorUi.offline || confirmed !== snapshot) return;
+      void task.run(async signal => {
+        setError(''); if (!model.plan) throw new Error(model.validation.join(' '));
+        const created = await api(`/api/projects/${view.project.id}/tasks`, TaskReceiptSchema, 'POST', { schema: 'project-task-editor-save-v1', clientRequestId: ids.id(draft), fields: draft }, { signal, waitForHub: true });
+        ids.done(); updated(); afterDialogs(props.message, model.savedNotice); close(); if (created.taskId) props.navigate(`/projects/${view.project.id}`);
+      });
+    }}>
+      {coordinatorUi.offlineNotice && <OfflineNotice text={coordinatorUi.offlineNotice} canMove={coordinatorUi.controls.canMove} enabled={coordinatorUi.controls.moveEnabled} refusal={coordinatorUi.controls.moveRefusal ?? undefined} moving={moving.busy} move={() => void moving.run(async signal => { setError(''); await move(signal); })} />}
+      <label>{copy.TITLE}<input required maxLength={model.limits.title} value={draft.title} onChange={event => change({ title: event.target.value })} /></label>
+      <label>{copy.TASK}<textarea aria-label={copy.TASK} required maxLength={model.limits.task} rows={6} value={draft.task} onChange={event => change({ task: event.target.value })} /></label>
+      <label>Type<select value={draft.type} onChange={event => change({ type: event.target.value })}>{model.types.map(value => <option key={value}>{value}</option>)}</select></label>
+      <label>Goal<select value={draft.goalId} onChange={event => change({ goalId: event.target.value })}><option value="">Asks</option>{model.goals.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}</select></label>
+      <label className="check"><input type="checkbox" checked={draft.now} onChange={event => change({ now: event.target.checked })} />Start now</label>
+      <label>After<select multiple value={draft.after} onChange={event => change({ after: Array.from(event.target.selectedOptions, option => option.value) })}>{model.afterTasks.map(row => <option value={row.id} key={row.id}>{row.label}</option>)}</select></label>
+      <label>From branch<input maxLength={model.limits.fromBranch} value={draft.fromBranch} onChange={event => change({ fromBranch: event.target.value })} placeholder="Optional existing branch on origin" /></label>
+      <label>Needs<input value={draft.needs} placeholder="residential, mac" onChange={event => change({ needs: event.target.value })} /></label>
+      <details className="pw-placement" onToggle={event => { if (event.currentTarget.open) event.currentTarget.querySelector('.pw-placement-fields')?.scrollIntoView({ block: 'nearest' }); }}>
+        <summary>Choose where it runs</summary><div className="form-grid pw-placement-fields">
+          <label>{copy.MODEL}<select value={draft.modelId} onChange={event => setDraft(taskEditorCommand(draft, model.models, { type: 'model', value: event.target.value }))}>
+            <option value="">{copy.AUTOMATIC}</option>{model.models.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}
+          </select></label>
+          <label>{copy.EFFORT}<select value={draft.effort} onChange={event => change({ effort: event.target.value })}><option value="">{copy.AUTOMATIC}</option>{model.efforts.map(effort => <option key={effort} value={effort}>{effort}</option>)}</select></label>
+          <div className="pw-field"><label>{copy.DEVICE}<select value={draft.deviceId} aria-describedby={model.deviceNote ? deviceNote : undefined} onChange={event => change({ deviceId: event.target.value })}>
+            <option value="">{copy.AUTOMATIC}</option>{model.devices.map(row => <option key={row.id} value={row.id} disabled={row.disabled}>{row.label}</option>)}
+          </select></label>{model.deviceNote && <p className="pw-field-note" id={deviceNote}>{model.deviceNote}</p>}</div>
         </div>
-      </form>
-    </Modal>
-  );
+      </details>
+      {error && <p className="error">{error}</p>}
+      <div className="form-actions"><button type="button" className="secondary" onClick={close}>{copy.CANCEL}</button><button disabled={task.busy || coordinatorUi.offline || confirmed !== snapshot}>{task.busy ? copy.STARTING : copy.START_THREAD}</button></div>
+    </form>}
+    {error && (!draft || !model) && <p className="error">{error}</p>}
+  </Modal>;
 }
 
 /**
