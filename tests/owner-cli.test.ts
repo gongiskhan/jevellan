@@ -1,3 +1,4 @@
+import { ProjectPlacementEditorSchema } from '../packages/core/dist/index.js';
 import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
 import { ConfigRevisionSchema, DecisionsSettingsEditorSchema } from '../packages/core/dist/index.js';
 import { ImproverStateSchema } from '../packages/core/dist/index.js';
@@ -21,6 +22,19 @@ import { ProjectRouteWhyViewSchema, ProjectThreadOverrideEditorSchema, ThreadCre
 let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
+
+test('CLI config placement editor exposes the shared constraint form', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['config', 'placement_editor'], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-placement-editor-v1', fields: { allModels: true, modelIds: ['fixture'], minEffort: '' }, guidance: { maxLength: 2000 } } });
+  if (!result.ok) throw new Error('Expected placement editor.'); const view = ProjectPlacementEditorSchema.parse(result.data);
+  output.mockClear(); expect(await callCommand(['config', 'placement_preview', '--request', JSON.stringify({ ...view.request.base, fields: { ...view.fields, allModels: false, minEffort: 'low', guidance: 'CLI placement guidance.' } })], f.homes)).toBe(0);
+  const preview = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); if (!preview.ok) throw new Error('Expected placement preview.');
+  output.mockClear(); expect(await callCommand(['config', 'placement_save', '--request', JSON.stringify(ProjectPlacementEditorSchema.parse(preview.data).saveRequest)], f.homes)).toBe(0);
+  expect((await f.app.projectWork.settingsView('project')).settings.placement).toEqual({ allowedModelIds: ['fixture'], minEffort: 'low', guidance: 'CLI placement guidance.' });
+  expect(f.fake.runs).toHaveLength(0);
+});
 
 test('CLI config settings editor exposes the shared project form and value-free summaries', async () => {
   f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);

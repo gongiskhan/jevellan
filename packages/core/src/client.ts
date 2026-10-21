@@ -104,3 +104,4 @@ export * from './conversation-composer-schemas.js';
 export * from './conversation-step-presentation-schemas.js';
 export * from './conversation-decision-view-schemas.js';
 export * from './account-copy.js';
+export * from './project-placement-editor-schemas.js';

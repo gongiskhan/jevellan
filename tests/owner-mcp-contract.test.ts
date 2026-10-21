@@ -1,3 +1,4 @@
+import { ProjectPlacementEditorSchema } from '../packages/core/dist/index.js';
 import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
 import { ConfigRevisionSchema, DecisionsSettingsEditorSchema } from '../packages/core/dist/index.js';
 import { ImproverStateSchema } from '../packages/core/dist/index.js';
@@ -23,6 +24,17 @@ async function connect(env: Record<string, string>): Promise<Client> {
     env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', ...env }, cwd: f!.checkout, stderr: 'ignore' });
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
+
+test('MCP config placement editor exposes the shared constraint form', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'placement_editor' } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-placement-editor-v1', fields: { allModels: true, modelIds: ['fixture'], minEffort: '' }, guidance: { maxLength: 2000 } } });
+  if (!result.ok) throw new Error('Expected placement editor.'); const view = ProjectPlacementEditorSchema.parse(result.data);
+  const preview = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'placement_preview', request: { ...view.request.base, fields: { ...view.fields, allModels: false, minEffort: 'low', guidance: 'MCP placement guidance.' } } } })).structuredContent); if (!preview.ok) throw new Error('Expected placement preview.');
+  expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'placement_save', request: ProjectPlacementEditorSchema.parse(preview.data).saveRequest } })).structuredContent)).toMatchObject({ ok: true });
+  expect((await f.app.projectWork.settingsView('project')).settings.placement).toEqual({ allowedModelIds: ['fixture'], minEffort: 'low', guidance: 'MCP placement guidance.' });
+  expect(f.fake.runs).toHaveLength(0);
+});
 
 test('MCP config settings editor exposes the shared project form and value-free summaries', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root }), settings = (await f.app.projectWork.settingsView('project')).settings;

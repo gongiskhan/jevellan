@@ -1890,6 +1890,12 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     await settings.getByLabel('Project instructions', { exact: true }).fill('Keep changes small and explain the result.');
     await expect(settings).toContainText('42 / 16,000');
     await settings.getByLabel('Guidance for Jev', { exact: true }).fill('Choose a careful model for UI work.');
+    const placement = settings.locator('#project-settings-placement');
+    const placementEditor = await (await page.request.get(`${PROJECT}/config/placement-editor`)).json();
+    await placement.getByLabel('All enabled models', { exact: true }).uncheck();
+    const placementModel = placement.getByRole('checkbox', { name: placementEditor.models[placementEditor.models.length - 1].label, exact: true });
+    await placementModel.uncheck(); await placementModel.check();
+    await placement.getByLabel('Lowest effort for threads', { exact: true }).selectOption('high');
     await settings.getByLabel('New threads per day', { exact: true }).fill('17');
     const controls = (await (await page.request.get(`${PROJECT}/config/editor`)).json()).controls;
     for (const [key, field] of Object.entries(controls.numbers) as Array<[string, { label: string; min: number; max: number; step: number }]>) {
@@ -1939,6 +1945,7 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     expect((await work(page)).settings).toMatchObject({ landingChecks: [{ name: 'Fixture landing check', paths: ['src', ' spaced path '], command: 'true' }], smokeCheck: 'true', mergeCommitPaths: ['docs', ' notes '] });
     expect((await work(page)).settings).toMatchObject({ threadTurnCap: 41, startMode: 'propose', perDeviceLimits: { [limitDevice.id]: 2 }, prAutoFix: { checks: false, maxRounds: 4 }, riskyAreas: 'Fixture-sensitive paths.' });
     expect((await work(page)).settings.coordinator).toMatchObject({ modelId: coordinatorModel.value, effort: 'low' });
+    expect((await work(page)).settings.placement).toEqual({ allowedModelIds: placementEditor.restrictedModelIds, minEffort: 'high', guidance: 'Choose a careful model for UI work.' });
     settings = await openSettings(page);
     await expect(settings.getByLabel('Project instructions', { exact: true })).toHaveValue('Keep changes small and explain the result.');
     await expect(settings.getByLabel('Secret 1 value', { exact: true })).toHaveValue('');
@@ -1956,12 +1963,15 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     await expect(settings.getByLabel('Max running threads', { exact: true })).toHaveValue('13');
     await settings.getByLabel('Smoke check', { exact: true }).fill('echo unsaved draft');
     await settings.getByLabel('Coordinator effort', { exact: true }).selectOption('max');
+    await settings.getByLabel('Guidance for Jev', { exact: true }).fill('Unsaved placement guidance.');
     await expect(settings.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
     await settings.getByRole('button', { name: 'Paused', exact: true }).click();
     await expect(settings.getByRole('button', { name: 'Paused', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(settings.getByLabel('Smoke check', { exact: true })).toHaveValue('echo unsaved draft');
     await expect(settings.getByLabel('Coordinator effort', { exact: true })).toHaveValue('max');
     expect((await work(page)).settings.coordinator.effort).toBe('low');
+    await expect(settings.getByLabel('Guidance for Jev', { exact: true })).toHaveValue('Unsaved placement guidance.');
+    expect((await work(page)).settings.placement.guidance).toBe('Choose a careful model for UI work.');
     await settings.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(page.getByText('This project is paused. Nothing new starts until you resume it.', { exact: true })).toBeVisible();
     await page.screenshot({ path: `test-results/PAR1-paused-${layout(info)}.png`, fullPage: true });

@@ -164,6 +164,8 @@ export const config: OwnerHandler = async (context) => {
     case 'remove_secret': {
       const name = String(args.name); await context.app.state.environment.remove(context.project.id, name); return { text: `Removed ${name}.` };
     }
+    case 'placement_editor': case 'placement_preview': return { text: 'Project placement choices.', data: await context.app.projectWork.placementEditor(context.project.id, context.action === 'placement_preview' ? args.request : undefined) };
+    case 'placement_save': return { text: 'Project placement settings saved.', data: await context.app.projectWork.savePlacementEditor(context.project.id, args.request) };
     case 'landing_editor': case 'landing_preview': return { text: 'Landing settings.', data: await context.app.projectWork.landingEditor(context.project.id, context.action === 'landing_preview' ? args.request : undefined) };
     case 'landing_save': return { text: 'Landing settings saved.', data: await context.app.projectWork.saveLandingEditor(context.project.id, args.request) };
     case 'settings_change': return { text: 'Recorded settings changes.', data: await context.app.projectWork.settingsChangeView(context.project.id, args.request) };

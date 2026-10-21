@@ -1,3 +1,5 @@
+import { ProjectPlacementEditorSaveSchema } from '@jevellan/core';
+import { placementEditor } from './placement-editor.js';
 import { MergeCorrectionInputSchema } from '@jevellan/core';
 import { waitingItemsView, sentText } from './waiting-views.js';
 import { projectConfigurationInfo } from './project-configuration.js';
@@ -952,6 +954,15 @@ export class ProjectWork {
   async coordinatorEditor(projectId: string, preview?: unknown) {
     const [view, configuration] = await Promise.all([this.view(projectId), this.#o.settings()]);
     return coordinatorEditor(view, configuration, id => this.#o.runtimes.get(id)?.displayName ?? id, preview);
+  }
+  async placementEditor(projectId: string, raw?: unknown) {
+    const [view, configuration] = await Promise.all([this.settingsView(projectId), this.#o.settings()]);
+    return placementEditor(view.settings, configuration, raw);
+  }
+  async savePlacementEditor(projectId: string, raw: unknown) {
+    const input = ProjectPlacementEditorSaveSchema.parse(raw);
+    if (input.projectId !== projectId) throw refuse('The placement choices belong to another project.', 400);
+    return this.putSettings(projectId, input.settingsRequest);
   }
   async landingEditor(projectId: string, raw?: unknown) {
     await this.#project(projectId);

@@ -85,3 +85,4 @@ export * from './thread-why.js';
 export * from './override-editor.js';
 export * from './route-why.js';
 export * from './routine-settings.js';
+export * from './placement-editor.js';
