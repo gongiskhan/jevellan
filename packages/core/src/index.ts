@@ -157,3 +157,5 @@ export * from './notification-editor-schemas.js';
 export * from './device-about-schemas.js';
 export * from './configuration-editor-schemas.js';
 export * from './configuration-editor.js';
+
+export * from './account-view-schemas.js';

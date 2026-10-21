@@ -5,11 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import {
   AccountViewSchema,
-  effectiveAccountStatus,
+  AccountsSettingsViewSchema, ACCOUNT_VIEW_REFRESH_MS, type AccountsSettingsView, type AccountSettingsRow,
   LoginViewSchema,
   type AccountView,
   type Account,
-  type AccountStatus,
 } from '@jevellan/core/client';
 import { api, empty, isCancelled } from './api.js';
 import {
@@ -21,8 +20,6 @@ import {
   useTask,
   type PageProps,
 } from './components.js';
-import { deviceAvailable } from './devices.js';
-import { accountAvailability } from './account-availability.js';
 
 const paidLabels = {
   always: 'Always',
@@ -30,29 +27,12 @@ const paidLabels = {
   never: 'Never automatically',
 };
 type Login = z.infer<typeof LoginViewSchema>;
-function currentStatus(view: AccountView, deviceId: string) {
-  return effectiveAccountStatus(view.account, view.statuses, deviceId);
-}
-function Usage({ status }: { status: AccountStatus | undefined }) {
-  return (
-    <div className="usage-windows">
-      {(['fiveHour', 'weekly'] as const).map((window) => {
-        const value = window === 'fiveHour' ? status?.usage?.fiveHourPct : status?.usage?.weeklyPct;
-        const reset = window === 'fiveHour' ? status?.usage?.fiveHourResetsAt : status?.usage?.weeklyResetsAt;
-        const label = window === 'fiveHour' ? 'Five hours' : 'Week';
-        return (
-          <div className="usage" key={window}>
-            <div>
-              <span>{label}</span>
-              <span>{value === undefined ? 'Unknown' : `${value}%`}</span>
-            </div>
-            <progress aria-label={`${label} usage`} max={100} value={value ?? 0} />
-            {reset && <small>Resets {dateTime(reset)}</small>}
-          </div>
-        );
-      })}
-    </div>
-  );
+function Usage({ windows }: { windows: AccountSettingsRow['usage'] }) {
+  return <div className="usage-windows">{windows.map(window => <div className="usage" key={window.key}>
+    <div><span>{window.label}</span><span>{window.valueLabel}</span></div>
+    <progress aria-label={`${window.label} usage`} max={100} value={window.value ?? 0} />
+    {window.resetAt && <small>{window.resetLabel} {dateTime(window.resetAt)}</small>}
+  </div>)}</div>;
 }
 function AccountForm({
   runtime,
@@ -261,7 +241,7 @@ function ReplaceKey({ view, close, props }: { view: AccountView; close(): void; 
     </Modal>
   );
 }
-function LoginPanel({ initial, props, close }: { initial: Login; props: PageProps; close(): void }) {
+function LoginPanel({ initial, props, close, readRow }: { initial: Login; props: PageProps; close(): void; readRow: AccountSettingsRow | undefined }) {
   const save = useSettingsSave();
   const [login, setLogin] = useState(initial);
   const [code, setCode] = useState('');
@@ -321,6 +301,7 @@ function LoginPanel({ initial, props, close }: { initial: Login; props: PageProp
       setLogin(next);
     });
   const account = props.data.accounts.find((view) => view.account.id === login.accountId);
+  const availability = readRow?.devices.find(device => device.id === login.deviceId)?.availability ?? readRow?.availability;
   return (
     <Modal
       title={`Log in · ${account?.account.label ?? 'Account'}`}
@@ -347,7 +328,7 @@ function LoginPanel({ initial, props, close }: { initial: Login; props: PageProp
           {account?.account.identity?.email
             ? `Signed in as ${account.account.identity.email}`
             : 'Signed in successfully.'}
-          {account && <p>{accountAvailability(account.account, currentStatus(account, login.deviceId), props.data.config.configuration['x-jevellan'].runtimes[account.account.runtime]?.enabled === true).label}.</p>}
+          {availability && <p>{availability.label}.</p>}
           {account && !account.account.enabled && <>
             <p>Sign-in saved your credentials. Enable this account to let Jevellan use it.</p>
             <button disabled={task.busy} onClick={() => void task.run(async signal => {
@@ -444,11 +425,19 @@ function LoginPanel({ initial, props, close }: { initial: Login; props: PageProp
   );
 }
 export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
-  const [now, setNow] = useState(Date.now);
+  const [settingsView, setSettingsView] = useState<AccountsSettingsView>();
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(timer);
-  }, []);
+    const controller = new AbortController(); let timer: ReturnType<typeof setTimeout> | undefined;
+    let refreshMs = ACCOUNT_VIEW_REFRESH_MS;
+    const refresh = async () => {
+      try {
+        const next = await api('/api/accounts/view', AccountsSettingsViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true });
+        if (!controller.signal.aborted) { refreshMs = next.refreshMs; setSettingsView(next); }
+      } catch (error) { if (!controller.signal.aborted) props.onError(error); }
+      finally { if (!controller.signal.aborted) timer = setTimeout(() => void refresh(), refreshMs); }
+    };
+    void refresh(); return () => { controller.abort(); clearTimeout(timer); };
+  }, [props.data.accounts, props.data.runtimes, props.data.offered, props.data.roster, props.onError]);
   const save = useSettingsSave();
   const { data } = props;
   const [adding, setAdding] = useState<string>();
@@ -550,13 +539,8 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
             </details>
           </div>}
           <div className="model-chips">
-            {data.offered
-              .filter((offered) => offered.runtime === runtime.id)
-              .flatMap(offered => offered.models).filter((model, index, all) => all.findIndex(row => row.id === model.id) === index).map((model) => (
-                <span className="chip" key={model.id} title={`${model.id} · ${model.efforts.join(', ')}`}>
-                  {model.label}
-                </span>
-              )) ?? <span className="muted">Models appear after an account is checked.</span>}
+            {settingsView?.runtimes.find(row => row.id === runtime.id)?.models.map(model => <span className="chip" key={model.id} title={model.title}>{model.label}</span>)}
+            {settingsView?.runtimes.find(row => row.id === runtime.id)?.emptyModelsText && <span className="muted">{settingsView.runtimes.find(row => row.id === runtime.id)!.emptyModelsText}</span>}
           </div>
           <div className="subheading">
             <h3>Accounts</h3>
@@ -564,20 +548,15 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
               Add account
             </button>
           </div>
-          {data.accounts
-            .filter((view) => view.account.runtime === runtime.id)
-            .map((view) => {
-              const account = view.account;
-              const status = currentStatus(view, data.devices.currentDeviceId);
-              const availability = accountAvailability(account, status, runtime.enabled, now);
+          {settingsView?.runtimes.find(row => row.id === runtime.id)?.accounts.map(row => {
+              const view = row.view, account = view.account, availability = row.availability;
               return (
                 <article className="account" id={`account-${account.id}`} tabIndex={-1} key={account.id}>
                   <div className="account-heading">
                     <div>
                       <strong>{account.label}</strong>
                       <span className="muted">
-                        {account.kind === 'endpoint' ? ENDPOINT.type : account.kind === 'api-key' ? 'API key' : 'Subscription'}
-                        {view.secret && ` · Saved · ••••${view.secret.lastFour}`}
+                        {row.kindLabel}{row.secretLine && ` · ${row.secretLine}`}
                       </span>
                     </div>
                     <span className={`status status-${availability.tone}`}>
@@ -585,23 +564,10 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
                       {availability.label}
                     </span>
                   </div>
-                  {account.kind !== 'endpoint' && <Usage status={status} />}
-                  {status?.usage && <p className="muted small-text">Usage checked {dateTime(status.usage.observedAt)}</p>}
-                  {availability.label === 'Usage ceiling reached' && <p className="notice">Usage reached this account’s {account.ceilingPct}% ceiling. Jevellan will use another eligible account.</p>}
-                  {account.paidUse && <p className="muted small-text">{paidLabels[account.paidUse]}</p>}
-                  {status?.coolingUntil && Date.parse(status.coolingUntil) > Date.now() && (
-                    <p className="notice">Cooling until {dateTime(status.coolingUntil)}</p>
-                  )}
-                  {Object.entries(status?.modelCooling ?? {})
-                    .filter(([, until]) => Date.parse(until) > Date.now())
-                    .map(([model, until]) => (
-                      <p className="notice" key={model}>
-                        {props.data.config.configuration['x-jevellan'].menu.find((entry) => entry.model === model)
-                          ?.label ?? model}{' '}
-                        reached its limit on this account. Cooling until {dateTime(until)}; other models can still use it.
-                      </p>
-                    ))}
-                  {status?.lastError && account.kind !== 'endpoint' && <p className="notice">{status.lastError}</p>}
+                  {row.usage.length > 0 && <Usage windows={row.usage} />}
+                  {row.usageCheckedAt && <p className="muted small-text">{row.usageCheckedLabel} {dateTime(row.usageCheckedAt)}</p>}
+                  {row.paidUseLine && <p className="muted small-text">{row.paidUseLine}</p>}
+                  {row.notices.map(notice => <p className="notice" key={notice.id}>{notice.text}{notice.at && dateTime(notice.at)}{notice.suffix}</p>)}
                   <div className="actions">
                     {account.kind === 'subscription' && account.credential !== 'per-device' && (
                       <button
@@ -661,42 +627,17 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
                       {account.enabled ? 'Disable' : 'Enable'}
                     </button>
                   </div>
-                  {account.credential === 'per-device' && (
-                    <div className="device-grid">
-                      {data.roster.devices
-                        .filter((row) => !row.revoked)
-                        .map((row) => {
-                          const device = row.device;
-                          const here = device.id === data.devices.currentDeviceId;
-                          const available = deviceAvailable(row, data.devices.currentDeviceId);
-                          const state = view.statuses.find((entry) => entry.deviceId === device.id);
-                          const deviceStatus = available ? accountAvailability(account, state, runtime.enabled, now) : { label: 'Offline', tone: 'offline' };
-                          return (
-                            <div key={device.id}>
-                              <span>{device.name}</span>
-                              <span className={`status status-${deviceStatus.tone}`}>
-                                <i />
-                                {deviceStatus.label}
-                              </span>
-                              <button
-                                className="text-button"
-                                disabled={!available || task.busy}
-                                onClick={() =>
-                                  void task.run((signal) => begin(account.id, signal, device.id))
-                                }
-                              >
-                                {here ? 'Log in here' : `Log in on ${device.name}`}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      <p className="muted small-text">Codex sign-ins are kept per device for now.</p>
-                    </div>
-                  )}
+                  {row.devices.length > 0 && <div className="device-grid">
+                    {row.devices.map(device => <div key={device.id}>
+                      <span>{device.name}</span><span className={`status status-${device.availability.tone}`}><i />{device.availability.label}</span>
+                      <button className="text-button" disabled={!device.available || task.busy} onClick={() => void task.run(signal => begin(account.id, signal, device.id))}>{device.loginLabel}</button>
+                    </div>)}
+                    {row.deviceNote && <p className="muted small-text">{row.deviceNote}</p>}
+                  </div>}
                 </article>
               );
             })}
-          {!data.accounts.some((view) => view.account.runtime === runtime.id) && (
+          {settingsView && !settingsView.runtimes.find(row => row.id === runtime.id)?.accounts.length && (
             <p className="empty-inline">No accounts added yet.</p>
           )}
           <button
@@ -725,7 +666,7 @@ export function RuntimesPage(props: PageProps & { embedded?: boolean }) {
         />
       )}
       {replacing && <ReplaceKey view={replacing} close={() => setReplacing(undefined)} props={props} />}
-      {login && <LoginPanel initial={login} props={props} close={() => setLogin(undefined)} />}
+      {login && <LoginPanel initial={login} props={props} close={() => setLogin(undefined)} readRow={settingsView?.runtimes.flatMap(row => row.accounts).find(row => row.view.account.id === login.accountId)} />}
     </>
   );
 }

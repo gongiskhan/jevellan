@@ -1,7 +1,12 @@
 import { expect, test } from 'vitest';
 import { AccountSchema, AccountStatusSchema, effectiveAccountStatus, type AccountStatus } from '../packages/core/dist/index.js';
-import { rankAccounts } from '../packages/accounts/dist/index.js';
-import { accountAvailability } from '../apps/web/src/account-availability.js';
+import { rankAccounts, accountAvailability as rankedAccountAvailability } from '../packages/accounts/dist/index.js';
+import type { Account } from '../packages/core/dist/index.js';
+
+function accountAvailability(account: Account, status: AccountStatus | undefined, runtimeEnabled: boolean, at = Date.now()) {
+  const ranked = rankAccounts({ accounts: [account], statuses: status ? [status] : [], runtime: account.runtime, deviceId: status?.deviceId ?? 'here', now: at })[0]!;
+  const { label, tone } = rankedAccountAvailability(ranked, runtimeEnabled, at); return { label, tone };
+}
 
 const now = Date.parse('2026-10-01T16:35:00Z');
 const account = AccountSchema.parse({ schema: 'account-v1', id: 'fixture', label: 'Fixture', runtime: 'claude', kind: 'subscription', enabled: true, credential: 'shared', ceilingPct: 90 });

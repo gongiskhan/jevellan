@@ -26,6 +26,13 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP account read model shares runtime grouping and eligibility without checking accounts', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'accounts_view' } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'accounts-settings-view-v1', currentDeviceId: f.app.device.deviceId, runtimes: [expect.objectContaining({ id: 'fake', accounts: [expect.objectContaining({ kindLabel: 'Subscription', availability: expect.objectContaining({ label: 'Ready', eligible: true }) })] })] } });
+  expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP configuration import uses the shared preview and canonical revision receipt', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const { exportConfiguration } = await import('../packages/core/dist/index.js'), current = await f.app.configuration(), proposed = structuredClone(current.configuration); proposed['x-jevellan'].maxRunningThreadsAll++;

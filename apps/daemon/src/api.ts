@@ -194,6 +194,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       const config = (await app.configuration()).configuration['x-jevellan'];
       send(RuntimeListSchema.parse({ schema: 'runtimes-list-v1', runtimes: [...app.runtimes.values()].map((runtime) => ({ id: runtime.id, displayName: runtime.displayName, enabled: config.runtimes[runtime.id]?.enabled === true, accountKinds: runtime.accountKinds, riggingKinds: runtime.riggingKinds, capabilities: runtime.capabilities, ...(['claude', 'codex'].includes(runtime.id) ? { nativeSetup: nativeSetup(app.homes, runtime.id as 'claude' | 'codex', undefined, config.runtimes[runtime.id]?.useOwnSetup !== false).inventory } : {}) })), offered: (await app.accounts.offered()) })); return;
     }
+    if (path === '/api/accounts/view' && method === 'GET') { send(await app.accountsSettings()); return; }
     if (path === '/hub/accounts' && method === 'GET') { send(AccountListSchema.parse({ schema: 'accounts-list-v1', accounts: (await app.accounts.list()) })); return; }
     if (path === '/hub/accounts' && method === 'POST') {
       const input = AddAccountSchema.parse(await body(request)); retryable = input.clientRequestId !== undefined;

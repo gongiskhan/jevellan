@@ -21,7 +21,7 @@ import { hostname } from 'node:os';
 import { z } from 'zod';
 import { ConsumeSwitchSchema, DaemonOwnership, DeviceConfigSchema, DeviceOriginSchema, DeviceSchema, DeviceSwitchInputSchema, JevConnectionSchema, RiggingApplicationSchema, GitHubClient, ProjectSchema, VaultProjectSchema, VaultViewSchema, Homes, ProjectVisibility, RiggingDisk, SecretRedactor, VERSION, compareVersions, versionSkewMessage, newId, readDocument, seedConfiguration, stableJson, writeDocument, type DeviceConfig, type VaultView, type Project, type ProjectHub, type VisibilityProbe } from '@jevellan/core';
 import { DeviceRegistry, HubAccounts, HubCheckoutStore, HubDatabase, HubIndexes, HubMesh, HubProjectAccess, HubPublicationLeases, HubState, MemberAccounts, MemberCheckoutStore, MemberHubClient, MemberIndexes, MemberProjectStore, MemberPublicationLeases, MemberState, MemberUiAuth, ProjectImproverHub, UiAuth, memberConnection } from '@jevellan/mesh';
-import { AccountService } from '@jevellan/accounts';
+import { AccountService, accountsSettingsView } from '@jevellan/accounts';
 import { BackgroundDrafts, ContextOperations, ConversationService, StretchBridges } from '@jevellan/conversations';
 import { ProjectWork, type ProjectTimers } from '@jevellan/projects';
 import { RoutingImprover } from './routing-improver.js';
@@ -383,6 +383,10 @@ export class Application {
     return this.member ? this.member.projectMemory(request) : this.projectMemoryRequest(request, this.device.deviceId);
   }
   async improverRequest(input: unknown) { return this.member ? this.member.improver(input) : this.routingImprover!.request(input, this.device.deviceId); }
+  async accountsSettings(deviceId = this.device.deviceId) {
+    const [accounts, offered, revision, roster] = await Promise.all([this.accounts.list(), this.accounts.offered(), this.configuration(), this.roster()]);
+    return accountsSettingsView({ accounts, offered, runtimeIds: [...this.runtimes.keys()], configuration: revision.configuration, roster, deviceId });
+  }
   async configurationEditor() {
     const [history, roster] = await Promise.all([this.state.configuration.history(), this.roster()]);
     return configurationEditorView(history, roster);

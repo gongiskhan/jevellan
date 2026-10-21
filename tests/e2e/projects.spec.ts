@@ -2324,6 +2324,21 @@ test('About renders the engine device version and maintenance text and opens the
   await page.getByRole('button', { name: 'Open setup guide', exact: true }).click(); await expect(page).toHaveURL(/\/setup$/); expect(errors).toEqual([]);
 });
 
+test('Runtime account views share model chips and preserve Check now', async ({ page }, info) => {
+  const errors = await begin(page); await page.goto('/settings/runtimes');
+  const claude = page.locator('.runtime-card').filter({ has: page.getByRole('heading', { name: 'Claude Code', exact: true }) });
+  const response = await page.request.get('/api/accounts/view'); expect(response.ok()).toBe(true);
+  const view = await response.json(), runtime = view.runtimes.find((row: { id: string }) => row.id === 'claude'); expect(runtime.models.length).toBeGreaterThan(0);
+  await expect(claude.locator('.model-chips .chip')).toHaveCount(runtime.models.length);
+  for (const model of runtime.models) await expect(claude.locator('.model-chips .chip').filter({ hasText: model.label })).toHaveAttribute('title', model.title);
+
+  const account = page.locator('.account').first(); await expect(account).toBeVisible();
+  const checked = page.waitForResponse(response => /\/api\/accounts\/[^/]+\/check$/.test(response.url()) && response.request().method() === 'POST');
+  await account.getByRole('button', { name: 'Check now', exact: true }).click(); expect((await checked).ok()).toBe(true);
+  await expect(account.locator('.account-heading .status')).toHaveText('Ready');
+  await page.screenshot({ path: `test-results/ACCOUNTS-read-model-${layout(info)}.png`, fullPage: true }); expect(errors).toEqual([]);
+});
+
 test('Configuration import keeps edited source ahead of delayed previews and applies the current draft', async ({ page }, info) => {
   const errors = await begin(page); await page.goto('/settings/configuration');
   const before = await page.request.get('/hub/config/export'); expect(before.ok()).toBe(true); const original = await before.text();
