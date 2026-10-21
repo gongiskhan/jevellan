@@ -92,7 +92,9 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
     const usage = thread.usage ? { inputTokens: thread.usage.inputTokens, outputTokens: thread.usage.outputTokens, cacheReadTokens: thread.usage.cacheReadTokens, costUsdEstimate: thread.usage.costUnknownTurns ? null : thread.usage.costUsd } : undefined;
     const landing = thread.landing ? { commit: thread.landing.commit.slice(0, 7), at: thread.landing.at, method: thread.landing.method } : undefined;
     const pullRequest = thread.pr ? { number: thread.pr.number, url: thread.pr.url } : undefined;
-    const detail = state === 'landing' ? thread.stateReason ?? (thread.landingStage ? `landing, ${thread.landingStage}` : 'landing') : state === 'failed' || state === 'stopped' ? thread.stateReason : undefined;
+    // A thread at rest that has not ended (#32) says what stopped it: its reason, else its last report.
+    const detail = state === 'landing' ? thread.stateReason ?? (thread.landingStage ? `landing, ${thread.landingStage}` : 'landing') : state === 'failed' || state === 'stopped' ? thread.stateReason
+      : state === 'idle' && !thread.endedAt ? thread.stateReason ?? thread.lastSummary : undefined;
     return { schema: 'run-view-v1', id: threadShort(thread), internalId: thread.id, kind: 'thread', label: labelOfTask(task), title: thread.title, state,
       ...(detail ? { detail: detail.slice(0, 400) } : {}),
       runtime: thread.runtime, model: thread.modelLabel, effort: thread.effort, account: thread.accountLabel, device: input.deviceName(thread.ownerDeviceId),
@@ -130,7 +132,10 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
   const threadQueued = threadRuns.filter(run => run.state === 'queued');
   const landedAt = (run: RunView) => run.landing?.at ?? run.endedAt ?? '';
   const landed = threadRuns.filter(run => run.state === 'landed').sort((a, b) => landedAt(b).localeCompare(landedAt(a)));
-  const finished = all.filter(run => ['deployed', 'failed', 'stopped', 'cancelled', 'idle'].includes(run.state) && recent(run)).sort((a, b) => (b.endedAt ?? '').localeCompare(a.endedAt ?? ''));
+  // A started thread at rest that has not ended is open work: it stays listed however long ago it started, after the recent endings.
+  const resting = (run: RunView) => run.kind === 'thread' && run.state === 'idle' && run.endedAt === undefined;
+  const finished = all.filter(run => ['deployed', 'failed', 'stopped', 'cancelled', 'idle'].includes(run.state) && (recent(run) || resting(run)))
+    .sort((a, b) => Number(resting(a)) - Number(resting(b)) || (b.endedAt ?? b.startedAt ?? '').localeCompare(a.endedAt ?? a.startedAt ?? ''));
 
   const today = ownerLocal(now, timeZone).day;
   const goals: GoalLine[] = byCreated(input.goals).filter(goal => goal.state !== 'done').map(goal => {

@@ -75,3 +75,11 @@ test('a thread merged through its pull request with no landing record is listed 
     expect(text).toContain(`Fix receipts rounding · landed as 9f8e7d6 at ${ownerClock(at(74), NOW, 'Europe/Lisbon')}`);
   }
 });
+
+test('a started thread at rest that has not ended stays listed, idle with what stopped it, however long ago it started', () => {
+  const resting = thread('thread_37', 'Legal gates: explain the failing gates', { state: 'idle', turns: 1, lastSummary: 'Rigging preserved local changes: settings.json.', createdAt: at(24 * 60) });
+  const view = projectStatus(input({ threads: [resting] }), new OwnerShortIds(new MemoryStore()));
+  expect(view.finished.map(row => [row.title, row.state, row.detail])).toEqual([['Legal gates: explain the failing gates', 'idle', 'Rigging preserved local changes: settings.json.']]);
+  expect(renderStatus(view)).toContain('\nStarted, now idle\nT1 manual · Legal gates: explain the failing gates · Rigging preserved local changes: settings.json.');
+  expect(renderStatus(view)).not.toContain('Finished in the last 12 hours');
+});

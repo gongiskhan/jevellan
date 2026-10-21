@@ -100,11 +100,17 @@ export function renderStatus(view: ProjectStatusView, options: { section?: 'wait
     lines.push('', 'Landed, not deployed');
     for (const run of view.landed) lines.push(`${run.id} ${run.title} · ${landedAs(run, view)}`);
   }
-  if (section('finished') && view.finished.length) {
+  // Threads that started and rest without having ended are open work, listed apart from the recent endings (#32).
+  const resting = view.finished.filter(run => run.kind === 'thread' && run.state === 'idle' && !run.endedAt), ended = view.finished.filter(run => !resting.includes(run));
+  if (section('finished') && resting.length) {
+    lines.push('', 'Started, now idle');
+    for (const run of resting) lines.push(`${run.id} ${runLabel(run)} · ${run.title}${run.detail ? ` · ${oneLine(run.detail, 200)}` : ''}`);
+  }
+  if (section('finished') && ended.length) {
     lines.push('', 'Finished in the last 12 hours');
-    const shown = options.section === 'finished' || options.detail ? view.finished : view.finished.slice(0, 8);
+    const shown = options.section === 'finished' || options.detail ? ended : ended.slice(0, 8);
     for (const run of shown) lines.push(finishedLine(run, view));
-    if (shown.length < view.finished.length) lines.push(`${view.finished.length - shown.length} more finished.`);
+    if (shown.length < ended.length) lines.push(`${ended.length - shown.length} more finished.`);
   }
   return capLines(lines, options.detail);
 }
