@@ -1,10 +1,51 @@
 import { join } from 'node:path';
+import { ConversationSettlementCommandSchema, ConversationSettlementEditorSchema } from '../../packages/core/dist/index.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { ConversationControlCommandSchema, ConversationMessageCommandSchema, ConversationControlsViewSchema, ConversationPublicSchema, ConversationStartRequestSchema, ConversationStartResultSchema, OwnerToolResultSchema } from '../../packages/core/dist/index.js';
 import { projectFixture } from '../helpers/project-fixture.js';
 import { expect, test } from './fixtures.js';
 import { closeConversationSettings, openConversationSettings } from './navigation.js';
+
+for (const branchPolicy of ['main', 'external'] as const) test(`SETTLEPAR1 browser settlement and MCP receipts preserve later work (${branchPolicy})`, async ({ page, context }, info) => {
+  const f = await projectFixture({ control: true, branchPolicy }); let client: Client | undefined;
+  try {
+    const id = 'settlement_parity';
+    await f.app.conversations.create({ schema: 'start-conversation-v1', id, projectId: 'project', title: 'Settlement parity', message: 'Preserve this fixture work.', clientMessageId: 'settlement_parity_first' }); await f.app.conversations.wait(id);
+    const refs = f.git(f.checkout, 'show-ref'), status = f.git(f.checkout, 'status', '--porcelain');
+    const separator = f.cookie.indexOf('='); await context.addCookies([{ name: f.cookie.slice(0, separator), value: f.cookie.slice(separator + 1), url: f.base, httpOnly: true, sameSite: 'Lax' }]);
+    await page.goto(f.base + '/conversations/' + id);
+    const transport = new StdioClientTransport({ command: process.execPath, args: [join(import.meta.dirname, '..', '..', 'bin', 'jevellan.mjs'), 'mcp'], cwd: f.checkout,
+      env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', JEVELLAN_HOME: f.homes.root }, stderr: 'ignore' });
+    client = new Client({ name: 'settlement-parity-fixture', version: '1' }); await client.connect(transport);
+    const read = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_settlement_editor', conversation: id, request: { schema: 'conversation-settlement-editor-request-v1' } } })).structuredContent);
+    expect(read.ok).toBe(true); if (!read.ok) throw new Error('The canonical settlement editor was refused.');
+    const editor = ConversationSettlementEditorSchema.parse(read.data);
+    const settings = await openConversationSettings(page); await settings.getByRole('button', { name: 'Close this work', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: editor.title, exact: true }); await expect(dialog).toContainText(editor.intro);
+    for (const option of editor.choices) { await expect(dialog.getByRole('button', { name: option.label, exact: true })).toBeEnabled(); if (option.description) await expect(dialog).toContainText(option.description); }
+    if (branchPolicy === 'external') {
+      await expect(dialog.getByRole('button', { name: 'Publish', exact: true })).toHaveCount(0); await expect(dialog.getByRole('button', { name: 'Discard…', exact: true })).toHaveCount(0); expect(editor.confirmation).toBeNull();
+    } else {
+      await dialog.getByRole('button', { name: 'Discard…', exact: true }).click(); const confirmation = page.getByRole('dialog', { name: editor.confirmation!.title, exact: true });
+      for (const paragraph of editor.confirmation!.paragraphs) await expect(confirmation).toContainText(paragraph);
+      await expect(confirmation.getByRole('button', { name: editor.confirmation!.submitLabel, exact: true })).toBeEnabled();
+      await page.screenshot({ path: info.outputPath('settlement-confirmation.png'), fullPage: true }); await confirmation.getByRole('button', { name: editor.confirmation!.backLabel, exact: true }).click();
+    }
+    await page.screenshot({ path: info.outputPath('settlement-choices.png'), fullPage: true });
+    const submission = page.waitForRequest(request => request.url() === f.base + '/api/conversations/' + id + '/settlement-command' && request.method() === 'POST');
+    await dialog.getByRole('button', { name: editor.choices.find(option => option.choice === 'keep')!.label, exact: true }).click(); await expect(dialog).toHaveCount(0); await f.app.conversations.wait(id);
+    const command = ConversationSettlementCommandSchema.parse((await submission).postDataJSON()), settled = await f.app.conversations.view(id), count = f.app.conversations.ledger(id).events().length;
+    expect(settled.settlements).toMatchObject([{ id: command.body.clientRequestId, workId: editor.context.workId, choice: 'keep', status: 'completed' }]);
+    const replay = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_settle', conversation: id, request: command } })).structuredContent);
+    expect(replay.ok).toBe(true); if (!replay.ok) throw new Error('The canonical settlement receipt was refused.'); expect(ConversationPublicSchema.parse(replay.data).conversation).toEqual(settled.conversation); expect(f.app.conversations.ledger(id).events()).toHaveLength(count);
+    await f.app.conversations.message(id, { schema: 'conversation-message-v1', clientMessageId: 'later_settlement_parity', text: 'Preserve the newer fixture work.' }); await f.app.conversations.wait(id); const later = await f.app.conversations.view(id), laterCount = f.app.conversations.ledger(id).events().length;
+    const oldReplay = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_settle', conversation: id, request: command } })).structuredContent);
+    expect(oldReplay.ok).toBe(true); if (!oldReplay.ok) throw new Error('The old settlement receipt was refused.'); expect(ConversationPublicSchema.parse(oldReplay.data).conversation).toEqual(later.conversation); expect(later.conversation.work?.request).toBe('Preserve the newer fixture work.'); expect(f.app.conversations.ledger(id).events()).toHaveLength(laterCount);
+    expect(f.git(f.checkout, 'show-ref')).toBe(refs); expect(f.git(f.checkout, 'status', '--porcelain')).toBe(status); expect(f.fake.starts).toHaveLength(0);
+    await page.screenshot({ path: info.outputPath('settlement-replay-later-work.png'), fullPage: true });
+  } finally { await client?.close().catch(() => undefined); await f.close(); }
+});
 
 test('STARTPAR1 browser creation and MCP retry preserve one canonical conversation and ledger', async ({ page, context }, info) => {
   const f = await projectFixture({ control: true }); let client: Client | undefined;

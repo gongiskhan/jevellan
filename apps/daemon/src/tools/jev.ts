@@ -74,6 +74,9 @@ export const jev: OwnerHandler = async (context) => {
     case 'conversation_transcript': return { text: 'Recorded conversation transcript.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'transcript-view', args.request) };
     case 'conversation_message_draft': return { text: 'Conversation message draft.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'message-draft', args.request) };
     case 'conversation_message': return { text: 'Conversation updated.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'message-command', args.request) };
+    case 'conversation_settlement_editor': return { text: 'Work settlement editor.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'settlement-editor', args.request) };
+    case 'conversation_settlement_draft': return { text: 'Work settlement draft.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'settlement-draft', args.request) };
+    case 'conversation_settle': return { text: 'Work settlement recorded.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'settlement-command', args.request) };
     case 'conversation_control_editor': return { text: 'Conversation editor.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'control-editor', args.request) };
     case 'conversation_control_draft': return { text: 'Conversation control draft.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'control-draft', args.request) };
     case 'conversation_control': return { text: 'Conversation updated.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'control-command', args.request) };

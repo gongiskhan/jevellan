@@ -1,3 +1,4 @@
+import { ConversationSettlementCommandSchema, conversationSettlementEditor, conversationSettlementDraft } from '@jevellan/core';
 import { ConversationControlCommandSchema, conversationControlEditor, conversationControlDraft } from '@jevellan/core';
 import { ConversationMessageCommandSchema, conversationMessageDraft } from '@jevellan/core';
 import { conversationControlsView } from '@jevellan/core';
@@ -501,6 +502,15 @@ export class ConversationService {
   }
   async ownerDevice(id: string): Promise<string> { return (await this.location(id)).ownerDeviceId; }
   async corrections(ids?: string[]) { await this.indexes.flush(); const records = await this.options.indexes.corrections(); return ids ? records.filter(record => ids.includes(record.id)) : records; }
+  async settlementEditor(id: string, raw: unknown) {
+    await this.ready; const view = await this.view(id);
+    return conversationSettlementEditor(view, await this.#project(view.conversation.projectId), raw);
+  }
+  async settlementDraft(id: string, raw: unknown) {
+    await this.ready; const view = await this.view(id);
+    return conversationSettlementDraft(view, await this.#project(view.conversation.projectId), raw, () => `settlement_${randomUUID()}`);
+  }
+  async settlementCommand(id: string, raw: unknown) { return this.settle(id, ConversationSettlementCommandSchema.parse(raw).body); }
   async controlEditor(id: string, raw: unknown) { await this.ready; return conversationControlEditor(await this.view(id), raw); }
   async controlDraft(id: string, raw: unknown) {
     await this.ready;

@@ -1,3 +1,4 @@
+import { ConversationSettlementContextSchema, ConversationSettlementEditorSchema, ConversationSettlementDraftSchema, ConversationSettlementPendingSchema, conversationSettlementContext, conversationSettlementEditor } from '@jevellan/core/client';
 import { ConversationControlContextSchema, ConversationControlEditorSchema, ConversationControlDraftSchema, ConversationControlPendingSchema, conversationControlContext, conversationControlEditor, conversationControlPreview } from '@jevellan/core/client';
 import { ConversationMessageDraftRequestSchema, ConversationMessageDraftSchema, ConversationMessagePendingSchema, conversationMessageEditor } from '@jevellan/core/client';
 import { conversationControlsView } from '@jevellan/core/client';
@@ -1210,81 +1211,49 @@ function SettleWork({
   close(): void;
   onError(error: unknown): void;
 }) {
-  const [discard, setDiscard] = useState(false);
+  const [context] = useState<z.infer<typeof ConversationSettlementContextSchema>>(() => conversationSettlementContext(view, workId));
+  const [editor, setEditor] = useState(() => conversationSettlementEditor(view, project, { schema: 'conversation-settlement-editor-request-v1', context }));
+  const [confirming, setConfirming] = useState<z.infer<typeof ConversationSettlementEditorSchema>['choices'][number] | null>(null);
   const task = useTask(onError);
-  const request = useRef<{ choice: string; id: string } | undefined>(undefined);
-  const choose = (choice: 'publish' | 'keep' | 'discard') =>
-    task.run(async () => {
-      if (request.current?.choice !== choice) request.current = { choice, id: `settlement_${clientId()}` };
-      update(
-        await api(`/api/conversations/${view.conversation.id}/settle`, ConversationPublicSchema, 'POST', {
-          schema: 'settle-work-v1',
-          clientRequestId: request.current.id,
-          workId,
-          generation: view.conversation.generation,
-          choice,
-        }),
-      );
+  const pending = useRef<z.infer<typeof ConversationSettlementPendingSchema> | undefined>(undefined);
+  useEffect(() => {
+    const controller = new AbortController();
+    void api(`/api/conversations/${view.conversation.id}/settlement-editor`, ConversationSettlementEditorSchema, 'POST', {
+      schema: 'conversation-settlement-editor-request-v1', context,
+    }, { signal: controller.signal }).then(model => { if (!controller.signal.aborted) setEditor(model); }).catch(error => { if (!controller.signal.aborted) onError(error); });
+    return () => controller.abort();
+  }, [view.conversation.id, context, onError]);
+  const choose = (choice: z.infer<typeof ConversationSettlementEditorSchema>['choices'][number]['choice']) =>
+    task.run(async signal => {
+      const draft = await api(`/api/conversations/${view.conversation.id}/settlement-draft`, ConversationSettlementDraftSchema, 'POST', {
+        schema: 'conversation-settlement-draft-request-v1', context: editor.context, choice, ...(pending.current ? { pending: pending.current } : {}),
+      }, { signal });
+      pending.current = draft.pending;
+      update(await api(`/api/conversations/${view.conversation.id}/settlement-command`, ConversationPublicSchema, 'POST', draft.command, { signal }));
       close();
     });
+  const confirmation = confirming && editor.confirmation;
   return (
-    <Modal title={discard ? 'Discard this work' : 'Close this work'} close={close}>
-      {project.branchPolicy === 'external' ? (
-        <>
-          <p>This project follows its own git rules. Its files stay as they are.</p>
-          <button disabled={task.busy} onClick={() => void choose('keep')}>
-            Close and keep changes
-          </button>
-        </>
-      ) : discard ? (
-        <>
-          <p>
-            This resets this work’s unpublished code and memory checkpoints to where the work started. A
-            recovery ref is saved first. Uncommitted files must be checkpointed before they can be discarded.
-          </p>
-          <p>
-            Anything outside the repository, such as databases, deployments or messages sent, is not undone.
-          </p>
-          <div className="actions">
-            <button disabled={task.busy} onClick={() => void choose('discard')}>
-              Discard checkpoints
-            </button>
-            <button className="secondary" disabled={task.busy} onClick={() => setDiscard(false)}>
-              Back
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          <p>Choose what happens to this work’s unpublished changes.</p>
-          <div className="settlement-choices">
-            <div>
-              <button disabled={task.busy} onClick={() => void choose('publish')}>
-                Publish
-              </button>
-              <p>Verify the final checkpoint, bring in newer work from main, and publish.</p>
-            </div>
-            <div>
-              <button className="secondary" disabled={task.busy} onClick={() => void choose('keep')}>
-                Keep them
-              </button>
-              <p>
-                Close the work and keep its changes. The checkout stays reserved while changes remain
-                unsettled.
-              </p>
-            </div>
-            <div>
-              <button className="secondary" disabled={task.busy} onClick={() => setDiscard(true)}>
-                Discard…
-              </button>
-              <p>Save a recovery ref, then reset unpublished checkpoints.</p>
-            </div>
-          </div>
-        </>
-      )}
+    <Modal title={confirmation ? confirmation.title : editor.title} close={close}>
+      {confirmation ? <>
+        {confirmation.paragraphs.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
+        <div className="actions">
+          <button disabled={task.busy} onClick={() => void choose(confirming!.choice)}>{confirmation.submitLabel}</button>
+          <button className="secondary" disabled={task.busy} onClick={() => setConfirming(null)}>{confirmation.backLabel}</button>
+        </div>
+      </> : <>
+        <p>{editor.intro}</p>
+        <div className={editor.confirmation ? 'settlement-choices' : undefined}>
+          {editor.choices.map(option => <div key={option.choice}>
+            <button className={option.secondary ? 'secondary' : undefined} disabled={task.busy} onClick={() => option.confirm ? setConfirming(option) : void choose(option.choice)}>{option.label}</button>
+            {option.description && <p>{option.description}</p>}
+          </div>)}
+        </div>
+      </>}
     </Modal>
   );
 }
+
 function ManualPicker({
   view,
   props,

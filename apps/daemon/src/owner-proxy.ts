@@ -1,3 +1,4 @@
+import { ConversationSettlementEditorRequestSchema, ConversationSettlementEditorSchema, ConversationSettlementDraftRequestSchema, ConversationSettlementDraftSchema, ConversationSettlementCommandSchema } from '@jevellan/core';
 import { ConversationControlEditorRequestSchema, ConversationControlEditorSchema, ConversationControlDraftRequestSchema, ConversationControlDraftSchema, ConversationControlCommandSchema } from '@jevellan/core';
 import { ConversationMessageDraftRequestSchema, ConversationMessageDraftSchema, ConversationMessageCommandSchema } from '@jevellan/core';
 import { RenameConversationSchema } from '@jevellan/core';
@@ -60,7 +61,7 @@ export async function proxyConversation(app: Application, request: IncomingMessa
   return true;
 }
 
-export type OwnerConversationOperation = 'control-editor' | 'control-draft' | 'control-command' | 'message-draft' | 'message-command' | 'rename' | 'transcript-view' | 'conversation-view' | 'changes' | 'evidence-read' | 'plan-approve' | 'plan-changes' | 'plan-read' | 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
+export type OwnerConversationOperation = 'settlement-editor' | 'settlement-draft' | 'settlement-command' | 'control-editor' | 'control-draft' | 'control-command' | 'message-draft' | 'message-command' | 'rename' | 'transcript-view' | 'conversation-view' | 'changes' | 'evidence-read' | 'plan-approve' | 'plan-changes' | 'plan-read' | 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
 
 /** Closed owner operations bind the indexed resource before issuing temporary peer authority. */
 export async function ownerConversationOperation(app: Application, projectId: string, id: string, operation: OwnerConversationOperation, raw?: unknown, ownerToken?: string) {
@@ -68,6 +69,9 @@ export async function ownerConversationOperation(app: Application, projectId: st
   if (location.projectId !== projectId) throw failure('This composer or decision belongs to another conversation or project.', 409);
   const spec = (() => {
     switch (operation) {
+      case 'settlement-editor': { const body = ConversationSettlementEditorRequestSchema.parse(raw); return { suffix: 'settlement-editor', method: 'POST' as const, body, local: () => app.conversations.settlementEditor(id, body) }; }
+      case 'settlement-draft': { const body = ConversationSettlementDraftRequestSchema.parse(raw); return { suffix: 'settlement-draft', method: 'POST' as const, body, local: () => app.conversations.settlementDraft(id, body) }; }
+      case 'settlement-command': { const body = ConversationSettlementCommandSchema.parse(raw); return { suffix: 'settlement-command', method: 'POST' as const, body, local: () => app.conversations.settlementCommand(id, body) }; }
       case 'control-editor': { const body = ConversationControlEditorRequestSchema.parse(raw); return { suffix: 'control-editor', method: 'POST' as const, body, local: () => app.conversations.controlEditor(id, body) }; }
       case 'control-draft': { const body = ConversationControlDraftRequestSchema.parse(raw); return { suffix: 'control-draft', method: 'POST' as const, body, local: () => app.conversations.controlDraft(id, body) }; }
       case 'control-command': { const body = ConversationControlCommandSchema.parse(raw); return { suffix: 'control-command', method: 'POST' as const, body, local: () => app.conversations.controlCommand(id, body) }; }
@@ -93,7 +97,7 @@ export async function ownerConversationOperation(app: Application, projectId: st
   const path = `/api/conversations/${id}${spec.suffix ? `/${spec.suffix}` : ''}`;
   if (!conversationRoute(path, spec.method)) throw failure('Conversation operation not found.', 404);
   const bind = (received: unknown) => {
-    const value = operation === 'control-editor' ? parseReply(ConversationControlEditorSchema, received) : operation === 'control-draft' ? parseReply(ConversationControlDraftSchema, received) : operation === 'message-draft' ? parseReply(ConversationMessageDraftSchema, received) : operation === 'transcript-view' ? parseReply(ConversationTranscriptViewSchema, received) : operation === 'conversation-view' ? parseReply(ConversationPublicSchema, received) : operation === 'changes' ? parseReply(ConversationChangesSchema, received) : operation === 'evidence-read' ? parseReply(ConversationEvidenceViewSchema, received) : operation === 'plan-read' ? parseReply(ConversationPlanReadSchema, received) : ['control-command', 'message-command', 'rename', 'correction-save', 'plan-approve', 'plan-changes'].includes(operation) ? parseReply(ConversationPublicSchema, received)
+    const value = operation === 'settlement-editor' ? parseReply(ConversationSettlementEditorSchema, received) : operation === 'settlement-draft' ? parseReply(ConversationSettlementDraftSchema, received) : operation === 'control-editor' ? parseReply(ConversationControlEditorSchema, received) : operation === 'control-draft' ? parseReply(ConversationControlDraftSchema, received) : operation === 'message-draft' ? parseReply(ConversationMessageDraftSchema, received) : operation === 'transcript-view' ? parseReply(ConversationTranscriptViewSchema, received) : operation === 'conversation-view' ? parseReply(ConversationPublicSchema, received) : operation === 'changes' ? parseReply(ConversationChangesSchema, received) : operation === 'evidence-read' ? parseReply(ConversationEvidenceViewSchema, received) : operation === 'plan-read' ? parseReply(ConversationPlanReadSchema, received) : ['settlement-command', 'control-command', 'message-command', 'rename', 'correction-save', 'plan-approve', 'plan-changes'].includes(operation) ? parseReply(ConversationPublicSchema, received)
       : operation === 'decision-why' ? parseReply(ConversationDecisionWhyViewSchema, received)
         : operation === 'step-editor' || operation === 'step-preview' ? parseReply(StepCorrectionEditorSchema, received) : parseReply(ConversationComposerViewSchema, received);
     const actual = 'conversation' in value ? { project: value.conversation.projectId, id: value.conversation.id } : { project: value.projectId, id: value.conversationId };

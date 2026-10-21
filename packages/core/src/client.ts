@@ -193,3 +193,4 @@ export * from './conversation-controls-view.js';
 export * from './conversation-message-draft.js';
 
 export * from './conversation-control-editor.js';
+export * from './conversation-settlement-editor.js';

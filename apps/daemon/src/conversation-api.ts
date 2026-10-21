@@ -6,8 +6,8 @@ import { publicConversationData, streamConversation } from './conversation-event
 import { json, requestBody } from './http.js';
 
 const reads = new Set(['', 'changes', 'file', 'events', 'read', 'choices-view', 'step-editor']);
-const readPosts = new Set(['control-editor', 'control-draft', 'message-draft', 'decision-why', 'step-preview', 'plan-read', 'evidence-read', 'transcript-view']);
-const writes = new Set(['control-command', 'message-command', 'messages', 'manual', 'resume', 'retry-external', 'choices', 'choices-editor', 'cancel', 'approve-plan', 'settle', 'correct', 'retry-redo', 'adopt-changes', 'rename', 'finish-outside']);
+const readPosts = new Set(['settlement-editor', 'settlement-draft', 'control-editor', 'control-draft', 'message-draft', 'decision-why', 'step-preview', 'plan-read', 'evidence-read', 'transcript-view']);
+const writes = new Set(['settlement-command', 'control-command', 'message-command', 'messages', 'manual', 'resume', 'retry-external', 'choices', 'choices-editor', 'cancel', 'approve-plan', 'settle', 'correct', 'retry-redo', 'adopt-changes', 'rename', 'finish-outside']);
 export type ConversationRoute = { id: string; operation: string; stretch?: number };
 
 /** The same closed route table serves local and owner-relayed requests. */
@@ -43,6 +43,9 @@ export async function handleConversation(app: Application, request: IncomingMess
     send(ConversationReadSchema.parse({ schema: 'conversation-read-v1', pointer, content: publicConversationData(app.conversations.ledger(id).read(pointer)) })); return;
   }
   const input = await requestBody(request);
+  if (operation === 'settlement-editor') { send(await app.conversations.settlementEditor(id, input)); return; }
+  if (operation === 'settlement-draft') { send(await app.conversations.settlementDraft(id, input)); return; }
+  if (operation === 'settlement-command') { send(await app.conversations.settlementCommand(id, input)); return; }
   if (operation === 'control-editor') { send(await app.conversations.controlEditor(id, input)); return; }
   if (operation === 'control-draft') { send(await app.conversations.controlDraft(id, input)); return; }
   if (operation === 'control-command') { send(await app.conversations.controlCommand(id, input)); return; }
