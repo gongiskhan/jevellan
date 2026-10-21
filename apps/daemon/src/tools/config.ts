@@ -1,6 +1,7 @@
 import { ProjectRoutineSettingsSaveSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsRequestSchema } from '@jevellan/core';
 import { capLines, projectRoutineJobChoices, projectRoutineSettings } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
+import { ownerCoordinatorEditorSave } from '../project-work-api.js';
 
 const yesNo = (value: boolean) => value ? 'yes' : 'no';
 type Setter = (context: OwnerContext, key: string, value: string | number | boolean) => Promise<{ old: string; new: string; consequence?: string }>;
@@ -145,6 +146,11 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'coordinator_editor': case 'coordinator_preview': {
+      const data = await context.app.projectWork.coordinatorEditor(context.project.id, context.action === 'coordinator_preview' ? args.request : undefined);
+      return { text: 'Coordinator choices.', data };
+    }
+    case 'coordinator_save': return { text: 'Coordinator choices saved. They apply from the next turn.', data: await ownerCoordinatorEditorSave(context.app, context.project.id, args.request) };
     case 'routines': case 'routines_save': {
       const { app, project, tools } = context;
       if (context.action === 'routines_save') {

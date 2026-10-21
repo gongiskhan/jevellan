@@ -1,6 +1,5 @@
 import { joinToolTurns } from './transcript-groups.js';
 import {
-  EffortSchema,
   IdSchema,
   OWNER_STARTED_PREFIX,
   OWNER_STOPPED_THREAD,
@@ -100,12 +99,6 @@ export function deviceChoices(view: Pick<ProjectWorkView, 'gates' | 'devices'> |
   return selected && !choices.some((choice) => choice.id === selected) ? [...choices, { id: selected, label: name(selected), disabled: true }] : choices;
 }
 
-const EFFORTS = EffortSchema.options;
-/** The effort a model runs for a requested one: its lowest effort at or above it, else its highest (core `mapEffort`, which is not browser-safe). */
-export function nearestEffort(requested: Effort, supported: readonly Effort[]): Effort {
-  const offered = [...new Set(supported)].sort((a, b) => EFFORTS.indexOf(a) - EFFORTS.indexOf(b));
-  return offered.find((effort) => EFFORTS.indexOf(effort) >= EFFORTS.indexOf(requested)) ?? offered.at(-1) ?? requested;
-}
 export type ThreadForm = { title: string; task: string; isolation: '' | Isolation; modelId: string; effort: '' | Effort; deviceId: string };
 /** `POST /api/projects/:id/threads`: fields left on Automatic are omitted, so placement decides them. */
 export function threadCreateRequest(clientRequestId: string, form: ThreadForm) {

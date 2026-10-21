@@ -1,4 +1,5 @@
 import { ProjectMergeWhyRequestSchema, ProjectRouteWhyViewSchema } from '@jevellan/core';
+import { ProjectCoordinatorEditorPreviewSchema, ProjectCoordinatorEditorSaveSchema, ProjectWorkSettingsViewSchema } from '@jevellan/core';
 import { ProjectThreadOverrideEditorSchema, ThreadOverrideEditorPreviewSchema, ThreadOverrideEditorSaveSchema } from '@jevellan/core';
 import { ProjectPageRequestSchema, ProjectWaitingRespondRequestSchema } from '@jevellan/core';
 import { DailyEnabledRequestSchema, JobPausedRequestSchema } from '@jevellan/core';
@@ -30,7 +31,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -46,6 +47,9 @@ const rows: readonly Row[] = [
   { name: 'landing-why-correction', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/landing\/why-correction$/, methods: ['POST'], target: 'owner' },
   { name: 'merge-why-correction', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/pr\/why-correction$/, methods: ['POST'], target: 'owner' },
   { name: 'thread-override-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/override-editor$/, methods: ['GET'], target: 'owner' },
+  { name: 'coordinator-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/editor$/, methods: ['GET'], target: 'any' },
+  { name: 'coordinator-editor-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/editor$/, methods: ['POST'], target: 'coordinator' },
+  { name: 'coordinator-editor-preview', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/editor\/preview$/, methods: ['POST'], target: 'any' },
   { name: 'thread-override-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/override-editor$/, methods: ['POST'], target: 'owner' },
   { name: 'thread-override-preview', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/override-editor\/preview$/, methods: ['POST'], target: 'owner' },
   { name: 'goal-views', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/goal-views$/, methods: ['GET'], target: 'any' },
@@ -283,6 +287,15 @@ export async function ownerRoutineSave(app: Application, projectId: string, item
   if (result.projectId !== projectId || itemId && result.id !== itemId) throw failure('The returned definition does not match the request.', 502);
   return result;
 }
+export async function ownerCoordinatorEditorSave(app: Application, projectId: string, raw: unknown) {
+  const input = ProjectCoordinatorEditorSaveSchema.parse(raw);
+  if (input.projectId !== projectId) throw failure('The coordinator choices belong to another project.', 400);
+  const owner = await app.projectWork.coordinatorDevice(projectId);
+  if (owner === null || owner === app.device.deviceId) return app.projectWork.saveCoordinatorEditor(projectId, input);
+  const result = parseReply(ProjectWorkSettingsViewSchema, await ownerProjectJson(app, owner, 'coordinator', `${API_PREFIX}${projectId}/coordinator/editor`, 'POST', input));
+  if (result.settings.projectId !== projectId) throw failure('The returned settings do not match the request.', 502);
+  return result;
+}
 export async function ownerDeployRollback(app: Application, projectId: string, deployId: string, raw: unknown) {
   const input = DeployRollbackRequestSchema.parse(raw), owner = await app.projectWork.coordinatorDevice(projectId);
   if (owner === null || owner === app.device.deviceId) return app.projectWork.deploys.rollback(projectId, deployId, input.expectedRevision);
@@ -444,6 +457,9 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'daily-run': send(await work.daily.runDaily(projectId, route.dailyId!, ProjectRunRequestSchema.parse(await requestBody(request))), 202); return true;
 
     case 'goal-views': send(await work.goalViews(projectId)); return true;
+    case 'coordinator-editor': send(await work.coordinatorEditor(projectId)); return true;
+    case 'coordinator-editor-preview': send(await work.coordinatorEditor(projectId, ProjectCoordinatorEditorPreviewSchema.parse(await requestBody(request)))); return true;
+    case 'coordinator-editor-save': send(await work.saveCoordinatorEditor(projectId, ProjectCoordinatorEditorSaveSchema.parse(await requestBody(request)))); return true;
     case 'goal-editor': send(await work.goalEditor(projectId, route.goalId)); return true;
     case 'goal-editor-save': send(await work.saveGoalEditor(projectId, route.goalId, await requestBody(request)), route.goalId ? 200 : 201); return true;
     case 'goal-list': send(await work.goalList(projectId)); return true;

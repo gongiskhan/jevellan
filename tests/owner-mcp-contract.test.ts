@@ -1,6 +1,7 @@
 import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
 import { ConfigRevisionSchema, DecisionsSettingsEditorSchema } from '../packages/core/dist/index.js';
 import { ImproverStateSchema } from '../packages/core/dist/index.js';
+import { ProjectCoordinatorEditorSchema } from '../packages/core/dist/index.js';
 import { seedConversationDecision } from './helpers/conversation-decision-fixture.js';
 import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
@@ -19,6 +20,17 @@ async function connect(env: Record<string, string>): Promise<Client> {
     env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', ...env }, cwd: f!.checkout, stderr: 'ignore' });
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
+
+test('MCP config coordinator editor exposes engine choices and canonical save data', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root }), settings = (await f.app.projectWork.settingsView('project')).settings;
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'coordinator_editor' } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-coordinator-editor-v1', fields: { modelId: settings.coordinator.modelId ?? '', effort: settings.coordinator.effort, fresh: false }, saveRequest: { projectId: 'project', settingsRequest: { revision: settings.revision } } } });
+  if (!result.ok) throw new Error('Expected coordinator editor.'); const view = ProjectCoordinatorEditorSchema.parse(result.data);
+  const preview = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'coordinator_preview', request: { ...view.request.base, fields: { ...view.fields, modelId: 'fixture', effort: 'low' } } } })).structuredContent); if (!preview.ok) throw new Error('Expected coordinator preview.');
+  expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'coordinator_save', request: ProjectCoordinatorEditorSchema.parse(preview.data).saveRequest } })).structuredContent)).toMatchObject({ ok: true });
+  expect((await f.app.projectWork.settingsView('project')).settings.coordinator).toMatchObject({ modelId: 'fixture', effort: 'low' });
+  expect(f.fake.runs).toHaveLength(0);
+});
 
 test('MCP config project reads include the canonical configuration metadata', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });

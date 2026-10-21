@@ -1,6 +1,7 @@
 import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
 import { ConfigRevisionSchema, DecisionsSettingsEditorSchema } from '../packages/core/dist/index.js';
 import { ImproverStateSchema } from '../packages/core/dist/index.js';
+import { ProjectCoordinatorEditorSchema } from '../packages/core/dist/index.js';
 import { seedConversationDecision } from './helpers/conversation-decision-fixture.js';
 import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
@@ -17,6 +18,20 @@ import { ProjectRouteWhyViewSchema, ProjectThreadOverrideEditorSchema, ThreadCre
 let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
+
+test('CLI config coordinator editor exposes engine choices and canonical save data', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  const settings = (await f.app.projectWork.settingsView('project')).settings;
+  expect(await callCommand(['config', 'coordinator_editor'], f.homes)).toBe(0);
+  const encoded = output.mock.calls.map(row => String(row[0])).find(text => text.startsWith('{')), result = OwnerToolResultSchema.parse(encoded ? JSON.parse(encoded) : undefined);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-coordinator-editor-v1', fields: { modelId: settings.coordinator.modelId ?? '', effort: settings.coordinator.effort, fresh: false }, saveRequest: { projectId: 'project', settingsRequest: { revision: settings.revision } } } });
+  if (!result.ok) throw new Error('Expected coordinator editor.'); const view = ProjectCoordinatorEditorSchema.parse(result.data);
+  output.mockClear(); expect(await callCommand(['config', 'coordinator_preview', '--request', JSON.stringify({ ...view.request.base, fields: { ...view.fields, modelId: 'fixture', effort: 'low' } })], f.homes)).toBe(0);
+  const preview = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); if (!preview.ok) throw new Error('Expected coordinator preview.');
+  output.mockClear(); expect(await callCommand(['config', 'coordinator_save', '--request', JSON.stringify(ProjectCoordinatorEditorSchema.parse(preview.data).saveRequest)], f.homes)).toBe(0);
+  expect((await f.app.projectWork.settingsView('project')).settings.coordinator).toMatchObject({ modelId: 'fixture', effort: 'low' });
+  expect(f.fake.runs).toHaveLength(0);
+});
 
 test('CLI config project reads include the canonical configuration metadata', async () => {
   f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);

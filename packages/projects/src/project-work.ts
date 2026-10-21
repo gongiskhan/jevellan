@@ -1,6 +1,8 @@
 import { MergeCorrectionInputSchema } from '@jevellan/core';
 import { waitingItemsView, sentText } from './waiting-views.js';
 import { projectConfigurationInfo } from './project-configuration.js';
+import { coordinatorEditor } from './coordinator-editor.js';
+import { ProjectCoordinatorEditorSaveSchema } from '@jevellan/core';
 import { QUESTION_NOT_FOUND } from './copy.js';
 import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction, type ProjectPageRequest, type ProjectWaitingRespondRequest, ProjectWaitingResponseSchema } from '@jevellan/core';
 import { projectGoalViews, goalEditorView, goalEditorRequest } from './goal-views.js';
@@ -916,6 +918,19 @@ export class ProjectWork {
   async settingsView(projectId: string): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {
     const project = await this.#project(projectId);
     return this.#settingsView(project, (await this.#o.hub.settings(projectId))?.document ?? null);
+  }
+  async coordinatorEditor(projectId: string, preview?: unknown) {
+    const [view, configuration] = await Promise.all([this.view(projectId), this.#o.settings()]);
+    return coordinatorEditor(view, configuration, id => this.#o.runtimes.get(id)?.displayName ?? id, preview);
+  }
+  /** The existing two-step owner workflow: settings commit first, then optional Fresh on its assigned device. */
+  async saveCoordinatorEditor(projectId: string, raw: unknown) {
+    const input = ProjectCoordinatorEditorSaveSchema.parse(raw);
+    if (input.projectId !== projectId) throw refuse('The coordinator choices belong to another project.', 400);
+    if (input.fresh && !(await this.view(projectId)).coordinator.online) throw refuse('Fresh is unavailable while the coordinator is not online.', 409);
+    const saved = await this.putSettings(projectId, input.settingsRequest);
+    if (input.fresh) await this.freshCoordinator(projectId);
+    return saved;
   }
   #settingsView(project: Project, stored: ProjectWorkSettings | null) {
     const shown = effectiveSettings(stored ?? defaultProjectWorkSettings(project.id), project);
