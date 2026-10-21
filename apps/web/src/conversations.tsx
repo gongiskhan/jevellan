@@ -1,3 +1,4 @@
+import { conversationActivityReading, conversationStepReading, conversationChangesReading, conversationNoticeReading } from '@jevellan/core/client';
 import { ConversationManualDraftSchema, ConversationManualSelectionSchema, conversationManualEditor, conversationManualPreview } from '@jevellan/core/client';
 import { ConversationRecoveryDraftSchema, ConversationRecoveryPendingSchema, conversationRecoveryEditor } from '@jevellan/core/client';
 import { ConversationSettlementContextSchema, ConversationSettlementEditorSchema, ConversationSettlementDraftSchema, ConversationSettlementPendingSchema, conversationSettlementContext, conversationSettlementEditor } from '@jevellan/core/client';
@@ -11,8 +12,8 @@ import { ConversationNewSourceSchema, conversationNewSource, conversationNewView
 import { conversationSidebarDrop, conversationSidebarRename, conversationSidebarCanRename } from '@jevellan/core/client';
 import { conversationSidebarView, type ConversationSidebarFilter } from '@jevellan/core/client';
 import { ConversationListSourceSchema, conversationListRefresh, conversationListUpdateKey, CONVERSATION_LIST_POLL_MS, CONVERSATION_UPDATED_EVENT } from '@jevellan/core/client';
-import { conversationActionLabel as actionLabel, conversationPagePresentation, conversationPagePresentationForStream } from '@jevellan/core/client';
-import { ConversationTranscriptViewSchema, conversationTranscriptProjection, selectConversationTranscriptView, conversationNoticeHidden, type ConversationTranscriptView } from '@jevellan/core/client';
+import { conversationActionLabel as actionLabel, conversationPagePresentationForStream } from '@jevellan/core/client';
+import { ConversationTranscriptViewSchema, conversationTranscriptProjection, selectConversationTranscriptView, type ConversationTranscriptView } from '@jevellan/core/client';
 import { ConversationStatusStreamRequestSchema, ConversationStatusEventSchema, STATUS_REFRESH_WINDOW_MS } from '@jevellan/core/client';
 import { conversationPlansView, planApprovalRequest, planChangesMessage } from '@jevellan/core/client';
 import { ConversationCorrectionDialog as ChangeStep, ConversationWhyPanel as Why } from './conversation-decision-panels.js';
@@ -36,7 +37,6 @@ import {
   ConversationEventSchema,
   ConversationListSchema,
   ProjectsListSchema,
-  ConversationNoticeSchema,
   ConversationPublicSchema,
   ConversationReadSchema,
   type DecisionRecord,
@@ -533,6 +533,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
   const running = controls.running;
   const plans = view.plans ?? conversationPlansView(view, props.data.config.configuration['x-jevellan'].guards.pauseAfterPlan);
   const project = projects.find((entry) => entry.id === view.conversation.projectId);
+  const changesReading = changes ? changes.reading ?? conversationChangesReading(view, changes) : undefined;
   const settlementTarget = controls.settlement.target;
   const kept = controls.settlement.kept;
   const checkpointBlock = controls.recovery.checkpoint;
@@ -708,19 +709,8 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           }
           const branchChange = GitBranchChangeSchema.safeParse(event.data);
           if (branchChange.success) return <BranchChangeNotice key={event.id} change={branchChange.data} presentation={view.branchChanges?.find(row => row.eventId === event.id)?.view} />;
-          const notice = ConversationNoticeSchema.safeParse(event.data);
-          const noticeStep = event.stretch ?? view.stretches.at(-1)?.n;
-          if (notice.success && notice.data.kind === 'closing' && conversationNoticeHidden(transcripts[noticeStep ?? 0], event, {
-            projectId: view.conversation.projectId, conversationId: id, step: noticeStep ?? 0, head: events.at(-1)?.id ?? 0, running: view.stretches.find(row => row.n === noticeStep)?.status === 'running',
-            events: events.filter(entry => entry.stretch === noticeStep), summaries: view.handoffs.map(row => row.summary), summary: view.handoffs.find(row => row.stretch === noticeStep)?.summary,
-          })) return null;
-          if (notice.success)
-            return (
-              <p key={event.id} className={notice.data.kind === 'error' ? 'error' : 'notice'}>
-                {notice.data.text}
-              </p>
-            );
-          return null;
+          const notice = conversationNoticeReading(view, event, events, transcripts).notice;
+          return notice?.shown ? <p key={event.id} className={notice.tone}>{notice.text}</p> : null;
         })}
       </div>
       {/* A "Pick the next step:" pause heads the picker. Without the picker it keeps only its cause,
@@ -904,7 +894,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
       {changes && (
         <Panel title="Changes" eyebrow={`step ${changes.stretch}`} close={() => setChanges(undefined)}>
           <details className="changed-files"><summary>{changes.files.length} changed files <span className="muted small-text">Browse recorded files</span></summary><div className="changed-file-list" aria-label="Changed files">
-            {changes.files.map((file) => (
+            {changes.files.map((file, index) => (
               <p key={`${file.source}/${file.path}`}>
                 <EvidenceLink
                   value={file.path}
@@ -913,19 +903,19 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                 />
                 <span className="muted small-text">
                   {' '}
-                  · {file.source === 'step' ? 'Recorded step' : 'Working copy'}
+                  · {changesReading!.fileSourceLabels[index]}
                 </span>
               </p>
             ))}
           </div></details>
           <ChangesDiff text={changes.diff} view={changes.diffView} />
-          {changes.uncommitted && (
+          {changesReading!.showUncommitted && (
             <>
               <h3>Uncommitted changes</h3>
               <ChangesDiff text={changes.uncommitted} view={changes.uncommittedView} label="Working copy diff" />
             </>
           )}
-          {changes.recovery && (
+          {changesReading!.showAcceptance && (
             <AcceptChanges
               changes={changes}
               view={view}
@@ -939,7 +929,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
               onError={props.onError}
             />
           )}
-          {changes.evidence.length > 0 && (
+          {changesReading!.hasEvidence && (
             <>
               <h3>Agent evidence</h3>
               {changes.evidence.map((item, i) => (
@@ -947,7 +937,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                   {item.kind}:{' '}
                   <EvidenceLink
                     value={item.ref}
-                    file={item.kind === 'file' || item.kind === 'screenshot'}
+                    file={changesReading!.evidenceFileFlags[i]!}
                     open={(ref) => read(ref, item.note ?? ref, changes.stretch)}
                   />
                   {item.note ? ` — ${item.note}` : ''}
@@ -956,16 +946,11 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
             </>
           )}
           <h3>Jevellan verification</h3>
-          {!changes.verifications.length && <p className="muted">No verification receipt yet.</p>}
-          {changes.verifications.map((receipt) => (
+          {changesReading!.noVerifications && <p className="muted">No verification receipt yet.</p>}
+          {changes.verifications.map((receipt, index) => (
             <div className="verification-receipt" key={receipt.id}>
               <strong>
-                {receipt.passed &&
-                receipt.headStable &&
-                (receipt.treeClean ||
-                  (receipt.worktreeBefore === receipt.worktreeAfter && !!receipt.worktreeBefore))
-                  ? 'Passed'
-                  : 'Failed'}
+                {changesReading!.verificationVerdicts[index]!.label}
               </strong>
               <p>
                 <code>{receipt.command}</code>
@@ -997,31 +982,18 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
 }
 function ConversationActivity({ view, events }: { view: View; events: LedgerEvent[] }) {
   const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  const step = view.stretches.findLast((entry) => entry.status === 'running');
-  const { phase, title, description, since } = (view.presentation ?? conversationPagePresentation(view)).activity;
-  const elapsed = Math.max(0, Math.floor((now - Date.parse(since)) / 1000));
-  const latestTool =
-    step && events.findLast((event) => event.stretch === step.n && event.type === 'tool-start');
-  const tool = latestTool && object(latestTool.data);
-  const pending =
-    tool && !events.some((event) => event.type === 'tool-end' && object(event.data).id === tool.id);
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  const activity = conversationActivityReading(view, events);
+  const elapsed = Math.max(0, Math.floor((now - Date.parse(activity.since)) / 1000));
   return (
     <section className="conversation-activity" aria-label="Current activity">
       <span className="activity-spinner" aria-hidden="true" />
-      <div>
-        <strong role="status">{title}</strong>
-        <p>{phase === 'running' && pending ? `Using ${String(tool.name)}…` : description}</p>
-      </div>
-      <time aria-label="Time in this stage">
-        {elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`}
-      </time>
+      <div><strong role="status">{activity.title}</strong><p>{activity.description}</p></div>
+      <time aria-label="Time in this stage">{elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`}</time>
     </section>
   );
 }
+
 function EditConversation({
   kind,
   view,
@@ -1307,27 +1279,14 @@ function StepBlock({
     return () => { active = false; abort.abort(); };
   }, [conversationId, step.n, sourceTail, sourceRunning, rememberTranscript]);
   const snapshot = selectConversationTranscriptView(transcriptView, { projectId: view.conversation.projectId, conversationId, step: step.n, head: events.at(-1)?.id ?? 0, running: step.status === 'running', events, summary: handoff?.summary });
-  const { transcript, activity, fallbackAnswer, finalTurns } = conversationTranscriptProjection(snapshot);
-  const answerResult = handoff?.result?.type === 'answer' ? handoff.result : undefined;
-  const finalTurnIds = new Set(finalTurns.map(turn => turn.id));
-  const actionable = !!view.conversation.work && view.stretches.findLast(entry => entry.workId === view.conversation.work!.id && entry.status !== 'undone')?.n === step.n;
-  const editable =
-    step.status !== 'undone' &&
-    [view.conversation.work?.id, view.closedWorks.at(-1)?.id].includes(step.workId);
+  const reading = conversationStepReading(view, step.n, events, snapshot);
+  const { transcript, activity: allActivity, fallbackAnswer, finalTurns } = conversationTranscriptProjection(snapshot);
+  const activity = allActivity.filter(item => reading.transcript!.visibleActivityIds.includes(item.id));
+  const answerResult = reading.recordedAnswer;
+  const editable = reading.editable;
   const presentation = step.presentation;
   const review = (view.plans ?? conversationPlansView(view, props.data.config.configuration['x-jevellan'].guards.pauseAfterPlan)).reviews.find(entry => entry.step === step.n);
-  const findings = [
-    ...events
-      .filter((event) => event.type === 'finding')
-      .map((event) => ({
-        claim: String(object(event.data).claim ?? ''),
-        pointer: String(object(event.data).pointer ?? ''),
-      })),
-    ...(handoff?.findings ?? []),
-  ].filter(
-    (finding, index, all) =>
-      all.findIndex((entry) => entry.claim === finding.claim && entry.pointer === finding.pointer) === index,
-  );
+  const findings = reading.findings;
   const tokens = step.usage.inputTokens + step.usage.outputTokens;
   return (
     <article
@@ -1354,14 +1313,14 @@ function StepBlock({
       </div>)}
       {!!transcript.length && <div className="step-transcript cursor-transcript" aria-label={`Step ${step.n} transcript`}>
         {activity.map(item => item.kind === 'response'
-          ? answerResult && finalTurnIds.has(item.id) ? null : <TranscriptTurn key={item.id} turn={item.turn} onOpen={ref => read(ref, ref)} />
+          ? <TranscriptTurn key={item.id} turn={item.turn} onOpen={ref => read(ref, ref)} />
           : <ConversationTools key={item.id} turns={item.turns} read={read} />)}
       </div>}
-      {answerResult && <StepResult kind="answer" id={view.conversation.id} pointer={answerResult.ref} fallback={handoff!.summary} onError={props.onError} open={(ref) => read(ref, ref)} />}
-      {fallbackAnswer && !answerResult && <Markdown onOpen={(ref) => read(ref, ref)}>{fallbackAnswer}</Markdown>}
-      {handoff?.result?.type === 'plan' && <PlanReview id={view.conversation.id} pointer={handoff.result.ref} step={step.n} actions={planReview} approved={review?.approved ?? false} presentation={review} onError={props.onError} open={ref => read(ref, ref)} />}
-      {actionable && handoff?.blockers.map((blocker, i) => <p className="notice" key={i}>{blocker}</p>)}
-      {actionable && handoff?.question && view.openQuestion?.stretch !== step.n && <p className="notice">{handoff.question}</p>}
+      {answerResult && <StepResult kind="answer" id={view.conversation.id} pointer={answerResult.ref} fallback={answerResult.fallback} onError={props.onError} open={(ref) => read(ref, ref)} />}
+      {reading.transcript!.showFallback && fallbackAnswer && <Markdown onOpen={(ref) => read(ref, ref)}>{fallbackAnswer}</Markdown>}
+      {reading.planResult && <PlanReview id={view.conversation.id} pointer={reading.planResult} step={step.n} actions={planReview} approved={review?.approved ?? false} presentation={review} onError={props.onError} open={ref => read(ref, ref)} />}
+      {reading.blockers.map((blocker, i) => <p className="notice" key={i}>{blocker}</p>)}
+      {reading.question && <p className="notice">{reading.question}</p>}
       <div className="stretch-links">
         <button className="secondary" onClick={changes}>
           <Icon name="diff" size={14} />
@@ -1377,8 +1336,8 @@ function StepBlock({
           Why
         </button>
         {editable && <button className="secondary" onClick={correct} aria-label={`Change step ${step.n}`}>Change step</button>}
-        {handoff?.result && handoff.result.type !== 'plan' && (
-          <button className="secondary" onClick={() => read(handoff.result!.ref, 'Full result')}>
+        {reading.fullResult && (
+          <button className="secondary" onClick={() => read(reading.fullResult!, 'Full result')}>
             Read full result
           </button>
         )}
@@ -1412,7 +1371,7 @@ function StepBlock({
             {handoff.failedApproaches.length > 0 && <><h3>Attempted approaches</h3><ul>{handoff.failedApproaches.map((attempt, i) => <li key={i}>{attempt}</li>)}</ul></>}
           </div>
         )}
-        {answerResult && finalTurns.length > 0 && <div className="recorded-response"><h3>Streamed reply</h3>{finalTurns.map(turn => <TranscriptTurn key={turn.id} turn={turn} onOpen={ref => read(ref, ref)} />)}</div>}
+        {reading.transcript!.showStreamedReply && <div className="recorded-response"><h3>Streamed reply</h3>{finalTurns.map(turn => <TranscriptTurn key={turn.id} turn={turn} onOpen={ref => read(ref, ref)} />)}</div>}
         {findings.length > 0 && (
           <ul className="findings">
             {findings.map((finding, i) => (

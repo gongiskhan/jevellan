@@ -249,3 +249,5 @@ export * from './conversation-control-editor.js';
 export * from './conversation-settlement-editor.js';
 export * from './conversation-recovery-editor.js';
 export * from './conversation-manual-editor.js';
+export * from './conversation-reading-policy-schemas.js';
+export * from './conversation-reading-policy.js';

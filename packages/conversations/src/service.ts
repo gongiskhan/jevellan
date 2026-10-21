@@ -1,3 +1,4 @@
+import { ConversationReadingRequestSchema, conversationActivityReading, conversationStepReading, conversationNoticeReading, conversationChangesReading } from '@jevellan/core';
 import { ConversationManualCommandSchema, conversationManualEditor, conversationManualDraft } from '@jevellan/core';
 import { ConversationRecoveryCommandSchema, conversationRecoveryEditor, conversationRecoveryDraft } from '@jevellan/core';
 import { ConversationSettlementCommandSchema, conversationSettlementEditor, conversationSettlementDraft } from '@jevellan/core';
@@ -504,6 +505,18 @@ export class ConversationService {
   }
   async ownerDevice(id: string): Promise<string> { return (await this.location(id)).ownerDeviceId; }
   async corrections(ids?: string[]) { await this.indexes.flush(); const records = await this.options.indexes.corrections(); return ids ? records.filter(record => ids.includes(record.id)) : records; }
+  async readingView(id: string, raw: unknown) {
+    await this.ready; const input = ConversationReadingRequestSchema.parse(raw);
+    if (input.kind === 'changes') return (await this.changes(id, input.step)).reading!;
+    const work = this.#load(id), view = await this.view(id), records = work.ledger.events();
+    const hydrate = (event: typeof records[number]) => ({ ...event, data: publicConversationData(work.ledger.data(event)) });
+    if (input.kind === 'activity') return conversationActivityReading(view, records.map(event => ['tool-start', 'tool-end'].includes(event.type) ? hydrate(event) : event));
+    if (input.kind === 'step') return conversationStepReading(view, input.step, records.map(event => event.type === 'finding' ? hydrate(event) : event), await this.transcriptView(id, { schema: 'conversation-transcript-request-v1', step: input.step }));
+    const event = records.find(row => row.id === input.eventId); if (!event) throw Object.assign(new Error('Event not found.'), { status: 404 });
+    const step = event.stretch ?? view.stretches.at(-1)?.n, snapshot = step && view.stretches.some(row => row.n === step) ? await this.transcriptView(id, { schema: 'conversation-transcript-request-v1', step }) : undefined;
+    const events = records.map(row => row.id === event.id || !snapshot && row.stretch === step ? hydrate(row) : row);
+    return conversationNoticeReading(view, hydrate(event), events, snapshot ? { [snapshot.step]: snapshot } : {});
+  }
   async manualEditor(id: string) { await this.ready; return conversationManualEditor(await this.view(id), await this.options.settings()); }
   async manualDraft(id: string, raw: unknown) { await this.ready; return conversationManualDraft(await this.view(id), raw); }
   async manualCommand(id: string, raw: unknown) { return this.manual(id, ConversationManualCommandSchema.parse(raw).body); }
@@ -606,10 +619,11 @@ export class ConversationService {
       } catch (error) { recovery = { schema: 'checkpoint-review-v1', generation: view.conversation.generation, reason: error instanceof Error ? error.message : 'These changes cannot be accepted yet.' }; }
     }
     const diff = stretch.gitBefore && after ? await workspace.diff(stretch.gitBefore, after) : '';
-    return ConversationChangesSchema.parse({ schema: 'conversation-changes-v1', projectId: view.conversation.projectId, conversationId: id, diffView: changesDiffView(diff), uncommittedView: changesDiffView(uncommitted), stretch: n,
+    const result = ConversationChangesSchema.parse({ schema: 'conversation-changes-v1', projectId: view.conversation.projectId, conversationId: id, diffView: changesDiffView(diff), uncommittedView: changesDiffView(uncommitted), stretch: n,
       diff, uncommitted, ...(recovery ? { recovery } : {}),
       files: [...(stretch.gitBefore && after ? (await workspace.changedFiles(stretch.gitBefore, after)).map((path) => ({ path, source: 'step' })) : []), ...(await workspace.changedFiles()).map((path) => ({ path, source: 'working-tree' }))],
       evidence: view.handoffs.find((entry) => entry.stretch === n)?.evidence ?? [], verifications: work.ledger.events().filter((event) => event.type === 'verification').map((event) => VerificationSchema.parse(work.ledger.data(event))).filter((entry) => entry.workId === stretch.workId) });
+    return ConversationChangesSchema.parse({ ...result, reading: conversationChangesReading(view, result) });
   }
   decisions(id: string): DecisionRecord[] {
     const ledger = this.#load(id).ledger; const decisions = new Map<string, DecisionRecord>();

@@ -1,4 +1,6 @@
 import { join } from 'node:path';
+import { ConversationReadingViewSchema } from '../../packages/core/dist/index.js';
+import { conversationReadingFixture } from '../helpers/conversation-reading-fixture.js';
 import { ConversationManualCommandSchema, ConversationManualEditorSchema } from '../../packages/core/dist/index.js';
 import { ConversationRecoveryCommandSchema, ConversationRecoveryEditorSchema } from '../../packages/core/dist/index.js';
 import { blockedConversationReview, blockedConversationRedo, enqueueConversationHandoff, enqueueHeldConversationHandoff } from '../helpers/conversation-recovery-fixture.js';
@@ -9,6 +11,32 @@ import { ConversationControlCommandSchema, ConversationMessageCommandSchema, Con
 import { projectFixture, FIXTURE_MENU } from '../helpers/project-fixture.js';
 import { expect, test } from './fixtures.js';
 import { closeConversationSettings, openConversationSettings } from './navigation.js';
+
+test('READPAR1 browser tool activity and recorded reading actions match canonical MCP views', async ({ page, context }, info) => {
+  const made = await conversationReadingFixture(true), f = made.f; let client: Client | undefined;
+  try {
+    const separator = f.cookie.indexOf('='); await context.addCookies([{ name: f.cookie.slice(0, separator), value: f.cookie.slice(separator + 1), url: f.base, httpOnly: true, sameSite: 'Lax' }]);
+    await page.goto(f.base + '/conversations/' + made.id);
+    const transport = new StdioClientTransport({ command: process.execPath, args: [join(import.meta.dirname, '..', '..', 'bin', 'jevellan.mjs'), 'mcp'], cwd: f.checkout,
+      env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', JEVELLAN_HOME: f.homes.root }, stderr: 'ignore' });
+    client = new Client({ name: 'reading-parity-fixture', version: '1' }); await client.connect(transport);
+    const activityResult = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_read_view', conversation: made.id, request: { schema: 'conversation-reading-request-v1', kind: 'activity' } } })).structuredContent);
+    expect(activityResult.ok).toBe(true); if (!activityResult.ok) throw new Error('The canonical activity view was refused.'); const activity = ConversationReadingViewSchema.parse(activityResult.data); if (activity.kind !== 'activity') throw new Error('Expected activity metadata.');
+    const live = page.locator('.conversation-activity'); await expect(live.getByRole('status')).toHaveText(activity.title); await expect(live.locator('p')).toHaveText(activity.description); await expect(live.locator('time')).toBeVisible(); await page.screenshot({ path: info.outputPath('reading-active-tool.png'), fullPage: true });
+    await made.finish(); await expect(live).toHaveCount(0); const count = f.app.conversations.ledger(made.id).events().length;
+    const stepResult = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_read_view', conversation: made.id, request: { schema: 'conversation-reading-request-v1', kind: 'step', step: 1 } } })).structuredContent);
+    expect(stepResult.ok).toBe(true); if (!stepResult.ok) throw new Error('The canonical step reading was refused.'); const reading = ConversationReadingViewSchema.parse(stepResult.data); if (reading.kind !== 'step') throw new Error('Expected step metadata.');
+    const step = page.locator('.stretch-block').filter({ has: page.getByRole('heading', { name: 'Step 1 · Reply', exact: true }) }); await expect(step.getByRole('button', { name: 'Change step 1', exact: true })).toBeVisible(); expect(reading.editable).toBe(true); expect(reading.actionable).toBe(true);
+    await expect(step.locator(':scope > p.notice')).toHaveText(reading.blockers); expect(reading.question).toBeNull(); await expect(page.getByRole('region', { name: 'Answer the question', exact: true })).toContainText('Which fixture value should stay?');
+    await expect(step.getByRole('heading', { name: 'Recorded reading result', exact: true })).toBeVisible(); await expect(step.locator('.step-transcript')).not.toContainText('The fixture result is saved.'); expect(reading.transcript?.showFallback).toBe(false);
+    await step.locator('.step-details > summary').click(); await expect(step.locator('.findings li')).toHaveCount(reading.findings.length); for (const [index, finding] of reading.findings.entries()) { await expect(step.locator('.findings li').nth(index)).toContainText(finding.claim); await expect(step.locator('.findings li').nth(index)).toContainText(finding.pointer); }
+    expect(reading.transcript?.showStreamedReply).toBe(true); await expect(step.locator('.recorded-response').getByRole('heading', { name: 'Streamed reply', exact: true })).toBeVisible(); await page.screenshot({ path: info.outputPath('reading-recorded-step.png'), fullPage: true });
+    await step.getByRole('button', { name: 'Read full result', exact: true }).click(); const resultPanel = page.getByRole('dialog', { name: 'Full result', exact: true }); await expect(resultPanel).toContainText('Recorded reading result'); await resultPanel.getByRole('button', { name: 'Close panel', exact: true }).click();
+    const changesResult = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_read_view', conversation: made.id, request: { schema: 'conversation-reading-request-v1', kind: 'changes', step: 1 } } })).structuredContent); expect(changesResult.ok).toBe(true); if (!changesResult.ok) throw new Error('The canonical changes reading was refused.'); const changes = ConversationReadingViewSchema.parse(changesResult.data); if (changes.kind !== 'changes') throw new Error('Expected changes metadata.');
+    await step.getByRole('button', { name: 'Changes', exact: true }).click(); const panel = page.getByRole('dialog', { name: 'Changes', exact: true }); expect(changes.showAcceptance).toBe(false); await expect(panel.getByRole('heading', { name: 'Accept reviewed changes', exact: true })).toHaveCount(0); expect(changes.evidenceFileFlags).toEqual([true, false]); await expect(panel.getByRole('button', { name: 'value.txt', exact: true })).toBeVisible(); await expect(panel.getByText('Read fixture value', { exact: true })).toBeVisible(); expect(changes.noVerifications).toBe(true); await expect(panel).toContainText('No verification receipt yet.'); await page.screenshot({ path: info.outputPath('reading-changes-evidence.png'), fullPage: true });
+    expect(f.app.conversations.ledger(made.id).events()).toHaveLength(count); expect(f.fake.starts).toHaveLength(1);
+  } finally { made.release(); await client?.close().catch(() => undefined); await f.close(); }
+});
 
 test('MANUALPAR1 browser manual choice matches MCP metadata and preserves running and completed continuation guards', async ({ page, context }, info) => {
   const f = await projectFixture({ control: true, menu: [FIXTURE_MENU[0]!, { ...FIXTURE_MENU[0]!, id: 'alternate_model', label: 'Alternate fixture', efforts: ['low', 'medium', 'high', 'xhigh', 'max'] }] }); let client: Client | undefined;
