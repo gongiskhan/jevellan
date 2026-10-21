@@ -1,3 +1,5 @@
+import { ConversationNewSourceRequestSchema } from '@jevellan/core';
+import { readConversationNewSource, readConversationNewView } from './conversation-new-view.js';
 import { ownerConversationSidebarDrop, ownerConversationSidebarRename } from './conversation-sidebar-actions.js';
 import { ConversationSidebarRequestSchema } from '@jevellan/core';
 import { ownerConversationSidebar } from './conversation-sidebar-view.js';
@@ -184,6 +186,17 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       return;
     }
     if (path === '/api/conversation-composer' && method === 'POST') { send(await app.conversations.composerDraft(await body(request))); return; }
+    if (path === '/api/conversation-new/source' || path === '/api/conversation-new/view') {
+      ConversationNewSourceRequestSchema.parse({ schema: 'conversation-new-source-request-v1', ...Object.fromEntries(url.searchParams) });
+      if (path.endsWith('/source')) {
+        if (method !== 'GET') throw failure('This composer source read does not support that method.', 405);
+        send(await readConversationNewSource(app));
+      } else {
+        if (method !== 'POST') throw failure('This composer view does not support that method.', 405);
+        send(await readConversationNewView(app, await body(request)));
+      }
+      return;
+    }
     if (path === '/api/conversation-list/order' || path === '/api/conversation-list/rename') {
       if (method !== 'POST') throw failure('This sidebar change does not support that method.', 405);
       const input = await body(request);

@@ -1,3 +1,4 @@
+import { readConversationNewView } from '../conversation-new-view.js';
 import { ownerConversationSidebarDrop, ownerConversationSidebarRename } from '../conversation-sidebar-actions.js';
 import { ownerConversationSidebar } from '../conversation-sidebar-view.js';
 import { ownerCommandViewForTools } from '../owner-command-view.js';
@@ -45,6 +46,7 @@ export const jev: OwnerHandler = async (context) => {
     case 'plan_approve': return { text: 'Plan approved.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'plan-approve', args.request) };
     case 'plan_changes': return { text: 'Requested plan changes.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'plan-changes', args.request) };
     case 'session_list': return { text: 'This device’s session list.', data: sessionListView(app.device.deviceId, readSessionListPreferences(app.homes)) };
+    case 'conversation_new': return { text: 'New conversation.', data: await readConversationNewView(app, args.request, context.request.deviceId) };
     case 'conversation_sidebar_drop': {
       const data = await ownerConversationSidebarDrop(app, args.request);
       return { text: data.accepted ? 'Session order saved.' : 'Session order unchanged.', data };

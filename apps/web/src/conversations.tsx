@@ -1,3 +1,4 @@
+import { ConversationNewSourceSchema, conversationNewSource, conversationNewView, type ConversationNewSource } from '@jevellan/core/client';
 import { conversationSidebarDrop, conversationSidebarRename, conversationSidebarCanRename } from '@jevellan/core/client';
 import { conversationSidebarView, type ConversationSidebarFilter } from '@jevellan/core/client';
 import { ConversationListSourceSchema, conversationListRefresh, conversationListUpdateKey, CONVERSATION_LIST_POLL_MS, CONVERSATION_UPDATED_EVENT } from '@jevellan/core/client';
@@ -25,10 +26,10 @@ import {
   ConversationChangesSchema,
   ConversationEventSchema,
   ConversationListSchema,
+  ProjectsListSchema,
   ConversationNoticeSchema,
   ConversationPublicSchema,
   ConversationReadSchema,
-  ProjectsListSchema,
   type Action,
   type DecisionRecord,
   type Effort,
@@ -207,7 +208,7 @@ export function ConversationSidebar({
 }
 
 export function NewConversation(props: PageProps & { embedded?: boolean }) {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [sourceState, setSource] = useState<ConversationNewSource>();
   const [projectId, setProjectId] = useState('');
   const [message, setMessage] = useState('');
   const task = useTask(props.onError);
@@ -221,20 +222,21 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
   const device = props.data.devices.devices.find((entry) => entry.id === props.data.devices.currentDeviceId)!;
   useEffect(() => {
     const controller = new AbortController();
-    void api('/hub/projects', ProjectsListSchema, 'GET', undefined, {
+    void api('/api/conversation-new/source', ConversationNewSourceSchema, 'GET', undefined, {
       signal: controller.signal,
       waitForHub: true,
     })
       .then((value) => {
-        setProjects(value.projects.map((row) => row.project));
-        setProjectId(value.projects[0]?.project.id ?? '');
+        setSource(value);
+        setProjectId(value.defaultProjectId);
       })
       .catch(props.onError);
     return () => controller.abort();
   }, [props.onError]);
-  const project = projects.find((entry) => entry.id === projectId);
-  const available =
-    project?.paths[device.id] && (!project.allowedDevices || project.allowedDevices.includes(device.id));
+  const source = sourceState ? { ...sourceState, device: { id: device.id, name: device.name }, accountCount: props.data.accounts.length, jevSaved: props.data.jev.saved }
+    : conversationNewSource({ schema: 'conversation-new-facts-v1', projects: [], device: { id: device.id, name: device.name }, accountCount: props.data.accounts.length, jevSaved: props.data.jev.saved });
+  const view = conversationNewView(source, { schema: 'conversation-new-request-v1', projectId, message, busy: task.busy });
+  const projects = source.projects;
   return (
     <div className={props.embedded ? 'new-conversation-embedded' : 'new-conversation-page'}>
       {!props.embedded && (
@@ -243,19 +245,7 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
           <p className="intro">Give your agents a project and an objective.</p>
         </>
       )}
-      {!props.data.accounts.length && (
-        <p className="notice">
-          Add an account to Claude Code or Codex first.{' '}
-          <button className="text-button" onClick={() => props.navigate('/settings/runtimes')}>
-            Open Runtimes →
-          </button>
-        </p>
-      )}
-      {!props.data.jev.saved && (
-        <p className="notice">
-          Add your Jev key in Settings → Decisions. Until then you pick each step yourself.
-        </p>
-      )}
+      {view.notices.map(notice => <p className="notice" key={notice.kind}>{notice.text}{notice.kind === 'account' && <> <button className="text-button" onClick={() => props.navigate(notice.route)}>{notice.buttonLabel}</button></>}</p>)}
       <form
         className="card new-conversation-form"
         onSubmit={(event) => {
@@ -301,7 +291,7 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
               Project
               <select required value={projectId} onChange={(event) => setProjectId(event.target.value)}>
                 <option value="" disabled>
-                  {projects.length ? 'Choose a project' : 'Add a project first'}
+                  {view.projectPlaceholder}
                 </option>
                 {projects.map((entry) => (
                   <option value={entry.id} key={entry.id}>
@@ -321,23 +311,13 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
             <label>
               Device
               <select defaultValue="here">
-                <option value="here">This device: {device.name}</option>
-                <option value="automatic" disabled>
-                  Choose automatically
-                </option>
+                {view.deviceOptions.map(option => <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}</option>)}
               </select>
             </label>
-            <small>
-              Coming later: Jevellan will pick a free machine and avoid ones where other agents are working.
-            </small>
+            <small>{view.deviceHint}</small>
           </div>
         </div>
-        {project && !available && (
-          <p className="notice">
-            {project.name} isn’t set up on {device.name}. Add its path in Settings → Projects, or switch
-            device.
-          </p>
-        )}
+        {view.unavailableNotice && <p className="notice">{view.unavailableNotice}</p>}
         <label>
           <span className="sr-only">Message</span>
           <textarea
@@ -357,8 +337,8 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
         <ComposerOverride
           projectId={projectId} revision={props.data.config.revision} initial={choices} update={setChoices} disabled={task.busy} run={task.run}
         />
-        <button disabled={task.busy || !available || !props.data.accounts.length || !message.trim()}>
-          {task.busy ? 'Starting…' : 'Start'}
+        <button disabled={!view.canStart}>
+          {view.startLabel}
         </button>
       </form>
       {branchChange?.projectId === projectId && <BranchChangeNotice change={branchChange.change} />}
@@ -370,15 +350,13 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
           knownPublic={false}
           close={() => setAddingProject(false)}
           saved={async (signal) => {
-            const result = await api('/hub/projects', ProjectsListSchema, 'GET', undefined, {
+            const result = await api('/api/conversation-new/source', ConversationNewSourceSchema, 'GET', undefined, {
               signal,
               waitForHub: true,
             });
-            const added = result.projects.find(
-              (row) => !projects.some((project) => project.id === row.project.id),
-            );
-            setProjects(result.projects.map((row) => row.project));
-            if (added) setProjectId(added.project.id);
+            const next = conversationNewView(result, { schema: 'conversation-new-request-v1', projectId, previousProjectIds: projects.map(project => project.id) });
+            setSource(result);
+            if (next.addedProjectId) setProjectId(next.addedProjectId);
             setAddingProject(false);
             props.message('Project added.');
           }}
