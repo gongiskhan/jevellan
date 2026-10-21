@@ -32,6 +32,18 @@ test('a waiting item reaches the bridge as a channel push, is acked, and comes b
   expect(f.app.ownerPushes.messages('project')).toEqual([]);
 });
 
+test('a budget push names the window that reached the budget, and a reading from before its window reset pushes nothing', async () => {
+  f = await projectFixture({ control: true });
+  let clock = Date.now(); const pushes = new OwnerPushes(f.app, () => clock);
+  const budget = () => pushes.messages('project').map(message => message.text).filter(text => text.includes('budget'));
+  const at = (ms: number) => new Date(clock + ms).toISOString();
+  await f.app.accounts.recordUsage('acc_fixture', { source: 'probe', observedAt: at(-60_000), fiveHourPct: 95, weeklyPct: 1, fiveHourResetsAt: at(-30_000), weeklyResetsAt: at(5 * 86_400_000) });
+  await pushes.sweep(); expect(budget()).toEqual([]);
+  await f.app.accounts.recordUsage('acc_fixture', { source: 'probe', observedAt: at(0), fiveHourPct: 95, weeklyPct: 1, fiveHourResetsAt: at(3_600_000), weeklyResetsAt: at(5 * 86_400_000) });
+  clock += 31_000; await pushes.sweep();
+  expect(budget()).toEqual([expect.stringMatching(/^\[Jevellan\] Account Fixture reached its 90% budget in its five-hour window \(95%; weekly 1%\)\. New work waits for another eligible account or until \d{2}:\d{2}\.$/u)]);
+});
+
 test('quiet hours hold ordinary pushes and send one summary when they end; urgent ones go at once; bursts batch', async () => {
   f = await projectFixture({ control: true });
   let now = Date.now(); const pushes = new OwnerPushes(f.app, () => now);

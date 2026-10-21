@@ -2,7 +2,7 @@ import { appendFileSync, mkdirSync, readFileSync, renameSync, existsSync, writeF
 import { createHash } from 'node:crypto';
 import { dirname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { CallerLogEntrySchema, HubUnavailable, ownerClock, OwnerInstallationSettingsSchema, OwnerProjectSettingsSchema, RoutineAutomationPatchSchema, SteeringRecordSchema, defaultOwnerInstallationSettings, defaultOwnerProjectSettings, newId,
+import { CallerLogEntrySchema, HubUnavailable, currentUsage, ownerClock, OwnerInstallationSettingsSchema, OwnerProjectSettingsSchema, RoutineAutomationPatchSchema, SteeringRecordSchema, defaultOwnerInstallationSettings, defaultOwnerProjectSettings, newId,
   type OwnerInstallationSettings, type OwnerProjectSettings, type SteeringRecord, OWNER_TOOLS, OwnerToolResultSchema, ownerTool, ownerToolAction, type CallerLogEntry, type OwnerToolDefinition, type OwnerToolRequest, type OwnerToolResult,
   type Project, type ProjectStatusView } from '@jevellan/core';
 import { OwnerShortIds, projectStatus, renderStatus, renderStatusLine } from '@jevellan/projects';
@@ -191,9 +191,9 @@ export class OwnerTools {
       work.view(projectId), work.taskList(projectId), work.goalList(projectId), work.daily.view(projectId), work.deploys.view(projectId), this.app.accounts.list(), this.app.roster(), work.coordinatorStop(projectId)]);
     const names = new Map(roster.devices.map(row => [row.device.id, row.device.name]));
     const budgets = accounts.filter(row => row.account.enabled !== false).map(row => {
-      const usage = [...row.statuses].sort((a, b) => (b.usage?.observedAt ?? '').localeCompare(a.usage?.observedAt ?? ''))[0]?.usage;
-      const used = usage ? Math.max(usage.weeklyPct ?? 0, usage.fiveHourPct ?? 0) : null;
-      return { label: row.account.label, usedPercent: usage && (usage.weeklyPct !== undefined || usage.fiveHourPct !== undefined) ? used : null, budgetPercent: row.account.ceilingPct ?? 90 };
+      // A window that reset since the reading is unknown until the next probe.
+      const usage = currentUsage([...row.statuses].sort((a, b) => (b.usage?.observedAt ?? '').localeCompare(a.usage?.observedAt ?? ''))[0]?.usage, this.now().getTime());
+      return { label: row.account.label, usedPercent: usage.weeklyPct !== undefined || usage.fiveHourPct !== undefined ? Math.max(usage.weeklyPct ?? 0, usage.fiveHourPct ?? 0) : null, budgetPercent: row.account.ceilingPct ?? 90 };
     });
     const view_ = projectStatus({ project: { id: projectId, name: project.name }, now: this.now(), settings: view.settings, coordinator: view.coordinator, coordinatorStalled: false, coordinatorStop,
       threads: view.threads, tasks: tasks.tasks, goals: goals.goals.map(row => row.goal), decisions: view.decisions.open, jobs: daily.jobs, dailies: daily.dailies, runs: daily.runs,

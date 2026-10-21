@@ -89,3 +89,8 @@ test('a whole-account limit still cools the account for every model', () => {
   expect(cooled.modelCooling).toBeUndefined();
   for (const model of ['claude-fable-5-1', 'claude-opus-5-5']) expect(rankAccounts({ accounts: [account('sub')], statuses: [cooled], runtime: 'codex', model, deviceId: 'here', now })[0]!.reason).toBe('cooling');
 });
+test('a usage window whose reset has passed no longer counts: a five-hour reading at the ceiling stops blocking once that window reset', () => {
+  const reading = (fiveHourResetsAt: number) => ({ ...usage(95, 1), fiveHourResetsAt: new Date(fiveHourResetsAt).toISOString(), weeklyResetsAt: new Date(now + 5 * 86_400_000).toISOString() });
+  expect(rank([account('ekoa')], [status('ekoa', { usage: reading(now + 600_000) })])[0]).toMatchObject({ eligible: false, reason: 'usage-ceiling', effectivePct: 95 });
+  expect(rank([account('ekoa')], [status('ekoa', { usage: reading(now - 600_000) })])[0]).toMatchObject({ eligible: true, reason: 'eligible', effectivePct: 1, knownUsage: true });
+});

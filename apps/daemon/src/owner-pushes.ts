@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { OwnerPushMessageSchema, OwnerPushSchema, ProjectDecisionSchema, ProjectNotificationSchema, ProjectSchema, StoredProjectWorkSettingsSchema, defaultProjectNotifications, ownerClock,
+import { OwnerPushMessageSchema, OwnerPushSchema, ProjectDecisionSchema, ProjectNotificationSchema, ProjectSchema, StoredProjectWorkSettingsSchema, currentUsage, defaultProjectNotifications, ownerClock,
   type OwnerPush, type OwnerPushMessage, type PushKind } from '@jevellan/core';
 import { waitingKind } from '@jevellan/projects';
 import type { Application } from './application.js';
@@ -85,10 +85,13 @@ export class OwnerPushes {
     }
     for (const row of heavy ? await this.app.accounts.list().catch(() => []) : []) {
       const usage = [...row.statuses].sort((a, b) => b.observedAt.localeCompare(a.observedAt))[0]?.usage; if (!usage) continue;
-      const used = Math.max(usage.weeklyPct ?? 0, usage.fiveHourPct ?? 0); const budget = row.account.ceilingPct ?? 90; if (used < budget) continue;
-      const resets = (usage.weeklyPct ?? 0) >= budget ? usage.weeklyResetsAt : usage.fiveHourResetsAt;
+      // Only windows that have not reset since the reading count, and the push names the window that reached the budget.
+      const current = currentUsage(usage, now); const budget = row.account.ceilingPct ?? 90;
+      const weekly = (current.weeklyPct ?? 0) >= budget; if (!weekly && (current.fiveHourPct ?? 0) < budget) continue;
+      const resets = weekly ? usage.weeklyResetsAt : usage.fiveHourResetsAt;
+      const reading = weekly ? `weekly window (${Math.round(current.weeklyPct!)}%)` : `five-hour window (${Math.round(current.fiveHourPct!)}%${current.weeklyPct === undefined ? '' : `; weekly ${Math.round(current.weeklyPct)}%`})`;
       for (const project of await this.app.ownerTools.projects()) this.add({ projectId: project.id, kind: 'budget_exhausted', key: `budget:${row.account.id}:${resets ?? ''}`,
-        text: `Account ${row.account.label} reached its ${budget}% budget. New work waits for another eligible account${resets ? ` or until ${ownerClock(resets, new Date(now), 'Europe/Lisbon')}` : ''}.` });
+        text: `Account ${row.account.label} reached its ${budget}% budget in its ${reading}. New work waits for another eligible account${resets ? ` or until ${ownerClock(resets, new Date(now), 'Europe/Lisbon')}` : ''}.` });
     }
     // Replies to the bridge's own messages to the coordinator.
     for (const [clientMessageId, pending] of [...this.app.ownerTools.awaitingReplies()]) {

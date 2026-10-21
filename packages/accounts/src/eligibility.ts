@@ -1,4 +1,4 @@
-import { AccountSchema, AccountStatusSchema, effectiveAccountStatus, type Account, type AccountStatus, type ExclusionReason } from '@jevellan/core';
+import { AccountSchema, AccountStatusSchema, currentUsage, effectiveAccountStatus, type Account, type AccountStatus, type ExclusionReason } from '@jevellan/core';
 
 export type RankedAccount = { account: Account; status?: AccountStatus; eligible: boolean; reason: ExclusionReason | 'eligible'; knownUsage: boolean; effectivePct: number; weeklyPct: number };
 /** model: the runtime's model id; a limit on that model on an account excludes the account for it as 'cooling'. */
@@ -13,7 +13,8 @@ export function rankAccounts(input: { accounts: Account[]; statuses: AccountStat
     // synthetic `missing` row; its timestamp must not invalidate a checked shared credential.
     // Actual probe failures and credential-rotation `checking` rows still take precedence.
     const status = effectiveAccountStatus(account, statuses, input.deviceId);
-    const windows = account.kind === 'endpoint' ? [] : [status?.usage?.fiveHourPct, status?.usage?.weeklyPct].filter((value): value is number => value !== undefined);
+    const usage = currentUsage(status?.usage, now);
+    const windows = account.kind === 'endpoint' ? [] : [usage.fiveHourPct, usage.weeklyPct].filter((value): value is number => value !== undefined);
     let reason: RankedAccount['reason'] = 'eligible';
     if (account.runtime !== input.runtime || account.credential === 'hub-refreshed') reason = 'unsupported';
     else if (input.model && (account.kind === 'endpoint' ? !account.endpoint!.models.some(model => model.id === input.model) : endpointModels.has(input.model))) reason = 'model-not-served';
@@ -23,7 +24,7 @@ export function rankAccounts(input: { accounts: Account[]; statuses: AccountStat
     else if (status.coolingUntil && Date.parse(status.coolingUntil) > now) reason = 'cooling';
     else if (input.model && status.modelCooling?.[input.model] && Date.parse(status.modelCooling[input.model]!) > now) reason = 'cooling';
     else if (windows.some((value) => value >= account.ceilingPct)) reason = 'usage-ceiling';
-    return { account, ...(status ? { status } : {}), eligible: reason === 'eligible', reason, knownUsage: windows.length > 0, effectivePct: windows.length ? Math.max(...windows) : 0, weeklyPct: account.kind === 'endpoint' ? 0 : status?.usage?.weeklyPct ?? 0 };
+    return { account, ...(status ? { status } : {}), eligible: reason === 'eligible', reason, knownUsage: windows.length > 0, effectivePct: windows.length ? Math.max(...windows) : 0, weeklyPct: account.kind === 'endpoint' ? 0 : usage.weeklyPct ?? 0 };
   });
   const subscriptionReady = base.some((entry) => entry.eligible && !metered(entry.account));
   for (const entry of base) if (entry.eligible && metered(entry.account)) {
