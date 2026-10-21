@@ -148,3 +148,7 @@ export * from './thread-image-refs.js';
 export * from './thread-image-view-schemas.js';
 
 export * from './session-cache-view.js';
+
+export * from './transcript-turn-presentation-schema.js';
+export * from './transcript-turn-presentation.js';
+export * from './session-history-view.js';

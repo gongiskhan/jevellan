@@ -1,3 +1,4 @@
+import { CursorTranscriptSchema, EARLIER_TRANSCRIPT_UNAVAILABLE, transcriptTurnPresentation, TRANSCRIPT_PROMPT, HISTORY_PROMPT_COLLAPSE_CHARACTERS } from '@jevellan/core';
 import { taskEditorView } from '@jevellan/core';
 import { projectSetupPresentation } from '@jevellan/core';
 import { defaultRuntimeCacheWindow } from '@jevellan/core';
@@ -1141,8 +1142,8 @@ export class ProjectWork {
     if (!previous) throw Object.assign(new Error('Session history not found.'), { status: 404 });
     const transcript = await this.transcripts.read({ id: `history_${key}`, title: threadId ? this.store.get(threadId)!.title : `Coordinator: ${project.name}`,
       nativeSessionId: previous.nativeSessionId, placement: { runtime: previous.runtime, accountId: previous.accountId } }, project.name);
-    if (!transcript) throw Object.assign(new Error('The earlier transcript is unavailable.'), { status: 404 });
-    return transcript;
+    if (!transcript) throw Object.assign(new Error(EARLIER_TRANSCRIPT_UNAVAILABLE), { status: 404 });
+    return CursorTranscriptSchema.parse({ ...transcript, turns: transcript.turns.map(turn => ({ ...turn, presentation: transcriptTurnPresentation(turn, { userLabel: TRANSCRIPT_PROMPT, collapseLongUser: HISTORY_PROMPT_COLLAPSE_CHARACTERS }) })) });
   }
   threadView(projectId: string, threadId: string): Promise<ThreadView> { return this.views.thread(projectId, threadId); }
   async threadMessage(projectId: string, threadId: string, input: z.infer<typeof ThreadMessageRequestSchema>): Promise<{ repeated: boolean }> {

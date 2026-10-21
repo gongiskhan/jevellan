@@ -285,9 +285,8 @@ export const RESTART_WITH_CHOICES = 'Restart with these choices';
 export const APPLY = 'Apply';
 export const JUMP_TO_LATEST = 'Jump to latest';
 /** The label of a Jevellan turn prompt in a thread transcript (D56). */
-export const PROMPT = 'Prompt';
+export { TRANSCRIPT_PROMPT as PROMPT, THREAD_PROMPT_COLLAPSE_CHARACTERS as PROMPT_COLLAPSE_CHARACTERS } from '@jevellan/core/client';
 /** Prompts longer than this collapse in thread transcripts (D56). */
-export const PROMPT_COLLAPSE_CHARACTERS = 1200;
 /** The composer of a concluded thread; the server refuses messages to it with the same sentence (D81). */
 export const THREAD_ENDED = 'This thread has ended. Start a new thread for new work.';
 /** The composer's live line while a turn, the preparation or the publication runs. */

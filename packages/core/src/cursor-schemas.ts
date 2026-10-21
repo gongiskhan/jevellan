@@ -1,3 +1,4 @@
+import { TranscriptTurnPresentationSchema } from './transcript-turn-presentation-schema.js';
 import { z } from 'zod';
 import { IdSchema, TimestampSchema } from './schemas.js';
 
@@ -20,7 +21,7 @@ export const CursorBlockSchema = z.discriminatedUnion('type', [
 ]);
 export const CursorTurnSchema = z.strictObject({
   id: z.string(), role: z.enum(['user', 'assistant']), blocks: z.array(CursorBlockSchema),
-  automated: z.boolean().optional(),
+  automated: z.boolean().optional(), presentation: TranscriptTurnPresentationSchema.optional(),
 });
 export type CursorTurn = z.infer<typeof CursorTurnSchema>;
 export const CursorMessageInputSchema = z.strictObject({

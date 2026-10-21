@@ -1,3 +1,4 @@
+import { CursorTranscriptSchema, sessionHistoryView, transcriptTurnPresentation, TRANSCRIPT_PROMPT, HISTORY_PROMPT_COLLAPSE_CHARACTERS } from '../../packages/core/dist/client.js';
 import { threadImagesView } from '../../packages/projects/dist/thread-image-view.js';
 import { threadPresentation } from '../../packages/projects/dist/thread-presentation.js';
 import { threadTimeline } from '../../packages/projects/dist/thread-timeline.js';
@@ -2973,4 +2974,47 @@ test('EV1 engine card publication and owner merge confirmation preserve the resu
   expect(finished.card!.outcome).toBe(finished.card!.mergedOutcome);
   await page.screenshot({ path: `test-results/EV1-engine-card-merged-${layout(info)}.png`, fullPage: false });
   expect(errors).toEqual([]);
+});
+
+
+test('HISTORY1 recorded earlier sessions keep their links, folded prompts and readable work', async ({ page }) => {
+  const errors = await begin(page);
+  const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: randomUUID(), title: 'Recorded history fixture', task: 'CACHE1 metrics', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } });
+  expect(created.ok()).toBe(true); const made = await created.json();
+  await expect.poll(async () => (await threadView(page, made.threadId)).thread.state, LONG).toBe('idle');
+  const initial = await threadView(page, made.threadId), at = new Date().toISOString();
+  const entry = { schema: 'project-session-history-v1' as const, key: 'c'.repeat(64), runtime: initial.placement.runtime, model: initial.thread.modelLabel, accountId: initial.placement.accountId, at };
+  const prompt = `Recorded prompt\n${'h'.repeat(3001)}`;
+  const turns: CursorTurn[] = [{ id: 'historical_prompt', role: 'user', blocks: [{ type: 'text', text: prompt }] },
+    { id: 'historical_work', role: 'assistant', blocks: [{ type: 'text', text: 'Recorded earlier work remains readable.' }] }];
+  // Recorded-history UI fixture: canonical projectors shape synthetic readonly records; no checkpoint lifecycle is claimed.
+  const historical = CursorTranscriptSchema.parse({ schema: 'cursor-transcript-v1', session: { schema: 'cursor-session-v1', id: 'claude_00000000000000000000000000000000',
+    ownerDeviceId: initial.thread.ownerDeviceId, deviceName: initial.deviceName, title: initial.thread.title, cwd: null, project: 'Projects fixture',
+    state: 'idle', lastActivityAt: at, connected: false, canSteer: false, canSend: false },
+    turns: turns.map(turn => ({ ...turn, presentation: transcriptTurnPresentation(turn, { userLabel: TRANSCRIPT_PROMPT, collapseLongUser: HISTORY_PROMPT_COLLAPSE_CHARACTERS }) })),
+    messages: [], truncated: false, observedAt: at });
+  await page.context().route(url => url.pathname === `${PROJECT}/work` || url.pathname === `${PROJECT}/status-view`, async route => {
+    const response = await route.fetch(), data = await response.json(); const original = data.work ?? data;
+    const work = { ...original, coordinator: { ...original.coordinator, sessionHistory: [entry] }, historyView: sessionHistoryView({ projectId: 'projects_fixture', entries: [entry] }) };
+    await route.fulfill({ response, json: data.work ? { ...data, work } : work });
+  });
+  await page.context().route(url => url.pathname === `${PROJECT}/session-transcript` && url.searchParams.get('session') === entry.key, route => route.fulfill({ json: historical }));
+  await page.context().route(url => url.pathname === `${PROJECT}/threads/${made.threadId}`, async route => {
+    if (new URL(route.request().url()).searchParams.get('session') === entry.key) { await route.fulfill({ json: historical }); return; }
+    const response = await route.fetch(), view = await response.json();
+    await route.fulfill({ response, json: { ...view, sessionHistory: [entry], historyView: sessionHistoryView({ projectId: 'projects_fixture', threadId: made.threadId, entries: [entry] }) } });
+  });
+  await openProject(page, 'Projects fixture');
+  await page.getByText('Earlier sessions (1)', { exact: true }).click();
+  const coordinatorLink = page.locator(`a[href="${PROJECT}/session-transcript?session=${entry.key}"]`); await expect(coordinatorLink).toContainText(entry.model); await coordinatorLink.click();
+  let dialog = page.getByRole('dialog', { name: 'Earlier session', exact: true }); await expect(dialog).toContainText('Recorded earlier work remains readable.');
+  await expect(dialog.locator('.pw-prompt')).not.toHaveAttribute('open'); await expect(dialog.locator('.pw-prompt > summary')).toHaveText('Recorded prompt');
+  await dialog.locator('.pw-prompt > summary').click(); await expect(dialog.getByText(prompt, { exact: true })).toBeVisible(); await dialog.locator('.pw-prompt > summary').click();
+  await shot(page, 'coordinator-recorded-history', false); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click();
+  await page.goto(`/projects/projects_fixture/threads/${made.threadId}`); await sessionDetails(page);
+  await page.getByText('Earlier sessions (1)', { exact: true }).click();
+  const threadLink = page.locator(`a[href="${PROJECT}/threads/${made.threadId}?session=${entry.key}"]`); await expect(threadLink).toContainText(entry.model); await threadLink.click();
+  dialog = page.getByRole('dialog', { name: 'Earlier session', exact: true }); await expect(dialog).toContainText('Recorded earlier work remains readable.');
+  await expect(dialog.locator('.pw-prompt')).not.toHaveAttribute('open'); await expect(dialog.locator('.pw-prompt > summary')).toHaveText('Recorded prompt');
+  await shot(page, 'thread-recorded-history', false); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click(); expect(errors).toEqual([]);
 });

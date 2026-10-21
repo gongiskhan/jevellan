@@ -248,7 +248,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
             </div>
             {controls?.attachPanel && <TakeOver device={view.deviceName} command={view.attachCommand} message={message} />}
             <SessionCache view={view.cacheView} />
-            <SessionHistory entries={view.sessionHistory} path={`/api/projects/${projectId}/threads/${thread.id}`} />
+            <SessionHistory view={view.historyView} />
             {!!view.notices?.length && <details><summary>{copy.SESSION_NOTICES} ({view.notices.length})</summary><ol>{view.notices.map((notice, index) => <li key={index}><time dateTime={notice.at}>{dateTime(notice.at)}</time>: {readableSessionText(notice.text)}</li>)}</ol></details>}
           </section>
         </div>

@@ -1,3 +1,4 @@
+import { transcriptTurnPresentation, TRANSCRIPT_PROMPT, THREAD_PROMPT_COLLAPSE_CHARACTERS } from '@jevellan/core';
 import { imageReferences, turnImages, joinToolTurns, prepareTranscriptGroups, ThreadReportPresentationSchema, ThreadTimelineSchema,
   type CursorTurn, type QueuedMessage, type ThreadReport, type ThreadReportPresentation, type ThreadTimeline, type ThreadView } from '@jevellan/core';
 import * as copy from './copy.js';
@@ -118,9 +119,12 @@ export function threadTimeline(view: ThreadView): ThreadTimeline {
     running ? view.thread.turns + 1 : view.thread.turns, view.fixTurns), reports));
   const items = mergeThreadToolTurns(aligned);
   return ThreadTimelineSchema.parse({ schema: 'project-thread-timeline-v1', projectId: view.thread.projectId, threadId: view.thread.id,
-    items: items.map((item, index) => item.kind === 'turn'
-      ? { ...item, images: turnImages(item.turn), fixLabel: item.fix ? copy.fixTurnLabel(item.fix) : null, active: running && index === items.length - 1,
-        groups: prepareTranscriptGroups(item.turn, running && index === items.length - 1) }
-      : { ...item, presentation: reportPresentation(view.thread.projectId, item.report) }),
+    items: items.map((item, index) => {
+      if (item.kind === 'report') return { ...item, presentation: reportPresentation(view.thread.projectId, item.report) };
+      const active = running && index === items.length - 1, groups = prepareTranscriptGroups(item.turn, active);
+      return { ...item, turn: { ...item.turn, presentation: transcriptTurnPresentation(item.turn, { active, focus: true, userLabel: TRANSCRIPT_PROMPT,
+        collapseLongUser: view.thread.state === 'attached' ? 0 : THREAD_PROMPT_COLLAPSE_CHARACTERS }, groups) },
+        images: turnImages(item.turn), fixLabel: item.fix ? copy.fixTurnLabel(item.fix) : null, active, groups };
+    }),
     queued: view.queuedMessages.map(message => ({ message, presentation: queuedPresentation(message) })) });
 }

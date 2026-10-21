@@ -1,3 +1,4 @@
+import { sessionHistoryView } from '@jevellan/core';
 import { sessionCacheDay, sessionCacheView } from '@jevellan/core';
 import { threadImagesView } from './thread-image-view.js';
 import { threadTimeline } from './thread-timeline.js';
@@ -202,6 +203,7 @@ export class ProjectViews {
     const cacheRows = [...new Map(summaries.filter(row => row.day === today).map(row => [`${row.day}:${row.key}`, row])).values()];
     const devices = this.#o.placement.deviceSetup(project, work, roster, placing, { settings: config, accounts });
     return ProjectWorkViewSchema.parse({ schema: 'project-work-view-v1', project: { id: project.id, name: project.name, branchPolicy: project.branchPolicy, baseBranch },
+      historyView: sessionHistoryView({ projectId, entries: coordinator.sessionHistory }),
       sessionCache: cacheRows, cacheView: sessionCacheView({ projectId, rows: cacheRows, sessionKey: coordinator.session?.cacheSessionKey, timezone: work.nightlyWindow.timezone,
         titles: Object.fromEntries([[projectId, 'Coordinator'], ...threads.map(thread => [thread.id, thread.title])]), now: cacheAt }),
       settings: shown.settings, ...(githubNotice ? { githubNotice } : {}), ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator, threads,
@@ -264,6 +266,6 @@ export class ProjectViews {
       canOverride, atTurnLimit: atTurnLimit(thread),
       canDiscard: (thread.state === 'stopped' || thread.state === 'failed') && thread.isolation === 'worktree' && !isDiscarded(thread.stateReason),
       ...(thread.state === 'attached' ? { stopRefusal: attachedRefusal(threadId) } : {}), ...(kept ? { checkoutHeld: checkoutStillHeld(kept) } : {}) });
-    return ThreadViewSchema.parse({ ...view, presentation: threadPresentation(view), timeline: threadTimeline(view), images: threadImagesView(view), cacheView: sessionCacheView({ projectId, rows: index.sessionCache, sessionKey: index.cacheSessionKey, timezone: index.sessionCache.at(-1)?.timezone ?? 'UTC', titles: { [thread.id]: thread.title }, now: new Date(this.#o.now?.() ?? Date.now()) }) });
+    return ThreadViewSchema.parse({ ...view, presentation: threadPresentation(view), timeline: threadTimeline(view), images: threadImagesView(view), historyView: sessionHistoryView({ projectId, threadId, entries: view.sessionHistory }), cacheView: sessionCacheView({ projectId, rows: index.sessionCache, sessionKey: index.cacheSessionKey, timezone: index.sessionCache.at(-1)?.timezone ?? 'UTC', titles: { [thread.id]: thread.title }, now: new Date(this.#o.now?.() ?? Date.now()) }) });
   }
 }

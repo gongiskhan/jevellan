@@ -565,7 +565,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         </div>
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}
-      <SessionHistory entries={coordinator.sessionHistory} path={`/api/projects/${id}/session-transcript`} />
+      <SessionHistory view={view.historyView} />
       <SessionsCache view={view.cacheView} />
       {coordinatorUi.contextNotice && <p className="notice" role="status">{coordinatorUi.contextNotice}</p>}
       {header.banner && <ProjectStatusBanner projectId={id} banner={header.banner} props={props} />}
