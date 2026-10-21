@@ -496,3 +496,7 @@ test('MCP conversation creation draft prepares canonical identity and title with
 test('MCP project setup view reads canonical readiness without starting work',async()=>{
  f=await projectFixture({control:true});const mcp=await connect({JEVELLAN_HOME:f.homes.root});const result=OwnerToolResultSchema.parse((await mcp.callTool({name:'jev',arguments:{action:'project_setup',request:{schema:'project-setup-wait-request-v1',waitSeconds:0}}})).structuredContent);const ordinary=await(await f.request('/api/projects/project/setup-view')).json();expect(result).toMatchObject({ok:true,data:ordinary});expect(f.fake.starts).toHaveLength(0);
 });
+
+test('MCP conversation start writes through the same canonical creation service',async()=>{
+ f=await projectFixture({control:true});const mcp=await connect({JEVELLAN_HOME:f.homes.root});const request={schema:'conversation-start-request-v1',deviceId:f.app.device.deviceId,start:{schema:'start-conversation-v1',id:'mcp_start',projectId:'project',title:'MCP created',message:'Wait for the next fixture step.',clientMessageId:'message_mcp_start'},waitSeconds:0};const result=OwnerToolResultSchema.parse((await mcp.callTool({name:'jev',arguments:{action:'conversation_start',request}})).structuredContent);expect(result).toMatchObject({ok:true,data:{status:'created',view:{conversation:{id:'mcp_start',ownerDeviceId:f.app.device.deviceId}}}});expect((await f.app.conversations.list()).conversations).toHaveLength(1);expect(f.fake.starts).toHaveLength(0);
+});

@@ -1,3 +1,4 @@
+import { ConversationStartRequestSchema } from '@jevellan/core';
 import { waitProjectSetupView } from '../project-setup-wait.js';
 import { readConversationCreationDraft } from '../conversation-creation-draft.js';
 import { readConversationNewView } from '../conversation-new-view.js';
@@ -48,6 +49,12 @@ export const jev: OwnerHandler = async (context) => {
     case 'plan_approve': return { text: 'Plan approved.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'plan-approve', args.request) };
     case 'plan_changes': return { text: 'Requested plan changes.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'plan-changes', args.request) };
     case 'session_list': return { text: 'This device’s session list.', data: sessionListView(app.device.deviceId, readSessionListPreferences(app.homes)) };
+    case 'conversation_start': {
+      const input = ConversationStartRequestSchema.parse(args.request);
+      if (input.start.projectId !== projectId) throw new OwnerRefusal('This creation request belongs to another project.', 'invalid_arguments', 409);
+      const data = await app.startConversation(input);
+      return { text: data.view ? `Conversation ${data.view.conversation.id}.` : data.setup.summary, data };
+    }
     case 'project_setup': { const data = await waitProjectSetupView(app, projectId, context.request.deviceId, args.request); return { text: data.summary, data }; }
     case 'conversation_create_draft': return { text: 'Conversation creation draft.', data: await readConversationCreationDraft(app, args.request, projectId) };
     case 'conversation_new': return { text: 'New conversation.', data: await readConversationNewView(app, args.request, context.request.deviceId) };

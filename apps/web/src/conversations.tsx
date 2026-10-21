@@ -1,3 +1,4 @@
+import { ConversationStartResultSchema } from '@jevellan/core/client';
 import { PROJECT_SETUP_WAITING_LABEL } from '@jevellan/core/client';
 import { ConversationCreationDraftSchema, type ConversationCreationPending } from '@jevellan/core/client';
 import { ConversationNewSourceSchema, conversationNewSource, conversationNewView, type ConversationNewSource } from '@jevellan/core/client';
@@ -266,13 +267,14 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
               setWaitingForSetup(false);
             }
             const created = await api(
-              '/api/conversations',
-              ConversationPublicSchema,
+              '/api/conversation-new/start',
+              ConversationStartResultSchema,
               'POST',
-              draft.request,
+              { schema: 'conversation-start-request-v1', deviceId: device.id, start: draft.request, waitSeconds: 0 },
               { signal, waitForHub: true },
             );
-            props.navigate(`/conversations/${created.conversation.id}`);
+            if (!created.view) throw new Error(created.setup.refusal ?? created.setup.summary);
+            props.navigate(`/conversations/${created.view.conversation.id}`);
           });
         }}
       >

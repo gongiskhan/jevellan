@@ -1,3 +1,6 @@
+import { ConversationStartRequestSchema, ConversationStartResultSchema } from '@jevellan/core';
+import { waitProjectSetupView } from './project-setup-wait.js';
+import { conversationStartDeviceOperation } from './conversation-start-peer.js';
 import { IdSchema, ProjectSetupViewSchema, projectSetupView as buildProjectSetupView } from '@jevellan/core';
 import { settingsWorkspace, cleanupSettingsEditor, CleanupSettingsSaveSchema, RiggingListSchema } from '@jevellan/core';
 import { ProjectDefinitionRestores } from './project-definition-restores.js';
@@ -438,6 +441,19 @@ export class Application {
   async saveRuntimeSettings(input: unknown, deviceId = this.device.deviceId) {
     const state = !this.member && deviceId !== this.device.deviceId ? new HubState(this.hub, deviceId, [...this.runtimes.keys()]) : this.state;
     const saved = await state.configuration.runtimesPut(input); await this.configuration(); await this.applyRigging(); return saved;
+  }
+  async startConversation(raw: unknown, signal?: AbortSignal, ownerToken?: string) {
+    const input = ConversationStartRequestSchema.parse(raw); await this.conversations.ready; signal?.throwIfAborted();
+    const location = await this.conversations.location(input.start.id).catch(error => { if ((error as { status?: number }).status === 404) return undefined; throw error; });
+    if (location && location.projectId !== input.start.projectId) throw Object.assign(new Error('This creation request belongs to another project.'), { status: 409 });
+    const target = location?.ownerDeviceId ?? input.deviceId;
+    if (target !== this.device.deviceId) return conversationStartDeviceOperation(this, target, input, signal, ownerToken);
+    if (this.conversations.hasLocalConversation(input.start.id) && this.conversations.ledger(input.start.id).events().length) {
+      return ConversationStartResultSchema.parse({ schema: 'conversation-start-result-v1', status: 'existing', setup: null, view: await this.conversations.create(input.start) });
+    }
+    const setup = await waitProjectSetupView(this, input.start.projectId, this.device.deviceId, { schema: 'project-setup-wait-request-v1', waitSeconds: input.waitSeconds }); signal?.throwIfAborted();
+    if (setup.state !== 'ready') return ConversationStartResultSchema.parse({ schema: 'conversation-start-result-v1', status: setup.state, setup, view: null });
+    return ConversationStartResultSchema.parse({ schema: 'conversation-start-result-v1', status: 'created', setup, view: await this.conversations.create(input.start) });
   }
   async projectSetupView(projectId: string, deviceId = this.device.deviceId, signal?: AbortSignal) {
     const id = IdSchema.parse(projectId), target = IdSchema.parse(deviceId); signal?.throwIfAborted();

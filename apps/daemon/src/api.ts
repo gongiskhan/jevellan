@@ -1,3 +1,4 @@
+import { handleConversationStartPeer } from './conversation-start-peer.js';
 import { ProjectSetupReadRequestSchema } from '@jevellan/core';
 import { waitProjectSetupView } from './project-setup-wait.js';
 import { readConversationCreationDraft } from './conversation-creation-draft.js';
@@ -76,6 +77,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     const path = url.pathname; const method = request.method ?? 'GET'; const token = sessionFromCookie(request.headers.cookie);
     // Project hub requests enter the gate in their route once the operation is known: reads are admitted like GET (D247).
     if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path) && !DEVICE_WORKTREES_ROUTE.test(path) && !DEVICE_CLEANUP_ROUTE.test(path) && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
+    if (path === '/api/mesh/conversation-start') { await handleConversationStartPeer(app, request, response); return; }
     if (path === '/api/mesh/project-definitions') { await handleProjectDefinitionsPeer(app, request, response); return; }
     if (path.startsWith('/api/mesh/devices/') && await handleDeviceCleanup(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/devices/') && await handleDeviceWorktrees(app, request, response, url)) return;
@@ -197,6 +199,10 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       return;
     }
     if (path === '/api/conversation-composer' && method === 'POST') { send(await app.conversations.composerDraft(await body(request))); return; }
+    if (path === '/api/conversation-new/start') {
+      if (method !== 'POST') throw failure('This creation write does not support that method.', 405);
+      send(await app.startConversation(await body(request), undefined, token)); return;
+    }
     if (path === '/api/conversation-new/draft') {
       if (method !== 'POST') throw failure('This creation draft read does not support that method.', 405);
       send(await readConversationCreationDraft(app, await body(request))); return;

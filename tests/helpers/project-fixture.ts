@@ -1,7 +1,7 @@
 // Shared Projects integration harness (design 5.1.1, D48): a booted daemon on a real git origin with a GitHub-shaped remote
 // redirected by `insteadOf` (D18), the fake GitHub server, FakeRuntime turns that report through the daemon's own bridge, and
 // a signed-in browser session. Everything is simulated except git, HTTP, the ledgers and the process groups.
-import { expect } from 'vitest';
+import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
@@ -22,20 +22,20 @@ import { startGitHubFixture, type GitHubFixture } from '../fixtures/github-serve
 
 /** Validate the required computed context while keeping exact assertions on the task/message being delivered. */
 export function threadRequestText(prompt: string): string {
-  const parts = prompt.split(/Project now \(\d{2}:\d{2}\):\n/u); expect(parts).toHaveLength(2);
+  const parts = prompt.split(/Project now \(\d{2}:\d{2}\):\n/u); assert.equal(parts.length, 2);
   let before = parts[0]!, remaining = parts[1]!;
   const boundary = remaining.indexOf('\n\n'), now = boundary < 0 ? remaining : remaining.slice(0, boundary);
   remaining = boundary < 0 ? '' : remaining.slice(boundary + 2);
-  expect(now.length).toBeLessThanOrEqual(2500); expect(now).toMatch(/^Other active threads:\n/u);
-  expect(now).toMatch(/\nMerged to [^\n]+ in the last 24 hours:\n/u);
+  assert.ok(now.length <= 2500); assert.match(now, /^Other active threads:\n/u);
+  assert.match(now, /\nMerged to [^\n]+ in the last 24 hours:\n/u);
   const memoryAt = before.indexOf('Project memory:\n');
   if (memoryAt >= 0) {
-    const memory = before.slice(memoryAt).trimEnd(); expect(memory.length).toBeLessThanOrEqual(5000);
-    if (memory.includes('unavailable')) expect([
+    const memory = before.slice(memoryAt).trimEnd(); assert.ok(memory.length <= 5000);
+    if (memory.includes('unavailable')) assert.ok([
       'Project memory:\nProject memory is unavailable for this turn.',
       'Project memory:\nProject memory is unavailable: the hub is offline.',
-    ]).toContain(memory);
-    else expect(memory).toMatch(/Search memory with memory_search for more\.$/u);
+    ].includes(memory));
+    else assert.match(memory, /Search memory with memory_search for more\.$/u);
     before = before.slice(0, memoryAt);
   }
   const task = before.trimEnd();
@@ -371,7 +371,7 @@ export async function expectNoLeaks(f: ProjectFixture, extra: ReadonlyArray<[str
     ...runtimes.flatMap((runtime) => runtime.runs.map((run): [string, string] => ['native session id', run.native.sessionId ?? ''])),
     ...runtimes.flatMap((runtime) => runtime.turnStarts.map((input): [string, string] => ['bridge token', input.launch.env.JEVELLAN_STRETCH_TOKEN ?? '']))];
   // Every collected value is real, so an absence below cannot pass vacuously.
-  for (const [kind, value] of secrets) expect(value.length, kind).toBeGreaterThanOrEqual(16);
+  for (const [kind, value] of secrets) assert.ok(value.length >= 16, kind);
   const threadIds = f.app.projectWork.paths.threadIds(f.project.id);
   await f.json('/api/project-work', ProjectWorkListViewSchema); await f.json(`/api/projects/${f.project.id}/work`, ProjectWorkViewSchema);
   for (const threadId of threadIds) await f.json(`/api/projects/${f.project.id}/threads/${threadId}`, ThreadViewSchema);
@@ -382,7 +382,7 @@ export async function expectNoLeaks(f: ProjectFixture, extra: ReadonlyArray<[str
     ['hub decisions', JSON.stringify(await f.app.projectHub.decisions(f.project.id))], ['hub notebook', JSON.stringify(await f.app.projectHub.notebook(f.project.id))],
     ['hub work settings', JSON.stringify(await f.app.projectHub.settings(f.project.id))], ['coordinator ledger', f.ledgerText()],
     ...threadIds.map((threadId): [string, string] => [`thread ledger ${threadId}`, f.ledgerText(threadId)]), ...extra];
-  expect(texts.flatMap(([where, text]) => secrets.filter(([, value]) => text.includes(value)).map(([kind]) => `${kind} in ${where}`))).toEqual([]);
+  assert.deepEqual(texts.flatMap(([where, text]) => secrets.filter(([, value]) => text.includes(value)).map(([kind]) => `${kind} in ${where}`)), []);
 }
 
 /** Exercise the coordinator's real queued-task tool, then wait for durable dispatch to a local or remote thread. */
