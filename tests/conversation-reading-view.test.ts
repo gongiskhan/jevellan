@@ -56,3 +56,25 @@ test('member conversation reads bind resource identity and revoke temporary auth
   await expect(ownerConversationOperation(f.app, 'project', id, 'conversation-view')).rejects.toMatchObject({ status: 502 });
   expect(revoke.mock.calls.length).toBe(issue.mock.calls.length); expect(f.app.conversations.hasLocalConversation(id)).toBe(false); expect(member.fake.starts).toHaveLength(0);
 });
+
+
+test('busy preparation retains Steer and Queue before the runtime step starts', async () => {
+  f = await projectFixture(); const id = 'busy_reading_fixture';
+  await f.app.conversations.create({ schema: 'start-conversation-v1', id, projectId: 'project', title: 'Busy preparation fixture', message: 'Exercise the simulated preparation state.', clientMessageId: 'busy_first', choices: { schema: 'composer-initial-v1', pins: { modelId: 'fixture', effort: 'low' }, once: {} } }); await f.app.conversations.wait(id);
+  let entered = false, release!: () => void; const gate = new Promise<void>(resolve => { release = resolve; });
+  const acquire = f.app.conversations.ownership.acquire.bind(f.app.conversations.ownership);
+  vi.spyOn(f.app.conversations.ownership, 'acquire').mockImplementation(async (...args) => { entered = true; await gate; return acquire(...args); });
+  f.fake.enqueue(async ({ input, emit }) => {
+    emit({ type: 'text', delta: 'The simulated preparation finishes.' });
+    const response = await fetch(`${input.launch.env.JEVELLAN_DAEMON_URL}/api/bridge`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${input.launch.env.JEVELLAN_STRETCH_TOKEN}` }, body: JSON.stringify({ schema: 'bridge-request-v1', operation: 'call', name: 'jevellan_handoff', arguments: { schema: 'handoff-v2', stretch: input.stretch, action: input.action, status: 'done', summary: 'The simulated preparation finishes.', evidence: [], findings: [], blockers: [], failedApproaches: [], proposedNext: 'done', changedFiles: [] } }) });
+    expect(response.status).toBe(200); return { status: 'completed' };
+  });
+  const admission = f.app.conversations.manual(id, { schema: 'manual-step-v1', generation: (await f.app.conversations.view(id)).conversation.generation, action: 'implement', modelId: 'fixture', effort: 'low' });
+  try {
+    await f.waitFor(() => entered, value => value);
+    const response = await f.request(`/api/conversations/${id}`); expect(response.status).toBe(200); const during = await response.json();
+    expect(during.busy).toBe(true); expect(during.conversation.state).not.toBe('running'); expect(f.fake.starts).toHaveLength(0);
+    expect(during.delivery).toMatchObject({ primaryLabel: 'Steer', primaryEnabled: true, queueEnabled: true });
+  } finally { release(); await admission; await f.app.conversations.wait(id); }
+  expect((await f.app.conversations.view(id)).delivery).toMatchObject({ primaryLabel: 'Send', queueEnabled: false });
+});

@@ -2531,3 +2531,5 @@ Bridge continuation area 7c: decisions 159–160 record shared reference classif
 Bridge continuation area 7d: decisions 161–162 record strict shared delivery facts, exact branch copy and parsed saved/working diff views; canonical owner-bound root/changes readers; unchanged writers/parser/copy; and failing-first/static/backend/two complete desktop gates. Rows 171–173 close, with 151 phase 10 rows remaining before intake and placement/p-v1/m-v1. Source remains unreleased.
 
 Bridge continuation area 7e: decisions 163–164 record the device-local preference scope difference, shared synchronous revision service/Core policy, compatible versioned HTTP/CLI/MCP view, and failing-first/static/backend/SESSIONS1 gates. Row174 closes; 150 phase10 rows remain before intake and placement/p-v1/m-v1. Source stays unreleased.
+
+Bridge continuation area7e1: decisions 165–166 record the preparation-state delivery mismatch, canonical failing-first admission barrier and exact repeat, one-line busy-or-running correction, and backend/two desktop gates. Inventory remains 158 + 2 of 310;150 phase 10 rows remain. Source stays unreleased.
