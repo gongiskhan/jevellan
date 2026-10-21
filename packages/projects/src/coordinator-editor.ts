@@ -14,13 +14,14 @@ export function coordinatorEditor(view: ProjectWorkView, configuration: Configur
   const actual = selected?.efforts.length ? mapEffort(fields.effort, selected.efforts) : fields.effort;
   const freshEnabled = view.coordinator.online;
   const refusal = fields.modelId && !current && !available ? 'Choose an available model.' : fields.fresh && !freshEnabled ? 'Fresh is unavailable while the coordinator is not online.' : null;
-  const base = { schema: 'project-coordinator-editor-preview-v1' as const, projectId: view.project.id, revision, clientRequestId: input?.clientRequestId ?? newId('cform') };
+  const base = { schema: 'project-coordinator-editor-preview-v1' as const, projectId: view.project.id, revision, clientRequestId: input?.clientRequestId ?? newId('cform'),
+    ...(input?.presentation ? { presentation: input.presentation } : {}) };
   const clientRequestId = `cset_${createHash('sha256').update(stableJson({ base, fields })).digest('hex').slice(0, 40)}`;
   const path = `/api/projects/${view.project.id}/coordinator/editor`;
   return ProjectCoordinatorEditorSchema.parse({ schema: 'project-coordinator-editor-v1', projectId: view.project.id, revision, fields,
-    models: [{ value: '', label: 'Automatic — first available', disabled: false }, ...listed.map(model => ({ value: model.id, label: `${runtimeName(model.runtime)} ${model.label}`, disabled: !model.enabled || !configuration.runtimes[model.runtime]?.enabled })),
+    models: [{ value: '', label: input?.presentation ? 'Automatic: first available' : 'Automatic — first available', disabled: false }, ...listed.map(model => ({ value: model.id, label: input?.presentation ? model.label : `${runtimeName(model.runtime)} ${model.label}`, disabled: !model.enabled || !configuration.runtimes[model.runtime]?.enabled })),
       ...(fields.modelId && !selected && current ? [{ value: fields.modelId, label: `${fields.modelId} (unavailable)`, disabled: true }] : [])],
-    efforts: EffortSchema.options.map(value => ({ value, label: value })), effectiveEffort: { requested: fields.effort, actual,
+    efforts: EffortSchema.options.map(value => ({ value, label: input?.presentation ? ({ low: 'Low', medium: 'Medium', high: 'High', xhigh: 'Extra high', max: 'Max' })[value] : value })), effectiveEffort: { requested: fields.effort, actual,
       line: actual === fields.effort ? null : `${fields.effort} → ${actual}: nearest effort this model supports.` }, freshEnabled,
     help: 'These choices apply from the next turn. The current turn can finish.',
     sessionHelp: 'A model or effort change starts a fresh session when needed. The project notebook and recent conversation carry over.',

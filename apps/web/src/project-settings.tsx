@@ -3,11 +3,12 @@ import { ProjectHealthEditor } from './project-health.js';
 import { browserPushId } from './notifications.js';
 import { NotificationsViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { EkoaCodeSetupReceiptSchema, EffortSchema, EmptySchema, ProjectEnvSecretSummarySchema, ProjectSettingsEditorSchema, ProjectSettingsEditorSavedSchema,
+import { EkoaCodeSetupReceiptSchema, EffortSchema, ProjectWorkViewSchema, ProjectEnvSecretSummarySchema, ProjectSettingsEditorSchema, ProjectSettingsEditorSavedSchema,
   type ProjectSettingsEditor, type ProjectSettingsSectionKey, type ProjectConfigurationInfo, type ProjectEnvSecretSummary, type ProjectWorkSettings, type ProjectWorkView } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
 import { dateTime, useSettingsSave, useTask, type PageProps } from './components.js';
 import { LandingSettings } from './project-landing-settings.js';
+import { ProjectCoordinatorFields } from './project-coordinator-fields.js';
 import { updated, useLocalError } from './project-work.js';
 import * as copy from './project-work-copy.js';
 import { ProjectUsageSection } from './project-usage.js';
@@ -23,6 +24,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const [configuration, setConfiguration] = useState<ProjectConfigurationInfo>();
   const [editor, setEditor] = useState<ProjectSettingsEditor>();
   const [landingReady, setLandingReady] = useState(false), [loadEpoch, setLoadEpoch] = useState(0);
+  const [coordinatorReady, setCoordinatorReady] = useState(false);
   const [work, setWork] = useState<ProjectWorkView>();
   const [routines, setRoutines] = useState<ProjectRoutineSettingsView>();
   const [stale, setStale] = useState(false);
@@ -69,8 +71,6 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
     props.message(saved.savedNotice); navigate(saved.backPath);
   });
   const enabledModels = data.config.configuration['x-jevellan'].menu.filter(model => model.enabled);
-  const models = data.config.configuration['x-jevellan'].menu.filter(model => model.enabled || model.id === draft?.coordinator.modelId);
-  const rigging = data.rigging.items.filter(row => row.item.state === 'owned' && (!row.item.projects?.length || row.item.projects.includes(id))).map(row => row.item.name);
   const section = (key: ProjectSettingsSectionKey, children: ReactNode) => <section id={`project-settings-${key}`} className="pw-settings-section" aria-labelledby={`project-settings-title-${key}`}>
     <h2 id={`project-settings-title-${key}`}>{editor!.sections.find(row => row.key === key)!.label}</h2>{children}</section>;
   const controls = editor?.controls;
@@ -81,17 +81,15 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   return <div className="pw-settings-page">
     <header className="pw-settings-heading">{props.navigation}<div><h1>{copy.PROJECT_SETTINGS}</h1>{work && <p className="muted">{work.project.name}</p>}</div>
       <button type="button" className="text-button" onClick={() => navigate(editor?.backPath ?? `/projects/${id}`)}>{copy.BACK_TO_PROJECT}</button></header>
-    {!draft || !base || !work || !routines || !editor ? <p role="status">{copy.LOADING}</p> : !configuration || !controls ? <p role="status">Project configuration metadata is unavailable. Reload after the daemon is updated.</p> : <div className="pw-settings-layout">
+    {!draft || !base || !work || !routines || !editor ? <p role="status">{copy.LOADING}</p> : !configuration || !controls || !editor.rigging ? <p role="status">Project configuration metadata is unavailable. Reload after the daemon is updated.</p> : <div className="pw-settings-layout">
       <nav aria-label={copy.SETTINGS_SECTIONS}>{editor.sections.map(row => <a key={row.key} href={`#project-settings-${row.key}`}>{row.label}</a>)}</nav>
-      <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); if (landingReady && !stale) saveAll(); }}>
+      <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); if (landingReady && coordinatorReady && !stale) saveAll(); }}>
         <fieldset disabled={task.busy} className="pw-fields">
           {section('general', <>
             <fieldset><legend>{copy.PROJECT_STATUS}</legend><div className="form-actions">{editor.statusOptions.map(option => <button key={option.value} type="button" className="secondary" aria-pressed={base.status === option.value} onClick={() => setStatus(option.value)}>{option.label}</button>)}</div>
               <p className="pw-field-note">{configuration.pauseHelp}</p><p className="pw-field-note">{configuration.archiveHelp}</p></fieldset>
-            <div className="form-grid"><label>{copy.COORDINATOR_MODEL}<select value={draft.coordinator.modelId ?? ''} onChange={event => change({ coordinator: { ...draft.coordinator, modelId: event.target.value || null } })}>
-              <option value="">{copy.AUTOMATIC_FIRST_AVAILABLE}</option>{models.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}</select></label>
-              <label>{copy.COORDINATOR_EFFORT}<select value={draft.coordinator.effort} onChange={event => change({ coordinator: { ...draft.coordinator, effort: EffortSchema.parse(event.target.value) } })}>{EffortSchema.options.map(effort => <option key={effort} value={effort}>{copy.EFFORT_LABELS[effort]}</option>)}</select></label></div>
-            <button type="button" className="secondary" onClick={() => void task.run(async signal => { await api(`/api/projects/${id}/coordinator/fresh`, EmptySchema, 'POST', empty, { signal, waitForHub: true }); props.message(copy.FRESH_STARTED); })}>{copy.FRESH_COORDINATOR_SETTINGS}</button>
+            <ProjectCoordinatorFields key={loadEpoch} projectId={id} revision={base.revision} value={draft.coordinator} change={coordinator => change({ coordinator })} ready={setCoordinatorReady} conflict={() => setStale(true)} fail={local.fail} />
+            <button type="button" className="secondary" onClick={() => void task.run(async signal => { await api(`/api/projects/${id}/coordinator/fresh`, ProjectWorkViewSchema, 'POST', empty, { signal, waitForHub: true }); props.message(copy.FRESH_STARTED); })}>{copy.FRESH_COORDINATOR_SETTINGS}</button>
           </>)}
           {section('instructions', <><label>{copy.PROJECT_INSTRUCTIONS}<textarea aria-label={copy.PROJECT_INSTRUCTIONS} rows={8} maxLength={configuration.instructions.maxLength} value={draft.instructions} onChange={event => change({ instructions: event.target.value })} /></label><p className="pw-field-note">{configuration.instructions.help}</p><p className="pw-counter">{draft.instructions.length} / {configuration.instructions.maxLength.toLocaleString('en-US')}</p></>)}
           {section('placement', <>
@@ -133,7 +131,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
                 <button type="button" className="text-button" aria-label={copy.removeSecret(index)} onClick={() => change({ environment: { ...draft.environment, secrets: draft.environment.secrets.filter((_, at) => at !== index) } })}>{copy.REMOVE_ENV}</button></div>
               <p className="pw-field-note">{secretStates[name]?.saved ? copy.secretSavedAt(dateTime(secretStates[name]!.updatedAt!)) : copy.SECRET_NOT_SET}</p></div>)}
               <button type="button" className="secondary" disabled={draft.environment.secrets.length >= 50} onClick={() => change({ environment: { ...draft.environment, secrets: [...draft.environment.secrets, ''] } })}>{copy.ADD_SECRET}</button><p className="pw-field-note">{copy.SECRET_HELP}</p></fieldset>
-            <p className="pw-field-note">{rigging.length ? copy.projectRigging(rigging.join(', ')) : copy.RIGGING_NONE}</p><a href="/settings/rigging" onClick={event => { event.preventDefault(); navigate('/settings/rigging'); }}>{copy.EDIT_RIGGING}</a>
+            <p className="pw-field-note">{editor.rigging.message}</p><a href={editor.rigging.editPath} onClick={event => { event.preventDefault(); navigate(editor.rigging!.editPath); }}>{copy.EDIT_RIGGING}</a>
           </>)}
           {section('routines', <>
             <label className="checkbox"><input type="checkbox" checked={draft.nightlyWindow.enabled} onChange={event => change({ nightlyWindow: { ...draft.nightlyWindow, enabled: event.target.checked } })} />{copy.NIGHTLY_WINDOW}</label>
@@ -151,7 +149,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
         {local.error && <p role="alert" className="error">{local.error}{stale && <button type="button" className="text-button" disabled={task.busy} onClick={() => void task.run(read)}>{copy.RELOAD}</button>}</p>}
         <div className="form-actions pw-settings-savebar">
           {work.project.name === 'Ekoa Code' && <button type="button" className="secondary" disabled={task.busy || !draft.coordinator.modelId} onClick={() => void task.run(async signal => { await api(`/api/projects/${id}/ekoa-code-setup`, EkoaCodeSetupReceiptSchema, 'POST', { schema: 'ekoa-code-setup-request-v1', modelId: draft.coordinator.modelId, workflowPull: 208 }, { signal, waitForHub: true }); await read(signal); updated(); })}>{copy.APPLY_EKOA_SETUP}</button>}
-          <button type="button" className="secondary" onClick={() => navigate(editor.backPath)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale || !landingReady}>{task.busy ? copy.SAVING : copy.SAVE}</button>
+          <button type="button" className="secondary" onClick={() => navigate(editor.backPath)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale || !landingReady || !coordinatorReady}>{task.busy ? copy.SAVING : copy.SAVE}</button>
         </div>
       </form><RoutinePreferences model={routines} saved={setRoutines} /></div>
     </div>}

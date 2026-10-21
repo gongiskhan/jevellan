@@ -1,10 +1,16 @@
 import { ProjectSettingsEditorBaseSchema, ProjectSettingsEditorSaveRequestSchema, ProjectSettingsEditorSavedSchema, ProjectWorkSettingsRequestSchema,
-  ProjectSettingsControlsSchema, ProjectWorkSettingsSchema, ProjectPrAutoFixSettingsSchema, SessionCheckpointSettingsSchema,
+  ProjectSettingsControlsSchema, ProjectSettingsRiggingSchema, ProjectWorkSettingsSchema, ProjectPrAutoFixSettingsSchema, SessionCheckpointSettingsSchema,
   DeviceRosterSchema, type ProjectWorkSettings, type ProjectSettingsEditorSaved } from '@jevellan/core';
 import { z } from 'zod';
-import type { ProjectWorkSettingsViewSchema, ProjectWorkViewSchema } from '@jevellan/core';
+import type { ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, RiggingViewSchema } from '@jevellan/core';
 
 const savedNotice = 'Project settings saved.';
+/** Match the existing project summary: owned scope applies independently of runtime enablement. */
+export function settingsEditorRigging(projectId: string, rows: readonly z.infer<typeof RiggingViewSchema>[]) {
+  const names = rows.filter(row => row.item.state === 'owned' && (!row.item.projects?.length || row.item.projects.includes(projectId))).map(row => row.item.name);
+  return ProjectSettingsRiggingSchema.parse({ schema: 'project-settings-rigging-v1', names,
+    message: names.length ? `Rigging for this project: ${names.join(', ')}` : 'No rigging items apply to this project.', editPath: '/settings/rigging' });
+}
 /** Resource offers and HTML affordances derive from the canonical writer's schemas. */
 export function settingsEditorControls(roster: z.infer<typeof DeviceRosterSchema>) {
   const shape = ProjectWorkSettingsSchema.shape;

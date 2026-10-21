@@ -1,5 +1,5 @@
 import { ProjectRoutineSettingsSaveSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsRequestSchema } from '@jevellan/core';
-import { capLines, projectRoutineJobChoices, projectRoutineSettings } from '@jevellan/projects';
+import { capLines, projectRoutineJobChoices, projectRoutineSettings, settingsEditorRigging } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
 import { ownerCoordinatorEditorSave } from '../project-work-api.js';
 import { ProjectSettingsUndoRequestSchema } from '@jevellan/core';
@@ -154,8 +154,8 @@ export const config: OwnerHandler = async (context) => {
   switch (context.action) {
     case 'settings_editor': {
       const { app, project } = context, base = await app.projectWork.settingsEditor(project.id);
-      const [routines, secretStates] = await Promise.all([routineView(context), Promise.all(base.settingsView.settings.environment.secrets.map(name => app.state.environment.summary(project.id, name)))]);
-      return { text: 'Project settings.', data: ProjectSettingsEditorSchema.parse({ ...base, schema: 'project-settings-editor-v1', routines, secretStates }) };
+      const [routines, secretStates, rigging] = await Promise.all([routineView(context), Promise.all(base.settingsView.settings.environment.secrets.map(name => app.state.environment.summary(project.id, name))), app.rigging.list()]);
+      return { text: 'Project settings.', data: ProjectSettingsEditorSchema.parse({ ...base, schema: 'project-settings-editor-v1', routines, secretStates, rigging: settingsEditorRigging(project.id, rigging) }) };
     }
     case 'settings_save': {
       const data = await context.app.projectWork.saveSettingsEditor(context.project.id, args.request);

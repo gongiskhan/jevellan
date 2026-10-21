@@ -4,7 +4,7 @@ import { ProjectWorkSettingsRequestSchema } from './project-schemas.js';
 
 export const ProjectCoordinatorEditorFieldsSchema = z.strictObject({ modelId: z.string().max(200), effort: EffortSchema, fresh: z.boolean() });
 export const ProjectCoordinatorEditorPreviewSchema = z.strictObject({ schema: z.literal('project-coordinator-editor-preview-v1'), projectId: IdSchema,
-  revision: z.number().int().nonnegative(), clientRequestId: IdSchema, fields: ProjectCoordinatorEditorFieldsSchema });
+  revision: z.number().int().nonnegative(), clientRequestId: IdSchema, fields: ProjectCoordinatorEditorFieldsSchema, presentation: z.literal('project-settings').optional() });
 export const ProjectCoordinatorEditorSaveSchema = z.strictObject({ schema: z.literal('project-coordinator-editor-save-v1'), projectId: IdSchema,
   settingsRequest: ProjectWorkSettingsRequestSchema, fresh: z.boolean() });
 export const ProjectCoordinatorEditorSchema = z.strictObject({ schema: z.literal('project-coordinator-editor-v1'), projectId: IdSchema,

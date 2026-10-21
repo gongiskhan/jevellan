@@ -19,8 +19,10 @@ export const ProjectSettingsEditorBaseSchema = z.strictObject({ schema: z.litera
   sections: z.array(z.strictObject({ key: ProjectSettingsSectionKeySchema, label: z.string().min(1).max(100) })).length(ProjectSettingsSectionKeySchema.options.length),
   statusOptions: z.array(z.strictObject({ value: status, label: z.string().min(1).max(100) })).length(3),
   savePath: z.string().min(1).max(1000), backPath: z.string().min(1).max(1000), savedNotice: z.string().min(1).max(500), controls: ProjectSettingsControlsSchema.optional() });
+export const ProjectSettingsRiggingSchema = z.strictObject({ schema: z.literal('project-settings-rigging-v1'), names: z.array(z.string().min(1).max(128)).max(10000),
+  message: z.string().min(1).max(2 * 1024 * 1024), editPath: z.string().min(1).max(1000) });
 export const ProjectSettingsEditorSchema = ProjectSettingsEditorBaseSchema.extend({ schema: z.literal('project-settings-editor-v1'), routines: ProjectRoutineSettingsViewSchema,
-  secretStates: z.array(ProjectEnvSecretSummarySchema).max(100) });
+  secretStates: z.array(ProjectEnvSecretSummarySchema).max(100), rigging: ProjectSettingsRiggingSchema.optional() });
 const presence = z.record(z.string().max(64), z.boolean()).refine(value => Object.keys(value).length <= 2000, 'Too many pending secret inputs.');
 export const ProjectSettingsEditorSaveRequestSchema = z.discriminatedUnion('schema', [
   z.strictObject({ schema: z.literal('project-settings-editor-save-v1'), clientRequestId: IdSchema, base: ProjectWorkSettingsSchema, draft: ProjectWorkSettingsSchema, secretPresence: presence.default({}) }),
