@@ -255,7 +255,7 @@ function eventCard(event: Exclude<CoordinatorEvent, { kind: 'user-message' }>, t
   switch (event.kind) {
     case 'handoff-requested': return card('Coordinator saved its work', undefined, 'Saving what is in flight before the next session.');
     case 'setup-requested': return card(copy.SETUP_REQUESTED_EVENT, undefined);
-    case 'settings-changed': return card(copy.SETTINGS_CHANGED_EVENT, undefined, event.changes.map(change => `${copy.settingFieldLabel(change.field)}: ${change.from} → ${change.to}`).join('; '));
+    case 'settings-changed': return card(event.settingsPresentation?.text ?? copy.SETTINGS_CHANGED_EVENT, undefined, event.settingsPresentation?.detail);
     case 'thread-resolved': return card(copy.threadResolved(titles(event.threadId) ?? copy.UNKNOWN_THREAD_NAME), event.threadId);
     case 'thread-placement-changed': return card(event.summary, event.threadId);
     case 'thread-auto-fix': return card(copy.automaticFixEvent(event.prNumber, event.outcome), event.threadId);

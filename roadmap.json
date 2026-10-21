@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Areas 1a–1e/2a–2d/3/4a–4g/5a–5b: 72 of 310 UI rows migrated/refined plus 1 browser-only; phase8 is closed. Coordinator editor/preview/prepared-save models preserve requested effort, full settings and assigned-device canonical save/Fresh behavior across UI/CLI/MCP. Final static checks and 257 affected backend cases in 18 files with 6 workers and 0 skips pass. Initial desktop fixture startup failed before execution; one unchanged rerun passes the coordinator override journey without in-test retry/skip. One exact image retained, vision not run. Remaining phase9 (57), phase10 (180), intake and placement/p-v1/m-v1 follow; full parity incomplete and CM1 remains. Installations last verified 0.7.2 on 20 October; no further release.",
+    "why": "Areas 1a–1e/2a–2d/3/4a–4g/5a–5c: 73 of 310 UI rows migrated/refined plus 1 browser-only; phase8 is closed. Settings-change/Undo and historical settings-event presentations share canonical server labels and unchanged writers across UI/CLI/MCP. Final static checks and 287 affected backend cases in 22 files with 6 workers and 0 skips pass; desktop-light PAR2 passes once without retry/skip. Three exact images retained and proven nested source copies restored, vision not run. Remaining phase9 (56), phase10 (180), intake and placement/p-v1/m-v1 follow; full parity incomplete and CM1 remains. Installations last verified 0.7.2 on 20 October; no further release.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Areas 1a–1e/2a–2d/3/4a–4g/5a–5b: 72 of 310 UI rows migrated/refined plus 1 browser-only; phase8 is closed. Coordinator editor/preview/prepared-save models preserve requested effort, full settings and assigned-device canonical save/Fresh behavior across UI/CLI/MCP. Final static checks and 257 affected backend cases in 18 files with 6 workers and 0 skips pass. Initial desktop fixture startup failed before execution; one unchanged rerun passes the coordinator override journey without in-test retry/skip. One exact image retained, vision not run. Remaining phase9 (57), phase10 (180), intake and placement/p-v1/m-v1 follow; full parity incomplete and CM1 remains. Installations last verified 0.7.2 on 20 October; no further release.",
+    "why": "Areas 1a–1e/2a–2d/3/4a–4g/5a–5c: 73 of 310 UI rows migrated/refined plus 1 browser-only; phase8 is closed. Settings-change/Undo and historical settings-event presentations share canonical server labels and unchanged writers across UI/CLI/MCP. Final static checks and 287 affected backend cases in 22 files with 6 workers and 0 skips pass; desktop-light PAR2 passes once without retry/skip. Three exact images retained and proven nested source copies restored, vision not run. Remaining phase9 (56), phase10 (180), intake and placement/p-v1/m-v1 follow; full parity incomplete and CM1 remains. Installations last verified 0.7.2 on 20 October; no further release.",
     "status": "in-progress"
   },
   {

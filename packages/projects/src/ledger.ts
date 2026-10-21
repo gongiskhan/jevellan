@@ -1,4 +1,6 @@
 import { ZodError } from 'zod';
+import { CoordinatorEventSchema } from '@jevellan/core';
+import { settingsEventPresentation } from './settings-change-views.js';
 import { createHash } from 'node:crypto';
 import {
   BridgeToolNameSchema, ProjectLedgerEventSchema, SecretRedactor, boundedRedaction, clipRedacted, parseProjectLedgerData, type ProjectLedgerData, type ProjectLedgerEvent,
@@ -45,7 +47,12 @@ const PRIVATE_KEYS = new Set(['nativeSessionId', 'cwd', 'sessionId']);
 export function publicProjectData(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(publicProjectData);
   if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(Object.entries(value).filter(([key]) => !PRIVATE_KEYS.has(key)).map(([key, child]) => [key, publicProjectData(child)]));
+  const clean = Object.fromEntries(Object.entries(value).filter(([key]) => !PRIVATE_KEYS.has(key)).map(([key, child]) => [key, publicProjectData(child)]));
+  if (clean.schema === 'coordinator-event-v1' && clean.kind === 'settings-changed') {
+    const event = CoordinatorEventSchema.safeParse(clean);
+    if (event.success && event.data.kind === 'settings-changed') return { ...clean, settingsPresentation: settingsEventPresentation(event.data) };
+  }
+  return clean;
 }
 
 /**

@@ -5,6 +5,7 @@ import { ProjectWorkCardSchema, ThreadMutationActionSchema } from './project-car
 import { ProjectViewNoticeSchema } from './project-view-notice-schemas.js';
 import { ProjectDeploySettingsSchema } from './project-deploy-schemas.js';
 import { ProjectConfigurationInfoSchema } from './project-configuration-schemas.js';
+import { ProjectSettingsEventPresentationSchema } from './project-settings-change-view-schemas.js';
 import { DeliverySchema, LandingCheckSchema, ThreadLandingSchema } from './project-landing-schemas.js';
 import { ProjectRelativePathSchema } from './project-parity-schemas.js';
 import { ProjectHealthChecksSchema } from './project-health-schemas.js';
@@ -144,7 +145,7 @@ export const CoordinatorEventSchema = z.discriminatedUnion('kind', [
   ev('setup-requested', {}),
   ev('handoff-requested', { reason: z.enum(['nightly', 'context', 'owner-pending']), night: z.string().max(10).optional() }),
   ev('deploy', { deployId: IdSchema, commit: z.string().regex(/^[a-f0-9]{40}$/u), threads: count, outcome: z.enum(['deployed', 'failed', 'rolled-back']), summary: z.string().max(1200) }),
-  ev('settings-changed', { by: z.enum(['owner', 'coordinator']), changes: z.array(z.strictObject({ field: z.string().max(80), from: z.string().max(400), to: z.string().max(400) })).max(30), instructions: z.string().max(16000).optional() }),
+  ev('settings-changed', { by: z.enum(['owner', 'coordinator']), changes: z.array(z.strictObject({ field: z.string().max(80), from: z.string().max(400), to: z.string().max(400) })).max(30), instructions: z.string().max(16000).optional(), settingsPresentation: ProjectSettingsEventPresentationSchema.optional() }),
   ev('thread-resolved', { threadId: IdSchema, by: z.enum(['owner', 'inactivity', 'deploy']), deployId: IdSchema.optional() }),
   ev('thread-placement-changed', { threadId: IdSchema, reason: z.enum(['account-limit', 'model-unavailable', 'escalation']), summary: z.string().max(400) }),
   ev('thread-auto-fix', { threadId: IdSchema, prNumber: positive, fixKind: z.enum(['checks', 'conflicts', 'comments']), round: positive, maxRounds: positive, outcome: z.enum(['started', 'fixed', 'gave-up']), comments: count.optional() }),

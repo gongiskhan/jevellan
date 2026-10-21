@@ -1,7 +1,6 @@
-import { clientId } from './client-id.js';
-import { useContext, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ProjectCardsContext, projectCardKey } from './project-cards.js';
-import { TaskViewSchema, ProjectWorkSettingsViewSchema, undoProjectSetting, type ProjectSettingsChange, type ProjectWorkSettings, type ProjectWorkTask, type ThreadIndex } from '@jevellan/core/client';
+import { TaskViewSchema, ProjectSettingsChangeViewSchema, ProjectWorkSettingsViewSchema, type ProjectSettingsChangeView, type ProjectSettingsChange, type ProjectWorkSettings, type ProjectWorkTask, type ThreadIndex } from '@jevellan/core/client';
 import { api } from './api.js';
 import { useTask } from './components.js';
 import { ThreadCard } from './thread-card.js';
@@ -31,14 +30,20 @@ export function ChatWorkCards({ item, projectId, tasks, threads, startAll, navig
 }
 
 export function ChatSettingsChanges({ projectId, change, settings, changed, onError }: { projectId: string; change: ProjectSettingsChange; settings: ProjectWorkSettings; changed(): void; onError(error: unknown): void }) {
-  const operation = useTask(onError), [undone, setUndone] = useState<string[]>([]), [ids] = useState(clientId);
-  return <div className="pw-chat-settings">{change.changes.map(value => {
-    const restored = undoProjectSetting(settings, value), disabled = !restored || undone.includes(value.field);
-    return <div className="pw-chat-setting" key={value.field}><p>{copy.settingChangeLine(value)}</p>
-      <button className="secondary small" title={disabled ? copy.CHANGED_AGAIN : undefined} disabled={disabled || operation.busy} onClick={() => void operation.run(async signal => {
-        if (!restored) return;
-        await api(`/api/projects/${projectId}/work-settings/undo`, ProjectWorkSettingsViewSchema, 'POST', { schema: 'project-settings-undo-request-v1', expectedRevision: settings.revision, clientRequestId: `undo_${ids}_${value.field.replaceAll('.', '_')}_${settings.revision}`, change: value }, { signal, waitForHub: true });
-        setUndone(previous => [...previous, value.field]); changed();
-      })}>{copy.UNDO_SETTING}</button></div>;
-  })}</div>;
+  const operation = useTask(onError), [model, setModel] = useState<ProjectSettingsChangeView>();
+  const error = useRef(onError); error.current = onError;
+  const path = `/api/projects/${projectId}/config/change-view`, serialized = JSON.stringify(change);
+  const read = useCallback(async (signal: AbortSignal) => {
+    setModel(await api(path, ProjectSettingsChangeViewSchema, 'POST', { schema: 'project-settings-change-view-request-v1', change: JSON.parse(serialized) }, { signal, waitForHub: true }));
+  }, [path, serialized]);
+  useEffect(() => {
+    const controller = new AbortController(); void read(controller.signal).catch(reason => { if (!controller.signal.aborted) error.current(reason); });
+    return () => controller.abort();
+  }, [read, settings.revision]);
+  return <div className="pw-chat-settings">{!model ? <p role="status">{copy.LOADING}</p> : model.items.map(row => <div className="pw-chat-setting" key={row.field}><p>{row.line}</p>
+    <button className="secondary small" title={row.refusal ?? undefined} disabled={!row.undo || operation.busy} onClick={() => void operation.run(async signal => {
+      const request = row.undo; if (!request) return;
+      await api(request.path, ProjectWorkSettingsViewSchema, 'POST', request.body, { signal, waitForHub: true });
+      await read(signal); changed();
+    })}>{model.undoLabel}</button></div>)}</div>;
 }

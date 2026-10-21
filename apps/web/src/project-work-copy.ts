@@ -412,15 +412,6 @@ export const CHANGED_AGAIN = 'Changed again since.';
 export const SETTINGS_CHANGED_EVENT = 'Project settings changed';
 export const threadResolved = (title: string) => `Resolved "${title}"`;
 export const automaticFixEvent = (number: number, outcome: string) => `Pull request #${number}: automatic fix ${outcome}`;
-export const SETTING_FIELD_LABELS: Record<string, string> = { maxRunningThreads: 'max running threads', maxNewThreadsPerDay: 'new threads per day', startMode: 'start mode',
-  'prAutoFix.checks': 'fixing failing checks', 'prAutoFix.conflicts': 'resolving conflicts', 'prAutoFix.comments': 'addressing review comments', instructions: 'project instructions', 'placement.guidance': 'guidance for Jev' };
-export const settingFieldLabel = (field: string) => SETTING_FIELD_LABELS[field] ?? field;
-const settingValueText = (value: unknown) => value === true ? 'on' : value === false ? 'off' : value === 'start' ? 'start right away' : value === 'propose' ? 'propose first' : String(value);
-export function settingChangeLine(change: { field: string; before: unknown; after: unknown; append?: string | undefined }): string {
-  if (change.append !== undefined) return change.field === 'instructions' ? `Added to project instructions: "${change.append}"` : `Added to guidance for Jev: "${change.append}"`;
-  return `Changed ${settingFieldLabel(change.field)} from ${settingValueText(change.before)} to ${settingValueText(change.after)}.`;
-}
-
 export const OVERVIEW = 'Overview';
 export const ROUTINES = 'Routines';
 export const BOARD_LABELS = { waiting: 'Waiting for you', review: 'Ready for review', working: 'Working', landing: 'Landing', landed: 'Landed, waiting for deploy', idle: 'Idle', resolved: 'Resolved' } as const;

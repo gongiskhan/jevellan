@@ -2,6 +2,8 @@ import { MergeCorrectionInputSchema } from '@jevellan/core';
 import { waitingItemsView, sentText } from './waiting-views.js';
 import { projectConfigurationInfo } from './project-configuration.js';
 import { coordinatorEditor } from './coordinator-editor.js';
+import { settingsChangeView } from './settings-change-views.js';
+import { ProjectSettingsChangeViewRequestSchema } from '@jevellan/core';
 import { ProjectCoordinatorEditorSaveSchema } from '@jevellan/core';
 import { QUESTION_NOT_FOUND } from './copy.js';
 import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction, type ProjectPageRequest, type ProjectWaitingRespondRequest, ProjectWaitingResponseSchema } from '@jevellan/core';
@@ -981,6 +983,13 @@ export class ProjectWork {
         id: `cev_settings_${projectId}_${saved.revision}`, at: new Date(this.#timers.now()).toISOString() });
       return this.#settingsView(project, saved);
     } catch (error) { if (statusOf(error) === 409) throw refuse(SETTING_CHANGED_AGAIN, 409); throw error; }
+  }
+  async settingsChangeView(projectId: string, raw: unknown) {
+    const input = ProjectSettingsChangeViewRequestSchema.parse(raw);
+    if (input.change.projectId !== projectId) throw refuse('The settings change belongs to another project.', 400);
+    await this.#project(projectId);
+    const current = (await this.#o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId);
+    return settingsChangeView(current, input.change);
   }
   /** Persist the original request before applying it, so a lost reply retries the same revision without appending twice. */
   async coordinatorSettings(projectId: string, input: unknown, requestId: string): Promise<{ schema: 'project-settings-change-result-v1'; change: ProjectSettingsChange; repeated: boolean }> {

@@ -2,6 +2,7 @@ import { ProjectRoutineSettingsSaveSchema, ProjectWorkSettingsSchema, ProjectWor
 import { capLines, projectRoutineJobChoices, projectRoutineSettings } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
 import { ownerCoordinatorEditorSave } from '../project-work-api.js';
+import { ProjectSettingsUndoRequestSchema } from '@jevellan/core';
 
 const yesNo = (value: boolean) => value ? 'yes' : 'no';
 type Setter = (context: OwnerContext, key: string, value: string | number | boolean) => Promise<{ old: string; new: string; consequence?: string }>;
@@ -146,6 +147,8 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'settings_change': return { text: 'Recorded settings changes.', data: await context.app.projectWork.settingsChangeView(context.project.id, args.request) };
+    case 'settings_undo': return { text: 'Setting restored.', data: await context.app.projectWork.undoSetting(context.project.id, ProjectSettingsUndoRequestSchema.parse(args.request)) };
     case 'coordinator_editor': case 'coordinator_preview': {
       const data = await context.app.projectWork.coordinatorEditor(context.project.id, context.action === 'coordinator_preview' ? args.request : undefined);
       return { text: 'Coordinator choices.', data };

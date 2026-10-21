@@ -1,5 +1,6 @@
 import { ProjectMergeWhyRequestSchema, ProjectRouteWhyViewSchema } from '@jevellan/core';
 import { ProjectCoordinatorEditorPreviewSchema, ProjectCoordinatorEditorSaveSchema, ProjectWorkSettingsViewSchema } from '@jevellan/core';
+import { ProjectSettingsChangeViewRequestSchema } from '@jevellan/core';
 import { ProjectThreadOverrideEditorSchema, ThreadOverrideEditorPreviewSchema, ThreadOverrideEditorSaveSchema } from '@jevellan/core';
 import { ProjectPageRequestSchema, ProjectWaitingRespondRequestSchema } from '@jevellan/core';
 import { DailyEnabledRequestSchema, JobPausedRequestSchema } from '@jevellan/core';
@@ -31,7 +32,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -79,6 +80,7 @@ const rows: readonly Row[] = [
   { name: 'setup-action', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-proposals\/([A-Za-z0-9_-]+)\/actions$/, methods: ['POST'], target: 'any', ids: ['projectId', 'proposalId'] },
   { name: 'usage', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/usage$/, methods: ['GET'], target: 'any' },
   { name: 'settings-undo', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/work-settings\/undo$/, methods: ['POST'], target: 'any' },
+  { name: 'settings-change-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/config\/change-view$/, methods: ['POST'], target: 'any' },
   { name: 'session-history', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/session-transcript$/, methods: ['GET'], target: 'coordinator' },
   { name: 'ekoa-code-setup', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/ekoa-code-setup$/, methods: ['POST'], target: 'coordinator' },
   { name: 'job-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs$/, methods: ['GET'], target: 'any' },
@@ -457,6 +459,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'daily-run': send(await work.daily.runDaily(projectId, route.dailyId!, ProjectRunRequestSchema.parse(await requestBody(request))), 202); return true;
 
     case 'goal-views': send(await work.goalViews(projectId)); return true;
+    case 'settings-change-view': send(await work.settingsChangeView(projectId, ProjectSettingsChangeViewRequestSchema.parse(await requestBody(request)))); return true;
     case 'coordinator-editor': send(await work.coordinatorEditor(projectId)); return true;
     case 'coordinator-editor-preview': send(await work.coordinatorEditor(projectId, ProjectCoordinatorEditorPreviewSchema.parse(await requestBody(request)))); return true;
     case 'coordinator-editor-save': send(await work.saveCoordinatorEditor(projectId, ProjectCoordinatorEditorSaveSchema.parse(await requestBody(request)))); return true;

@@ -2,6 +2,7 @@ import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '.
 import { ConfigRevisionSchema, DecisionsSettingsEditorSchema } from '../packages/core/dist/index.js';
 import { ImproverStateSchema } from '../packages/core/dist/index.js';
 import { ProjectCoordinatorEditorSchema } from '../packages/core/dist/index.js';
+import { ProjectSettingsChangeViewSchema } from '../packages/core/dist/index.js';
 import { seedConversationDecision } from './helpers/conversation-decision-fixture.js';
 import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
@@ -20,6 +21,16 @@ async function connect(env: Record<string, string>): Promise<Client> {
     env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', ...env }, cwd: f!.checkout, stderr: 'ignore' });
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
+
+test('MCP config settings change views include canonical sentences and Undo data', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const { change } = await f.app.projectWork.coordinatorSettings('project', { maxRunningThreads: 7, ownerWords: 'Use seven.' }, 'mcp_settings_change');
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'settings_change', request: { schema: 'project-settings-change-view-request-v1', change } } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-settings-change-view-v1', changeId: change.id, items: [{ field: 'maxRunningThreads', undo: { body: { schema: 'project-settings-undo-request-v1' } } }] } }); expect(f.fake.runs).toHaveLength(0);
+  if (!result.ok) throw new Error('Expected settings change view.'); const view = ProjectSettingsChangeViewSchema.parse(result.data);
+  expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'settings_undo', request: view.items[0]!.undo!.body } })).structuredContent)).toMatchObject({ ok: true });
+  expect((await f.app.projectWork.settingsView('project')).settings.maxRunningThreads).toBe(change.changes[0]!.before);
+});
 
 test('MCP config coordinator editor exposes engine choices and canonical save data', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root }), settings = (await f.app.projectWork.settingsView('project')).settings;
