@@ -1,3 +1,4 @@
+import { ConversationManualDraftSchema, ConversationManualSelectionSchema, conversationManualEditor, conversationManualPreview } from '@jevellan/core/client';
 import { ConversationRecoveryDraftSchema, ConversationRecoveryPendingSchema, conversationRecoveryEditor } from '@jevellan/core/client';
 import { ConversationSettlementContextSchema, ConversationSettlementEditorSchema, ConversationSettlementDraftSchema, ConversationSettlementPendingSchema, conversationSettlementContext, conversationSettlementEditor } from '@jevellan/core/client';
 import { ConversationControlContextSchema, ConversationControlEditorSchema, ConversationControlDraftSchema, ConversationControlPendingSchema, conversationControlContext, conversationControlEditor, conversationControlPreview } from '@jevellan/core/client';
@@ -38,7 +39,6 @@ import {
   ConversationNoticeSchema,
   ConversationPublicSchema,
   ConversationReadSchema,
-  type Action,
   type DecisionRecord,
   type Effort,
   type LedgerEvent,
@@ -1220,119 +1220,53 @@ function ManualPicker({
   update(value: View): void;
   heading: string | undefined;
 }) {
-  const config = props.data.config.configuration['x-jevellan'];
-  const models = config.menu.filter((model) => model.enabled && config.runtimes[model.runtime]?.enabled);
-  const preferredModel = () =>
-    [view.conversation.once.modelId, view.conversation.pins.modelId, view.conversation.current?.modelId].find(
-      (id) => models.some((entry) => entry.id === id),
-    ) ??
-    models[0]?.id ??
-    '';
-  const preferredEffort = () =>
-    view.conversation.once.effort ??
-    view.conversation.pins.effort ??
-    view.conversation.current?.effort ??
-    'high';
-  const [action, setAction] = useState<Action>(view.conversation.once.action ?? 'reply');
-  const [model, setModel] = useState(preferredModel);
-  const [effort, setEffort] = useState<Effort>(preferredEffort);
-  const [remember, setRemember] = useState(false);
+  const editor = conversationManualEditor(view, props.data.config.configuration['x-jevellan']);
+  const [selection, setSelection] = useState(editor.defaults);
   const task = useTask(props.onError);
   useEffect(() => {
-    setAction(view.conversation.once.action ?? 'reply');
-    setModel(preferredModel());
-    setEffort(preferredEffort());
-  }, [
-    view.conversation.once.action,
-    view.conversation.once.modelId,
-    view.conversation.once.effort,
-    view.conversation.pins.modelId,
-    view.conversation.pins.effort,
-  ]);
-  const planWaiting =
-    config.guards.pauseAfterPlan &&
-    view.conversation.work?.latestPlanRef &&
-    view.conversation.work.approvedPlanRef !== view.conversation.work.latestPlanRef;
-  const allowed = view.allowed.filter((entry) => !planWaiting || entry === 'plan');
-  const chosen = allowed.includes(action) ? action : allowed[0];
+    setSelection(previous => ({ ...editor.defaults, remember: previous.remember }));
+  }, [editor.resetKey]);
+  const preview = conversationManualPreview(editor.context, selection);
   return (
-    <form
-      className="manual-picker card"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void task.run(async () =>
-          update(
-            await api(`/api/conversations/${view.conversation.id}/manual`, ConversationPublicSchema, 'POST', {
-              schema: 'manual-step-v1',
-              generation: view.conversation.generation,
-              action: chosen,
-              modelId: model || undefined,
-              effort,
-              remember,
-            }),
-          ),
-        );
-      }}
-    >
-      <h2>{heading ?? 'Pick the next step'}</h2>
+    <form className="manual-picker card" onSubmit={event => {
+      event.preventDefault();
+      void task.run(async signal => {
+        const draft = await api(`/api/conversations/${view.conversation.id}/manual-draft`, ConversationManualDraftSchema, 'POST', {
+          schema: 'conversation-manual-draft-request-v1', context: editor.context, selection,
+        }, { signal });
+        if (!draft.command) return;
+        update(await api(`/api/conversations/${view.conversation.id}/manual-command`, ConversationPublicSchema, 'POST', draft.command, { signal }));
+      });
+    }}>
+      <h2>{heading ?? editor.labels.title}</h2>
       <div className="manual-fields">
-        <label>
-          Action
-          <select value={chosen} onChange={(event) => setAction(event.target.value as Action)}>
-            {allowed.map((entry) => (
-              <option key={entry} value={entry}>
-                {actionLabel(entry)}
-              </option>
-            ))}
+        <label>{editor.labels.action}
+          <select value={preview.chosen ?? ''} onChange={event => setSelection(previous => ({ ...previous, action: event.target.value as z.infer<typeof ConversationManualSelectionSchema>['action'] }))}>
+            {editor.actions.map(entry => <option key={entry.value} value={entry.value}>{entry.label}</option>)}
           </select>
         </label>
-        <label>
-          Model
-          <select
-            value={model}
-            disabled={chosen === 'done'}
-            onChange={(event) => setModel(event.target.value)}
-          >
-            {models.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.label}
-              </option>
-            ))}
+        <label>{editor.labels.model}
+          <select value={selection.model} disabled={preview.modelDisabled} onChange={event => setSelection(previous => ({ ...previous, model: event.target.value }))}>
+            {editor.models.map(entry => <option key={entry.id} value={entry.id}>{entry.label}</option>)}
           </select>
         </label>
-        <label>
-          Effort
-          <select
-            value={effort}
-            disabled={chosen === 'done'}
-            onChange={(event) => setEffort(event.target.value as Effort)}
-          >
-            {['low', 'medium', 'high', 'xhigh', 'max'].map((entry) => (
-              <option key={entry} value={entry}>
-                {entry}
-              </option>
-            ))}
+        <label>{editor.labels.effort}
+          <select value={selection.effort} disabled={preview.effortDisabled} onChange={event => setSelection(previous => ({ ...previous, effort: event.target.value as Effort }))}>
+            {editor.efforts.map(entry => <option key={entry} value={entry}>{entry}</option>)}
           </select>
         </label>
       </div>
       <div className="manual-footer">
-        {chosen === 'reply' && (
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={remember}
-              onChange={(event) => setRemember(event.target.checked)}
-            />
-            This request explicitly asks to remember something.
-          </label>
-        )}
-        <button disabled={task.busy || !chosen || (chosen !== 'done' && !model)}>
-          {task.busy ? 'Starting…' : 'Continue'}
-        </button>
+        {preview.showRemember && <label className="toggle">
+          <input type="checkbox" checked={selection.remember} onChange={event => setSelection(previous => ({ ...previous, remember: event.target.checked }))} />
+          {editor.labels.remember}
+        </label>}
+        <button disabled={task.busy || !preview.canSubmit}>{task.busy ? editor.labels.busy : editor.labels.submit}</button>
       </div>
     </form>
   );
 }
+
 function StepBlock({
   step,
   view,

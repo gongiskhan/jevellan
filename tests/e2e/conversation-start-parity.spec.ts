@@ -1,13 +1,43 @@
 import { join } from 'node:path';
+import { ConversationManualCommandSchema, ConversationManualEditorSchema } from '../../packages/core/dist/index.js';
 import { ConversationRecoveryCommandSchema, ConversationRecoveryEditorSchema } from '../../packages/core/dist/index.js';
-import { blockedConversationReview, blockedConversationRedo, enqueueConversationHandoff } from '../helpers/conversation-recovery-fixture.js';
+import { blockedConversationReview, blockedConversationRedo, enqueueConversationHandoff, enqueueHeldConversationHandoff } from '../helpers/conversation-recovery-fixture.js';
 import { ConversationSettlementCommandSchema, ConversationSettlementEditorSchema } from '../../packages/core/dist/index.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { ConversationControlCommandSchema, ConversationMessageCommandSchema, ConversationControlsViewSchema, ConversationPublicSchema, ConversationStartRequestSchema, ConversationStartResultSchema, OwnerToolResultSchema } from '../../packages/core/dist/index.js';
-import { projectFixture } from '../helpers/project-fixture.js';
+import { projectFixture, FIXTURE_MENU } from '../helpers/project-fixture.js';
 import { expect, test } from './fixtures.js';
 import { closeConversationSettings, openConversationSettings } from './navigation.js';
+
+test('MANUALPAR1 browser manual choice matches MCP metadata and preserves running and completed continuation guards', async ({ page, context }, info) => {
+  const f = await projectFixture({ control: true, menu: [FIXTURE_MENU[0]!, { ...FIXTURE_MENU[0]!, id: 'alternate_model', label: 'Alternate fixture', efforts: ['low', 'medium', 'high', 'xhigh', 'max'] }] }); let client: Client | undefined;
+  try {
+    const id = 'manual_parity'; f.fake.capabilities.readOnlyEnforced = true;
+    await f.app.conversations.create({ schema: 'start-conversation-v1', id, projectId: 'project', title: 'Manual parity', message: 'Preserve the manual fixture.', clientMessageId: 'manual_parity_first' }); await f.app.conversations.wait(id); const initial = await f.app.conversations.view(id);
+    const separator = f.cookie.indexOf('='); await context.addCookies([{ name: f.cookie.slice(0, separator), value: f.cookie.slice(separator + 1), url: f.base, httpOnly: true, sameSite: 'Lax' }]);
+    await page.goto(f.base + '/conversations/' + id);
+    const transport = new StdioClientTransport({ command: process.execPath, args: [join(import.meta.dirname, '..', '..', 'bin', 'jevellan.mjs'), 'mcp'], cwd: f.checkout,
+      env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', JEVELLAN_HOME: f.homes.root }, stderr: 'ignore' });
+    client = new Client({ name: 'manual-parity-fixture', version: '1' }); await client.connect(transport);
+    const read = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_manual_editor', conversation: id } })).structuredContent); expect(read.ok).toBe(true); if (!read.ok) throw new Error('The canonical manual editor was refused.'); const editor = ConversationManualEditorSchema.parse(read.data), picker = page.locator('.manual-picker');
+    await expect(picker.getByRole('heading', { name: initial.presentation?.picker.heading ?? editor.labels.title, exact: true })).toBeVisible();
+    const action = picker.getByRole('combobox', { name: editor.labels.action, exact: true }), model = picker.getByRole('combobox', { name: editor.labels.model, exact: true }), effort = picker.getByRole('combobox', { name: editor.labels.effort, exact: true });
+    await expect(action.locator('option')).toHaveText(editor.actions.map(option => option.label)); await expect(model.locator('option')).toHaveText(editor.models.map(option => option.label)); await expect(effort.locator('option')).toHaveText(editor.efforts);
+    await expect(action).toHaveValue(editor.defaults.action); await expect(model).toHaveValue(editor.defaults.model); await expect(effort).toHaveValue(editor.defaults.effort);
+    const remember = picker.getByRole('checkbox', { name: editor.labels.remember, exact: true }); await remember.check(); await action.selectOption('plan'); await expect(remember).toHaveCount(0); await action.selectOption('reply'); await expect(remember).toBeChecked(); await remember.uncheck(); await model.selectOption('alternate_model'); await effort.selectOption('low');
+    await page.screenshot({ path: info.outputPath('manual-shared-editor.png'), fullPage: true }); const held = enqueueHeldConversationHandoff(f);
+    let command: ReturnType<typeof ConversationManualCommandSchema.parse>;
+    try {
+      const submission = page.waitForRequest(request => request.url() === f.base + '/api/conversations/' + id + '/manual-command' && request.method() === 'POST'); await picker.getByRole('button', { name: editor.labels.submit, exact: true }).click(); command = ConversationManualCommandSchema.parse((await submission).postDataJSON());
+      expect(command.body).toEqual({ schema: 'manual-step-v1', generation: initial.conversation.generation, action: 'reply', modelId: 'alternate_model', effort: 'low', remember: false }); await held.entered; const count = f.app.conversations.ledger(id).events().length;
+      const replay = await client.callTool({ name: 'jev', arguments: { action: 'conversation_manual', conversation: id, request: command } }); expect(replay).toMatchObject({ isError: true, content: [{ type: 'text', text: 'A step is already running or settling.' }] }); expect((await f.request(`/api/conversations/${id}/manual-command`, 'POST', command)).status).toBe(409); expect(f.app.conversations.ledger(id).events()).toHaveLength(count); expect(f.fake.starts).toHaveLength(1);
+    } finally { held.release(); }
+    await f.app.conversations.wait(id); const done = await f.app.conversations.view(id); expect(done.stretches).toHaveLength(1); expect(done.stretches[0]).toMatchObject({ modelId: 'alternate_model', effortRequested: 'low', status: 'completed' });
+    const next = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_manual_editor', conversation: id } })).structuredContent); expect(next.ok).toBe(true); if (!next.ok) throw new Error('The next canonical manual editor was refused.'); const nextEditor = ConversationManualEditorSchema.parse(next.data); await expect(model).toHaveValue(nextEditor.defaults.model); await expect(effort).toHaveValue(nextEditor.defaults.effort);
+    enqueueConversationHandoff(f); const continuation = OwnerToolResultSchema.parse((await client.callTool({ name: 'jev', arguments: { action: 'conversation_manual', conversation: id, request: command } })).structuredContent); expect(continuation.ok).toBe(true); await f.app.conversations.wait(id); expect((await f.app.conversations.view(id)).stretches).toHaveLength(2); expect(f.fake.starts).toHaveLength(2); await page.screenshot({ path: info.outputPath('manual-running-and-continuation-guards.png'), fullPage: true });
+  } finally { await client?.close().catch(() => undefined); await f.close(); }
+});
 
 for (const branchPolicy of ['main', 'external'] as const) test(`ADOPTPAR1 browser acceptance and MCP share the original reviewed checkpoint (${branchPolicy})`, async ({ page, context }, info) => {
   const f = await projectFixture({ control: true, branchPolicy }); let client: Client | undefined;

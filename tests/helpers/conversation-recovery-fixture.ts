@@ -26,3 +26,16 @@ export async function blockedConversationRedo(f:RecoveryFixture,id='redo_editor'
  const checkpoint=git(f.checkout,'rev-parse','HEAD');assert.notEqual(checkpoint,initial);const outside=join(f.checkout,'redo-dirty.txt');writeFileSync(outside,'Preserve this fixture until undo is blocked.\n');
  await f.app.conversations.correct(id,{schema:'correct-step-v1',clientRequestId:`${id}_correction`,generation:(await f.app.conversations.view(id)).conversation.generation,stretch:1,mode:'redo',choices:{action:'reply'}});await f.app.conversations.wait(id);const view=await f.app.conversations.view(id);assert.equal(view.redos.at(-1)?.status,'blocked');assert.equal(git(f.checkout,'rev-parse','HEAD'),checkpoint);unlinkSync(outside);return{view,initial,checkpoint,entry:view.redos.at(-1)!};
 }
+
+/** Holds one owned Fake turn so admission tests exercise a genuinely running step. Abort always releases the wait. */
+export function enqueueHeldConversationHandoff(f:RecoveryFixture){
+ let enteredResolve!:()=>void,release!:()=>void;
+ const entered=new Promise<void>(resolve=>{enteredResolve=resolve;}),held=new Promise<void>(resolve=>{release=resolve;});
+ f.fake.enqueue(async({input,signal})=>{
+  enteredResolve();await new Promise<void>(resolve=>{const abort=()=>{signal.removeEventListener('abort',abort);resolve();};signal.addEventListener('abort',abort,{once:true});void held.then(()=>{signal.removeEventListener('abort',abort);resolve();});if(signal.aborted)abort();});
+  if(signal.aborted)return{status:'interrupted'};
+  const response=await fetch(`${input.launch.env.JEVELLAN_DAEMON_URL}/api/bridge`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${input.launch.env.JEVELLAN_STRETCH_TOKEN}`},body:JSON.stringify({schema:'bridge-request-v1',operation:'call',name:'jevellan_handoff',arguments:{schema:'handoff-v2',stretch:input.stretch,action:input.action,status:'done',summary:'The held manual fixture is recorded.',proposedNext:null,evidence:[],findings:[],blockers:[],failedApproaches:[],changedFiles:[]}})});
+  assert.equal(response.status,200);return{status:'completed'};
+ });
+ return{entered,release};
+}

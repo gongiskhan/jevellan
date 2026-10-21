@@ -1,3 +1,4 @@
+import { ConversationManualCommandSchema, conversationManualEditor, conversationManualDraft } from '@jevellan/core';
 import { ConversationRecoveryCommandSchema, conversationRecoveryEditor, conversationRecoveryDraft } from '@jevellan/core';
 import { ConversationSettlementCommandSchema, conversationSettlementEditor, conversationSettlementDraft } from '@jevellan/core';
 import { ConversationControlCommandSchema, conversationControlEditor, conversationControlDraft } from '@jevellan/core';
@@ -503,6 +504,9 @@ export class ConversationService {
   }
   async ownerDevice(id: string): Promise<string> { return (await this.location(id)).ownerDeviceId; }
   async corrections(ids?: string[]) { await this.indexes.flush(); const records = await this.options.indexes.corrections(); return ids ? records.filter(record => ids.includes(record.id)) : records; }
+  async manualEditor(id: string) { await this.ready; return conversationManualEditor(await this.view(id), await this.options.settings()); }
+  async manualDraft(id: string, raw: unknown) { await this.ready; return conversationManualDraft(await this.view(id), raw); }
+  async manualCommand(id: string, raw: unknown) { return this.manual(id, ConversationManualCommandSchema.parse(raw).body); }
   async recoveryEditor(id: string, raw: unknown) { await this.ready; return conversationRecoveryEditor(await this.view(id), raw); }
   async recoveryDraft(id: string, raw: unknown) {
     await this.ready;

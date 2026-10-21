@@ -5,9 +5,9 @@ import type { Application } from './application.js';
 import { publicConversationData, streamConversation } from './conversation-events.js';
 import { json, requestBody } from './http.js';
 
-const reads = new Set(['', 'changes', 'file', 'events', 'read', 'choices-view', 'step-editor']);
-const readPosts = new Set(['recovery-editor', 'recovery-draft', 'settlement-editor', 'settlement-draft', 'control-editor', 'control-draft', 'message-draft', 'decision-why', 'step-preview', 'plan-read', 'evidence-read', 'transcript-view']);
-const writes = new Set(['recovery-command', 'settlement-command', 'control-command', 'message-command', 'messages', 'manual', 'resume', 'retry-external', 'choices', 'choices-editor', 'cancel', 'approve-plan', 'settle', 'correct', 'retry-redo', 'adopt-changes', 'rename', 'finish-outside']);
+const reads = new Set(['manual-editor', '', 'changes', 'file', 'events', 'read', 'choices-view', 'step-editor']);
+const readPosts = new Set(['manual-draft', 'recovery-editor', 'recovery-draft', 'settlement-editor', 'settlement-draft', 'control-editor', 'control-draft', 'message-draft', 'decision-why', 'step-preview', 'plan-read', 'evidence-read', 'transcript-view']);
+const writes = new Set(['manual-command', 'recovery-command', 'settlement-command', 'control-command', 'message-command', 'messages', 'manual', 'resume', 'retry-external', 'choices', 'choices-editor', 'cancel', 'approve-plan', 'settle', 'correct', 'retry-redo', 'adopt-changes', 'rename', 'finish-outside']);
 export type ConversationRoute = { id: string; operation: string; stretch?: number };
 
 /** The same closed route table serves local and owner-relayed requests. */
@@ -24,6 +24,7 @@ export async function handleConversation(app: Application, request: IncomingMess
   const { id, operation } = route;
   const send = (value: unknown, status = 200) => json(response, app.redactor.document(value), status);
   await app.conversations.ready;
+  if (operation === 'manual-editor') { send(await app.conversations.manualEditor(id)); return; }
   if (!operation) { send(await app.conversations.view(id)); return; }
   if (operation === 'step-editor') { send(await app.conversations.stepEditor(id, route.stretch!)); return; }
   if (operation === 'choices-view') { send(await app.conversations.composerEditor(id)); return; }
@@ -43,6 +44,8 @@ export async function handleConversation(app: Application, request: IncomingMess
     send(ConversationReadSchema.parse({ schema: 'conversation-read-v1', pointer, content: publicConversationData(app.conversations.ledger(id).read(pointer)) })); return;
   }
   const input = await requestBody(request);
+  if (operation === 'manual-draft') { send(await app.conversations.manualDraft(id, input)); return; }
+  if (operation === 'manual-command') { send(await app.conversations.manualCommand(id, input)); return; }
   if (operation === 'recovery-editor') { send(await app.conversations.recoveryEditor(id, input)); return; }
   if (operation === 'recovery-draft') { send(await app.conversations.recoveryDraft(id, input)); return; }
   if (operation === 'recovery-command') { send(await app.conversations.recoveryCommand(id, input)); return; }
