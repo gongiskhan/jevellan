@@ -1,3 +1,4 @@
+import { PROJECT_SETUP_WAITING_LABEL } from '@jevellan/core/client';
 import { ConversationCreationDraftSchema, type ConversationCreationPending } from '@jevellan/core/client';
 import { ConversationNewSourceSchema, conversationNewSource, conversationNewView, type ConversationNewSource } from '@jevellan/core/client';
 import { conversationSidebarDrop, conversationSidebarRename, conversationSidebarCanRename } from '@jevellan/core/client';
@@ -260,8 +261,7 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
             try {
               await waitForProjectSetup(projectId, signal, () => setWaitingForSetup(true), change => {
                 setBranchChange({ projectId, change });
-                if (change.status === 'completed') props.message(branchChangeText(change));
-              });
+              }, change => props.message(branchChangeText(change)));
             } finally {
               setWaitingForSetup(false);
             }
@@ -333,7 +333,7 @@ export function NewConversation(props: PageProps & { embedded?: boolean }) {
         </button>
       </form>
       {branchChange?.projectId === projectId && <BranchChangeNotice change={branchChange.change} />}
-      {waitingForSetup && <p role="status">Finishing project setup…</p>}
+      {waitingForSetup && <p role="status">{PROJECT_SETUP_WAITING_LABEL}</p>}
       {addingProject && (
         <ProjectForm
           {...props}

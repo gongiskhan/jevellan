@@ -26,6 +26,7 @@ export type ProjectDefinitionCommand = z.infer<typeof ProjectDefinitionCommandSc
 export type ProjectDefinitionEditor = z.infer<typeof ProjectDefinitionEditorSchema>;
 export type ProjectDefinitionsView = z.infer<typeof ProjectDefinitionsViewSchema>;
 export const ProjectDefinitionPeerRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('setup-view'), projectId: IdSchema }),
   z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('view') }),
   z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('read'), input: ProjectDefinitionReadSchema }),
   z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('preview'), input: ProjectDefinitionPreviewSchema }),

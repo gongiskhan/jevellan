@@ -1,3 +1,5 @@
+import { ProjectSetupReadRequestSchema } from '@jevellan/core';
+import { waitProjectSetupView } from './project-setup-wait.js';
 import { readConversationCreationDraft } from './conversation-creation-draft.js';
 import { ConversationNewSourceRequestSchema } from '@jevellan/core';
 import { readConversationNewSource, readConversationNewView } from './conversation-new-view.js';
@@ -161,6 +163,14 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       const project = (await app.conversations.projects()).projects.find((row) => row.project.id === IdSchema.parse(visibility[1]))?.project;
       if (!project) throw failure('Project not found.', 404);
       send(await app.projectVisibility.inspect(project, app.device.deviceId)); return;
+    }
+    const setupRead = path.match(/^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-(view|wait)$/);
+    if (setupRead) {
+      ProjectSetupReadRequestSchema.parse({ schema: 'project-setup-read-request-v1', ...Object.fromEntries(url.searchParams) });
+      const id = IdSchema.parse(setupRead[1]);
+      if (setupRead[2] === 'view') { if (method !== 'GET') throw failure('This setup view does not support that method.', 405); send(await app.projectSetupView(id)); }
+      else { if (method !== 'POST') throw failure('This setup wait does not support that method.', 405); send(await waitProjectSetupView(app, id, app.device.deviceId, await body(request))); }
+      return;
     }
     const contextOperation = path.match(/^\/api\/projects\/([A-Za-z0-9_-]+)\/context\/(operations|continue|review)$/);
     if (contextOperation) {

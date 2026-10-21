@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { ContextOperationSchema, ContextPanelSchema, ContextViewSchema, type ContextOperation } from '@jevellan/core';
+import { ContextOperationSchema, ContextPanelSchema, ContextViewSchema, projectSetupView, type ContextOperation } from '@jevellan/core';
 import { waitForProjectSetup } from '../apps/web/lib/project-setup.js';
 
 const context = ContextViewSchema.parse({ schema: 'project-context-v1', projectId: 'fixture', state: 'none', fingerprint: 'a'.repeat(64), claudeReadsAgents: false,
   files: ['AGENTS.md', 'CLAUDE.md'].map(name => ({ name, kind: 'missing', tracked: false, hash: 'a'.repeat(64), content: '' })) });
 const operation = (status: ContextOperation['status']) => ContextOperationSchema.parse({ schema: 'context-operation-v1', id: 'setup', projectId: 'fixture', conversationId: 'setup_conversation', workId: 'setup_work', createdAt: '2026-09-25T00:00:00.000Z',
   request: { schema: 'context-request-v1', clientRequestId: 'setup', revision: 1, fingerprint: context.fingerprint, choice: 'create' }, before: context, generation: 1, status });
-const response = (busy: boolean, status?: ContextOperation['status']) => Response.json(ContextPanelSchema.parse({ schema: 'context-panel-v1', context, revision: 1, busy, operations: status ? [operation(status)] : [] }));
+const setup = (panel: unknown) => projectSetupView({ schema: 'project-setup-facts-v1', projectId: 'fixture', deviceId: 'fixture_device', panel });
+const response = (busy: boolean, status?: ContextOperation['status']) => Response.json(setup(ContextPanelSchema.parse({ schema: 'context-panel-v1', context, revision: 1, busy, operations: status ? [operation(status)] : [] })));
 
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
@@ -18,7 +19,7 @@ test('new conversation waits for instruction setup and its final ownership clean
   await vi.advanceTimersByTimeAsync(0); expect(waiting).toHaveBeenCalled(); expect(start).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(500); expect(start).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(500); await pending; expect(start).toHaveBeenCalledOnce();
-  expect(fetcher.mock.calls.every(([path, options]) => path === '/api/projects/fixture/context/operations' && options.method === 'GET')).toBe(true);
+  expect(fetcher.mock.calls.every(([path, options]) => path === '/api/projects/fixture/setup-view' && options.method === 'GET')).toBe(true);
 });
 
 test.each(['blocked', 'draft-ready', 'requested'] as const)('new conversation preserves unfinished %s context work for user attention', async status => {
@@ -41,7 +42,7 @@ test.each([undefined, 'cancelled'] as const)('projects without unfinished contex
 
  test('project setup reports its branch move even when setup has already completed', async () => {
   const change = { schema: 'git-branch-change-v1', from: 'feature', to: 'main', status: 'completed', created: true, createdRemote: false, before: 'a'.repeat(40), after: 'b'.repeat(40) };
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(ContextPanelSchema.parse({ schema: 'context-panel-v1', context, revision: 1, busy: false, operations: [{ ...operation('completed'), branchChange: change }] }))));
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(setup(ContextPanelSchema.parse({ schema: 'context-panel-v1', context, revision: 1, busy: false, operations: [{ ...operation('completed'), branchChange: change }] })))));
   const notify = vi.fn(); await waitForProjectSetup('fixture', new AbortController().signal, vi.fn(), notify);
   expect(notify).toHaveBeenCalledExactlyOnceWith(change);
 });

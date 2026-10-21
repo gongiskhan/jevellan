@@ -1,3 +1,4 @@
+export * from './project-setup-view.js';
 export * from './conversation-creation-draft.js';
 export * from './conversation-new-view.js';
 export * from './conversation-sidebar-actions.js';

@@ -1,3 +1,4 @@
+import { IdSchema, ProjectSetupViewSchema, projectSetupView as buildProjectSetupView } from '@jevellan/core';
 import { settingsWorkspace, cleanupSettingsEditor, CleanupSettingsSaveSchema, RiggingListSchema } from '@jevellan/core';
 import { ProjectDefinitionRestores } from './project-definition-restores.js';
 import { ProjectDefinitionEditorSchema, ProjectDefinitionsViewSchema, ProjectViewSchema, type ProjectDefinitionEditor, type ProjectDefinitionsView } from '@jevellan/core';
@@ -437,6 +438,14 @@ export class Application {
   async saveRuntimeSettings(input: unknown, deviceId = this.device.deviceId) {
     const state = !this.member && deviceId !== this.device.deviceId ? new HubState(this.hub, deviceId, [...this.runtimes.keys()]) : this.state;
     const saved = await state.configuration.runtimesPut(input); await this.configuration(); await this.applyRigging(); return saved;
+  }
+  async projectSetupView(projectId: string, deviceId = this.device.deviceId, signal?: AbortSignal) {
+    const id = IdSchema.parse(projectId), target = IdSchema.parse(deviceId); signal?.throwIfAborted();
+    if (target !== this.device.deviceId) return ProjectSetupViewSchema.parse(await projectDefinitionDeviceOperation(this, target, { schema: 'project-definition-peer-request-v1', operation: 'setup-view', projectId: id }, signal));
+    await this.conversations.ready; signal?.throwIfAborted();
+    if (!await this.state.projects.get(id)) throw Object.assign(new Error('Project not found.'), { status: 404 });
+    const panel = await this.conversations.contextPanel(id); signal?.throwIfAborted();
+    return buildProjectSetupView(this.redactor.document({ schema: 'project-setup-facts-v1', projectId: id, deviceId: this.device.deviceId, panel }));
   }
   async settingsWorkspace() {
     const [config, accounts, runtimeList, items, roster, jev] = await Promise.all([this.configuration(), this.accounts.list(), this.runtimeList(), this.rigging.list(), this.roster(), this.state.jev.summary()]);

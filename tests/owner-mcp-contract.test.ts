@@ -492,3 +492,7 @@ test('MCP conversation new view uses canonical device-bound composer metadata wi
 test('MCP conversation creation draft prepares canonical identity and title without starting work',async()=>{
  f=await projectFixture({control:true});const raw={schema:'conversation-creation-intent-v1',projectId:'project',message:'MCP creation title\nDetails',choices:{schema:'composer-initial-v1',once:{},pins:{}}};const draft=await(await f.request('/api/conversation-new/draft','POST',raw)).json(),mcp=await connect({JEVELLAN_HOME:f.homes.root});const result=OwnerToolResultSchema.parse((await mcp.callTool({name:'jev',arguments:{action:'conversation_create_draft',request:{...raw,previous:draft.pending}}})).structuredContent);expect(result).toMatchObject({ok:true,data:draft});expect((await f.app.conversations.list()).conversations).toHaveLength(0);expect(f.fake.starts).toHaveLength(0);
 });
+
+test('MCP project setup view reads canonical readiness without starting work',async()=>{
+ f=await projectFixture({control:true});const mcp=await connect({JEVELLAN_HOME:f.homes.root});const result=OwnerToolResultSchema.parse((await mcp.callTool({name:'jev',arguments:{action:'project_setup',request:{schema:'project-setup-wait-request-v1',waitSeconds:0}}})).structuredContent);const ordinary=await(await f.request('/api/projects/project/setup-view')).json();expect(result).toMatchObject({ok:true,data:ordinary});expect(f.fake.starts).toHaveLength(0);
+});
