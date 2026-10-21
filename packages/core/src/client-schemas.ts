@@ -1,3 +1,4 @@
+import { accountInputIssues } from './account-policy.js';
 import { RuntimeSettingsEditorSchema } from './runtime-settings-schemas.js';
 import { z } from 'zod';
 import { NativeSetupInventorySchema } from './native-setup-schemas.js';
@@ -15,13 +16,7 @@ export const AddAccountSchema = z.strictObject({
   endpoint: AccountEndpointSchema.optional(), paidUse: PaidUseSchema.optional(), secret: CredentialInputSchema.optional(), clientRequestId: IdSchema.optional(),
   /** 'per-device' for an account that logs in on each device, such as one used in place in the owner's own folder. */
   credential: z.enum(['shared', 'per-device']).optional(),
-}).superRefine((value, ctx) => {
-  if (value.kind === 'api-key' && (!value.paidUse || !value.secret)) ctx.addIssue({ code: 'custom', message: 'Enter the key and choose when Jevellan may use it.' });
-  if ((value.kind === 'subscription' || value.kind === 'endpoint' && value.endpoint?.billing !== 'metered') && value.paidUse) ctx.addIssue({ code: 'custom', message: 'Paid-use policy applies only to API keys.' });
-  if (value.kind === 'endpoint' && (!value.endpoint || !value.secret || value.runtime !== 'claude' || value.endpoint.billing === 'metered' && !value.paidUse)) ctx.addIssue({ code: 'custom', message: 'Enter the endpoint, auth token and billing policy.' });
-  if (value.kind !== 'endpoint' && value.endpoint) ctx.addIssue({ code: 'custom', message: 'Endpoint settings belong to compatible-endpoint accounts.' });
-  if (value.runtime === 'codex' && value.kind === 'subscription' && value.secret) ctx.addIssue({ code: 'custom', message: 'Codex subscription sign-in belongs to this device.' });
-});
+}).superRefine((value, ctx) => { for (const message of accountInputIssues(value, Boolean(value.secret))) ctx.addIssue({ code: 'custom', message }); });
 export const UpdateAccountSchema = z.strictObject({
   schema: z.literal('update-account-v1'), revision: z.number().int().positive(), label: z.string().trim().min(1).max(128),
   enabled: z.boolean(), ceilingPct: z.number().min(0).max(100), paidUse: PaidUseSchema.optional(), endpoint: AccountEndpointSchema.optional(), clientRequestId: IdSchema.optional(),

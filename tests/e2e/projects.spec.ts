@@ -2324,6 +2324,35 @@ test('About renders the engine device version and maintenance text and opens the
   await page.getByRole('button', { name: 'Open setup guide', exact: true }).click(); await expect(page).toHaveURL(/\/setup$/); expect(errors).toEqual([]);
 });
 
+test('Account editor creates and replaces API keys without sending credentials to readonly previews', async ({ page }, info) => {
+  const errors = await begin(page), previews: Record<string, unknown>[] = [];
+  page.on('request', request => { if (new URL(request.url()).pathname === '/api/accounts/editor/preview' && request.method() === 'POST') previews.push(request.postDataJSON() as Record<string, unknown>); });
+  await page.goto('/settings/runtimes'); const runtime = page.locator('.runtime-card').filter({ has: page.getByRole('heading', { name: 'Claude Code', exact: true }) });
+  await runtime.getByRole('button', { name: 'Add account', exact: true }).click(); const form = page.getByRole('dialog', { name: 'Add account', exact: true });
+  await form.getByRole('combobox', { name: 'Kind', exact: true }).selectOption('api-key');
+  await form.getByRole('textbox', { name: 'Label', exact: true }).fill('Account editor key fixture'); await form.getByLabel('API key', { exact: true }).fill('fixture-account-editor-key-one');
+  await form.getByRole('combobox', { name: 'When may Jevellan use this key?', exact: true }).selectOption('never'); await form.getByRole('button', { name: 'Add account', exact: true }).click(); await expect(form).toHaveCount(0, LONG);
+  const account = runtime.locator('.account').filter({ has: page.getByText('Account editor key fixture', { exact: true }) }); await expect(account).toContainText('••••-one', LONG);
+  await expect(account.locator('.account-heading .status')).toHaveText('Paid use not allowed', LONG);
+  await account.getByRole('button', { name: 'Replace key', exact: true }).click(); const replace = page.getByRole('dialog', { name: 'Replace API key', exact: true });
+  await replace.getByLabel('New API key', { exact: true }).fill('fixture-account-editor-key-two'); await replace.getByRole('button', { name: 'Replace key', exact: true }).click(); await expect(replace).toHaveCount(0, LONG);
+  await expect(account).toContainText('••••-two', LONG); await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(previews.length).toBeGreaterThan(0); for (const request of previews) { expect(request).not.toHaveProperty('credential'); expect(request).not.toHaveProperty('secret'); expect(typeof request.credentialPresent).toBe('boolean'); }
+  await page.screenshot({ path: `test-results/ACCTEDIT-key-replaced-${layout(info)}.png`, fullPage: true }); expect(errors).toEqual([]);
+});
+
+test('Account edit accepts canonical fractional usage ceilings without changing the account kind', async ({ page }, info) => {
+  const errors = await begin(page); await page.goto('/settings/runtimes');
+  const account = page.locator('.account').first(); await expect(account).toBeVisible();
+  const id = (await account.getAttribute('id'))!.replace(/^account-/, ''), path = `/hub/accounts/${id}`;
+  const before = await (await page.request.get(path)).json(), target = before.account.ceilingPct === 90.5 ? 91.5 : 90.5;
+  await account.getByRole('button', { name: 'Edit', exact: true }).click(); const dialog = page.getByRole('dialog', { name: 'Edit account', exact: true });
+  await dialog.getByRole('spinbutton', { name: 'Usage ceiling (%)', exact: true }).fill(String(target)); await dialog.getByRole('button', { name: 'Save account', exact: true }).click();
+  await expect.poll(async () => (await (await page.request.get(path)).json()).account.ceilingPct).toBe(target);
+  await expect(dialog).toHaveCount(0); const after = await (await page.request.get(path)).json(); expect(after.account.kind).toBe(before.account.kind); expect(after.account.enabled).toBe(before.account.enabled); expect(after.account.label).toBe(before.account.label);
+  await page.screenshot({ path: `test-results/ACCTEDIT-fractional-${layout(info)}.png`, fullPage: true }); expect(errors).toEqual([]);
+});
+
 test('Runtime settings keep cache, own setup and enable writes scoped', async ({ page }, info) => {
   const errors = await begin(page); await page.goto('/settings/runtimes');
   const before = await (await page.request.get('/hub/config')).json(), editor = await (await page.request.get('/api/config/runtimes')).json();

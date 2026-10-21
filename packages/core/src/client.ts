@@ -112,3 +112,5 @@ export * from './configuration-editor-schemas.js';
 
 export * from './account-view-schemas.js';
 export * from './runtime-settings-schemas.js';
+export * from './account-policy.js';
+export * from './account-editor-schemas.js';

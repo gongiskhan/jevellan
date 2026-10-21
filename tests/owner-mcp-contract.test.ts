@@ -1,3 +1,4 @@
+import { accountEditorFixture } from './helpers/account-editor-fixture.js';
 import { ProjectEnvironmentEditorSchema } from '../packages/core/dist/index.js';
 import { ProjectPlacementEditorSchema } from '../packages/core/dist/index.js';
 import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
@@ -25,6 +26,15 @@ async function connect(env: Record<string, string>): Promise<Client> {
     env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', ...env }, cwd: f!.checkout, stderr: 'ignore' });
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
+
+test('MCP account editor shares nonsecret preparation and never starts a provider login', async () => {
+  f = await accountEditorFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'account_editor', runtime: 'claude' } })).structuredContent); expect(result.ok).toBe(true);
+  const view = result.ok ? result.data as { context: object; fields: object } : undefined;
+  const request = { schema: 'account-editor-preview-v1', context: view!.context, fields: { ...view!.fields, label: 'MCP editor fixture', kind: 'api-key', paidUse: 'never' }, credentialPresent: true };
+  const prepared = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'account_preview', request } })).structuredContent); expect(prepared).toMatchObject({ ok: true, data: { schema: 'account-editor-view-v1', canSave: true, plan: { primary: { path: '/hub/accounts', body: { kind: 'api-key', paidUse: 'never' } }, startLogin: false } } });
+  expect(f.fake.runs).toHaveLength(0);
+});
 
 test('MCP runtime settings share the engine reader and scoped enable writer', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { AddAccountSchema, AccountEditorReadSchema, AccountEditorPreviewSchema, AccountEditorSaveSchema, AccountEditorSavedSchema, accountEditorInitial, accountEditorView } from '@jevellan/core';
 import { RuntimeListSchema, RuntimeSettingsEditorSchema, runtimeSettingsEditor, nativeSetup } from '@jevellan/core';
 import { CleanupService } from '@jevellan/core';
 import { ConfigWriteSchema, ImportSchema, ConfigurationYamlViewSchema, configurationEditorView, configurationImportView, parseConfiguration, exportConfiguration } from '@jevellan/core';
@@ -384,6 +386,40 @@ export class Application {
     return this.member ? this.member.projectMemory(request) : this.projectMemoryRequest(request, this.device.deviceId);
   }
   async improverRequest(input: unknown) { return this.member ? this.member.improver(input) : this.routingImprover!.request(input, this.device.deviceId); }
+  async createAccount(raw: unknown) {
+    const input = AddAccountSchema.parse(raw);
+    const view = await this.accounts.add(input); await this.applyRigging();
+    if (view.account.secretRef) { await this.accounts.check(view.account.id); if ((await this.accounts.status(view.account.id)).auth === 'ready') await this.accounts.discover(view.account.id).catch(() => undefined); }
+    return this.accounts.get(view.account.id);
+  }
+  async accountEditorRead(raw: unknown) {
+    const input = AccountEditorReadSchema.parse(raw), current = input.accountId ? await this.accounts.get(input.accountId) : undefined;
+    const runtime = this.runtimes.get(input.runtime); if (!runtime && !current) throw Object.assign(new Error('This runtime is not installed.'), { status: 404 });
+    const kinds = runtime?.accountKinds ?? (current ? [current.account.kind] : []), initial = accountEditorInitial(input.runtime, [...kinds], current, input.mode);
+    return accountEditorView({ schema: 'account-editor-preview-v1', ...initial, credentialPresent: false }, [...kinds], current);
+  }
+  async accountEditorPreview(raw: unknown) {
+    const input = AccountEditorPreviewSchema.parse(raw), current = input.context.accountId ? await this.accounts.get(input.context.accountId) : undefined;
+    const kinds = this.runtimes.get(input.context.runtime)?.accountKinds ?? (current ? [current.account.kind] : []);
+    return accountEditorView(input, [...kinds], current);
+  }
+  async accountEditorSave(raw: unknown) {
+    const input = AccountEditorSaveSchema.parse(raw); if (input.credential) this.redactor.add(input.credential);
+    const current = input.context.accountId ? await this.accounts.get(input.context.accountId) : undefined;
+    const kinds = this.runtimes.get(input.context.runtime)?.accountKinds ?? (current ? [current.account.kind] : []);
+    const prepared = accountEditorView({ schema: 'account-editor-preview-v1', context: input.context, fields: input.fields, credentialPresent: Boolean(input.credential) }, [...kinds], current, true);
+    if (!prepared.plan) throw Object.assign(new Error(prepared.validation.map(row => row.message).join(' ')), { status: 400 });
+    const plan = prepared.plan, body = { ...plan.primary.body, clientRequestId: input.clientRequestId, ...(plan.primary.includeCredential ? { secret: input.credential } : {}) };
+    let account;
+    if (body.schema === 'add-account-v1') account = await this.createAccount(body);
+    else if (body.schema === 'update-account-v1') account = await this.accounts.update(input.context.accountId!, body);
+    else account = await this.accounts.replaceCredential(input.context.accountId!, body);
+    if (plan.credentialReplacement) {
+      const clientRequestId = `credential_${createHash('sha256').update(input.clientRequestId).digest('hex')}`;
+      account = await this.accounts.replaceCredential(input.context.accountId!, { ...plan.credentialReplacement.body, secret: input.credential, clientRequestId });
+    }
+    return AccountEditorSavedSchema.parse({ schema: 'account-editor-saved-v1', account, startLogin: plan.startLogin });
+  }
   async runtimeList() {
     const revision = await this.configuration(), config = revision.configuration['x-jevellan'];
     const runtimes = [...this.runtimes.values()].map(runtime => ({ id: runtime.id, displayName: runtime.displayName, enabled: config.runtimes[runtime.id]?.enabled === true,

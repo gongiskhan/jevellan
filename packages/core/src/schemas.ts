@@ -69,10 +69,11 @@ export const ConfigRevisionSchema = z.strictObject({
 });
 export type ConfigRevision = z.infer<typeof ConfigRevisionSchema>;
 
+export const ACCOUNT_ENDPOINT_LIMITS = { models: 10, modelId: 200, label: 80, description: 600, background: 200 } as const;
 export const AccountEndpointSchema = z.strictObject({
   baseUrl: z.url(), billing: z.enum(['subscription', 'metered', 'free']),
-  models: z.array(z.strictObject({ id: z.string().min(1).max(200), label: z.string().min(1).max(80), efforts: z.array(EffortSchema).min(1), description: z.string().min(1).max(600) })).min(1).max(10),
-  backgroundModel: z.string().min(1).max(200).optional(),
+  models: z.array(z.strictObject({ id: z.string().min(1).max(ACCOUNT_ENDPOINT_LIMITS.modelId), label: z.string().min(1).max(ACCOUNT_ENDPOINT_LIMITS.label), efforts: z.array(EffortSchema).min(1), description: z.string().min(1).max(ACCOUNT_ENDPOINT_LIMITS.description) })).min(1).max(ACCOUNT_ENDPOINT_LIMITS.models),
+  backgroundModel: z.string().min(1).max(ACCOUNT_ENDPOINT_LIMITS.background).optional(),
 }).refine(value => new Set(value.models.map(model => model.id)).size === value.models.length, 'Each model id can appear once.');
 export const AccountSchemaV2 = z.strictObject({
   schema: z.literal('account-v2'), id: IdSchema, runtime: IdSchema, label: text,

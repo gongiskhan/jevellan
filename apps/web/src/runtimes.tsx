@@ -1,5 +1,4 @@
-import { EndpointFields } from './endpoint-fields.js';
-import { ENDPOINT } from './project-work-copy.js';
+import { AccountForm, ReplaceKey } from './account-editor.js';
 import { clientId } from './client-id.js';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
@@ -8,7 +7,6 @@ import {
   AccountsSettingsViewSchema, ACCOUNT_VIEW_REFRESH_MS, type AccountsSettingsView, type AccountSettingsRow,
   LoginViewSchema,
   type AccountView,
-  type Account,
 } from '@jevellan/core/client';
 import { api, empty, isCancelled } from './api.js';
 import {
@@ -21,11 +19,6 @@ import {
   type PageProps,
 } from './components.js';
 
-const paidLabels = {
-  always: 'Always',
-  'when-subscriptions-run-out': 'Only when this runtime’s subscriptions run out',
-  never: 'Never automatically',
-};
 type Login = z.infer<typeof LoginViewSchema>;
 function Usage({ windows }: { windows: AccountSettingsRow['usage'] }) {
   return <div className="usage-windows">{windows.map(window => <div className="usage" key={window.key}>
@@ -33,213 +26,6 @@ function Usage({ windows }: { windows: AccountSettingsRow['usage'] }) {
     <progress aria-label={`${window.label} usage`} max={100} value={window.value ?? 0} />
     {window.resetAt && <small>{window.resetLabel} {dateTime(window.resetAt)}</small>}
   </div>)}</div>;
-}
-function AccountForm({
-  runtime,
-  existing,
-  done,
-  close,
-  onError,
-}: {
-  runtime: string;
-  existing?: AccountView;
-  done(account: AccountView, startLogin: boolean, signal: AbortSignal): Promise<void>;
-  close(): void;
-  onError(error: unknown): void;
-}) {
-  const [label, setLabel] = useState(existing?.account.label ?? '');
-  const [kind, setKind] = useState(existing?.account.kind ?? 'subscription');
-  const [ceiling, setCeiling] = useState(existing?.account.ceilingPct ?? 90);
-  const [paid, setPaid] = useState<string>(existing?.account.paidUse ?? '');
-  const [secret, setSecret] = useState('');
-  const [endpoint, setEndpoint] = useState<NonNullable<Account['endpoint']>>(existing?.account.endpoint ?? { baseUrl: '', billing: 'subscription', models: [{ id: '', label: '', efforts: ['medium'], description: '' }] });
-  const metered = kind === 'api-key' || kind === 'endpoint' && endpoint.billing === 'metered';
-  const endpointValue = () => { const { backgroundModel, ...rest } = endpoint; return { ...rest, ...(backgroundModel?.trim() ? { backgroundModel: backgroundModel.trim() } : {}) }; };
-  const task = useTask(onError);
-  const requestId = useRequestId();
-  return (
-    <Modal title={existing ? 'Edit account' : 'Add account'} close={close}>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          void task.run(async (signal) => {
-            try {
-              const value = existing
-                ? {
-                    schema: 'update-account-v1',
-                    revision: existing.revision,
-                    label,
-                    enabled: existing.account.enabled,
-                    ceilingPct: ceiling,
-                    ...(metered ? { paidUse: paid } : {}),
-                    ...(kind === 'endpoint' ? { endpoint: endpointValue() } : {}),
-                  }
-                : {
-                    schema: 'add-account-v1',
-                    runtime,
-                    label,
-                    kind,
-                    ceilingPct: ceiling,
-                    ...(metered ? { paidUse: paid } : {}),
-                    ...(kind === 'endpoint' ? { endpoint: endpointValue() } : {}),
-                    ...(secret ? { secret } : {}),
-                  };
-              let account = await api(
-                existing ? `/hub/accounts/${existing.account.id}` : '/hub/accounts',
-                AccountViewSchema,
-                existing ? 'PATCH' : 'POST',
-                { ...value, clientRequestId: requestId({ accountId: existing?.account.id, value }) },
-                { signal, waitForHub: true },
-              );
-              if (existing && kind === 'endpoint' && secret) account = await api(`/hub/accounts/${account.account.id}/credential`, AccountViewSchema, 'PUT', { schema: 'replace-credential-v1', revision: account.revision, secret, clientRequestId: requestId({ credential: true, accountId: account.account.id, secret }) }, { signal, waitForHub: true });
-              await done(account, !existing && kind === 'subscription' && !secret, signal);
-            } finally {
-              setSecret('');
-            }
-          });
-        }}
-      >
-        <label>
-          Label
-          <input
-            autoFocus
-            required
-            maxLength={128}
-            value={label}
-            onChange={(event) => setLabel(event.target.value)}
-            placeholder="Personal"
-          />
-        </label>
-        {!existing && (
-          <label>
-            Kind
-            <select
-              value={kind}
-              onChange={(event) => {
-                setKind(event.target.value as Account['kind']);
-                setPaid('');
-                setSecret('');
-              }}
-            >
-              <option value="subscription">Subscription</option>
-              <option value="api-key">API key</option>
-              {runtime === 'claude' && <option value="endpoint">{ENDPOINT.type}</option>}
-            </select>
-          </label>
-        )}
-        {kind === 'subscription' && runtime === 'claude' && (
-          <p className="notice">
-            Anthropic's terms restrict third-party tools from offering Claude subscription logins without
-            their approval. Using your own token here is your decision.
-          </p>
-        )}
-        {!existing && kind === 'api-key' && (
-          <label>
-            API key
-            <input
-              type="password"
-              autoComplete="off"
-              required
-              value={secret}
-              onChange={(event) => setSecret(event.target.value)}
-            />
-          </label>
-        )}
-        {!existing && kind === 'subscription' && runtime === 'claude' && (
-          <details>
-            <summary>Use an existing token</summary>
-            <label>
-              Subscription token
-              <input
-                type="password"
-                autoComplete="off"
-                value={secret}
-                onChange={(event) => setSecret(event.target.value)}
-              />
-            </label>
-          </details>
-        )}
-        {kind === 'endpoint' && <><EndpointFields value={endpoint} change={setEndpoint} /><label>{ENDPOINT.token}<input type="password" autoComplete="off" required={!existing} value={secret} onChange={event => setSecret(event.target.value)} /></label></>}
-        {metered && (
-          <label>
-            {kind === 'endpoint' ? ENDPOINT.paid : 'When may Jevellan use this key?'}
-            <select required value={paid} onChange={(event) => setPaid(event.target.value)}>
-              <option value="" disabled>
-                Choose when
-              </option>
-              {Object.entries(paidLabels).map(([value, text]) => (
-                <option value={value} key={value}>
-                  {text}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <label>
-          Usage ceiling (%)
-          <input
-            type="number"
-            min={0}
-            max={100}
-            required
-            value={ceiling}
-            onChange={(event) => setCeiling(Number(event.target.value))}
-          />
-        </label>
-        <div className="form-actions">
-          <button type="button" className="secondary" onClick={close}>
-            Cancel
-          </button>
-          <button disabled={task.busy}>
-            {task.busy ? 'Saving…' : existing ? 'Save account' : 'Add account'}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-function ReplaceKey({ view, close, props }: { view: AccountView; close(): void; props: PageProps }) {
-  const save = useSettingsSave();
-  const [secret, setSecret] = useState('');
-  const task = useTask(props.onError);
-  return (
-    <Modal title="Replace API key" close={close}>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          void task.run(async (signal) => {
-            try {
-              await save(
-                `/hub/accounts/${view.account.id}/credential`,
-                AccountViewSchema,
-                'PUT',
-                { schema: 'replace-credential-v1', revision: view.revision, secret },
-                signal,
-              );
-              await props.reload(signal);
-              close();
-            } finally {
-              setSecret('');
-            }
-          });
-        }}
-      >
-        <label>
-          New API key
-          <input
-            autoFocus
-            type="password"
-            autoComplete="off"
-            required
-            value={secret}
-            onChange={(event) => setSecret(event.target.value)}
-          />
-        </label>
-        <p className="muted">The saved key is replaced when you submit this form.</p>
-        <button disabled={task.busy}>{task.busy ? 'Checking…' : 'Replace key'}</button>
-      </form>
-    </Modal>
-  );
 }
 function LoginPanel({ initial, props, close, readRow }: { initial: Login; props: PageProps; close(): void; readRow: AccountSettingsRow | undefined }) {
   const save = useSettingsSave();

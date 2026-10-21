@@ -1,3 +1,4 @@
+import { AccountEditorReadSchema, AccountEditorSaveSchema } from '@jevellan/core';
 import { RuntimeSettingsSaveSchema } from '@jevellan/core';
 import { environmentSecretSummary } from '@jevellan/projects';
 import { EkoaOAuthStartSchema, EkoaOAuthCallbackSchema } from '@jevellan/core';
@@ -194,14 +195,17 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (path === '/api/runtimes' && method === 'GET') { send(await app.runtimeList()); return; }
     if (path === '/api/config/runtimes' && method === 'GET') { send(await app.runtimeSettings()); return; }
     if (path === '/api/config/runtimes' && method === 'PUT') { const input = RuntimeSettingsSaveSchema.parse(await body(request)); retryable = true; send(await app.saveRuntimeSettings(input)); return; }
+    if (path === '/api/accounts/editor' && method === 'GET') {
+      const input = AccountEditorReadSchema.parse({ schema: 'account-editor-read-v1', runtime: url.searchParams.get('runtime'), ...(url.searchParams.has('accountId') ? { accountId: url.searchParams.get('accountId') } : {}), ...(url.searchParams.has('mode') ? { mode: url.searchParams.get('mode') } : {}) });
+      send(await app.accountEditorRead(input)); return;
+    }
+    if (path === '/api/accounts/editor/preview' && method === 'POST') { send(await app.accountEditorPreview(await body(request))); return; }
+    if (path === '/api/accounts/editor/save' && method === 'POST') { const input = AccountEditorSaveSchema.parse(await body(request)); retryable = true; send(await app.accountEditorSave(input), input.context.mode === 'create' ? 201 : 200); return; }
     if (path === '/api/accounts/view' && method === 'GET') { send(await app.accountsSettings()); return; }
     if (path === '/hub/accounts' && method === 'GET') { send(AccountListSchema.parse({ schema: 'accounts-list-v1', accounts: (await app.accounts.list()) })); return; }
     if (path === '/hub/accounts' && method === 'POST') {
       const input = AddAccountSchema.parse(await body(request)); retryable = input.clientRequestId !== undefined;
-      const view = (await app.accounts.add(input));
-      await app.applyRigging();
-      if (view.account.secretRef) { await app.accounts.check(view.account.id); if ((await app.accounts.status(view.account.id)).auth === 'ready') await app.accounts.discover(view.account.id).catch(() => undefined); }
-      send((await app.accounts.get(view.account.id)), 201); return;
+      send(await app.createAccount(input), 201); return;
     }
     const account = path.match(/^\/hub\/accounts\/([A-Za-z0-9_-]+)(\/credential)?$/);
     if (account) {

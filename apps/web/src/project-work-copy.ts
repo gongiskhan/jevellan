@@ -49,7 +49,7 @@ export const THREAD_MODELS = 'Models threads may use';
 export const ALL_ENABLED_MODELS = 'All enabled models';
 export const LOWEST_EFFORT = 'Lowest effort for threads';
 export const NO_MINIMUM = 'No minimum';
-export const EFFORT_LABELS = { low: 'Low', medium: 'Medium', high: 'High', xhigh: 'Extra high', max: 'Max' } as const;
+export { ACCOUNT_EFFORT_LABELS as EFFORT_LABELS } from '@jevellan/core/client';
 export const PLACEMENT_GUIDANCE = 'Guidance for Jev';
 export const START_MODE = 'When the coordinator plans work';
 export const START_RIGHT_AWAY = 'Start threads right away';
@@ -477,13 +477,7 @@ export const RIGGING_ALL_PROJECTS = 'All projects';
 export const libraryFileSize = (size: number) => size >= 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)} MB` : size >= 1024 ? `${(size / 1024).toFixed(1)} KB` : `${size} B`;
 
 // Compatible endpoints
-export const ENDPOINT = {
-  type: 'Compatible endpoint', baseUrl: 'Base URL', placeholder: 'https://api.example.com/anthropic', token: 'Auth token', billing: 'Billing',
-  subscription: 'Plan or subscription', metered: 'Pay per use', free: 'Free (local)', paid: 'When Jevellan may use it',
-  help: "Any server that speaks the Anthropic Messages API: Z.ai's GLM endpoint, DeepSeek, or a local server or proxy in front of a local model.",
-  models: 'Models', modelId: 'Model id', label: 'Label', efforts: 'Efforts', description: 'When to use it (Jev reads this)', addModel: 'Add model', removeModel: 'Remove model',
-  background: 'Background model', backgroundHelp: "Used for Claude Code's small background calls. Defaults to the first model.", keyRefused: 'Key refused',
-} as const;
+export { ACCOUNT_ENDPOINT_COPY as ENDPOINT } from '@jevellan/core/client';
 export { modelNotServed } from '@jevellan/core/client';
 
 export const SUGGEST_SETUP = 'Suggest setup';

@@ -1,3 +1,4 @@
+import { accountEditorFixture } from './helpers/account-editor-fixture.js';
 import { ProjectEnvironmentEditorSchema } from '../packages/core/dist/index.js';
 import { ProjectPlacementEditorSchema } from '../packages/core/dist/index.js';
 import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
@@ -23,6 +24,17 @@ import { ProjectRouteWhyViewSchema, ProjectThreadOverrideEditorSchema, ThreadCre
 let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
+
+test('CLI account editor shares defaults and canonical subscription save without starting login', async () => {
+  f = await accountEditorFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['config', 'account_editor', '--runtime', 'claude'], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); expect(result.ok).toBe(true);
+  const view = result.ok ? result.data as { context: object; fields: object } : undefined;
+  const request = { schema: 'account-editor-save-v1', context: view!.context, fields: { ...view!.fields, label: 'CLI editor fixture' }, clientRequestId: 'account_editor_cli' };
+  output.mockClear(); expect(await callCommand(['config', 'account_save', '--request', JSON.stringify(request)], f.homes)).toBe(0);
+  const saved = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); expect(saved).toMatchObject({ ok: true, data: { schema: 'account-editor-saved-v1', startLogin: true, account: { account: { label: 'CLI editor fixture', kind: 'subscription', ceilingPct: 90 } } } });
+  expect(f.fake.runs).toHaveLength(0);
+});
 
 test('CLI runtime settings share canonical controls and scoped cache saves', async () => {
   f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);

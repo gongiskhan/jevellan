@@ -1,3 +1,4 @@
+import { ACCOUNT_PAID_LABELS } from '@jevellan/core';
 import type { z } from 'zod';
 import { AccountsSettingsViewSchema, AccountAvailabilitySchema, ACCOUNT_VIEW_REFRESH_MS, currentUsage, IdSchema, type AccountView, type Configuration, type DeviceRosterSchema, type OfferedModelsSchema } from '@jevellan/core';
 import { rankAccounts, type RankedAccount } from './eligibility.js';
@@ -21,7 +22,6 @@ export function accountAvailability(ranked: RankedAccount, runtimeEnabled: boole
   if (status.lastError) return result('Signed in · check failed', 'unknown');
   return result('Ready', 'ready');
 }
-const paidLabels = { always: 'Always', 'when-subscriptions-run-out': 'Only when this runtime’s subscriptions run out', never: 'Never automatically' };
 export function accountsSettingsView(input: { accounts: AccountView[]; offered: z.infer<typeof OfferedModelsSchema>[]; runtimeIds: string[]; configuration: Configuration; roster: z.infer<typeof DeviceRosterSchema>; deviceId: string; now?: number }) {
   const now = input.now ?? Date.now(), deviceId = IdSchema.parse(input.deviceId), accounts = input.accounts.map(view => view.account), statuses = input.accounts.flatMap(view => view.statuses);
   const rankedFor = (runtime: string, device: string) => new Map(rankAccounts({ accounts, statuses, runtime, deviceId: device, now }).map(row => [row.account.id, row]));
@@ -38,7 +38,7 @@ export function accountsSettingsView(input: { accounts: AccountView[]; offered: 
           if (status?.coolingUntil && Date.parse(status.coolingUntil) > now) notice('cooling', 'Cooling until ', status.coolingUntil);
           for (const [model, until] of Object.entries(status?.modelCooling ?? {})) if (Date.parse(until) > now) notice(`model:${model}`, `${input.configuration['x-jevellan'].menu.find(entry => entry.runtime === runtime && entry.model === model)?.label ?? model} reached its limit on this account. Cooling until `, until, '; other models can still use it.');
           if (status?.lastError && account.kind !== 'endpoint') notice('last-error', status.lastError);
-          return { schema: 'account-settings-row-v1', view, availability, kindLabel: account.kind === 'endpoint' ? 'Compatible endpoint' : account.kind === 'api-key' ? 'API key' : 'Subscription', secretLine: view.secret ? `Saved · ••••${view.secret.lastFour}` : null, paidUseLine: account.paidUse ? paidLabels[account.paidUse] : null,
+          return { schema: 'account-settings-row-v1', view, availability, kindLabel: account.kind === 'endpoint' ? 'Compatible endpoint' : account.kind === 'api-key' ? 'API key' : 'Subscription', secretLine: view.secret ? `Saved · ••••${view.secret.lastFour}` : null, paidUseLine: account.paidUse ? ACCOUNT_PAID_LABELS[account.paidUse] : null,
             usage: account.kind === 'endpoint' ? [] : (['fiveHour', 'weekly'] as const).map(key => { const value = key === 'fiveHour' ? usage.fiveHourPct : usage.weeklyPct; return { schema: 'account-usage-window-v1', key, label: key === 'fiveHour' ? 'Five hours' : 'Week', valueLabel: value === undefined ? 'Unknown' : `${value}%`, resetLabel: 'Resets', value: value ?? null, resetAt: value === undefined ? null : (key === 'fiveHour' ? status?.usage?.fiveHourResetsAt : status?.usage?.weeklyResetsAt) ?? null }; }), usageCheckedAt: status?.usage?.observedAt ?? null, usageCheckedLabel: 'Usage checked', notices,
             devices: account.credential !== 'per-device' ? [] : input.roster.devices.filter(device => !device.revoked).map(device => {
               const here = device.device.id === deviceId, available = here || device.status !== 'offline', ranked = rankedFor(runtime, device.device.id).get(account.id)!;
