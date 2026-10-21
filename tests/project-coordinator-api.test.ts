@@ -1,3 +1,4 @@
+import { projectConfigurationInfo } from '../packages/projects/dist/project-configuration.js';
 // The coordinator HTTP API and its chat stream (brief 11, 5.1, 5.13, 8.1; design 2.10): every phase 2 route through a booted
 // daemon with the browser session, FakeRuntime coordinator turns, the hub project store and live git. The stream is read as
 // raw SSE bytes, so the frame format, the cursor rules and the per-flush authentication are checked on the wire.
@@ -282,8 +283,8 @@ test('work settings, notebook and answers: revision checks, the main default coe
     ({ schema: 'project-work-settings-request-v1', revision, settings: { ...defaults, ...over }, ...(clientRequestId ? { clientRequestId } : {}) });
 
   // Settings: defaults first, then a compare-and-swap on the revision; the body is checked before the revision.
-  expect(ProjectWorkSettingsViewSchema.parse(await call(f, route('/work-settings'), 'GET', undefined, 200))).toEqual({ schema: 'project-work-settings-view-v1', settings: base });
-  expect(await call(f, route('/work-settings'), 'PUT', put(0, { maxRunningThreads: 3 }), 200)).toEqual({ schema: 'project-work-settings-view-v1',
+  expect(ProjectWorkSettingsViewSchema.parse(await call(f, route('/work-settings'), 'GET', undefined, 200))).toEqual({ schema: 'project-work-settings-view-v1', configuration: projectConfigurationInfo(), settings: base });
+  expect(await call(f, route('/work-settings'), 'PUT', put(0, { maxRunningThreads: 3 }), 200)).toEqual({ schema: 'project-work-settings-view-v1', configuration: projectConfigurationInfo(),
     settings: { ...base, revision: 1, maxRunningThreads: 3 } });
   expect(await call(f, route('/work-settings'), 'PUT', put(0, { maxRunningThreads: 4 }), 409)).toEqual(refused('conflict', SETTINGS_CHANGED));
   expect(await call(f, route('/work-settings'), 'PUT', put(0, { maxRunningThreads: 21 }), 400)).toEqual(refused('request-failed', CHECK));
@@ -291,7 +292,7 @@ test('work settings, notebook and answers: revision checks, the main default coe
   expect(await call(f, '/api/projects/missing/work-settings', 'GET', undefined, 404)).toEqual(refused('not-found', PROJECT_NOT_FOUND));
   // Retired isolation fields are refused, and delivery is a revision-checked project default only.
   expect(await call(f, route('/work-settings'), 'PUT', put(1, { defaultIsolation: 'main' }), 400)).toMatchObject({ code: 'request-failed' });
-  expect(await call(f, route('/work-settings'), 'PUT', put(1, { maxRunningThreads: 3, delivery: 'land' }), 200)).toEqual({ schema: 'project-work-settings-view-v1', settings: { ...base, revision: 2, maxRunningThreads: 3, delivery: 'land' } });
+  expect(await call(f, route('/work-settings'), 'PUT', put(1, { maxRunningThreads: 3, delivery: 'land' }), 200)).toEqual({ schema: 'project-work-settings-view-v1', configuration: projectConfigurationInfo(), settings: { ...base, revision: 2, maxRunningThreads: 3, delivery: 'land' } });
   const opened = ProjectWorkViewSchema.parse(await call(f, route('/work'), 'GET', undefined, 200));
   expect(opened).toMatchObject({ settings: { delivery: 'land', revision: 2 }, gates: { mainIsolation: false } }); expect(opened.settingsNotice).toBeUndefined();
   const stored = await f.app.state.projects.get(pid);
@@ -301,7 +302,7 @@ test('work settings, notebook and answers: revision checks, the main default coe
   // A retried save with its client request id repeats instead of conflicting (D101).
   const retried = put(2, { maxRunningThreads: 5 }, 'set_retry');
   const saved = await call(f, route('/work-settings'), 'PUT', retried, 200);
-  expect(saved).toEqual({ schema: 'project-work-settings-view-v1', settings: { ...base, revision: 3, maxRunningThreads: 5 } });
+  expect(saved).toEqual({ schema: 'project-work-settings-view-v1', configuration: projectConfigurationInfo(), settings: { ...base, revision: 3, maxRunningThreads: 5 } });
   expect(await call(f, route('/work-settings'), 'PUT', retried, 200)).toEqual(saved);
   expect(ProjectWorkSettingsSchema.parse((await f.app.projectHub.settings(pid))!.document)).toMatchObject({ revision: 3, maxRunningThreads: 5 });
 

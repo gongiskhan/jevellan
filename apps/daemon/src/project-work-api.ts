@@ -111,7 +111,7 @@ const rows: readonly Row[] = [
   { name: 'fresh', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/fresh$/, methods: ['POST'], target: 'coordinator' },
   // Move coordinator here runs on the device the owner uses, never proxied (3.5.3).
   { name: 'move', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/move$/, methods: ['POST'], target: 'local' },
-  { name: 'settings', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/work-settings$/, methods: ['GET', 'PUT'], target: 'any' },
+  { name: 'settings', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/(?:work-settings|config)$/, methods: ['GET', 'PUT'], target: 'any' },
   { name: 'notebook', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/notebook$/, methods: ['GET', 'PUT'], target: 'any' },
   { name: 'thread-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads$/, methods: ['POST'], target: 'coordinator' },
   { name: 'thread', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)$/, methods: ['GET'], target: 'owner' },

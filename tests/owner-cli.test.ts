@@ -18,6 +18,15 @@ let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
 
+test('CLI config project reads include the canonical configuration metadata', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  const expected = await (await f.request('/api/projects/project/work-settings')).json();
+  expect(await callCommand(['config', 'get', '--section', 'project'], f.homes)).toBe(0);
+  const encoded = output.mock.calls.map(row => String(row[0])).find(text => text.startsWith('{')), result = OwnerToolResultSchema.parse(encoded ? JSON.parse(encoded) : undefined);
+  expect(result.ok).toBe(true); if (!result.ok) throw new Error('Expected CLI project configuration.');
+  expect(result.data).toEqual(expected); expect(result.data).toHaveProperty('configuration.instructions.maxLength', 16000); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('improver read projections reach the CLI without starting work', async () => {
   f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
   const expected = await f.json('/api/improver', ImproverStateSchema), history = f.app.hub.configuration.history();

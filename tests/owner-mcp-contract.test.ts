@@ -20,6 +20,14 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP config project reads include the canonical configuration metadata', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const expected = await (await f.request('/api/projects/project/work-settings')).json();
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'get', section: 'project' } })).structuredContent);
+  expect(result.ok).toBe(true); if (!result.ok) throw new Error('Expected MCP project configuration.');
+  expect(result.data).toEqual(expected); expect(result.data).toHaveProperty('configuration.guidance.maxLength', 2000); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('improver read projections reach the official MCP client without starting work', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root }), history = f.app.hub.configuration.history();
   const expected = await f.json('/api/improver', ImproverStateSchema), response = await mcp.callTool({ name: 'jev', arguments: { action: 'improver' } }); expect(response.isError).toBeFalsy();

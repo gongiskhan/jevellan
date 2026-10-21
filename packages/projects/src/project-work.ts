@@ -1,5 +1,6 @@
 import { MergeCorrectionInputSchema } from '@jevellan/core';
 import { waitingItemsView, sentText } from './waiting-views.js';
+import { projectConfigurationInfo } from './project-configuration.js';
 import { QUESTION_NOT_FOUND } from './copy.js';
 import { ProjectSendRequestSchema, ProjectSendSavedSchema, boundedRedaction, type ProjectPageRequest, type ProjectWaitingRespondRequest, ProjectWaitingResponseSchema } from '@jevellan/core';
 import { projectGoalViews, goalEditorView, goalEditorRequest } from './goal-views.js';
@@ -918,7 +919,7 @@ export class ProjectWork {
   }
   #settingsView(project: Project, stored: ProjectWorkSettings | null) {
     const shown = effectiveSettings(stored ?? defaultProjectWorkSettings(project.id), project);
-    return ProjectWorkSettingsViewSchema.parse({ schema: 'project-work-settings-view-v1', settings: shown.settings, ...(shown.notice ? { notice: shown.notice } : {}) });
+    return ProjectWorkSettingsViewSchema.parse({ schema: 'project-work-settings-view-v1', settings: shown.settings, configuration: projectConfigurationInfo(), ...(shown.notice ? { notice: shown.notice } : {}) });
   }
   /** Settings 5.1 with a revision check; a conflict is the owner's reload sentence. */
   async putSettings(projectId: string, input: z.infer<typeof ProjectWorkSettingsRequestSchema>, clientRequestId?: string, by: 'owner' | 'coordinator' = 'owner'): Promise<z.infer<typeof ProjectWorkSettingsViewSchema>> {

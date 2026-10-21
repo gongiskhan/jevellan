@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { ProjectWorkCardSchema, ThreadMutationActionSchema } from './project-card-schemas.js';
 import { ProjectViewNoticeSchema } from './project-view-notice-schemas.js';
 import { ProjectDeploySettingsSchema } from './project-deploy-schemas.js';
+import { ProjectConfigurationInfoSchema } from './project-configuration-schemas.js';
 import { DeliverySchema, LandingCheckSchema, ThreadLandingSchema } from './project-landing-schemas.js';
 import { ProjectRelativePathSchema } from './project-parity-schemas.js';
 import { ProjectHealthChecksSchema } from './project-health-schemas.js';
@@ -599,7 +600,7 @@ export const ThreadCreatedViewSchema = z.strictObject({ schema: z.literal('threa
 export const MergeResultViewSchema = z.strictObject({ schema: z.literal('pull-request-merge-view-v1'), merged: z.boolean(),
   message: z.string().optional() });
 export const ProjectWorkSettingsViewSchema = z.strictObject({ schema: z.literal('project-work-settings-view-v1'),
-  settings: ProjectWorkSettingsSchema, notice: z.string().optional() });
+  settings: ProjectWorkSettingsSchema, notice: z.string().optional(), configuration: ProjectConfigurationInfoSchema.optional() });
 export const CoordinatorMessageReceiptSchema = z.strictObject({ schema: z.literal('coordinator-message-receipt-v1'), repeated: z.boolean() });
 /** `POST .../threads/:tid/messages` answers 202 with this; a retried client message id repeats (D153, D170). */
 export const ThreadMessageReceiptSchema = z.strictObject({ schema: z.literal('thread-message-receipt-v1'), repeated: z.boolean() });

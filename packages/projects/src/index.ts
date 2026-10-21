@@ -32,6 +32,7 @@ export * from './card-views.js';
 export * from './waiting-views.js';
 export * from './github-awareness.js';
 export * from './project-work.js';
+export * from './project-configuration.js';
 export * from './tasks.js';
 export * from './dispatcher.js';
 export * from './apps.js';

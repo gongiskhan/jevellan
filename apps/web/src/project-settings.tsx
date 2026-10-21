@@ -4,7 +4,7 @@ import { browserPushId } from './notifications.js';
 import { NotificationsViewSchema } from '@jevellan/core/client';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { EkoaCodeSetupReceiptSchema, EffortSchema, EmptySchema, ProjectEnvSecretSummarySchema, ProjectWorkSettingsSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema,
-  type ProjectEnvSecretSummary, type ProjectWorkSettings, type ProjectWorkView } from '@jevellan/core/client';
+  type ProjectConfigurationInfo, type ProjectEnvSecretSummary, type ProjectWorkSettings, type ProjectWorkView } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
 import { dateTime, useSettingsSave, useTask, type PageProps } from './components.js';
 import { LandingSettings } from './project-landing-settings.js';
@@ -28,6 +28,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const local = useLocalError(props.onError), task = useTask(local.fail), save = useSettingsSave();
   const [base, setBase] = useState<ProjectWorkSettings>();
   const [draft, setDraft] = useState<ProjectWorkSettings>();
+  const [configuration, setConfiguration] = useState<ProjectConfigurationInfo>();
   const [work, setWork] = useState<ProjectWorkView>();
   const [routines, setRoutines] = useState<ProjectRoutineSettingsView>();
   const [stale, setStale] = useState(false);
@@ -39,7 +40,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
     const [settings, view, routineModel] = await Promise.all([api(path, ProjectWorkSettingsViewSchema, 'GET', undefined, { signal, waitForHub: true }),
       api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/routine-settings`, ProjectRoutineSettingsViewSchema, 'GET', undefined, { signal, waitForHub: true })]);
     const states = await Promise.all(settings.settings.environment.secrets.map(name => api(`/api/projects/${id}/env-secrets/${encodeURIComponent(name)}`, ProjectEnvSecretSummarySchema, 'GET', undefined, { signal, waitForHub: true })));
-    setBase(settings.settings); setDraft(settings.settings); setWork(view); setRoutines(routineModel); setStale(false); setSecretValues({});
+    setBase(settings.settings); setDraft(settings.settings); setConfiguration(settings.configuration); setWork(view); setRoutines(routineModel); setStale(false); setSecretValues({});
     setSecretStates(Object.fromEntries(states.map(state => [state.name, state]))); local.setError('');
   }, [id, path, local.setError]);
   useEffect(() => {
@@ -60,7 +61,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
     if (!parsed.success) throw new Error(parsed.error.issues[0]?.message);
     try {
       const result = await save(path, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision: base!.revision, settings: fields(parsed.data) }, signal);
-      setBase(result.settings); updated(); return result.settings;
+      setBase(result.settings); setConfiguration(result.configuration); updated(); return result.settings;
     } catch (error) { if (error instanceof ApiError && error.status === 409) setStale(true); throw error; }
   };
   const setStatus = (status: ProjectWorkSettings['status']) => void task.run(async signal => {
@@ -89,30 +90,30 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   return <div className="pw-settings-page">
     <header className="pw-settings-heading">{props.navigation}<div><h1>{copy.PROJECT_SETTINGS}</h1>{work && <p className="muted">{work.project.name}</p>}</div>
       <button type="button" className="text-button" onClick={() => navigate(`/projects/${id}`)}>{copy.BACK_TO_PROJECT}</button></header>
-    {!draft || !base || !work || !routines ? <p role="status">{copy.LOADING}</p> : <div className="pw-settings-layout">
+    {!draft || !base || !work || !routines ? <p role="status">{copy.LOADING}</p> : !configuration ? <p role="status">Project configuration metadata is unavailable. Reload after the daemon is updated.</p> : <div className="pw-settings-layout">
       <nav aria-label={copy.SETTINGS_SECTIONS}>{sections.map(([key, title]) => <a key={key} href={`#project-settings-${key}`}>{title}</a>)}</nav>
       <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); saveAll(); }}>
         <fieldset disabled={task.busy} className="pw-fields">
           {section('general', <>
             <fieldset><legend>{copy.PROJECT_STATUS}</legend><div className="form-actions">{(['active', 'paused', 'archived'] as const).map(status => <button key={status} type="button" className="secondary" aria-pressed={base.status === status} onClick={() => setStatus(status)}>{copy.PROJECT_STATUS_LABELS[status]}</button>)}</div>
-              <p className="pw-field-note">{copy.PROJECT_PAUSE_HELP}</p><p className="pw-field-note">{copy.PROJECT_ARCHIVE_HELP}</p></fieldset>
+              <p className="pw-field-note">{configuration.pauseHelp}</p><p className="pw-field-note">{configuration.archiveHelp}</p></fieldset>
             <div className="form-grid"><label>{copy.COORDINATOR_MODEL}<select value={draft.coordinator.modelId ?? ''} onChange={event => change({ coordinator: { ...draft.coordinator, modelId: event.target.value || null } })}>
               <option value="">{copy.AUTOMATIC_FIRST_AVAILABLE}</option>{models.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}</select></label>
               <label>{copy.COORDINATOR_EFFORT}<select value={draft.coordinator.effort} onChange={event => change({ coordinator: { ...draft.coordinator, effort: EffortSchema.parse(event.target.value) } })}>{EffortSchema.options.map(effort => <option key={effort} value={effort}>{copy.EFFORT_LABELS[effort]}</option>)}</select></label></div>
             <button type="button" className="secondary" onClick={() => void task.run(async signal => { await api(`/api/projects/${id}/coordinator/fresh`, EmptySchema, 'POST', empty, { signal, waitForHub: true }); props.message(copy.FRESH_STARTED); })}>{copy.FRESH_COORDINATOR_SETTINGS}</button>
           </>)}
-          {section('instructions', <><label>{copy.PROJECT_INSTRUCTIONS}<textarea aria-label={copy.PROJECT_INSTRUCTIONS} rows={8} maxLength={16000} value={draft.instructions} onChange={event => change({ instructions: event.target.value })} /></label><p className="pw-field-note">{copy.PROJECT_INSTRUCTIONS_HELP}</p><p className="pw-counter">{copy.instructionsCount(draft.instructions.length)}</p></>)}
+          {section('instructions', <><label>{copy.PROJECT_INSTRUCTIONS}<textarea aria-label={copy.PROJECT_INSTRUCTIONS} rows={8} maxLength={configuration.instructions.maxLength} value={draft.instructions} onChange={event => change({ instructions: event.target.value })} /></label><p className="pw-field-note">{configuration.instructions.help}</p><p className="pw-counter">{draft.instructions.length} / {configuration.instructions.maxLength.toLocaleString('en-US')}</p></>)}
           {section('placement', <>
             <fieldset><legend>{copy.THREAD_MODELS}</legend><label className="checkbox"><input type="checkbox" checked={draft.placement.allowedModelIds === null} onChange={event => change({ placement: { ...draft.placement, allowedModelIds: event.target.checked ? null : enabledModels.map(model => model.id) } })} />{copy.ALL_ENABLED_MODELS}</label>
               {draft.placement.allowedModelIds !== null && enabledModels.map(model => <label key={model.id} className="checkbox"><input type="checkbox" checked={draft.placement.allowedModelIds!.includes(model.id)} onChange={event => change({ placement: { ...draft.placement, allowedModelIds: event.target.checked ? [...draft.placement.allowedModelIds!, model.id] : draft.placement.allowedModelIds!.filter(id => id !== model.id) } })} />{model.label}</label>)}</fieldset>
             <label>{copy.LOWEST_EFFORT}<select value={draft.placement.minEffort ?? ''} onChange={event => change({ placement: { ...draft.placement, minEffort: event.target.value ? EffortSchema.parse(event.target.value) : null } })}><option value="">{copy.NO_MINIMUM}</option>{EffortSchema.options.map(effort => <option key={effort} value={effort}>{copy.EFFORT_LABELS[effort]}</option>)}</select></label>
-            <label>{copy.PLACEMENT_GUIDANCE}<textarea aria-label={copy.PLACEMENT_GUIDANCE} rows={4} maxLength={2000} value={draft.placement.guidance} onChange={event => change({ placement: { ...draft.placement, guidance: event.target.value } })} /></label><p className="pw-field-note">{copy.PLACEMENT_GUIDANCE_HELP}</p><p className="pw-counter">{copy.guidanceCount(draft.placement.guidance.length)}</p>
+            <label>{copy.PLACEMENT_GUIDANCE}<textarea aria-label={copy.PLACEMENT_GUIDANCE} rows={4} maxLength={configuration.guidance.maxLength} value={draft.placement.guidance} onChange={event => change({ placement: { ...draft.placement, guidance: event.target.value } })} /></label><p className="pw-field-note">{configuration.guidance.help}</p><p className="pw-counter">{draft.placement.guidance.length} / {configuration.guidance.maxLength.toLocaleString('en-US')}</p>
           </>)}
           {section('limits', <>
             <fieldset><legend>{copy.START_MODE}</legend>{(['start', 'propose'] as const).map(mode => <label className="checkbox" key={mode}><input type="radio" name="start-mode" checked={draft.startMode === mode} onChange={() => change({ startMode: mode })} />{mode === 'start' ? copy.START_RIGHT_AWAY : copy.PROPOSE_FIRST}</label>)}</fieldset>
             <div className="form-grid">{number(copy.MAX_RUNNING_THREADS, draft.maxRunningThreads, 1, 20, maxRunningThreads => change({ maxRunningThreads }))}{number(copy.MAX_PER_DEVICE, draft.maxRunningPerDevice, 1, 10, maxRunningPerDevice => change({ maxRunningPerDevice }))}
               {number(copy.TURN_LIMIT, draft.threadTurnCap, 5, 200, threadTurnCap => change({ threadTurnCap }))}{number(copy.NEW_THREADS_PER_DAY, draft.maxNewThreadsPerDay, 1, 500, maxNewThreadsPerDay => change({ maxNewThreadsPerDay }))}</div>
-            <p className="pw-field-note">{copy.NEW_THREADS_PER_DAY_HELP}</p>
+            <p className="pw-field-note">{configuration.dailyThreadHelp}</p>
             <div className="form-grid">{data.roster.devices.filter(row => !row.revoked && row.device.workPolicy?.mode !== 'apps-only').map(row => <label key={row.device.id}>{copy.deviceLimit(row.device.name)}<input type="number" min={1} max={10} placeholder={copy.deviceDefaultLimit(draft.maxRunningPerDevice)} value={draft.perDeviceLimits[row.device.id] ?? ''} onChange={event => {
               const perDeviceLimits = { ...draft.perDeviceLimits }; if (event.target.value) perDeviceLimits[row.device.id] = Number(event.target.value); else delete perDeviceLimits[row.device.id]; change({ perDeviceLimits });
             }} /></label>)}</div>

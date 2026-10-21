@@ -114,25 +114,6 @@ export function threadCreateRequest(clientRequestId: string, form: ThreadForm) {
     ...(form.effort ? { effort: form.effort } : {}), ...(form.deviceId ? { deviceId: form.deviceId } : {}) };
 }
 
-export type SettingsForm = { defaultIsolation: Isolation; isolationChanged: boolean; modelId: string; effort: Effort; setupCommand: string;
-  refill?: ProjectWorkView['settings']['refill']; nightlyWindow?: ProjectWorkView['settings']['nightlyWindow']; autoLand?: boolean; riskyAreas?: string; requiredChecks?: string[]; instructions?: string; allowMainIsolation?: boolean;
-  sessionCheckpoints?: ProjectWorkView['settings']['sessionCheckpoints']; compactAtPercent?: number; maxRunningThreads: number; maxRunningPerDevice: number; perDeviceLimits?: Record<string, number>; threadTurnCap: number };
-/**
- * `PUT /api/projects/:id/work-settings`. Reads show a stored `main` default as worktree with a notice (D205); unless the
- * owner picked an isolation, a save keeps the stored `main` instead of silently replacing it (D223).
- */
-export function settingsRequest(view: Pick<ProjectWorkView, 'settings' | 'settingsNotice'>, form: SettingsForm) {
-  const { schema: _schema, projectId: _project, revision: _revision, ...settings } = view.settings; void _schema; void _project; void _revision;
-  return { schema: 'project-work-settings-request-v1' as const, revision: view.settings.revision, settings: {
-    ...settings, refill: form.refill ?? view.settings.refill, nightlyWindow: form.nightlyWindow ?? view.settings.nightlyWindow,
-    coordinator: { ...view.settings.coordinator, modelId: form.modelId || null, effort: form.effort }, setupCommand: form.setupCommand.trim() || null,
-    autoLand: form.autoLand ?? view.settings.autoLand, riskyAreas: form.riskyAreas ?? view.settings.riskyAreas, instructions: form.instructions ?? view.settings.instructions,
-    sessionCheckpoints: form.sessionCheckpoints ?? view.settings.sessionCheckpoints,
-    compactAtPercent: form.compactAtPercent ?? view.settings.compactAtPercent,
-    perDeviceLimits: form.perDeviceLimits ?? view.settings.perDeviceLimits,
-    maxRunningThreads: form.maxRunningThreads, maxRunningPerDevice: form.maxRunningPerDevice, threadTurnCap: form.threadTurnCap } };
-}
-
 const TOOL_ICONS: Record<string, IconName> = {
   jevellan_setup_propose: 'settings', jevellan_library_list: 'search', jevellan_library_get: 'file',
   jevellan_settings_update: 'settings', jevellan_tasks_start: 'plus', jevellan_review_followup: 'pull-request', jevellan_handoff_write: 'file',

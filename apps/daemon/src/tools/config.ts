@@ -155,8 +155,9 @@ export const config: OwnerHandler = async (context) => {
       return { text: context.action === 'routines_save' ? 'Saved automation preferences.' : 'Deploy and routine settings.', data: projectRoutineSettings(project.id, jobs, state.owner, state.revision, missed) };
     }
     case 'get': {
+      if (args.section === 'project') return { text: 'Project configuration.', data: await context.app.projectWork.settingsView(context.project.id) };
       const all = await sections(context); const wanted = typeof args.section === 'string' ? args.section : undefined;
-      if (wanted && !(wanted in all)) throw new OwnerRefusal(`section must be one of ${Object.keys(all).join(', ')}.`, 'invalid_section');
+      if (wanted && !(wanted in all)) throw new OwnerRefusal(`section must be one of ${[...Object.keys(all), 'project'].join(', ')}.`, 'invalid_section');
       return { text: capLines(Object.entries(all).filter(([name]) => !wanted || name === wanted).map(([name, line]) => `${name}: ${line}`)), data: all };
     }
     case 'set': {

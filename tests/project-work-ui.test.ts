@@ -1,3 +1,4 @@
+import { settingsRequest } from '../packages/projects/dist/project-configuration.js';
 import { effortChoices, nearestEffort, overrideForm, overrideOffered, overrideReady, overrideRequest, restartHelp } from '../packages/projects/dist/override-editor.js';
 import { fallbackChip, placementConstraintText, whyFields } from '../packages/projects/dist/thread-why.js';
 import { decisionSource, sentText, showSent, withdrawals } from '../packages/projects/dist/waiting-views.js';
@@ -17,7 +18,7 @@ import { chatProposalIds, chatProposalGroups } from '../apps/web/src/project-wor
 import {
   alignReports, mergeThreadToolTurns, chatItems, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass,
   lineParts, mainIsolationBlock, partWords, projectDot,
-  projectRoute, reportBadge, restartedThread, rowClockMs, settingsRequest, sidebarProjects, threadActions, threadCreateRequest,
+  projectRoute, reportBadge, restartedThread, rowClockMs, sidebarProjects, threadActions, threadCreateRequest,
   threadActivity, threadLiveText, threadPollDelay, threadReason, threadStarting, toolIcon, transcriptNotice, withoutEchoedSummaries,
   withoutReportCalls,
 } from '../apps/web/src/project-work-model.js';
@@ -204,7 +205,7 @@ test('device choices: every device of the work view, disabled with the reason a 
   expect(deviceChoices(undefined, roster, 'mac').map((choice) => choice.disabled)).toEqual([true, true]);
 });
 
-test('request bodies: Automatic placement fields are omitted and a stored main default survives a save (D205, D223)', () => {
+test('request bodies: Automatic placement fields are omitted and v5 settings preserve unrelated values', () => {
   const automatic = threadCreateRequest('thread_req_1', { title: ' Fix login ', task: 'Fix it.\n', isolation: '', modelId: '', effort: '', deviceId: '' });
   expect(ThreadCreateRequestSchema.parse(automatic)).toEqual({ schema: 'thread-create-request-v1', clientRequestId: 'thread_req_1', title: 'Fix login', task: 'Fix it.' });
   expect(ThreadCreateRequestSchema.parse(threadCreateRequest('thread_req_2', { title: 'A', task: 'B', isolation: 'worktree', modelId: 'deep', effort: 'high', deviceId: 'mac' })))

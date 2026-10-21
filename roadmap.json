@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Areas 1a–1e/2a–2d/3/4a–4g: 68 of 310 UI rows migrated/refined plus 1 browser-only; every phase8 inventory row is closed. Improver evidence/check/preview read projections preserve stored receipts, canonical writers and live/simulated provenance across UI/CLI/MCP. Final static checks and 105 affected backend cases in 14 files with 6 workers and 0 skips pass; desktop-light J10 passes once without retries/skips. Four exact images retained, vision not run. Remaining phase9 (61 rows), phase10 (180), intake and placement/p-v1/m-v1 follow; full parity is incomplete and CM1 remains. Installations last verified 0.7.2 on 20 October; no further release.",
+    "why": "Areas 1a–1e/2a–2d/3/4a–4g/5a: 71 of 310 UI rows migrated/refined plus 1 browser-only; phase8 is closed. Canonical project settings metadata, legacy v5 adapter and engine status transitions share normal HTTP/CLI/MCP writers/readers. Final static checks and 223 affected backend cases in 15 files with 6 workers and 0 skips pass; desktop-light PAR1 passes once without retries/skips. Five exact images retained, vision not run. Remaining phase9 (58 rows), phase10 (180), intake and placement/p-v1/m-v1 follow; full parity is incomplete and CM1 remains. Installations last verified 0.7.2 on 20 October; no further release.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Areas 1a–1e/2a–2d/3/4a–4g: 68 of 310 UI rows migrated/refined plus 1 browser-only; every phase8 inventory row is closed. Improver evidence/check/preview read projections preserve stored receipts, canonical writers and live/simulated provenance across UI/CLI/MCP. Final static checks and 105 affected backend cases in 14 files with 6 workers and 0 skips pass; desktop-light J10 passes once without retries/skips. Four exact images retained, vision not run. Remaining phase9 (61 rows), phase10 (180), intake and placement/p-v1/m-v1 follow; full parity is incomplete and CM1 remains. Installations last verified 0.7.2 on 20 October; no further release.",
+    "why": "Areas 1a–1e/2a–2d/3/4a–4g/5a: 71 of 310 UI rows migrated/refined plus 1 browser-only; phase8 is closed. Canonical project settings metadata, legacy v5 adapter and engine status transitions share normal HTTP/CLI/MCP writers/readers. Final static checks and 223 affected backend cases in 15 files with 6 workers and 0 skips pass; desktop-light PAR1 passes once without retries/skips. Five exact images retained, vision not run. Remaining phase9 (58 rows), phase10 (180), intake and placement/p-v1/m-v1 follow; full parity is incomplete and CM1 remains. Installations last verified 0.7.2 on 20 October; no further release.",
     "status": "in-progress"
   },
   {

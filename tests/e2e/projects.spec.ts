@@ -1870,6 +1870,12 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     await page.goto('/projects/projects_fixture');
     let settings = await openSettings(page);
     await expect(settings.getByRole('navigation', { name: 'Project settings sections' })).toBeVisible();
+    const configuration = await (await page.request.get(`${PROJECT}/config`)).json();
+    await expect(settings.getByLabel('Project instructions', { exact: true })).toHaveAttribute('maxlength', String(configuration.configuration.instructions.maxLength));
+    await expect(settings.getByLabel('Guidance for Jev', { exact: true })).toHaveAttribute('maxlength', String(configuration.configuration.guidance.maxLength));
+    await expect(settings).toContainText(configuration.configuration.pauseHelp);
+    await expect(settings).toContainText(configuration.configuration.archiveHelp);
+    await expect(settings).toContainText(configuration.configuration.dailyThreadHelp);
     await settings.getByLabel('Project instructions', { exact: true }).fill('Keep changes small and explain the result.');
     await expect(settings).toContainText('42 / 16,000');
     await settings.getByLabel('Guidance for Jev', { exact: true }).fill('Choose a careful model for UI work.');
