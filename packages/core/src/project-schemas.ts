@@ -1,3 +1,4 @@
+import { SessionCacheViewSchema } from './session-cache-view.js';
 import { ThreadImageReferencesSchema, ThreadImagesViewSchema } from './thread-image-view-schemas.js';
 import { ThreadPresentationSchema } from './project-thread-presentation-schemas.js';
 import { NotificationLevelSchema, ProjectNotificationPreferencesSchema, defaultQuietHours, defaultProjectNotifications } from './notification-schemas.js';
@@ -521,7 +522,7 @@ export type PullRequestEntry = z.infer<typeof PullRequestEntrySchema>;
 export const ProjectDeviceSetupSchema = z.strictObject({ schema: z.literal('project-device-setup-v1'), deviceId: IdSchema, name: text, reason: z.string().max(400).optional() });
 export type ProjectDeviceSetup = z.infer<typeof ProjectDeviceSetupSchema>;
 export const ProjectWorkViewSchema = z.strictObject({ schema: z.literal('project-work-view-v1'),
-  sessionCache: z.array(SessionCacheSummarySchema).optional(),
+  sessionCache: z.array(SessionCacheSummarySchema).optional(), cacheView: SessionCacheViewSchema.optional(),
   project: z.strictObject({ id: IdSchema, name: text, branchPolicy: z.enum(['main', 'external']), baseBranch: z.string().nullable() }),
   settings: ProjectWorkSettingsSchema, settingsNotice: z.string().optional(), githubNotice: z.string().max(500).optional(),
   coordinator: CoordinatorViewSchema, threads: z.array(ThreadIndexSchema),
@@ -551,7 +552,7 @@ export const ThreadTimelineSchema = z.strictObject({ schema: z.literal('project-
   ])), queued: z.array(z.strictObject({ message: QueuedMessageSchema, presentation: ThreadQueuedPresentationSchema })) });
 export type ThreadTimeline = z.infer<typeof ThreadTimelineSchema>;
 export const ThreadViewSchema = z.strictObject({ overrideEditorPath: z.string().nullable().optional(), placementNotice: z.string().nullable().optional(), sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-thread-view-v1'),
-  card: ProjectWorkCardSchema.optional(), presentation: ThreadPresentationSchema.optional(), timeline: ThreadTimelineSchema.optional(), images: ThreadImagesViewSchema.optional(),
+  card: ProjectWorkCardSchema.optional(), presentation: ThreadPresentationSchema.optional(), timeline: ThreadTimelineSchema.optional(), images: ThreadImagesViewSchema.optional(), cacheView: SessionCacheViewSchema.optional(),
   notices: z.array(z.strictObject({ at: TimestampSchema, text: z.string().max(4000), kind: z.enum(['info', 'error']) })).max(20).optional(),
   escalations: ThreadLocalSchema.shape.escalations,
   fixTurns: z.array(z.strictObject({ turn: positive, fix: ThreadFixSchema })).optional(),

@@ -25,6 +25,13 @@ let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
 
+test('CLI status exposes the shared cache view without starting work', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['status'], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
+  expect(result).toMatchObject({ ok: true, data: { cacheView: { schema: 'session-cache-view-v1', projectId: 'project', line: { ratio: 'Unknown', coldStarts: 0 }, table: { rows: [] } } } }); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('CLI thread view returns the shared presentation without steering work', async () => {
   f = await projectFixture({ control: true }); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Simulated CLI thread ready.' }), forThread());
   const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'cli_thread_presentation', title: 'CLI thread view', task: 'Inspect the simulated fixture.' });

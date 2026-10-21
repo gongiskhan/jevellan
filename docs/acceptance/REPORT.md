@@ -2515,3 +2515,5 @@ Bridge continuation area 6c: decisions 143–144 record shared transcript/report
 Bridge continuation area 6d: decisions 145–146 record shared thread controls, canonical confirmation copy/usage totals and caller-locale display, with failed-first history and exact disjoint backend/desktop/image/source evidence.
 
 Bridge continuation area 6e: decisions 147–148 record shared image policy/metadata and unchanged canonical file guards, corrected gallery-mock evidence and exact simulated backend/desktop/image/source receipts.
+
+Bridge continuation area 6f: decisions 149–150 record the shared calendar-day cache view, strict additive compatibility, structured status adapter choice and exact helper parity, with honest failed-first/repeat and corrected simulated backend/desktop/image/source evidence.

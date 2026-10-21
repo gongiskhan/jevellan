@@ -247,7 +247,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
               {!!view.overrideEditorPath && <button type="button" className="secondary" onClick={() => setOverriding(true)}><Icon name="tune" size={15} />{copy.OVERRIDE}</button>}
             </div>
             {controls?.attachPanel && <TakeOver device={view.deviceName} command={view.attachCommand} message={message} />}
-            <SessionCache rows={thread.sessionCache} sessionKey={thread.cacheSessionKey} timezone={thread.sessionCache?.at(-1)?.timezone ?? 'UTC'} />
+            <SessionCache view={view.cacheView} />
             <SessionHistory entries={view.sessionHistory} path={`/api/projects/${projectId}/threads/${thread.id}`} />
             {!!view.notices?.length && <details><summary>{copy.SESSION_NOTICES} ({view.notices.length})</summary><ol>{view.notices.map((notice, index) => <li key={index}><time dateTime={notice.at}>{dateTime(notice.at)}</time>: {readableSessionText(notice.text)}</li>)}</ol></details>}
           </section>

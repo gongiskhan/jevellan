@@ -1,3 +1,4 @@
+import { sessionCacheDay, sessionCacheView } from '@jevellan/core';
 import { threadImagesView } from './thread-image-view.js';
 import { threadTimeline } from './thread-timeline.js';
 import { threadPresentation } from './thread-presentation.js';
@@ -74,7 +75,7 @@ export function effectiveSettings(settings: ProjectWorkSettings, project: Pick<P
 }
 
 export type ProjectViewsOptions = {
-  deviceId: string; deviceName: string;
+  deviceId: string; deviceName: string; now?(): number;
   hub: Pick<ProjectHub, 'threads' | 'decisions' | 'settings' | 'coordinator' | 'coordinatorStatus' | 'notebook' | 'workSummaries' | 'sessionCaches' | 'tasks'>;
   projects: Pick<SharedProjects, 'get' | 'list'>;
   store: Pick<ThreadStore, 'get' | 'labels' | 'local' | 'index'>; ledgers: ProjectLedgers; coordinators: Pick<CoordinatorService, 'get'>;
@@ -196,11 +197,13 @@ export class ProjectViews {
     const summaries = [...cacheSnapshots.filter(row => row.deviceId !== this.#o.deviceId).flatMap(row => row.records),
       ...sessionCacheSummaries(cacheRecords(this.#o.ledgers.coordinator(projectId)), work.nightlyWindow.timezone),
       ...(where.deviceId !== this.#o.deviceId ? where.sessionCache ?? [] : []), ...threads.flatMap(thread => thread.sessionCache ?? [])];
-    const today = new Intl.DateTimeFormat('en-CA', { timeZone: work.nightlyWindow.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    const cacheAt = new Date(this.#o.now?.() ?? Date.now());
+    const today = sessionCacheDay(work.nightlyWindow.timezone, cacheAt);
     const cacheRows = [...new Map(summaries.filter(row => row.day === today).map(row => [`${row.day}:${row.key}`, row])).values()];
     const devices = this.#o.placement.deviceSetup(project, work, roster, placing, { settings: config, accounts });
     return ProjectWorkViewSchema.parse({ schema: 'project-work-view-v1', project: { id: project.id, name: project.name, branchPolicy: project.branchPolicy, baseBranch },
-      sessionCache: cacheRows,
+      sessionCache: cacheRows, cacheView: sessionCacheView({ projectId, rows: cacheRows, sessionKey: coordinator.session?.cacheSessionKey, timezone: work.nightlyWindow.timezone,
+        titles: Object.fromEntries([[projectId, 'Coordinator'], ...threads.map(thread => [thread.id, thread.title])]), now: cacheAt }),
       settings: shown.settings, ...(githubNotice ? { githubNotice } : {}), ...(shown.notice ? { settingsNotice: shown.notice } : {}), coordinator, threads,
       decisions: decisionLists(decisions), pullRequests: pullRequestEntries(threads), notebookRevision: notebook?.revision ?? 0, lastEventId, gates: PHASE_GATES, devices, board: overviewBoard(threads), needsOwner: decisionLists(decisions).open.length + threads.filter(thread => boardGroup(thread) === 'waiting').length + await this.#drafts(projectId) });
   }
@@ -261,6 +264,6 @@ export class ProjectViews {
       canOverride, atTurnLimit: atTurnLimit(thread),
       canDiscard: (thread.state === 'stopped' || thread.state === 'failed') && thread.isolation === 'worktree' && !isDiscarded(thread.stateReason),
       ...(thread.state === 'attached' ? { stopRefusal: attachedRefusal(threadId) } : {}), ...(kept ? { checkoutHeld: checkoutStillHeld(kept) } : {}) });
-    return ThreadViewSchema.parse({ ...view, presentation: threadPresentation(view), timeline: threadTimeline(view), images: threadImagesView(view) });
+    return ThreadViewSchema.parse({ ...view, presentation: threadPresentation(view), timeline: threadTimeline(view), images: threadImagesView(view), cacheView: sessionCacheView({ projectId, rows: index.sessionCache, sessionKey: index.cacheSessionKey, timezone: index.sessionCache.at(-1)?.timezone ?? 'UTC', titles: { [thread.id]: thread.title }, now: new Date(this.#o.now?.() ?? Date.now()) }) });
   }
 }

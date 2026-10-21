@@ -1,3 +1,4 @@
+import { SessionCacheViewSchema } from './session-cache-view.js';
 import { z } from 'zod';
 import { EffortSchema, IdSchema, TimestampSchema } from './schemas.js';
 
@@ -46,7 +47,7 @@ export const GoalLineSchema = z.strictObject({ id: ShortIdSchema, internalId: Id
 export type GoalLine = z.infer<typeof GoalLineSchema>;
 
 /** The whole status of a project at a moment, as the engine orders it; tools render it, the UI reads its parts. */
-export const ProjectStatusViewSchema = z.strictObject({ schema: z.literal('project-status-view-v1'), projectId: IdSchema, project: z.string().min(1).max(200), at: TimestampSchema, timeZone: z.string().min(1).max(80),
+export const ProjectStatusViewSchema = z.strictObject({ schema: z.literal('project-status-view-v1'), cacheView: SessionCacheViewSchema.optional(), projectId: IdSchema, project: z.string().min(1).max(200), at: TimestampSchema, timeZone: z.string().min(1).max(80),
   coordinator: z.strictObject({ state: z.enum(['running', 'idle', 'starting', 'stalled', 'crashed', 'stopped']), model: z.string().max(120).nullable(), effort: EffortSchema.nullable(), account: z.string().max(120).nullable(),
     reason: z.string().min(1).max(400).optional() }),
   budgets: z.array(z.strictObject({ label: z.string().max(120), usedPercent: z.number().nonnegative().nullable(), budgetPercent: z.number().int().min(1).max(100) })).max(40),

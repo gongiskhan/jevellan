@@ -27,6 +27,12 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP status exposes the shared cache view without starting work', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'status', arguments: {} })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { cacheView: { schema: 'session-cache-view-v1', projectId: 'project', line: { ratio: 'Unknown', coldStarts: 0 }, table: { rows: [] } } } }); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP thread view shares header and composer presentation without steering work', async () => {
   f = await projectFixture({ control: true }); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Simulated MCP thread ready.' }), forThread());
   const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'mcp_thread_presentation', title: 'MCP thread view', task: 'Inspect the simulated fixture.' });

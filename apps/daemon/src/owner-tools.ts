@@ -1,3 +1,4 @@
+import { ProjectStatusViewSchema } from '@jevellan/core';
 import { appendFileSync, mkdirSync, readFileSync, renameSync, existsSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join, resolve, sep } from 'node:path';
@@ -207,7 +208,7 @@ export class OwnerTools {
       ...this.takeover.holds(projectId).filter(hold => hold.warnedAt).map(hold => ({ schema: 'waiting-item-view-v1' as const, id: this.takeover.waitingId(hold), internalId: `held-${hold.threadId}`.slice(0, 128), kind: 'held_idle' as const,
         from: 'jevellan', text: `${hold.id} has been held with no activity since ${hold.keptAt ?? hold.since}.`, options: ['keep', 'return'], freeText: false, urgent: false, createdAt: hold.warnedAt!, updatedAt: hold.warnedAt!, state: 'open' as const }))] }, this.ids);
     for (const run of [...view_.running, ...view_.queued, ...view_.landed, ...view_.finished]) if (run.kind === 'thread') this.app.ownerEvents.noteSource(run.internalId, run.id);
-    return view_;
+    return ProjectStatusViewSchema.parse({ ...view_, ...(view.cacheView ? { cacheView: view.cacheView } : {}) });
   }
   /**
    * Account files changed outside Rigging (#28): each waits on the owner until its changed copy is parked, like any other waiting item, so the

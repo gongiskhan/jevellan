@@ -47,7 +47,7 @@ const write = (name: string, shape: z.ZodRawShape = {}, structuredResult = false
 
 export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
   { name: 'status', single: true, description: "What is happening in a Jevellan project right now: what waits on the owner, what runs, lands, is queued or finished recently, plus goals, budgets, deploy, health checks and the night at a glance. Use it for any 'what's going on' question.",
-    actions: [read('status', { goal: z.string().min(1).max(200).optional().describe('Goal id (G2) or title.'), section: z.enum(['waiting', 'running', 'queued', 'landed', 'finished']).optional(), detail })] },
+    actions: [read('status', { goal: z.string().min(1).max(200).optional().describe('Goal id (G2) or title.'), section: z.enum(['waiting', 'running', 'queued', 'landed', 'finished']).optional(), detail }, true)] },
   { name: 'activity', single: true, description: 'What happened: a digest for a period (for example overnight), recent events of the coordinator, a thread or a job run, or decisions with their reasons.',
     actions: [read('activity', { target: z.string().min(1).max(40).optional().describe('C, a T id, a J id, or all (default all).'), kind: z.enum(['digest', 'events', 'decisions']).optional(),
       since: z.string().min(1).max(60).optional().describe('ISO time, HH:MM, "N minutes", "N hours", "today" or "last night".'), limit: z.number().int().min(1).max(200).optional(), detail })] },

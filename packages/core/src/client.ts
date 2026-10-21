@@ -146,3 +146,5 @@ export * from './thread-display.js';
 
 export * from './thread-image-refs.js';
 export * from './thread-image-view-schemas.js';
+
+export * from './session-cache-view.js';

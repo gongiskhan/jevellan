@@ -494,7 +494,7 @@ export class ProjectWork {
       runner: (threadId) => this.threads.runner(threadId), project: (projectId) => this.#project(projectId), accounts: o.accounts, transcripts: this.transcripts });
     this.views = new ProjectViews({ mergesHeld: async (id, tid) => await this.daily.mergesHeld(id) && !(await this.daily.allowedMergeThreads(id)).includes(tid), deviceId: o.deviceId, deviceName: o.deviceName, hub: o.hub, projects: o.projects, store: this.store, ledgers: this.ledgers,
       githubNotice: async projectId => { const budget = await (await github.open(projectId)).rateLimit(); return budget && budget.remaining / budget.limit < 0.2 && budget.resetAt > now() ? 'GitHub has less than 20% of its request budget remaining. Pull requests refresh every five minutes until it resets.' : undefined; },
-      coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster, placement });
+      coordinators: this.coordinators, transcripts: this.transcripts, worktrees, accounts: o.accounts, runtimes: o.runtimes, settings: o.settings, roster: o.roster, placement, now });
     this.notifications = new ProjectNotifications({ deviceId: o.deviceId, ledgers: this.ledgers, store: this.store, hub: o.hub, projects: o.projects, redactor: o.redactor, now });
     this.usage = new ProjectUsage({ deviceId: o.deviceId, hub: o.hub, ledgers: this.ledgers, store: this.store, now, timezone: async projectId => (await this.admission.settings(projectId)).nightlyWindow.timezone });
     this.ready = Promise.all([this.apps.ready, recoverProjects({ paths: this.paths, ledgers: this.ledgers, store: this.store, coordinators: this.coordinators,

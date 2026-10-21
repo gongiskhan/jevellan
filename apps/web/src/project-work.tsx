@@ -561,12 +561,12 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         <div className="conversation-meta pw-context">
           {coordinatorUi.contextLine && <span aria-label="Coordinator context">{coordinatorUi.contextLine}</span>}
           <button type="button" className="secondary" disabled={control.busy || !coordinatorUi.controls.canFresh} onClick={fresh}>{copy.FRESH_COORDINATOR}</button>
-          <SessionCache rows={view.sessionCache} sessionKey={coordinator.session?.cacheSessionKey} timezone={view.settings.nightlyWindow.timezone} />
+          <SessionCache view={view.cacheView} />
         </div>
       </div>
       {loadError && <p className="notice" role="status">{loadError}</p>}
       <SessionHistory entries={coordinator.sessionHistory} path={`/api/projects/${id}/session-transcript`} />
-      <SessionsCache rows={view.sessionCache} timezone={view.settings.nightlyWindow.timezone} titles={Object.fromEntries([[id, 'Coordinator'], ...view.threads.map(thread => [thread.id, thread.title])])} />
+      <SessionsCache view={view.cacheView} />
       {coordinatorUi.contextNotice && <p className="notice" role="status">{coordinatorUi.contextNotice}</p>}
       {header.banner && <ProjectStatusBanner projectId={id} banner={header.banner} props={props} />}
       {routines && <NightlyBanner view={routines} />}
