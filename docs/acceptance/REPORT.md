@@ -2523,3 +2523,5 @@ Bridge continuation area 6g: decisions 151–152 record shared transcript/histor
 Bridge continuation area 6h: decisions 153–154 record shared interrupt availability/choice policy, deliberately local retry identity, unchanged canonical writers and simulated backend/desktop/image/source evidence.
 
 Bridge continuation area 7a: decisions 155–156 record shared plan-content projection, the explicit scoped reader choice and unchanged public-data boundary, with pre-product flaky-baseline evidence, backend/member/tool gates and the complete existing desktop plan journey. Approval row 168 remains planned for area 7b.
+
+Bridge continuation area 7b: decisions 157–158 record canonical shared plan approval state, optional step-bound reads and thin normal owner-tool adapters, unchanged approval/message writers and local retry identities, and failing-first/static/backend/service/desktop gates. Mixed row 168 now closes; 156 phase 10 rows remain before intake and placement/p-v1/m-v1. Source remains unreleased.

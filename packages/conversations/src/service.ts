@@ -1,3 +1,4 @@
+import { conversationPlansView } from '@jevellan/core';
 import { ConversationPlanReadRequestSchema, ConversationPlanReadSchema, planContentView, publicConversationData } from '@jevellan/core';
 import { ConversationLocationSchema, ConversationDecisionWhyRequestSchema, StepCorrectionPreviewSchema } from '@jevellan/core';
 import { conversationStepPresentation } from './step-presentation.js';
@@ -576,8 +577,10 @@ export class ConversationService {
   async planRead(id: string, raw: unknown) {
     await this.ready;
     const input = ConversationPlanReadRequestSchema.parse(raw), work = this.#load(id), source = work.load().conversation;
+    const review = input.step === undefined ? undefined : (await this.view(id)).plans?.reviews.find(row => row.step === input.step);
+    if (input.step !== undefined && (!review || review.pointer !== input.pointer)) throw conflict('This plan no longer belongs to that step. Reload it before continuing.');
     const content = publicConversationData(work.ledger.read(input.pointer));
-    return ConversationPlanReadSchema.parse({ schema: 'conversation-plan-read-v1', projectId: source.projectId, conversationId: id, pointer: input.pointer, view: planContentView(content) });
+    return ConversationPlanReadSchema.parse({ schema: 'conversation-plan-read-v1', projectId: source.projectId, conversationId: id, pointer: input.pointer, view: planContentView(content), ...(review ? { review } : {}) });
   }
   async view(id: string) {
     const work = this.#load(id); const view = work.load();
@@ -585,14 +588,15 @@ export class ConversationService {
     const decisions = this.decisions(id), savedOverrides = overrides(work), byId = new Map(decisions.map(row => [row.id, row]));
     const correctionsByStep = new Map<number, typeof savedOverrides>();
     for (const row of savedOverrides) { const rows = correctionsByStep.get(row.request.stretch) ?? []; rows.push(row); correctionsByStep.set(row.request.stretch, rows); }
-    const allowed = view.conversation.work ? allowedActions(view.conversation.work, (await this.options.settings()).guards, !!(await this.#project(view.conversation.projectId)).testCommand, decisions.filter((decision) => decision.workId === view.conversation.work!.id).length, latestMessageNeedsResponse(work, decisions)) : [];
-    return ConversationPublicSchema.parse({ schema: 'conversation-view-v1', ...view, progress: this.#operations.get(id)?.progress,
+    const settings = view.conversation.work ? await this.options.settings() : undefined, busy = this.#operations.has(id) || this.#correcting.has(id);
+    const allowed = view.conversation.work ? allowedActions(view.conversation.work, settings!.guards, !!(await this.#project(view.conversation.projectId)).testCommand, decisions.filter((decision) => decision.workId === view.conversation.work!.id).length, latestMessageNeedsResponse(work, decisions)) : [];
+    return ConversationPublicSchema.parse({ schema: 'conversation-view-v1', ...view, plans: conversationPlansView({ ...view, busy }, settings?.guards.pauseAfterPlan ?? false), progress: this.#operations.get(id)?.progress,
       stretches: view.stretches.map((step) => { const result = { ...step, presentation: conversationStepPresentation(step, correctionsByStep.get(step.n) ?? [], byId.get(step.decisionId)) }; delete result.native; return result; }),
       ...(this.#decisionWait(work) ? { decisionWait: this.#decisionWait(work) } : {}),
       ...(() => { const open = view.conversation.state === 'waiting-for-you' && !this.#operations.has(id) ? this.#lastQuestion(work) : undefined;
         return open && !open.answered ? { openQuestion: { stretch: open.stretch, text: open.text, options: open.options } } : {}; })(),
       ...(this.#externalWait(work) ? { externalWait: this.#externalWait(work) } : {}),
-      settlements: this.#settlements(work), overrides: savedOverrides, composerOverrides: composerOverrides(work), redos: redoOperations(work), checkpointBlocks: checkpointBlocks(work), decisions: this.decisions(id), busy: this.#operations.has(id) || this.#correcting.has(id), allowed });
+      settlements: this.#settlements(work), overrides: savedOverrides, composerOverrides: composerOverrides(work), redos: redoOperations(work), checkpointBlocks: checkpointBlocks(work), decisions: this.decisions(id), busy, allowed });
   }
   #settlements(work: ConversationWork) {
     const results = new Map<string, ReturnType<typeof WorkSettlementSchema.parse>>();

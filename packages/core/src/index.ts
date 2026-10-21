@@ -210,3 +210,6 @@ export * from './project-thread-steering.js';
 
 export * from './plan-content-view.js';
 export * from './public-conversation-data.js';
+
+export * from './conversation-plan-review-schemas.js';
+export * from './conversation-plans-view.js';

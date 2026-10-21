@@ -1,3 +1,4 @@
+import { ConversationPlanReviewSchema } from './conversation-plan-review-schemas.js';
 import { z } from 'zod';
 import { IdSchema } from './schemas.js';
 
@@ -12,8 +13,8 @@ export const PlanNodeSchema: z.ZodType<PlanNode> = z.lazy(() => z.discriminatedU
 ]));
 export const PlanContentViewSchema = z.strictObject({ schema: z.literal('plan-content-view-v1'), root: PlanNodeSchema });
 export type PlanContentView = z.infer<typeof PlanContentViewSchema>;
-export const ConversationPlanReadRequestSchema = z.strictObject({ schema: z.literal('conversation-plan-read-request-v1'), pointer: z.string().min(1) });
-export const ConversationPlanReadSchema = z.strictObject({ schema: z.literal('conversation-plan-read-v1'), projectId: IdSchema, conversationId: IdSchema, pointer: z.string().min(1), view: PlanContentViewSchema });
+export const ConversationPlanReadRequestSchema = z.strictObject({ schema: z.literal('conversation-plan-read-request-v1'), pointer: z.string().min(1), step: z.number().int().positive().optional() });
+export const ConversationPlanReadSchema = z.strictObject({ schema: z.literal('conversation-plan-read-v1'), projectId: IdSchema, conversationId: IdSchema, pointer: z.string().min(1), view: PlanContentViewSchema, review: ConversationPlanReviewSchema.optional() });
 export type ConversationPlanRead = z.infer<typeof ConversationPlanReadSchema>;
 
 const planFieldLabel = (key: string) => key.replace(/([a-z\d])([A-Z])/g, (_, left: string, right: string) => `${left} ${right.toLowerCase()}`).replace(/[_-]+/g, ' ').replace(/^./, letter => letter.toUpperCase());

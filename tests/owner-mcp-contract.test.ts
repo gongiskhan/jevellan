@@ -1,3 +1,4 @@
+import { conversationPlanReviewFixture } from './helpers/conversation-plan-review-fixture.js';
 import { conversationPlanFixture } from './helpers/conversation-plan-fixture.js';
 import { accountEditorFixture } from './helpers/account-editor-fixture.js';
 import { ProjectEnvironmentEditorSchema } from '../packages/core/dist/index.js';
@@ -410,4 +411,11 @@ test('MCP plan reader shares the typed plan model without starting more work', a
   const made = await conversationPlanFixture(true); f = made.f; const starts = f.fake.starts.length, mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'plan_read', project: 'project', conversation: made.id, request: { schema: 'conversation-plan-read-request-v1', pointer: made.pointer } } })).structuredContent);
   expect(result).toMatchObject({ ok: true, data: { schema: 'conversation-plan-read-v1', projectId: 'project', conversationId: made.id, pointer: made.pointer, view: { schema: 'plan-content-view-v1', root: { kind: 'fields' } } } }); expect(f.fake.starts).toHaveLength(starts);
+});
+
+test('MCP plan approval uses the canonical writer and shared approved status', async () => {
+  const made = await conversationPlanReviewFixture(true); f = made.f;
+  const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'plan_approve', project: 'project', conversation: made.id, request: { schema: 'plan-approval-v1', generation: made.view.conversation.generation, ref: made.pointer } } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { conversation: { work: { approvedPlanRef: made.pointer } }, plans: { reviews: [{ badge: 'Approved', offered: false }] } } });
 });

@@ -1,3 +1,4 @@
+import { conversationPlansView, planApprovalRequest, planChangesMessage } from '@jevellan/core/client';
 import { ConversationCorrectionDialog as ChangeStep, ConversationWhyPanel as Why } from './conversation-decision-panels.js';
 import { PlanReview, type PlanReviewActions } from './plan-review.js';
 import { BranchChangeNotice, branchChangeText } from './branch-change-notice.js';
@@ -616,8 +617,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
     );
   const device = props.data.devices.devices.find((entry) => entry.id === view.conversation.ownerDeviceId);
   const running = view.busy || view.conversation.state === 'running';
-  const plan = view.conversation.work?.latestPlanRef;
-  const planStep = plan ? view.stretches.findLast(step => step.workId === view.conversation.work?.id && step.status !== 'undone' && view.handoffs.some(handoff => handoff.stretch === step.n && handoff.result?.type === 'plan' && handoff.result.ref === plan))?.n : undefined;
+  const plans = view.plans ?? conversationPlansView(view, props.data.config.configuration['x-jevellan'].guards.pauseAfterPlan);
   const project = projects.find((entry) => entry.id === view.conversation.projectId);
   const settlementTarget = view.conversation.work ?? view.closedWorks.at(-1);
   const latestSettlement = view.settlements.filter((entry) => entry.workId === settlementTarget?.id).at(-1);
@@ -794,6 +794,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           if (event.type === 'stretch-start') {
             const step = view.stretches.find((entry) => entry.n === event.stretch);
             if (!step) return null;
+            const review = plans.reviews.find(entry => entry.step === step.n);
             return (
               <StepBlock
                 key={event.id}
@@ -804,10 +805,10 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                 correct={() => setCorrecting(step)}
                 why={() => setWhy(view.decisions.find((entry) => entry.id === step.decisionId))}
                 selected={!!why && why.id === step.decisionId}
-                planReview={plan && props.data.config.configuration['x-jevellan'].guards.pauseAfterPlan && view.conversation.work?.approvedPlanRef !== plan && planStep === step.n ? {
+                planReview={review?.offered ? {
                   busy: task.busy || running,
-                  approve: async () => { setView(await api(`/api/conversations/${id}/approve-plan`, ConversationPublicSchema, 'POST', { schema: 'plan-approval-v1', generation: view.conversation.generation, ref: plan })); },
-                  changes: async (text, clientMessageId) => { setView(await api(`/api/conversations/${id}/messages`, ConversationPublicSchema, 'POST', { schema: 'conversation-message-v1', clientMessageId, text, planChange: { ref: plan, generation: view.conversation.generation } })); },
+                  approve: async () => { setView(await api(`/api/conversations/${id}/approve-plan`, ConversationPublicSchema, 'POST', planApprovalRequest(review))); },
+                  changes: async (text, clientMessageId) => { setView(await api(`/api/conversations/${id}/messages`, ConversationPublicSchema, 'POST', planChangesMessage(review, text, clientMessageId))); },
                 } : undefined}
                 changes={() =>
                   void task.run(async () =>
@@ -929,8 +930,8 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           .map((entry) => (
             <RetryRedo key={entry.id} entry={entry} view={view} update={setView} onError={props.onError} />
           ))}
-      {!running && plan && props.data.config.configuration['x-jevellan'].guards.pauseAfterPlan && view.conversation.work?.approvedPlanRef !== plan && (
-        <p className="plan-waiting" role="status">Waiting for plan approval. <button className="text-button" onClick={() => document.getElementById(`plan-step-${planStep}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>Review plan ↑</button></p>
+      {plans.notice && (
+        <p className="plan-waiting" role="status">{plans.notice.text} <button className="text-button" onClick={() => document.getElementById(plans.notice!.target ?? '')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{plans.notice.label}</button></p>
       )}
       {view.openQuestion && view.openQuestion.options.length > 0 && (
         <section className="answer-card" aria-label="Answer the question">
@@ -1624,6 +1625,7 @@ function StepBlock({
     step.status !== 'undone' &&
     [view.conversation.work?.id, view.closedWorks.at(-1)?.id].includes(step.workId);
   const presentation = step.presentation;
+  const review = (view.plans ?? conversationPlansView(view, props.data.config.configuration['x-jevellan'].guards.pauseAfterPlan)).reviews.find(entry => entry.step === step.n);
   const findings = [
     ...events
       .filter((event) => event.type === 'finding')
@@ -1667,7 +1669,7 @@ function StepBlock({
       </div>}
       {answerResult && <StepResult kind="answer" id={view.conversation.id} pointer={answerResult.ref} fallback={handoff!.summary} onError={props.onError} open={(ref) => read(ref, ref)} />}
       {fallbackAnswer && !answerResult && <Markdown onOpen={(ref) => read(ref, ref)}>{fallbackAnswer}</Markdown>}
-      {handoff?.result?.type === 'plan' && <PlanReview id={view.conversation.id} pointer={handoff.result.ref} step={step.n} actions={planReview} approved={[view.conversation.work, ...view.closedWorks].find(work => work?.id === step.workId)?.approvedPlanRef === handoff.result.ref} onError={props.onError} open={ref => read(ref, ref)} />}
+      {handoff?.result?.type === 'plan' && <PlanReview id={view.conversation.id} pointer={handoff.result.ref} step={step.n} actions={planReview} approved={review?.approved ?? false} presentation={review} onError={props.onError} open={ref => read(ref, ref)} />}
       {actionable && handoff?.blockers.map((blocker, i) => <p className="notice" key={i}>{blocker}</p>)}
       {actionable && handoff?.question && view.openQuestion?.stretch !== step.n && <p className="notice">{handoff.question}</p>}
       <div className="stretch-links">
