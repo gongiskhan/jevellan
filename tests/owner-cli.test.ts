@@ -470,3 +470,11 @@ test('CLI conversation reader shares delivery and branch presentation without st
   const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
   expect(result).toMatchObject({ ok: true, data: { schema: 'conversation-view-v1', delivery: { schema: 'message-delivery-view-v1', primaryLabel: 'Send' }, branchChanges: [] } }); expect(f.fake.starts).toHaveLength(starts);
 });
+
+test('CLI session preferences use the canonical per-device revision writer', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['jev', 'session_list_save', '--request', JSON.stringify({ schema: 'session-list-update-v1', revision: 0, operation: 'rename', id: 'cli_session', title: 'CLI fixture title' })], f.homes)).toBe(0);
+  expect(await callCommand(['jev', 'session_list'], f.homes)).toBe(0);
+  const replies = output.mock.calls.filter(row => String(row[0]).startsWith('{')).map(row => OwnerToolResultSchema.parse(JSON.parse(String(row[0])))); expect(replies).toHaveLength(2);
+  for (const result of replies) expect(result).toMatchObject({ ok: true, data: { schema: 'session-list-view-v1', deviceId: f.app.device.deviceId, preferences: { revision: 1, titles: { cli_session: 'CLI fixture title' } } } }); expect(f.fake.runs).toHaveLength(0);
+});

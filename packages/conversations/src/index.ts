@@ -22,3 +22,5 @@ export { applyComposerChoice, conversationComposerView } from './composer-view.j
 export { conversationStepPresentation, recordedDecisionNotice } from './step-presentation.js';
 export { conversationDecisionWhy, conversationActionLabel } from './decision-view.js';
 export { stepCorrectionEditor, stepCorrectionTarget } from './correction-editor.js';
+
+export * from './session-list.js';
