@@ -1,4 +1,4 @@
-import { HubUnavailable, ProjectUsageDaySchema, ProjectUsageRangeSchema, ProjectUsageViewSchema, type ProjectHub, type ProjectLedgerEvent, type ProjectUsageDay, type ProjectUsageRow, type ProjectUsageView, type ThreadUsageTotal, type UsageSchema } from '@jevellan/core';
+import { HubUnavailable, ProjectUsageDaySchema, ProjectUsageRangeSchema, ProjectUsageViewSchema, ProjectUsagePresentationSchema, ProjectUsageRequestRangeSchema, DEFAULT_PROJECT_USAGE_RANGE, PROJECT_USAGE_REFRESH_MS, type ProjectHub, type ProjectLedgerEvent, type ProjectUsageDay, type ProjectUsageRow, type ProjectUsageView, type ThreadUsageTotal, type UsageSchema } from '@jevellan/core';
 import type { z } from 'zod';
 import type { ProjectLedger, ProjectLedgers } from './ledger.js';
 import type { ThreadStore } from './stores.js';
@@ -20,8 +20,22 @@ export function projectUsageView(projectId: string, range: z.infer<typeof Projec
       add(group, row); if (!group.models.includes(row.modelLabel)) group.models.push(row.modelLabel); groups[kind].set(id, group);
     }
   }
-  return ProjectUsageViewSchema.parse({ schema: 'project-usage-view-v1', projectId, range, totals,
+  const view = ProjectUsageViewSchema.parse({ schema: 'project-usage-view-v1', projectId, range, totals,
     ...Object.fromEntries(Object.entries(groups).map(([key, value]) => [key, [...value.values()].sort((a, b) => b.inputTokens + b.outputTokens - a.inputTokens - a.outputTokens || a.label.localeCompare(b.label))])) });
+  return { ...view, presentation: usagePresentation(view) };
+}
+/** Display choices accompany the existing projection; old raw counters retain their meanings. */
+function usagePresentation(view: ProjectUsageView) {
+  const kindLabels: Record<string, string> = { coordinator: 'Coordinator', thread: 'Threads', verification: 'Verification', review: 'Review', memory: 'Memory' };
+  const tables = [['byThread', 'By thread', 'Thread'], ['byModel', 'By model', 'Model'], ['byAccount', 'By account', 'Account'], ['byKind', 'By kind', 'Kind']] as const;
+  const totals = [['inputTokens', 'Tokens in'], ['outputTokens', 'Tokens out'], ['cacheReadTokens', 'Cache read'], ['cacheWriteTokens', 'Cache written'], ['costUsd', 'Cost']] as const;
+  return ProjectUsagePresentationSchema.parse({ schema: 'project-usage-presentation-v1', defaultRange: DEFAULT_PROJECT_USAGE_RANGE, refreshMs: PROJECT_USAGE_REFRESH_MS,
+    ranges: [{ value: 'today', label: 'Today' }, { value: '7d', label: '7 days' }, { value: '30d', label: '30 days' }],
+    empty: view.totals.turns === 0, emptyMessage: 'No usage in this range.', unknownCostNotice: view.totals.costUnknownTurns > 0 ? `${view.totals.costUnknownTurns} turns without a reported cost` : null,
+    totals: totals.map(([key, label]) => ({ key, label, value: view.totals[key], format: key === 'costUsd' ? 'usd' : 'count' })),
+    tables: tables.map(([key, label, first]) => ({ key, label, columns: [{ key: 'label', label: first, format: 'text' }, ...(key === 'byThread' ? [{ key: 'models', label: 'Models', format: 'text' }] : []), { key: 'turns', label: 'Turns', format: 'plain' }, { key: 'tokens', label: 'Tokens', format: 'count' }, { key: 'costUsd', label: 'Cost', format: 'usd' }],
+      rows: view[key].map(row => ({ id: row.id, label: key === 'byKind' ? kindLabels[row.id] ?? row.label : row.label, models: row.models.join(', '), turns: row.turns, tokens: row.inputTokens + row.outputTokens, costUsd: row.costUsd })) })),
+  });
 }
 type Identity = Pick<ProjectUsageRow, 'kind' | 'ownerId' | 'title' | 'runtime' | 'modelLabel' | 'accountLabel'>;
 type Projection = { loaded: boolean; existingChecked: boolean; timezone: string; dirtyDays: Set<string>; dirtyThreads: Set<string>; seen: Map<string, number>; starts: Map<string, Identity>; days: Map<string, Map<string, ProjectUsageRow>>; threads: Map<string, ThreadUsageTotal>; updatedAt: string };
@@ -113,8 +127,8 @@ export class ProjectUsage {
     add(row, total); rows.set(rowKey, row); state.days.set(day, rows); state.dirtyDays.add(day); if (event.t > state.updatedAt) state.updatedAt = event.t;
     if (identity.kind === 'thread') { const thread = state.threads.get(identity.ownerId) ?? emptyUsage(); add(thread, total); state.threads.set(identity.ownerId, thread); state.dirtyThreads.add(identity.ownerId); }
   }
-  async view(projectId: string, rawRange: unknown) {
-    const range = ProjectUsageRangeSchema.parse(rawRange); await this.refresh(projectId);
+  async view(projectId: string, rawRange?: unknown) {
+    const range = ProjectUsageRequestRangeSchema.parse(rawRange); await this.refresh(projectId);
     return projectUsageView(projectId, range, await this.o.hub.usageDays?.(projectId) ?? [], this.o.now(), this.#projects.get(projectId)!.timezone);
   }
   async close(): Promise<void> { this.#unsubscribe(); await Promise.allSettled(this.#pending.values()); }

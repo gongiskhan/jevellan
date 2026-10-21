@@ -26,6 +26,13 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP config usage exposes the engine table projection without starting work', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'usage', range: '30d' } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-usage-view-v1', range: '30d', presentation: { schema: 'project-usage-presentation-v1', empty: true, tables: expect.arrayContaining([expect.objectContaining({ key: 'byThread', label: 'By thread' })]) } } });
+  expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP config notification editor shares unknown browser state and notification actions', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'notification_editor' } })).structuredContent);

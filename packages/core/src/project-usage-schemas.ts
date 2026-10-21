@@ -13,7 +13,18 @@ export const ProjectUsageDaySchema = z.strictObject({ schema: z.literal('project
   day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u), rows: z.array(ProjectUsageRowSchema).max(2000), updatedAt: TimestampSchema });
 export type ProjectUsageDay = z.infer<typeof ProjectUsageDaySchema>;
 export const ProjectUsageRangeSchema = z.enum(['today', '7d', '30d']);
+export const DEFAULT_PROJECT_USAGE_RANGE = 'today' as const;
+export const PROJECT_USAGE_REFRESH_MS = 15_000;
+export const ProjectUsageRequestRangeSchema = ProjectUsageRangeSchema.default(DEFAULT_PROJECT_USAGE_RANGE);
+export const ProjectUsagePresentationSchema = z.strictObject({ schema: z.literal('project-usage-presentation-v1'),
+  defaultRange: ProjectUsageRangeSchema, refreshMs: z.literal(PROJECT_USAGE_REFRESH_MS), empty: z.boolean(), emptyMessage: z.string().min(1).max(200), unknownCostNotice: z.string().max(200).nullable(),
+  ranges: z.array(z.strictObject({ value: ProjectUsageRangeSchema, label: z.string().min(1).max(50) })).length(3),
+  totals: z.array(z.strictObject({ key: z.enum(['inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheWriteTokens', 'costUsd']), label: z.string().min(1).max(100), value: z.number().nonnegative(), format: z.enum(['count', 'usd']) })).length(5),
+  tables: z.array(z.strictObject({ key: z.enum(['byThread', 'byModel', 'byAccount', 'byKind']), label: z.string().min(1).max(100),
+    columns: z.array(z.strictObject({ key: z.enum(['label', 'models', 'turns', 'tokens', 'costUsd']), label: z.string().min(1).max(100), format: z.enum(['text', 'plain', 'count', 'usd']) })).min(4).max(5),
+    rows: z.array(z.strictObject({ id: z.string(), label: z.string(), models: z.string(), turns: count, tokens: count, costUsd: z.number().nonnegative() })) })).length(4),
+});
 const group = ThreadUsageTotalSchema.extend({ id: z.string(), label: z.string(), models: z.array(z.string()) });
 export const ProjectUsageViewSchema = z.strictObject({ schema: z.literal('project-usage-view-v1'), projectId: IdSchema, range: ProjectUsageRangeSchema,
-  totals: ThreadUsageTotalSchema, byThread: z.array(group), byModel: z.array(group), byAccount: z.array(group), byKind: z.array(group) });
+  totals: ThreadUsageTotalSchema, byThread: z.array(group), byModel: z.array(group), byAccount: z.array(group), byKind: z.array(group), presentation: ProjectUsagePresentationSchema.optional() });
 export type ProjectUsageView = z.infer<typeof ProjectUsageViewSchema>;

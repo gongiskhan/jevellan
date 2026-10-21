@@ -152,6 +152,7 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'usage': return { text: 'Project usage.', data: await context.app.projectWork.usage.view(context.project.id, args.range) };
     case 'notification_editor': case 'notification_remove': case 'notification_test': {
       const notifications = context.app.notifications;
       if (!notifications) throw new OwnerRefusal('Notification settings are unavailable here.');

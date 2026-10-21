@@ -446,7 +446,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'setup-request': send(await work.requestSetup(projectId, await requestBody(request)), 202); return true;
     case 'setup-get': send(await work.setupView(projectId, route.proposalId!)); return true;
     case 'setup-action': send(await work.setupAction(projectId, route.proposalId!, SetupActionRequestSchema.parse(await requestBody(request)))); return true;
-    case 'usage': send(await work.usage.view(projectId, url.searchParams.get('range') ?? 'today')); return true;
+    case 'usage': send(await work.usage.view(projectId, url.searchParams.get('range') ?? undefined)); return true;
     case 'session-history': send(await work.sessionTranscript(projectId, url.searchParams.get('session') ?? '')); return true;
     case 'ekoa-code-setup': send(await work.setupEkoaCode(projectId, EkoaCodeSetupRequestSchema.parse(await requestBody(request)))); return true;
     case 'deploy-list': send(await work.deploys.view(projectId)); return true;
