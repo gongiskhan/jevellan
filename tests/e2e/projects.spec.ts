@@ -1886,9 +1886,33 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     await settings.getByRole('button', { name: 'Add secret', exact: true }).click();
     await settings.getByLabel('Secret 1 name', { exact: true }).fill('PARITY_TOKEN');
     await settings.getByLabel('Secret 1 value', { exact: true }).fill('fixture-private-environment-value');
-    await settings.getByRole('button', { name: 'Save', exact: true }).click();
+    await settings.getByRole('button', { name: 'Add landing check', exact: true }).click();
+    const check = settings.getByRole('group', { name: 'Check 1', exact: true });
+    await expect(settings.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+    await check.getByLabel('Name', { exact: true }).fill('Fixture landing check');
+    await check.getByLabel('Paths', { exact: true }).fill('src\n\n spaced path \n');
+    await check.getByLabel('Command', { exact: true }).fill('true');
+    await settings.getByLabel('Keep commits for these paths', { exact: true }).fill('docs\n\n notes \n');
+    await expect(settings.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+    await expect(check.getByLabel('Paths', { exact: true })).toHaveValue('src\n\n spaced path \n');
+    let settingsWrites = 0;
+    const settingsRoute = `**${PROJECT}/work-settings`, landingRoute = `**${PROJECT}/config/landing-editor`;
+    await page.route(settingsRoute, async route => { if (route.request().method() === 'PUT') settingsWrites++; await route.continue(); });
+    let releasePreview!: () => void, previewStarted!: () => void;
+    const release = new Promise<void>(resolve => { releasePreview = resolve; }), started = new Promise<void>(resolve => { previewStarted = resolve; });
+    await page.route(landingRoute, async route => { previewStarted(); await release; await route.continue(); });
+    try {
+      await settings.getByLabel('Smoke check', { exact: true }).fill('true'); await started;
+      await expect(settings.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+      await settings.locator('form.pw-settings').evaluate((form: HTMLFormElement) => { form.requestSubmit(); form.requestSubmit(); });
+    } finally { releasePreview(); }
+    await expect(settings.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+    await page.unroute(landingRoute); expect(settingsWrites).toBe(0);
+    await settings.locator('form.pw-settings').evaluate((form: HTMLFormElement) => { form.requestSubmit(); form.requestSubmit(); });
     await expect(page).toHaveURL(/\/projects\/projects_fixture$/);
+    expect(settingsWrites).toBe(1); await page.unroute(settingsRoute);
     await expect.poll(async () => (await work(page)).settings.maxNewThreadsPerDay).toBe(17);
+    expect((await work(page)).settings).toMatchObject({ landingChecks: [{ name: 'Fixture landing check', paths: ['src', ' spaced path '], command: 'true' }], smokeCheck: 'true', mergeCommitPaths: ['docs', ' notes '] });
     settings = await openSettings(page);
     await expect(settings.getByLabel('Project instructions', { exact: true })).toHaveValue('Keep changes small and explain the result.');
     await expect(settings.getByLabel('Secret 1 value', { exact: true })).toHaveValue('');
@@ -1904,8 +1928,11 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     await page.screenshot({ path: `test-results/PAR1-conflict-${layout(info)}.png`, fullPage: true });
     await settings.getByRole('button', { name: 'Reload', exact: true }).click();
     await expect(settings.getByLabel('Max running threads', { exact: true })).toHaveValue('13');
+    await settings.getByLabel('Smoke check', { exact: true }).fill('echo unsaved draft');
+    await expect(settings.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
     await settings.getByRole('button', { name: 'Paused', exact: true }).click();
     await expect(settings.getByRole('button', { name: 'Paused', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(settings.getByLabel('Smoke check', { exact: true })).toHaveValue('echo unsaved draft');
     await settings.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(page.getByText('This project is paused. Nothing new starts until you resume it.', { exact: true })).toBeVisible();
     await page.screenshot({ path: `test-results/PAR1-paused-${layout(info)}.png`, fullPage: true });

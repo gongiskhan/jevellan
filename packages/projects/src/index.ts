@@ -35,6 +35,7 @@ export * from './project-work.js';
 export * from './project-configuration.js';
 export * from './coordinator-editor.js';
 export * from './settings-change-views.js';
+export * from './landing-editor.js';
 export * from './tasks.js';
 export * from './dispatcher.js';
 export * from './apps.js';

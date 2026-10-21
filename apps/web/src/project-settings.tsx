@@ -29,6 +29,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const [base, setBase] = useState<ProjectWorkSettings>();
   const [draft, setDraft] = useState<ProjectWorkSettings>();
   const [configuration, setConfiguration] = useState<ProjectConfigurationInfo>();
+  const [landingReady, setLandingReady] = useState(false), [loadEpoch, setLoadEpoch] = useState(0);
   const [work, setWork] = useState<ProjectWorkView>();
   const [routines, setRoutines] = useState<ProjectRoutineSettingsView>();
   const [stale, setStale] = useState(false);
@@ -40,7 +41,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
     const [settings, view, routineModel] = await Promise.all([api(path, ProjectWorkSettingsViewSchema, 'GET', undefined, { signal, waitForHub: true }),
       api(`/api/projects/${id}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal, waitForHub: true }), api(`/api/projects/${id}/routine-settings`, ProjectRoutineSettingsViewSchema, 'GET', undefined, { signal, waitForHub: true })]);
     const states = await Promise.all(settings.settings.environment.secrets.map(name => api(`/api/projects/${id}/env-secrets/${encodeURIComponent(name)}`, ProjectEnvSecretSummarySchema, 'GET', undefined, { signal, waitForHub: true })));
-    setBase(settings.settings); setDraft(settings.settings); setConfiguration(settings.configuration); setWork(view); setRoutines(routineModel); setStale(false); setSecretValues({});
+    setBase(settings.settings); setDraft(settings.settings); setConfiguration(settings.configuration); setWork(view); setRoutines(routineModel); setStale(false); setSecretValues({}); setLoadEpoch(value => value + 1);
     setSecretStates(Object.fromEntries(states.map(state => [state.name, state]))); local.setError('');
   }, [id, path, local.setError]);
   useEffect(() => {
@@ -92,7 +93,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
       <button type="button" className="text-button" onClick={() => navigate(`/projects/${id}`)}>{copy.BACK_TO_PROJECT}</button></header>
     {!draft || !base || !work || !routines ? <p role="status">{copy.LOADING}</p> : !configuration ? <p role="status">Project configuration metadata is unavailable. Reload after the daemon is updated.</p> : <div className="pw-settings-layout">
       <nav aria-label={copy.SETTINGS_SECTIONS}>{sections.map(([key, title]) => <a key={key} href={`#project-settings-${key}`}>{title}</a>)}</nav>
-      <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); saveAll(); }}>
+      <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); if (landingReady && !stale) saveAll(); }}>
         <fieldset disabled={task.busy} className="pw-fields">
           {section('general', <>
             <fieldset><legend>{copy.PROJECT_STATUS}</legend><div className="form-actions">{(['active', 'paused', 'archived'] as const).map(status => <button key={status} type="button" className="secondary" aria-pressed={base.status === status} onClick={() => setStatus(status)}>{copy.PROJECT_STATUS_LABELS[status]}</button>)}</div>
@@ -123,7 +124,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
             {number(copy.CHECKPOINT_MINIMUM, draft.sessionCheckpoints.checkpointMinTokens, 20000, 200000, checkpointMinTokens => change({ sessionCheckpoints: { ...draft.sessionCheckpoints, checkpointMinTokens } }))}
           </>)}
           {section('pull-requests', <>
-            <LandingSettings value={draft} change={change} /><DeploySettings model={routines} value={draft} change={change} />
+            <LandingSettings key={loadEpoch} value={base} change={change} ready={setLandingReady} onError={local.fail} /><DeploySettings model={routines} value={draft} change={change} />
             {([['checks', copy.FIX_CHECKS_AUTOMATICALLY], ['conflicts', copy.FIX_CONFLICTS_AUTOMATICALLY], ['comments', copy.FIX_COMMENTS_AUTOMATICALLY]] as const).map(([kind, label]) => <label className="checkbox" key={kind}><input type="checkbox" checked={draft.prAutoFix[kind]} onChange={event => change({ prAutoFix: { ...draft.prAutoFix, [kind]: event.target.checked } })} />{label}</label>)}
             {number(copy.AUTOMATIC_FIX_LIMIT, draft.prAutoFix.maxRounds, 1, 10, maxRounds => change({ prAutoFix: { ...draft.prAutoFix, maxRounds } }))}
             <label>{copy.RISKY_AREAS}<textarea aria-label={copy.RISKY_AREAS} rows={4} maxLength={2000} value={draft.riskyAreas} onChange={event => change({ riskyAreas: event.target.value })} /></label>
@@ -160,7 +161,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
         {local.error && <p role="alert" className="error">{local.error}{stale && <button type="button" className="text-button" disabled={task.busy} onClick={() => void task.run(read)}>{copy.RELOAD}</button>}</p>}
         <div className="form-actions pw-settings-savebar">
           {work.project.name === 'Ekoa Code' && <button type="button" className="secondary" disabled={task.busy || !draft.coordinator.modelId} onClick={() => void task.run(async signal => { await api(`/api/projects/${id}/ekoa-code-setup`, EkoaCodeSetupReceiptSchema, 'POST', { schema: 'ekoa-code-setup-request-v1', modelId: draft.coordinator.modelId, workflowPull: 208 }, { signal, waitForHub: true }); await read(signal); updated(); })}>{copy.APPLY_EKOA_SETUP}</button>}
-          <button type="button" className="secondary" onClick={() => navigate(`/projects/${id}`)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale}>{task.busy ? copy.SAVING : copy.SAVE}</button>
+          <button type="button" className="secondary" onClick={() => navigate(`/projects/${id}`)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale || !landingReady}>{task.busy ? copy.SAVING : copy.SAVE}</button>
         </div>
       </form><RoutinePreferences model={routines} saved={setRoutines} /></div>
     </div>}

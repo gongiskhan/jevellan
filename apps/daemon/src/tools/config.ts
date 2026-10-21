@@ -147,6 +147,8 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'landing_editor': case 'landing_preview': return { text: 'Landing settings.', data: await context.app.projectWork.landingEditor(context.project.id, context.action === 'landing_preview' ? args.request : undefined) };
+    case 'landing_save': return { text: 'Landing settings saved.', data: await context.app.projectWork.saveLandingEditor(context.project.id, args.request) };
     case 'settings_change': return { text: 'Recorded settings changes.', data: await context.app.projectWork.settingsChangeView(context.project.id, args.request) };
     case 'settings_undo': return { text: 'Setting restored.', data: await context.app.projectWork.undoSetting(context.project.id, ProjectSettingsUndoRequestSchema.parse(args.request)) };
     case 'coordinator_editor': case 'coordinator_preview': {

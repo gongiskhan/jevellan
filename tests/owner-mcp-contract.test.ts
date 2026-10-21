@@ -3,6 +3,7 @@ import { ConfigRevisionSchema, DecisionsSettingsEditorSchema } from '../packages
 import { ImproverStateSchema } from '../packages/core/dist/index.js';
 import { ProjectCoordinatorEditorSchema } from '../packages/core/dist/index.js';
 import { ProjectSettingsChangeViewSchema } from '../packages/core/dist/index.js';
+import { ProjectLandingEditorSchema } from '../packages/core/dist/index.js';
 import { seedConversationDecision } from './helpers/conversation-decision-fixture.js';
 import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
@@ -21,6 +22,16 @@ async function connect(env: Record<string, string>): Promise<Client> {
     env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', ...env }, cwd: f!.checkout, stderr: 'ignore' });
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
+
+test('MCP config landing editor exposes raw draft constraints and canonical save data', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root }), settings = (await f.app.projectWork.settingsView('project')).settings;
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'landing_editor' } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-landing-editor-v1', fields: { delivery: settings.delivery }, limits: { checks: 30 }, saveRequest: { projectId: 'project', settingsRequest: { revision: settings.revision } } } }); expect(f.fake.runs).toHaveLength(0);
+  if (!result.ok) throw new Error('Expected landing editor.'); const view = ProjectLandingEditorSchema.parse(result.data);
+  const preview = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'landing_preview', request: { ...view.request.base, fields: { ...view.fields, smokeCheck: 'true' } } } })).structuredContent); if (!preview.ok) throw new Error('Expected landing preview.');
+  expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'landing_save', request: ProjectLandingEditorSchema.parse(preview.data).saveRequest } })).structuredContent)).toMatchObject({ ok: true });
+  expect((await f.app.projectWork.settingsView('project')).settings.smokeCheck).toBe('true');
+});
 
 test('MCP config settings change views include canonical sentences and Undo data', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });

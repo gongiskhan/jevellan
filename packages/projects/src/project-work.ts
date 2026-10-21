@@ -3,6 +3,8 @@ import { waitingItemsView, sentText } from './waiting-views.js';
 import { projectConfigurationInfo } from './project-configuration.js';
 import { coordinatorEditor } from './coordinator-editor.js';
 import { settingsChangeView } from './settings-change-views.js';
+import { landingEditor } from './landing-editor.js';
+import { ProjectLandingEditorRequestSchema, ProjectLandingEditorSaveSchema } from '@jevellan/core';
 import { ProjectSettingsChangeViewRequestSchema } from '@jevellan/core';
 import { ProjectCoordinatorEditorSaveSchema } from '@jevellan/core';
 import { QUESTION_NOT_FOUND } from './copy.js';
@@ -924,6 +926,17 @@ export class ProjectWork {
   async coordinatorEditor(projectId: string, preview?: unknown) {
     const [view, configuration] = await Promise.all([this.view(projectId), this.#o.settings()]);
     return coordinatorEditor(view, configuration, id => this.#o.runtimes.get(id)?.displayName ?? id, preview);
+  }
+  async landingEditor(projectId: string, raw?: unknown) {
+    await this.#project(projectId);
+    const input = ProjectLandingEditorRequestSchema.parse(raw ?? { schema: 'project-landing-editor-request-v1', settings: (await this.settingsView(projectId)).settings });
+    if (input.settings.projectId !== projectId) throw refuse('The landing settings belong to another project.', 400);
+    return landingEditor(input);
+  }
+  async saveLandingEditor(projectId: string, raw: unknown) {
+    const input = ProjectLandingEditorSaveSchema.parse(raw);
+    if (input.projectId !== projectId) throw refuse('The landing settings belong to another project.', 400);
+    return this.putSettings(projectId, input.settingsRequest);
   }
   /** The existing two-step owner workflow: settings commit first, then optional Fresh on its assigned device. */
   async saveCoordinatorEditor(projectId: string, raw: unknown) {

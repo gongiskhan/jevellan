@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Areas 1a–1e/2a–2d/3/4a–4g/5a–5c: 73 of 310 UI rows migrated/refined plus 1 browser-only; phase8 is closed. Settings-change/Undo and historical settings-event presentations share canonical server labels and unchanged writers across UI/CLI/MCP. Final static checks and 287 affected backend cases in 22 files with 6 workers and 0 skips pass; desktop-light PAR2 passes once without retry/skip. Three exact images retained and proven nested source copies restored, vision not run. Remaining phase9 (56), phase10 (180), intake and placement/p-v1/m-v1 follow; full parity incomplete and CM1 remains. Installations last verified 0.7.2 on 20 October; no further release.",
+    "why": "Areas 1a–1e/2a–2d/3/4a–4g/5a–5d: 74 of 310 UI rows migrated/refined plus 2 browser-only; phase8 is closed. Landing editor/normalization/prepared requests share canonical UI/CLI/MCP writers; client async guards remain. Final static checks and 322 affected backend cases in 24 files with 6 workers and 0 skips pass. Extended PAR1 assertions pass after four stable client textarea labels; backend/test hashes unchanged. Five exact corrected images retained, vision not run. Remaining phase9 (54), phase10 (180), intake and placement/p-v1/m-v1 follow; full parity incomplete and CM1 remains. Installations last verified 0.7.2 on 20 October; no further release.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Areas 1a–1e/2a–2d/3/4a–4g/5a–5c: 73 of 310 UI rows migrated/refined plus 1 browser-only; phase8 is closed. Settings-change/Undo and historical settings-event presentations share canonical server labels and unchanged writers across UI/CLI/MCP. Final static checks and 287 affected backend cases in 22 files with 6 workers and 0 skips pass; desktop-light PAR2 passes once without retry/skip. Three exact images retained and proven nested source copies restored, vision not run. Remaining phase9 (56), phase10 (180), intake and placement/p-v1/m-v1 follow; full parity incomplete and CM1 remains. Installations last verified 0.7.2 on 20 October; no further release.",
+    "why": "Areas 1a–1e/2a–2d/3/4a–4g/5a–5d: 74 of 310 UI rows migrated/refined plus 2 browser-only; phase8 is closed. Landing editor/normalization/prepared requests share canonical UI/CLI/MCP writers; client async guards remain. Final static checks and 322 affected backend cases in 24 files with 6 workers and 0 skips pass. Extended PAR1 assertions pass after four stable client textarea labels; backend/test hashes unchanged. Five exact corrected images retained, vision not run. Remaining phase9 (54), phase10 (180), intake and placement/p-v1/m-v1 follow; full parity incomplete and CM1 remains. Installations last verified 0.7.2 on 20 October; no further release.",
     "status": "in-progress"
   },
   {
