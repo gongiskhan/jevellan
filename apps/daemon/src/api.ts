@@ -23,6 +23,7 @@ import { json, requestBody as body } from './http.js';
 import { PROJECT_HUB_ROUTE, handleMeshDeviceApi, handleMeshUiApi } from './mesh-api.js';
 import { handleLoginApi } from './login-api.js';
 import { ImproverRequestSchema } from '@jevellan/core';
+import { DecisionsSettingsPreviewSchema, DecisionsSettingsSaveSchema } from '@jevellan/core';
 import { handleAgentAccessApi } from './agent-access-api.js';
 import { handleAgentPeer } from './agent-mcp-api.js';
 import { DEVICE_WORKTREES_ROUTE, handleDeviceWorktrees } from './device-worktrees-api.js';
@@ -172,6 +173,17 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       EmptySchema.parse(await body(request)); await app.auth.logout(token); response.setHeader('Set-Cookie', clearSessionCookie(secureCookies)); send(await app.auth.state(undefined)); return;
     }
     if (path === '/hub/config' && method === 'GET') { send(await app.configuration()); return; }
+    if (['/api/config/decisions', '/api/jev/menu-candidates', '/api/jev/effort-guide'].includes(path) && method === 'GET') { send(await app.state.configuration.decisionsEditor()); return; }
+    if (['/api/config/decisions/preview', '/api/jev/menu', '/api/jev/effort-guide/reset'].includes(path) && method === 'POST') {
+      const input = DecisionsSettingsPreviewSchema.parse(await body(request)); retryable = true;
+      if (path === '/api/jev/menu' && input.command?.kind !== 'add-model' || path === '/api/jev/effort-guide/reset' && input.command?.kind !== 'reset-effort-guide') throw failure('Choose the matching decisions editor action.', 400);
+      send(await app.state.configuration.decisionsEditor(input)); return;
+    }
+    if (path === '/api/config/decisions' && method === 'PUT') {
+      const input = DecisionsSettingsSaveSchema.parse(await body(request)); retryable = true;
+      send(await app.saveDecisionsSettings(input)); return;
+    }
+    if (path === '/api/jev/connection' && method === 'GET') { send(await app.state.jev.connection()); return; }
     if (path === '/hub/config' && method === 'PUT') {
       const input = ConfigWriteSchema.parse(await body(request));
       retryable = input.clientRequestId !== undefined;

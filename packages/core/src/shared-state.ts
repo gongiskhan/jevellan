@@ -3,12 +3,16 @@ import { ProjectEnvNameSchema, ProjectEnvImportSourceSchema, ProjectEnvSecretSum
 import { AddRiggingSchema, ConfigWriteSchema, CredentialInputSchema, GitHubTokenStateSchema, RiggingEntrySchema, RiggingViewSchema, SecretStateSchema, SecretSummarySchema, UpdateRiggingSchema, type GitHubTokenState } from './client-schemas.js';
 import { ProjectViewSchema } from './conversation-schemas.js';
 import { ConfigRevisionSchema, IdSchema, ProjectSchema, RiggingItemSchema, type ConfigRevision, type Project, type RiggingItem } from './schemas.js';
+import { DecisionsSettingsEditorSchema, DecisionsSettingsPreviewSchema, DecisionsSettingsSaveSchema, JevCheckRecordSchema, JevKeyGenerationSchema, JevConnectionViewSchema, type DecisionsSettingsEditor, type JevConnectionView } from './decisions-settings-schemas.js';
+import { JevConnectionSchema } from './client-schemas.js';
 
 type Available<T> = T | Promise<T>;
 export interface SharedConfiguration {
   current(): Available<ConfigRevision>;
   history(): Available<ConfigRevision[]>;
   put(input: unknown): Available<ConfigRevision>;
+  decisionsEditor(input?: unknown): Available<DecisionsSettingsEditor>;
+  decisionsPut(input: unknown): Available<ConfigRevision>;
 }
 export interface SharedRigging {
   get(id: string): Available<z.infer<typeof RiggingViewSchema>>;
@@ -29,6 +33,9 @@ export interface SharedJev {
   summary(): Available<z.infer<typeof SecretStateSchema>>;
   put(value: string, clientRequestId?: string): Available<z.infer<typeof SecretSummarySchema>>;
   credential(): Available<string | undefined>;
+  connection(): Available<JevConnectionView>;
+  checkGeneration(): Available<number>;
+  recordCheck(input: unknown): Available<z.infer<typeof JevConnectionSchema>>;
 }
 /** The GitHub token for pull requests: summaries carry the last four characters and the save time, never the token. */
 export interface SharedGitHub {
@@ -54,6 +61,10 @@ export const SharedStateRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...base, operation: z.enum(['configuration', 'configuration-history', 'projects', 'jev-summary', 'jev-credential']) }),
   z.strictObject({ ...base, operation: z.enum(['github-summary', 'github-credential']), projectId: IdSchema.optional() }),
   z.strictObject({ ...base, operation: z.literal('configuration-put'), input: ConfigWriteSchema }),
+  z.strictObject({ ...base, operation: z.literal('decisions-editor'), input: DecisionsSettingsPreviewSchema.optional() }),
+  z.strictObject({ ...base, operation: z.literal('decisions-put'), input: DecisionsSettingsSaveSchema }),
+  z.strictObject({ ...base, operation: z.enum(['jev-check-generation', 'jev-connection']) }),
+  z.strictObject({ ...base, operation: z.literal('jev-check-record'), input: JevCheckRecordSchema }),
   z.strictObject({ ...base, operation: z.literal('project'), id: IdSchema }),
   z.strictObject({ ...base, operation: z.literal('project-put'), clientRequestId: IdSchema.optional(), project: ProjectSchema, revision: z.number().int().nonnegative() }),
   z.strictObject({ ...base, operation: z.literal('project-context'), id: IdSchema, context: ProjectSchema.shape.context, revision: z.number().int().positive() }),
@@ -68,6 +79,10 @@ export const SharedStateRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...base, operation: z.literal('rigging-items'), projectId: IdSchema.optional(), runtime: IdSchema, runtimes }),
 ]);
 export const SharedStateResultSchema = z.discriminatedUnion('schema', [
+  z.strictObject({ schema: z.literal('shared-decisions-editor-v1'), editor: DecisionsSettingsEditorSchema }),
+  z.strictObject({ schema: z.literal('shared-jev-generation-v1'), value: JevKeyGenerationSchema }),
+  z.strictObject({ schema: z.literal('shared-jev-connection-v1'), view: JevConnectionViewSchema }),
+  z.strictObject({ schema: z.literal('shared-jev-check-v1'), result: JevConnectionSchema }),
   z.strictObject({ schema: z.literal('shared-project-env-summary-v1'), summary: ProjectEnvSecretSummarySchema }),
   z.strictObject({ schema: z.literal('shared-project-env-credentials-v1'), values: z.record(ProjectEnvNameSchema, CredentialInputSchema) }),
   z.strictObject({ schema: z.literal('shared-configuration-v1'), revision: ConfigRevisionSchema }),

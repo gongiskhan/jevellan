@@ -398,7 +398,7 @@ function App() {
     ) : currentPage === 'rigging' ? (
       <RiggingPage {...props} />
     ) : currentPage === 'decisions' ? (
-      <DecisionsPage {...props} key={data.config.revision} />
+      <DecisionsPage {...props} />
     ) : currentPage === 'improver' ? (
       <ImproverPage {...props} monitor={improver} />
     ) : currentPage === 'cleanup' ? (

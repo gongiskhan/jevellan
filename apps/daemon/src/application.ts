@@ -409,16 +409,22 @@ export class Application {
   async peerAuthenticated(input: unknown, existingStream = false) { return this.auth instanceof MemberUiAuth ? this.auth.verifyPeer(input, existingStream) : !!this.mesh.peerSession(this.device.deviceId, input).session; }
   async peerLoginAuthenticated(input: unknown, existingStream = false) { return this.auth instanceof MemberUiAuth ? this.auth.verifyPeerLogin(input, existingStream) : !!this.mesh.peerLoginSession(this.device.deviceId, input).session; }
   riggingApplication() { const path = this.homes.at('rigging', 'application.json'); return existsSync(path) ? readDocument(path, RiggingApplicationSchema) : null; }
+  async saveDecisionsSettings(input: unknown) {
+    const saved = await this.state.configuration.decisionsPut(input); await this.configuration(); await this.applyRigging(); return saved;
+  }
   async checkJev(signal?: AbortSignal) {
+    const generation = await this.state.jev.checkGeneration();
     const configuredModel = (await this.configuration()).configuration['x-jevellan'].decisions.model;
     const started = performance.now();
+    let result: ReturnType<typeof JevConnectionSchema.parse>;
     try {
-      const result = await (await this.decisionClient()).models(signal);
-      return JevConnectionSchema.parse({ schema: 'jev-connection-v2', checkedAt: new Date().toISOString(), latencyMs: Math.round(performance.now() - started), configuredModel, status: 'connected', availableModels: result.models.map((model) => model.name) });
+      const listed = await (await this.decisionClient()).models(signal), availableModels = listed.models.map(model => model.name);
+      result = JevConnectionSchema.parse({ schema: 'jev-connection-v2', checkedAt: new Date().toISOString(), latencyMs: Math.round(performance.now() - started), configuredModel, status: 'connected', availableModels, savedModelListed: availableModels.includes(configuredModel) });
     } catch (error) {
       if (!(error instanceof JevError)) throw error;
-      return JevConnectionSchema.parse({ schema: 'jev-connection-v2', checkedAt: new Date().toISOString(), latencyMs: Math.round(performance.now() - started), configuredModel, status: 'unavailable', availableModels: [], reason: error.message });
+      result = JevConnectionSchema.parse({ schema: 'jev-connection-v2', checkedAt: new Date().toISOString(), latencyMs: Math.round(performance.now() - started), configuredModel, status: 'unavailable', availableModels: [], reason: error.message, savedModelListed: false });
     }
+    return this.state.jev.recordCheck({ schema: 'jev-check-record-v1', generation, result });
   }
   applyRigging() {
     const task = this.#riggingQueue.catch(() => undefined).then(async () => {

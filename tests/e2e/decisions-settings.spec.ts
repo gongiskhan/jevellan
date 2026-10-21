@@ -1,0 +1,31 @@
+import { test, expect } from './fixtures.js';
+import { randomUUID } from 'node:crypto';
+
+test('Decisions drafts survive unrelated revisions and save through the scoped engine editor', async ({ page }, info) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/settings/decisions'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible(); await page.goto('/settings/decisions');
+  await expect(page.getByRole('heading', { name: 'Decisions', exact: true })).toBeVisible();
+  const routing = page.getByRole('textbox', { name: 'Routing profile', exact: true }), draft = 'Preserve this unsaved routing guidance across an unrelated configuration revision.';
+  await routing.fill(draft);
+  const before = await (await page.request.get('/hub/config')).json(); before.configuration['x-jevellan'].maxRunningThreadsAll = 4;
+  expect((await page.request.put('/hub/config', { data: { schema: 'config-write-v1', revision: before.revision, configuration: before.configuration } })).ok()).toBe(true);
+  await page.getByLabel('Jev key', { exact: true }).fill(`fixture-${randomUUID()}`); await page.getByRole('button', { name: 'Save key', exact: true }).click();
+  await expect(page.getByText('Jev key saved.', { exact: true })).toBeVisible(); await expect(page.getByLabel('Jev key', { exact: true })).toHaveValue('');
+  await expect(routing).toHaveValue(draft);
+  await expect(page.getByText('Settings changed elsewhere. Your draft is preserved. Reload the latest decisions settings before saving.', { exact: true })).toBeVisible();
+  await page.screenshot({ path: `docs/acceptance/screenshots/decisions-settings-draft-${info.project.name}.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Reload latest decisions settings', exact: true }).click(); await expect(routing).not.toHaveValue(draft);
+  await routing.fill(draft); await page.getByLabel('Review cap', { exact: true }).fill('0'); await page.getByLabel('Work cost cap (USD)', { exact: true }).fill('0.005');
+  await page.getByRole('button', { name: 'Test connection', exact: true }).click(); await expect(page.getByText('Connected to Jev.', { exact: true })).toBeVisible();
+  await expect(page.getByText('The saved model was not returned by Jev. Choose a returned model before relying on automatic decisions.', { exact: true })).toBeVisible();
+  await page.getByLabel('Jev model', { exact: true }).fill('jev-latest');
+  const save = page.getByRole('button', { name: 'Save decisions settings', exact: true }); await expect(save).toBeEnabled(); await save.click();
+  await expect(page.getByText('Decisions settings saved.', { exact: true })).toBeVisible();
+  const after = await (await page.request.get('/hub/config')).json(); expect(after.configuration['x-jevellan']).toMatchObject({ maxRunningThreadsAll: 4, decisions: { model: 'jev-latest' }, routingProfile: draft, guards: { reviewCap: 0, workCostCapUsd: 0.005 } });
+  await page.reload(); await expect(routing).toHaveValue(draft); await expect(page.getByLabel('Jev model', { exact: true })).toHaveValue('jev-latest'); await expect(page.getByLabel('Work cost cap (USD)', { exact: true })).toHaveValue('0.005');
+  await page.screenshot({ path: `docs/acceptance/screenshots/decisions-settings-saved-${info.project.name}.png`, fullPage: true });
+  await page.getByLabel('Review cap', { exact: true }).fill('-1'); await expect(page.getByText('guards.reviewCap must be a non-negative whole number.', { exact: true })).toBeVisible(); await expect(save).toBeDisabled();
+  await page.screenshot({ path: `docs/acceptance/screenshots/decisions-settings-invalid-${info.project.name}.png`, fullPage: true });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); expect(errors).toEqual([]);
+});

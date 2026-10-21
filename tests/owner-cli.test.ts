@@ -1,4 +1,5 @@
 import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
+import { ConfigRevisionSchema, DecisionsSettingsEditorSchema } from '../packages/core/dist/index.js';
 import { seedConversationDecision } from './helpers/conversation-decision-fixture.js';
 import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
@@ -15,6 +16,19 @@ import { ProjectRouteWhyViewSchema, ProjectThreadOverrideEditorSchema, ThreadCre
 let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
+
+test('CLI Decisions settings use the shared scoped editor and recover the same save receipt', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  expect(await callCommand(['jev', 'settings_editor'], f.homes)).toBe(0);
+  const encoded = output.mock.calls.map(row => String(row[0])).find(text => text.startsWith('{')), result = OwnerToolResultSchema.parse(encoded ? JSON.parse(encoded) : undefined);
+  expect(result.ok).toBe(true); if (!result.ok) throw new Error('Expected CLI settings editor.');
+  const view = DecisionsSettingsEditorSchema.parse(result.data), fields = { ...view.fields, routingProfile: 'CLI settings guidance.' };
+  output.mockClear(); expect(await callCommand(['jev', 'settings_preview', '--request', JSON.stringify({ ...view.preview.request, fields })], f.homes)).toBe(0);
+  const previewResult = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); expect(previewResult.ok).toBe(true); if (!previewResult.ok) throw new Error('Expected CLI settings preview.');
+  const draft = DecisionsSettingsEditorSchema.parse(previewResult.data), before = f.app.hub.configuration.current()!.revision;
+  for (let attempt = 0; attempt < 2; attempt++) { output.mockClear(); expect(await callCommand(['jev', 'settings_save', '--request', JSON.stringify(draft.saveRequest)], f.homes)).toBe(0); const saved = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); expect(saved.ok).toBe(true); if (!saved.ok) throw new Error('Expected CLI settings save.'); expect(ConfigRevisionSchema.parse(saved.data).revision).toBe(before + 1); }
+  expect(f.app.hub.configuration.current()?.configuration['x-jevellan'].routingProfile).toBe(fields.routingProfile); expect(f.fake.runs).toHaveLength(0);
+});
 
 test('CLI editor templates include their versioned request data', async () => {
   f = await projectFixture({ control: true });

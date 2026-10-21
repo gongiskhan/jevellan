@@ -19,6 +19,13 @@ export const jev: OwnerHandler = async (context) => {
   await tools.status(project); // display ids for every current thread and goal
   const goals = new Map((await app.projectWork.goalList(projectId)).goals.map(row => [row.goal.id, tools.ids.one(projectId, 'G', row.goal.id)]));
   switch (context.action) {
+    case 'settings_editor': case 'settings_preview': {
+      const data = await app.state.configuration.decisionsEditor(context.action === 'settings_preview' ? args.request : undefined);
+      return { text: 'Decisions settings.', data };
+    }
+    case 'settings_save': return { text: 'Decisions settings saved.', data: await app.saveDecisionsSettings(args.request) };
+    case 'connection': return { text: 'Jev connection.', data: await app.state.jev.connection() };
+    case 'connection_check': return { text: 'Jev connection check.', data: await app.checkJev() };
     case 'conversation_why': case 'correction_editor': case 'correction_preview': case 'correction_save': {
       const operation = context.action === 'conversation_why' ? 'decision-why' : context.action === 'correction_editor' ? 'step-editor' : context.action === 'correction_preview' ? 'step-preview' : 'correction-save';
       const input = context.action === 'conversation_why' ? { schema: 'conversation-decision-why-request-v1', decisionId: args.decision } : context.action === 'correction_editor' ? args.stretch : args.request;

@@ -13,10 +13,12 @@ const keyed = ['improver.spec.ts', 'answer-options.spec.ts'];
 // Projects journeys get servers started with --projects: their GitHub-shaped project, fake GitHub, accounts and scripted
 // turns are hub-wide state the other journeys must not see.
 const projectsSpec = 'projects.spec.ts';
+const decisionsSpec = 'decisions-settings.spec.ts';
 const projects = [
-  ...layouts.map((layout, index) => ({ name: layout.name, metadata: { layout: layout.name }, testIgnore: ['installation.spec.ts', ...keyed, projectsSpec], use: { ...layout.use, baseURL: `http://127.0.0.1:${base + index}` } })),
+  ...layouts.map((layout, index) => ({ name: layout.name, metadata: { layout: layout.name }, testIgnore: ['installation.spec.ts', ...keyed, projectsSpec, decisionsSpec], use: { ...layout.use, baseURL: `http://127.0.0.1:${base + index}` } })),
   ...layouts.map((layout, index) => ({ name: `${layout.name}-improver`, metadata: { layout: layout.name }, testMatch: keyed, use: { ...layout.use, baseURL: `http://127.0.0.1:${base + layouts.length + index}` } })),
   ...layouts.map((layout, index) => ({ name: `${layout.name}-projects`, metadata: { layout: layout.name }, testMatch: projectsSpec, use: { ...layout.use, baseURL: `http://127.0.0.1:${base + 2 * layouts.length + index}` } })),
+  ...layouts.map((layout, index) => ({ name: `${layout.name}-decisions`, metadata: { layout: layout.name }, testMatch: decisionsSpec, use: { ...layout.use, baseURL: `http://127.0.0.1:${base + 3 * layouts.length + index}` } })),
 ];
 export default defineConfig({
   testDir: './tests/e2e', fullyParallel: false, timeout: 120_000, workers: 4,

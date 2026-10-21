@@ -87,5 +87,5 @@ export const GitHubTokenStateSchema = z.union([
 ]);
 export type GitHubTokenState = z.infer<typeof GitHubTokenStateSchema>;
 export const JevConnectionSchema = z.strictObject({ schema: z.literal('jev-connection-v2'), checkedAt: z.iso.datetime(), latencyMs: z.number().int().nonnegative(), configuredModel: z.string().min(1),
-  status: z.enum(['connected', 'unavailable']), availableModels: z.array(z.string()), reason: z.string().optional() });
+  status: z.enum(['connected', 'unavailable']), availableModels: z.array(z.string()), reason: z.string().optional(), savedModelListed: z.boolean().optional() });
 export const RiggingSaveSchema = z.strictObject({ schema: z.literal('rigging-save-v1'), item: RiggingViewSchema, application: RiggingApplicationSchema });

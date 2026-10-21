@@ -1,4 +1,5 @@
 import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
+import { ConfigRevisionSchema, DecisionsSettingsEditorSchema } from '../packages/core/dist/index.js';
 import { seedConversationDecision } from './helpers/conversation-decision-fixture.js';
 import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
@@ -17,6 +18,16 @@ async function connect(env: Record<string, string>): Promise<Client> {
     env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', ...env }, cwd: f!.checkout, stderr: 'ignore' });
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
+
+test('official MCP Decisions editor and scoped save preserve their typed request and receipt', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const read = await mcp.callTool({ name: 'jev', arguments: { action: 'settings_editor' } }), result = OwnerToolResultSchema.parse(read.structuredContent); expect(result.ok).toBe(true); if (!result.ok) throw new Error('Expected MCP settings editor.');
+  const view = DecisionsSettingsEditorSchema.parse(result.data), fields = { ...view.fields, routingProfile: 'MCP settings guidance.' };
+  const response = await mcp.callTool({ name: 'jev', arguments: { action: 'settings_preview', request: { ...view.preview.request, fields } } }), previewed = OwnerToolResultSchema.parse(response.structuredContent); expect(previewed.ok).toBe(true); if (!previewed.ok) throw new Error('Expected MCP settings preview.');
+  const draft = DecisionsSettingsEditorSchema.parse(previewed.data), before = f.app.hub.configuration.current()!.revision;
+  for (let attempt = 0; attempt < 2; attempt++) { const saved = await mcp.callTool({ name: 'jev', arguments: { action: 'settings_save', request: draft.saveRequest } }), value = OwnerToolResultSchema.parse(saved.structuredContent); expect(saved.isError).toBeFalsy(); expect(value.ok).toBe(true); if (!value.ok) throw new Error('Expected MCP settings save.'); expect(ConfigRevisionSchema.parse(value.data).revision).toBe(before + 1); }
+  expect(f.app.hub.configuration.current()?.configuration['x-jevellan'].routingProfile).toBe(fields.routingProfile); expect(f.fake.runs).toHaveLength(0);
+});
 
 test('the forwarder lists exactly the twelve tools with their descriptions and forwards calls to the tool route', async () => {
   f = await projectFixture({ control: true });

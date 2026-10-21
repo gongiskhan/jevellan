@@ -31,6 +31,8 @@ export * from './environment.js';
 export * from './configuration.js';
 export * from './vault.js';
 export * from './models.js';
+export * from './decisions-settings-schemas.js';
+export * from './decisions-settings.js';
 export * from './rigging.js';
 export * from './store.js';
 export * from './account-store.js';

@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { AjvJsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/ajv';
-import { ComposerChoiceSchema, CorrectStepSchema, OWNER_TOOLS, StepCorrectionPreviewSchema, ownerToolInputSchema } from '../packages/core/dist/index.js';
+import { ComposerChoiceSchema, CorrectStepSchema, OWNER_TOOLS, StepCorrectionPreviewSchema, DecisionsSettingsSaveSchema, decisionsSettingsFields, seedConfiguration, ownerToolInputSchema } from '../packages/core/dist/index.js';
 
 const tool = OWNER_TOOLS.find(row => row.name === 'jev')!;
 const examples = [
@@ -18,4 +18,10 @@ test.each(examples)('advertised MCP inputs accept the valid $action request docu
 
 test('the canonical action still refuses a request document belonging to another action', () => {
   expect(tool.actions.find(row => row.name === 'correction_save')!.input.safeParse({ conversation: 'conversation_fixture', request: examples[0]!.request }).success).toBe(false);
+});
+
+test('advertised MCP inputs preserve the scoped Decisions save document', () => {
+  const args = { request: DecisionsSettingsSaveSchema.parse({ schema: 'decisions-settings-save-v1', revision: 1, clientRequestId: 'metadata_settings', draftRequestId: 'metadata_draft', fields: decisionsSettingsFields(seedConfiguration()) }) };
+  expect(tool.actions.find(row => row.name === 'settings_save')!.input.safeParse(args).success).toBe(true);
+  expect(new AjvJsonSchemaValidator().getValidator(ownerToolInputSchema(tool))({ action: 'settings_save', ...args }).valid).toBe(true);
 });

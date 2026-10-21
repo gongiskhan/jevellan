@@ -8,6 +8,8 @@ import { HubRigging } from './rigging.js';
 import { settingsMutation } from './settings-mutation.js';
 import { createHash } from 'node:crypto';
 import { DeviceSchema, parseGitHubRemote } from '@jevellan/core';
+import { ConfigRevisionSchema, SecretStateSchema, OfferedModelsSchema, DecisionsSettingsPreviewSchema, DecisionsSettingsSaveSchema, JevCheckRecordSchema, JevKeyGenerationSchema,
+  decisionsSettingsEditor, normalizeDecisionsSettings, jevConnectionView, type ConfigRevision } from '@jevellan/core';
 
 export class HubState {
   readonly configuration: SharedConfiguration;
@@ -19,11 +21,30 @@ export class HubState {
   constructor(readonly hub: HubDatabase, readonly deviceId: string, runtimes: readonly string[]) {
     IdSchema.parse(deviceId); this.rigging = new HubRigging(hub, deviceId, runtimes);
     const clean = (value: unknown) => { if (hub.redactor.text(JSON.stringify(value)) !== JSON.stringify(value)) throw new Error('Store credentials in their Settings fields.'); };
+    const current = (): ConfigRevision => { const value = hub.configuration.current(); if (!value) throw new Error('Configuration has not been initialized.'); return value; };
+    const generation = () => hub.get('jev-key-generation', 'current', JevKeyGenerationSchema)?.document.generation ?? 0;
+    const checked = () => { const row = hub.get('jev-settings-check', 'current', JevCheckRecordSchema)?.document; return row?.generation === generation() ? row.result : null; };
+    const offers = () => hub.list('offered-models', OfferedModelsSchema).map(row => row.document);
+    const jevSummary = () => SecretStateSchema.parse(hub.db.prepare('SELECT id FROM secrets WHERE id=?').get('jev') ? hub.vault.summary('jev') : { schema: 'secret-state-v1', id: 'jev', saved: false });
     const projectView = (row: { revision: number; document: Project }) => ProjectViewSchema.parse({ schema: 'project-view-v1', revision: row.revision, project: row.document });
     this.configuration = {
-      current: () => { const revision = hub.configuration.current(); if (!revision) throw new Error('Configuration has not been initialized.'); return revision; },
+      current,
       history: () => hub.configuration.history(),
       put: raw => { const input = ConfigWriteSchema.parse(raw); clean(input.configuration); return hub.configuration.put(input.configuration, input.revision, { deviceId, source: 'ui' }, undefined, input.clientRequestId); },
+      decisionsEditor: raw => {
+        const input = raw === undefined ? undefined : DecisionsSettingsPreviewSchema.parse(raw), latest = current(), base = input ? hub.configuration.revision(input.revision) : latest;
+        if (!base) throw Object.assign(new Error('The configuration revision is unavailable. Reload decisions settings.'), { status: 409 });
+        return decisionsSettingsEditor(base, latest.revision, offers(), checked(), input);
+      },
+      decisionsPut: raw => {
+        const input = DecisionsSettingsSaveSchema.parse(raw); clean(input);
+        return settingsMutation(hub, deviceId, 'decisions-put', input, input.clientRequestId, ConfigRevisionSchema, () => {
+          const latest = current(); if (input.revision !== latest.revision) throw Object.assign(new Error('Settings changed elsewhere. Your draft is preserved. Reload the latest decisions settings before saving.'), { status: 409 });
+          const result = normalizeDecisionsSettings(latest, input.fields, offers(), checked(), input.draftRequestId);
+          if (!result.configuration) throw Object.assign(new Error(result.validation.map(issue => issue.message).join(' ')), { status: 400 });
+          return hub.configuration.put(result.configuration, input.revision, { deviceId, source: 'ui' });
+        });
+      },
     };
     this.projects = {
       get: id => { const row = hub.get('projects', IdSchema.parse(id), ProjectSchema); return row ? projectView(row) : null; },
@@ -56,13 +77,27 @@ export class HubState {
       },
     };
     this.jev = {
-      summary: () => hub.db.prepare('SELECT id FROM secrets WHERE id=?').get('jev') ? hub.vault.summary('jev') : { schema: 'secret-state-v1', id: 'jev', saved: false },
+      summary: jevSummary,
       put: (raw, clientRequestId) => {
         const value = CredentialInputSchema.parse(raw);
-        settingsMutation(hub, deviceId, 'jev-put', { value }, clientRequestId, SecretSummarySchema, () => hub.vault.put('jev', value));
+        settingsMutation(hub, deviceId, 'jev-put', { value }, clientRequestId, SecretSummarySchema, () => {
+          const result = hub.vault.put('jev', value), previous = hub.get('jev-key-generation', 'current', JevKeyGenerationSchema);
+          hub.put('jev-key-generation', 'current', JevKeyGenerationSchema, { schema: 'jev-key-generation-v1', generation: (previous?.document.generation ?? 0) + 1 }, previous?.revision ?? 0);
+          return result;
+        });
         return hub.vault.summary('jev');
       },
       credential: () => { if (!hub.db.prepare('SELECT id FROM secrets WHERE id=?').get('jev')) return undefined; return hub.vault.forLaunch('jev'); },
+      connection: () => jevConnectionView(jevSummary(), checked(), current().configuration['x-jevellan'].decisions.model),
+      checkGeneration: generation,
+      recordCheck: raw => {
+        const input = JevCheckRecordSchema.parse(raw); clean(input.result);
+        return hub.transaction(() => {
+          if (input.generation !== generation()) throw Object.assign(new Error('The Jev key changed during this check. Test connection again.'), { status: 409 });
+          const previous = hub.get('jev-settings-check', 'current', JevCheckRecordSchema);
+          hub.put('jev-settings-check', 'current', JevCheckRecordSchema, input, previous?.revision ?? 0); return input.result;
+        });
+      },
     };
     const environmentKey = (projectId: string, name: string) => {
       if (!hub.get('projects', IdSchema.parse(projectId), ProjectSchema)) throw Object.assign(new Error('Project not found.'), { status: 404 });
@@ -124,6 +159,11 @@ export class HubState {
       case 'configuration': result = { schema: 'shared-configuration-v1', revision: await this.configuration.current() }; break;
       case 'configuration-history': result = { schema: 'shared-configuration-history-v1', revisions: await this.configuration.history() }; break;
       case 'configuration-put': result = { schema: 'shared-configuration-v1', revision: await this.configuration.put(request.input) }; break;
+      case 'decisions-editor': result = { schema: 'shared-decisions-editor-v1', editor: await this.configuration.decisionsEditor(request.input) }; break;
+      case 'decisions-put': result = { schema: 'shared-configuration-v1', revision: await this.configuration.decisionsPut(request.input) }; break;
+      case 'jev-connection': result = { schema: 'shared-jev-connection-v1', view: await this.jev.connection() }; break;
+      case 'jev-check-generation': result = { schema: 'shared-jev-generation-v1', value: { schema: 'jev-key-generation-v1', generation: await this.jev.checkGeneration() } }; break;
+      case 'jev-check-record': result = { schema: 'shared-jev-check-v1', result: await this.jev.recordCheck(request.input) }; break;
       case 'project': result = { schema: 'shared-project-v1', project: await this.projects.get(request.id) }; break;
       case 'projects': result = { schema: 'shared-projects-v1', projects: await this.projects.list() }; break;
       case 'project-put': result = { schema: 'shared-project-v1', project: await this.projects.put(request.project, request.revision, request.clientRequestId) }; break;
@@ -165,6 +205,8 @@ export class MemberState {
       current: async () => (await request('configuration', 'shared-configuration-v1')).revision,
       history: async () => (await request('configuration-history', 'shared-configuration-history-v1')).revisions,
       put: async input => (await request('configuration-put', 'shared-configuration-v1', { input })).revision,
+      decisionsEditor: async input => (await request('decisions-editor', 'shared-decisions-editor-v1', input === undefined ? {} : { input })).editor,
+      decisionsPut: async input => (await request('decisions-put', 'shared-configuration-v1', { input })).revision,
     };
     const writtenProject = async (operation: string, fields: object, id: string, revision: number) => { const result = (await request(operation, 'shared-project-v1', fields)).project; if (!result || result.project.id !== id || result.revision !== revision + 1) throw new HubProtocolError(); return result; };
     this.projects = {
@@ -174,6 +216,9 @@ export class MemberState {
       context: (id, context, revision) => writtenProject('project-context', { id, context, revision }, id, revision),
     };
     this.jev = {
+      connection: async () => (await request('jev-connection', 'shared-jev-connection-v1')).view,
+      checkGeneration: async () => (await request('jev-check-generation', 'shared-jev-generation-v1')).value.generation,
+      recordCheck: async input => (await request('jev-check-record', 'shared-jev-check-v1', { input })).result,
       summary: async () => { const summary = (await request('jev-summary', 'shared-jev-summary-v1')).summary; if (summary.id !== 'jev') throw new HubProtocolError(); return summary; },
       put: async (value, clientRequestId) => { const summary = (await request('jev-put', 'shared-jev-summary-v1', { value, clientRequestId })).summary; if (!summary.saved || summary.id !== 'jev') throw new HubProtocolError(); return summary; },
       credential: async () => (await request('jev-credential', 'shared-jev-credential-v1')).value ?? undefined,
