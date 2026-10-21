@@ -18,7 +18,7 @@ import {
   RESTART_PUBLISHED_TO_MAIN, SESSION_REPLACED, TESTS_FAILED_THREE_TIMES, THREAD_ALREADY_RESTARTED, THREAD_ENDED, THREAD_NOT_FOUND, THREAD_WORKING, TOOL_NOT_IN_TURN, TURN_FAILED,
   TURN_LIMIT_REACHED, TURN_TIMED_OUT, TURN_WITHOUT_REPORT, VERIFICATION_ATTEMPTS, WAITING_FOR_HUB, WAITING_FOR_HUB_SLOT, WORKTREE_DISCARDED, accountMovedNotice, alreadyAttached,
   attachedRefusal, cleanupFailed, commitsSavedReason, isRestarted, messagesNotDelivered, messagesPrompt, ownerWorkedLine, savedCommitsRef,
-  AUTOMATIC_FIX_CANCELLED, recoveryContext, accountEligibilityWait, movedModelNotice, escalatedModelNotice, unavailableModelAccount, USAGE_LIMIT_CONTINUE, usageLimitWait, usageLimitContinue, preparationRetrying, preparationTaskFailed, sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
+  AUTOMATIC_FIX_CANCELLED, launchRefused, recoveryContext, accountEligibilityWait, movedModelNotice, escalatedModelNotice, unavailableModelAccount, USAGE_LIMIT_CONTINUE, usageLimitWait, usageLimitContinue, preparationRetrying, preparationTaskFailed, sessionNotAdopted, taskPrompt, threadPrompt, threadStepFailed, threadSystemAppend, verificationFailurePrompt, worktreeSetupFailed, type ThreadTurnReason,
   pullHeadConflictPrompt, pullHeadUpdateFailed, pullHeadUpdated,
 } from './copy.js';
 import type { DecisionItems } from './decision-items.js';
@@ -113,6 +113,8 @@ export function restartRefusal(thread: Pick<Thread, 'id' | 'state' | 'pr' | 'iso
   return thread.state === 'attached' ? attachedRefusal(thread.id) : undefined;
 }
 /** The turns a thread keeps when it waits for its account; message turns keep their messages in the queue instead (phase 8). */
+/** Minutes before the sweep tries a refused launch again, by how many times it was refused in a row; the last repeats. */
+export const LAUNCH_RETRY_MINUTES = [1, 2, 5, 10, 30] as const;
 const KEPT_TURNS: readonly ThreadTurnReason[] = ['task', 'verification', 'conflict', 'checks', 'comments', 'continue', 'publish'];
 /** Pull request fix turns, which start from the pull request's current head (fix-051). */
 const FIX_REASONS: readonly ThreadTurnReason[] = ['checks', 'conflict', 'comments'];
@@ -192,6 +194,8 @@ export class ThreadRunner {
   #steer = false;
   #accountMoved = false;
   #limitedAccount: string | undefined;
+  /** Refused launches in a row with the same reason, and when the sweep may try again (#31). */
+  #refusals = 0; #launchRetryAt = 0; #refusedReason: string | undefined;
   #abort = new AbortController();
   #stopping: string | undefined;
   #concluding = 0;
@@ -456,12 +460,13 @@ export class ThreadRunner {
     } finally { this.#turn = undefined; this.#steer = false; release(); }
     if (ran.status === 'shutdown') return null;
     if (ran.status === 'unavailable' && ran.accountWait) { this.#recordAccountWait(next, ran.accountWait); return null; }
+    if (ran.status === 'unavailable') return this.#refused(next, turn, ran.error ?? TURN_FAILED);
+    this.#refusedReason = undefined; this.#refusals = 0;
     if (ran.status === 'unconfirmed') {
       // The process may still work in the checkout: a main thread's claim stays until a sweep confirms the process ended (phase 8).
       await this.#fail(PROCESS_UNCONFIRMED); return null;
     }
-    const ended = ran.status === 'unavailable' ? 'failed' : ran.status;
-    ledger.append({ type: 'thread-turn-end', turn, data: { schema: 'thread-turn-end-v1', turn, status: ended, ...(ran.error ? { error: ran.error } : {}),
+    ledger.append({ type: 'thread-turn-end', turn, data: { schema: 'thread-turn-end-v1', turn, status: ran.status, ...(ran.error ? { error: ran.error } : {}),
       ...(ran.runtimeError?.kind === 'rate-limit' && ran.finalText ? { partialText: clipRedacted(this.#c.redactor.text(ran.finalText), 8000, 'end') } : {}),
       ...(ran.usage ? { usage: ran.usage } : {}), ...(ran.sessionKey ? { sessionKey: ran.sessionKey } : {}) } });
     if (ran.runtimeError?.kind === 'rate-limit') {
@@ -507,6 +512,25 @@ export class ThreadRunner {
     if (atRest(thread.state) && thread.stateReason === reason) return;
     this.#set((current) => withState(current, atRest(current.state) ? current.state : 'idle', reason));
   }
+  /**
+   * The launch was refused before the model ran (#31): no turn is counted, so queued messages cannot burn the turn limit on launches that
+   * never happen; the thread rests with the reason and keeps its turn and messages, the coordinator hears it once per reason, and the
+   * sweep tries again after a delay that grows while the same refusal repeats.
+   */
+  async #refused(next: NextTurn, turn: number, error: string): Promise<null> {
+    const reason = launchRefused(this.#c.redactor.text(error)), first = this.#refusedReason !== reason;
+    this.#refusedReason = reason; this.#refusals = first ? 1 : this.#refusals + 1;
+    this.#launchRetryAt = this.#c.now() + LAUNCH_RETRY_MINUTES[Math.min(this.#refusals, LAUNCH_RETRY_MINUTES.length) - 1]! * 60_000;
+    this.#rest(next, reason);
+    if (first) {
+      const report = synthesizedReport({ status: 'unavailable', error }, turn, this.#c.redactor);
+      const rested = this.#set((current) => ({ ...current, lastReport: report }), { type: 'thread-report', data: report, turn });
+      await this.#tell(rested.projectId, { kind: 'thread-report', threadId: rested.id, report });
+    }
+    return null;
+  }
+  /** Whether the sweep may try a refused launch again. */
+  launchDue(): boolean { return this.#c.now() >= this.#launchRetryAt; }
   #recordAccountWait(next: NextTurn, wait: AccountWait): void {
     const thread = this.#thread(), old = this.#c.store.local(thread.id).waitingForAccount;
     const waiting = { since: old?.since ?? this.#at(), runtime: thread.placement.runtime, modelId: thread.placement.modelId, earliestEligibleAt: wait.earliestEligibleAt, moved: old?.moved ?? false };

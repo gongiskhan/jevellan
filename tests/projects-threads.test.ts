@@ -54,6 +54,34 @@ async function settings(f: ProjectFixture, over: Partial<ProjectWorkSettings>): 
   await f.app.projectHub.putSettings(ProjectWorkSettingsSchema.parse({ ...(current?.document ?? defaultProjectWorkSettings('project')), delivery: 'pull-request', ...over }), current?.revision ?? 0);
 }
 
+test('a turn whose launch is refused before the model runs counts no turn, rests with the reason, tells the coordinator once and retries later', { timeout: 60_000 }, async () => {
+  let clock = Date.now();
+  const f = await setup({ projectTimers: { now: () => clock } });
+  const refused = 'Rigging preserved local changes: settings.json. Park the changed copy in Rigging to apply its managed items again.';
+  let refuse = true, attempts = 0;
+  f.fake.materialiseRigging = async () => { attempts += 1; if (refuse) throw new Error(refused); return []; };
+  const created = await start(f, 'Document the landing notice', 'Add a short paragraph.');
+  const reason = `Could not start its next turn: ${refused}`;
+  await f.waitFor(() => f.thread(created.threadId), thread => thread.stateReason === reason);
+  // Messages that arrive meanwhile wait with the turn instead of each one burning a turn on a launch that cannot happen.
+  for (const n of [1, 2, 3]) await f.app.projectWork.threads.message(f.project.id, created.threadId, 'owner', `Message ${n}.`, false, `msg_refused_${n}`);
+  await f.app.projectWork.idle();
+  const reports = () => payloads(f, created.threadId, 'thread-report');
+  expect(f.thread(created.threadId)).toMatchObject({ turns: 0, state: 'idle', stateReason: reason });
+  expect(reports()).toHaveLength(1); expect(reports()[0]).toMatchObject({ status: 'blocked', summary: refused, synthesized: true });
+  // The sweep waits before trying again.
+  const tried = attempts; for (let sweep = 0; sweep < 3; sweep++) await f.app.projectWork.pulse();
+  expect(attempts).toBe(tried);
+  refuse = false; clock += 31 * 60_000;
+  // The kept task turn runs first, then the messages that waited with it (D72).
+  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Added the paragraph.' }), forThread());
+  f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Read the messages.' }), forThread());
+  await f.app.projectWork.pulse();
+  await f.waitFor(() => f.thread(created.threadId), thread => thread.turns === 2 && thread.state === 'idle' && !thread.stateReason);
+  const starts = f.fake.turnStarts.filter(input => input.owner.kind === 'thread');
+  expect(starts.at(-2)!.prompt).toContain('Add a short paragraph.'); expect(starts.at(-1)!.prompt).toContain('Message 3.');
+});
+
 test('a thread compaction keeps its native session and restores the task block on the next turn', { timeout: 60_000 }, async () => {
   const f = await setup(); await settings(f, { compactAtPercent: 65 });
   f.fake.enqueueTurn(async turn => {

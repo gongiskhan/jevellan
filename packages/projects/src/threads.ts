@@ -15,7 +15,7 @@ import { DISPATCH_HOLD_MS, type Admission } from './admission.js';
 import {
   ACTION_ID_REUSED, ACTION_NO_CHECKS, ACTION_NO_CONFLICTS, ACTION_NO_COMMENTS, ACTION_NO_COMMITS, ACTION_OPEN_PR, ACTION_WORKING, ACTION_RESOLVE_OPEN_PR, ACTION_NOT_RESOLVABLE, ACTION_NOT_REOPENABLE, RESOLVED_BY_OWNER, RESOLVED_BY_INACTIVITY, PUBLISH_REQUESTED, checksFixPrompt, conflictFixPrompt, commentsFixPrompt,
   PROJECT_PAUSED, COORDINATOR_ELSEWHERE, MODEL_SAME_RUNTIME, NEXT_TURN_FIELDS, NO_RELAY, PROJECT_NOT_FOUND, THREAD_ATTACHED, THREAD_ENDED, THREAD_NOT_FOUND, UNKNOWN_PLACEMENT_MODEL, WAITING_FOR_HUB, WAITING_FOR_MAIN,
-  attachedRefusal, isWaitingForAccount, isWaitingForSlot, overrideSummary, ownerStartedLine, placementSummary, queuedReason, restartedReason,
+  attachedRefusal, isLaunchRefused, isWaitingForAccount, isWaitingForSlot, overrideSummary, ownerStartedLine, placementSummary, queuedReason, restartedReason,
 } from './copy.js';
 import type { CoordinatorService } from './coordinator.js';
 import { derivedId, type DecisionItems } from './decision-items.js';
@@ -513,7 +513,8 @@ export class ThreadService {
     // Also threads whose turn waits for an account a terminal holds (phase 8), or for their claimed checkout to be back on main (P8 review
     // TH-1), with its messages or the turn it kept.
     const waiting = this.#o.store.all().filter((thread) => REST_STATES.includes(thread.state)
-      && (thread.stateReason === PROJECT_PAUSED || isWaitingForSlot(thread.stateReason) || thread.stateReason === WAITING_FOR_HUB || isWaitingForAccount(thread.stateReason) || thread.stateReason === WAITING_FOR_MAIN)
+      && (thread.stateReason === PROJECT_PAUSED || isWaitingForSlot(thread.stateReason) || thread.stateReason === WAITING_FOR_HUB || isWaitingForAccount(thread.stateReason) || thread.stateReason === WAITING_FOR_MAIN
+        || isLaunchRefused(thread.stateReason) && !!this.runner(thread.id)?.launchDue())
       && (thread.queuedMessages.length || this.#o.store.local(thread.id).pendingTurn))
       .sort((a, b) => oldestMessage(a).localeCompare(oldestMessage(b)));
     for (const thread of waiting) { if (this.#closed) return; await this.runner(thread.id)?.resume(); }
