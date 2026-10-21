@@ -1,3 +1,4 @@
+import { conversationSidebarDrop, conversationSidebarRename, conversationSidebarCanRename } from '@jevellan/core/client';
 import { conversationSidebarView, type ConversationSidebarFilter } from '@jevellan/core/client';
 import { ConversationListSourceSchema, conversationListRefresh, conversationListUpdateKey, CONVERSATION_LIST_POLL_MS, CONVERSATION_UPDATED_EVENT } from '@jevellan/core/client';
 import { conversationActionLabel as actionLabel, conversationPagePresentation, conversationPagePresentationForStream } from '@jevellan/core/client';
@@ -105,11 +106,10 @@ export function ConversationSidebar({
   }, { schema: 'conversation-sidebar-request-v1', filter, q: search, shells: shells.visible, selected, pendingOrder, dragOrder: drag.drag.order }).rows : view.rows;
   const dragged = combined.find(entry => entry.id === drag.drag?.id);
   const drop = (id: string, target: string, after: boolean) => void task.run(async () => {
-    if (id === target || !combined.some(entry => entry.id === id) || !combined.some(entry => entry.id === target)) return;
-    const order = combined.map(entry => entry.id).filter(key => key !== id);
-    order.splice(order.indexOf(target) + Number(after), 0, id);
-    setPendingOrder(order);
-    try { await presentation.save({ operation: 'order', order: [...order, ...presentation.preferences.order.filter(key => !order.includes(key))].slice(0, 10000) }); }
+    const prepared = conversationSidebarDrop(combined, presentation.preferences, { schema: 'conversation-sidebar-drop-v1', revision: presentation.preferences.revision, id, target, after });
+    if (!prepared.request) return;
+    setPendingOrder(prepared.previewOrder);
+    try { await presentation.save({ operation: 'order', order: prepared.request.order }); }
     finally { setPendingOrder(undefined); }
   });
   useEffect(() => { document.title = view.documentTitle; }, [view.documentTitle]);
@@ -189,17 +189,16 @@ export function ConversationSidebar({
       </div>, document.body)}
       {renaming && <Modal title="Rename session" close={() => setRenaming(undefined)}>
         <form onSubmit={event => { event.preventDefault(); void task.run(async () => {
-          if (renaming.cursor) await presentation.save({ operation: 'rename', id: renaming.id, title: title.trim() });
+          const prepared = conversationSidebarRename(renaming, title, `rename_${clientId()}`, presentation.preferences);
+          if (prepared.kind === 'native') await presentation.save({ operation: 'rename', id: prepared.request.id, title: prepared.request.title });
           else {
-            await api(`/api/conversations/${renaming.id}/rename`, ConversationPublicSchema, 'POST', {
-              schema: 'rename-conversation-v1', clientRequestId: `rename_${clientId()}`, previousTitle: renaming.title, title: title.trim(),
-            });
+            await api(prepared.path, ConversationPublicSchema, 'POST', prepared.request);
             window.dispatchEvent(new Event(CONVERSATION_UPDATED_EVENT));
           }
           setRenaming(undefined);
         }); }}>
           <label>Name<input autoFocus required maxLength={200} value={title} onChange={event => setTitle(event.target.value)} /></label>
-          <div className="actions"><button disabled={task.busy || !title.trim()}>{task.busy ? 'Saving…' : 'Save name'}</button><button type="button" className="secondary" onClick={() => setRenaming(undefined)}>Cancel</button></div>
+          <div className="actions"><button disabled={task.busy || !conversationSidebarCanRename(title)}>{task.busy ? 'Saving…' : 'Save name'}</button><button type="button" className="secondary" onClick={() => setRenaming(undefined)}>Cancel</button></div>
         </form>
       </Modal>}
       {view.unavailable.length > 0 && <details className="cursor-source-notice"><summary>Some native sessions are unavailable</summary>{view.unavailable.map(text => <p key={text}>{text}</p>)}</details>}

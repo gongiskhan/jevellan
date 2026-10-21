@@ -1,3 +1,4 @@
+import { ownerConversationSidebarDrop, ownerConversationSidebarRename } from './conversation-sidebar-actions.js';
 import { ConversationSidebarRequestSchema } from '@jevellan/core';
 import { ownerConversationSidebar } from './conversation-sidebar-view.js';
 import { ekoaEditor, prepareEkoaEditorSave, prepareEkoaEditorConnect, EkoaEditorPreviewSchema, EkoaEditorSaveSchema, EkoaEditorConnectSchema } from '@jevellan/core';
@@ -183,6 +184,11 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       return;
     }
     if (path === '/api/conversation-composer' && method === 'POST') { send(await app.conversations.composerDraft(await body(request))); return; }
+    if (path === '/api/conversation-list/order' || path === '/api/conversation-list/rename') {
+      if (method !== 'POST') throw failure('This sidebar change does not support that method.', 405);
+      const input = await body(request);
+      send(path.endsWith('/order') ? await ownerConversationSidebarDrop(app, input, token) : await ownerConversationSidebarRename(app, input, token)); return;
+    }
     if (path === '/api/conversation-list/sidebar') {
       if (method !== 'GET') throw failure('This sidebar read does not support that method.', 405);
       const query = Object.fromEntries(url.searchParams);

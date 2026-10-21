@@ -1,3 +1,4 @@
+export * from './conversation-sidebar-actions.js';
 export * from './conversation-sidebar-view.js';
 import { z } from 'zod';
 

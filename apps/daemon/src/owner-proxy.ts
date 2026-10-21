@@ -1,3 +1,4 @@
+import { RenameConversationSchema } from '@jevellan/core';
 import { ConversationTranscriptRequestSchema, ConversationTranscriptViewSchema } from '@jevellan/core';
 import { ConversationChangesSchema } from '@jevellan/core';
 import { ConversationEvidenceRequestSchema, ConversationEvidenceViewSchema } from '@jevellan/core';
@@ -57,14 +58,15 @@ export async function proxyConversation(app: Application, request: IncomingMessa
   return true;
 }
 
-export type OwnerConversationOperation = 'transcript-view' | 'conversation-view' | 'changes' | 'evidence-read' | 'plan-approve' | 'plan-changes' | 'plan-read' | 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
+export type OwnerConversationOperation = 'rename' | 'transcript-view' | 'conversation-view' | 'changes' | 'evidence-read' | 'plan-approve' | 'plan-changes' | 'plan-read' | 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
 
 /** Closed owner operations bind the indexed resource before issuing temporary peer authority. */
-export async function ownerConversationOperation(app: Application, projectId: string, id: string, operation: OwnerConversationOperation, raw?: unknown) {
+export async function ownerConversationOperation(app: Application, projectId: string, id: string, operation: OwnerConversationOperation, raw?: unknown, ownerToken?: string) {
   const location = await app.conversations.location(id);
   if (location.projectId !== projectId) throw failure('This composer or decision belongs to another conversation or project.', 409);
   const spec = (() => {
     switch (operation) {
+      case 'rename': { const body = RenameConversationSchema.parse(raw); return { suffix: 'rename', method: 'POST' as const, body, local: () => app.conversations.rename(id, body) }; }
       case 'transcript-view': { const body = ConversationTranscriptRequestSchema.parse(raw); return { suffix: 'transcript-view', method: 'POST' as const, body, local: () => app.conversations.transcriptView(id, body) }; }
       case 'conversation-view': return { suffix: '', method: 'GET' as const, body: undefined, local: () => app.conversations.view(id) };
       case 'changes': { const n = z.number().int().positive().parse(raw); return { suffix: `changes/${n}`, method: 'GET' as const, body: undefined, local: () => app.conversations.changes(id, n) }; }
@@ -84,7 +86,7 @@ export async function ownerConversationOperation(app: Application, projectId: st
   const path = `/api/conversations/${id}${spec.suffix ? `/${spec.suffix}` : ''}`;
   if (!conversationRoute(path, spec.method)) throw failure('Conversation operation not found.', 404);
   const bind = (received: unknown) => {
-    const value = operation === 'transcript-view' ? parseReply(ConversationTranscriptViewSchema, received) : operation === 'conversation-view' ? parseReply(ConversationPublicSchema, received) : operation === 'changes' ? parseReply(ConversationChangesSchema, received) : operation === 'evidence-read' ? parseReply(ConversationEvidenceViewSchema, received) : operation === 'plan-read' ? parseReply(ConversationPlanReadSchema, received) : ['correction-save', 'plan-approve', 'plan-changes'].includes(operation) ? parseReply(ConversationPublicSchema, received)
+    const value = operation === 'transcript-view' ? parseReply(ConversationTranscriptViewSchema, received) : operation === 'conversation-view' ? parseReply(ConversationPublicSchema, received) : operation === 'changes' ? parseReply(ConversationChangesSchema, received) : operation === 'evidence-read' ? parseReply(ConversationEvidenceViewSchema, received) : operation === 'plan-read' ? parseReply(ConversationPlanReadSchema, received) : ['rename', 'correction-save', 'plan-approve', 'plan-changes'].includes(operation) ? parseReply(ConversationPublicSchema, received)
       : operation === 'decision-why' ? parseReply(ConversationDecisionWhyViewSchema, received)
         : operation === 'step-editor' || operation === 'step-preview' ? parseReply(StepCorrectionEditorSchema, received) : parseReply(ConversationComposerViewSchema, received);
     const actual = 'conversation' in value ? { project: value.conversation.projectId, id: value.conversation.id } : { project: value.projectId, id: value.conversationId };
@@ -109,9 +111,9 @@ export async function ownerConversationOperation(app: Application, projectId: st
   if (location.ownerDeviceId === app.device.deviceId) return bind(await spec.local());
   const target = (await app.roster()).devices.find(row => row.device.id === location.ownerDeviceId);
   if (!target || target.revoked) throw failure('The conversation owner is no longer available in this mesh.', 409);
-  const auth = app.auth;
-  if (!(auth instanceof UiAuth)) throw failure('Owner tools must run on the state point.', 409);
-  const token = auth.issue(); app.redactor.add(token);
+  const auth = app.auth instanceof UiAuth ? app.auth : undefined;
+  if (!ownerToken && !auth) throw failure('Owner tools must run on the state point.', 409);
+  const token = ownerToken ?? auth!.issue(); app.redactor.add(token);
   try {
     const url = new URL(DeviceOriginSchema.parse(target.device.url)); url.pathname = `${peerPrefix}${id}${spec.suffix ? `/${spec.suffix}` : ''}`;
     let response: Response;
@@ -127,7 +129,7 @@ export async function ownerConversationOperation(app: Application, projectId: st
       throw failure(error.success ? error.data.message : proxyCopy.conversation.unreachable(target.device.name), error.success ? response.status : 502);
     }
     return bind(value);
-  } finally { auth.logout(token); }
+  } finally { if (!ownerToken) auth!.logout(token); }
 }
 
 export async function ownerConversationComposer(app: Application, projectId: string, id: string, raw?: unknown) {

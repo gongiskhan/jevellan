@@ -479,3 +479,8 @@ test('MCP conversation sidebar view shares canonical merged presentation without
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'conversation_sidebar', request: { schema: 'conversation-sidebar-request-v1', shells: false, filter: 'Running', q: 'fixture' } } })).structuredContent);
   const ordinary = await (await f.request('/api/conversation-list/sidebar?shells=false&filter=Running&q=fixture')).json(); expect(result).toMatchObject({ ok: true, data: ordinary }); expect(f.fake.starts).toHaveLength(0);
 });
+
+test('MCP conversation sidebar actions rename through the canonical guarded writer', async () => {
+  f = await projectFixture({ control: true }); await f.app.conversations.create({schema:'start-conversation-v1',id:'mcp_sidebar',projectId:'project',title:'MCP sidebar original',message:'Wait for my next step.',clientMessageId:'start_mcp_sidebar'});await f.app.conversations.wait('mcp_sidebar');const mcp=await connect({JEVELLAN_HOME:f.homes.root});
+  const result=OwnerToolResultSchema.parse((await mcp.callTool({name:'jev',arguments:{action:'conversation_sidebar_rename',request:{schema:'conversation-sidebar-rename-request-v1',kind:'owner',id:'mcp_sidebar',previousTitle:'MCP sidebar original',title:'MCP sidebar renamed',clientRequestId:'rename_mcp_sidebar'}}})).structuredContent);expect(result).toMatchObject({ok:true,data:{conversation:{id:'mcp_sidebar',title:'MCP sidebar renamed'}}});expect((await f.app.conversations.view('mcp_sidebar')).conversation.title).toBe('MCP sidebar renamed');expect(f.fake.starts).toHaveLength(0);
+});

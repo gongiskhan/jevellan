@@ -525,3 +525,9 @@ test('CLI conversation sidebar view shares canonical merged presentation without
   const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
   const ordinary = await (await f.request('/api/conversation-list/sidebar?shells=false&filter=Running&q=fixture')).json(); expect(result).toMatchObject({ ok: true, data: ordinary }); expect(f.fake.starts).toHaveLength(0);
 });
+
+test('CLI conversation sidebar actions rename through the canonical guarded writer', async () => {
+  f = await projectFixture({ control: true }); await f.app.conversations.create({schema:'start-conversation-v1',id:'cli_sidebar',projectId:'project',title:'CLI sidebar original',message:'Wait for my next step.',clientMessageId:'start_cli_sidebar'});await f.app.conversations.wait('cli_sidebar');
+  const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined); const request={schema:'conversation-sidebar-rename-request-v1',kind:'owner',id:'cli_sidebar',previousTitle:'CLI sidebar original',title:'CLI sidebar renamed',clientRequestId:'rename_cli_sidebar'};
+  expect(await callCommand(['jev','conversation_sidebar_rename','--request',JSON.stringify(request)],f.homes)).toBe(0);const result=OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row=>String(row[0]).startsWith('{'))?.[0])));expect(result).toMatchObject({ok:true,data:{conversation:{id:'cli_sidebar',title:'CLI sidebar renamed'}}});expect((await f.app.conversations.view('cli_sidebar')).conversation.title).toBe('CLI sidebar renamed');expect(f.fake.starts).toHaveLength(0);
+});
