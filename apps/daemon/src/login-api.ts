@@ -15,7 +15,8 @@ export async function handleLoginApi(app: Application, request: IncomingMessage,
   const start = path.match(/^\/api\/accounts\/([A-Za-z0-9_-]+)\/login$/);
   const login = path.match(/^\/api\/logins\/([A-Za-z0-9_-]+)$/);
   if (!start && !login) { if (peer) throw failure('Login operation not found.', 404); return false; }
-  const method = request.method ?? 'GET'; let retryable = true;
+  const method = request.method ?? 'GET'; let retryable = true; let requesterDeviceId = app.device.deviceId;
+  const present = async (value: unknown, status = 200) => send(await app.loginPresentation(value, requesterDeviceId), status);
   const send = (value: unknown, status = 200) => json(response, app.redactor.document(value), status);
   try {
     if (start ? method !== 'POST' : !['GET', 'POST', 'DELETE'].includes(method)) throw failure('Unsupported login method.', 405);
@@ -24,7 +25,7 @@ export async function handleLoginApi(app: Application, request: IncomingMessage,
       const authorization = request.headers.authorization;
       const input = PeerLoginSessionInputSchema.safeParse({ schema: 'peer-login-session-input-v1', sourceDeviceId: request.headers['x-jevellan-source-device'], token: authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined });
       if (!input.success || !await app.peerLoginAuthenticated(input.data)) throw failure('Sign in to Jevellan.', 401);
-      app.redactor.add(input.data.token);
+      app.redactor.add(input.data.token); requesterDeviceId = input.data.sourceDeviceId;
     } else {
       const deviceId = IdSchema.parse(url.searchParams.get('deviceId') ?? app.device.deviceId);
       if (deviceId !== app.device.deviceId) {
@@ -39,14 +40,14 @@ export async function handleLoginApi(app: Application, request: IncomingMessage,
     }
     if (start) {
       const input = LoginStartSchema.parse(await requestBody(request)); const requestId = input.schema === 'login-start-v1' ? input.clientRequestId : undefined;
-      retryable = requestId !== undefined; send(await app.accounts.beginLogin(IdSchema.parse(start[1]), requestId), 201);
+      retryable = requestId !== undefined; await present(await app.accounts.beginLogin(IdSchema.parse(start[1]), requestId), 201);
     } else {
       const id = IdSchema.parse(login![1]);
-      if (method === 'GET') send(await app.accounts.pollLogin(id));
-      else if (method === 'DELETE') { EmptySchema.parse(await requestBody(request)); await app.accounts.cancelLogin(id); send(await app.accounts.pollLogin(id)); }
+      if (method === 'GET') await present(await app.accounts.pollLogin(id));
+      else if (method === 'DELETE') { EmptySchema.parse(await requestBody(request)); await app.accounts.cancelLogin(id); await present(await app.accounts.pollLogin(id)); }
       else {
         const input = LoginCodeSchema.parse(await requestBody(request)); retryable = false;
-        try { send(await app.accounts.submitLogin(id, input.code)); }
+        try { await present(await app.accounts.submitLogin(id, input.code)); }
         catch (error) { retryable = app.accounts.loginSubmissionAccepted(id); throw error; }
       }
     }

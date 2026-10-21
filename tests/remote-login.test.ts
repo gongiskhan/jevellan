@@ -47,7 +47,7 @@ test.each(['hub-to-member', 'member-to-hub', 'member-to-member'])('%s login stay
   const source = direction === 'hub-to-member' ? hub : first; const target = direction === 'member-to-hub' ? hub : second ?? first;
   const account = AccountViewSchema.parse(await body(await call(source, '/hub/accounts', { schema: 'add-account-v1', runtime: 'codex', kind: 'subscription', label: 'Remote account' }), 201));
   const route = `/api/accounts/${account.account.id}/login?deviceId=${target.app.device.deviceId}`; const input = { schema: 'login-start-v1', clientRequestId: 'remote_start' };
-  const login = LoginViewSchema.parse(await body(await call(source, route, input), 201)); expect(login.deviceId).toBe(target.app.device.deviceId); expect(target.starts).toBe(1); expect(source.starts).toBe(0);
+  const login = LoginViewSchema.parse(await body(await call(source, route, input), 201)); expect(login.deviceId).toBe(target.app.device.deviceId); expect(login.presentation).toMatchObject({ code: { visible: true, label: 'Callback address' }, poll: { path: `/api/logins/${login.id}?deviceId=${target.app.device.deviceId}` } }); expect(target.starts).toBe(1); expect(source.starts).toBe(0);
   expect(LoginViewSchema.parse(await body(await call(source, route, input), 201)).id).toBe(login.id); expect(target.starts).toBe(1);
   const path = `/api/logins/${login.id}?deviceId=${target.app.device.deviceId}`;
   expect(LoginViewSchema.parse(await body(await call(source, path))).state).toBe('pending');
@@ -64,7 +64,7 @@ test('a remote device-code login completes by polling and a second login can be 
   deviceCode = true; const hub = await addDevice('Hub'); const target = await addDevice('Target', hub);
   const account = AccountViewSchema.parse(await body(await call(hub, '/hub/accounts', { schema: 'add-account-v1', runtime: 'codex', kind: 'subscription', label: 'Device code' }), 201));
   const start = () => call(hub, `/api/accounts/${account.account.id}/login?deviceId=${target.app.device.deviceId}`, { schema: 'login-start-v1', clientRequestId: `start_${target.starts}` });
-  const login = LoginViewSchema.parse(await body(await start(), 201)); expect(login.userCode).toBe('FIXTURE'); expect(login.acceptsCode).toBe(false); target.complete!();
+  const login = LoginViewSchema.parse(await body(await start(), 201)); expect(login.userCode).toBe('FIXTURE'); expect(login.acceptsCode).toBe(false); expect(login.presentation).toMatchObject({ code: { visible: false }, pending: { waitingText: null }, restart: { visible: false } }); target.complete!();
   expect(LoginViewSchema.parse(await body(await call(hub, `/api/logins/${login.id}?deviceId=${target.app.device.deviceId}`))).state).toBe('done');
   const next = LoginViewSchema.parse(await body(await start(), 201));
   expect(LoginViewSchema.parse(await body(await call(hub, `/api/logins/${next.id}?deviceId=${target.app.device.deviceId}`, empty, 'DELETE'))).state).toBe('cancelled'); expect(target.cancellations).toBe(1);

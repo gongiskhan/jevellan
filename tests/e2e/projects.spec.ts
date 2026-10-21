@@ -2324,6 +2324,15 @@ test('About renders the engine device version and maintenance text and opens the
   await page.getByRole('button', { name: 'Open setup guide', exact: true }).click(); await expect(page).toHaveURL(/\/setup$/); expect(errors).toEqual([]);
 });
 
+test('Endpoint login deep links open credential editing without starting a subscription login', async ({ page }, info) => {
+  const errors = await begin(page);
+  const response = await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', kind: 'endpoint', label: 'Endpoint deep-link fixture', secret: 'fixture_endpoint_refused', clientRequestId: 'endpoint_deep_link_fixture', endpoint: { baseUrl: new URL('/anthropic', `http://127.0.0.1:${Number(new URL(info.project.use.baseURL!).port) + 200}`).href, billing: 'free', models: [{ id: 'deep-link', label: 'Deep link', efforts: ['medium'], description: 'Fixture model' }] } } }); expect(response.status()).toBe(201); const account = await response.json();
+  let loginStarts = 0; page.on('request', request => { if (/\/api\/accounts\/[^/]+\/login$/.test(new URL(request.url()).pathname) && request.method() === 'POST') loginStarts++; });
+  await page.goto(`/settings/runtimes?account=${account.account.id}&login=1`); const edit = page.getByRole('dialog', { name: 'Edit account', exact: true });
+  await expect(edit).toBeVisible(); await expect(edit.getByLabel('Auth token', { exact: true })).toHaveValue(''); expect(loginStarts).toBe(0);
+  await page.screenshot({ path: `test-results/LOGIN-endpoint-deep-link-${layout(info)}.png`, fullPage: true }); await edit.getByRole('button', { name: 'Cancel', exact: true }).click(); expect(errors).toEqual([]);
+});
+
 test('Account editor creates and replaces API keys without sending credentials to readonly previews', async ({ page }, info) => {
   const errors = await begin(page), previews: Record<string, unknown>[] = [];
   page.on('request', request => { if (new URL(request.url()).pathname === '/api/accounts/editor/preview' && request.method() === 'POST') previews.push(request.postDataJSON() as Record<string, unknown>); });

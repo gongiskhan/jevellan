@@ -1,3 +1,6 @@
+import { AccountLoginPresentationSchema } from './account-login-schemas.js';
+import { UpdateAccountSchema } from './account-write-schemas.js';
+export { UpdateAccountSchema };
 import { accountInputIssues } from './account-policy.js';
 import { RuntimeSettingsEditorSchema } from './runtime-settings-schemas.js';
 import { z } from 'zod';
@@ -17,10 +20,6 @@ export const AddAccountSchema = z.strictObject({
   /** 'per-device' for an account that logs in on each device, such as one used in place in the owner's own folder. */
   credential: z.enum(['shared', 'per-device']).optional(),
 }).superRefine((value, ctx) => { for (const message of accountInputIssues(value, Boolean(value.secret))) ctx.addIssue({ code: 'custom', message }); });
-export const UpdateAccountSchema = z.strictObject({
-  schema: z.literal('update-account-v1'), revision: z.number().int().positive(), label: z.string().trim().min(1).max(128),
-  enabled: z.boolean(), ceilingPct: z.number().min(0).max(100), paidUse: PaidUseSchema.optional(), endpoint: AccountEndpointSchema.optional(), clientRequestId: IdSchema.optional(),
-});
 export const ReplaceCredentialSchema = z.strictObject({ schema: z.literal('replace-credential-v1'), revision: z.number().int().positive(), secret: CredentialInputSchema, clientRequestId: IdSchema.optional() });
 export const AccountViewSchema = z.strictObject({
   schema: z.literal('account-view-v1'), revision: z.number().int().positive(), account: AccountSchema,
@@ -36,6 +35,7 @@ export const LoginViewSchema = z.strictObject({
   schema: z.literal('login-view-v1'), id: IdSchema, accountId: IdSchema, deviceId: IdSchema,
   state: z.enum(['pending', 'checking', 'done', 'failed', 'cancelled']), instructions: z.string(),
   url: z.url().optional(), userCode: z.string().optional(), acceptsCode: z.boolean(), error: z.string().optional(),
+  presentation: AccountLoginPresentationSchema.optional(),
 });
 export const RiggingEntrySchema = z.strictObject({
   schema: z.literal('rigging-entry-v1'), projects: z.array(IdSchema).max(200).optional(), id: IdSchema, name: z.string().trim().min(1).max(128),

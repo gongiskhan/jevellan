@@ -52,6 +52,9 @@ test('CLI account read model uses the shared device-bound projection without che
   const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
   expect(result).toMatchObject({ ok: true, data: { schema: 'accounts-settings-view-v1', currentDeviceId: f.app.device.deviceId, refreshMs: 30000 } });
   expect(f.fake.runs).toHaveLength(0);
+  if (!result.ok) throw new Error('Expected account actions.');
+  const { AccountsSettingsViewSchema } = await import('../packages/core/dist/index.js'); const actions = AccountsSettingsViewSchema.parse(result.data).runtimes.find(row => row.id === 'fake')!.accounts[0]!;
+  expect(actions).toMatchObject({ actions: expect.arrayContaining([expect.objectContaining({ id: 'toggle', kind: 'write', body: expect.objectContaining({ enabled: false }) })]), deepLinkAction: { id: 'login', kind: 'login', expected: { accountId: 'acc_fixture', deviceId: f.app.device.deviceId } } });
 });
 
 test('CLI configuration editor exposes shared history and canonical export metadata', async () => {

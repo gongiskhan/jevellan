@@ -1,3 +1,4 @@
+import { accountLoginPresentation, LoginViewSchema } from '@jevellan/core';
 import { createHash } from 'node:crypto';
 import { AddAccountSchema, AccountEditorReadSchema, AccountEditorPreviewSchema, AccountEditorSaveSchema, AccountEditorSavedSchema, accountEditorInitial, accountEditorView } from '@jevellan/core';
 import { RuntimeListSchema, RuntimeSettingsEditorSchema, runtimeSettingsEditor, nativeSetup } from '@jevellan/core';
@@ -431,6 +432,14 @@ export class Application {
   async saveRuntimeSettings(input: unknown, deviceId = this.device.deviceId) {
     const state = !this.member && deviceId !== this.device.deviceId ? new HubState(this.hub, deviceId, [...this.runtimes.keys()]) : this.state;
     const saved = await state.configuration.runtimesPut(input); await this.configuration(); await this.applyRigging(); return saved;
+  }
+  async loginPresentation(raw: unknown, requesterDeviceId = this.device.deviceId) {
+    const view = LoginViewSchema.parse(raw), settings = await this.accountsSettings(view.deviceId);
+    const row = settings.runtimes.flatMap(runtime => runtime.accounts).find(row => row.view.account.id === view.accountId);
+    if (!row) throw Object.assign(new Error('The login account no longer exists.'), { status: 404 });
+    const roster = await this.roster(), device = roster.devices.find(row => row.device.id === view.deviceId);
+    const availability = row.devices.find(device => device.id === view.deviceId)?.availability ?? row.availability;
+    return LoginViewSchema.parse({ ...view, presentation: accountLoginPresentation(view, { account: row.view, availabilityLabel: availability.label, requesterDeviceId, deviceName: device?.device.name ?? 'the selected device' }) });
   }
   async accountsSettings(deviceId = this.device.deviceId) {
     const [accounts, offered, revision, roster] = await Promise.all([this.accounts.list(), this.accounts.offered(), this.configuration(), this.roster()]);

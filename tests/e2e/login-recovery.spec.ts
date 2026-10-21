@@ -16,7 +16,7 @@ async function openLogin(page: Page) {
   return { panel, account: claude.locator('.account').filter({ hasText: label }) };
 }
 
-test('Claude sign-in reports failure and starts a fresh login in the same panel', async ({ page }) => {
+test('Claude sign-in reports failure and starts a fresh login in the same panel', async ({ page }, info) => {
   const { panel, account } = await openLogin(page);
   await panel.getByLabel('Authorization code').fill('fixture-rejected');
   await panel.getByRole('button', { name: 'Continue', exact: true }).click();
@@ -32,6 +32,7 @@ test('Claude sign-in reports failure and starts a fresh login in the same panel'
   await panel.getByRole('button', { name: 'Close panel' }).click();
   await expect(account.getByText('Ready', { exact: true })).toBeVisible();
   await expect(account).toContainText('Saved');
+  await page.screenshot({ path: `test-results/LOGIN-restart-${info.project.name}.png`, fullPage: true });
 });
 
 test('Claude sign-in shows pending progress and resumes polling after a connection error', async ({ page }, info) => {

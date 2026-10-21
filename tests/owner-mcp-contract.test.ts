@@ -50,6 +50,9 @@ test('MCP account read model shares runtime grouping and eligibility without che
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'accounts_view' } })).structuredContent);
   expect(result).toMatchObject({ ok: true, data: { schema: 'accounts-settings-view-v1', currentDeviceId: f.app.device.deviceId, runtimes: [expect.objectContaining({ id: 'fake', accounts: [expect.objectContaining({ kindLabel: 'Subscription', availability: expect.objectContaining({ label: 'Ready', eligible: true }) })] })] } });
   expect(f.fake.runs).toHaveLength(0);
+  if (!result.ok) throw new Error('Expected account actions.');
+  const { AccountsSettingsViewSchema } = await import('../packages/core/dist/index.js'); const actions = AccountsSettingsViewSchema.parse(result.data).runtimes.find(row => row.id === 'fake')!.accounts[0]!;
+  expect(actions).toMatchObject({ actions: expect.arrayContaining([expect.objectContaining({ id: 'toggle', kind: 'write', body: expect.objectContaining({ enabled: false }) })]), deepLinkAction: { id: 'login', kind: 'login', expected: { accountId: 'acc_fixture', deviceId: f.app.device.deviceId } } });
 });
 
 test('MCP configuration import uses the shared preview and canonical revision receipt', async () => {

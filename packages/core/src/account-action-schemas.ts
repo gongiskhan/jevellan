@@ -1,0 +1,10 @@
+import { z } from 'zod';
+import { IdSchema } from './schemas.js';
+import { UpdateAccountSchema } from './account-write-schemas.js';
+const common = { schema: z.literal('account-action-v1'), id: z.string(), label: z.string(), style: z.enum(['secondary small', 'text-button']) };
+export const AccountLoginActionSchema = z.strictObject({ ...common, id: z.literal('login'), kind: z.literal('login'), path: z.string(), method: z.literal('POST'), expected: z.strictObject({ accountId: IdSchema, deviceId: IdSchema }) });
+export const AccountWriteActionSchema = z.strictObject({ ...common, kind: z.literal('write'), path: z.string(), method: z.enum(['POST', 'PATCH']), body: z.union([UpdateAccountSchema.omit({ clientRequestId: true }), z.strictObject({ schema: z.literal('empty-request-v1') })]) });
+export const AccountEditorActionSchema = z.strictObject({ ...common, kind: z.literal('editor'), mode: z.enum(['edit', 'replace-key']) });
+export const AccountActionSchema = z.discriminatedUnion('kind', [AccountLoginActionSchema, AccountWriteActionSchema, AccountEditorActionSchema]);
+export type AccountAction = z.infer<typeof AccountActionSchema>;
+export type AccountLoginAction = z.infer<typeof AccountLoginActionSchema>;
