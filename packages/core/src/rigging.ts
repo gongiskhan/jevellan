@@ -128,6 +128,8 @@ function files(root: string): string[] {
   });
 }
 
+/** How Rigging's refusal to overwrite an account folder's own changes begins. */
+export const RIGGING_CONFLICT = 'Rigging preserved local changes: ';
 /** The reason Rigging gives for every item of an in-place account (Homes.registerInPlace): the owner's folder is never written. */
 export const IN_PLACE_RIGGING_REASON = 'This account uses your own folder in place.';
 /** APM deploys into private staging; only verified runtime files reach an account. */
@@ -268,7 +270,7 @@ export class RiggingDelivery {
       const rewrite = merged(ref, path, empty); if (rewrite !== null) { if (rewrite !== empty) rewrites.set(ref, rewrite); else if (hash(readFileSync(path)) !== previous.files[ref]) rewrites.set(ref, rewrite); continue; }
       if (!lstatSync(path).isFile() || hash(readFileSync(path)) !== previous.files[ref]) conflicts.push(ref);
     }
-    if (conflicts.length) throw new Error(`Rigging preserved local changes: ${conflicts.join(', ')}. Park the changed copy in Rigging to apply its managed items again.`);
+    if (conflicts.length) throw new Error(`${RIGGING_CONFLICT}${conflicts.join(', ')}. Park the changed copy in Rigging to apply its managed items again.`);
     const next: Record<string, string> = {};
     for (const [ref, contents] of staged) { const path = confined(home, ref); const written = rewrites.get(ref) ?? contents; write(path, written, modes.get(ref)); next[ref] = hash(written); }
     for (const ref of Object.keys(previous.files)) if (!staged.has(ref)) {

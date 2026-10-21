@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { rankAccounts } from '@jevellan/accounts';
 import type { AccountService } from '@jevellan/accounts';
 import { ACCOUNT_REASON_TEXT } from '@jevellan/decisions';
-import { IN_PLACE_RIGGING_REASON, PROJECT_MEMORY_ID, applicationRoot, deviceAllowsWork, projectEnvironment, type PlacementAccountChoice, type AccountStatus, type Effort, type Homes, type RiggingItem, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
+import { IN_PLACE_RIGGING_REASON, PROJECT_MEMORY_ID, RIGGING_CONFLICT, applicationRoot, deviceAllowsWork, projectEnvironment, type PlacementAccountChoice, type AccountStatus, type Effort, type Homes, type RiggingItem, type ProjectWorkSettings, type SecretRedactor } from '@jevellan/core';
 import type { BridgeScopeTools, StretchBridges } from '@jevellan/conversations';
 import { TurnInputSchema, type RuntimeAdapter, type StretchRun, type TurnInput } from '@jevellan/runtime-contract';
 import { ACCOUNT_BUSY, MEMORY_HOOKS_UNDELIVERED, accountInTerminal, libraryInstructions, cannotRunHere, noTurnAccount, waitingForAccountReason } from './copy.js';
@@ -131,7 +131,9 @@ export class TurnLauncher {
     const taken = ranking.find((entry) => entry.eligible);
     return taken && waitingForAccountReason(taken.account.label);
   }
-  async launch(request: LaunchRequest): Promise<LaunchResult> {
+  launch(request: LaunchRequest): Promise<LaunchResult> { return this.#launch(request, new Set()); }
+  /** `passedOver`: accounts whose folder Rigging refused for this launch; the next eligible account runs it instead. */
+  async #launch(request: LaunchRequest, passedOver: ReadonlySet<string>): Promise<LaunchResult> {
     if (!deviceAllowsWork(this.#o.homes)) return { kind: 'unavailable', reason: 'This device serves apps only; project work runs on a working device.' };
     const daemonUrl = this.#o.daemonUrl();
     if (!daemonUrl) throw new Error('Project turns start after the daemon is listening.');
@@ -140,7 +142,7 @@ export class TurnLauncher {
       return { kind: 'unavailable', reason: cannotRunHere(adapter?.displayName ?? request.runtime) };
     }
     let accounts = await this.#o.accounts.list();
-    let ranking = this.#ranking(accounts, request).filter((entry) => request.requiredAccountId === undefined || entry.account.id === request.requiredAccountId);
+    let ranking = this.#ranking(accounts, request).filter((entry) => (request.requiredAccountId === undefined || entry.account.id === request.requiredAccountId) && !passedOver.has(entry.account.id));
     // An account a terminal holds is passed over like an ineligible one: the pinned account while it is free, else the next in rank (D16).
     const held = new Set(this.#o.held?.() ?? []);
     const free = (entry: Ranked) => entry.eligible && !held.has(entry.account.id);
@@ -148,7 +150,7 @@ export class TurnLauncher {
     const chosenAccount = !pinned && request.requiredAccountId === undefined && ranking.some(free) && this.#o.chooseAccount
       ? await this.#o.chooseAccount(request, ranking.filter(entry => !held.has(entry.account.id))) : undefined;
     if (chosenAccount) {
-      accounts = await this.#o.accounts.list(); ranking = this.#ranking(accounts, request);
+      accounts = await this.#o.accounts.list(); ranking = this.#ranking(accounts, request).filter((entry) => !passedOver.has(entry.account.id));
       for (const id of this.#o.held?.() ?? []) held.add(id);
     }
     const selected = pinned ?? (chosenAccount ? ranking.find(entry => free(entry) && entry.account.id === chosenAccount.accountId) : ranking.find(free));
@@ -189,7 +191,17 @@ export class TurnLauncher {
       }
       const compactionNotice = request.runtime === 'codex' && !contextWindow ? 'Codex did not expose this model’s context window; native default auto-compaction is active until model discovery supplies it.' : undefined;
       const rigging = await this.#o.riggingItems(request.runtime, request.owner.projectId);
-      const delivered = await adapter.materialiseRigging(resolved.home, rigging);
+      let delivered: Awaited<ReturnType<typeof adapter.materialiseRigging>>;
+      try { delivered = await adapter.materialiseRigging(resolved.home, rigging); }
+      catch (error) {
+        // A Rigging conflict is this account folder's: the next eligible account runs the turn (#26). With none, or an account the owner
+        // required, the conflict is the launch's failure.
+        if (request.requiredAccountId !== undefined || !(error instanceof Error) || !error.message.startsWith(RIGGING_CONFLICT)) throw error;
+        await release();
+        const next = await this.#launch(request, new Set([...passedOver, account.id]));
+        if (next.kind === 'unavailable') throw error;
+        return next;
+      }
       // An in-place account is the owner's own folder, which never gets Rigging: its sessions run without the compaction and session-end
       // memory hooks (the turn-end capture of Projects still runs).
       const inPlace = delivered.some((item) => item.reason === IN_PLACE_RIGGING_REASON);
