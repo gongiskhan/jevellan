@@ -153,6 +153,10 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'configuration_editor': return { text: 'Configuration history.', data: await context.app.configurationEditor() };
+    case 'configuration_yaml': return { text: 'Configuration YAML.', data: await context.app.configurationYaml() };
+    case 'configuration_preview': return { text: 'Configuration import preview.', data: await context.app.configurationImportPreview({ schema: 'config-import-v1', yaml: args.yaml }) };
+    case 'configuration_apply': return { text: 'Configuration imported.', data: await context.app.writeConfiguration(args.request) };
     case 'about': {
       const data = deviceAboutView(await context.app.roster(), context.request.deviceId ?? context.app.device.deviceId);
       return { text: `Jevellan ${data.currentVersion ?? 'version unavailable'}.`, data };

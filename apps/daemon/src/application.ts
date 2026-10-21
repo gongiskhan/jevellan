@@ -1,4 +1,5 @@
 import { CleanupService } from '@jevellan/core';
+import { ConfigWriteSchema, ImportSchema, ConfigurationYamlViewSchema, configurationEditorView, configurationImportView, parseConfiguration, exportConfiguration } from '@jevellan/core';
 import { ProjectHealthRequestSchema, ProjectHealthRunSchema, ProjectHealthViewSchema, type ProjectHealthRequest, type ProjectHealthRun } from '@jevellan/core';
 import { runHealthCheck } from '@jevellan/projects';
 import { ProjectLibraryService } from './library.js';
@@ -382,6 +383,24 @@ export class Application {
     return this.member ? this.member.projectMemory(request) : this.projectMemoryRequest(request, this.device.deviceId);
   }
   async improverRequest(input: unknown) { return this.member ? this.member.improver(input) : this.routingImprover!.request(input, this.device.deviceId); }
+  async configurationEditor() {
+    const [history, roster] = await Promise.all([this.state.configuration.history(), this.roster()]);
+    return configurationEditorView(history, roster);
+  }
+  async configurationYaml() {
+    return ConfigurationYamlViewSchema.parse({ schema: 'configuration-yaml-view-v1', yaml: this.redactor.text(exportConfiguration((await this.configuration()).configuration)) });
+  }
+  async configurationImportPreview(raw: unknown) {
+    const input = ImportSchema.parse(raw), proposed = parseConfiguration(input.yaml), current = await this.configuration();
+    if (this.redactor.text(JSON.stringify(proposed)) !== JSON.stringify(proposed)) throw Object.assign(new Error('Remove credentials from this configuration before importing it.'), { status: 400 });
+    return configurationImportView(current, proposed);
+  }
+  async writeConfiguration(raw: unknown) {
+    const input = ConfigWriteSchema.parse(raw);
+    if (this.redactor.text(JSON.stringify(input.configuration)) !== JSON.stringify(input.configuration)) throw Object.assign(new Error('Store credentials in their Settings fields, not in configuration.'), { status: 400 });
+    const revision = await this.state.configuration.put(input);
+    await this.configuration(); await this.applyRigging(); return revision;
+  }
   async configuration() {
     for (let attempt = 0; attempt < 2; attempt++) {
       if (this.#closing) throw Object.assign(new Error('Jevellan is stopping.'), { status: 503 });

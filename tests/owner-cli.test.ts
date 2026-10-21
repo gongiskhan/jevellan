@@ -24,6 +24,14 @@ let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
 
+test('CLI configuration editor exposes shared history and canonical export metadata', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['config', 'configuration_editor'], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
+  expect(result).toMatchObject({ ok: true, data: { schema: 'configuration-editor-v1', yaml: { downloadName: 'apm.yml' }, import: { previewPath: '/api/config/import-preview' } } });
+  expect(f.fake.runs).toHaveLength(0);
+});
+
 test('CLI config About returns device identity and command text without maintenance', async () => {
   f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
   expect(await callCommand(['config', 'about'], f.homes)).toBe(0);

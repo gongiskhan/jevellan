@@ -2324,6 +2324,32 @@ test('About renders the engine device version and maintenance text and opens the
   await page.getByRole('button', { name: 'Open setup guide', exact: true }).click(); await expect(page).toHaveURL(/\/setup$/); expect(errors).toEqual([]);
 });
 
+test('Configuration import keeps edited source ahead of delayed previews and applies the current draft', async ({ page }, info) => {
+  const errors = await begin(page); await page.goto('/settings/configuration');
+  const before = await page.request.get('/hub/config/export'); expect(before.ok()).toBe(true); const original = await before.text();
+  const proposed = original.replace(/pauseAfterPlan: (true|false)/u, (_, value) => `pauseAfterPlan: ${value === 'false'}`); expect(proposed).not.toBe(original);
+  await page.getByRole('button', { name: 'Import', exact: true }).click(); await page.getByRole('textbox', { name: 'YAML', exact: true }).fill(proposed);
+  let release!: () => void, entered!: () => void, continued!: () => void;
+  const held = new Promise<void>(resolve => { release = resolve; }), started = new Promise<void>(resolve => { entered = resolve; }), resumed = new Promise<void>(resolve => { continued = resolve; });
+  const route = '**/config/import-preview';
+  await page.route(route, async request => { entered(); await held; try { await request.continue(); } finally { continued(); } });
+  try {
+    await page.getByRole('button', { name: 'Validate and show diff', exact: true }).click(); await started;
+    await page.getByRole('textbox', { name: 'YAML', exact: true }).fill(original);
+  } finally { release(); }
+  await resumed; await expect(page.getByRole('button', { name: 'Validate and show diff', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Apply import', exact: true })).toHaveCount(0);
+  await page.unroute(route);
+  await page.getByRole('button', { name: 'Validate and show diff', exact: true }).click(); await expect(page.getByRole('heading', { name: 'No changes', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Apply import', exact: true })).toBeDisabled();
+  await page.getByRole('textbox', { name: 'YAML', exact: true }).fill(proposed); await page.getByRole('button', { name: 'Validate and show diff', exact: true }).click();
+  await expect(page.getByText('/x-jevellan/guards/pauseAfterPlan', { exact: true })).toBeVisible();
+  await page.screenshot({ path: `test-results/CONFIG-import-preview-${layout(info)}.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Apply import', exact: true }).click(); await expect(page.getByRole('status').filter({ hasText: 'Configuration imported.' })).toBeVisible();
+  expect(await (await page.request.get('/hub/config/export')).text()).toBe(proposed);
+  await page.screenshot({ path: `test-results/CONFIG-import-saved-${layout(info)}.png`, fullPage: true }); expect(errors).toEqual([]);
+});
+
 test('PAR7 library uploads, attachments in both composers, images and project rigging', async ({ page }, info) => {
   const errors = await begin(page);
   await page.goto('/projects/projects_fixture'); if (phone(info)) await tab(page, 'Overview').click();

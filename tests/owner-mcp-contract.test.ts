@@ -26,6 +26,19 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP configuration import uses the shared preview and canonical revision receipt', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const { exportConfiguration } = await import('../packages/core/dist/index.js'), current = await f.app.configuration(), proposed = structuredClone(current.configuration); proposed['x-jevellan'].maxRunningThreadsAll++;
+  const reply = await mcp.callTool({ name: 'config', arguments: { action: 'configuration_preview', yaml: exportConfiguration(proposed) } }); expect(reply.isError).toBeFalsy();
+  const result = OwnerToolResultSchema.parse(reply.structuredContent); expect(result).toMatchObject({ ok: true, data: { schema: 'configuration-import-view-v1', canApply: true } });
+  if (!result.ok) throw new Error('Expected configuration import preview.');
+  const data = result.data as { write: { body: object } }; const request = { ...data.write.body, clientRequestId: 'mcp_configuration_import' };
+  const saved = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'configuration_apply', request } })).structuredContent);
+  expect(saved).toMatchObject({ ok: true, data: { revision: current.revision + 1, configuration: proposed } });
+  const repeated = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'configuration_apply', request } })).structuredContent); expect(repeated).toEqual(saved);
+  expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP config About shares device identity and command text without maintenance', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'about' } })).structuredContent);

@@ -14,7 +14,7 @@ import { handleCursorApi } from './cursor-api.js';
 import { projectFolders } from './project-folders.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { z } from 'zod';
-import { nativeSetup, CorrectionsListSchema, CorrectionsReadSchema, ErrorDocumentSchema, GitHubTokenStateSchema, IdSchema, ProjectWriteSchema, SecretSummarySchema, EmptySchema, ConfigWriteSchema, ImportSchema, SecretInputSchema, AccountListSchema, RiggingListSchema, RuntimeListSchema, exportConfiguration, parseConfiguration, stableJson } from '@jevellan/core';
+import { nativeSetup, CorrectionsListSchema, CorrectionsReadSchema, ErrorDocumentSchema, GitHubTokenStateSchema, IdSchema, ProjectWriteSchema, SecretSummarySchema, EmptySchema, ConfigWriteSchema, SecretInputSchema, AccountListSchema, RiggingListSchema, RuntimeListSchema, CONFIGURATION_EXPORT_FILENAME } from '@jevellan/core';
 import { HubUnavailable, clearSessionCookie, sessionCookie, sessionFromCookie, deviceAboutView } from '@jevellan/mesh';
 import { AddAccountSchema, AddRiggingSchema, ReplaceCredentialSchema, UpdateAccountSchema, UpdateRiggingSchema } from '@jevellan/core';
 import { Application } from './application.js';
@@ -48,14 +48,6 @@ export function requireOrigin(request: IncomingMessage, allowedOrigins: readonly
     if (request.headers['sec-fetch-site'] === 'cross-site') throw failure('Open Jevellan directly before changing settings.', 403);
   }
   return secure;
-}
-function changedPaths(before: unknown, after: unknown, path = ''): string[] {
-  if (stableJson(before) === stableJson(after)) return [];
-  if (before && after && typeof before === 'object' && typeof after === 'object' && !Array.isArray(before) && !Array.isArray(after)) {
-    const a = before as Record<string, unknown>; const b = after as Record<string, unknown>;
-    return [...new Set([...Object.keys(a), ...Object.keys(b)])].sort().flatMap((key) => changedPaths(a[key], b[key], `${path}/${key}`));
-  }
-  return [path || '/'];
 }
 
 export async function handleApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, options: { allowedOrigins?: readonly string[]; secureCookies?: boolean; proxyOrigin?: string } = {}): Promise<void> {
@@ -186,22 +178,18 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       send(await app.saveDecisionsSettings(input)); return;
     }
     if (path === '/api/jev/connection' && method === 'GET') { send(await app.state.jev.connection()); return; }
+    if (path === '/api/config/editor' && method === 'GET') { send(await app.configurationEditor()); return; }
+    if (path === '/api/config/yaml' && method === 'GET') { send(await app.configurationYaml()); return; }
+    if (path === '/api/config/import-preview' && method === 'POST') { send(await app.configurationImportPreview(await body(request))); return; }
     if (path === '/hub/config' && method === 'PUT') {
-      const input = ConfigWriteSchema.parse(await body(request));
-      retryable = input.clientRequestId !== undefined;
-      if (app.redactor.text(JSON.stringify(input.configuration)) !== JSON.stringify(input.configuration)) throw failure('Store credentials in their Settings fields, not in configuration.', 400);
-      const revision = await app.state.configuration.put(input);
-      await app.configuration(); await app.applyRigging(); send(revision); return;
+      const input = ConfigWriteSchema.parse(await body(request)); retryable = input.clientRequestId !== undefined;
+      send(await app.writeConfiguration(input)); return;
     }
     if (path === '/hub/config/history' && method === 'GET') { send({ schema: 'config-history-v1', revisions: await app.state.configuration.history() }); return; }
     if (path === '/hub/config/export' && method === 'GET') {
-      const revision = await app.configuration(); response.writeHead(200, { 'Content-Type': 'application/yaml; charset=utf-8', 'Content-Disposition': 'attachment; filename="apm.yml"', 'Cache-Control': 'no-store' }); response.end(app.redactor.text(exportConfiguration(revision.configuration))); return;
+      const view = await app.configurationYaml(); response.writeHead(200, { 'Content-Type': 'application/yaml; charset=utf-8', 'Content-Disposition': `attachment; filename="${CONFIGURATION_EXPORT_FILENAME}"`, 'Cache-Control': 'no-store' }); response.end(view.yaml); return;
     }
-    if (path === '/hub/config/import-preview' && method === 'POST') {
-      const input = ImportSchema.parse(await body(request)); const proposed = parseConfiguration(input.yaml); const current = await app.configuration();
-      if (app.redactor.text(JSON.stringify(proposed)) !== JSON.stringify(proposed)) throw failure('Remove credentials from this configuration before importing it.', 400);
-      send({ schema: 'config-preview-v1', revision: current.revision, configuration: proposed, before: exportConfiguration(current.configuration), after: exportConfiguration(proposed), changedPaths: changedPaths(current.configuration, proposed) }); return;
-    }
+    if (path === '/hub/config/import-preview' && method === 'POST') { send((await app.configurationImportPreview(await body(request))).preview); return; }
     if (path === '/api/runtimes' && method === 'GET') {
       const config = (await app.configuration()).configuration['x-jevellan'];
       send(RuntimeListSchema.parse({ schema: 'runtimes-list-v1', runtimes: [...app.runtimes.values()].map((runtime) => ({ id: runtime.id, displayName: runtime.displayName, enabled: config.runtimes[runtime.id]?.enabled === true, accountKinds: runtime.accountKinds, riggingKinds: runtime.riggingKinds, capabilities: runtime.capabilities, ...(['claude', 'codex'].includes(runtime.id) ? { nativeSetup: nativeSetup(app.homes, runtime.id as 'claude' | 'codex', undefined, config.runtimes[runtime.id]?.useOwnSetup !== false).inventory } : {}) })), offered: (await app.accounts.offered()) })); return;

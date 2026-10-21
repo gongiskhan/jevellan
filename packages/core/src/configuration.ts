@@ -7,6 +7,7 @@ import { ConfigRevisionSchema, ConfigurationSchema, IdSchema, PreCleanupConfigur
 import { atomicWrite, stableJson } from './files.js';
 import type { Homes } from './homes.js';
 import { existsSync, readFileSync } from 'node:fs';
+import { CONFIGURATION_EXPORT_FILENAME } from './configuration-path.js';
 
 export class RevisionConflict extends Error {
   readonly status = 409;
@@ -30,7 +31,7 @@ export function parseConfiguration(yaml: string): Configuration {
 }
 export function exportConfiguration(configuration: Configuration): string { return stringify(ConfigurationSchema.parse(configuration)); }
 export function materialiseConfiguration(homes: Homes, raw: ConfigRevision): ConfigRevision {
-  const revision = ConfigRevisionSchema.parse(raw); const file = homes.at('apm.yml'); const yaml = exportConfiguration(revision.configuration);
+  const revision = ConfigRevisionSchema.parse(raw); const file = homes.at(CONFIGURATION_EXPORT_FILENAME); const yaml = exportConfiguration(revision.configuration);
   if (!existsSync(file) || readFileSync(file, 'utf8') !== yaml) atomicWrite(file, yaml);
   return revision;
 }
