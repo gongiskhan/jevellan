@@ -206,6 +206,7 @@ function SuggestionCard({
   monitor: Monitor;
   props: PageProps;
 }) {
+  const presentation = card.presentation, check = presentation?.check;
   const task = useTask(props.onError);
   const mutate = useMutation();
   const [dialog, setDialog] = useState<'change' | 'dismiss'>();
@@ -308,72 +309,22 @@ function SuggestionCard({
       <p>{card.reason}</p>
       {card.error && <p className="notice">{card.error}</p>}
       {card.counts && <p className="muted small-text">This change {countsText(card.counts)}.</p>}
-      <details className="suggestion-evidence">
-        {card.evidence.kind === 'corrections' ? (
-          <>
-            <summary>
-              Based on {card.evidence.total} correction{card.evidence.total === 1 ? '' : 's'} (
-              {card.evidence.withUndo} with undo)
-            </summary>
-            <ul>
-              {card.evidence.items.map((item) => (
-                <li key={item.id}>
-                  <a
-                    href={`/conversations/${item.conversationId}${item.stretch ? `?stretch=${item.stretch}` : ''}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      props.navigate(event.currentTarget.getAttribute('href')!);
-                    }}
-                  >
-                    {item.conversationTitle ?? item.context}
-                  </a>
-                  <span className="muted">
-                    {' '}
-                    · {dateTime(item.at)} · {item.field}: {item.from ?? 'Auto'} → {item.to ?? 'Auto'}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <>
-            <summary>
-              Based on {card.evidence.notes.length} note{card.evidence.notes.length === 1 ? '' : 's'}
-            </summary>
-            <ul>
-              {card.evidence.notes.map((entry) => (
-                <li key={entry.permalink}>
-                  <button className="evidence-link" onClick={() => setNote(entry.permalink)}>
-                    {entry.title}
-                  </button>
-                  <span className="muted"> · {entry.path}</span>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </details>
+      {presentation ? <details className="suggestion-evidence">
+        <summary>{presentation.evidence.summary}</summary>
+        <ul>{presentation.evidence.entries.map(entry => {
+          const action = entry.action;
+          return <li key={entry.id}>
+            {action.kind === 'conversation' ? <a href={action.href} onClick={event => { event.preventDefault(); props.navigate(action.href); }}>{entry.label}</a>
+              : <button className="evidence-link" onClick={() => setNote(action.permalink)}>{entry.label}</button>}
+            {(entry.at || entry.detail) && <span className="muted"> · {entry.at ? `${dateTime(entry.at)} · ` : ''}{entry.detail}</span>}
+          </li>;
+        })}</ul>
+      </details> : <p className="muted">Evidence details unavailable.</p>}
       <DiffView text={card.change.diff} label="Suggested change" />
-      {card.check && (
-        <div className="suggestion-checks">
-          <p>
-            Checked against {card.check.total} saved cases: {card.check.unchanged} unchanged,{' '}
-            {card.check.better} better, {card.check.worse} worse.
-            {card.check.evidence === 'simulated' && (
-              <span className="muted"> Simulated judge responses.</span>
-            )}
-          </p>
-          {card.check.changed.length > 0 && (
-            <ul>
-              {card.check.changed.map((entry) => (
-                <li key={entry.caseId}>
-                  {entry.title} · {entry.change}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+      {check && <div className="suggestion-checks">
+        <p>{check.summary}{check.simulatedNotice && <span className="muted"> {check.simulatedNotice}</span>}</p>
+        {check.cases.length > 0 && <ul>{check.cases.map(entry => <li key={entry.id}>{entry.text}</li>)}</ul>}
+      </div>}
       {running && <p role="status">Preparing a revised suggestion…</p>}
       <div className="actions">
         {busy && <span className="activity-spinner" aria-hidden="true" />}
@@ -509,14 +460,10 @@ function SuggestionCard({
               <h3>Revised change</h3>
               {'draft' in preview ? (
                 <>
-                  <DiffView
-                    text={`- ${preview.draft.before.split('\n').join('\n- ')}\n+ ${preview.draft.after.split('\n').join('\n+ ')}`}
-                  />
-                  <p className="muted small-text">
-                    Checked against {preview.comparison.cases.length} saved cases:{' '}
-                    {preview.comparison.unchanged} unchanged, {preview.comparison.better} better,{' '}
-                    {preview.comparison.worse} worse.
-                  </p>
+                  {preview.presentation ? <>
+                    <DiffView text={preview.presentation.diff} />
+                    <p className="muted small-text">{preview.presentation.checkSummary}{preview.presentation.simulatedNotice && <> {preview.presentation.simulatedNotice}</>}</p>
+                  </> : <p className="muted">Preview details unavailable.</p>}
                 </>
               ) : (
                 <DiffView text={preview.patch.diff} />

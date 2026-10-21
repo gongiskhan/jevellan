@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ImproverCardPresentationSchema, RoutingPreviewPresentationSchema } from './improver-presentation-schemas.js';
 import { ActionSchema, EffortSchema, HandoffSchema, IdSchema, ImproverSettingsSchema, JevCallSchema, TimestampSchema, UsageSchema } from './schemas.js';
 import {
   ImproverLastRunSchema, ImproverNoticeSchema, MemoryCareCountsSchema, MemoryCareReportActionSchema, MemoryCareReportRowSchema, MemoryCareStateSchema, MemoryNoteRefSchema,
@@ -108,7 +109,7 @@ export type RoutingSuggestionRow = z.infer<typeof RoutingSuggestionRowSchema>;
 export const RoutingPreviewSchema = z.strictObject({
   schema: z.literal('routing-preview-v1'), id: IdSchema, suggestionId: IdSchema, suggestionRevision: z.number().int().positive(),
   source: z.enum(['text', 'instruction']), instruction: z.string().max(4000).nullable(), draft: RoutingDraftSchema, comparison: DecisionComparisonSchema,
-  configurationRevision: z.number().int().positive(), createdAt: TimestampSchema,
+  configurationRevision: z.number().int().positive(), createdAt: TimestampSchema, presentation: RoutingPreviewPresentationSchema.optional(),
 });
 export type RoutingPreview = z.infer<typeof RoutingPreviewSchema>;
 const suggestionRequest = { schema: z.literal('routing-suggestion-action-v1'), clientRequestId: IdSchema, revision: z.number().int().positive() };
@@ -174,7 +175,7 @@ export const ImproverJobViewSchema = z.strictObject({
 const CardStatusSchema = z.enum(['pending', 'applying', 'recompute', 'expired', 'applied', 'undoing', 'dismissed', 'undone']);
 /** One card shape for every improver suggestion, whatever job produced it. */
 export const ImproverCardSchema = z.strictObject({
-  schema: z.literal('improver-card-v1'), kind: z.enum(['routing', 'memory-care', 'context']), id: IdSchema, revision: z.number().int().positive(),
+  schema: z.literal('improver-card-v1'), presentation: ImproverCardPresentationSchema.optional(), kind: z.enum(['routing', 'memory-care', 'context']), id: IdSchema, revision: z.number().int().positive(),
   projectId: IdSchema.nullable(), projectName: z.string().max(200).nullable(), title: z.string().min(1).max(200), reason: z.string().min(1).max(1200),
   status: CardStatusSchema, decided: z.boolean(), error: z.string().max(1200).nullable(), createdAt: TimestampSchema, updatedAt: TimestampSchema,
   evidence: z.discriminatedUnion('kind', [

@@ -192,3 +192,28 @@ test('nightly polling starts once, records an empty-run log and never repeats th
     await improver.close(); await vi.advanceTimersByTimeAsync(60_000); expect(active).toBe(0);
   } finally { vi.useRealTimers(); }
 });
+
+test('engine improver projection supplies correction navigation, counts and saved-case copy without further work', async () => {
+  seed(); const previous = hub.get('overrides', 'implement_2', OverrideRecordSchema)!;
+  hub.put('overrides', 'implement_2', OverrideRecordSchema, { ...previous.document, request: { ...previous.document.request, mode: 'redo' } }, previous.revision);
+  const job = await improver.run({ kind: 'manual', id: 'evidence_projection' }); await improver.wait(job.id);
+  const history = hub.configuration.history(), calls = questions.length, generated = drafts.length;
+  const state = ImproverStateSchema.parse(await improver.request({ schema: 'improver-request-v1', operation: 'state' }, 'hub'));
+  expect(state.cards[0]).toMatchObject({ presentation: {
+    schema: 'improver-card-presentation-v1', evidence: { summary: 'Based on 3 corrections (1 with undo)', entries: [expect.objectContaining({ label: 'A specified backend change.', detail: 'model: claude-fable → codex-gpt', action: { kind: 'conversation', href: '/conversations/conversation?stretch=1' } }), expect.anything(), expect.anything()] },
+    check: { summary: 'Checked against 27 saved cases: 27 unchanged, 0 better, 0 worse.', simulatedNotice: 'Simulated judge responses.', cases: [] },
+  } });
+  expect(hub.configuration.history()).toEqual(history); expect(questions).toHaveLength(calls); expect(drafts).toHaveLength(generated);
+});
+
+test('engine improver projection supplies revised diff and check copy while stored receipts remain unchanged', async () => {
+  const row = await suggestion(), input = { schema: 'routing-revision-request-v1' as const, clientRequestId: 'presentation_preview', kind: 'text' as const, suggestionId: row.suggestion.id, revision: row.revision, after: 'A checked revised preference.' };
+  const started = RoutingRevisionRecordSchema.parse(await improver.request({ schema: 'improver-request-v1', operation: 'revise', input }, 'hub')); await improver.revisions.wait(started.id);
+  const stored = hub.get('routing-revision-requests', started.id, RoutingRevisionRecordSchema)!, history = hub.configuration.history();
+  const response = RoutingRevisionRecordSchema.parse(await improver.request({ schema: 'improver-request-v1', operation: 'revision', id: started.id }, 'hub'));
+  expect(response).toMatchObject({ preview: { presentation: { schema: 'routing-preview-presentation-v1', diff: expect.stringContaining('+A checked revised preference.'), checkSummary: 'Checked against 27 saved cases: 27 unchanged, 0 better, 0 worse.', simulatedNotice: 'Simulated judge responses.' } } });
+  const state = improver.state(); expect(state.revisions.find(value => value.id === started.id)?.preview).toEqual(response.preview);
+  expect(await improver.request({ schema: 'improver-request-v1', operation: 'revise', input }, 'hub')).toEqual(response);
+  expect(hub.get('routing-revision-requests', started.id, RoutingRevisionRecordSchema)).toEqual(stored); expect(stored.document).not.toHaveProperty('preview.presentation');
+  expect(hub.configuration.history()).toEqual(history); expect(drafts).toHaveLength(1);
+});

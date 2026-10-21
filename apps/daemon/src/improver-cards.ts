@@ -1,18 +1,18 @@
-import { ImproverCardSchema, unifiedDiff, type ImproverCard, type ProjectSuggestionRow, type RoutingSuggestionRow } from '@jevellan/core';
+import { unifiedDiff, type ImproverCard, type ProjectSuggestionRow, type RoutingSuggestionRow } from '@jevellan/core';
+import { presentImproverCard, routingFieldName } from './improver-presentation.js';
 
 const open = ['pending', 'applying', 'recompute', 'undoing'];
-const fieldName = (field: RoutingSuggestionRow['suggestion']['draft']['field']) => field.kind === 'routing-profile' ? 'routing-profile' : field.kind === 'menu-description' ? `menu/${field.modelId}/description` : `effort-guide/${field.effort}`;
 
 export function routingCard(row: RoutingSuggestionRow, titles: ReadonlyMap<string, string>, now = Date.now()): ImproverCard {
   const { suggestion } = row; const key = suggestion.group.key; const last = suggestion.outcomes.at(-1);
-  return ImproverCardSchema.parse({
+  return presentImproverCard({
     schema: 'improver-card-v1', kind: 'routing', id: suggestion.id, revision: row.revision, projectId: null, projectName: null, title: suggestion.draft.title, reason: suggestion.draft.reason,
     status: suggestion.status, decided: !open.includes(suggestion.status), error: suggestion.status === 'recompute' ? 'The field changed since this suggestion was made. It is being recomputed.' : null,
     createdAt: suggestion.createdAt, updatedAt: suggestion.updatedAt,
     evidence: { kind: 'corrections', total: suggestion.group.overrides.length, withUndo: suggestion.group.overrides.filter(item => item.mode === 'redo').length,
       items: suggestion.group.overrides.map(item => ({ id: item.id, at: item.at, conversationId: item.conversationId, conversationTitle: titles.get(item.conversationId) ?? null, stretch: item.stretch,
         field: key.field, from: key.from, to: key.to, context: item.context, mode: item.mode })) },
-    change: { kind: 'field', field: suggestion.draft.field, before: suggestion.draft.before, after: suggestion.draft.after, diff: unifiedDiff(fieldName(suggestion.draft.field), `${suggestion.draft.before}\n`, `${suggestion.draft.after}\n`) },
+    change: { kind: 'field', field: suggestion.draft.field, before: suggestion.draft.before, after: suggestion.draft.after, diff: unifiedDiff(routingFieldName(suggestion.draft.field), `${suggestion.draft.before}\n`, `${suggestion.draft.after}\n`) },
     check: { evidence: suggestion.comparison.evidence, total: suggestion.comparison.cases.length, unchanged: suggestion.comparison.unchanged, better: suggestion.comparison.better, worse: suggestion.comparison.worse,
       changed: suggestion.comparison.cases.filter(entry => entry.change !== 'unchanged').map(entry => ({ caseId: entry.after.caseId, title: entry.after.title, change: entry.change })) },
     counts: null,
@@ -25,7 +25,7 @@ export function routingCard(row: RoutingSuggestionRow, titles: ReadonlyMap<strin
 
 export function projectCard(row: ProjectSuggestionRow, now = Date.now()): ImproverCard {
   const { suggestion } = row;
-  return ImproverCardSchema.parse({
+  return presentImproverCard({
     schema: 'improver-card-v1', kind: suggestion.kind, id: suggestion.id, revision: row.revision, projectId: suggestion.projectId, projectName: suggestion.projectName,
     title: suggestion.title, reason: suggestion.reason, status: suggestion.status, decided: !open.includes(suggestion.status), error: suggestion.error,
     createdAt: suggestion.createdAt, updatedAt: suggestion.updatedAt, evidence: { kind: 'notes', notes: suggestion.evidence },

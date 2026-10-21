@@ -1,5 +1,6 @@
 import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
 import { ConfigRevisionSchema, DecisionsSettingsEditorSchema } from '../packages/core/dist/index.js';
+import { ImproverStateSchema } from '../packages/core/dist/index.js';
 import { seedConversationDecision } from './helpers/conversation-decision-fixture.js';
 import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
@@ -18,6 +19,13 @@ async function connect(env: Record<string, string>): Promise<Client> {
     env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', ...env }, cwd: f!.checkout, stderr: 'ignore' });
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
+
+test('improver read projections reach the official MCP client without starting work', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root }), history = f.app.hub.configuration.history();
+  const expected = await f.json('/api/improver', ImproverStateSchema), response = await mcp.callTool({ name: 'jev', arguments: { action: 'improver' } }); expect(response.isError).toBeFalsy();
+  const result = OwnerToolResultSchema.parse(response.structuredContent); expect(result.ok).toBe(true); if (!result.ok) throw new Error('Expected improver read projection.');
+  expect(ImproverStateSchema.parse(result.data)).toEqual(expected); expect(f.fake.runs).toHaveLength(0); expect(f.app.hub.configuration.history()).toEqual(history);
+});
 
 test('official MCP Decisions editor and scoped save preserve their typed request and receipt', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });

@@ -1,5 +1,6 @@
 import { ConversationDecisionWhyViewSchema, StepCorrectionEditorSchema } from '../packages/core/dist/index.js';
 import { ConfigRevisionSchema, DecisionsSettingsEditorSchema } from '../packages/core/dist/index.js';
+import { ImproverStateSchema } from '../packages/core/dist/index.js';
 import { seedConversationDecision } from './helpers/conversation-decision-fixture.js';
 import { ConversationComposerViewSchema } from '../packages/core/dist/index.js';
 import { seedRouteDecision } from './helpers/route-fixtures.js';
@@ -16,6 +17,14 @@ import { ProjectRouteWhyViewSchema, ProjectThreadOverrideEditorSchema, ThreadCre
 let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
+
+test('improver read projections reach the CLI without starting work', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  const expected = await f.json('/api/improver', ImproverStateSchema), history = f.app.hub.configuration.history();
+  expect(await callCommand(['jev', 'improver'], f.homes)).toBe(0);
+  const encoded = output.mock.calls.map(row => String(row[0])).find(text => text.startsWith('{')), result = OwnerToolResultSchema.parse(encoded ? JSON.parse(encoded) : undefined); expect(result.ok).toBe(true); if (!result.ok) throw new Error('Expected CLI improver read projection.');
+  expect(ImproverStateSchema.parse(result.data)).toEqual(expected); expect(f.fake.runs).toHaveLength(0); expect(f.app.hub.configuration.history()).toEqual(history);
+});
 
 test('CLI Decisions settings use the shared scoped editor and recover the same save receipt', async () => {
   f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined);

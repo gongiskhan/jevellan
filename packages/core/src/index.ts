@@ -17,6 +17,7 @@ export * from './version-skew.js';
 export * from './session-cache-schemas.js';
 export * from './project-journal-schemas.js';
 export * from './improver-schemas.js';
+export * from './improver-presentation-schemas.js';
 export * from './project-improver-schemas.js';
 export * from './text-diff.js';
 export * from './routing-fields.js';

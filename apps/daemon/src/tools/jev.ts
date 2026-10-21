@@ -19,6 +19,8 @@ export const jev: OwnerHandler = async (context) => {
   await tools.status(project); // display ids for every current thread and goal
   const goals = new Map((await app.projectWork.goalList(projectId)).goals.map(row => [row.goal.id, tools.ids.one(projectId, 'G', row.goal.id)]));
   switch (context.action) {
+    case 'improver': return { text: 'Improver suggestions and recorded checks.', data: await app.improverRequest({ schema: 'improver-request-v1', operation: 'state' }) };
+    case 'improver_revision': return { text: 'Recorded improver revision.', data: await app.improverRequest({ schema: 'improver-request-v1', operation: 'revision', id: args.id }) };
     case 'settings_editor': case 'settings_preview': {
       const data = await app.state.configuration.decisionsEditor(context.action === 'settings_preview' ? args.request : undefined);
       return { text: 'Decisions settings.', data };

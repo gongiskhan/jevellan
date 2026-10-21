@@ -7,6 +7,7 @@ import {
 import { HubDatabase, HubIndexes, ImproverJobs, RoutingSuggestions, dueImproverDate } from '@jevellan/mesh';
 import { deadlineClient, compareDecisionCases, decisionCaseManifest, judgeRoutingGroup, routingGroups, savedDecisionCases, validateRoutingDraft, type DecisionSource } from '@jevellan/decisions';
 import { RoutingRevisions } from './routing-revisions.js';
+import { presentRoutingRevision } from './improver-presentation.js';
 import { routingCard, sortCards } from './improver-cards.js';
 
 export type RoutingImproverOptions = {
@@ -86,15 +87,15 @@ export class RoutingImprover {
   state(): ImproverState {
     const suggestions = this.suggestions.visible(); const titles = this.conversationTitles();
     return ImproverStateSchema.parse({ schema: 'improver-state-v2', cards: sortCards(suggestions.map(row => routingCard(row, titles))), suggestions, jobs: this.jobs.list().map(job => this.view(job)).sort((a, b) => b.startedAt.localeCompare(a.startedAt)),
-      revisions: this.revisions.recent(), projectSuggestions: [], projectRevisions: [], reports: [], lastRuns: [], trialLog: { schema: 'trial-log-v1', weeks: [] },
+      revisions: this.revisions.recent().map(presentRoutingRevision), projectSuggestions: [], projectRevisions: [], reports: [], lastRuns: [], trialLog: { schema: 'trial-log-v1', weeks: [] },
       pending: suggestions.filter(row => ['pending', 'recompute'].includes(row.suggestion.status)).length, notice: null });
   }
   conversationTitles(): Map<string, string> { return new Map(new HubIndexes(this.options.hub, this.options.deviceId).conversations().map(entry => [entry.id, entry.title])); }
   protected async handle(request: ImproverRequest, deviceId: string): Promise<ImproverResult> {
     if (request.operation === 'state') return this.state();
     if (request.operation === 'run') return this.view(await this.run({ kind: 'manual', id: hash([deviceId, request.clientRequestId]) }));
-    if (request.operation === 'revise' && request.input.schema === 'routing-revision-request-v1') return this.revisions.request(request.input, deviceId);
-    if (request.operation === 'revision') return this.revisions.get(request.id);
+    if (request.operation === 'revise' && request.input.schema === 'routing-revision-request-v1') return presentRoutingRevision(await this.revisions.request(request.input, deviceId));
+    if (request.operation === 'revision') return presentRoutingRevision(this.revisions.get(request.id));
     if (request.operation === 'log') {
       const log = this.log(request.jobId); if (!log) throw Object.assign(new Error('Run log not found.'), { status: 404 }); return log;
     }
