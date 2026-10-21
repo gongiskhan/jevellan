@@ -9,10 +9,11 @@ afterEach(async () => { await fixture?.close(); fixture = undefined; });
 test('a reserved job is not started by recovery while its project is paused', { timeout: 120_000 }, async () => {
   const f = fixture = await projectFixture(), id = f.project.id;
   await f.app.projectHub.assignCoordinator(id, f.app.device.deviceId, 0);
-  const settings = (await f.app.projectWork.settingsView(id)).settings;
-  await f.app.projectHub.putSettings({ ...settings, status: 'paused' }, settings.revision);
+  // Run now is refused while paused, so the job is queued first and the project pauses with its run reserved.
   const job = await f.app.projectWork.daily.createJob(id, { schema: 'job-create-request-v1', clientRequestId: 'job', name: 'A recovered command', goalId: null, enabled: true, gate: null, run: { kind: 'command', command: 'true', timeoutMinutes: 1 } });
   const receipt = await f.app.projectWork.daily.runJob(id, job.id, { schema: 'project-run-request-v1', clientRequestId: 'run' });
+  const settings = (await f.app.projectWork.settingsView(id)).settings;
+  await f.app.projectHub.putSettings({ ...settings, status: 'paused' }, settings.revision);
   const task = await f.app.projectWork.tasks.read(id, receipt.taskId), runId = 'reserved_job';
   await f.app.projectWork.tasks.save({ ...task, state: 'active', jobRunId: runId });
   await f.app.projectHub.putJobRun(ProjectJobRunSchema.parse({ schema: 'project-job-run-v1', id: runId, projectId: id, revision: 0, jobId: job.id, taskId: task.id,

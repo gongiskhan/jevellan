@@ -75,7 +75,8 @@ test.each(['paused', 'archived'] as const)('%s keeps coordinator events, tasks, 
   const job = await f.app.projectWork.daily.createJob(f.project.id, { schema: 'job-create-request-v1', clientRequestId: 'job', name: 'A command', goalId: null, enabled: true, gate: null, run: { kind: 'command', command: 'true', timeoutMinutes: 1 } });
   await f.app.projectWork.daily.createDaily(f.project.id, { schema: 'daily-create-request-v1', clientRequestId: 'daily', name: 'Night command', goalId: null, order: 1, enabled: true, target: { kind: 'job', jobId: job.id } });
   clock += 120_000;
-  await f.app.projectWork.daily.runJob(f.project.id, job.id, { schema: 'project-run-request-v1', clientRequestId: 'extra-run' });
+  // Run now is refused outright while the project is not active; the nightly run below stays queued instead.
+  await expect(f.app.projectWork.daily.runJob(f.project.id, job.id, { schema: 'project-run-request-v1', clientRequestId: 'extra-run' })).rejects.toThrow('The project is paused.');
   await f.request(`/api/projects/${f.project.id}/coordinator/messages`, 'POST', { schema: 'coordinator-message-request-v1', clientMessageId: 'owner', text: 'What is queued?' });
   const task = await f.json(`/api/projects/${f.project.id}/tasks`, TaskReceiptSchema, 'POST', { schema: 'task-create-request-v1', clientRequestId: 'task', title: 'Small task', brief: 'Inspect the checkout.', type: 'analysis' });
   for (let sweep = 0; sweep < 2; sweep++) await f.app.projectWork.pulse();
