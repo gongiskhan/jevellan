@@ -27,6 +27,13 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP task mirror preview owns token-removal disabling without writing or starting login', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const request = { schema: 'ekoa-editor-preview-v1', revision: 0, fields: { url: '', enabled: true }, operation: 'remove-token', credentialPresent: false };
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'mirror_preview', request } })).structuredContent); expect(result).toMatchObject({ ok: true, data: { schema: 'ekoa-editor-v1', canSave: true, plan: { body: { enabled: false, removeToken: true } } } });
+  expect(f.app.ekoa!.settings().revision).toBe(0); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP settings navigation and cleanup writer share the engine model', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const navigation = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'navigation' } })).structuredContent); expect(navigation).toMatchObject({ ok: true, data: { schema: 'settings-navigation-v1', defaultPage: 'runtimes' } });

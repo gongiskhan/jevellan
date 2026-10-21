@@ -1,3 +1,4 @@
+import { ekoaEditor, prepareEkoaEditorSave, prepareEkoaEditorConnect, EkoaEditorPreviewSchema, EkoaEditorSaveSchema, EkoaEditorConnectSchema } from '@jevellan/core';
 import { CleanupSettingsSaveSchema } from '@jevellan/core';
 import { handleProjectDefinitionsPeer } from './project-definition-device.js';
 import { GlobalThreadLimitSaveSchema, ProjectDefinitionReadSchema, ProjectDefinitionPreviewSchema, ProjectDefinitionSaveSchema } from '@jevellan/core';
@@ -108,6 +109,12 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (path === '/api/improver' && method === 'POST') {
       const input = ImproverRequestSchema.parse(await body(request)); retryable = true; send(await app.improverRequest(input)); return;
     }
+    if (path === '/hub/ekoa/editor' && method === 'GET') { send(ekoaEditor(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'state' }, token!))); return; }
+    if (path === '/hub/ekoa/editor/preview' && method === 'POST') { const input = EkoaEditorPreviewSchema.parse(await body(request)); send(ekoaEditor(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'state' }, token!), input)); return; }
+    if (path === '/hub/ekoa/editor' && method === 'PUT') { const input = EkoaEditorSaveSchema.parse(await body(request)); retryable = true; send(ekoaEditor(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'save', input: prepareEkoaEditorSave(input) }, token!))); return; }
+    if (path === '/hub/ekoa/editor/connect' && method === 'POST') { const input = EkoaEditorConnectSchema.parse(await body(request)); send(ekoaEditor(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'oauth-start', input: prepareEkoaEditorConnect(input) }, token!))); return; }
+    if (path === '/hub/ekoa/editor/callback' && method === 'POST') { const input = EkoaOAuthCallbackSchema.parse(await body(request)); send(ekoaEditor(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'oauth-complete', input }, token!))); return; }
+    if (path === '/hub/ekoa/editor/test' && method === 'POST') { EkoaEmptySchema.parse(await body(request)); send(ekoaEditor(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'test' }, token!))); return; }
     if (path === '/hub/ekoa' && method === 'GET') { send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'state' }, token!)); return; }
     if (path === '/hub/ekoa' && method === 'PUT') { send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'save', input: EkoaSettingsInputSchema.parse(await body(request)) }, token!)); return; }
     if (path === '/hub/ekoa/connect' && method === 'POST') { send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'oauth-start', input: EkoaOAuthStartSchema.parse(await body(request)) }, token!)); return; }

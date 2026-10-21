@@ -177,3 +177,6 @@ export * from './settings-workspace-schemas.js';
 export * from './cleanup-editor-schemas.js';
 export * from './settings-workspace.js';
 export * from './cleanup-editor.js';
+
+export * from './ekoa-editor-schemas.js';
+export * from './ekoa-editor.js';

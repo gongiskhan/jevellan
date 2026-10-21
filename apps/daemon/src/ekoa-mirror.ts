@@ -1,7 +1,7 @@
 import { EkoaOAuthService } from './ekoa-oauth.js';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { ProjectWindowSchema, EkoaConnectionSchema, EkoaMirrorSchema, EkoaRequestSchema, EkoaSettingsSchema, EkoaStateSchema, ProjectDecisionSchema, ProjectSchema, ProjectWorkTaskSchema as TaskSchema, ThreadIndexSchema,
+import { ProjectWindowSchema, EkoaSettingsInputSchema, EkoaConnectionSchema, EkoaMirrorSchema, EkoaRequestSchema, EkoaSettingsSchema, EkoaStateSchema, ProjectDecisionSchema, ProjectSchema, ProjectWorkTaskSchema as TaskSchema, ThreadIndexSchema,
   newId, stableJson, type EkoaMirror, type EkoaRequest } from '@jevellan/core';
 import { settingsMutation, type HubDatabase } from '@jevellan/mesh';
 import { connectEkoa, type EkoaClient, type EkoaConnector } from './ekoa-client.js';
@@ -23,15 +23,8 @@ export class EkoaMirrorService {
   settings() { return this.hub.get('ekoa-settings', 'current', EkoaSettingsSchema)?.document ?? EkoaSettingsSchema.parse({ schema: 'ekoa-settings-v1', revision: 0, url: '', enabled: false }); }
   async request(raw: EkoaRequest, deviceId: string) {
     const request = EkoaRequestSchema.parse(raw);
-    if (request.operation === 'save') {
-      const input = request.input; if (input.token) this.hub.redactor.add(input.token);
-      const settings = settingsMutation(this.hub, deviceId, 'ekoa-settings', input, input.clientRequestId, EkoaSettingsSchema, () => {
-        if (input.removeToken || input.url !== this.settings().url || input.token) { this.oauth.disconnect(); this.hub.vault.remove('ekoa'); }
-        if (input.token) this.hub.vault.put('ekoa', input.token);
-        return this.hub.put('ekoa-settings', 'current', EkoaSettingsSchema, { schema: 'ekoa-settings-v1', revision: input.revision + 1, url: input.url, enabled: input.enabled }, input.revision).document;
-      });
-      void settings; this.kick();
-    } else if (request.operation === 'oauth-start') {
+    if (request.operation === 'save') return this.save(request.input, deviceId);
+    if (request.operation === 'oauth-start') {
       const current = this.settings();
       if (current.url !== request.input.url) { this.oauth.disconnect(); this.hub.vault.remove('ekoa'); this.hub.put('ekoa-settings', 'current', EkoaSettingsSchema, { ...current, revision: current.revision + 1, url: request.input.url, enabled: false }, current.revision); }
       try { const oauth = await this.oauth.start(request.input, request.ownerSession); return { ...this.state(), oauth }; }
@@ -47,6 +40,18 @@ export class EkoaMirrorService {
       } catch (error) { this.#saveConnection('blocked', [], this.#error(error)); }
     } else if (request.operation === 'test') await this.test();
     return this.state();
+  }
+  save(raw: unknown, deviceId: string) {
+    const input = EkoaSettingsInputSchema.parse(raw); if (input.token) this.hub.redactor.add(input.token);
+    settingsMutation(this.hub, deviceId, 'ekoa-settings', input, input.clientRequestId, EkoaSettingsSchema, () => {
+      const current = this.settings();
+      // Validate the definition and CAS before touching provider state.
+      const saved = this.hub.put('ekoa-settings', 'current', EkoaSettingsSchema, { schema: 'ekoa-settings-v1', revision: input.revision + 1, url: input.url, enabled: input.removeToken ? false : input.enabled }, input.revision).document;
+      if (input.removeToken || input.url !== current.url || input.token) { this.oauth.disconnect(); this.hub.vault.remove('ekoa'); }
+      if (input.token) this.hub.vault.put('ekoa', input.token);
+      return saved;
+    });
+    this.kick(); return this.state();
   }
   #saveConnection(status: 'connected' | 'blocked' | 'unavailable', tools: string[], reason?: string, settingsRevision = this.settings().revision) {
     if (settingsRevision !== this.settings().revision) return;

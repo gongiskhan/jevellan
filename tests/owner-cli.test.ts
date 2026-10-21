@@ -25,6 +25,15 @@ let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
 
+test('CLI task mirror editor shares nonsecret defaults and the canonical scoped save', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['config', 'mirror_editor'], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); expect(result).toMatchObject({ ok: true, data: { schema: 'ekoa-editor-v1', fields: { enabled: false }, connect: { defaultUrl: 'https://mcp.ekoa.io/mcp' } } });
+  if (!result.ok) throw new Error('Expected mirror editor.'); const view = result.data as { state: { settings: { revision: number } }; fields: object };
+  const request = { schema: 'ekoa-editor-save-v1', revision: view.state.settings.revision, fields: view.fields, operation: 'save', clientRequestId: 'mirror_cli_save' };
+  output.mockClear(); expect(await callCommand(['config', 'mirror_save', '--request', JSON.stringify(request)], f.homes)).toBe(0); expect(f.app.ekoa!.settings()).toMatchObject({ revision: 1, enabled: false }); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('CLI settings navigation and cleanup writer share the engine model', async () => {
   f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
   expect(await callCommand(['config', 'navigation'], f.homes)).toBe(0);

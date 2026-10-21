@@ -124,3 +124,6 @@ export { projectDefinitionCommand, projectDefinitionDeviceRows } from './project
 export * from './settings-workspace-schemas.js';
 export * from './cleanup-editor-schemas.js';
 export { settingsPage } from './settings-workspace.js';
+
+export * from './ekoa-editor-schemas.js';
+export { ekoaCallbackInput, ekoaUrlRequired } from './ekoa-editor.js';

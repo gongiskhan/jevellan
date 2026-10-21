@@ -1,3 +1,4 @@
+import { ekoaEditor } from '../../packages/core/dist/index.js';
 import { basename } from 'node:path';
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
@@ -2853,6 +2854,24 @@ test('WG8 the shared thread limit is editable in Settings Projects', async ({ pa
   await limit.fill('6'); await page.getByRole('button', { name: 'Save thread limit', exact: true }).click(); expect(errors).toEqual([]);
 });
 
+test('Task mirror editor saves only on submit and removes a token while disabling the draft', async ({ page }, info) => {
+  const errors = await begin(page); await page.goto('/settings/ekoa');
+  await expect(page.getByRole('heading', { name: 'Tasks that need you', exact: true })).toBeVisible();
+  const enabled = page.getByRole('checkbox', { name: 'Mirror tasks to Ekoa', exact: true }), password = page.getByLabel('Ekoa token', { exact: true });
+  await expect(enabled).not.toBeChecked(); await password.fill(`fixture-${randomUUID()}`);
+  const saved = page.waitForResponse(response => new URL(response.url()).pathname === '/hub/ekoa/editor' && response.request().method() === 'PUT');
+  await page.getByRole('button', { name: 'Save', exact: true }).click(); expect((await saved).status()).toBe(200);
+  await expect(page.getByText('Ekoa settings saved.', { exact: true })).toBeVisible(); await expect(password).toHaveValue('');
+  await expect(page.getByText('Token saved in the hub vault.', { exact: false })).toBeVisible();
+  await page.screenshot({ path: info.outputPath(`mirror-token-saved-${layout(info)}.png`), fullPage: true });
+  await enabled.check(); expect((await (await page.request.get('/hub/ekoa')).json()).settings.enabled).toBe(false);
+  const removed = page.waitForResponse(response => new URL(response.url()).pathname === '/hub/ekoa/editor' && response.request().method() === 'PUT');
+  await page.getByRole('button', { name: 'Remove token', exact: true }).click(); expect((await removed).status()).toBe(200); await expect(enabled).not.toBeChecked();
+  const current = await (await page.request.get('/hub/ekoa')).json(); expect(current.settings.enabled).toBe(false); expect(current.tokenSaved).toBe(false);
+  await expect(page.getByRole('button', { name: 'Remove token', exact: true })).toHaveCount(0); await expect(password).toHaveValue('');
+  await page.screenshot({ path: info.outputPath(`mirror-token-removed-${layout(info)}.png`), fullPage: true }); expect(errors).toEqual([]);
+});
+
 test('WG9 owner labels, Claude app prompts, quiet hours and OAuth connect', async ({ page }, info) => {
   const errors = await begin(page), before = (await work(page)).settings;
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
@@ -2881,8 +2900,8 @@ test('WG9 owner labels, Claude app prompts, quiet hours and OAuth connect', asyn
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('Inspect the local app connection and tell me whether it is online.');
   await card.scrollIntoViewIfNeeded(); await page.screenshot({ path: info.outputPath(`claude-app-prompt-${layout(info)}.png`) });
   const state = await (await page.request.get('/hub/ekoa')).json();
-  await page.route('**/hub/ekoa/connect', route => route.fulfill({ json: { ...state, oauth: { schema: 'ekoa-oauth-status-v1', connected: false, connecting: true, authorizationUrl: new URL('/settings/ekoa/callback?state=fixture_state_browser_123456&code=fixture_code', page.url()).href } } }));
-  await page.route('**/hub/ekoa/callback', route => route.fulfill({ json: { ...state, settings: { ...state.settings, enabled: true, url: 'https://fixture.example/mcp' }, tokenSaved: true, oauth: { schema: 'ekoa-oauth-status-v1', connected: true, connecting: false }, connection: { schema: 'ekoa-connection-v1', status: 'connected', tools: [], at: new Date().toISOString() } } }));
+  await page.route('**/hub/ekoa/editor/connect', route => route.fulfill({ json: ekoaEditor({ ...state, oauth: { schema: 'ekoa-oauth-status-v1', connected: false, connecting: true, authorizationUrl: new URL('/settings/ekoa/callback?state=fixture_state_browser_123456&code=fixture_code', page.url()).href } }) }));
+  await page.route('**/hub/ekoa/editor/callback', route => route.fulfill({ json: ekoaEditor({ ...state, settings: { ...state.settings, enabled: true, url: 'https://fixture.example/mcp' }, tokenSaved: true, oauth: { schema: 'ekoa-oauth-status-v1', connected: true, connecting: false }, connection: { schema: 'ekoa-connection-v1', status: 'connected', tools: [], at: new Date().toISOString() } }) }));
   await page.goto('/settings/ekoa'); await page.getByRole('button', { name: 'Connect to Ekoa', exact: true }).click();
   await expect(page.getByText('OAuth sign-in saved. Access refreshes automatically.', { exact: true })).toBeVisible(LONG);
   await expect(page).toHaveURL(/\/settings\/ekoa$/u);
