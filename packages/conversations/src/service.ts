@@ -1,3 +1,4 @@
+import { branchChangeView, changesDiffView, messageDeliveryView } from '@jevellan/core';
 import { ConversationEvidenceRequestSchema, ConversationEvidenceViewSchema, conversationEvidenceReferences, evidenceDocumentView, evidenceFilePresentation, evidenceSourceSwitching, evidenceReference, storedPointer } from '@jevellan/core';
 import { conversationPlansView } from '@jevellan/core';
 import { ConversationPlanReadRequestSchema, ConversationPlanReadSchema, planContentView, publicConversationData } from '@jevellan/core';
@@ -565,8 +566,9 @@ export class ConversationService {
         recovery = { schema: 'checkpoint-review-v1', generation: view.conversation.generation, fingerprint: reviewed.fingerprint, mode: workspace.project.branchPolicy === 'external' ? 'acknowledge' : 'checkpoint' };
       } catch (error) { recovery = { schema: 'checkpoint-review-v1', generation: view.conversation.generation, reason: error instanceof Error ? error.message : 'These changes cannot be accepted yet.' }; }
     }
-    return ConversationChangesSchema.parse({ schema: 'conversation-changes-v1', stretch: n,
-      diff: stretch.gitBefore && after ? await workspace.diff(stretch.gitBefore, after) : '', uncommitted, ...(recovery ? { recovery } : {}),
+    const diff = stretch.gitBefore && after ? await workspace.diff(stretch.gitBefore, after) : '';
+    return ConversationChangesSchema.parse({ schema: 'conversation-changes-v1', projectId: view.conversation.projectId, conversationId: id, diffView: changesDiffView(diff), uncommittedView: changesDiffView(uncommitted), stretch: n,
+      diff, uncommitted, ...(recovery ? { recovery } : {}),
       files: [...(stretch.gitBefore && after ? (await workspace.changedFiles(stretch.gitBefore, after)).map((path) => ({ path, source: 'step' })) : []), ...(await workspace.changedFiles()).map((path) => ({ path, source: 'working-tree' }))],
       evidence: view.handoffs.find((entry) => entry.stretch === n)?.evidence ?? [], verifications: work.ledger.events().filter((event) => event.type === 'verification').map((event) => VerificationSchema.parse(work.ledger.data(event))).filter((entry) => entry.workId === stretch.workId) });
   }
@@ -600,7 +602,7 @@ export class ConversationService {
     for (const row of savedOverrides) { const rows = correctionsByStep.get(row.request.stretch) ?? []; rows.push(row); correctionsByStep.set(row.request.stretch, rows); }
     const settings = view.conversation.work ? await this.options.settings() : undefined, busy = this.#operations.has(id) || this.#correcting.has(id);
     const allowed = view.conversation.work ? allowedActions(view.conversation.work, settings!.guards, !!(await this.#project(view.conversation.projectId)).testCommand, decisions.filter((decision) => decision.workId === view.conversation.work!.id).length, latestMessageNeedsResponse(work, decisions)) : [];
-    return ConversationPublicSchema.parse({ schema: 'conversation-view-v1', ...view, evidenceReferences: conversationEvidenceReferences(view.handoffs), plans: conversationPlansView({ ...view, busy }, settings?.guards.pauseAfterPlan ?? false), progress: this.#operations.get(id)?.progress,
+    return ConversationPublicSchema.parse({ schema: 'conversation-view-v1', ...view, delivery: messageDeliveryView({ running: view.conversation.state === 'running' }), branchChanges: work.ledger.events().filter(event => event.type === 'git').flatMap(event => { const change = GitBranchChangeSchema.safeParse(work.ledger.data(event)); return change.success ? [{ eventId: event.id, view: branchChangeView(change.data) }] : []; }), evidenceReferences: conversationEvidenceReferences(view.handoffs), plans: conversationPlansView({ ...view, busy }, settings?.guards.pauseAfterPlan ?? false), progress: this.#operations.get(id)?.progress,
       stretches: view.stretches.map((step) => { const result = { ...step, presentation: conversationStepPresentation(step, correctionsByStep.get(step.n) ?? [], byId.get(step.decisionId)) }; delete result.native; return result; }),
       ...(this.#decisionWait(work) ? { decisionWait: this.#decisionWait(work) } : {}),
       ...(() => { const open = view.conversation.state === 'waiting-for-you' && !this.#operations.has(id) ? this.#lastQuestion(work) : undefined;

@@ -425,3 +425,9 @@ test('MCP evidence reader returns the canonical public view without starting wor
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'evidence_read', conversation: made.id, request: { schema: 'conversation-evidence-request-v1', ref: made.pointer } } })).structuredContent);
   expect(result).toMatchObject({ ok: true, data: { schema: 'conversation-evidence-view-v1', projectId: 'project', conversationId: made.id, reference: { value: made.pointer }, view: { kind: 'text', text: JSON.stringify(f.app.conversations.ledger(made.id).read(made.pointer), null, 2) } } }); expect(f.fake.starts).toHaveLength(starts);
 });
+
+test('MCP conversation reader shares delivery and branch presentation without starting work', async () => {
+  const made = await conversationPlanFixture(true); f = made.f; const starts = f.fake.starts.length, mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'conversation_view', conversation: made.id } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'conversation-view-v1', delivery: { schema: 'message-delivery-view-v1', primaryLabel: 'Send' }, branchChanges: [] } }); expect(f.fake.starts).toHaveLength(starts);
+});

@@ -1,3 +1,4 @@
+import { ConversationChangesSchema } from '@jevellan/core';
 import { ConversationEvidenceRequestSchema, ConversationEvidenceViewSchema } from '@jevellan/core';
 import { PlanApprovalSchema, ConversationPlanChangesRequestSchema } from '@jevellan/core';
 import { ConversationPlanReadSchema, ConversationPlanReadRequestSchema } from '@jevellan/core';
@@ -55,7 +56,7 @@ export async function proxyConversation(app: Application, request: IncomingMessa
   return true;
 }
 
-export type OwnerConversationOperation = 'evidence-read' | 'plan-approve' | 'plan-changes' | 'plan-read' | 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
+export type OwnerConversationOperation = 'conversation-view' | 'changes' | 'evidence-read' | 'plan-approve' | 'plan-changes' | 'plan-read' | 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
 
 /** Closed owner operations bind the indexed resource before issuing temporary peer authority. */
 export async function ownerConversationOperation(app: Application, projectId: string, id: string, operation: OwnerConversationOperation, raw?: unknown) {
@@ -63,6 +64,8 @@ export async function ownerConversationOperation(app: Application, projectId: st
   if (location.projectId !== projectId) throw failure('This composer or decision belongs to another conversation or project.', 409);
   const spec = (() => {
     switch (operation) {
+      case 'conversation-view': return { suffix: '', method: 'GET' as const, body: undefined, local: () => app.conversations.view(id) };
+      case 'changes': { const n = z.number().int().positive().parse(raw); return { suffix: `changes/${n}`, method: 'GET' as const, body: undefined, local: () => app.conversations.changes(id, n) }; }
       case 'evidence-read': { const body = ConversationEvidenceRequestSchema.parse(raw); return { suffix: 'evidence-read', method: 'POST' as const, body, local: () => app.conversations.evidenceRead(id, body) }; }
       case 'plan-approve': { const body = PlanApprovalSchema.parse(raw); return { suffix: 'approve-plan', method: 'POST' as const, body, local: () => app.conversations.approvePlan(id, body) }; }
       case 'plan-changes': { const body = ConversationPlanChangesRequestSchema.parse(raw); return { suffix: 'messages', method: 'POST' as const, body, local: () => app.conversations.message(id, body) }; }
@@ -76,14 +79,15 @@ export async function ownerConversationOperation(app: Application, projectId: st
       default: throw failure('Conversation operation not found.', 404);
     }
   })();
-  const path = `/api/conversations/${id}/${spec.suffix}`;
+  const path = `/api/conversations/${id}${spec.suffix ? `/${spec.suffix}` : ''}`;
   if (!conversationRoute(path, spec.method)) throw failure('Conversation operation not found.', 404);
   const bind = (received: unknown) => {
-    const value = operation === 'evidence-read' ? parseReply(ConversationEvidenceViewSchema, received) : operation === 'plan-read' ? parseReply(ConversationPlanReadSchema, received) : ['correction-save', 'plan-approve', 'plan-changes'].includes(operation) ? parseReply(ConversationPublicSchema, received)
+    const value = operation === 'conversation-view' ? parseReply(ConversationPublicSchema, received) : operation === 'changes' ? parseReply(ConversationChangesSchema, received) : operation === 'evidence-read' ? parseReply(ConversationEvidenceViewSchema, received) : operation === 'plan-read' ? parseReply(ConversationPlanReadSchema, received) : ['correction-save', 'plan-approve', 'plan-changes'].includes(operation) ? parseReply(ConversationPublicSchema, received)
       : operation === 'decision-why' ? parseReply(ConversationDecisionWhyViewSchema, received)
         : operation === 'step-editor' || operation === 'step-preview' ? parseReply(StepCorrectionEditorSchema, received) : parseReply(ConversationComposerViewSchema, received);
     const actual = 'conversation' in value ? { project: value.conversation.projectId, id: value.conversation.id } : { project: value.projectId, id: value.conversationId };
     if (actual.project !== projectId || actual.id !== id) throw failure('The returned model belongs to another conversation or project.', 502);
+    if (operation === 'changes' && ConversationChangesSchema.parse(value).stretch !== z.number().int().positive().parse(raw)) throw failure('The returned changes do not match the request.', 502);
     if (operation === 'evidence-read') {
       const evidence = ConversationEvidenceViewSchema.parse(value), expected = ConversationEvidenceRequestSchema.parse(spec.body);
       if (JSON.stringify(evidence.request) !== JSON.stringify(expected) || evidence.reference.value !== expected.ref) throw failure('The returned evidence does not match the request.', 502);
@@ -93,7 +97,7 @@ export async function ownerConversationOperation(app: Application, projectId: st
       if (plan.pointer !== request.pointer || request.step !== undefined && plan.review?.step !== request.step) throw failure('The returned plan does not match the request.', 502);
     }
     if (operation === 'decision-why' && 'decisionId' in value && value.decisionId !== ConversationDecisionWhyRequestSchema.parse(spec.body).decisionId) throw failure('The returned decision does not match the request.', 502);
-    if ('stretch' in value) {
+    if ('stretch' in value && 'preview' in value) {
       const wanted = operation === 'step-editor' ? z.number().int().positive().parse(raw) : StepCorrectionPreviewSchema.parse(spec.body).stretch;
       if (value.stretch !== wanted || value.preview.path !== `/api/conversations/${id}/step-preview`) throw failure('The returned step editor does not match the request.', 502);
     }
@@ -106,7 +110,7 @@ export async function ownerConversationOperation(app: Application, projectId: st
   if (!(auth instanceof UiAuth)) throw failure('Owner tools must run on the state point.', 409);
   const token = auth.issue(); app.redactor.add(token);
   try {
-    const url = new URL(DeviceOriginSchema.parse(target.device.url)); url.pathname = `${peerPrefix}${id}/${spec.suffix}`;
+    const url = new URL(DeviceOriginSchema.parse(target.device.url)); url.pathname = `${peerPrefix}${id}${spec.suffix ? `/${spec.suffix}` : ''}`;
     let response: Response;
     try {
       response = await fetch(url, { method: spec.method, redirect: 'manual', signal: AbortSignal.timeout(OWNER_REQUEST_TIMEOUT_MS),

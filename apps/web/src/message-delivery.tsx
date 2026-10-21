@@ -1,3 +1,4 @@
+import { messageDeliveryView, type MessageDeliveryView } from '@jevellan/core/client';
 import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { Icon } from './icons.js';
 
@@ -33,18 +34,17 @@ export function MessageInput({ value, change, label, placeholder, inputRef }: {
     }} />;
 }
 
-export function MessageDelivery({ running, canSteer = true, canSend = true, disabled, queue, cursor = false }: {
-  running: boolean; canSteer?: boolean; canSend?: boolean; disabled: boolean; queue(): void; cursor?: boolean;
+export function MessageDelivery({ running, canSteer = true, canSend = true, disabled, queue, cursor = false, presentation }: {
+  running: boolean; canSteer?: boolean; canSend?: boolean; disabled: boolean; queue(): void; cursor?: boolean; presentation?: MessageDeliveryView | undefined;
 }) {
-  const primary = running ? 'Steer' : 'Send';
-  const unavailable = cursor ? 'Connection hooks and an active Cursor turn are needed. Use the session’s settings in the list.' : 'Message delivery is unavailable.';
+  const view = presentation ?? messageDeliveryView({ running, canSteer, canSend, cursor });
   return <div className="message-actions">
-    <button type="submit" className="send-icon" aria-label={primary}
-      title={!(running ? canSteer : canSend) ? unavailable : running ? cursor ? 'Steer after the next tool call' : 'Steer current work' : 'Send message'}
-      disabled={disabled || !(running ? canSteer : canSend)}><Icon name="send" size={20} /></button>
-    <button type="button" className="queue-icon" aria-label="Queue message" onClick={queue}
-      title={!canSend ? unavailable : running ? 'Queue for when current work finishes' : 'Queue is available while work is running'}
-      disabled={disabled || !running || !canSend}><Icon name="queue" size={20} /></button>
+    <button type="submit" className="send-icon" aria-label={view.primaryLabel}
+      title={view.primaryTitle}
+      disabled={disabled || !view.primaryEnabled}><Icon name="send" size={20} /></button>
+    <button type="button" className="queue-icon" aria-label={view.queueLabel} onClick={queue}
+      title={view.queueTitle}
+      disabled={disabled || !view.queueEnabled}><Icon name="queue" size={20} /></button>
   </div>;
 }
 

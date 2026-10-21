@@ -217,3 +217,6 @@ export * from './conversation-plans-view.js';
 export * from './evidence-reference-schemas.js';
 export * from './evidence-references.js';
 export * from './conversation-evidence-view.js';
+
+export * from './conversation-reading-view-schemas.js';
+export * from './conversation-reading-view.js';

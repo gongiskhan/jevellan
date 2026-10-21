@@ -822,7 +822,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
             );
           }
           const branchChange = GitBranchChangeSchema.safeParse(event.data);
-          if (branchChange.success) return <BranchChangeNotice key={event.id} change={branchChange.data} />;
+          if (branchChange.success) return <BranchChangeNotice key={event.id} change={branchChange.data} presentation={view.branchChanges?.find(row => row.eventId === event.id)?.view} />;
           const notice = ConversationNoticeSchema.safeParse(event.data);
           if (notice.success && notice.data.kind === 'closing' && repeatedClosingNotice(notice.data,
             view.handoffs.map(handoff => handoff.summary),
@@ -973,7 +973,7 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
         <div className="message-input-row">
           <MessageInput inputRef={input} value={message} change={setMessage} label="Message"
             placeholder={running ? 'Steer this work…' : 'What would you like to do next?'} />
-          <MessageDelivery running={running} disabled={task.busy || kept || !!finishing || !message.trim()}
+          <MessageDelivery running={running} presentation={view.delivery} disabled={task.busy || kept || !!finishing || !message.trim()}
             queue={() => void submit('note')} />
         </div>
       </form>
@@ -1047,11 +1047,11 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
               </p>
             ))}
           </div></details>
-          <ChangesDiff text={changes.diff} />
+          <ChangesDiff text={changes.diff} view={changes.diffView} />
           {changes.uncommitted && (
             <>
               <h3>Uncommitted changes</h3>
-              <ChangesDiff text={changes.uncommitted} label="Working copy diff" />
+              <ChangesDiff text={changes.uncommitted} view={changes.uncommittedView} label="Working copy diff" />
             </>
           )}
           {changes.recovery && (
