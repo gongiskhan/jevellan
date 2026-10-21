@@ -225,3 +225,5 @@ export * from './session-list-view.js';
 
 export * from './conversation-transcript-view-schemas.js';
 export * from './conversation-transcript-view.js';
+
+export * from './owner-command-view.js';

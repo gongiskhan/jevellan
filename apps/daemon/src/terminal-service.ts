@@ -1,3 +1,4 @@
+import { OwnerCommandViewRequestSchema, OwnerCommandViewSchema, ownerCommandPresentation } from '@jevellan/core';
 import { createHash, randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { z } from 'zod';
@@ -116,6 +117,17 @@ export class TerminalService {
     const input = TerminalCreateRequestSchema.parse(raw), plan = await this.#plan(input);
     const session = TerminalSessionSchema.parse(await this.peer(plan.deviceId, { schema: 'terminal-peer-request-v1', operation: 'create', input: { ...input, deviceId: plan.deviceId } }, token));
     return this.ticket(session, token);
+  }
+  async ownerCommandView(raw: unknown, token: string) {
+    const input = OwnerCommandViewRequestSchema.parse(raw);
+    if (!await this.app.state.projects.get(input.projectId)) throw refuse('Project not found.', 404);
+    await this.#source(input);
+    const thread = input.threadId ? (await this.app.projectHub.thread(input.threadId))?.document : undefined;
+    if (input.threadId && (!thread || thread.projectId !== input.projectId)) throw refuse('Thread not found in this project.', 404);
+    const deviceId = input.command.deviceId ?? input.scopeDeviceId ?? thread?.ownerDeviceId;
+    const device = deviceId ? await this.device(deviceId, false) : undefined;
+    const receipt = input.command.kind === 'prompt' ? null : (await this.commandReceipt({ schema: 'owner-command-receipt-request-v1', projectId: input.projectId, ...(input.threadId ? { threadId: input.threadId } : {}), ...(input.decisionId ? { decisionId: input.decisionId } : {}), command: input.command }, token)).receipt;
+    return OwnerCommandViewSchema.parse(this.app.redactor.document({ schema: 'owner-command-view-v1', projectId: input.projectId, presentation: ownerCommandPresentation(input.command, { deviceId, deviceName: device?.name, receipt }) }));
   }
   async ownerCommand(raw: unknown, token: string) {
     const input = OwnerCommandRunRequestSchema.parse(raw);

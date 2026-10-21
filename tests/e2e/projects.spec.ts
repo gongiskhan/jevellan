@@ -1686,7 +1686,7 @@ test('CM4 owner commands and shell blocks show exact copy controls, with editabl
   await expect.poll(async () => (await threadView(page, started.threadId)).reports.some(report => report.ownerCommands?.length), LONG).toBe(true);
   const ownerDeviceId = (await threadView(page, started.threadId)).thread.ownerDeviceId;
   await page.goto(`/projects/projects_fixture/threads/${started.threadId}`);
-  const report = page.locator('.pw-report').first(); await expect(report.locator('.owner-command pre')).toHaveText('scripts/owner-only.sh');
+  const report = page.locator('.pw-report').first(); await report.locator('.pw-report-disclosure > summary').click(); await expect(report.locator('.owner-command pre')).toHaveText('scripts/owner-only.sh');
   await expect(report.getByRole('button', { name: 'Copy', exact: true })).toHaveCount(2);
   await expect(report.getByRole('button', { name: 'Run in Terminal', exact: true })).toHaveCount(2);
   await shot(page, 'owner-command-report');
@@ -1742,13 +1742,14 @@ test('CM5 owner terminal reconnects, relays, copies command records and returns 
   await shot(page, 'member-terminal-relay', false);
   const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: randomUUID(), title: 'Terminal owner setup', task: 'CM5 owner command thread', isolation: 'worktree', modelId: 'claude-fable', effort: 'high' } }); expect(created.ok()).toBe(true); const started = await created.json();
   await expect.poll(async () => (await threadView(page, started.threadId)).reports.some(row => row.ownerCommands?.length), LONG).toBe(true);
-  await page.goto(`/projects/projects_fixture/threads/${started.threadId}`); const commandCard = page.locator('.owner-command').first(); await expect(commandCard.locator('pre')).toHaveText('scripts/owner-only.sh'); await commandCard.getByRole('button', { name: 'Run in Terminal', exact: true }).click();
+  await page.goto(`/projects/projects_fixture/threads/${started.threadId}`); await page.locator('.pw-report-disclosure > summary').first().click(); const commandCard = page.locator('.owner-command').first(); await expect(commandCard.locator('pre')).toHaveText('scripts/owner-only.sh'); await commandCard.getByRole('button', { name: 'Run in Terminal', exact: true }).click();
   await expect(page).toHaveURL(/\/terminals\//u); await expect.poll(async () => (await threadView(page, started.threadId)).reports.some(row => row.summary.includes('owner command finished with exit code 0')), LONG).toBe(true);
-  await page.goto(`/projects/projects_fixture/threads/${started.threadId}`); await expect(page.locator('.owner-command').first()).toContainText('Ran in terminal at', LONG); await shot(page, 'owner-command-return', false);
+  await page.goto(`/projects/projects_fixture/threads/${started.threadId}`); await page.locator('.pw-report-disclosure > summary').first().click(); await expect(page.locator('.owner-command').first()).toContainText('Ran in terminal at', LONG); await shot(page, 'owner-command-return', false);
   if ((page.viewportSize()?.width ?? 1440) <= 600) {
     const actions = await page.locator('.pw-thread-heading > .actions').boundingBox(), meta = await page.locator('.pw-thread-heading > .conversation-meta').boundingBox();
     expect(actions).not.toBeNull(); expect(meta).not.toBeNull(); expect(meta!.y).toBeGreaterThanOrEqual(actions!.y + actions!.height);
   }
+  await sessionDetails(page);
   await page.getByRole('button', { name: 'Take over in browser', exact: true }).click(); await expect(page).toHaveURL(/\/terminals\//u);
   await expect.poll(async () => (await threadView(page, started.threadId)).thread.state, LONG).toBe('attached');
   await page.getByRole('textbox', { name: 'Type or dictate a command' }).fill('exit 0'); await page.locator('.terminal-commandline').getByRole('button', { name: 'Run', exact: true }).click();

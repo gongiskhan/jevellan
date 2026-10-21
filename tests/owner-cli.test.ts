@@ -486,3 +486,10 @@ test('CLI conversation transcript shares the canonical step snapshot without sta
   const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
   expect(result).toMatchObject({ ok: true, data: { schema: 'conversation-transcript-view-v1', projectId: 'project', conversationId: made.id, step: 1, running: false, fallbackAnswer: null } }); expect(f.fake.starts).toHaveLength(starts);
 });
+
+test('CLI owner-command view reads presentation without executing the command', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['jev', 'owner_command_view', '--command', JSON.stringify({ command: 'printf fixture', why: 'Simulated owner command.', cwd: 'checkout' }), '--device', f.app.device.deviceId], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
+  expect(result).toMatchObject({ ok: true, data: { schema: 'owner-command-view-v1', projectId: 'project', presentation: { copyOnly: false, receipt: null, header: `${f.app.device.name} · checkout` } } }); expect(f.app.terminals.manager.list()).toHaveLength(0); expect(f.fake.runs).toHaveLength(0);
+});

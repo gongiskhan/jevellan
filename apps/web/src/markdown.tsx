@@ -1,11 +1,11 @@
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { filePointer, remarkFilePaths, markdownEvidenceTarget } from '@jevellan/core/client';
+import { filePointer, remarkFilePaths, markdownEvidenceTarget, isOwnerShellFence } from '@jevellan/core/client';
 import { Children, isValidElement, type ReactNode } from 'react';
 import { ShellCommand } from './owner-commands.js';
 function ShellPre({ children }: { children?: ReactNode }) {
   const child = Children.toArray(children)[0];
-  if (isValidElement<{ className?: string; children?: ReactNode }>(child) && /^language-(?:bash|sh|zsh|shell|console)$/u.test(child.props.className ?? '') && typeof child.props.children === 'string')
+  if (isValidElement<{ className?: string; children?: ReactNode }>(child) && isOwnerShellFence(child.props.className) && typeof child.props.children === 'string')
     return <ShellCommand command={child.props.children}><pre>{children}</pre></ShellCommand>;
   return <pre>{children}</pre>;
 }

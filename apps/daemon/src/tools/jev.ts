@@ -1,3 +1,4 @@
+import { ownerCommandViewForTools } from '../owner-command-view.js';
 import { readSessionListPreferences, saveSessionListPreferences } from '@jevellan/conversations';
 import { sessionListView } from '@jevellan/core';
 import { ComposerInitialSchema, ConversationComposerViewSchema } from '@jevellan/core';
@@ -41,6 +42,7 @@ export const jev: OwnerHandler = async (context) => {
     case 'plan_changes': return { text: 'Requested plan changes.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'plan-changes', args.request) };
     case 'session_list': return { text: 'This device’s session list.', data: sessionListView(app.device.deviceId, readSessionListPreferences(app.homes)) };
     case 'session_list_save': return { text: 'Session list saved.', data: sessionListView(app.device.deviceId, saveSessionListPreferences(app.homes, args.request)) };
+    case 'owner_command_view': return { text: 'Owner command view.', data: await ownerCommandViewForTools(app, projectId, args) };
     case 'conversation_transcript': return { text: 'Recorded conversation transcript.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'transcript-view', args.request) };
     case 'conversation_view': return { text: 'Conversation view.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'conversation-view') };
     case 'conversation_changes': return { text: 'Recorded changes.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'changes', args.stretch) };

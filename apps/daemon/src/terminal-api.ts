@@ -28,6 +28,7 @@ export async function handleTerminalApi(app: Application, request: IncomingMessa
     json(response, await service.list(token, { ...(projectId ? { projectId: IdSchema.parse(projectId) } : {}), ...(deviceId ? { deviceId: IdSchema.parse(deviceId) } : {}) })); return true;
   }
   if (path === '/api/terminals' && method === 'POST') { json(response, await service.create(TerminalCreateRequestSchema.parse(await requestBody(request)), token), 201); return true; }
+  if (path === '/api/terminals/owner-command/view' && method === 'POST') { json(response, await service.ownerCommandView(await requestBody(request), token)); return true; }
   if (path === '/api/terminals/owner-command' && method === 'POST') { json(response, await service.ownerCommand(await requestBody(request), token), 201); return true; }
   if (path === '/api/terminals/owner-command/receipt' && method === 'POST') { json(response, await service.commandReceipt(await requestBody(request), token)); return true; }
   const match = path.match(/^\/api\/terminals\/([A-Za-z0-9_-]+)(?:\/(ticket|close|send))?$/u);

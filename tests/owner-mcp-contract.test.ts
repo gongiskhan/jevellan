@@ -446,3 +446,9 @@ test('MCP conversation transcript shares the canonical step snapshot without sta
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'conversation_transcript', conversation: made.id, request: { schema: 'conversation-transcript-request-v1', step: 1 } } })).structuredContent);
   expect(result).toMatchObject({ ok: true, data: { schema: 'conversation-transcript-view-v1', projectId: 'project', conversationId: made.id, step: 1, running: false, fallbackAnswer: null } }); expect(f.fake.starts).toHaveLength(starts);
 });
+
+test('MCP owner-command view reads presentation without executing the command', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'owner_command_view', command: { command: 'printf fixture', why: 'Simulated owner command.', cwd: 'checkout' }, device: f.app.device.deviceId } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'owner-command-view-v1', projectId: 'project', presentation: { copyOnly: false, receipt: null, header: `${f.app.device.name} · checkout` } } }); expect(f.app.terminals.manager.list()).toHaveLength(0); expect(f.fake.runs).toHaveLength(0);
+});
