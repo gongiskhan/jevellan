@@ -1,3 +1,5 @@
+import { composerBlock, threadActions, threadActivity, threadLiveText, transcriptNotice, restartedThread, threadReason } from '../packages/projects/dist/thread-presentation.js';
+import { deviceRefusal, threadPollDelay, threadStarting } from '../packages/core/dist/index.js';
 import { settingsRequest } from '../packages/projects/dist/project-configuration.js';
 import { effortChoices, nearestEffort, overrideForm, overrideOffered, overrideReady, overrideRequest, restartHelp } from '../packages/projects/dist/override-editor.js';
 import { fallbackChip, placementConstraintText, whyFields } from '../packages/projects/dist/thread-why.js';
@@ -16,10 +18,10 @@ import { sidebarOrder } from '../packages/projects/dist/views.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
 import { chatProposalIds, chatProposalGroups } from '../apps/web/src/project-work-model.js';
 import {
-  alignReports, mergeThreadToolTurns, chatItems, composerBlock, deviceBlock, deviceChoices, deviceRefusal, dotClass,
+  alignReports, mergeThreadToolTurns, chatItems, deviceBlock, deviceChoices, dotClass,
   lineParts, mainIsolationBlock, partWords, projectDot,
-  projectRoute, reportBadge, restartedThread, rowClockMs, sidebarProjects, threadActions, threadCreateRequest,
-  threadActivity, threadLiveText, threadPollDelay, threadReason, threadStarting, toolIcon, transcriptNotice, withoutEchoedSummaries,
+  projectRoute, reportBadge, rowClockMs, sidebarProjects, threadCreateRequest,
+  toolIcon, withoutEchoedSummaries,
   withoutReportCalls,
 } from '../apps/web/src/project-work-model.js';
 import { dateOnly, duration, relativeDuration, shortTime, timeStamp } from '../apps/web/src/time.js';
@@ -490,8 +492,8 @@ test('thread header buttons: Stop until concluded (disabled with the server reas
 
 test('the thread composer: the live line, and why it takes no message when attached or concluded (D81)', () => {
   expect(threadLiveText(thread({ state: 'running', turns: 2 }))).toBe('Working on turn 3…');
-  expect(threadLiveText(thread({ state: 'preparing' }))).toBe(copy.PREPARING);
-  expect(threadLiveText(thread({ state: 'publishing' }))).toBe(copy.PUBLISHING);
+  expect(threadLiveText(thread({ state: 'preparing' }))).toBe(server.PREPARING);
+  expect(threadLiveText(thread({ state: 'publishing' }))).toBe(server.PUBLISHING);
   expect(threadLiveText(thread({ state: 'idle' }))).toBeNull();
   const view = (state: ThreadIndex['state'], canMessage: boolean) => ({ thread: thread({ state }), canMessage, deviceName: 'Mac mini' });
   expect(composerBlock(view('running', true))).toBeNull();
@@ -502,12 +504,12 @@ test('the thread composer: the live line, and why it takes no message when attac
 test('thread transcript notes, report badges and the header pull request badges', () => {
   const transcript = (turns: CursorTurn[], truncated = false) => ({ turns, truncated }) as unknown as NonNullable<Parameters<typeof transcriptNotice>[0]['transcript']>;
   const r1 = reportOf(1, 'First pass.');
-  expect(transcriptNotice({ transcript: null, reports: [], thread: thread({ turns: 0 }) })).toBe(copy.NO_TRANSCRIPT_YET);
-  expect(transcriptNotice({ transcript: null, reports: [r1], thread: thread({ turns: 1 }) })).toBe(copy.TRANSCRIPT_UNAVAILABLE);
-  expect(transcriptNotice({ transcript: null, reports: [], thread: thread({ turns: 2 }) })).toBe(copy.TRANSCRIPT_UNAVAILABLE);
-  expect(transcriptNotice({ transcript: transcript([]), reports: [], thread: thread() })).toBe(copy.NO_TRANSCRIPT_YET);
+  expect(transcriptNotice({ transcript: null, reports: [], thread: thread({ turns: 0 }) })).toBe(server.NO_TRANSCRIPT_YET);
+  expect(transcriptNotice({ transcript: null, reports: [r1], thread: thread({ turns: 1 }) })).toBe(server.TRANSCRIPT_UNAVAILABLE);
+  expect(transcriptNotice({ transcript: null, reports: [], thread: thread({ turns: 2 }) })).toBe(server.TRANSCRIPT_UNAVAILABLE);
+  expect(transcriptNotice({ transcript: transcript([]), reports: [], thread: thread() })).toBe(server.NO_TRANSCRIPT_YET);
   expect(transcriptNotice({ transcript: transcript([text('p1', 'user', 'Task')]), reports: [], thread: thread() })).toBeNull();
-  expect(transcriptNotice({ transcript: transcript([text('p1', 'user', 'Task')], true), reports: [r1], thread: thread() })).toBe(copy.TRANSCRIPT_TRUNCATED);
+  expect(transcriptNotice({ transcript: transcript([text('p1', 'user', 'Task')], true), reports: [r1], thread: thread() })).toBe(server.TRANSCRIPT_TRUNCATED);
   expect(['progress', 'done', 'needs-decision', 'blocked'].map((status) => reportBadge(status as ThreadReport['status']))).toEqual([
     { text: 'Progress', tone: 'muted' }, { text: 'Done', tone: 'ok' }, { text: 'Needs a decision', tone: 'jev' }, { text: 'Blocked', tone: 'warn' }]);
   expect(pullRequestBadges(pr({ checks: 'failing', mergeable: 'conflict' }))).toEqual([{ text: 'Checks failing', tone: 'danger' }, { text: 'Conflicts', tone: 'danger' }]);
@@ -660,7 +662,7 @@ test('interface copy: brief-verbatim texts, shared server texts and no conversat
   expect(copy.takeOverLine('Mac mini', server.attachCommand('thread_a'))).toBe('Take over in a terminal on Mac mini: jevellan thread attach thread_a');
   expect(`${copy.takeOverLead('Mac mini')} ${server.attachCommand('thread_a')}`).toBe(copy.takeOverLine('Mac mini', server.attachCommand('thread_a')));
   expect(copy.savedUpdated('Oct 4, 2026')).toBe('Saved · updated Oct 4, 2026');
-  expect([copy.NOTEBOOK_CHANGED, copy.ALLOW_MORE_TURNS, copy.MERGE_BLOCKED_CONFLICTS, copy.MERGE_BLOCKED_CHECKS, copy.THREAD_ENDED,
+  expect([copy.NOTEBOOK_CHANGED, server.ALLOW_MORE_TURNS, copy.MERGE_BLOCKED_CONFLICTS, copy.MERGE_BLOCKED_CHECKS, copy.THREAD_ENDED,
     copy.WORKTREE_DISCARDED]).toEqual([server.NOTEBOOK_CHANGED, server.ALLOW_MORE_TURNS, server.MERGE_CONFLICTS,
     server.MERGE_CHECKS_FAILING, server.THREAD_ENDED, server.WORKTREE_DISCARDED.trim()]);
   expect(copy.discardQuestion('jv/fix-login-abc123')).toBe('Remove the worktree and local branch jv/fix-login-abc123?');

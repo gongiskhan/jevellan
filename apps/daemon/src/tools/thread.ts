@@ -1,6 +1,6 @@
 import { OwnerRefusal, type OwnerHandler } from '../owner-tools.js';
 import { clientId, resolveTask } from './common.js';
-import { ProjectThreadActionsViewSchema, ThreadActionRequestSchema } from '@jevellan/core';
+import { ProjectThreadActionsViewSchema, ThreadActionRequestSchema, ThreadViewSchema } from '@jevellan/core';
 import { ownerThreadOperation } from '../project-work-api.js';
 
 /** `thread`: steer a running thread (bridge specification, "Threads: say, takeover, hold rules"). */
@@ -10,6 +10,11 @@ export const thread: OwnerHandler = async (context) => {
   if (token.toUpperCase() === 'C') throw new OwnerRefusal("The coordinator can't be taken over. Ask it something or tell it what to do instead.", 'coordinator', 409);
   const target = await resolveTask(context, token); const id = target.id; const row = target.thread;
   switch (context.action) {
+    case 'view': {
+      if (!row) throw new OwnerRefusal(`${id} has no thread yet.`, 'not_running', 409);
+      const view = ThreadViewSchema.parse(await ownerThreadOperation(app, project.id, row.id, 'view'));
+      return { text: `${id}: ${view.card?.stateLabel ?? view.thread.state}.`, data: view };
+    }
     case 'actions': {
       if (!row) throw new OwnerRefusal(`${id} has no thread yet.`, 'not_running', 409);
       const view = ProjectThreadActionsViewSchema.parse(await ownerThreadOperation(app, project.id, row.id, 'actions'));
@@ -56,5 +61,5 @@ export const thread: OwnerHandler = async (context) => {
     case 'open': return tools.takeover.open(context, id, row);
     case 'return': return tools.takeover.return(context, id, row, (args.as as 'resume' | 'done' | 'stop' | undefined) ?? 'resume', typeof args.note === 'string' ? args.note : undefined);
   }
-  throw new OwnerRefusal('thread takes say, open, return, stop, actions, act, merge.', 'unknown_action');
+  throw new OwnerRefusal('thread takes say, open, return, stop, actions, act, merge, view.', 'unknown_action');
 };

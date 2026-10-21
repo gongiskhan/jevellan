@@ -9,8 +9,8 @@ import { realpathSync } from 'node:fs';
 import { ProjectWorkViewSchema, ThreadMessageReceiptSchema, ThreadViewSchema, type ProjectLedgerEvent } from '../packages/core/dist/index.js';
 import { FakeRuntime, fakeNativeSessionFile, forThread } from '../packages/runtime-contract/dist/index.js';
 import { THREAD_ATTACHED, THREAD_WORKING, attachCommand, ownerWorkedLine } from '../packages/projects/dist/index.js';
-import { composerBlock } from '../apps/web/src/project-work-model.js';
-import { attachedNotice } from '../apps/web/src/project-work-copy.js';
+import { composerBlock } from '../packages/projects/dist/thread-presentation.js';
+import { attachedNotice } from '../packages/projects/dist/copy.js';
 import { expectNoLeaks, holdStep, projectFixture, reportStep, type ProjectFixture, withoutFollowupRoute } from './helpers/project-fixture.js';
 import { ATTACH_MENU, BACK_ADOPTED, CANARY, agents, claudeAccount, finished, jevellan, named, rest, start, stopCommands, worked } from './helpers/attach-cli.js';
 

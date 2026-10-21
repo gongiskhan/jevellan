@@ -217,12 +217,13 @@ export async function ownerCreateTask(app: Application, projectId: string, raw: 
 
 /** Authenticated owner tools reuse the browser's typed owner routes; work never moves to the state point. */
 export async function ownerThreadOperation(app: Application, projectId: string, threadId: string,
-  operation: 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'override-editor' | 'override-preview' | 'override-save' | 'why' | 'actions' | 'act' | 'merge', input?: unknown) {
-  const work = app.projectWork, read = ['landing-why', 'merge-why', 'override-editor', 'override-preview', 'why', 'actions'].includes(operation);
+  operation: 'view' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'override-editor' | 'override-preview' | 'override-save' | 'why' | 'actions' | 'act' | 'merge', input?: unknown) {
+  const work = app.projectWork, read = ['view', 'landing-why', 'merge-why', 'override-editor', 'override-preview', 'why', 'actions'].includes(operation);
   const owner = await (read ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
   if (owner === null) throw failure(THREAD_NOT_FOUND, 404);
   if (owner === app.device.deviceId) {
     switch (operation) {
+      case 'view': return work.views.thread(projectId, threadId);
       case 'landing-why': return work.landingWhy(projectId, threadId);
       case 'merge-why': return work.mergeWhy(projectId, threadId, ProjectMergeWhyRequestSchema.parse(input));
       case 'landing-why-correction': return work.landingWhyCorrection(projectId, threadId, LandingCorrectionInputSchema.parse(input));
@@ -244,6 +245,7 @@ export async function ownerThreadOperation(app: Application, projectId: string, 
   }
   let suffix: string, method: 'GET' | 'POST' = 'POST', body: unknown;
   switch (operation) {
+    case 'view': suffix = ''; method = 'GET'; break;
     case 'landing-why': suffix = 'landing/why-view'; method = 'GET'; break;
     case 'merge-why': suffix = 'pr/why-view'; body = ProjectMergeWhyRequestSchema.parse(input); break;
     case 'landing-why-correction': suffix = 'landing/why-correction'; body = LandingCorrectionInputSchema.parse(input); break;
@@ -256,7 +258,7 @@ export async function ownerThreadOperation(app: Application, projectId: string, 
     case 'act': suffix = 'actions'; body = ThreadActionRequestSchema.parse(input); break;
     case 'merge': suffix = 'pr/merge'; body = EmptySchema.parse({ schema: 'empty-request-v1' }); break;
   }
-  const value = await ownerProjectJson(app, owner, 'thread', `${API_PREFIX}${projectId}/threads/${threadId}/${suffix}`, method, body);
+  const value = await ownerProjectJson(app, owner, 'thread', `${API_PREFIX}${projectId}/threads/${threadId}${suffix ? `/${suffix}` : ''}`, method, body);
   if (['landing-why', 'merge-why', 'landing-why-correction', 'merge-why-correction'].includes(operation)) {
     const view = parseReply(ProjectRouteWhyViewSchema, value), kind = operation.startsWith('landing-') ? 'landing' : 'merge';
     if (view.projectId !== projectId || view.threadId !== threadId || view.kind !== kind) throw failure('The returned explanation does not match the thread.', 502);
@@ -270,6 +272,7 @@ export async function ownerThreadOperation(app: Application, projectId: string, 
   }
   if (operation === 'override-save') return parseReply(ThreadOverrideViewSchema, value);
   if (operation === 'why') { const view = parseReply(ProjectThreadWhyViewSchema, value); if (view.projectId !== projectId || view.threadId !== threadId) throw failure('The returned explanation does not match the thread.', 502); return view; }
+  if (operation === 'view') { const view = parseReply(ThreadViewSchema, value); if (view.thread.projectId !== projectId || view.thread.id !== threadId) throw failure('The returned view does not match the thread.', 502); return view; }
   if (operation === 'actions') return parseReply(ProjectThreadActionsViewSchema, value);
   if (operation === 'act') return parseReply(ThreadViewSchema, value);
   return parseReply(MergeResultViewSchema, value);

@@ -279,10 +279,8 @@ export const WHY = 'Why';
 export const OVERRIDE = 'Override';
 export const DISCARD = 'Discard';
 export const discardQuestion = (branch: string): string => `Remove the worktree and local branch ${branch}?`;
-export const ALLOW_MORE_TURNS = 'Allow 10 more turns';
 export const THREAD_PLACEHOLDER = 'Message this thread';
 export const INTERRUPT_TURN = 'Interrupt current turn';
-export const attachedNotice = (device: string): string => `Attached in a terminal on ${device}. Messages wait until you exit.`;
 /** The takeover line's words before the command; the page shows the command itself as code, with its copy button. */
 export const takeOverLead = (device: string): string => `Take over in a terminal on ${device}:`;
 /** `command` is the thread view's `attachCommand` (`jevellan thread attach {threadId}`), never retyped here. */
@@ -309,18 +307,10 @@ export const DISCARD_NO_BRANCH = 'Remove the worktree?';
 export const DISCARD_BODY = 'Uncommitted work and commits that were not pushed are lost.';
 /** The toast after Discard; the server appends the same words to the state reason. */
 export const WORKTREE_DISCARDED = 'Worktree discarded.';
-export const MORE_TURNS_ALLOWED = 'The thread can take 10 more turns.';
 /** The composer of a concluded thread; the server refuses messages to it with the same sentence (D81). */
 export const THREAD_ENDED = 'This thread has ended. Start a new thread for new work.';
-export const THREAD_CONTINUE = 'Continue here. Jev will classify your message and choose how to run the follow-up.';
 /** The composer's live line while a turn, the preparation or the publication runs. */
-export const turnRunning = (turn: number): string => `Working on turn ${turn}…`;
-export const PREPARING = 'Preparing…';
-export const PUBLISHING = 'Publishing…';
 export const TRANSCRIPT_LABEL = 'Thread transcript';
-export const TRANSCRIPT_TRUNCATED = 'Showing the most recent part of the transcript.';
-export const NO_TRANSCRIPT_YET = 'Nothing here yet. The transcript appears once the first turn starts.';
-export const TRANSCRIPT_UNAVAILABLE = 'The transcript cannot be read right now. Reports are shown on their own.';
 /** Report cards (12.3): the turn they report, their status chip and the tests they ran. */
 export const reportHeading = (turn: number): string => `Report · turn ${turn}`;
 export const REPORT_STATUS = { progress: 'Progress', done: 'Done', 'needs-decision': 'Needs a decision', blocked: 'Blocked' } as const;

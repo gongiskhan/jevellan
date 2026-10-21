@@ -1,3 +1,4 @@
+import { threadPresentation } from './thread-presentation.js';
 import { overrideOffered, overrideEditorView, overrideEditorRequest } from './override-editor.js';
 import { fallbackChip, threadWhyView } from './thread-why.js';
 import { threadActionView, threadCardView } from './card-views.js';
@@ -244,7 +245,7 @@ export class ProjectViews {
     const mergesHeld = await this.#o.mergesHeld?.(projectId, threadId).catch(() => undefined);
     const index = { ...this.#o.store.index(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt), sessionCache: sessionCacheSummaries(cacheRecords(ledger)).slice(-500) };
     const canOverride = { nextTurn: !isTerminal(thread.state), restart: !restartReason, ...(restartReason ? { restartReason } : {}) };
-    return ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: index, overrideEditorPath: overrideOffered({ canOverride }) ? `/api/projects/${projectId}/threads/${threadId}/override-editor` : null, placementNotice: fallbackChip(thread.placement),
+    const view = ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: index, overrideEditorPath: overrideOffered({ canOverride }) ? `/api/projects/${projectId}/threads/${threadId}/override-editor` : null, placementNotice: fallbackChip(thread.placement),
       card: threadCardView(index, { deviceName: () => this.#o.deviceName, runtimeName: id => this.#o.runtimes.get(id)?.displayName ?? id, held: mergesHeld ?? index.landingStage === 'held', baseBranch: thread.baseBranch }),
       ...(this.#o.store.local(threadId).memoryRecall ? { memoryRecall: this.#o.store.local(threadId).memoryRecall } : {}),
       ...(this.#o.store.local(threadId).escalations ? { escalations: this.#o.store.local(threadId).escalations } : {}),
@@ -258,5 +259,6 @@ export class ProjectViews {
       canOverride, atTurnLimit: atTurnLimit(thread),
       canDiscard: (thread.state === 'stopped' || thread.state === 'failed') && thread.isolation === 'worktree' && !isDiscarded(thread.stateReason),
       ...(thread.state === 'attached' ? { stopRefusal: attachedRefusal(threadId) } : {}), ...(kept ? { checkoutHeld: checkoutStillHeld(kept) } : {}) });
+    return ThreadViewSchema.parse({ ...view, presentation: threadPresentation(view) });
   }
 }

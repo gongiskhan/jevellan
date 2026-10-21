@@ -136,3 +136,5 @@ export * from './project-task-editor-schemas.js';
 export * from './project-task-editor.js';
 
 export * from './thread-form.js';
+
+export * from './project-thread-presentation-schemas.js';

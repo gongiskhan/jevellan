@@ -88,3 +88,5 @@ export * from './routine-settings.js';
 export * from './placement-editor.js';
 export * from './environment-editor.js';
 export * from './notification-editor.js';
+
+export * from './thread-presentation.js';

@@ -5,12 +5,7 @@ import {
   OWNER_STOPPED_THREAD,
   OWNER_WORKED_PREFIX,
   ProjectLedgerDataSchemas,
-  RESTARTED_PREFIX,
-  idTime,
-  isTerminal,
-  liveWork,
   runningSection,
-  splitSavedCommits,
   type CoordinatorEvent,
   type CursorTurn,
   type ProjectLedgerData,
@@ -20,7 +15,6 @@ import {
   type ThreadIndex,
   type ThreadReport,
   type ThreadState,
-  type ThreadView,
 } from '@jevellan/core/client';
 import type { IconName } from './icons.js';
 import * as copy from './project-work-copy.js';
@@ -107,68 +101,6 @@ export function partWords(part: string): string[] {
 }
 
 /** How often the thread page reads its view (D79): 1.5 s while live work runs, else 10 s. */
-export const THREAD_POLL_LIVE_MS = 1500;
-export const THREAD_POLL_REST_MS = 10_000;
-/** How long the page keeps reading every 1.5 s after the owner acted, so the turn the action starts shows at once (D230). */
-export const THREAD_POLL_AFTER_ACTION_MS = 6000;
-/**
- * A thread page that finds no thread yet keeps loading while the thread is this young (D274): one placed on another device
- * exists there, and in the hub index, only once that device has read its start from the hub.
- */
-export const THREAD_START_WAIT_MS = 120_000;
-export function threadStarting(threadId: string, now: number): boolean {
-  const at = idTime(threadId); return at !== null && Math.abs(now - at) < THREAD_START_WAIT_MS;
-}
-/**
- * A thread view read that the thread's device could not answer before any view showed (D276): 409 when the device is offline
- * or left the mesh, a wait the page shows as a notice; 502 when it could not be reached, an error. The page then names the
- * thread from the project's index meanwhile. Other failures are no device's.
- */
-export function deviceRefusal(status: number): 'notice' | 'error' | undefined {
-  return status === 409 ? 'notice' : status === 502 ? 'error' : undefined;
-}
-export function threadPollDelay(state: ThreadState | undefined, now: number, fastUntil = 0): number {
-  return (state !== undefined && liveWork(state)) || now < fastUntil ? THREAD_POLL_LIVE_MS : THREAD_POLL_REST_MS;
-}
-/**
- * The thread header buttons (12.3): Stop while the thread is not concluded, Discard when the owner may discard it (the
- * server decides), Allow 10 more turns at the turn limit of a thread that has not concluded.
- */
-/** `stopRefusal`: Stop shows disabled with the server's reason (an attached thread, phase 8). */
-export function threadActions(view: Pick<ThreadView, 'thread' | 'canDiscard' | 'atTurnLimit' | 'stopRefusal'>): { stop: boolean; stopRefusal: string | null; discard: boolean; allowTurns: boolean } {
-  const ended = isTerminal(view.thread.state);
-  return { stop: !ended, stopRefusal: ended ? null : view.stopRefusal ?? null, discard: view.canDiscard, allowTurns: view.atTurnLimit && !ended };
-}
-/** Why the thread composer takes no message (D81), or null: attached in a terminal, else concluded. */
-export function composerBlock(view: Pick<ThreadView, 'canMessage' | 'thread' | 'deviceName'>): string | null {
-  if (view.canMessage) return null;
-  return view.thread.state === 'attached' ? copy.attachedNotice(view.deviceName) : copy.THREAD_ENDED;
-}
-/** The composer's live line: the running turn (turns count finished ones), the preparation or the publication. */
-export function threadLiveText(thread: Pick<ThreadIndex, 'state' | 'turns'>): string | null {
-  return thread.state === 'running' ? copy.turnRunning(thread.turns + 1) : thread.state === 'preparing' ? copy.PREPARING
-    : thread.state === 'publishing' ? copy.PUBLISHING : null;
-}
-/** Show the latest tool's stated purpose while its result is pending, without inferring process health. */
-export function threadActivity(view: Pick<ThreadView, 'thread' | 'transcript'>): string | null {
-  if (view.thread.state !== 'running') return null;
-  const turn = view.transcript?.turns.at(-1);
-  if (turn?.role !== 'assistant') return null;
-  const block = turn.blocks.at(-1);
-  if (block?.type !== 'tool' || block.output !== undefined || !['running', 'unknown'].includes(block.state)) return null;
-  let purpose = block.name;
-  try {
-    const input: unknown = JSON.parse(block.input);
-    if (input && typeof input === 'object' && 'description' in input && typeof input.description === 'string') purpose = input.description;
-  } catch { /* Partial tool input still has its tool name. */ }
-  return `Waiting for tool result: ${purpose.slice(0, 180)}`;
-}
-/** The note above a thread transcript: none yet, unreadable (reports still show) or only its most recent part. */
-export function transcriptNotice(view: Pick<ThreadView, 'transcript' | 'reports' | 'thread'>): string | null {
-  if (!view.transcript) return view.reports.length || view.thread.turns ? copy.TRANSCRIPT_UNAVAILABLE : copy.NO_TRANSCRIPT_YET;
-  if (!view.transcript.turns.length && !view.reports.length) return copy.NO_TRANSCRIPT_YET;
-  return view.transcript.truncated ? copy.TRANSCRIPT_TRUNCATED : null;
-}
 const REPORT_TONES = { progress: 'muted', done: 'ok', 'needs-decision': 'jev', blocked: 'warn' } as const satisfies Record<ThreadReport['status'], BadgeTone>;
 /** A report card's status chip: progress muted, done ok, a decision magenta like Waiting for you, blocked warn. */
 export function reportBadge(status: ThreadReport['status']): { text: string; tone: BadgeTone } {
@@ -177,21 +109,6 @@ export function reportBadge(status: ThreadReport['status']): { text: string; ton
 
 
 // ---------- placement: the fallback chip, Why and Override (12.3, 9.8; D255) ----------
-/** The new thread's id in a restarted thread's reason (`Restarted as {newId}.`, brief 10), so the page can link it; else null. */
-export function restartedThread(reason: string | undefined): string | null {
-  if (!reason?.startsWith(RESTARTED_PREFIX) || !reason.endsWith('.')) return null;
-  const id = reason.slice(RESTARTED_PREFIX.length, -1);
-  return IdSchema.safeParse(id).success ? id : null;
-}
-/**
- * A thread's reason in parts (D295): the free text the header clamps, the restarted thread it links, and the ref a main thread's
- * unpublished commits were saved at, which the header shows whole on its own line (the owner needs it to recover them).
- */
-export function threadReason(reason: string | undefined): { text: string; restartedAs: string | null; savedRef: string | null } | null {
-  if (!reason) return null;
-  const { text, ref } = splitSavedCommits(reason);
-  return { text, restartedAs: restartedThread(text), savedRef: ref };
-}
 
 function payload<T extends ProjectLedgerEventType>(event: ProjectLedgerEvent, type: T): ProjectLedgerData<T> | undefined {
   if (event.type !== type) return undefined;

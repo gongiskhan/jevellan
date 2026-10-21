@@ -2,6 +2,7 @@ import { AttachmentControls, LibraryMessage, useProjectAttachments } from './pro
 import { ThreadActions } from './thread-actions.js';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
+  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, threadPollDelay, threadStarting, deviceRefusal,
   ProjectWorkViewSchema, ProjectThreadOverrideEditorSchema, type ProjectThreadOverrideEditor, type ThreadOverrideEditorFields, ProjectThreadWhyViewSchema, type ProjectThreadWhyView, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema,
   type QueuedMessage, type ThreadIndex, type ThreadReport, type ThreadView,
 } from '@jevellan/core/client';
@@ -16,9 +17,8 @@ import { Icon } from './icons.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
-  THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, alignReports, composerBlock, deviceRefusal, dotClass, lineParts,
-  mergeThreadToolTurns, partWords, reportBadge, threadActions, threadActivity, threadLiveText,
-  threadPollDelay, threadReason, threadStarting, transcriptNotice, withoutEchoedSummaries, withoutReportCalls,
+  alignReports, dotClass, lineParts,
+  mergeThreadToolTurns, partWords, reportBadge, withoutEchoedSummaries, withoutReportCalls,
 } from './project-work-model.js';
 import { RouteLink, Stamp, afterDialogs, deviceNames, failureText, updated, useClientIds, useLocalError } from './project-work.js';
 import { TranscriptTurn } from './session-transcript.js';
@@ -166,15 +166,17 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   }
 
   const thread = view.thread;
-  const actions = threadActions(view);
+  const details = view.presentation;
+  const actions = details?.actions;
   const line = view.card?.placementLine ?? '';
-  const notice = transcriptNotice(view);
+  const notice = details?.transcriptNotice;
   const fallback = view.placementNotice;
-  const reason = threadReason(thread.stateReason);
+  const reason = details?.reason;
   const allowTurns = () => void allow.run(async (signal) => {
     setActionError('');
-    acted(await api(`${base}/allow-turns`, ThreadViewSchema, 'POST', empty, { signal }));
-    message(copy.MORE_TURNS_ALLOWED);
+    const next = await api(`${base}/allow-turns`, ThreadViewSchema, 'POST', empty, { signal });
+    acted(next);
+    if (next.presentation) message(next.presentation.actions.allowedNotice);
   });
 
   return (
@@ -188,20 +190,20 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
             <Icon name="settings" size={16} /><span className="pw-head-label">Session</span>
           </button>
           {images.length > 0 && <button type="button" className="secondary pw-head-button pw-keep-label" onClick={() => openImage(images[0]!)}>Images <span className="chip">{images.length}</span></button>}
-          {actions.stop && (
+          {actions?.stop && (
             <button type="button" className="secondary pw-head-button" disabled={!!actions.stopRefusal} title={actions.stopRefusal ?? undefined}
               aria-describedby={actions.stopRefusal ? stopNoteId : undefined} onClick={() => setConfirming('stop')}>
               <Icon name="stop" size={15} /><span className="pw-head-label">{copy.STOP}</span>
             </button>
           )}
-          {actions.discard && (
+          {actions?.discard && (
             <button type="button" className="secondary pw-head-button" onClick={() => setConfirming('discard')}>
               <Icon name="trash" size={15} /><span className="pw-head-label">{copy.DISCARD}</span>
             </button>
           )}
-          {actions.allowTurns && (
+          {actions?.allowTurns && (
             <button type="button" className="pw-head-button pw-keep-label" disabled={allow.busy} onClick={allowTurns}>
-              <Icon name="plus" size={15} /><span className="pw-head-label">{copy.ALLOW_MORE_TURNS}</span>
+              <Icon name="plus" size={15} /><span className="pw-head-label">{actions.allowTurnsLabel}</span>
             </button>
           )}
         </div>
@@ -232,7 +234,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           )}
           {reason?.savedRef && <p className="pw-saved-ref">{SAVED_COMMITS_SENTENCE}<code>{reason.savedRef}</code>.</p>}
           {/* Why Stop and Restart wait while the thread is attached, and why an ended main thread still holds the checkout (phase 8). */}
-          {actions.stopRefusal && <p className="pw-thread-note" id={stopNoteId}>{actions.stopRefusal}</p>}
+          {actions?.stopRefusal && <p className="pw-thread-note" id={stopNoteId}>{actions.stopRefusal}</p>}
           {view.checkoutHeld && <p className="pw-thread-note pw-tone-warn" role="status">{view.checkoutHeld}</p>}
           <div className="pw-session-badges">
             {thread.usage && <span className="chip pw-session-badge">{copy.usageBadge(thread.usage.inputTokens + thread.usage.outputTokens, thread.usage.costUsd)}</span>}
@@ -403,14 +405,14 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
   const { error, setError, fail } = useLocalError(onError);
   const send = useTask((failure) => { fail(failure); refused(); });
   const ids = useClientIds('message');
-  const running = view.thread.state === 'running';
+  const running = view.presentation?.composer.running ?? false;
   // A choice made for a turn that has ended never carries over to the next one.
   useEffect(() => { if (!running) setInterrupt(false); }, [running]);
-  const live = threadLiveText(view.thread);
-  const activity = threadActivity(view);
-  const block = composerBlock(view);
-  const ended = !view.canMessage && view.thread.state !== 'attached';
-  const completed = ['done', 'stopped', 'failed'].includes(view.thread.state);
+  const live = view.presentation?.live.text;
+  const activity = view.presentation?.live.activity;
+  const block = view.presentation?.composer.block ?? (view.presentation ? null : 'Thread details are unavailable. Refresh to continue.');
+  const ended = view.presentation?.composer.ended ?? true;
+  const continuation = view.presentation?.composer.continueNotice;
   return (
     <form onPaste={attachments.paste} onDragOver={attachments.dragOver} onDrop={attachments.drop} className="composer card pw-composer pw-thread-composer" ref={composerClearance} onSubmit={(event) => {
       event.preventDefault();
@@ -445,7 +447,7 @@ function ThreadComposer({ base, view, behind, jump, sent, refused, onError }: {
       )}
       {error && <p className="error pw-composer-error">{error}</p>}
       {block && <p className={`pw-composer-note${ended ? ' ended' : ''}`}>{block}</p>}
-      {completed && view.canMessage && <p className="pw-composer-note">{copy.THREAD_CONTINUE}</p>}
+      {continuation && <p className="pw-composer-note">{continuation}</p>}
       {!ended && (
         <fieldset className="pw-fields" disabled={!!block}>
           {/* A composer that takes no message takes no files either, so it keeps no Attach row (an attached page fits the phone). */}

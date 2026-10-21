@@ -27,6 +27,14 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP thread view shares header and composer presentation without steering work', async () => {
+  f = await projectFixture({ control: true }); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Simulated MCP thread ready.' }), forThread());
+  const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'mcp_thread_presentation', title: 'MCP thread view', task: 'Inspect the simulated fixture.' });
+  await f.waitFor(() => f!.thread(made.threadId), row => row.state === 'idle'); const before = structuredClone(f.thread(made.threadId)), mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'thread', arguments: { action: 'view', thread: made.threadId } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-thread-view-v1', presentation: { schema: 'project-thread-presentation-v1', actions: { allowTurnsStep: 10 }, composer: { block: null } } } }); expect(f.thread(made.threadId)).toEqual(before);
+});
+
 test('MCP task compose editor preserves Automatic placement and performs no work', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const read = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'work', arguments: { action: 'editor' } })).structuredContent); expect(read.ok).toBe(true);

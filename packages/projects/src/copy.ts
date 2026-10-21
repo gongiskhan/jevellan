@@ -496,9 +496,9 @@ export function overrideSummary(input: { changes: PlacementOverride['changes']; 
 }
 
 // Turn-limit decision item (brief 8.2; question text D142)
-export const ALLOW_MORE_TURNS = 'Allow 10 more turns';
-export const STOP_THE_THREAD = 'Stop the thread';
 export const MORE_TURNS = 10;
+export const ALLOW_MORE_TURNS = `Allow ${MORE_TURNS} more turns`;
+export const STOP_THE_THREAD = 'Stop the thread';
 export const turnLimitQuestion = (title: string, turns: number): string => `"${title}" reached its turn limit of ${turns} turns. Allow 10 more turns or stop it?`;
 
 // Context links in worktrees (D26)
@@ -669,3 +669,14 @@ export const SETUP_PROMPT = `This project is new to you. Before anything else, r
 Write a short notebook entry: what the project is, how it is built and tested, and what looks unfinished.
 Then call jevellan_setup_propose with what you would set: the test command, the worktree setup command, project instructions drawn from the repository's own conventions, untracked files new worktrees need (such as .env.local), environment variable and secret names they need (never values), and at most three goals.
 Propose only what the repository supports, and leave out what you cannot tell. Then answer the owner's message, if there is one.`;
+
+// Thread reader presentation shared with owner tools.
+export const attachedNotice = (device: string): string => `Attached in a terminal on ${device}. Messages wait until you exit.`;
+export const MORE_TURNS_ALLOWED = `The thread can take ${MORE_TURNS} more turns.`;
+export const THREAD_CONTINUE = 'Continue here. Jev will classify your message and choose how to run the follow-up.';
+export const turnRunning = (turn: number): string => `Working on turn ${turn}…`;
+export const PREPARING = 'Preparing…';
+export const PUBLISHING = 'Publishing…';
+export const TRANSCRIPT_TRUNCATED = 'Showing the most recent part of the transcript.';
+export const NO_TRANSCRIPT_YET = 'Nothing here yet. The transcript appears once the first turn starts.';
+export const TRANSCRIPT_UNAVAILABLE = 'The transcript cannot be read right now. Reports are shown on their own.';
