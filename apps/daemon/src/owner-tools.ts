@@ -200,10 +200,25 @@ export class OwnerTools {
       windows: daily.window ? [daily.window] : [], deploys: deploys.records,
       budgets, deviceName: id => names.get(id) ?? id, deployPaused: this.projectSettings(projectId).deploy.paused, missedThisWeek: this.app.ownerSchedules.missed(projectId, 7).length, ...(goal ? { goalFilter: goal } : {}),
       holds: new Map(this.takeover.holds(projectId).map(hold => [hold.threadId, { since: hold.since, via: hold.via, tmuxSession: hold.tmuxSession }])),
-      extraWaiting: this.takeover.holds(projectId).filter(hold => hold.warnedAt).map(hold => ({ schema: 'waiting-item-view-v1' as const, id: this.takeover.waitingId(hold), internalId: `held-${hold.threadId}`.slice(0, 128), kind: 'held_idle' as const,
-        from: 'jevellan', text: `${hold.id} has been held with no activity since ${hold.keptAt ?? hold.since}.`, options: ['keep', 'return'], freeText: false, urgent: false, createdAt: hold.warnedAt!, updatedAt: hold.warnedAt!, state: 'open' as const })) }, this.ids);
+      extraWaiting: [...this.riggingConflicts(accounts).map(item => ({ schema: 'waiting-item-view-v1' as const, id: this.ids.one(projectId, 'W', `rigging-${item.id}`.slice(0, 128)),
+        internalId: `rigging-${item.id}`.slice(0, 128), kind: 'other' as const, from: 'jevellan',
+        text: `Account ${item.accountLabel}: ${item.ref} was changed outside Rigging, so its managed items wait.`, options: ['park', 'leave'], freeText: false, urgent: false,
+        createdAt: item.updatedAt, updatedAt: item.updatedAt, state: 'open' as const })),
+      ...this.takeover.holds(projectId).filter(hold => hold.warnedAt).map(hold => ({ schema: 'waiting-item-view-v1' as const, id: this.takeover.waitingId(hold), internalId: `held-${hold.threadId}`.slice(0, 128), kind: 'held_idle' as const,
+        from: 'jevellan', text: `${hold.id} has been held with no activity since ${hold.keptAt ?? hold.since}.`, options: ['keep', 'return'], freeText: false, urgent: false, createdAt: hold.warnedAt!, updatedAt: hold.warnedAt!, state: 'open' as const }))] }, this.ids);
     for (const run of [...view_.running, ...view_.queued, ...view_.landed, ...view_.finished]) if (run.kind === 'thread') this.app.ownerEvents.noteSource(run.internalId, run.id);
     return view_;
+  }
+  /**
+   * Account files changed outside Rigging (#28): each waits on the owner until its changed copy is parked, like any other waiting item, so the
+   * bridge can resolve it with respond. A problem reading Rigging leaves status as it is.
+   */
+  riggingConflicts(accounts: ReadonlyArray<{ account: { id: string; runtime: string; label: string; enabled?: boolean } }>) {
+    const owned = accounts.filter(row => row.account.runtime === 'claude' || row.account.runtime === 'codex');
+    let items: ReturnType<Application['riggingDisk']['list']>['items'];
+    try { items = this.app.riggingDisk.list(owned.map(row => ({ id: row.account.id, runtime: row.account.runtime as 'claude' | 'codex' }))).items; } catch { return []; }
+    return items.filter(item => item.canPark && item.state === 'owned' && item.drifted && !item.address.selector)
+      .map(item => ({ ...item, ref: item.address.ref, accountLabel: owned.find(row => row.account.id === item.accountId)?.account.label ?? item.accountId }));
   }
   async statusText(project: Project, options: { goal?: string; section?: 'waiting' | 'running' | 'queued' | 'landed' | 'finished'; detail?: boolean }): Promise<string> {
     return renderStatus(await this.status(project, options.goal), options);

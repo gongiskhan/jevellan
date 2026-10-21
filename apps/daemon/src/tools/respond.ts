@@ -13,6 +13,14 @@ export const respond: OwnerHandler = async (context) => {
     const option = matchOption(['keep', 'return'], answer); if (!option) throw new OwnerRefusal(`${item.id} takes keep, return.`, 'invalid_answer');
     return { text: await context.tools.takeover.answerIdle(context, item.held, option as 'keep' | 'return') };
   }
+  if (item.rigging) {
+    const option = matchOption(['park', 'leave'], answer); if (!option) throw new OwnerRefusal(`${item.id} takes park, leave.`, 'invalid_answer');
+    const conflict = context.tools.riggingConflicts(await app.accounts.list()).find(row => row.id === item.rigging);
+    if (!conflict) throw new OwnerRefusal(`${item.id} is no longer waiting on you.`, 'not_open', 409);
+    if (option === 'leave') return { text: `Left it. Turns use another account while ${conflict.ref} of account ${conflict.accountLabel} keeps its changes.` };
+    await app.riggingDisk.transition(conflict.runtime, conflict.accountId, conflict.id, { schema: 'rigging-disk-transition-v1', requestId: clientId('owner_park'), fingerprint: conflict.fingerprint, action: 'park' });
+    return { text: `Parked the changed ${conflict.ref} of account ${conflict.accountLabel}. Its managed items apply at its next launch; the changed copy stays in Rigging, where it can be restored.` };
+  }
   if (item.draft) {
     const option = matchOption(['Start', 'Reject'], answer); if (!option) throw new OwnerRefusal(`${item.id} takes Start or Reject.`, 'invalid_answer');
     await engine.taskAction(project.id, item.draft.id, { schema: 'task-action-request-v1', expectedRevision: item.draft.revision, action: option === 'Start' ? 'approve' : 'reject', ...(note ? { reason: note } : {}) });

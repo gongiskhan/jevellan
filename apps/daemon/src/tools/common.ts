@@ -26,11 +26,12 @@ export async function resolveGoal(context: OwnerContext, token: string): Promise
   return { id: tools.ids.shortOf(project.id, goal.id)!, goal, revision: goal.revision };
 }
 
-export async function resolveWaiting(context: OwnerContext, token: string): Promise<{ id: string; decision: ProjectDecision | null; draft: ProjectWorkTask | null; held?: string }> {
+export async function resolveWaiting(context: OwnerContext, token: string): Promise<{ id: string; decision: ProjectDecision | null; draft: ProjectWorkTask | null; held?: string; rigging?: string }> {
   const { app, tools, project } = context; await tools.status(project);
   const found = tools.ids.resolve(project.id, token);
   if (!found) throw new OwnerRefusal(`${token} is not waiting on you. ${await waitingList(context)}`, 'not_found', 404);
   if (found.internalId.startsWith('held-')) return { id: found.shortId, decision: null, draft: null, held: found.internalId };
+  if (found.internalId.startsWith('rigging-')) return { id: found.shortId, decision: null, draft: null, rigging: found.internalId.slice('rigging-'.length) };
   if (found.internalId.startsWith('draft-')) {
     const task = (await app.projectWork.taskList(project.id)).tasks.find(row => `draft-${row.id}`.slice(0, 128) === found.internalId) ?? null;
     if (!task || task.state !== 'draft') throw new OwnerRefusal(`${found.shortId} is no longer waiting on you.`, 'not_open', 409);

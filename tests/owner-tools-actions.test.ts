@@ -1,5 +1,9 @@
 import { afterEach, expect, test } from 'vitest';
-import { forCoordinator } from '../packages/runtime-contract/dist/index.js';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { claudeAccount, named } from './helpers/attach-cli.js';
+import { FakeRuntime, forCoordinator } from '../packages/runtime-contract/dist/index.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
 let f: ProjectFixture | undefined;
@@ -84,4 +88,18 @@ test('status shows a coordinator stopped after two failed turns, and ask_coordin
   expect(prompt).toContain('The owner restarted the coordinator after it stopped.');
   expect(f.fake.turnStarts.at(-1)?.resume).toBeUndefined();
   expect((await text('status')).split('\n')[0]).toMatch(/ · coordinator idle \(/u);
+});
+
+test('changes made outside Rigging in an account file wait on the owner, and respond park parks the changed copy', { timeout: 120_000 }, async () => {
+  f = await projectFixture({ runtimes: { fake: new FakeRuntime(), claude: named('claude') } });
+  const { home } = await claudeAccount(f); const id = home.split('/').at(-1)!;
+  const written = '{"hooks":{}}\n';
+  writeFileSync(join(home, 'settings.json'), '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"echo mine"}]}]}}\n');
+  mkdirSync(f.homes.at('rigging', 'state', 'claude'), { recursive: true });
+  writeFileSync(f.homes.at('rigging', 'state', 'claude', `${id}.json`), JSON.stringify({ schema: 'rigging-delivery-v1', fingerprint: 'fixture', files: { 'settings.json': createHash('sha256').update(written).digest('hex') } }));
+  const status = await text('status');
+  expect(status).toContain('W1 Account Claude subscription: settings.json was changed outside Rigging, so its managed items wait. Options: park, leave');
+  expect(await text('respond', { item: 'W1', answer: 'park' })).toBe('Parked the changed settings.json of account Claude subscription. Its managed items apply at its next launch; the changed copy stays in Rigging, where it can be restored.');
+  expect(existsSync(join(home, 'settings.json'))).toBe(false);
+  expect(await text('status')).not.toContain('changed outside Rigging');
 });
