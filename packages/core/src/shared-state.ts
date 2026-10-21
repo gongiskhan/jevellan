@@ -1,3 +1,4 @@
+import { GlobalThreadLimitSaveSchema } from './project-definition-schemas.js';
 import { RuntimeSettingsSaveSchema } from './runtime-settings-schemas.js';
 import { z } from 'zod';
 import { ProjectEnvNameSchema, ProjectEnvImportSourceSchema, ProjectEnvSecretSummarySchema, type ProjectEnvSecretSummary } from './project-parity-schemas.js';
@@ -15,6 +16,7 @@ export interface SharedConfiguration {
   decisionsEditor(input?: unknown): Available<DecisionsSettingsEditor>;
   decisionsPut(input: unknown): Available<ConfigRevision>;
   runtimesPut(input: unknown): Available<ConfigRevision>;
+  limitsPut(input: unknown): Available<ConfigRevision>;
 }
 export interface SharedRigging {
   get(id: string): Available<z.infer<typeof RiggingViewSchema>>;
@@ -66,6 +68,7 @@ export const SharedStateRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...base, operation: z.literal('decisions-editor'), input: DecisionsSettingsPreviewSchema.optional() }),
   z.strictObject({ ...base, operation: z.literal('decisions-put'), input: DecisionsSettingsSaveSchema }),
   z.strictObject({ ...base, operation: z.literal('runtimes-put'), input: RuntimeSettingsSaveSchema }),
+  z.strictObject({ ...base, operation: z.literal('limits-put'), input: GlobalThreadLimitSaveSchema }),
   z.strictObject({ ...base, operation: z.enum(['jev-check-generation', 'jev-connection']) }),
   z.strictObject({ ...base, operation: z.literal('jev-check-record'), input: JevCheckRecordSchema }),
   z.strictObject({ ...base, operation: z.literal('project'), id: IdSchema }),

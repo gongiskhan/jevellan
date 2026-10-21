@@ -1,6 +1,7 @@
+import { basename } from 'node:path';
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { ProjectThreadActionsViewSchema, CleanupStateSchema, DeviceRosterSchema, MergeDocumentsViewSchema, ProjectJobRunListViewSchema, ProjectDeployViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
+import { ContextPanelSchema, ProjectsListSchema, ProjectThreadActionsViewSchema, CleanupStateSchema, DeviceRosterSchema, MergeDocumentsViewSchema, ProjectJobRunListViewSchema, ProjectDeployViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
@@ -2807,6 +2808,28 @@ test('WG7 cleanup settings and per-device Clean now receipt', async ({ page }, i
   }, { timeout: 60000, intervals: [1000, 2000, 3000] }).toBe(1);
   await expect(local.getByText(/^Last run: freed /)).toBeVisible(LONG); await expect(local.getByText(/^1 removed/)).toBeVisible();
   await local.scrollIntoViewIfNeeded(); await page.screenshot({ path: info.outputPath(`cleanup-last-run-${layout(info)}.png`) }); expect(errors).toEqual([]);
+});
+
+test('Project definitions preserve folder naming, device choices and canonical create and edit', async ({ page }, info) => {
+  const errors = await begin(page), roster = DeviceRosterSchema.parse(await read(page, '/hub/devices/roster'));
+  const device = roster.devices.find(row => row.device.id === roster.currentDeviceId)!.device;
+  const original = ProjectsListSchema.parse(await read(page, '/hub/projects')).projects.find(row => row.project.id === 'projects_fixture')!.project;
+  const path = original.paths[device.id]!, name = `Definition fixture ${layout(info)}`;
+  await page.goto('/settings/projects'); await page.getByRole('button', { name: 'Add project', exact: true }).click();
+  const dialog = page.getByRole('dialog'), localPath = dialog.getByLabel(`Path on ${device.name}`, { exact: true });
+  await localPath.fill(path + '/'); await expect(dialog.getByLabel('Name', { exact: true })).toHaveValue(basename(path));
+  await dialog.getByLabel('Name', { exact: true }).fill(name); await localPath.fill(path + '///'); await expect(dialog.getByLabel('Name', { exact: true })).toHaveValue(name);
+  const memory = dialog.getByRole('combobox', { name: 'Keep project memory', exact: true }), policy = dialog.getByRole('combobox', { name: 'Git policy', exact: true });
+  await memory.selectOption('repo'); await policy.selectOption('external'); await expect(memory).toHaveValue('device'); await policy.selectOption('main'); await expect(memory).toHaveValue('repo'); await memory.selectOption('hub');
+  const allowed = dialog.getByRole('checkbox', { name: device.name, exact: true }); await allowed.click(); await expect(allowed).not.toBeChecked(); await allowed.click(); await expect(allowed).toBeChecked();
+  const saved = page.waitForResponse(response => new URL(response.url()).pathname === '/hub/projects' && response.request().method() === 'PUT'); await dialog.getByRole('button', { name: 'Save project', exact: true }).click(); expect((await saved).status()).toBe(200); await expect(dialog).not.toBeVisible(LONG);
+  const card = page.locator('.project-card').filter({ has: page.getByRole('heading', { name, exact: true }) }); await expect(card).toContainText('Shared hub memory');
+  const stored = ProjectsListSchema.parse(await read(page, '/hub/projects')).projects.find(row => row.project.name === name)!;
+  expect(stored.project.allowedDevices?.slice().sort()).toEqual(roster.devices.map(row => row.device.id).sort());
+  await expect.poll(async () => { const panel = ContextPanelSchema.parse(await read(page, `/api/projects/${stored.project.id}/context/operations`)); return !panel.busy && panel.operations.every(operation => ['completed', 'cancelled'].includes(operation.status)); }, LONG).toBe(true);
+  await card.getByRole('button', { name: 'Edit', exact: true }).click(); await dialog.getByLabel('Name', { exact: true }).fill(`  ${name} edited  `);
+  const editSaved = page.waitForResponse(response => new URL(response.url()).pathname === '/hub/projects' && response.request().method() === 'PUT'); await dialog.getByRole('button', { name: 'Save project', exact: true }).click(); const editResponse = await editSaved; expect(editResponse.status(), (await editResponse.json()).message).toBe(200); await expect(dialog).not.toBeVisible(LONG);
+  await expect(page.getByRole('heading', { name: `${name} edited`, exact: true })).toBeVisible(); await page.screenshot({ path: `test-results/PROJECT-definition-editor-${layout(info)}.png`, fullPage: true }); expect(errors).toEqual([]);
 });
 
 test('WG8 the shared thread limit is editable in Settings Projects', async ({ page }, info) => {

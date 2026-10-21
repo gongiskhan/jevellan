@@ -117,3 +117,6 @@ export * from './account-editor-schemas.js';
 
 export * from './account-action-schemas.js';
 export * from './account-login-schemas.js';
+
+export * from './project-definition-schemas.js';
+export { projectDefinitionCommand, projectDefinitionDeviceRows } from './project-definition.js';

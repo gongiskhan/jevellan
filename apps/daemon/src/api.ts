@@ -1,3 +1,5 @@
+import { handleProjectDefinitionsPeer } from './project-definition-device.js';
+import { GlobalThreadLimitSaveSchema, ProjectDefinitionReadSchema, ProjectDefinitionPreviewSchema, ProjectDefinitionSaveSchema } from '@jevellan/core';
 import { AccountEditorReadSchema, AccountEditorSaveSchema } from '@jevellan/core';
 import { RuntimeSettingsSaveSchema } from '@jevellan/core';
 import { environmentSecretSummary } from '@jevellan/projects';
@@ -62,6 +64,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     const path = url.pathname; const method = request.method ?? 'GET'; const token = sessionFromCookie(request.headers.cookie);
     // Project hub requests enter the gate in their route once the operation is known: reads are admitted like GET (D247).
     if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path) && !DEVICE_WORKTREES_ROUTE.test(path) && !DEVICE_CLEANUP_ROUTE.test(path) && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
+    if (path === '/api/mesh/project-definitions') { await handleProjectDefinitionsPeer(app, request, response); return; }
     if (path.startsWith('/api/mesh/devices/') && await handleDeviceCleanup(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/devices/') && await handleDeviceWorktrees(app, request, response, url)) return;
     if (path === '/api/agent-peer') { await handleAgentPeer(app, request, response); return; }
@@ -110,6 +113,11 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (path === '/hub/ekoa/callback' && method === 'POST') { send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'oauth-complete', input: EkoaOAuthCallbackSchema.parse(await body(request)) }, token!)); return; }
     if (path === '/hub/ekoa/test' && method === 'POST') { EkoaEmptySchema.parse(await body(request)); send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'test' }, token!)); return; }
     if (await handleGitApi(app, request, response, url)) return;
+    if (path === '/api/config/limits' && method === 'GET') { send(await app.globalThreadLimitEditor()); return; }
+    if (path === '/api/config/limits' && method === 'PUT') { const input = GlobalThreadLimitSaveSchema.parse(await body(request)); retryable = true; send(await app.saveGlobalThreadLimit(input)); return; }
+    if (path === '/api/projects/view' && method === 'GET') { send(await app.projectDefinitions()); return; }
+    if (path === '/api/projects/editor' && method === 'GET') { send(await app.projectDefinitionRead(ProjectDefinitionReadSchema.parse({ schema: 'project-definition-read-v1', ...(url.searchParams.has('projectId') ? { projectId: url.searchParams.get('projectId') } : {}) }))); return; }
+    if (path === '/api/projects/editor/preview' && method === 'POST') { retryable = true; send(await app.projectDefinitionPreview(ProjectDefinitionPreviewSchema.parse(await body(request)))); return; }
     if (await handleProjectWorkApi(app, request, response, url, token!, () => { retryable = true; })) return;
     const sharedMemory = path.match(/^\/api\/projects\/([A-Za-z0-9_-]+)\/memory\/shared$/);
     if (sharedMemory && (method === 'GET' || method === 'POST')) {
@@ -124,7 +132,10 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     const vaultRestore = path.match(/^\/api\/projects\/([A-Za-z0-9_-]+)\/vault-restore$/);
     if (vaultRestore && method === 'POST') { retryable = true; send(await app.restoreProjectFromVault(IdSchema.parse(vaultRestore[1]))); return; }
     if (path === '/hub/projects' && method === 'GET') { await app.conversations.ready; send((await app.conversations.projects())); return; }
-    if (path === '/hub/projects' && method === 'PUT') { const input = ProjectWriteSchema.parse(await body(request)); retryable = input.clientRequestId !== undefined; send(await app.conversations.saveProject(input)); return; }
+    if (path === '/hub/projects' && method === 'PUT') {
+      const input = z.union([ProjectWriteSchema, ProjectDefinitionSaveSchema]).parse(await body(request)); retryable = input.clientRequestId !== undefined;
+      send(input.schema === 'project-definition-save-v1' ? await app.saveProjectDefinition(input) : await app.conversations.saveProject(input)); return;
+    }
     const visibility = path.match(/^\/api\/projects\/([A-Za-z0-9_-]+)\/visibility$/);
     if (visibility && method === 'GET') {
       await app.conversations.ready;

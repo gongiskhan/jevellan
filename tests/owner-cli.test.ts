@@ -25,6 +25,14 @@ let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
 
+test('CLI Projects editors share global limit bounds and draft project defaults without starting work', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['config', 'limits_editor'], f.homes)).toBe(0);
+  const limit = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); expect(limit).toMatchObject({ ok: true, data: { schema: 'global-thread-limit-editor-v1', input: { min: 1, max: 20, step: 1 } } });
+  output.mockClear(); expect(await callCommand(['config', 'project_editor'], f.homes)).toBe(0);
+  const project = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); expect(project).toMatchObject({ ok: true, data: { schema: 'project-definition-editor-v1', fields: { branchPolicy: 'main', memory: { mode: 'hub', dir: '.jevellan/memory' } } } }); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('CLI account editor shares defaults and canonical subscription save without starting login', async () => {
   f = await accountEditorFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
   expect(await callCommand(['config', 'account_editor', '--runtime', 'claude'], f.homes)).toBe(0);

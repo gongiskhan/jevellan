@@ -1,0 +1,40 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { DeviceOriginSchema, ErrorDocumentSchema, PeerLoginSessionInputSchema, ProjectDefinitionPeerRequestSchema, ProjectDefinitionEditorSchema, ProjectDefinitionsViewSchema, ProjectViewSchema } from '@jevellan/core';
+import { UiAuth } from '@jevellan/mesh';
+import type { Application } from './application.js';
+import { json, requestBody } from './http.js';
+import { OWNER_REQUEST_TIMEOUT_MS } from './owner-proxy.js';
+const path = '/api/mesh/project-definitions';
+const refuse = (message: string, status: number) => Object.assign(new Error(message), { status });
+/** Closed device-local operations use the same peer session authorization as device cleanup/worktrees. */
+export async function handleProjectDefinitionsPeer(app: Application, request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (request.method !== 'POST') throw refuse('Unsupported project operation.', 405);
+  if (request.headers.origin || request.headers['sec-fetch-site']) throw refuse('Use the device connection for this request.', 403);
+  const authorization = request.headers.authorization;
+  const caller = PeerLoginSessionInputSchema.safeParse({ schema: 'peer-login-session-input-v1', sourceDeviceId: request.headers['x-jevellan-source-device'], token: authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined });
+  if (!caller.success || !await app.peerLoginAuthenticated(caller.data)) throw refuse('Sign in to Jevellan.', 401);
+  app.redactor.add(caller.data.token); const input = ProjectDefinitionPeerRequestSchema.parse(await requestBody(request));
+  const result = input.operation === 'view' ? await app.projectDefinitions() : input.operation === 'read' ? await app.projectDefinitionRead(input.input) : input.operation === 'preview' ? await app.projectDefinitionPreview(input.input) : await app.saveProjectDefinition(input.input);
+  json(response, app.redactor.document(result));
+}
+export async function projectDefinitionDeviceOperation(app: Application, targetDeviceId: string, raw: unknown): Promise<unknown> {
+  const input = ProjectDefinitionPeerRequestSchema.parse(raw), target = (await app.roster()).devices.find(row => row.device.id === targetDeviceId);
+  if (!target || target.revoked) throw refuse('The project device is no longer available in this mesh.', 409);
+  if (target.status === 'offline') throw refuse(`${target.device.name} is offline. Project files remain there.`, 409);
+  const auth = app.auth; if (!(auth instanceof UiAuth)) throw refuse('Owner tools must run on the state point.', 409);
+  const token = auth.issue(); app.redactor.add(token);
+  try {
+    const url = new URL(DeviceOriginSchema.parse(target.device.url)); url.pathname = path;
+    let response: Response;
+    try { response = await fetch(url, { method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(OWNER_REQUEST_TIMEOUT_MS), headers: { Authorization: `Bearer ${token}`, 'X-Jevellan-Source-Device': app.device.deviceId, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(input) }); }
+    catch { throw refuse(`Can't reach ${target.device.name}. Project files remain there.`, 502); }
+    if (response.status >= 300 && response.status < 400) { await response.body?.cancel(); throw refuse('The project device returned an unexpected redirect.', 502); }
+    const rawReply: unknown = await response.json().catch(() => null);
+    if (!response.ok) { const error = ErrorDocumentSchema.safeParse(rawReply); throw refuse(error.success ? error.data.message : 'The project device could not complete the request.', error.success ? response.status : 502); }
+    if (input.operation === 'view') { const result = ProjectDefinitionsViewSchema.parse(rawReply); if (result.currentDeviceId !== targetDeviceId) throw refuse('The returned projects belong to another device.', 502); return result; }
+    if (input.operation === 'save') { const result = ProjectViewSchema.parse(rawReply); if (result.project.id !== input.input.context.projectId) throw refuse('The returned project does not match the request.', 502); return result; }
+    const result = ProjectDefinitionEditorSchema.parse(rawReply), id = input.operation === 'read' ? input.input.projectId : input.input.context.projectId;
+    if (result.currentDeviceId !== targetDeviceId || (id && result.context.projectId !== id)) throw refuse('The returned project draft does not match the device or request.', 502);
+    return result;
+  } finally { auth.logout(token); }
+}

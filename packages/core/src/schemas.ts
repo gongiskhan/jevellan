@@ -54,7 +54,8 @@ const SettingsFields = {
 };
 export const LegacyConfigurationSchema = z.strictObject({ ...ConfigurationFields, 'x-jevellan': z.strictObject({ schema: z.literal(1), ...SettingsFields }) });
 export const PreCleanupConfigurationSchema = z.strictObject({ ...ConfigurationFields, 'x-jevellan': z.strictObject({ schema: z.literal(2), ...SettingsFields, improver: ImproverSettingsSchema }) });
-const CurrentConfigurationSchema = PreCleanupConfigurationSchema.extend({ 'x-jevellan': PreCleanupConfigurationSchema.shape['x-jevellan'].extend({ cleanup: CleanupSettingsSchema.default(defaultCleanupSettings), maxRunningThreadsAll: z.number().int().min(1).max(20).default(6) }) }).superRefine((value, ctx) => {
+export const globalThreadLimit = z.number().int().min(1).max(20).default(6);
+const CurrentConfigurationSchema = PreCleanupConfigurationSchema.extend({ 'x-jevellan': PreCleanupConfigurationSchema.shape['x-jevellan'].extend({ cleanup: CleanupSettingsSchema.default(defaultCleanupSettings), maxRunningThreadsAll: globalThreadLimit }) }).superRefine((value, ctx) => {
   const ids = value['x-jevellan'].menu.map((model) => model.id);
   if (new Set(ids).size !== ids.length) ctx.addIssue({ code: 'custom', message: 'Model menu ids must be unique.', path: ['x-jevellan', 'menu'] });
 });

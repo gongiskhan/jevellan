@@ -27,6 +27,15 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP Projects editors share folder commands and leave project creation explicit', async () => {
+  f = await projectFixture({ control: true }); const before = await f.app.state.projects.list(), mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'project_editor' } })).structuredContent); expect(result.ok).toBe(true);
+  if (!result.ok) throw new Error('Expected project editor.'); const view = result.data as { context: object; fields: object };
+  const request = { schema: 'project-definition-preview-v1', context: view.context, fields: view.fields, command: { type: 'path', deviceId: f.app.device.deviceId, value: f.checkout + '/mcp-folder/' } };
+  expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'project_preview', request } })).structuredContent)).toMatchObject({ ok: true, data: { fields: { name: 'mcp-folder' } } });
+  expect(await f.app.state.projects.list()).toEqual(before); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP account editor shares nonsecret preparation and never starts a provider login', async () => {
   f = await accountEditorFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'account_editor', runtime: 'claude' } })).structuredContent); expect(result.ok).toBe(true);

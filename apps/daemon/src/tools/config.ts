@@ -153,6 +153,12 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'limits_editor': return { text: 'Shared thread limit.', data: await context.app.globalThreadLimitEditor() };
+    case 'limits_save': return { text: 'Settings saved.', data: await context.app.saveGlobalThreadLimit(args.request, context.request.deviceId ?? context.app.device.deviceId) };
+    case 'projects_view': return { text: 'Project definitions.', data: await context.app.projectDefinitions(context.request.deviceId ?? context.app.device.deviceId) };
+    case 'project_editor': return { text: 'Project editor.', data: await context.app.projectDefinitionRead({ schema: 'project-definition-read-v1', ...(args.projectId ? { projectId: args.projectId } : {}) }, context.request.deviceId ?? context.app.device.deviceId) };
+    case 'project_preview': return { text: 'Project preparation.', data: await context.app.projectDefinitionPreview(args.request, false, context.request.deviceId ?? context.app.device.deviceId) };
+    case 'project_save': return { text: 'Project saved.', data: await context.app.saveProjectDefinition(args.request, context.request.deviceId ?? context.app.device.deviceId) };
     case 'account_editor': return { text: 'Account editor.', data: await context.app.accountEditorRead({ schema: 'account-editor-read-v1', runtime: args.runtime, ...(args.accountId ? { accountId: args.accountId } : {}), ...(args.mode ? { mode: args.mode } : {}) }) };
     case 'account_preview': return { text: 'Account preparation.', data: await context.app.accountEditorPreview(args.request) };
     case 'account_save': return { text: 'Account saved.', data: await context.app.accountEditorSave(args.request) };

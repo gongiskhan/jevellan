@@ -1,3 +1,6 @@
+import { ProjectForm } from './project-definition-editor.js';
+export { ProjectForm };
+import { ProjectDefinitionsViewSchema, GlobalThreadLimitEditorSchema, ConfigRevisionSchema, type ProjectDefinitionsView } from '@jevellan/core/client';
 import { BranchChangeNotice } from './branch-change-notice.js';
 import { clientId } from './client-id.js';
 import { useEffect, useRef, useState } from 'react';
@@ -8,15 +11,8 @@ import {
   MemoryNoteSchema,
   MemorySearchSchema,
   ProjectMemoryViewSchema, ProjectMemoryResultSchema, ProjectWorkSettingsViewSchema,
-  ProjectsListSchema,
   ProjectViewSchema,
-  ProjectVisibilitySchema,
-  ProjectFoldersSchema,
-  VaultRestoreResultSchema,
-  VaultViewSchema,
-  vaultFolder,
   type Project,
-  type VaultView,
 } from '@jevellan/core/client';
 import { timeStamp } from './time.js';
 import { api } from './api.js';
@@ -33,439 +29,42 @@ import {
 
 type ProjectView = z.infer<typeof ProjectViewSchema>;
 export function ProjectsPage(props: PageProps & { embedded?: boolean }) {
-  const [globalLimit, setGlobalLimit] = useState(props.data.config.configuration['x-jevellan'].maxRunningThreadsAll), globalSave = useTask(props.onError);
-  const [projects, setProjects] = useState<ProjectView[]>([]);
-  const [visibility, setVisibility] = useState<Record<string, z.infer<typeof ProjectVisibilitySchema>>>({});
-  const [editing, setEditing] = useState<ProjectView | 'new'>();
-  const [memory, setMemory] = useState<Project>();
-  const [context, setContext] = useState<Project>();
-  // Phase 5: the hub's vault; a member has none and shows nothing.
-  const [vault, setVault] = useState<VaultView>();
+  const [model, setModel] = useState<ProjectDefinitionsView>(), [limit, setLimit] = useState<z.infer<typeof GlobalThreadLimitEditorSchema>>(), [globalLimit, setGlobalLimit] = useState('');
+  const [editing, setEditing] = useState<ProjectView | 'new'>(), [memory, setMemory] = useState<{ project: Project; isPublic: boolean }>(), [context, setContext] = useState<Project>();
+  const globalSave = useTask(props.onError), save = useSettingsSave();
+  const reload = async (signal?: AbortSignal) => setModel(await api('/api/projects/view', ProjectDefinitionsViewSchema, 'GET', undefined, { signal, waitForHub: true }));
+  const reloadLimit = async (signal?: AbortSignal) => { const next = await api('/api/config/limits', GlobalThreadLimitEditorSchema, 'GET', undefined, { signal, waitForHub: true }); setLimit(next); setGlobalLimit(String(next.input.value)); };
   useEffect(() => {
-    void api('/api/vault', VaultViewSchema).then(setVault).catch(() => undefined);
-  }, []);
-  const reload = async (signal?: AbortSignal) =>
-    setProjects(
-      (await api('/hub/projects', ProjectsListSchema, 'GET', undefined, { signal, waitForHub: true }))
-        .projects,
-    );
-  useEffect(() => {
-    void api('/hub/projects', ProjectsListSchema)
-      .then((value) => setProjects(value.projects))
-      .catch(props.onError);
+    const controller = new AbortController();
+    void reload(controller.signal).catch(error => { if (!controller.signal.aborted) props.onError(error); });
+    void reloadLimit(controller.signal).catch(error => { if (!controller.signal.aborted) props.onError(error); });
+    return () => { controller.abort(); };
   }, [props.onError]);
-  useEffect(() => {
-    let active = true;
-    setVisibility({});
-    for (const row of projects)
-      if (row.project.paths[props.data.devices.currentDeviceId])
-        void api(`/api/projects/${row.project.id}/visibility`, ProjectVisibilitySchema)
-          .then((value) => {
-            if (active) setVisibility((previous) => ({ ...previous, [row.project.id]: value }));
-          })
-          .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [projects, props.data.devices.currentDeviceId]);
-  return (
-    <>
-      {props.embedded ? (
-        <div className="setup-project-actions">
-          <button onClick={() => setEditing('new')}>Add project</button>
-        </div>
-      ) : (
-        <>
-          <SectionHeading title="Projects">
-            <div className="actions">
-              <button className="secondary" onClick={() => props.navigate('/settings/git')}>
-                Git settings
-              </button>
-              <button onClick={() => setEditing('new')}>Add project</button>
-            </div>
-          </SectionHeading>
-          <p className="intro">
-            Choose where your agents work, how changes reach git, and where project memory lives.
-          </p>
-        </>
-      )}
-      {!props.embedded && <section className="card"><h2>Running threads across all projects</h2><form onSubmit={event => { event.preventDefault(); void globalSave.run(async signal => { const config = props.data.config.configuration; await props.saveConfig({ ...config, 'x-jevellan': { ...config['x-jevellan'], maxRunningThreadsAll: globalLimit } }, signal); }); }}><label>Maximum running threads<input type="number" min={1} max={20} required value={globalLimit} onChange={event => setGlobalLimit(Number(event.target.value))} /></label><p className="small-text">One limit shared by every project and device. Threads wait for a free slot.</p><button disabled={globalSave.busy}>Save thread limit</button></form></section>}
-      {vault && !props.embedded && <VaultStatus vault={vault} />}
-      {!projects.length && <p className="empty-inline">Add a checked-out project to start a conversation.</p>}
-      <div className="project-list">
-        {projects.map((row) => {
-          const path = row.project.paths[props.data.devices.currentDeviceId];
-          return (
-            <section className="card project-card" key={row.project.id}>
-              <div className="card-heading">
-                <h2>{row.project.name}</h2>
-                <button className="secondary small" onClick={() => setEditing(row)}>
-                  Edit
-                </button>
-              </div>
-              <div className="model-chips">
-                <span className="chip">
-                  {row.project.branchPolicy === 'main' ? 'Work on main' : 'Leave git to me'}
-                </span>
-                <span className="chip">
-                  {row.project.memory.mode === 'hub' ? 'Shared hub memory' : row.project.memory.mode === 'repo' ? 'Memory in repository' : 'Memory on each device'}
-                </span>
-                {row.project.testCommand && <span className="chip dim">{row.project.testCommand}</span>}
-                {row.project.context.state === 'needs-decision' && (
-                  <span className="chip state-blocked">Context needs a decision</span>
-                )}
-              </div>
-              <p className={path ? 'project-path' : 'project-path muted'}>
-                {path ?? 'Not checked out on this device'}
-              </p>
-              {visibility[row.project.id]?.visibility === 'PUBLIC' && <PublicMemoryNotice />}
-              <div className="actions">
-                {!props.embedded && (
-                  <button className="secondary small" onClick={() => props.navigate(`/projects/${row.project.id}`)}>
-                    {OPEN}
-                  </button>
-                )}
-                <button className="secondary small" onClick={() => setMemory(row.project)}>
-                  Browse memory
-                </button>
-                <button className="secondary small" disabled={!path} onClick={() => setContext(row.project)}>
-                  Context
-                </button>
-              </div>
-            </section>
-          );
-        })}
-      </div>
-      {editing && (
-        <ProjectForm
-          {...props}
-          row={editing === 'new' ? undefined : editing}
-          vault={vault}
-          knownPublic={editing !== 'new' && visibility[editing.project.id]?.visibility === 'PUBLIC'}
-          close={() => setEditing(undefined)}
-          saved={async (signal) => {
-            await reload(signal);
-            setEditing(undefined);
-            props.message('Project saved.');
-          }}
-        />
-      )}
-      {memory && (
-        <MemoryViewer
-          project={memory}
-          isPublic={visibility[memory.id]?.visibility === 'PUBLIC'}
-          onError={props.onError}
-          close={() => setMemory(undefined)}
-        />
-      )}
-      {context && (
-        <ContextPanel
-          {...props}
-          project={context}
-          close={() => {
-            setContext(undefined);
-            void reload().catch(props.onError);
-          }}
-        />
-      )}
-    </>
-  );
+  return <>
+    {props.embedded ? <div className="setup-project-actions"><button onClick={() => setEditing('new')}>Add project</button></div> : <><SectionHeading title="Projects"><div className="actions"><button className="secondary" onClick={() => props.navigate('/settings/git')}>Git settings</button><button onClick={() => setEditing('new')}>Add project</button></div></SectionHeading><p className="intro">Choose where your agents work, how changes reach git, and where project memory lives.</p></>}
+    {!props.embedded && limit && <section className="card"><h2>{limit.title}</h2><form onSubmit={event => { event.preventDefault(); void globalSave.run(async signal => {
+      await save(limit.write.path, ConfigRevisionSchema, limit.write.method, { ...limit.write.body, value: globalLimit }, signal);
+      await props.reload(signal); await reloadLimit(signal); props.message(limit.savedNotice);
+    }); }}><label>{limit.input.label}<input type="number" min={limit.input.min} max={limit.input.max} step={limit.input.step} required disabled={globalSave.busy} value={globalLimit} onChange={event => setGlobalLimit(event.target.value)} /></label><p className="small-text">{limit.help}</p><button disabled={globalSave.busy}>Save thread limit</button></form></section>}
+    {model?.vault && !props.embedded && <VaultStatus vault={model.vault} />}
+    {model && !model.projects.length && <p className="empty-inline">Add a checked-out project to start work.</p>}
+    <div className="project-list">{model?.projects.map(row => <section className="card project-card" key={row.view.project.id}>
+      <div className="card-heading"><h2>{row.view.project.name}</h2><button className="secondary small" onClick={() => setEditing(row.view)}>Edit</button></div>
+      <div className="model-chips">{row.chips.map((chip, index) => <span className={`chip ${ { normal: '', dim: 'dim', blocked: 'state-blocked' }[chip.tone]}`} key={index}>{chip.label}</span>)}</div>
+      <p className={row.checkedOutHere ? 'project-path' : 'project-path muted'}>{row.path}</p>
+      {row.publicMemoryNotice && <PublicMemoryNotice />}
+      <div className="actions">{!props.embedded && <button className="secondary small" onClick={() => props.navigate(`/projects/${row.view.project.id}`)}>{OPEN}</button>}<button className="secondary small" onClick={() => setMemory({ project: row.view.project, isPublic: row.publicMemoryNotice })}>Browse memory</button><button className="secondary small" disabled={!row.canContext} onClick={() => setContext(row.view.project)}>Context</button></div>
+    </section>)}</div>
+    {editing && <ProjectForm {...props} row={editing === 'new' ? undefined : editing} knownPublic={false} close={() => setEditing(undefined)} saved={async signal => { await reload(signal); setEditing(undefined); props.message('Project saved.'); }} />}
+    {memory && <MemoryViewer project={memory.project} isPublic={memory.isPublic} onError={props.onError} close={() => setMemory(undefined)} />}
+    {context && <ContextPanel {...props} project={context} close={() => { setContext(undefined); void reload().catch(props.onError); }} />}
+  </>;
 }
-/** Where project memory, definitions and notebooks are kept, and how the last sync went. */
-function VaultStatus({ vault }: { vault: VaultView }) {
+function VaultStatus({ vault }: { vault: NonNullable<ProjectDefinitionsView['vault']> }) {
   const synced = vault.lastSyncAt ? timeStamp(vault.lastSyncAt) : null;
-  return (
-    <section className="card vault-status" aria-label="Vault">
-      <div className="card-heading">
-        <h2>Vault</h2>
-        <span className={`chip ${vault.lastError ? 'state-blocked' : ''}`}>{vault.lastError ? 'Not synced' : vault.pending ? 'Changes waiting' : vault.remote ? 'Synced' : 'Local only'}</span>
-      </div>
-      <p className="muted small-text">Project memory, project definitions and coordinator notebooks. A new hub restores a project from here when you add it.</p>
-      <dl className="vault-facts">
-        <dt>Remote</dt><dd>{vault.remote ?? 'None yet: save a GitHub token in Settings → Git.'}</dd>
-        <dt>Last sync</dt><dd>{synced ? <span title={synced.title}>{synced.label}</span> : 'Not yet'}</dd>
-        {vault.lastError && <><dt>Last error</dt><dd className="error-text">{vault.lastError}</dd></>}
-      </dl>
-    </section>
-  );
+  return <section className="card vault-status" aria-label="Vault"><div className="card-heading"><h2>Vault</h2><span className={`chip ${vault.blocked ? 'state-blocked' : ''}`}>{vault.label}</span></div><p className="muted small-text">Project memory, project definitions and coordinator notebooks. A new hub restores a project from here when you add it.</p><dl className="vault-facts"><dt>Remote</dt><dd>{vault.remoteLine}</dd><dt>Last sync</dt><dd>{synced ? <span title={synced.title}>{synced.label}</span> : 'Not yet'}</dd>{vault.lastError && <><dt>Last error</dt><dd className="error-text">{vault.lastError}</dd></>}</dl></section>;
 }
-
-function PublicMemoryNotice() {
-  return (
-    <p className="notice public-memory-notice">
-      This repository is public. Memory committed here is public too.
-    </p>
-  );
-}
-export function ProjectForm({
-  row,
-  knownPublic,
-  vault,
-  close,
-  saved,
-  ...props
-}: PageProps & {
-  row: ProjectView | undefined;
-  vault?: VaultView | undefined;
-  knownPublic: boolean;
-  close(): void;
-  saved(signal: AbortSignal): Promise<void>;
-}) {
-  const [project, setProject] = useState<Project>(
-    () =>
-      row?.project ?? {
-        schema: 'project-v1',
-        id: `project_${clientId()}`,
-        name: '',
-        paths: { [props.data.devices.currentDeviceId]: '' },
-        branchPolicy: 'main',
-        memory: { mode: 'hub', dir: '.jevellan/memory' },
-        context: { state: 'none' },
-      },
-  );
-  const [folders, setFolders] = useState<z.infer<typeof ProjectFoldersSchema>>();
-  const [createContext, setCreateContext] = useState(true);
-  const [restore, setRestore] = useState(true);
-  // A new project whose origin has a vault folder offers to restore its work from there (phase 5.6).
-  const restorable = !row && !!vault?.folders.includes(vaultFolder(project.remoteUrl) ?? '');
-  const task = useTask(props.onError);
-  const save = useSettingsSave();
-  const change = (values: Partial<Project>) => setProject({ ...project, ...values });
-  const deviceId = props.data.devices.currentDeviceId;
-  const folderName = (path: string) => path.replace(/\/+$/, '').split('/').at(-1) ?? '';
-  // A new project's name follows its folder until the user types a name of their own.
-  const [nameFollowsFolder, setNameFollowsFolder] = useState(!row);
-  const choosePath = (path: string) =>
-    setProject((current) => ({
-      ...current,
-      paths: { ...current.paths, [deviceId]: path },
-      name: nameFollowsFolder || !current.name.trim() ? folderName(path) : current.name,
-    }));
-  // Opening a folder selects it, so Save works without a separate "Use this folder" click.
-  const browse = (path?: string) =>
-    task.run(async () => {
-      const result = await api(
-        `/api/project-folders${path ? `?path=${encodeURIComponent(path)}` : ''}`,
-        ProjectFoldersSchema,
-      );
-      setFolders(result);
-      if (path) choosePath(result.path);
-    });
-  return (
-    <Modal title={row ? `Edit ${row.project.name}` : 'Add project'} close={close}>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          void task.run(async (signal) => {
-            const paths = Object.fromEntries(Object.entries(project.paths).filter(([, path]) => path.trim()));
-            await save(
-              '/hub/projects',
-              ProjectViewSchema,
-              'PUT',
-              {
-                schema: 'project-write-v1',
-                revision: row?.revision ?? 0,
-                createContext: !row && createContext,
-                project: {
-                  ...project,
-                  name: project.name.trim() || folderName(paths[deviceId] ?? ''),
-                  paths,
-                  remoteUrl: project.remoteUrl || undefined,
-                  testCommand: project.testCommand || undefined,
-                },
-              },
-              signal,
-            );
-            if (restorable && restore) await api(`/api/projects/${project.id}/vault-restore`, VaultRestoreResultSchema, 'POST', {}, { signal });
-            await saved(signal);
-          });
-        }}
-      >
-        <label>
-          Name
-          <input
-            value={project.name}
-            placeholder="The folder name"
-            onChange={(event) => {
-              setNameFollowsFolder(!event.target.value.trim());
-              change({ name: event.target.value });
-            }}
-          />
-        </label>
-        <label>
-          Remote URL
-          <input
-            value={project.remoteUrl ?? ''}
-            placeholder="Optional"
-            onChange={(event) => change({ remoteUrl: event.target.value })}
-          />
-        </label>
-        {restorable && (
-          <label className="toggle">
-            <input type="checkbox" checked={restore} onChange={(event) => setRestore(event.target.checked)} />
-            Restore from the vault
-          </label>
-        )}
-        {restorable && <p className="muted small-text">Settings, goals, jobs, the notebook and project memory come back from {vaultFolder(project.remoteUrl)}. This device becomes its only device.</p>}
-        <label className="toggle"><input type="checkbox" checked={project.githubTokenScope === 'project'} onChange={event => change({ githubTokenScope: event.target.checked ? 'project' : 'shared' })} />Require this project's GitHub token</label>
-        <p className="muted small-text">Save it in Settings → Git. When required, this project waits for its own token.</p>
-        {props.data.devices.devices.map((device) => (
-          <label key={device.id}>
-            Path on {device.name}
-            <input
-              required={device.id === props.data.devices.currentDeviceId}
-              placeholder="/absolute/path/to/project"
-              value={project.paths[device.id] ?? ''}
-              onChange={(event) =>
-                device.id === deviceId
-                  ? choosePath(event.target.value)
-                  : change({ paths: { ...project.paths, [device.id]: event.target.value } })
-              }
-            />
-          </label>
-        ))}
-        <button type="button" className="secondary" disabled={task.busy} onClick={() => void browse()}>
-          Browse folders on{' '}
-          {
-            props.data.devices.devices.find((device) => device.id === props.data.devices.currentDeviceId)
-              ?.name
-          }
-        </button>
-        {folders && (
-          <section className="folder-picker" aria-label="Project folders">
-            <p className="project-path">{folders.path}</p>
-            <div className="actions">
-              {folders.parent && (
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={task.busy}
-                  onClick={() => void browse(folders.parent!)}
-                >
-                  ↑ Parent folder
-                </button>
-              )}
-              <button
-                type="button"
-                disabled={task.busy}
-                onClick={() => {
-                  choosePath(folders.path);
-                  setFolders(undefined);
-                }}
-              >
-                Use this folder
-              </button>
-            </div>
-            <div className="folder-list">
-              {folders.folders.length === 0 && <p className="muted small-text">No folders inside this one.</p>}
-              {folders.folders.map((folder) => (
-                <button
-                  type="button"
-                  key={folder.path}
-                  disabled={task.busy}
-                  className="text-button"
-                  onClick={() => void browse(folder.path)}
-                >
-                  ▸ {folder.name}
-                </button>
-              ))}
-            </div>
-            <p className="muted small-text">Choose an existing Git project on this device.</p>
-          </section>
-        )}
-        <label>
-          Git policy
-          <select
-            value={project.branchPolicy}
-            onChange={(event) => {
-              const branchPolicy = event.target.value as Project['branchPolicy'];
-              change({
-                branchPolicy,
-                memory: { ...project.memory, mode: project.memory.mode === 'hub' ? 'hub' : branchPolicy === 'main' ? 'repo' : 'device' },
-              });
-            }}
-          >
-            <option value="main">Work on main</option>
-            <option value="external">Leave git to me</option>
-          </select>
-        </label>
-        {project.branchPolicy === 'main' && <p className="notice small-text">Jevellan automatically switches clean checkouts to main and announces the change. If main does not exist, it creates it from published branch history. The original branch is preserved.</p>}
-        <label>
-          Test command
-          <input
-            value={project.testCommand ?? ''}
-            placeholder="npm test"
-            onChange={(event) => change({ testCommand: event.target.value })}
-          />
-        </label>
-        <fieldset>
-          <legend>Allowed devices</legend>
-          {props.data.devices.devices.map((device) => (
-            <label className="toggle" key={device.id}>
-              <input
-                type="checkbox"
-                checked={!project.allowedDevices || project.allowedDevices.includes(device.id)}
-                onChange={(event) =>
-                  change({
-                    allowedDevices: event.target.checked
-                      ? [...(project.allowedDevices ?? []), device.id]
-                      : (
-                          project.allowedDevices ?? props.data.devices.devices.map((entry) => entry.id)
-                        ).filter((id) => id !== device.id),
-                  })
-                }
-              />
-              {device.name}
-            </label>
-          ))}
-        </fieldset>
-        {!row && (
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={createContext}
-              onChange={(event) => setCreateContext(event.target.checked)}
-            />
-            Create AGENTS.md if no instruction file exists
-          </label>
-        )}
-        <h3>Memory</h3>
-        {project.memory.mode !== 'hub' && knownPublic &&
-          row &&
-          project.paths[props.data.devices.currentDeviceId] ===
-            row.project.paths[props.data.devices.currentDeviceId] &&
-          project.remoteUrl === row.project.remoteUrl && <PublicMemoryNotice />}
-        <label>
-          Keep project memory
-          <select
-            value={project.memory.mode}
-            onChange={(event) =>
-              change({ memory: { ...project.memory, mode: event.target.value as Project['memory']['mode'] } })
-            }
-          >
-            <option value="hub">Shared on the hub</option>
-            <option value="repo">In the repository, synced through git</option>
-            <option value="device">On each device only</option>
-          </select>
-        </label>
-        {project.memory.mode === 'hub' ? <p className="muted">Notes and their private history stay on the hub. Switching copies the current notes once and keeps the old folder.</p> : <label>
-          Memory folder
-          <input
-            required
-            value={project.memory.dir}
-            onChange={(event) => change({ memory: { ...project.memory, dir: event.target.value } })}
-          />
-        </label>}
-        <div className="form-actions">
-          <button type="button" className="secondary" onClick={close}>
-            Cancel
-          </button>
-          <button disabled={task.busy}>{task.busy ? 'Saving…' : 'Save project'}</button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
+function PublicMemoryNotice() { return <p className="notice public-memory-notice">This repository is public. Memory committed here is public too.</p>; }
 function ContextPanel({ project, close, ...props }: PageProps & { project: Project; close(): void }) {
   const [review, setReview] = useState<z.infer<typeof ContextReviewSchema>>();
   const [panel, setPanel] = useState<z.infer<typeof ContextPanelSchema>>();

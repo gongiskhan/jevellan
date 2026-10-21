@@ -169,3 +169,6 @@ export * from './account-action-schemas.js';
 export * from './account-login-schemas.js';
 export * from './account-actions.js';
 export * from './account-login.js';
+
+export * from './project-definition-schemas.js';
+export * from './project-definition.js';

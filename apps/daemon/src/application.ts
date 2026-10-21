@@ -1,3 +1,7 @@
+import { ProjectDefinitionRestores } from './project-definition-restores.js';
+import { ProjectDefinitionEditorSchema, ProjectDefinitionsViewSchema, ProjectViewSchema, type ProjectDefinitionEditor, type ProjectDefinitionsView } from '@jevellan/core';
+import { projectDefinitionDeviceOperation } from './project-definition-device.js';
+import { GlobalThreadLimitSaveSchema, globalThreadLimitEditor, ProjectDefinitionReadSchema, ProjectDefinitionPreviewSchema, ProjectDefinitionSaveSchema, projectDefinitionFields, projectDefinitionEditor, projectDefinitionsView } from '@jevellan/core';
 import { accountLoginPresentation, LoginViewSchema } from '@jevellan/core';
 import { createHash } from 'node:crypto';
 import { AddAccountSchema, AccountEditorReadSchema, AccountEditorPreviewSchema, AccountEditorSaveSchema, AccountEditorSavedSchema, accountEditorInitial, accountEditorView } from '@jevellan/core';
@@ -432,6 +436,45 @@ export class Application {
   async saveRuntimeSettings(input: unknown, deviceId = this.device.deviceId) {
     const state = !this.member && deviceId !== this.device.deviceId ? new HubState(this.hub, deviceId, [...this.runtimes.keys()]) : this.state;
     const saved = await state.configuration.runtimesPut(input); await this.configuration(); await this.applyRigging(); return saved;
+  }
+  async globalThreadLimitEditor() { return globalThreadLimitEditor(await this.configuration()); }
+  async saveGlobalThreadLimit(raw: unknown, deviceId = this.device.deviceId) {
+    const input = GlobalThreadLimitSaveSchema.parse(raw), state = !this.member && deviceId !== this.device.deviceId ? new HubState(this.hub, deviceId, [...this.runtimes.keys()]) : this.state;
+    const saved = await state.configuration.limitsPut(input); await this.configuration(); return saved;
+  }
+  async projectDefinitions(deviceId = this.device.deviceId): Promise<ProjectDefinitionsView> {
+    if (deviceId !== this.device.deviceId) return ProjectDefinitionsViewSchema.parse(await projectDefinitionDeviceOperation(this, deviceId, { schema: 'project-definition-peer-request-v1', operation: 'view' }));
+    const projects = (await this.conversations.projects()).projects;
+    const rows = await Promise.all(projects.map(async view => ({ view, public: !!view.project.paths[this.device.deviceId] && await this.projectVisibility.inspect(view.project, this.device.deviceId).then(value => value.visibility === 'PUBLIC').catch(() => false) })));
+    return projectDefinitionsView(rows, this.device.deviceId, this.vault ? this.vaultView() : null);
+  }
+  async projectDefinitionRead(raw: unknown, deviceId = this.device.deviceId): Promise<ProjectDefinitionEditor> {
+    if (deviceId !== this.device.deviceId) return ProjectDefinitionEditorSchema.parse(await projectDefinitionDeviceOperation(this, deviceId, { schema: 'project-definition-peer-request-v1', operation: 'read', input: raw }));
+    const input = ProjectDefinitionReadSchema.parse(raw), current = input.projectId ? await this.state.projects.get(input.projectId) : null;
+    if (input.projectId && !current) throw Object.assign(new Error('Project not found.'), { status: 404 });
+    const publicReference = current?.project.paths[this.device.deviceId] ? await this.projectVisibility.inspect(current.project, this.device.deviceId).then(value => value.visibility === 'PUBLIC').catch(() => false) : false;
+    const context = { schema: 'project-definition-context-v1', mode: current ? 'edit' : 'create', projectId: current?.project.id ?? newId('project'), revision: current?.revision ?? 0, projectContext: current?.project.context ?? { state: 'none' }, reference: { public: publicReference, remoteUrl: current?.project.remoteUrl ?? '', localPath: current?.project.paths[this.device.deviceId] ?? '' } };
+    return this.projectDefinitionPreview({ schema: 'project-definition-preview-v1', context, fields: projectDefinitionFields(current?.project ?? null, this.device.deviceId) });
+  }
+  async projectDefinitionPreview(raw: unknown, receiptRetry = false, deviceId = this.device.deviceId): Promise<ProjectDefinitionEditor> {
+    if (deviceId !== this.device.deviceId) return ProjectDefinitionEditorSchema.parse(await projectDefinitionDeviceOperation(this, deviceId, { schema: 'project-definition-peer-request-v1', operation: 'preview', input: raw }));
+    const input = ProjectDefinitionPreviewSchema.parse(raw), current = await this.state.projects.get(input.context.projectId), roster = await this.roster();
+    return projectDefinitionEditor(input, { current, deviceId: this.device.deviceId, devices: roster.devices.map(row => ({ id: row.device.id, name: row.device.name })), vault: this.vault ? this.vaultView() : null, receiptRetry });
+  }
+  #projectDefinitionRestores: ProjectDefinitionRestores | undefined;
+  async saveProjectDefinition(raw: unknown, deviceId = this.device.deviceId): Promise<ReturnType<typeof ProjectViewSchema.parse>> {
+    if (deviceId !== this.device.deviceId) return ProjectViewSchema.parse(await projectDefinitionDeviceOperation(this, deviceId, { schema: 'project-definition-peer-request-v1', operation: 'save', input: raw }));
+    const input = ProjectDefinitionSaveSchema.parse(raw), prepared = await this.projectDefinitionPreview({ schema: 'project-definition-preview-v1', context: input.context, fields: input.fields }, true);
+    if (!prepared.plan) throw Object.assign(new Error(prepared.validation.join(' ')), { status: 400 });
+    const plan = prepared.plan, restores = this.#projectDefinitionRestores ??= new ProjectDefinitionRestores(this.homes);
+    return restores.run(input, plan.restorePath !== null, async () => {
+      const saved = await this.conversations.saveProject({ ...plan.body, clientRequestId: input.clientRequestId });
+      if (!plan.restorePath) return saved;
+      await this.restoreProjectFromVault(saved.project.id);
+      const restored = await this.state.projects.get(saved.project.id);
+      if (!restored) throw Object.assign(new Error('This project was removed after restoring. Refresh the list.'), { status: 409 });
+      return restored;
+    }, async () => this.state.projects.get(input.context.projectId));
   }
   async loginPresentation(raw: unknown, requesterDeviceId = this.device.deviceId) {
     const view = LoginViewSchema.parse(raw), settings = await this.accountsSettings(view.deviceId);
