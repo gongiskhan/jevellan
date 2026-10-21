@@ -4,6 +4,8 @@ import type { ProjectLedger } from '@jevellan/projects';
 import type { Application } from './application.js';
 
 const KEEP = 5000;
+/** A state that repeats unchanged (a thread waiting for a free slot is re-evaluated every few seconds) is shown again at most this often. */
+const REPEAT_MS = 5 * 60_000;
 const cut = (text: string, max = 600) => { const one = text.replace(/\s+/gu, ' ').trim(); return one.length > max ? `${one.slice(0, max - 3)}...` : one; };
 
 /**
@@ -16,6 +18,7 @@ export class OwnerEvents {
   readonly #listeners = new Set<(event: OwnerEvent) => void>();
   #seq: number;
   #threadSources = new Map<string, string>();
+  readonly #lastState = new Map<string, { text: string; at: number }>();
   constructor(private readonly app: Application, now: () => number = Date.now) {
     this.#seq = now() * 1000;
     app.projectWork.ledgers.subscribe((ledger, event) => { try { this.#fromLedger(ledger, event); } catch { /* a malformed payload never breaks a writer */ } });
@@ -34,7 +37,14 @@ export class OwnerEvents {
   #fromLedger(ledger: ProjectLedger, event: ProjectLedgerEvent): void {
     const data = ledger.data(event) as Record<string, unknown> | undefined; if (!data) return;
     const source = this.#source(ledger); const at = event.t; const projectId = ledger.projectId;
-    const emit = (kind: OwnerEvent['kind'], text: string) => this.publish({ projectId, source, kind, text: cut(text, 4000), at });
+    const emit = (kind: OwnerEvent['kind'], text: string) => {
+      if (kind === 'state') {
+        const key = `${projectId}:${ledger.threadId ?? 'coordinator'}`, last = this.#lastState.get(key), now = Date.parse(at);
+        if (last?.text === text && now - last.at < REPEAT_MS) return;
+        this.#lastState.set(key, { text, at: now });
+      }
+      this.publish({ projectId, source, kind, text: cut(text, 4000), at });
+    };
     switch (event.type) {
       case 'coordinator-text': { const parsed = ProjectLedgerDataSchemas['coordinator-text'].safeParse(data); if (parsed.success) emit('text', parsed.data.text); return; }
       case 'coordinator-tool': { const parsed = ProjectLedgerDataSchemas['coordinator-tool'].safeParse(data); if (parsed.success) emit(parsed.data.tool === 'jevellan_task_create' ? 'decide' : 'tool', `${parsed.data.tool}: ${parsed.data.summary}`); return; }
