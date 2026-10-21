@@ -1,16 +1,33 @@
 import { ProjectSettingsEditorBaseSchema, ProjectSettingsEditorSaveRequestSchema, ProjectSettingsEditorSavedSchema, ProjectWorkSettingsRequestSchema,
-  type ProjectWorkSettings, type ProjectSettingsEditorSaved } from '@jevellan/core';
-import type { z } from 'zod';
+  ProjectSettingsControlsSchema, ProjectWorkSettingsSchema, ProjectPrAutoFixSettingsSchema, SessionCheckpointSettingsSchema,
+  DeviceRosterSchema, type ProjectWorkSettings, type ProjectSettingsEditorSaved } from '@jevellan/core';
+import { z } from 'zod';
 import type { ProjectWorkSettingsViewSchema, ProjectWorkViewSchema } from '@jevellan/core';
 
 const savedNotice = 'Project settings saved.';
+/** Resource offers and HTML affordances derive from the canonical writer's schemas. */
+export function settingsEditorControls(roster: z.infer<typeof DeviceRosterSchema>) {
+  const shape = ProjectWorkSettingsSchema.shape;
+  const number = (label: string, schema: z.ZodNumber) => { const json = z.toJSONSchema(schema); return { label, min: json.minimum, max: json.maximum, step: 1 }; };
+  return ProjectSettingsControlsSchema.parse({ schema: 'project-settings-controls-v1', numbers: {
+    maxRunningThreads: number('Max running threads', shape.maxRunningThreads), maxRunningPerDevice: number('Max per device', shape.maxRunningPerDevice),
+    threadTurnCap: number('Turn limit per thread', shape.threadTurnCap), maxNewThreadsPerDay: number('New threads per day', shape.maxNewThreadsPerDay.removeDefault()),
+    compactAtPercent: number('Thread compaction at (%)', shape.compactAtPercent.removeDefault()), coordinatorHandoffAtPercent: number('Coordinator session reset at (%)', shape.coordinatorHandoffAtPercent.removeDefault()),
+    checkpointMinTokens: number('Checkpoint minimum context tokens', SessionCheckpointSettingsSchema.shape.checkpointMinTokens),
+    perDeviceLimit: number('Per-device limit', shape.perDeviceLimits.removeDefault().valueType), maxRounds: number('Automatic fixes per pull request', ProjectPrAutoFixSettingsSchema.shape.maxRounds),
+  }, startModes: [{ value: 'start', label: 'Start threads right away' }, { value: 'propose', label: 'Propose threads and wait for me' }],
+    devices: roster.devices.filter(row => !row.revoked && row.device.workPolicy?.mode !== 'apps-only').map(row => ({ id: row.device.id, label: `Limit on ${row.device.name}` })),
+    defaultLimitPrefix: 'Default: ', automaticFixes: [{ key: 'checks', label: 'Fix failing checks automatically' }, { key: 'conflicts', label: 'Resolve conflicts automatically' }, { key: 'comments', label: 'Address review comments automatically' }],
+    riskyAreasMaxLength: z.toJSONSchema(shape.riskyAreas.removeDefault()).maxLength,
+  });
+}
 /** Section order and status choices belong to the server; browser draft/reset state stays local. */
-export function settingsEditorBase(settingsView: z.infer<typeof ProjectWorkSettingsViewSchema>, work: z.infer<typeof ProjectWorkViewSchema>) {
+export function settingsEditorBase(settingsView: z.infer<typeof ProjectWorkSettingsViewSchema>, work: z.infer<typeof ProjectWorkViewSchema>, roster: z.infer<typeof DeviceRosterSchema>) {
   return ProjectSettingsEditorBaseSchema.parse({ schema: 'project-settings-editor-base-v1', settingsView, work,
     sections: [['general', 'General'], ['instructions', 'Instructions'], ['placement', 'Placement'], ['limits', 'Threads and limits'], ['pull-requests', 'Landing'],
       ['environment', 'Environment'], ['routines', 'Routines'], ['health', 'Health checks'], ['notifications', 'Notifications'], ['usage', 'Usage'], ['automation', 'Automation']].map(([key, label]) => ({ key, label })),
     statusOptions: [['active', 'Active'], ['paused', 'Paused'], ['archived', 'Archived']].map(([value, label]) => ({ value, label })),
-    savePath: `/api/projects/${settingsView.settings.projectId}/config/editor`, backPath: `/projects/${settingsView.settings.projectId}`, savedNotice,
+    savePath: `/api/projects/${settingsView.settings.projectId}/config/editor`, backPath: `/projects/${settingsView.settings.projectId}`, savedNotice, controls: settingsEditorControls(roster),
   });
 }
 export function settingsEditorRequest(projectId: string, raw: unknown) {

@@ -27,7 +27,7 @@ test('CLI config settings editor exposes the shared project form and value-free 
   const settings = (await f.app.projectWork.settingsView('project')).settings;
   expect(await callCommand(['config', 'settings_editor'], f.homes)).toBe(0);
   const encoded = output.mock.calls.map(row => String(row[0])).find(text => text.startsWith('{')), result = OwnerToolResultSchema.parse(encoded ? JSON.parse(encoded) : undefined);
-  expect(result).toMatchObject({ ok: true, data: { schema: 'project-settings-editor-v1', settingsView: { settings }, secretStates: [], savePath: '/api/projects/project/config/editor' } }); expect(f.fake.runs).toHaveLength(0);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-settings-editor-v1', settingsView: { settings }, secretStates: [], savePath: '/api/projects/project/config/editor', controls: { schema: 'project-settings-controls-v1', numbers: { maxRunningThreads: { min: 1, max: 20 } } } } }); expect(f.fake.runs).toHaveLength(0);
   if (!result.ok) throw new Error('Expected project settings editor.'); const view = ProjectSettingsEditorSchema.parse(result.data);
   output.mockClear(); expect(await callCommand(['config', 'settings_save', '--request', JSON.stringify({ schema: 'project-settings-editor-save-v1', clientRequestId: 'cli_form_settings', base: view.settingsView.settings, draft: { ...view.settingsView.settings, instructions: 'CLI draft.' }, secretPresence: {} })], f.homes)).toBe(0);
   const saved = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); if (!saved.ok) throw new Error('Expected project settings save.');

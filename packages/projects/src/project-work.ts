@@ -960,8 +960,8 @@ export class ProjectWork {
     return landingEditor(input);
   }
   async settingsEditor(projectId: string) {
-    const [settings, view] = await Promise.all([this.settingsView(projectId), this.view(projectId)]);
-    return settingsEditorBase(settings, view);
+    const [settings, view, roster] = await Promise.all([this.settingsView(projectId), this.view(projectId), this.#o.roster()]);
+    return settingsEditorBase(settings, view, roster);
   }
   async saveSettingsEditor(projectId: string, raw: unknown) {
     const input = settingsEditorRequest(projectId, raw), saved = await this.putSettings(projectId, input.request);

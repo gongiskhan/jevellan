@@ -1880,6 +1880,19 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     await expect(settings).toContainText('42 / 16,000');
     await settings.getByLabel('Guidance for Jev', { exact: true }).fill('Choose a careful model for UI work.');
     await settings.getByLabel('New threads per day', { exact: true }).fill('17');
+    const controls = (await (await page.request.get(`${PROJECT}/config/editor`)).json()).controls;
+    for (const [key, field] of Object.entries(controls.numbers) as Array<[string, { label: string; min: number; max: number; step: number }]>) {
+      if (key === 'perDeviceLimit') continue;
+      const input = settings.getByLabel(field.label, { exact: true });
+      await expect(input).toHaveAttribute('min', String(field.min)); await expect(input).toHaveAttribute('max', String(field.max)); await expect(input).toHaveAttribute('step', String(field.step));
+    }
+    const limitDevice = controls.devices[0];
+    await settings.getByLabel(limitDevice.label, { exact: true }).fill('2');
+    await settings.getByLabel('Turn limit per thread', { exact: true }).fill('41');
+    await settings.getByLabel('Propose threads and wait for me', { exact: true }).check();
+    await settings.getByLabel('Fix failing checks automatically', { exact: true }).uncheck();
+    await settings.getByLabel('Automatic fixes per pull request', { exact: true }).fill('4');
+    await settings.getByLabel('Risky areas', { exact: true }).fill('Fixture-sensitive paths.');
     await settings.getByRole('button', { name: 'Add variable', exact: true }).click();
     await settings.getByLabel('Variable 1 name', { exact: true }).fill('PARITY_DATA');
     await settings.getByLabel('Variable 1 value', { exact: true }).fill('/tmp/parity-data');
@@ -1913,6 +1926,7 @@ test('PAR1 project settings save, conflict, pause and archive', async ({ page },
     expect(settingsWrites).toBe(1); await page.unroute(settingsRoute);
     await expect.poll(async () => (await work(page)).settings.maxNewThreadsPerDay).toBe(17);
     expect((await work(page)).settings).toMatchObject({ landingChecks: [{ name: 'Fixture landing check', paths: ['src', ' spaced path '], command: 'true' }], smokeCheck: 'true', mergeCommitPaths: ['docs', ' notes '] });
+    expect((await work(page)).settings).toMatchObject({ threadTurnCap: 41, startMode: 'propose', perDeviceLimits: { [limitDevice.id]: 2 }, prAutoFix: { checks: false, maxRounds: 4 }, riskyAreas: 'Fixture-sensitive paths.' });
     settings = await openSettings(page);
     await expect(settings.getByLabel('Project instructions', { exact: true })).toHaveValue('Keep changes small and explain the result.');
     await expect(settings.getByLabel('Secret 1 value', { exact: true })).toHaveValue('');

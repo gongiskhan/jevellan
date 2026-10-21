@@ -27,7 +27,7 @@ async function connect(env: Record<string, string>): Promise<Client> {
 test('MCP config settings editor exposes the shared project form and value-free summaries', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root }), settings = (await f.app.projectWork.settingsView('project')).settings;
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'settings_editor' } })).structuredContent);
-  expect(result).toMatchObject({ ok: true, data: { schema: 'project-settings-editor-v1', settingsView: { settings }, secretStates: [], savePath: '/api/projects/project/config/editor' } }); expect(f.fake.runs).toHaveLength(0);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'project-settings-editor-v1', settingsView: { settings }, secretStates: [], savePath: '/api/projects/project/config/editor', controls: { schema: 'project-settings-controls-v1', numbers: { maxRunningThreads: { min: 1, max: 20 } } } } }); expect(f.fake.runs).toHaveLength(0);
   if (!result.ok) throw new Error('Expected project settings editor.'); const view = ProjectSettingsEditorSchema.parse(result.data);
   expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'settings_save', request: { schema: 'project-settings-editor-save-v1', clientRequestId: 'mcp_form_settings', base: view.settingsView.settings, draft: { ...view.settingsView.settings, instructions: 'MCP draft.' }, secretPresence: {} } } })).structuredContent)).toMatchObject({ ok: true, data: { settingsView: { settings: { instructions: 'MCP draft.' } } } });
   await f.app.state.environment.put('project', 'MCP_SECRET', 'owned fixture value');
