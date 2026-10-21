@@ -79,7 +79,7 @@ test('the bridge starts in tmux with the specified flags, refuses an account wit
     if (args[0] === 'list-panes') return { status: 0, stdout: alive ? 'claude\n' : '' };
     // The trust dialog is answered on its second capture and stays on screen for three more, then the channel confirmation shows under it.
     if (args[0] === 'capture-pane') { const n = calls.filter(row => row[0] === 'capture-pane').length;
-      return { status: 0, stdout: n <= 5 ? '❯ No, exit\n  Yes, I trust this folder' : n <= 7 ? 'Yes, I trust this folder\n❯ 1. I am using this for local development\n  2. Exit' : 'Claude Code v2\n❯ ' }; }
+      return { status: 0, stdout: n <= 5 ? '❯ No, exit\n  Yes, I trust this folder' : n <= 7 ? 'Yes, I trust this folder\n❯ 1. I am using this for local development\n  2. Exit' : `⏺ An earlier reply, replayed by --continue; the version header has scrolled away.\n${'─'.repeat(60)}\n❯ \n${'─'.repeat(60)}\n  /remote-control is active` }; }
     return { status: 0, stdout: '' }; };
   const bridges = new OwnerBridges(f.app, tmux, '/usr/bin/claude');
   const project = (await f.app.ownerTools.projects())[0]!;

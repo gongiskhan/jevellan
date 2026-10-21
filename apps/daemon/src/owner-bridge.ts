@@ -161,7 +161,9 @@ export class OwnerBridges {
       if (dialog && seen !== dialog.text) { seen = dialog.text; quiet = 0; continue; }
       if (dialog) { seen = undefined; answered.set(dialog.text, Date.now()); for (const key of dialog.keys) { this.tmux(['send-keys', '-t', `=${session}:`, key]); await new Promise(resolve => setTimeout(resolve, 300)); } quiet = 0; continue; }
       if (DIALOGS.some(entry => entry.text.test(pane))) { quiet = 0; continue; }
-      if (/Claude Code v\d/u.test(pane) && /❯/u.test(pane)) { quiet++; if (quiet >= 4) return { ready: true }; }
+      // The prompt: its input box (a selection marker under a full rule). The version header is not enough, and it scrolls away when
+      // --continue replays a long conversation.
+      if (/^─{20,}\s*\n❯/mu.test(pane)) { quiet++; if (quiet >= 4) return { ready: true }; }
     }
     return { ready: false, ...(screen ? { screen } : {}) };
   }
