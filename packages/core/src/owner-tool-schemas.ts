@@ -88,7 +88,7 @@ export const OwnerEventSchema = z.strictObject({ schema: z.literal('owner-event-
 export type OwnerEvent = z.infer<typeof OwnerEventSchema>;
 
 /** Push kinds (bridge specification, "Push"), each switchable under `config push`. */
-export const PushKindSchema = z.enum(['waiting_created', 'deploy', 'coordinator_crashed', 'coordinator_stalled', 'budget_exhausted', 'job_failed', 'night_missed', 'held_idle_warning', 'held_auto_return', 'coordinator_reply', 'coordinator_answer', 'login_done']);
+export const PushKindSchema = z.enum(['waiting_created', 'deploy', 'coordinator_crashed', 'coordinator_recovered', 'coordinator_stalled', 'budget_exhausted', 'job_failed', 'night_missed', 'held_idle_warning', 'held_auto_return', 'coordinator_reply', 'coordinator_answer', 'login_done']);
 export type PushKind = z.infer<typeof PushKindSchema>;
 // state point hub namespace owner-settings: key a project id, or `installation` for the installation-wide sections
 export const OwnerProjectSettingsSchema = z.strictObject({ schema: z.literal('owner-project-settings-v1'), projectId: IdSchema,

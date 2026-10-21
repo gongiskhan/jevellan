@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { OwnerPushMessageSchema, OwnerPushSchema, ProjectDecisionSchema, ProjectNotificationSchema, ProjectSchema, StoredProjectWorkSettingsSchema, currentUsage, defaultProjectNotifications, ownerClock,
   type OwnerPush, type OwnerPushMessage, type PushKind } from '@jevellan/core';
-import { waitingKind } from '@jevellan/projects';
+import { NOTIFICATION_COORDINATOR_RECOVERED, waitingKind } from '@jevellan/projects';
 import type { Application } from './application.js';
 import { insideQuietHours } from './notifications.js';
 import { coordinatorReply } from './tools/ask-coordinator.js';
@@ -64,7 +64,7 @@ export class OwnerPushes {
     for (const { document: notification } of hub.list('project-notifications', ProjectNotificationSchema)) {
       if (!notification.projectId || Date.parse(notification.createdAt) < cutoff) continue;
       if (notification.kind === 'deploy') this.add({ projectId: notification.projectId, kind: 'deploy', key: `notification:${notification.id}`, urgent: notification.urgent === true, at: notification.createdAt, text: `${notification.title}: ${notification.body}` });
-      else if (notification.kind === 'coordinator-unavailable') this.add({ projectId: notification.projectId, kind: 'coordinator_crashed', key: `notification:${notification.id}`, at: notification.createdAt, text: `${notification.title}: ${notification.body}` });
+      else if (notification.kind === 'coordinator-unavailable') this.add({ projectId: notification.projectId, kind: notification.body === NOTIFICATION_COORDINATOR_RECOVERED ? 'coordinator_recovered' : 'coordinator_crashed', key: `notification:${notification.id}`, at: notification.createdAt, text: `${notification.title}: ${notification.body}` });
     }
     // Failed job and night runs, exhausted budgets and a coordinator that shows no activity while marked running: these read whole
     // project views, so they run every 30 seconds rather than on every sweep.

@@ -44,6 +44,14 @@ test('a budget push names the window that reached the budget, and a reading from
   expect(budget()).toEqual([expect.stringMatching(/^\[Jevellan\] Account Fixture reached its 90% budget in its five-hour window \(95%; weekly 1%\)\. New work waits for another eligible account or until \d{2}:\d{2}\.$/u)]);
 });
 
+test('a coordinator that runs again after a stop reaches the bridge as a recovery push', async () => {
+  f = await projectFixture({ control: true }); const ledger = f.app.projectWork.ledgers.coordinator('project');
+  for (const [turn, status] of [[1, 'failed'], [2, 'failed'], [3, 'completed']] as const) ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status, ...(status === 'failed' ? { error: 'Provider unavailable.' } : {}) } });
+  await f.app.projectWork.notifications.flush(); await f.app.ownerPushes.sweep();
+  expect(f.app.ownerPushes.messages('project').map(message => [message.kind, message.text])).toEqual(expect.arrayContaining([
+    ['coordinator_crashed', `[Jevellan] ${f.project.name}: The coordinator stopped: Provider unavailable.`], ['coordinator_recovered', `[Jevellan] ${f.project.name}: The coordinator is running again.`]]));
+});
+
 test('quiet hours hold ordinary pushes and send one summary when they end; urgent ones go at once; bursts batch', async () => {
   f = await projectFixture({ control: true });
   let now = Date.now(); const pushes = new OwnerPushes(f.app, () => now);

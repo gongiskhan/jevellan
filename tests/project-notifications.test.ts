@@ -156,6 +156,18 @@ test('an owner message after the coordinator stopped starts a new count, so fail
   await f.restart(); expect(stopped()).toHaveLength(2);
 });
 
+test('a coordinator that stopped and runs again says so once, and a completed turn without a stop says nothing about recovery', async () => {
+  const f = fixture = await projectFixture(); const ledger = f.app.projectWork.ledgers.coordinator('project');
+  const end = (turn: number, status: 'failed' | 'completed') => ledger.append({ type: 'coordinator-turn-end', turn, data: { schema: 'coordinator-turn-end-v1', turn, status, ...(status === 'failed' ? { error: 'Provider unavailable.' } : {}) } });
+  end(1, 'completed'); end(2, 'failed'); end(3, 'failed');
+  // The owner's restart starts a new failure count; the turn after it still reports the recovery.
+  ledger.append({ type: 'coordinator-event', data: { schema: 'coordinator-event-v1', kind: 'user-message', id: 'cev_restart', at: new Date().toISOString(), text: 'Carry on.', clientMessageId: 'owner_restart_1', via: 'bridge' } });
+  end(4, 'completed'); end(5, 'completed');
+  await f.app.projectWork.notifications.flush();
+  const rows = f.app.hub.list('project-notifications', ProjectNotificationSchema).map(row => row.document).filter(row => row.kind === 'coordinator-unavailable');
+  expect(rows.map(row => row.body)).toEqual(['The coordinator stopped: Provider unavailable.', 'The coordinator is running again.']);
+});
+
 test('a question creates a single needs-you notification and uses high urgency', async () => {
   const f = fixture = await projectFixture(); const sent: string[] = [];
   const service = new HubNotifications(f.app.hub, () => 'https://fixture.example', async (_sub, payload, options) => { sent.push(String(payload)); expect(options?.urgency).toBe('high'); return { statusCode: 201, body: '', headers: {} }; }); services.push(service); subscribe(service);

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { ProjectNotificationSchema, clipRedacted, type ProjectHub, type ProjectLedgerEvent, type ProjectNotification, type SharedProjects, type SecretRedactor } from '@jevellan/core';
 import type { ProjectLedger, ProjectLedgers } from './ledger.js';
 import type { ThreadStore } from './stores.js';
-import { notificationCoordinatorStopped, notificationFailedBody, notificationThreadTitle } from './copy.js';
+import { NOTIFICATION_COORDINATOR_RECOVERED, notificationCoordinatorStopped, notificationFailedBody, notificationThreadTitle } from './copy.js';
 const week = 7 * 86400000;
 function plain(value: string): string {
   const code: string[] = [];
@@ -19,6 +19,8 @@ export class ProjectNotifications {
   readonly #pending = new Map<string, Pending>();
   readonly #text = new Map<string, string>();
   readonly #failures = new Map<string, number>();
+  /** Sources whose stop was notified and that have not completed a turn since. */
+  readonly #stopped = new Set<string>();
   readonly #seen = new Map<string, number>();
   readonly #unsubscribe: () => void;
   #flushing: Promise<void> | undefined;
@@ -49,7 +51,9 @@ export class ProjectNotifications {
       const end = ledger.payload(event as typeof event & { type: 'coordinator-turn-end' });
       enqueue('coordinator-reply', plain(this.#text.get(key) ?? '')); this.#text.delete(key);
       const failures = end.retrying || !['completed', 'failed', 'timed-out'].includes(end.status) ? this.#failures.get(source) ?? 0 : end.status === 'completed' ? 0 : (this.#failures.get(source) ?? 0) + 1;
-      this.#failures.set(source, failures); if (failures === 2 && !end.retrying && ['failed', 'timed-out'].includes(end.status)) enqueue('coordinator-unavailable', notificationCoordinatorStopped(end.error ?? end.status));
+      // A stop was notified: the first completed turn after it says the coordinator is back, also after an owner restart reset the count.
+      if (end.status === 'completed' && this.#stopped.delete(source)) enqueue('coordinator-unavailable', NOTIFICATION_COORDINATOR_RECOVERED);
+      this.#failures.set(source, failures); if (failures === 2 && !end.retrying && ['failed', 'timed-out'].includes(end.status)) { this.#stopped.add(source); enqueue('coordinator-unavailable', notificationCoordinatorStopped(end.error ?? end.status)); }
     } else if (event.type === 'thread-state') {
       const state = ledger.payload(event as typeof event & { type: 'thread-state' }); if (state.to === 'failed') enqueue('thread-failed', notificationFailedBody(state.reason ?? 'Unknown reason.'));
     } else if (event.type === 'thread-report') enqueue('thread-finished', ledger.payload(event as typeof event & { type: 'thread-report' }).summary.split('\n')[0]!);

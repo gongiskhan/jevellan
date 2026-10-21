@@ -632,6 +632,8 @@ export const notificationQuestionTitle = (project: string) => `${project}: quest
 export const notificationThreadTitle = (project: string, title: string) => `${project}: ${title}`;
 export const notificationFailedBody = (reason: string) => `Failed: ${reason}`;
 export const notificationCoordinatorStopped = (error: string) => `The coordinator stopped: ${error}`;
+/** The coordinator completed a turn after a stopped notification (#21): the earlier push is no longer true. */
+export const NOTIFICATION_COORDINATOR_RECOVERED = 'The coordinator is running again.';
 export const NOTIFICATION_TEST_TITLE = 'Jevellan';
 export const NOTIFICATION_TEST_BODY = 'Notifications work on this device.';
 
