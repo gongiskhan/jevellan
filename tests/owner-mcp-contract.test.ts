@@ -473,3 +473,9 @@ test('MCP conversation list source uses the canonical owner reader without start
   const ordinary = await (await f.request('/api/conversation-list/view')).json(); expect(ordinary).toMatchObject({ schema: 'conversation-list-source-v1', readPolicy: { pollMs: 5000 } });
   expect(result).toMatchObject({ ok: true, data: ordinary }); expect(f.fake.starts).toHaveLength(0);
 });
+
+test('MCP conversation sidebar view shares canonical merged presentation without starting work', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'conversation_sidebar', request: { schema: 'conversation-sidebar-request-v1', shells: false, filter: 'Running', q: 'fixture' } } })).structuredContent);
+  const ordinary = await (await f.request('/api/conversation-list/sidebar?shells=false&filter=Running&q=fixture')).json(); expect(result).toMatchObject({ ok: true, data: ordinary }); expect(f.fake.starts).toHaveLength(0);
+});

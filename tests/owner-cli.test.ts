@@ -518,3 +518,10 @@ test('CLI conversation list source uses the canonical owner reader without start
   const ordinary = await (await f.request('/api/conversation-list/view')).json(); expect(ordinary).toMatchObject({ schema: 'conversation-list-source-v1', readPolicy: { pollMs: 5000 } });
   expect(result).toMatchObject({ ok: true, data: ordinary }); expect(f.fake.starts).toHaveLength(0);
 });
+
+test('CLI conversation sidebar view shares canonical merged presentation without starting work', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['jev', 'conversation_sidebar', '--request', JSON.stringify({ schema: 'conversation-sidebar-request-v1', shells: false, filter: 'Running', q: 'fixture' })], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
+  const ordinary = await (await f.request('/api/conversation-list/sidebar?shells=false&filter=Running&q=fixture')).json(); expect(result).toMatchObject({ ok: true, data: ordinary }); expect(f.fake.starts).toHaveLength(0);
+});

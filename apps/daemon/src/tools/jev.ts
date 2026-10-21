@@ -1,3 +1,4 @@
+import { ownerConversationSidebar } from '../conversation-sidebar-view.js';
 import { ownerCommandViewForTools } from '../owner-command-view.js';
 import { conversationListSource } from '../conversation-list-source.js';
 import { ProjectPageRequestSchema } from '@jevellan/core';
@@ -43,6 +44,7 @@ export const jev: OwnerHandler = async (context) => {
     case 'plan_approve': return { text: 'Plan approved.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'plan-approve', args.request) };
     case 'plan_changes': return { text: 'Requested plan changes.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'plan-changes', args.request) };
     case 'session_list': return { text: 'This device’s session list.', data: sessionListView(app.device.deviceId, readSessionListPreferences(app.homes)) };
+    case 'conversation_sidebar': return { text: 'Conversation sidebar.', data: await ownerConversationSidebar(app, args.request) };
     case 'conversation_list': return { text: 'Owner conversations.', data: await conversationListSource(app) };
     case 'session_list_save': return { text: 'Session list saved.', data: sessionListView(app.device.deviceId, saveSessionListPreferences(app.homes, args.request)) };
     case 'owner_command_view': return { text: 'Owner command view.', data: await ownerCommandViewForTools(app, projectId, args) };

@@ -1,3 +1,4 @@
+export * from './conversation-sidebar-view.js';
 import { z } from 'zod';
 
 export const DEFAULT_PORT = 9771;

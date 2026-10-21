@@ -1,5 +1,6 @@
+import { conversationSidebarView, type ConversationSidebarFilter } from '@jevellan/core/client';
 import { ConversationListSourceSchema, conversationListRefresh, conversationListUpdateKey, CONVERSATION_LIST_POLL_MS, CONVERSATION_UPDATED_EVENT } from '@jevellan/core/client';
-import { conversationStateLabel as stateLabel, conversationActionLabel as actionLabel, conversationPagePresentation, conversationPagePresentationForStream } from '@jevellan/core/client';
+import { conversationActionLabel as actionLabel, conversationPagePresentation, conversationPagePresentationForStream } from '@jevellan/core/client';
 import { ConversationTranscriptViewSchema, conversationTranscriptProjection, selectConversationTranscriptView, conversationNoticeHidden, type ConversationTranscriptView } from '@jevellan/core/client';
 import { ConversationStatusStreamRequestSchema, ConversationStatusEventSchema, STATUS_REFRESH_WINDOW_MS } from '@jevellan/core/client';
 import { conversationPlansView, planApprovalRequest, planChangesMessage } from '@jevellan/core/client';
@@ -39,7 +40,7 @@ import { waitForProjectSetup } from './project-setup.js';
 import { queuedRefresh } from './refresh.js';
 import { ComposerOverride, ComposerChoices } from './composer-choices.js';
 import { Icon } from './icons.js';
-import { useCursorSessions, sessionRuntimeLabel } from './cursor-sessions.js';
+import { useCursorSessions } from './cursor-sessions.js';
 import { MessageDelivery, MessageInput, LatestUserMessage } from './message-delivery.js';
 import { EvidenceLink, EvidencePanel, type EvidenceTarget } from './evidence.js';
 import { Markdown, Modal, Panel, composerClearance, followOnScroll, repinAtEnd, useDismissible, useTask, type PageProps } from './components.js';
@@ -75,7 +76,7 @@ export function ConversationSidebar({
     [],
   );
   const [projects, setProjects] = useState<Array<Pick<Project, 'id' | 'name'>>>([]);
-  const [filter, setFilter] = useState('All');
+  const [filter, setFilter] = useState<ConversationSidebarFilter>('All');
   const [search, setSearch] = useState('');
   useEffect(() => {
     const refresh = conversationListRefresh(
@@ -89,38 +90,19 @@ export function ConversationSidebar({
     const timer = setInterval(changed, CONVERSATION_LIST_POLL_MS);
     return () => { refresh.stop(); clearInterval(timer); window.removeEventListener(CONVERSATION_UPDATED_EVENT, changed); };
   }, [onError, selected]);
-  const inFilter = (label: string, state: string) =>
-    label === 'All' ||
-    (label === 'Running' && state === 'running') ||
-    (label === 'Waiting for you' && ['waiting-for-you', 'blocked'].includes(state)) ||
-    (label === 'Done' && ['done', 'cancelled'].includes(state));
-  const projectName = (id: string) => projects.find((project) => project.id === id)?.name ?? id;
-  const terms = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const combined = [
-    ...conversations.map(entry => ({ ...entry, route: `/conversations/${entry.id}`, projectLabel: projectName(entry.projectId),
-      deviceLabel: data.devices.devices.find(device => device.id === entry.ownerDeviceId)?.name ?? entry.ownerDeviceId, cursor: false, runtimeLabel: '', needsConnection: false })),
-    ...cursor.sessions.map(entry => ({ id: `${entry.gatewayDeviceId ?? entry.ownerDeviceId}:${entry.ownerDeviceId}:${entry.id}`, title: entry.title,
-      state: entry.state === 'working' ? 'running' : entry.state === 'idle' ? 'idle' : 'unknown',
-      updatedAt: entry.lastActivityAt, ownerDeviceId: entry.ownerDeviceId,
-      projectLabel: entry.project, deviceLabel: entry.deviceName, cursor: true, runtimeLabel: sessionRuntimeLabel(entry.runtime), needsConnection: (!entry.runtime || entry.runtime === 'cursor') && !entry.canSend,
-      route: `/${entry.runtime && entry.runtime !== 'cursor' ? 'sessions' : 'cursor'}/${entry.id}?deviceId=${encodeURIComponent(entry.ownerDeviceId)}&gateway=${encodeURIComponent(entry.gatewayDeviceId ?? entry.ownerDeviceId)}`,
-    })),
-  ].map(entry => ({ ...entry, title: entry.cursor ? presentation.preferences.titles[entry.id] ?? entry.title : entry.title }))
-    .sort((a, b) => {
-      const order = pendingOrder ?? presentation.preferences.order;
-      const left = order.indexOf(a.id), right = order.indexOf(b.id);
-      return left - right || b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id);
-    });
-  const shown = combined.filter(entry => shells.visible || !entry.cursor);
-  const matching = shown.filter(entry => terms.every(term => `${entry.title} ${entry.projectLabel} ${entry.deviceLabel} ${entry.runtimeLabel}`.toLowerCase().includes(term)));
+  const view = conversationSidebarView({ schema: 'conversation-sidebar-facts-v1',
+    source: { schema: 'conversation-list-source-v1', deviceId: data.devices.currentDeviceId, conversations, projects,
+      readPolicy: { schema: 'conversation-list-read-policy-v1', pollMs: CONVERSATION_LIST_POLL_MS, updatedEvent: CONVERSATION_UPDATED_EVENT } },
+    native: cursor, devices: data.devices.devices.map(({ id, name }) => ({ id, name })), preferences: presentation.preferences,
+  }, { schema: 'conversation-sidebar-request-v1', filter, q: search, shells: shells.visible, selected, pendingOrder, dragOrder: undefined });
+  const combined = view.allRows;
   const drag = useSessionDrag({ disabled: task.busy || !presentation.ready,
     start: () => setActions(undefined), drop: (id, target, after) => drop(id, target, after) });
-  const filtered = matching.filter((entry) => inFilter(filter, entry.state));
-  const visible = drag.drag ? [...filtered].sort((a, b) => {
-    const order = drag.drag!.order;
-    const rank = (id: string) => { const index = order.indexOf(id); return index < 0 ? order.length : index; };
-    return rank(a.id) - rank(b.id);
-  }) : filtered;
+  const visible = drag.drag ? conversationSidebarView({ schema: 'conversation-sidebar-facts-v1',
+    source: { schema: 'conversation-list-source-v1', deviceId: data.devices.currentDeviceId, conversations, projects,
+      readPolicy: { schema: 'conversation-list-read-policy-v1', pollMs: CONVERSATION_LIST_POLL_MS, updatedEvent: CONVERSATION_UPDATED_EVENT } },
+    native: cursor, devices: data.devices.devices.map(({ id, name }) => ({ id, name })), preferences: presentation.preferences,
+  }, { schema: 'conversation-sidebar-request-v1', filter, q: search, shells: shells.visible, selected, pendingOrder, dragOrder: drag.drag.order }).rows : view.rows;
   const dragged = combined.find(entry => entry.id === drag.drag?.id);
   const drop = (id: string, target: string, after: boolean) => void task.run(async () => {
     if (id === target || !combined.some(entry => entry.id === id) || !combined.some(entry => entry.id === target)) return;
@@ -130,16 +112,11 @@ export function ConversationSidebar({
     try { await presentation.save({ operation: 'order', order: [...order, ...presentation.preferences.order.filter(key => !order.includes(key))].slice(0, 10000) }); }
     finally { setPendingOrder(undefined); }
   });
-  const waiting = conversations.filter((entry) => inFilter('Waiting for you', entry.state)).length;
-  const open = combined.find(entry => selected === entry.route);
-  useEffect(() => {
-    // The tab shows at a glance when conversations need you, even from another window.
-    document.title = `${waiting ? `(${waiting}) ` : ''}${open ? `${open.title} · ` : ''}Jevellan`;
-  }, [waiting, open?.title]);
+  useEffect(() => { document.title = view.documentTitle; }, [view.documentTitle]);
   return (
     <>
       <div className="filter-chips" role="group" aria-label="Conversation filters">
-        {['All', 'Running', 'Waiting for you', 'Done'].map((label) => (
+        {(['All', 'Running', 'Waiting for you', 'Done'] as const).map((label) => (
           <button
             key={label}
             className={label === filter ? 'selected' : ''}
@@ -149,9 +126,9 @@ export function ConversationSidebar({
             {label}
             {label !== 'All' &&
               label !== 'Done' &&
-              matching.some((entry) => inFilter(label, entry.state)) && (
+              view.counts[label] > 0 && (
                 <span className="count" aria-hidden="true">
-                  {matching.filter((entry) => inFilter(label, entry.state)).length}
+                  {view.counts[label]}
                 </span>
               )}
           </button>
@@ -161,7 +138,7 @@ export function ConversationSidebar({
         title="Show Cursor, Claude Code and Codex shell sessions" onClick={() => shells.update(!shells.visible)}>
         <span>Shell sessions</span><span className="switch-track" aria-hidden="true" />
       </button>
-      {shown.length > 6 && (
+      {view.searchable && (
         <label className="conversation-search">
           <span className="sr-only">Search conversations</span>
           <Icon name="search" size={14} />
@@ -173,17 +150,13 @@ export function ConversationSidebar({
           />
         </label>
       )}
-      {!!presentation.preferences.order.length && <button className="text-button session-sort" disabled={task.busy || !presentation.ready}
+      {view.sortByActivity && <button className="text-button session-sort" disabled={task.busy || !presentation.ready}
         onClick={() => void task.run(() => presentation.save({ operation: 'order', order: [] }))}>Sort by activity</button>}
       <span id="session-drag-help" className="sr-only">Drag to reorder. On touch screens, hold first. With a keyboard, use Alt and the up or down arrow.</span>
       <span className="sr-only" role="status">{dragged ? `Dragging ${dragged.title}. Release to place it; Escape cancels.` : ''}</span>
       <div className={`conversation-list ${drag.drag ? 'session-drag-active' : ''}`} ref={drag.list}>
-        {!shown.length ? (
-          <p className="empty-conversations">No conversations yet. Start one to put your agents to work.</p>
-        ) : !visible.length ? (
-          <p className="empty-conversations">
-            {terms.length ? 'No conversations match this search.' : 'No conversations in this view.'}
-          </p>
+        {view.emptyText ? (
+          <p className="empty-conversations">{view.emptyText}</p>
         ) : (
           visible.map((entry) => (
             <div className={`conversation-list-entry ${drag.drag?.id === entry.id ? 'session-drag-source' : ''} ${drag.drag?.target === entry.id ? drag.drag.after ? 'session-drop-after' : 'session-drop-before' : ''}`} data-session-id={entry.id} key={entry.id} onKeyDown={event => { if (event.key === 'Escape') setActions(undefined); }}>
@@ -197,14 +170,14 @@ export function ConversationSidebar({
               <strong title={entry.title}>{entry.title}</strong>
               <span className="row-time">{shortTime(entry.updatedAt)}</span>
               <span className="row-meta">
-                {entry.cursor ? `${entry.runtimeLabel} · ${entry.state === 'idle' ? 'Idle' : entry.state === 'unknown' ? 'Unknown' : 'Working'}` : stateLabel(entry.state)} · {entry.projectLabel} · {entry.deviceLabel}
+                {entry.stateLabel} · {entry.projectLabel} · {entry.deviceLabel}
               </span>
             </button>
             <button type="button" className="session-settings icon-button" aria-label={`Actions for ${entry.title}`} title="Session actions"
               aria-expanded={actions === entry.id} onClick={() => setActions(actions === entry.id ? undefined : entry.id)}><Icon name="more" size={16} /></button>
             {actions === entry.id && <div className="session-row-actions" role="group" aria-label={`Actions for ${entry.title}`}>
               <button className="text-button" disabled={task.busy || !presentation.ready} onClick={() => { setRenaming(entry); setTitle(entry.title); setActions(undefined); }}>Rename</button>
-              {(entry.needsConnection || !entry.cursor && selected === entry.route) && <button className="text-button" onClick={() => { setActions(undefined); if (entry.cursor) navigate('/settings/devices'); else { navigate(entry.route); window.dispatchEvent(new Event('jevellan-conversation-settings')); } }}><Icon name="gear" size={14} /> Settings</button>}
+              {entry.actions.includes('settings') && <button className="text-button" onClick={() => { setActions(undefined); if (entry.cursor) navigate('/settings/devices'); else { navigate(entry.route); window.dispatchEvent(new Event('jevellan-conversation-settings')); } }}><Icon name="gear" size={14} /> Settings</button>}
             </div>}
             </div>
           ))
@@ -229,7 +202,7 @@ export function ConversationSidebar({
           <div className="actions"><button disabled={task.busy || !title.trim()}>{task.busy ? 'Saving…' : 'Save name'}</button><button type="button" className="secondary" onClick={() => setRenaming(undefined)}>Cancel</button></div>
         </form>
       </Modal>}
-      {shells.visible && cursor.unavailable.length > 0 && <details className="cursor-source-notice"><summary>Some native sessions are unavailable</summary>{cursor.unavailable.map(text => <p key={text}>{text}</p>)}</details>}
+      {view.unavailable.length > 0 && <details className="cursor-source-notice"><summary>Some native sessions are unavailable</summary>{view.unavailable.map(text => <p key={text}>{text}</p>)}</details>}
     </>
   );
 }

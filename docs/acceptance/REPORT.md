@@ -2543,3 +2543,5 @@ Bridge continuation area 7h: decisions 171–172 record shared serialized refres
 Bridge continuation area 7i: decisions 173–174 record shared conversation labels, typed recorded pause/picker/notice presentation, canonical reader and live notice parity, unchanged writer methods and failing-first/static/backend/desktop evidence. Rows 185–186 close; 143 phase 10 rows remain before intake and placement/p-v1/m-v1. Source stays unreleased.
 
 Bridge continuation area7j: decisions175–176 record the shared owner-sidebar read/refresh policy, strict canonical HTTP/CLI/MCP source, the conversation-id route conflict, and failing-first/static/backend/two desktop gates. Row187 closes;142 phase10 rows remain before intake and placement/p-v1/m-v1. Source stays unreleased.
+
+Bridge continuation area7k: decisions177–178 record strict shared sidebar merge/order/filter/count/title/action presentation, normal authenticated native-reader reuse, canonical HTTP/CLI/MCP reads, the failing-first concurrent token-lifetime repair and static/backend/two desktop gates. Seven sidebar read rows close;135 phase10 rows remain before intake and placement/p-v1/m-v1. Source stays unreleased.

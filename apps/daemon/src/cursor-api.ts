@@ -40,6 +40,23 @@ export async function handleCursorApi(app: Application, request: IncomingMessage
   if (path === '/api/cursor/hooks' && method === 'GET') { send(app.cursor.hookSetup(deviceId)); return true; }
   const projects = (await app.state.projects.list()).flatMap(row => row.project.paths[app.device.deviceId] ? [row.project.paths[app.device.deviceId]!] : []);
   if (path === '/api/cursor' && method === 'GET') {
+    send(await cursorListSource(app, token, peer, projects));
+    return true;
+  }
+  const match = /^\/api\/cursor\/((?:cursor|claude|codex)_[a-f0-9]{32})(?:\/messages(?:\/([A-Za-z0-9_-]+))?)?$/.exec(path);
+  if (match) {
+    if (method === 'GET' && !path.endsWith('/messages')) send(await app.cursor.read(deviceId, match[1]!, projects));
+    else if (method === 'POST' && path.endsWith('/messages')) send(await app.cursor.send(deviceId, match[1]!, await requestBody(request)));
+    else if (method === 'DELETE' && match[2]) send(await app.cursor.cancel(deviceId, match[1]!, match[2]));
+    else throw fail('Unsupported Cursor operation.', 405);
+    return true;
+  }
+  throw fail('Cursor operation not found.', 404);
+}
+
+/** The existing local/peer native-session list reader shared by owner presentations. */
+export async function cursorListSource(app: Application, token?: string, peer = false, projectPaths?: string[]) {
+  const projects = projectPaths ?? (await app.state.projects.list()).flatMap(row => row.project.paths[app.device.deviceId] ? [row.project.paths[app.device.deviceId]!] : []);
     const localPromise = app.cursor.list(projects);
     const remote = peer ? [] : (await app.roster()).devices.filter(row => row.device.id !== app.device.deviceId && !row.revoked);
     const cache = snapshots.get(app) ?? new Map<string, ReturnType<typeof CursorListSchema.parse>>(); snapshots.set(app, cache);
@@ -59,19 +76,8 @@ export async function handleCursorApi(app: Application, request: IncomingMessage
       }
     }));
     const local = await localPromise;
-    send(CursorListSchema.parse({ schema: 'cursor-list-v1', observedAt: new Date().toISOString(),
+    return CursorListSchema.parse({ schema: 'cursor-list-v1', observedAt: new Date().toISOString(),
       sessions: [...local.sessions.map(session => ({ ...session, gatewayDeviceId: app.device.deviceId })), ...peers.flatMap(list => list.sessions)]
         .sort((a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt)),
-      unavailable: [...local.unavailable, ...peers.flatMap(list => list.unavailable)] }));
-    return true;
-  }
-  const match = /^\/api\/cursor\/((?:cursor|claude|codex)_[a-f0-9]{32})(?:\/messages(?:\/([A-Za-z0-9_-]+))?)?$/.exec(path);
-  if (match) {
-    if (method === 'GET' && !path.endsWith('/messages')) send(await app.cursor.read(deviceId, match[1]!, projects));
-    else if (method === 'POST' && path.endsWith('/messages')) send(await app.cursor.send(deviceId, match[1]!, await requestBody(request)));
-    else if (method === 'DELETE' && match[2]) send(await app.cursor.cancel(deviceId, match[1]!, match[2]));
-    else throw fail('Unsupported Cursor operation.', 405);
-    return true;
-  }
-  throw fail('Cursor operation not found.', 404);
+      unavailable: [...local.unavailable, ...peers.flatMap(list => list.unavailable)] });
 }

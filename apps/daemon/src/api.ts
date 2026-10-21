@@ -1,3 +1,5 @@
+import { ConversationSidebarRequestSchema } from '@jevellan/core';
+import { ownerConversationSidebar } from './conversation-sidebar-view.js';
 import { ekoaEditor, prepareEkoaEditorSave, prepareEkoaEditorConnect, EkoaEditorPreviewSchema, EkoaEditorSaveSchema, EkoaEditorConnectSchema } from '@jevellan/core';
 import { CleanupSettingsSaveSchema } from '@jevellan/core';
 import { handleProjectDefinitionsPeer } from './project-definition-device.js';
@@ -181,6 +183,13 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       return;
     }
     if (path === '/api/conversation-composer' && method === 'POST') { send(await app.conversations.composerDraft(await body(request))); return; }
+    if (path === '/api/conversation-list/sidebar') {
+      if (method !== 'GET') throw failure('This sidebar read does not support that method.', 405);
+      const query = Object.fromEntries(url.searchParams);
+      const parsed = ConversationSidebarRequestSchema.parse({ schema: 'conversation-sidebar-request-v1', ...query,
+        ...(query.shells === undefined ? {} : { shells: query.shells === 'true' ? true : query.shells === 'false' ? false : query.shells }) });
+      send(await ownerConversationSidebar(app, parsed, token)); return;
+    }
     if (path === '/api/conversation-list/view') {
       if (method !== 'GET') throw failure('This conversation list operation does not support that method.', 405);
       ConversationListReadRequestSchema.parse({ schema: 'conversation-list-read-request-v1', ...Object.fromEntries(url.searchParams) });

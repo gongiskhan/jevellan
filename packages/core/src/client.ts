@@ -1,3 +1,4 @@
+export * from './conversation-sidebar-view.js';
 // Browser-safe schemas and pure helpers: no filesystem, process, vault or SDK imports.
 export * from './schemas.js';
 export * from './session-cache-schemas.js';
