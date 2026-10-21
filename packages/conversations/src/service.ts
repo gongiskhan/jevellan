@@ -1,3 +1,4 @@
+import { ConversationTranscriptRequestSchema, conversationStepTranscriptView, conversationTranscriptSources } from '@jevellan/core';
 import { branchChangeView, changesDiffView, messageDeliveryView } from '@jevellan/core';
 import { ConversationEvidenceRequestSchema, ConversationEvidenceViewSchema, conversationEvidenceReferences, evidenceDocumentView, evidenceFilePresentation, evidenceSourceSwitching, evidenceReference, storedPointer } from '@jevellan/core';
 import { conversationPlansView } from '@jevellan/core';
@@ -577,6 +578,15 @@ export class ConversationService {
     for (const event of ledger.events().filter((entry) => entry.type === 'decision')) { const decision = DecisionRecordSchema.parse(ledger.data(event)); decisions.set(decision.id, decision); }
     return [...decisions.values()];
   }
+  async transcriptView(id: string, raw: unknown) {
+    await this.ready;
+    const input = ConversationTranscriptRequestSchema.parse(raw), work = this.#load(id), view = work.load(), step = view.stretches.find(row => row.n === input.step);
+    if (!step) throw Object.assign(new Error('Step not found.'), { status: 404 });
+    const records = work.ledger.events(), hydrate = (event: typeof records[number]) => ({ ...event, data: publicConversationData(work.ledger.data(event)) });
+    const events = records.filter(event => event.stretch === step.n).map(hydrate);
+    const notices = records.filter(event => event.type === 'notice' && (event.stretch === step.n || event.stretch === undefined && view.stretches.at(-1)?.n === step.n)).map(hydrate);
+    return conversationStepTranscriptView({ projectId: view.conversation.projectId, conversationId: id, step: step.n, head: records.at(-1)?.id ?? 0, running: step.status === 'running', events, notices, summary: view.handoffs.find(row => row.stretch === step.n)?.summary, summaries: view.handoffs.map(row => row.summary) });
+  }
   async evidenceRead(id: string, raw: unknown) {
     await this.ready;
     const input = ConversationEvidenceRequestSchema.parse(raw), work = this.#load(id), source = work.load().conversation;
@@ -602,7 +612,7 @@ export class ConversationService {
     for (const row of savedOverrides) { const rows = correctionsByStep.get(row.request.stretch) ?? []; rows.push(row); correctionsByStep.set(row.request.stretch, rows); }
     const settings = view.conversation.work ? await this.options.settings() : undefined, busy = this.#operations.has(id) || this.#correcting.has(id);
     const allowed = view.conversation.work ? allowedActions(view.conversation.work, settings!.guards, !!(await this.#project(view.conversation.projectId)).testCommand, decisions.filter((decision) => decision.workId === view.conversation.work!.id).length, latestMessageNeedsResponse(work, decisions)) : [];
-    return ConversationPublicSchema.parse({ schema: 'conversation-view-v1', ...view, delivery: messageDeliveryView({ running: busy || view.conversation.state === 'running' }), branchChanges: work.ledger.events().filter(event => event.type === 'git').flatMap(event => { const change = GitBranchChangeSchema.safeParse(work.ledger.data(event)); return change.success ? [{ eventId: event.id, view: branchChangeView(change.data) }] : []; }), evidenceReferences: conversationEvidenceReferences(view.handoffs), plans: conversationPlansView({ ...view, busy }, settings?.guards.pauseAfterPlan ?? false), progress: this.#operations.get(id)?.progress,
+    return ConversationPublicSchema.parse({ schema: 'conversation-view-v1', ...view, transcriptSources: conversationTranscriptSources(work.ledger.events(), view.stretches), delivery: messageDeliveryView({ running: busy || view.conversation.state === 'running' }), branchChanges: work.ledger.events().filter(event => event.type === 'git').flatMap(event => { const change = GitBranchChangeSchema.safeParse(work.ledger.data(event)); return change.success ? [{ eventId: event.id, view: branchChangeView(change.data) }] : []; }), evidenceReferences: conversationEvidenceReferences(view.handoffs), plans: conversationPlansView({ ...view, busy }, settings?.guards.pauseAfterPlan ?? false), progress: this.#operations.get(id)?.progress,
       stretches: view.stretches.map((step) => { const result = { ...step, presentation: conversationStepPresentation(step, correctionsByStep.get(step.n) ?? [], byId.get(step.decisionId)) }; delete result.native; return result; }),
       ...(this.#decisionWait(work) ? { decisionWait: this.#decisionWait(work) } : {}),
       ...(() => { const open = view.conversation.state === 'waiting-for-you' && !this.#operations.has(id) ? this.#lastQuestion(work) : undefined;

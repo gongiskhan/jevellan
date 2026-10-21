@@ -440,3 +440,9 @@ test('MCP session preferences use the canonical per-device revision writer', asy
   if (!saved.ok || !read.ok) throw Error('Expected successful preference save and read.');
   expect(saved.data).toEqual(read.data); expect(read).toMatchObject({ ok: true, data: { schema: 'session-list-view-v1', deviceId: f.app.device.deviceId, preferences: { revision: 1, titles: { mcp_session: 'MCP fixture title' } } } }); expect(f.fake.runs).toHaveLength(0);
 });
+
+test('MCP conversation transcript shares the canonical step snapshot without starting work', async () => {
+  const made = await conversationPlanReviewFixture(true); f = made.f; const starts = f.fake.starts.length, mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'conversation_transcript', conversation: made.id, request: { schema: 'conversation-transcript-request-v1', step: 1 } } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'conversation-transcript-view-v1', projectId: 'project', conversationId: made.id, step: 1, running: false, fallbackAnswer: null } }); expect(f.fake.starts).toHaveLength(starts);
+});

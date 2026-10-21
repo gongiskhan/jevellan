@@ -1,3 +1,4 @@
+import { ConversationTranscriptRequestSchema, ConversationTranscriptViewSchema } from '@jevellan/core';
 import { ConversationChangesSchema } from '@jevellan/core';
 import { ConversationEvidenceRequestSchema, ConversationEvidenceViewSchema } from '@jevellan/core';
 import { PlanApprovalSchema, ConversationPlanChangesRequestSchema } from '@jevellan/core';
@@ -56,7 +57,7 @@ export async function proxyConversation(app: Application, request: IncomingMessa
   return true;
 }
 
-export type OwnerConversationOperation = 'conversation-view' | 'changes' | 'evidence-read' | 'plan-approve' | 'plan-changes' | 'plan-read' | 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
+export type OwnerConversationOperation = 'transcript-view' | 'conversation-view' | 'changes' | 'evidence-read' | 'plan-approve' | 'plan-changes' | 'plan-read' | 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
 
 /** Closed owner operations bind the indexed resource before issuing temporary peer authority. */
 export async function ownerConversationOperation(app: Application, projectId: string, id: string, operation: OwnerConversationOperation, raw?: unknown) {
@@ -64,6 +65,7 @@ export async function ownerConversationOperation(app: Application, projectId: st
   if (location.projectId !== projectId) throw failure('This composer or decision belongs to another conversation or project.', 409);
   const spec = (() => {
     switch (operation) {
+      case 'transcript-view': { const body = ConversationTranscriptRequestSchema.parse(raw); return { suffix: 'transcript-view', method: 'POST' as const, body, local: () => app.conversations.transcriptView(id, body) }; }
       case 'conversation-view': return { suffix: '', method: 'GET' as const, body: undefined, local: () => app.conversations.view(id) };
       case 'changes': { const n = z.number().int().positive().parse(raw); return { suffix: `changes/${n}`, method: 'GET' as const, body: undefined, local: () => app.conversations.changes(id, n) }; }
       case 'evidence-read': { const body = ConversationEvidenceRequestSchema.parse(raw); return { suffix: 'evidence-read', method: 'POST' as const, body, local: () => app.conversations.evidenceRead(id, body) }; }
@@ -82,11 +84,12 @@ export async function ownerConversationOperation(app: Application, projectId: st
   const path = `/api/conversations/${id}${spec.suffix ? `/${spec.suffix}` : ''}`;
   if (!conversationRoute(path, spec.method)) throw failure('Conversation operation not found.', 404);
   const bind = (received: unknown) => {
-    const value = operation === 'conversation-view' ? parseReply(ConversationPublicSchema, received) : operation === 'changes' ? parseReply(ConversationChangesSchema, received) : operation === 'evidence-read' ? parseReply(ConversationEvidenceViewSchema, received) : operation === 'plan-read' ? parseReply(ConversationPlanReadSchema, received) : ['correction-save', 'plan-approve', 'plan-changes'].includes(operation) ? parseReply(ConversationPublicSchema, received)
+    const value = operation === 'transcript-view' ? parseReply(ConversationTranscriptViewSchema, received) : operation === 'conversation-view' ? parseReply(ConversationPublicSchema, received) : operation === 'changes' ? parseReply(ConversationChangesSchema, received) : operation === 'evidence-read' ? parseReply(ConversationEvidenceViewSchema, received) : operation === 'plan-read' ? parseReply(ConversationPlanReadSchema, received) : ['correction-save', 'plan-approve', 'plan-changes'].includes(operation) ? parseReply(ConversationPublicSchema, received)
       : operation === 'decision-why' ? parseReply(ConversationDecisionWhyViewSchema, received)
         : operation === 'step-editor' || operation === 'step-preview' ? parseReply(StepCorrectionEditorSchema, received) : parseReply(ConversationComposerViewSchema, received);
     const actual = 'conversation' in value ? { project: value.conversation.projectId, id: value.conversation.id } : { project: value.projectId, id: value.conversationId };
     if (actual.project !== projectId || actual.id !== id) throw failure('The returned model belongs to another conversation or project.', 502);
+    if (operation === 'transcript-view' && ConversationTranscriptViewSchema.parse(value).step !== ConversationTranscriptRequestSchema.parse(spec.body).step) throw failure('The returned transcript does not match the request.', 502);
     if (operation === 'changes' && ConversationChangesSchema.parse(value).stretch !== z.number().int().positive().parse(raw)) throw failure('The returned changes do not match the request.', 502);
     if (operation === 'evidence-read') {
       const evidence = ConversationEvidenceViewSchema.parse(value), expected = ConversationEvidenceRequestSchema.parse(spec.body);

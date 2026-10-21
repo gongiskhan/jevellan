@@ -478,3 +478,11 @@ test('CLI session preferences use the canonical per-device revision writer', asy
   const replies = output.mock.calls.filter(row => String(row[0]).startsWith('{')).map(row => OwnerToolResultSchema.parse(JSON.parse(String(row[0])))); expect(replies).toHaveLength(2);
   for (const result of replies) expect(result).toMatchObject({ ok: true, data: { schema: 'session-list-view-v1', deviceId: f.app.device.deviceId, preferences: { revision: 1, titles: { cli_session: 'CLI fixture title' } } } }); expect(f.fake.runs).toHaveLength(0);
 });
+
+test('CLI conversation transcript shares the canonical step snapshot without starting work', async () => {
+  const made = await conversationPlanReviewFixture(true); f = made.f; const starts = f.fake.starts.length;
+  const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['jev', 'conversation_transcript', '--conversation', made.id, '--request', JSON.stringify({ schema: 'conversation-transcript-request-v1', step: 1 })], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
+  expect(result).toMatchObject({ ok: true, data: { schema: 'conversation-transcript-view-v1', projectId: 'project', conversationId: made.id, step: 1, running: false, fallbackAnswer: null } }); expect(f.fake.starts).toHaveLength(starts);
+});

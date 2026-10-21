@@ -1,3 +1,4 @@
+import { conversationStepPresentation } from '../../packages/conversations/dist/index.js';
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { ConversationEventSchema, ConversationPublicSchema, HandoffSchema, StretchSchema } from '../../packages/core/dist/client.js';
@@ -47,7 +48,7 @@ test('conversation replies read as chat while tools and recorded details remain 
   ].map(event => ConversationEventSchema.parse({ schema: 'conversation-event-v1', event: {
     schema: 'ledger-event-v1', ...event, stretch: event.type === 'user-message' ? undefined : 1, t: step.startedAt,
   } }));
-  await page.context().route(`**/api/conversations/${id}`, route => route.fulfill({ json: snapshot }));
+  await page.context().route(`**/api/conversations/${id}`, route => route.fulfill({ json: { ...snapshot, stretches: snapshot.stretches.map(row => ({ ...row, presentation: conversationStepPresentation(row, [], snapshot.decisions.find(decision => decision.id === row.decisionId)) })) } }));
   await page.context().route(`**/api/conversations/${id}/events`, route => route.fulfill({
     contentType: 'text/event-stream', body: payloads.map(payload => `id: ${payload.event.id}\nevent: conversation\ndata: ${JSON.stringify(payload)}\n\n`).join(''),
   }));

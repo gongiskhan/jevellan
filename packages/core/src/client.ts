@@ -169,3 +169,6 @@ export * from './conversation-reading-view-schemas.js';
 export * from './conversation-reading-view.js';
 
 export * from './session-list-view.js';
+
+export * from './conversation-transcript-view-schemas.js';
+export * from './conversation-transcript-view.js';

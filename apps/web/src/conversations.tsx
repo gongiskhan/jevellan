@@ -1,17 +1,18 @@
+import { ConversationTranscriptViewSchema, conversationTranscriptProjection, selectConversationTranscriptView, conversationNoticeHidden, type ConversationTranscriptView } from '@jevellan/core/client';
 import { conversationPlansView, planApprovalRequest, planChangesMessage } from '@jevellan/core/client';
 import { ConversationCorrectionDialog as ChangeStep, ConversationWhyPanel as Why } from './conversation-decision-panels.js';
 import { PlanReview, type PlanReviewActions } from './plan-review.js';
 import { BranchChangeNotice, branchChangeText } from './branch-change-notice.js';
 import { useShellVisibility } from './shell-visibility.js';
 import { ChangesDiff } from './changes-diff.js';
-import { conversationActivity, conversationAnswerTurns, conversationFallbackAnswer, conversationTurns, repeatedClosingNotice } from './conversation-transcript.js';
+import { conversationTurns } from './conversation-transcript.js';
 import { TranscriptTurn } from './session-transcript.js';
 import { mergeTranscriptTurns } from './transcript-groups.js';
 import { createPortal } from 'react-dom';
 import { useSessionDrag } from './session-drag.js';
 import { clientId } from './client-id.js';
 import { useSessionList } from './session-list.js';
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
   GitBranchChangeSchema, type GitBranchChange,
@@ -468,6 +469,8 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
   }, []);
   const [view, setView] = useState<View>();
   const [events, setEvents] = useState<LedgerEvent[]>([]);
+  const [transcripts, setTranscripts] = useState<Record<number, ConversationTranscriptView>>({});
+  const rememberTranscript = useCallback((value: ConversationTranscriptView) => { if (value.conversationId === id) setTranscripts(current => ({ ...current, [value.step]: value })); }, [id]);
   const [connected, setConnected] = useState(false);
   const followedPoint = useRef(false);
   useEffect(() => {
@@ -800,6 +803,8 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
                 key={event.id}
                 step={step}
                 view={view}
+                transcriptView={transcripts[step.n]}
+                rememberTranscript={rememberTranscript}
                 events={events.filter((entry) => entry.stretch === step.n)}
                 props={props}
                 correct={() => setCorrecting(step)}
@@ -824,9 +829,11 @@ export function ConversationPage({ id, navigation, ...props }: PageProps & { id:
           const branchChange = GitBranchChangeSchema.safeParse(event.data);
           if (branchChange.success) return <BranchChangeNotice key={event.id} change={branchChange.data} presentation={view.branchChanges?.find(row => row.eventId === event.id)?.view} />;
           const notice = ConversationNoticeSchema.safeParse(event.data);
-          if (notice.success && notice.data.kind === 'closing' && repeatedClosingNotice(notice.data,
-            view.handoffs.map(handoff => handoff.summary),
-            conversationTurns(events.filter(entry => entry.stretch === (event.stretch ?? view.stretches.at(-1)?.n)), false))) return null;
+          const noticeStep = event.stretch ?? view.stretches.at(-1)?.n;
+          if (notice.success && notice.data.kind === 'closing' && conversationNoticeHidden(transcripts[noticeStep ?? 0], event, {
+            projectId: view.conversation.projectId, conversationId: id, step: noticeStep ?? 0, head: events.at(-1)?.id ?? 0, running: view.stretches.find(row => row.n === noticeStep)?.status === 'running',
+            events: events.filter(entry => entry.stretch === noticeStep), summaries: view.handoffs.map(row => row.summary), summary: view.handoffs.find(row => row.stretch === noticeStep)?.summary,
+          })) return null;
           if (notice.success)
             return (
               <p key={event.id} className={notice.data.kind === 'error' ? 'error' : 'notice'}>
@@ -1599,6 +1606,8 @@ function StepBlock({
   read,
   selected,
   planReview,
+  transcriptView,
+  rememberTranscript,
 }: {
   step: Step;
   view: View;
@@ -1610,15 +1619,24 @@ function StepBlock({
   read(pointer: string, title: string): void;
   selected: boolean;
   planReview?: PlanReviewActions | undefined;
+  transcriptView?: ConversationTranscriptView | undefined;
+  rememberTranscript(value: ConversationTranscriptView): void;
 }) {
   const handoff = view.handoffs.find((entry) => entry.stretch === step.n);
   const model = props.data.config.configuration['x-jevellan'].menu.find((entry) => entry.id === step.modelId);
   const account = props.data.accounts.find((entry) => entry.account.id === step.accountId);
-  const transcript = conversationTurns(events, step.status === 'running');
-  const activity = conversationActivity(transcript);
-  const fallbackAnswer = handoff ? conversationFallbackAnswer(transcript, handoff.summary) : undefined;
+  const source = view.transcriptSources?.find(row => row.step === step.n), conversationId = view.conversation.id;
+  const sourceTail = source?.tail, sourceRunning = source?.running;
+  useEffect(() => {
+    if (sourceTail === undefined) return;
+    const abort = new AbortController(); let active = true;
+    void api(`/api/conversations/${conversationId}/transcript-view`, ConversationTranscriptViewSchema, 'POST', { schema: 'conversation-transcript-request-v1', step: step.n }, { signal: abort.signal })
+      .then(value => { if (active) rememberTranscript(value); }).catch(() => { /* Live stream projection remains readable during reconnects. */ });
+    return () => { active = false; abort.abort(); };
+  }, [conversationId, step.n, sourceTail, sourceRunning, rememberTranscript]);
+  const snapshot = selectConversationTranscriptView(transcriptView, { projectId: view.conversation.projectId, conversationId, step: step.n, head: events.at(-1)?.id ?? 0, running: step.status === 'running', events, summary: handoff?.summary });
+  const { transcript, activity, fallbackAnswer, finalTurns } = conversationTranscriptProjection(snapshot);
   const answerResult = handoff?.result?.type === 'answer' ? handoff.result : undefined;
-  const finalTurns = conversationAnswerTurns(transcript);
   const finalTurnIds = new Set(finalTurns.map(turn => turn.id));
   const actionable = !!view.conversation.work && view.stretches.findLast(entry => entry.workId === view.conversation.work!.id && entry.status !== 'undone')?.n === step.n;
   const editable =
