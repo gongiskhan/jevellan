@@ -1,3 +1,4 @@
+import { ConversationEvidenceRequestSchema, ConversationEvidenceViewSchema, conversationEvidenceReferences, evidenceDocumentView, evidenceFilePresentation, evidenceSourceSwitching, evidenceReference, storedPointer } from '@jevellan/core';
 import { conversationPlansView } from '@jevellan/core';
 import { ConversationPlanReadRequestSchema, ConversationPlanReadSchema, planContentView, publicConversationData } from '@jevellan/core';
 import { ConversationLocationSchema, ConversationDecisionWhyRequestSchema, StepCorrectionPreviewSchema } from '@jevellan/core';
@@ -574,6 +575,15 @@ export class ConversationService {
     for (const event of ledger.events().filter((entry) => entry.type === 'decision')) { const decision = DecisionRecordSchema.parse(ledger.data(event)); decisions.set(decision.id, decision); }
     return [...decisions.values()];
   }
+  async evidenceRead(id: string, raw: unknown) {
+    await this.ready;
+    const input = ConversationEvidenceRequestSchema.parse(raw), work = this.#load(id), source = work.load().conversation;
+    const pointer = storedPointer(input.ref);
+    const file = pointer ? undefined : await this.file(id, { schema: 'conversation-file-request-v1', ref: input.ref, stretch: input.stretch, source: input.source });
+    return ConversationEvidenceViewSchema.parse({ schema: 'conversation-evidence-view-v1', projectId: source.projectId, conversationId: id, request: input, reference: evidenceReference(input.ref),
+      view: file ? { kind: 'file', file, presentation: evidenceFilePresentation(file) } : evidenceDocumentView(publicConversationData(work.ledger.read(input.ref)), input.output),
+      switching: evidenceSourceSwitching(input.ref, input.stretch, input.source) });
+  }
   async planRead(id: string, raw: unknown) {
     await this.ready;
     const input = ConversationPlanReadRequestSchema.parse(raw), work = this.#load(id), source = work.load().conversation;
@@ -590,7 +600,7 @@ export class ConversationService {
     for (const row of savedOverrides) { const rows = correctionsByStep.get(row.request.stretch) ?? []; rows.push(row); correctionsByStep.set(row.request.stretch, rows); }
     const settings = view.conversation.work ? await this.options.settings() : undefined, busy = this.#operations.has(id) || this.#correcting.has(id);
     const allowed = view.conversation.work ? allowedActions(view.conversation.work, settings!.guards, !!(await this.#project(view.conversation.projectId)).testCommand, decisions.filter((decision) => decision.workId === view.conversation.work!.id).length, latestMessageNeedsResponse(work, decisions)) : [];
-    return ConversationPublicSchema.parse({ schema: 'conversation-view-v1', ...view, plans: conversationPlansView({ ...view, busy }, settings?.guards.pauseAfterPlan ?? false), progress: this.#operations.get(id)?.progress,
+    return ConversationPublicSchema.parse({ schema: 'conversation-view-v1', ...view, evidenceReferences: conversationEvidenceReferences(view.handoffs), plans: conversationPlansView({ ...view, busy }, settings?.guards.pauseAfterPlan ?? false), progress: this.#operations.get(id)?.progress,
       stretches: view.stretches.map((step) => { const result = { ...step, presentation: conversationStepPresentation(step, correctionsByStep.get(step.n) ?? [], byId.get(step.decisionId)) }; delete result.native; return result; }),
       ...(this.#decisionWait(work) ? { decisionWait: this.#decisionWait(work) } : {}),
       ...(() => { const open = view.conversation.state === 'waiting-for-you' && !this.#operations.has(id) ? this.#lastQuestion(work) : undefined;

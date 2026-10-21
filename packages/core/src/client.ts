@@ -160,3 +160,7 @@ export * from './public-conversation-data.js';
 
 export * from './conversation-plan-review-schemas.js';
 export * from './conversation-plans-view.js';
+
+export * from './evidence-reference-schemas.js';
+export * from './evidence-references.js';
+export * from './conversation-evidence-view.js';

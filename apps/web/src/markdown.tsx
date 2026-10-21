@@ -1,6 +1,6 @@
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { decodeReference, filePointer, remarkFilePaths } from './evidence-refs.js';
+import { filePointer, remarkFilePaths, markdownEvidenceTarget } from '@jevellan/core/client';
 import { Children, isValidElement, type ReactNode } from 'react';
 import { ShellCommand } from './owner-commands.js';
 function ShellPre({ children }: { children?: ReactNode }) {
@@ -19,8 +19,8 @@ export default function Markdown({ children, onOpen, onOpenImage }: { children: 
         components={{
           pre: ShellPre,
           a: ({ href, children }) =>
-            (onOpen || onOpenImage && /\.(png|jpe?g|gif|webp)$/iu.test(href ?? '')) && href && !/^(?:https?:|mailto:|#)/i.test(href) ? (
-              <button className="text-button evidence-link" onClick={() => (onOpen ?? onOpenImage)?.(decodeReference(href))}>
+            markdownEvidenceTarget(href ?? '', 'link', !!onOpen, !!onOpenImage) !== null ? (
+              <button className="text-button evidence-link" onClick={() => (onOpen ?? onOpenImage)?.(markdownEvidenceTarget(href ?? '', 'link', !!onOpen, !!onOpenImage)!)}>
                 {children}
               </button>
             ) : (
@@ -33,7 +33,7 @@ export default function Markdown({ children, onOpen, onOpenImage }: { children: 
               </a>
             ),
           code: ({ children, className }) =>
-            (onOpen || onOpenImage && typeof children === 'string' && /\.(png|jpe?g|gif|webp)$/iu.test(children)) && !className && typeof children === 'string' && filePointer(children) ? (
+            typeof children === 'string' && markdownEvidenceTarget(children, 'code', !!onOpen, !!onOpenImage, className) !== null ? (
               <button className="text-button evidence-link" onClick={() => (onOpen ?? onOpenImage)?.(children)}>
                 <code>{children}</code>
               </button>
@@ -41,8 +41,8 @@ export default function Markdown({ children, onOpen, onOpenImage }: { children: 
               <code className={className}>{children}</code>
             ),
           img: ({ src, alt }) =>
-            (onOpen || onOpenImage) && src && !/^https?:/i.test(src) ? (
-              <button className="text-button evidence-link" onClick={() => (onOpen ?? onOpenImage)?.(decodeReference(src))}>
+            markdownEvidenceTarget(src ?? '', 'image', !!onOpen, !!onOpenImage) !== null ? (
+              <button className="text-button evidence-link" onClick={() => (onOpen ?? onOpenImage)?.(markdownEvidenceTarget(src ?? '', 'image', !!onOpen, !!onOpenImage)!)}>
                 {alt || src}
               </button>
             ) : (

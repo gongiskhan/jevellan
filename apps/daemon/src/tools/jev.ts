@@ -37,6 +37,7 @@ export const jev: OwnerHandler = async (context) => {
 
     case 'plan_approve': return { text: 'Plan approved.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'plan-approve', args.request) };
     case 'plan_changes': return { text: 'Requested plan changes.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'plan-changes', args.request) };
+    case 'evidence_read': return { text: 'Recorded evidence.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'evidence-read', args.request) };
     case 'plan_read': return { text: 'Recorded plan.', data: await ownerConversationOperation(app, projectId, String(args.conversation), 'plan-read', args.request) };
     case 'composer_editor': case 'composer_preview': case 'composer_save': {
       if (typeof args.conversation === 'string') {

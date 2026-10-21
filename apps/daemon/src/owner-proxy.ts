@@ -1,3 +1,4 @@
+import { ConversationEvidenceRequestSchema, ConversationEvidenceViewSchema } from '@jevellan/core';
 import { PlanApprovalSchema, ConversationPlanChangesRequestSchema } from '@jevellan/core';
 import { ConversationPlanReadSchema, ConversationPlanReadRequestSchema } from '@jevellan/core';
 import { ConversationDecisionWhyRequestSchema, ConversationDecisionWhyViewSchema, ConversationPublicSchema, CorrectStepSchema, StepCorrectionEditorSchema, StepCorrectionPreviewSchema } from '@jevellan/core';
@@ -54,7 +55,7 @@ export async function proxyConversation(app: Application, request: IncomingMessa
   return true;
 }
 
-export type OwnerConversationOperation = 'plan-approve' | 'plan-changes' | 'plan-read' | 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
+export type OwnerConversationOperation = 'evidence-read' | 'plan-approve' | 'plan-changes' | 'plan-read' | 'composer-editor' | 'composer-save' | 'decision-why' | 'step-editor' | 'step-preview' | 'correction-save';
 
 /** Closed owner operations bind the indexed resource before issuing temporary peer authority. */
 export async function ownerConversationOperation(app: Application, projectId: string, id: string, operation: OwnerConversationOperation, raw?: unknown) {
@@ -62,6 +63,7 @@ export async function ownerConversationOperation(app: Application, projectId: st
   if (location.projectId !== projectId) throw failure('This composer or decision belongs to another conversation or project.', 409);
   const spec = (() => {
     switch (operation) {
+      case 'evidence-read': { const body = ConversationEvidenceRequestSchema.parse(raw); return { suffix: 'evidence-read', method: 'POST' as const, body, local: () => app.conversations.evidenceRead(id, body) }; }
       case 'plan-approve': { const body = PlanApprovalSchema.parse(raw); return { suffix: 'approve-plan', method: 'POST' as const, body, local: () => app.conversations.approvePlan(id, body) }; }
       case 'plan-changes': { const body = ConversationPlanChangesRequestSchema.parse(raw); return { suffix: 'messages', method: 'POST' as const, body, local: () => app.conversations.message(id, body) }; }
       case 'plan-read': { const body = ConversationPlanReadRequestSchema.parse(raw); return { suffix: 'plan-read', method: 'POST' as const, body, local: () => app.conversations.planRead(id, body) }; }
@@ -77,11 +79,15 @@ export async function ownerConversationOperation(app: Application, projectId: st
   const path = `/api/conversations/${id}/${spec.suffix}`;
   if (!conversationRoute(path, spec.method)) throw failure('Conversation operation not found.', 404);
   const bind = (received: unknown) => {
-    const value = operation === 'plan-read' ? parseReply(ConversationPlanReadSchema, received) : ['correction-save', 'plan-approve', 'plan-changes'].includes(operation) ? parseReply(ConversationPublicSchema, received)
+    const value = operation === 'evidence-read' ? parseReply(ConversationEvidenceViewSchema, received) : operation === 'plan-read' ? parseReply(ConversationPlanReadSchema, received) : ['correction-save', 'plan-approve', 'plan-changes'].includes(operation) ? parseReply(ConversationPublicSchema, received)
       : operation === 'decision-why' ? parseReply(ConversationDecisionWhyViewSchema, received)
         : operation === 'step-editor' || operation === 'step-preview' ? parseReply(StepCorrectionEditorSchema, received) : parseReply(ConversationComposerViewSchema, received);
     const actual = 'conversation' in value ? { project: value.conversation.projectId, id: value.conversation.id } : { project: value.projectId, id: value.conversationId };
     if (actual.project !== projectId || actual.id !== id) throw failure('The returned model belongs to another conversation or project.', 502);
+    if (operation === 'evidence-read') {
+      const evidence = ConversationEvidenceViewSchema.parse(value), expected = ConversationEvidenceRequestSchema.parse(spec.body);
+      if (JSON.stringify(evidence.request) !== JSON.stringify(expected) || evidence.reference.value !== expected.ref) throw failure('The returned evidence does not match the request.', 502);
+    }
     if (operation === 'plan-read') {
       const plan = ConversationPlanReadSchema.parse(value), request = ConversationPlanReadRequestSchema.parse(spec.body);
       if (plan.pointer !== request.pointer || request.step !== undefined && plan.review?.step !== request.step) throw failure('The returned plan does not match the request.', 502);

@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
-import { ConversationFileSchema, ConversationReadSchema } from '@jevellan/core/client';
+import { ConversationFileSchema, ConversationEvidenceViewSchema, evidenceSourceSwitching, evidenceReference, relativeEvidenceReference, type ConversationEvidenceView, type EvidenceFilePresentation } from '@jevellan/core/client';
 import { api } from './api.js';
 import { Markdown, Panel } from './components.js';
-import { filePointer, storedPointer } from './evidence-refs.js';
 
 export type EvidenceTarget = {
   ref: string;
@@ -21,13 +20,14 @@ export function EvidenceLink({
   open(ref: string): void;
   file?: boolean;
 }) {
-  if (/^https?:\/\//i.test(value))
+  const reference = evidenceReference(value);
+  if (reference.kind === 'url')
     return (
       <a href={value} target="_blank" rel="noopener noreferrer">
         {value}
       </a>
     );
-  return file || storedPointer(value) || filePointer(value) ? (
+  return file || reference.kind === 'pointer' || reference.kind === 'file' ? (
     <button className="text-button evidence-link" onClick={() => open(value)}>
       {value}
     </button>
@@ -49,32 +49,17 @@ function centerInPanel(line: HTMLElement) {
     box.scrollTop += at.top + at.height / 2 - (port.top + box.clientTop + box.clientHeight / 2);
   }
 }
-function FileContent({ value, open }: { value: FileView; open(ref: string): void }) {
+function FileContent({ value, presentation, open }: { value: FileView; presentation: EvidenceFilePresentation; open(ref: string): void }) {
   const highlighted = useRef<HTMLSpanElement>(null);
-  const [source, setSource] = useState(Boolean(value.line));
+  const [source, setSource] = useState(presentation.initialSource);
   useEffect(() => {
     if (highlighted.current) centerInPanel(highlighted.current);
   }, [value]);
-  const relativeLink = (ref: string) => {
-    if (ref.startsWith('/') || storedPointer(ref)) {
-      open(ref);
-      return;
-    }
-    try {
-      const url = new URL(ref, `https://project.invalid/${value.path}`);
-      open(`${decodeURIComponent(url.pathname.slice(1))}${url.hash}`);
-    } catch {
-      open(ref);
-    }
-  };
+  const relativeLink = (ref: string) => open(relativeEvidenceReference(presentation.linkBase, ref));
   return (
     <>
       <p className="muted small-text">
-        {value.source === 'working-tree'
-          ? 'Current working copy · not a saved step'
-          : value.source === 'before-step'
-            ? 'Before this step · file deleted by the step'
-            : 'Recorded checkpoint'}
+        {presentation.sourceLabel}
         {value.commit && (
           <>
             {' '}
@@ -116,31 +101,18 @@ function FileContent({ value, open }: { value: FileView; open(ref: string): void
 }
 export function EvidencePanel({ id, target, close }: { id: string; target: EvidenceTarget; close(): void }) {
   const [current, setCurrent] = useState(target);
-  const [file, setFile] = useState<FileView>();
-  const [document, setDocument] = useState<{ content: unknown }>();
+  const [evidence, setEvidence] = useState<ConversationEvidenceView>();
   const [error, setError] = useState('');
   useEffect(() => {
     let active = true;
-    setFile(undefined);
-    setDocument(undefined);
+    setEvidence(undefined);
     setError('');
     const load = async () => {
       try {
-        if (storedPointer(current.ref)) {
-          const value = await api(
-            `/api/conversations/${id}/read?pointer=${encodeURIComponent(current.ref)}`,
-            ConversationReadSchema,
-          );
-          if (active) setDocument(value);
-        } else {
-          const params = new URLSearchParams({
-            ref: current.ref,
-            stretch: String(current.stretch),
-            source: current.source ?? 'step',
-          });
-          const value = await api(`/api/conversations/${id}/file?${params}`, ConversationFileSchema);
-          if (active) setFile(value);
-        }
+        const value = await api(`/api/conversations/${id}/evidence-read`, ConversationEvidenceViewSchema, 'POST', {
+          schema: 'conversation-evidence-request-v1', ref: current.ref, stretch: current.stretch, source: current.source ?? 'step', output: current.output ?? false,
+        });
+        if (active) setEvidence(value);
       } catch (failure) {
         if (active) setError(failure instanceof Error ? failure.message : 'Evidence could not be opened.');
       }
@@ -150,6 +122,7 @@ export function EvidencePanel({ id, target, close }: { id: string; target: Evide
       active = false;
     };
   }, [id, current]);
+  const switching = evidence?.switching ?? evidenceSourceSwitching(current.ref, current.stretch, current.source);
   const open = (ref: string) => setCurrent({ ...current, ref, title: ref, output: false });
   return (
     <Panel title={current.title ?? current.ref} eyebrow={current.stretch ? `step ${current.stretch}` : undefined} close={close}>
@@ -157,36 +130,28 @@ export function EvidencePanel({ id, target, close }: { id: string; target: Evide
         <p role="alert" className="error">
           {error}
         </p>
-      ) : file ? (
-        <FileContent key={file.path} value={file} open={open} />
-      ) : document ? (
-        typeof document.content === 'string' && !current.output ? (
-          <Markdown onOpen={open}>{document.content}</Markdown>
-        ) : (
-          <pre className="evidence-output">
-            {typeof document.content === 'string'
-              ? document.content
-              : JSON.stringify(document.content, null, 2)}
-          </pre>
-        )
+      ) : evidence?.view.kind === 'file' ? (
+        <FileContent key={evidence.view.file.path} value={evidence.view.file} presentation={evidence.view.presentation} open={open} />
+      ) : evidence ? (
+        evidence.view.kind === 'markdown' ? <Markdown onOpen={open}>{evidence.view.text}</Markdown> : <pre className="evidence-output">{evidence.view.text}</pre>
       ) : (
         <p role="status">Loading evidence…</p>
       )}
-      {!storedPointer(current.ref) && current.stretch && (
+      {switching && (
         <div className="actions">
           <button
             className="text-button"
-            disabled={current.source === 'working-tree'}
+            disabled={switching.workingDisabled}
             onClick={() => setCurrent({ ...current, source: 'working-tree' })}
           >
-            Open working copy
+            {switching.workingLabel}
           </button>
           <button
             className="text-button"
-            disabled={current.source !== 'working-tree'}
+            disabled={switching.recordedDisabled}
             onClick={() => setCurrent({ ...current, source: 'step' })}
           >
-            Open recorded step
+            {switching.recordedLabel}
           </button>
         </div>
       )}

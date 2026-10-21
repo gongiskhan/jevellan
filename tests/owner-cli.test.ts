@@ -454,3 +454,11 @@ test('CLI plan approval uses the canonical writer and shared approved status', a
   const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
   expect(result).toMatchObject({ ok: true, data: { conversation: { work: { approvedPlanRef: made.pointer } }, plans: { reviews: [{ badge: 'Approved', offered: false }] } } });
 });
+
+test('CLI evidence reader returns the canonical public view without starting work', async () => {
+  const made = await conversationPlanFixture(true); f = made.f; const starts = f.fake.starts.length;
+  const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['jev', 'evidence_read', '--conversation', made.id, '--request', JSON.stringify({ schema: 'conversation-evidence-request-v1', ref: made.pointer })], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
+  expect(result).toMatchObject({ ok: true, data: { schema: 'conversation-evidence-view-v1', projectId: 'project', conversationId: made.id, reference: { value: made.pointer }, view: { kind: 'text', text: JSON.stringify(f.app.conversations.ledger(made.id).read(made.pointer), null, 2) } } }); expect(f.fake.starts).toHaveLength(starts);
+});

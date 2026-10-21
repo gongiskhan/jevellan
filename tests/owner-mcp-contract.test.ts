@@ -419,3 +419,9 @@ test('MCP plan approval uses the canonical writer and shared approved status', a
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'plan_approve', project: 'project', conversation: made.id, request: { schema: 'plan-approval-v1', generation: made.view.conversation.generation, ref: made.pointer } } })).structuredContent);
   expect(result).toMatchObject({ ok: true, data: { conversation: { work: { approvedPlanRef: made.pointer } }, plans: { reviews: [{ badge: 'Approved', offered: false }] } } });
 });
+
+test('MCP evidence reader returns the canonical public view without starting work', async () => {
+  const made = await conversationPlanFixture(true); f = made.f; const starts = f.fake.starts.length, mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'jev', arguments: { action: 'evidence_read', conversation: made.id, request: { schema: 'conversation-evidence-request-v1', ref: made.pointer } } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'conversation-evidence-view-v1', projectId: 'project', conversationId: made.id, reference: { value: made.pointer }, view: { kind: 'text', text: JSON.stringify(f.app.conversations.ledger(made.id).read(made.pointer), null, 2) } } }); expect(f.fake.starts).toHaveLength(starts);
+});
