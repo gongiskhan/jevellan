@@ -120,3 +120,7 @@ export * from './account-login-schemas.js';
 
 export * from './project-definition-schemas.js';
 export { projectDefinitionCommand, projectDefinitionDeviceRows } from './project-definition.js';
+
+export * from './settings-workspace-schemas.js';
+export * from './cleanup-editor-schemas.js';
+export { settingsPage } from './settings-workspace.js';

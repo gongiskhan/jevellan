@@ -27,6 +27,16 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP settings navigation and cleanup writer share the engine model', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const navigation = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'navigation' } })).structuredContent); expect(navigation).toMatchObject({ ok: true, data: { schema: 'settings-navigation-v1', defaultPage: 'runtimes' } });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'cleanup_editor' } })).structuredContent); expect(result.ok).toBe(true);
+  if (!result.ok) throw new Error('Expected cleanup editor.'); const view = result.data as { revision: number; fields: object };
+  const request = { schema: 'cleanup-settings-save-v1', revision: view.revision, fields: { ...view.fields, freeDiskFloorGb: '52.5' }, clientRequestId: 'cleanup_mcp_fixture' };
+  for (let attempt = 0; attempt < 2; attempt++) expect(OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'cleanup_save', request } })).structuredContent)).toMatchObject({ ok: true });
+  expect((await f.app.configuration()).configuration['x-jevellan'].cleanup.freeDiskFloorGb).toBe(52.5); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP Projects editors share folder commands and leave project creation explicit', async () => {
   f = await projectFixture({ control: true }); const before = await f.app.state.projects.list(), mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'project_editor' } })).structuredContent); expect(result.ok).toBe(true);

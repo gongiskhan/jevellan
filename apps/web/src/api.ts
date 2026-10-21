@@ -1,14 +1,4 @@
-import {
-  AccountListSchema,
-  AuthStateSchema,
-  ConfigRevisionSchema,
-  DeviceRosterSchema,
-  ErrorDocumentSchema,
-  RiggingListSchema,
-  RuntimeListSchema,
-  SecretStateSchema,
-  type DocumentSchema,
-} from '@jevellan/core/client';
+import { AuthStateSchema, ErrorDocumentSchema, SettingsWorkspaceSchema, type DocumentSchema } from '@jevellan/core/client';
 
 export class ApiError extends Error {
   constructor(
@@ -122,35 +112,6 @@ export const empty = { schema: 'empty-request-v1' };
 export const authState = (signal?: AbortSignal) =>
   api('/api/auth', AuthStateSchema, 'GET', undefined, { signal, waitForHub: true });
 export async function loadSettings(signal?: AbortSignal) {
-  const controller = new AbortController();
-  const abort = () => controller.abort();
-  signal?.addEventListener('abort', abort, { once: true });
-  if (signal?.aborted) controller.abort();
-  const read = <T>(path: string, schema: DocumentSchema<T>) =>
-    api(path, schema, 'GET', undefined, { signal: controller.signal, waitForHub: true });
-  try {
-    const [config, accounts, runtimes, rigging, roster, jev] = await Promise.all([
-      read('/hub/config', ConfigRevisionSchema),
-      read('/hub/accounts', AccountListSchema),
-      read('/api/runtimes', RuntimeListSchema),
-      read('/hub/rigging', RiggingListSchema),
-      read('/hub/devices/roster', DeviceRosterSchema),
-      read('/hub/secrets/jev', SecretStateSchema),
-    ]);
-    return {
-      config,
-      accounts: accounts.accounts,
-      runtimes: runtimes.runtimes,
-      runtimeSettings: runtimes.settings,
-      offered: runtimes.offered,
-      rigging,
-      roster,
-      devices: { currentDeviceId: roster.currentDeviceId, devices: roster.devices.map((row) => row.device) },
-      jev,
-    };
-  } finally {
-    signal?.removeEventListener('abort', abort);
-    controller.abort();
-  }
+  return api('/api/config/workspace', SettingsWorkspaceSchema, 'GET', undefined, { signal, waitForHub: true });
 }
 export type SettingsData = Awaited<ReturnType<typeof loadSettings>>;

@@ -1,3 +1,4 @@
+import { CleanupSettingsSaveSchema } from '@jevellan/core';
 import { handleProjectDefinitionsPeer } from './project-definition-device.js';
 import { GlobalThreadLimitSaveSchema, ProjectDefinitionReadSchema, ProjectDefinitionPreviewSchema, ProjectDefinitionSaveSchema } from '@jevellan/core';
 import { AccountEditorReadSchema, AccountEditorSaveSchema } from '@jevellan/core';
@@ -113,6 +114,9 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (path === '/hub/ekoa/callback' && method === 'POST') { send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'oauth-complete', input: EkoaOAuthCallbackSchema.parse(await body(request)) }, token!)); return; }
     if (path === '/hub/ekoa/test' && method === 'POST') { EkoaEmptySchema.parse(await body(request)); send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'test' }, token!)); return; }
     if (await handleGitApi(app, request, response, url)) return;
+    if (path === '/api/config/workspace' && method === 'GET') { send(await app.settingsWorkspace()); return; }
+    if (path === '/api/config/cleanup' && method === 'GET') { send(await app.cleanupSettingsEditor()); return; }
+    if (path === '/api/config/cleanup' && method === 'PUT') { const input = CleanupSettingsSaveSchema.parse(await body(request)); retryable = true; send(await app.saveCleanupSettings(input)); return; }
     if (path === '/api/config/limits' && method === 'GET') { send(await app.globalThreadLimitEditor()); return; }
     if (path === '/api/config/limits' && method === 'PUT') { const input = GlobalThreadLimitSaveSchema.parse(await body(request)); retryable = true; send(await app.saveGlobalThreadLimit(input)); return; }
     if (path === '/api/projects/view' && method === 'GET') { send(await app.projectDefinitions()); return; }

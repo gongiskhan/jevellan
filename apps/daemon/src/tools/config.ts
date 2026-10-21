@@ -1,3 +1,4 @@
+import { settingsNavigation } from '@jevellan/core';
 import { ProjectRoutineSettingsSaveSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsRequestSchema, NotificationBrowserFactsSchema } from '@jevellan/core';
 import { capLines, projectRoutineJobChoices, projectRoutineSettings, settingsEditorRigging, environmentSecretSummary, notificationEditor, projectNotificationInfo } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
@@ -153,6 +154,9 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'navigation': return { text: 'Settings pages.', data: settingsNavigation() };
+    case 'cleanup_editor': return { text: 'Cleanup settings.', data: await context.app.cleanupSettingsEditor() };
+    case 'cleanup_save': return { text: 'Settings saved.', data: await context.app.saveCleanupSettings(args.request, context.request.deviceId ?? context.app.device.deviceId) };
     case 'limits_editor': return { text: 'Shared thread limit.', data: await context.app.globalThreadLimitEditor() };
     case 'limits_save': return { text: 'Settings saved.', data: await context.app.saveGlobalThreadLimit(args.request, context.request.deviceId ?? context.app.device.deviceId) };
     case 'projects_view': return { text: 'Project definitions.', data: await context.app.projectDefinitions(context.request.deviceId ?? context.app.device.deviceId) };

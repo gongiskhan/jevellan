@@ -1,3 +1,4 @@
+import { settingsWorkspace, cleanupSettingsEditor, CleanupSettingsSaveSchema, RiggingListSchema } from '@jevellan/core';
 import { ProjectDefinitionRestores } from './project-definition-restores.js';
 import { ProjectDefinitionEditorSchema, ProjectDefinitionsViewSchema, ProjectViewSchema, type ProjectDefinitionEditor, type ProjectDefinitionsView } from '@jevellan/core';
 import { projectDefinitionDeviceOperation } from './project-definition-device.js';
@@ -436,6 +437,15 @@ export class Application {
   async saveRuntimeSettings(input: unknown, deviceId = this.device.deviceId) {
     const state = !this.member && deviceId !== this.device.deviceId ? new HubState(this.hub, deviceId, [...this.runtimes.keys()]) : this.state;
     const saved = await state.configuration.runtimesPut(input); await this.configuration(); await this.applyRigging(); return saved;
+  }
+  async settingsWorkspace() {
+    const [config, accounts, runtimeList, items, roster, jev] = await Promise.all([this.configuration(), this.accounts.list(), this.runtimeList(), this.rigging.list(), this.roster(), this.state.jev.summary()]);
+    return settingsWorkspace({ config, accounts, runtimeList, rigging: RiggingListSchema.parse({ schema: 'rigging-list-v1', items, application: this.riggingApplication() }), roster, jev });
+  }
+  async cleanupSettingsEditor() { return cleanupSettingsEditor(await this.configuration()); }
+  async saveCleanupSettings(raw: unknown, deviceId = this.device.deviceId) {
+    const input = CleanupSettingsSaveSchema.parse(raw), state = !this.member && deviceId !== this.device.deviceId ? new HubState(this.hub, deviceId, [...this.runtimes.keys()]) : this.state;
+    const saved = await state.configuration.cleanupPut(input); await this.configuration(); return saved;
   }
   async globalThreadLimitEditor() { return globalThreadLimitEditor(await this.configuration()); }
   async saveGlobalThreadLimit(raw: unknown, deviceId = this.device.deviceId) {

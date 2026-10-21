@@ -2792,6 +2792,17 @@ test('WG6 coordinator session settings and durable save', async ({ page }, info)
   expect(errors).toEqual([]);
 });
 
+test('Settings navigation keeps engine order and the runtimes fallback', async ({ page }, info) => {
+  const errors = await begin(page); await page.goto('/settings/not-a-page');
+  await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
+  const tabs = page.getByRole('navigation', { name: 'Settings', exact: true });
+  await expect(tabs.locator('.settings-tabs-strip').getByRole('button')).toHaveText(['Runtimes', 'Notifications', 'Rigging', 'Decisions', 'Improver', 'Devices', 'Projects', 'Git', 'Ekoa', 'Agents', 'Cleanup', 'Configuration', 'About']);
+  await tabs.getByRole('button', { name: 'Cleanup', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Cleanup', exact: true })).toBeVisible();
+  await expect(page.getByRole('spinbutton', { name: 'Job logs and daemon logs: Keep for (days)', exact: true })).toHaveValue('14');
+  await page.screenshot({ path: info.outputPath(`settings-navigation-${layout(info)}.png`), fullPage: true }); expect(errors).toEqual([]);
+});
+
 test('WG7 cleanup settings and per-device Clean now receipt', async ({ page }, info) => {
   const errors = await begin(page); const seed = await control('/projects/cleanup-seed', { schema: 'fixture-cleanup-seed-v1' }) as { deviceName: string; deviceId: string };
   await page.goto('/settings/cleanup'); await expect(page.getByRole('heading', { name: 'Cleanup', exact: true })).toBeVisible();

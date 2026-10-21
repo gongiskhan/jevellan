@@ -1,6 +1,5 @@
 import { CleanupPage } from './cleanup.js';
 import { NotificationsPage } from './notifications.js';
-import { NOTIFICATIONS_TITLE } from './project-work-copy.js';
 import { EkoaPage } from './ekoa.js';
 import { clientId } from './client-id.js';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
@@ -9,6 +8,7 @@ import { createRoot } from 'react-dom/client';
 import { z } from 'zod';
 import {
   AuthStateSchema,
+  settingsPage as settingsPageModel,
   ConfigRevisionSchema,
   DeviceRosterSchema,
   type Configuration,
@@ -41,27 +41,13 @@ import { ThreadPage } from './thread-page.js';
 import { TerminalPage } from './terminal.js';
 import { SetupPage } from './setup.js';
 import { ImproverPage, useImprover } from './improver.js';
-import { BrandFlag, Icon, type IconName } from './icons.js';
+import { BrandFlag, Icon } from './icons.js';
 import './style.css';
 import './project-work.css';
 import { InstallAppButton, PwaStatus, startPwa } from './pwa.js';
 
 type Auth = z.infer<typeof AuthStateSchema>;
-const settingsPages = [
-  ['runtimes', 'Runtimes', 'runtimes'],
-  ['notifications', NOTIFICATIONS_TITLE, 'message'],
-  ['rigging', 'Rigging', 'rigging'],
-  ['decisions', 'Decisions', 'decisions'],
-  ['improver', 'Improver', 'improver'],
-  ['devices', 'Devices', 'devices'],
-  ['projects', 'Projects', 'projects'],
-  ['git', 'Git', 'git'],
-  ['ekoa', 'Ekoa', 'projects'],
-  ['agents', 'Agents', 'agents'],
-  ['cleanup', 'Cleanup', 'configuration'],
-  ['configuration', 'Configuration', 'configuration'],
-  ['about', 'About', 'about'],
-] as const satisfies ReadonlyArray<readonly [string, string, IconName]>;
+
 /**
  * The settings pages' tabs: a list beside the page, and below 1024 px a strip that scrolls sideways (useTabStrip). On an end
  * that hides tabs, a chevron button over the fade scrolls the strip that way; the tabs themselves stay the keyboard path.
@@ -301,23 +287,22 @@ function App() {
   const message = useCallback((text: string) => setNotice({ text, error: false }), []);
   const saveConfig = async (configuration: Configuration, signal?: AbortSignal) => {
     await api(
-      '/hub/config',
+      data!.configurationWrite.path,
       ConfigRevisionSchema,
-      'PUT',
+      data!.configurationWrite.method,
       {
-        schema: 'config-write-v1',
-        revision: data!.config.revision,
+        ...data!.configurationWrite.body,
         configuration,
         clientRequestId: `config_${clientId()}`,
       },
       { signal, waitForHub: true },
     );
     await reload(signal);
-    message('Settings saved.');
+    message(data!.configurationWrite.savedNotice);
   };
   const setup = path.split('?')[0] === '/setup';
   const settings = path.startsWith('/settings');
-  const currentPage = path.split('?')[0]!.split('/')[2] ?? 'runtimes';
+  const currentPage = path.split('?')[0]!.split('/')[2] ?? data?.navigation.defaultPage ?? '';
   const feedback = notice && <Toast notice={notice} dismiss={() => setNotice(undefined)} />;
   if (!auth)
     return (
@@ -363,7 +348,7 @@ function App() {
   const props: PageProps = { data, reload, saveConfig, message, onError, navigate };
   const settingsNav = (
     <SettingsTabs current={currentPage}>
-      {settingsPages.map(([id, label, icon]) => (
+      {data.navigation.pages.map(({id, label, icon}) => (
         <button
           key={id}
           className={currentPage === id ? 'selected' : ''}
@@ -444,7 +429,7 @@ function App() {
   const project = projectRoute(path);
   const conversation = path.startsWith('/cursor/') || path.startsWith('/sessions/') || path.startsWith('/conversations/') || !!project;
   const navigation = <button className="menu-button icon-button" aria-label="Open navigation" aria-expanded={sidebar} onClick={() => setSidebar(!sidebar)}><Icon name="menu" /></button>;
-  const settingsLabel = settingsPages.find(([id]) => id === currentPage)?.[1] ?? 'Runtimes';
+  const settingsLabel = settingsPageModel(data.navigation, currentPage).label;
   return (
     <div className={`app-shell ${conversation ? 'reading-conversation' : ''}`}>
       {sidebar && (
