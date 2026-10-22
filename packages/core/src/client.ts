@@ -242,3 +242,5 @@ export * from './terminal-stream.js';
 export * from './terminal-actions.js';
 
 export * from './health-editor.js';
+
+export * from './project-settings-setup.js';

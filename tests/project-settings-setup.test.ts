@@ -1,0 +1,30 @@
+import {afterEach,expect,test} from 'vitest';
+import * as core from '../packages/core/dist/index.js';
+import {EKOA_FAST_CHECKS} from '../packages/projects/dist/index.js';
+import {projectFixture,projectMember,type ProjectFixture} from './helpers/project-fixture.js';
+let f:ProjectFixture|undefined;afterEach(async()=>{await f?.close();f=undefined;});
+const metadata=()=>core.projectSettingsSetupMetadata('project','Ekoa Code');
+const menu=[{id:'discovered_opus',runtime:'claude',model:'reported-native-model',label:'Claude Opus 5.5',description:'Synthetic discovery',efforts:['high' as const],enabled:true}];
+async function named(eligible=false){f=await projectFixture({control:true,menu});const current=(await f.app.state.projects.get('project'))!;await f.app.state.projects.put(core.ProjectSchema.parse({...current.project,name:'Ekoa Code',...(eligible?{remoteUrl:'https://github.com/gongiskhan/ekoa-code.git',githubTokenScope:'project',allowedDevices:[f.app.device.deviceId],testCommand:EKOA_FAST_CHECKS}:{})}),current.revision);return f;}
+
+test('settings setup metadata owns the exact legacy visibility label path and workflow default',()=>{
+ expect(metadata()).toEqual({schema:'project-settings-setup-v1',projectId:'project',label:'Apply Ekoa Code setup',path:'/api/projects/project/ekoa-code-setup',workflowPull:208});for(const name of ['Other project','ekoa code',' Ekoa Code '])expect(core.projectSettingsSetupMetadata('project',name)).toBeNull();
+});
+test('settings setup action prepares the current draft model and disables missing or foreign scope',()=>{
+ expect(core.projectSettingsSetupAction(metadata(),'project','draft_model')).toEqual({schema:'project-settings-setup-action-v1',projectId:'project',label:'Apply Ekoa Code setup',enabled:true,path:'/api/projects/project/ekoa-code-setup',body:{schema:'ekoa-code-setup-request-v1',modelId:'draft_model',workflowPull:208}});expect(core.projectSettingsSetupAction(metadata(),'project',null)).toMatchObject({enabled:false,body:null});expect(core.projectSettingsSetupAction(null,'project','draft_model')).toBeNull();expect(core.projectSettingsSetupAction(metadata(),'other','draft_model')).toBeNull();
+});
+test('settings setup metadata and action documents are strict and bind the canonical project path',()=>{
+ const model=metadata();expect(core.ProjectSettingsSetupSchema.safeParse(model).success).toBe(true);expect(core.ProjectSettingsSetupSchema.safeParse({...model,path:'/api/projects/other/ekoa-code-setup'}).success).toBe(false);expect(core.ProjectSettingsSetupSchema.safeParse({...model,account:'untrusted'}).success).toBe(false);const action=core.projectSettingsSetupAction(model,'project','draft_model');expect(core.ProjectSettingsSetupActionSchema.safeParse(action).success).toBe(true);expect(core.ProjectSettingsSetupActionSchema.safeParse({...action,history:[]}).success).toBe(false);
+});
+test('ordinary settings and owner metadata do not offer a project setup action or start work',async()=>{
+ f=await projectFixture({control:true});const view=await f.json('/api/projects/project/config/editor',core.ProjectSettingsEditorSchema);expect(view.specialSetup).toBeNull();expect(await f.app.ownerTools.call('config',{schema:'owner-tool-request-v1',caller:'cli',action:'settings_editor',args:{}})).toMatchObject({ok:true,data:{specialSetup:null}});expect(f.fake.runs).toHaveLength(0);
+});
+test('setup visibility metadata never replaces the existing canonical repository and model refusal',async()=>{
+ const fixture=await named(),before=(await fixture.app.projectWork.settingsView('project')).settings,view=await fixture.json('/api/projects/project/config/editor',core.ProjectSettingsEditorSchema),command=core.projectSettingsSetupAction(view.specialSetup,'project','discovered_opus');expect(command?.enabled).toBe(true);const result=await fixture.app.ownerTools.call('config',{schema:'owner-tool-request-v1',caller:'cli',action:'project_setup',args:{request:command!.body}});expect(result.ok).toBe(false);expect(JSON.stringify(result)).toContain('Register the dedicated Ekoa Code clones on the allowed devices, with the project token and fast checks.');expect((await fixture.app.projectWork.settingsView('project')).settings).toEqual(before);expect(fixture.fake.runs).toHaveLength(0);
+});
+test('typed owner setup uses the canonical preset writer and its existing replay without running a turn',async()=>{
+ const fixture=await named(true),view=await fixture.json('/api/projects/project/config/editor',core.ProjectSettingsEditorSchema),command=core.projectSettingsSetupAction(view.specialSetup,'project','discovered_opus'),input={schema:'owner-tool-request-v1' as const,caller:'cli',action:'project_setup',args:{request:command!.body}};expect(command?.enabled).toBe(true);const first=await fixture.app.ownerTools.call('config',input);expect(first.ok).toBe(true);if(!first.ok)throw Error('Expected synthetic preset receipt.');expect(core.EkoaCodeSetupReceiptSchema.parse(first.data)).toMatchObject({projectId:'project',completed:true,presetVersion:3});const saved=(await fixture.app.projectWork.settingsView('project')).settings;expect(await fixture.app.ownerTools.call('config',input)).toMatchObject({ok:true,data:{completed:true}});expect((await fixture.app.projectWork.settingsView('project')).settings).toEqual(saved);expect(fixture.fake.runs).toHaveLength(0);
+});
+test('member setup metadata shares scoped engine facts and old editor documents may omit it',async()=>{
+ const fixture=await named(),member=await projectMember(fixture),view=await member.json('/api/projects/project/config/editor',core.ProjectSettingsEditorSchema);expect(view.specialSetup).toEqual(metadata());const{specialSetup:_setup,...old}=view;void _setup;expect(core.ProjectSettingsEditorSchema.safeParse(old).success).toBe(true);expect(core.ProjectSettingsEditorSchema.safeParse({...view,specialSetup:{...view.specialSetup,unknown:true}}).success).toBe(false);expect(()=>member.app.hub).toThrow('A member has no authoritative hub database.');expect(fixture.fake.runs).toHaveLength(0);
+});

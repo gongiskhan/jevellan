@@ -1,3 +1,4 @@
+import {projectSettingsSetupMetadata} from '@jevellan/core';
 import { ProjectSettingsEditorBaseSchema, ProjectSettingsEditorSaveRequestSchema, ProjectSettingsEditorSavedSchema, ProjectWorkSettingsRequestSchema,
   ProjectSettingsControlsSchema, ProjectSettingsRiggingSchema, ProjectWorkSettingsSchema, ProjectPrAutoFixSettingsSchema, SessionCheckpointSettingsSchema,
   DeviceRosterSchema, type ProjectWorkSettings, type ProjectSettingsEditorSaved } from '@jevellan/core';
@@ -33,7 +34,7 @@ export function settingsEditorBase(settingsView: z.infer<typeof ProjectWorkSetti
     sections: [['general', 'General'], ['instructions', 'Instructions'], ['placement', 'Placement'], ['limits', 'Threads and limits'], ['pull-requests', 'Landing'],
       ['environment', 'Environment'], ['routines', 'Routines'], ['health', 'Health checks'], ['notifications', 'Notifications'], ['usage', 'Usage'], ['automation', 'Automation']].map(([key, label]) => ({ key, label })),
     statusOptions: [['active', 'Active'], ['paused', 'Paused'], ['archived', 'Archived']].map(([value, label]) => ({ value, label })),
-    savePath: `/api/projects/${settingsView.settings.projectId}/config/editor`, backPath: `/projects/${settingsView.settings.projectId}`, savedNotice, controls: settingsEditorControls(roster),
+    savePath: `/api/projects/${settingsView.settings.projectId}/config/editor`, backPath: `/projects/${settingsView.settings.projectId}`, savedNotice, controls: settingsEditorControls(roster), specialSetup: projectSettingsSetupMetadata(work.project.id, work.project.name),
   });
 }
 export function settingsEditorRequest(projectId: string, raw: unknown) {

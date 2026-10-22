@@ -1,3 +1,4 @@
+import {projectSettingsSetupAction} from '@jevellan/core/client';
 import { DeploySettings } from './project-deploy.js';
 import { ProjectHealthEditor } from './project-health.js';
 import { browserNotificationEditor } from './notifications.js';
@@ -75,6 +76,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const section = (key: ProjectSettingsSectionKey, children: ReactNode) => <section id={`project-settings-${key}`} className="pw-settings-section" aria-labelledby={`project-settings-title-${key}`}>
     <h2 id={`project-settings-title-${key}`}>{editor!.sections.find(row => row.key === key)!.label}</h2>{children}</section>;
   const controls = editor?.controls;
+  const setupAction = editor && draft ? projectSettingsSetupAction(editor.specialSetup, id, draft.coordinator.modelId) : null;
   const number = (key: keyof NonNullable<ProjectSettingsEditor['controls']>['numbers'] | 'refill', value: number, onChange: (value: number) => void) => {
     const field = key === 'refill' ? { label: copy.REFILL_INTERVAL, ...routines!.routines.refill, step: 1 } : controls!.numbers[key];
     return <label>{field.label}<input type="number" required min={field.min} max={field.max} step={field.step} value={Number.isNaN(value) ? '' : value} onChange={event => onChange(event.target.valueAsNumber)} /></label>;
@@ -132,7 +134,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
         </fieldset>
         {local.error && <p role="alert" className="error">{local.error}{stale && <button type="button" className="text-button" disabled={task.busy} onClick={() => void task.run(read)}>{copy.RELOAD}</button>}</p>}
         <div className="form-actions pw-settings-savebar">
-          {work.project.name === 'Ekoa Code' && <button type="button" className="secondary" disabled={task.busy || !draft.coordinator.modelId} onClick={() => void task.run(async signal => { await api(`/api/projects/${id}/ekoa-code-setup`, EkoaCodeSetupReceiptSchema, 'POST', { schema: 'ekoa-code-setup-request-v1', modelId: draft.coordinator.modelId, workflowPull: 208 }, { signal, waitForHub: true }); await read(signal); updated(); })}>{copy.APPLY_EKOA_SETUP}</button>}
+          {setupAction && <button type="button" className="secondary" disabled={task.busy || !setupAction.enabled} onClick={() => void task.run(async signal => { await api(setupAction.path, EkoaCodeSetupReceiptSchema, 'POST', setupAction.body, { signal, waitForHub: true }); await read(signal); updated(); })}>{setupAction.label}</button>}
           <button type="button" className="secondary" onClick={() => navigate(editor.backPath)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale || !landingReady || !coordinatorReady || !placementReady || !environmentReady || !healthReady}>{task.busy ? copy.SAVING : copy.SAVE}</button>
         </div>
       </form><RoutinePreferences model={routines} saved={setRoutines} /></div>

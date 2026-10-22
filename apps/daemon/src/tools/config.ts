@@ -204,6 +204,7 @@ export const config: OwnerHandler = async (context) => {
       const [routines, secretStates, rigging] = await Promise.all([routineView(context), Promise.all(base.settingsView.settings.environment.secrets.map(async name => environmentSecretSummary(await app.state.environment.summary(project.id, name)))), app.rigging.list()]);
       return { text: 'Project settings.', data: ProjectSettingsEditorSchema.parse({ ...base, schema: 'project-settings-editor-v1', routines, secretStates, rigging: settingsEditorRigging(project.id, rigging), notificationInfo: projectNotificationInfo() }) };
     }
+    case 'project_setup': return { text: 'Project setup applied.', data: await context.app.projectWork.setupEkoaCode(context.project.id, args.request) };
     case 'settings_save': {
       const data = await context.app.projectWork.saveSettingsEditor(context.project.id, args.request);
       return { text: data.secretSteps.length ? `Project settings saved; ${data.secretSteps.length} secret changes remain.` : data.savedNotice, data };

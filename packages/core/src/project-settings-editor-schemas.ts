@@ -1,3 +1,4 @@
+import {ProjectSettingsSetupSchema} from './project-settings-setup.js';
 import { z } from 'zod';
 import { IdSchema } from './schemas.js';
 import { ProjectWorkSettingsSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema } from './project-schemas.js';
@@ -19,7 +20,7 @@ const status = ProjectWorkSettingsSchema.shape.status.removeDefault();
 export const ProjectSettingsEditorBaseSchema = z.strictObject({ schema: z.literal('project-settings-editor-base-v1'), settingsView: ProjectWorkSettingsViewSchema, work: ProjectWorkViewSchema,
   sections: z.array(z.strictObject({ key: ProjectSettingsSectionKeySchema, label: z.string().min(1).max(100) })).length(ProjectSettingsSectionKeySchema.options.length),
   statusOptions: z.array(z.strictObject({ value: status, label: z.string().min(1).max(100) })).length(3),
-  savePath: z.string().min(1).max(1000), backPath: z.string().min(1).max(1000), savedNotice: z.string().min(1).max(500), controls: ProjectSettingsControlsSchema.optional() });
+  savePath: z.string().min(1).max(1000), backPath: z.string().min(1).max(1000), savedNotice: z.string().min(1).max(500), controls: ProjectSettingsControlsSchema.optional(), specialSetup: ProjectSettingsSetupSchema.nullable().optional() });
 export const ProjectSettingsRiggingSchema = z.strictObject({ schema: z.literal('project-settings-rigging-v1'), names: z.array(z.string().min(1).max(128)).max(10000),
   message: z.string().min(1).max(2 * 1024 * 1024), editPath: z.string().min(1).max(1000) });
 export const ProjectSettingsEditorSchema = ProjectSettingsEditorBaseSchema.extend({ schema: z.literal('project-settings-editor-v1'), routines: ProjectRoutineSettingsViewSchema,
