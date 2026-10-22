@@ -16,6 +16,7 @@ const identity = { id: IdSchema, projectId: IdSchema, revision, deviceId: IdSche
 export const MergeRouteSchema = z.strictObject({ schema: z.literal('merge-route-v1'), ...identity, prNumber: z.number().int().positive(), questionSet: z.literal('m-v1'),
   route: MergeRouteNameSchema, source: z.enum(['jev', 'unavailable', 'guard']), reason: z.string().max(1200).optional(), packet: MergeRouteStateSchema,
   calls: z.array(JevCallSchema), probabilities: z.record(z.string(), z.number().min(0).max(1)).optional(),
+  rawChoice: MergeRouteNameSchema.optional(), inputsRef: IdSchema.optional(), promptVersion: z.number().int().positive().optional(), promptText: z.string().min(1).max(60000).optional(),
   state: z.enum(['waiting', 'verifying', 'asked', 'merging', 'merged', 'failed']), failures: z.number().int().min(0).max(3),
   notified: z.array(z.string().max(80)).max(12).default([]),
   headMoved: z.boolean().optional(), verificationRetries: z.number().int().min(0).max(1).default(0), failureDeliveredAt: TimestampSchema.optional(), mergedAt: TimestampSchema.optional(), decisionId: IdSchema.nullable(), verificationId: IdSchema.nullable(), nextAttemptAt: TimestampSchema.optional() });

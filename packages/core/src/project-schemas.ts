@@ -213,7 +213,7 @@ export const PlacementAccountChoiceSchema = z.strictObject({ schema: z.literal('
 export type PlacementAccountChoice = z.infer<typeof PlacementAccountChoiceSchema>;
 export const PlacementRecordSchema = z.strictObject({ schema: z.literal('placement-v1'), questionSet: z.literal('p-v1'),
   source: z.enum(['jev', 'fixed', 'fallback']), fixed: z.array(PlacementFieldSchema), isolation: IsolationSchema,
-  rawChoice: PlacementRawChoiceSchema.optional(), inputsRef: IdSchema.optional(), inputsDeviceId: IdSchema.optional(), rulesApplied: z.array(z.string().regex(/^R[1-9][0-9]*$/u)).max(1000).optional(), rulesReason: z.string().max(4000).optional(),
+  rawChoice: PlacementRawChoiceSchema.optional(), inputsRef: IdSchema.optional(), inputsDeviceId: IdSchema.optional(), promptVersion: z.number().int().positive().optional(), rulesApplied: z.array(z.string().regex(/^R[1-9][0-9]*$/u)).max(1000).optional(), rulesReason: z.string().max(4000).optional(),
   runtime: IdSchema, modelId: IdSchema, model: text, effortRequested: EffortSchema, effortEffective: EffortSchema,
   deviceId: IdSchema, accountId: IdSchema,
   accountChoice: PlacementAccountChoiceSchema.optional(),

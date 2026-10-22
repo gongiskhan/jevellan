@@ -23,7 +23,7 @@ test('rules are saved with their effect on past decisions, prompts are versioned
   const saved = await text('jev', { action: 'rule_set', when: { keywords: ['parser'] }, set: { landingRoute: 'ask-owner' }, note: 'Parser work needs my eyes' });
   expect(saved).toMatch(/^Saved R1: project · keywords parser · landing route ask-owner · "Parser work needs my eyes"\. Applies to new decisions from now on\.\nOn the last 30 decisions it would have changed 1: D\d+ T1 land to ask-owner\.$/u);
   expect(await text('jev', { action: 'rule_set', set: { minEffort: 'max', maxEffort: 'low' } })).toBe('ERROR invalid_rule: minEffort must not exceed maxEffort.');
-  expect(await text("jev", { action: "prompts" })).toMatch(/^l-v1 v1 live · 1 version\nm-v1 v1 live · 1 version · versioned; the engine still reads the code text\np-v1 v1 live/u);
+  expect(await text("jev", { action: "prompts" })).toMatch(/^l-v1 v1 live · 1 version\nm-v1 v1 live · 1 version\np-v1 v1 live/u);
   expect(await text('jev', { action: 'prompt_show', name: 'l-v1' })).toContain('land: Small or low-risk change');
   expect(await text('jev', { action: 'prompt_propose', name: 'l-v1', edits: [{ find: 'nothing here', replace: 'x' }], summary: 'No-op' })).toBe('ERROR edit_mismatch: Edit 1 did not match the current prompt text exactly once.');
   const proposed = await text('jev', { action: 'prompt_propose', name: 'l-v1', edits: [{ find: 'Small or low-risk change', replace: 'Small, test-covered change' }], summary: 'Land only covered changes' });

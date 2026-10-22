@@ -271,6 +271,7 @@ export class Application {
         }, ready: this.conversations.ready,
         ...(options.timers === undefined ? {} : { timers: options.timers }) });
       this.settingsSync = new SettingsSync({ homes: this.homes, redactor: this.redactor, ready: this.conversations.ready, apply: () => this.applyRigging(), ...(options.timers === undefined ? {} : { timers: options.timers }) });
+      if (this.#hub) this.ownerJev.versions();
       const releaseStartup = startup; startup = undefined;
       // Startup ends after conversation recovery and Projects recovery (brief 8.6); the improvers still wait only for theirs.
       this.started = Promise.all([improverReady, this.projectWork.ready]).then(releaseStartup, releaseStartup).catch(() => undefined);

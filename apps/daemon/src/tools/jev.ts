@@ -166,7 +166,7 @@ export const jev: OwnerHandler = async (context) => {
     case 'rule_remove': { const rule = control.removeRule(projectId, String(args.rule)); return { text: `Removed ${rule.id}.\n${await control.ruleEffect(projectId)}` }; }
     case 'prompts': {
       const versions = control.versions(); const names = [...new Set(versions.map(row => row.name))];
-      const lines = names.map(name => { const rows = versions.filter(row => row.name === name); const live = rows.find(row => row.active)!; return `${name} v${live.version} live · ${rows.length} version${rows.length === 1 ? '' : 's'}${name === 'l-v1' ? '' : ' · versioned; the engine still reads the code text'}`; });
+      const lines = names.map(name => { const rows = versions.filter(row => row.name === name); const live = rows.find(row => row.active)!; return `${name} v${live.version} live · ${rows.length} version${rows.length === 1 ? '' : 's'}`; });
       for (const proposal of control.proposals().filter(row => row.state === 'proposed')) lines.push(`${proposal.source === 'code' ? 'new default from code' : 'proposed'}: ${proposal.id} for ${proposal.name} (${proposal.summary})`);
       return { text: capLines(lines) };
     }

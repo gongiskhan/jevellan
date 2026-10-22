@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Through area8zg, all310 component rows have a disposition:305migrated or verified and5client-only;no phase10 component rows remain. Intake,placement rules and active p-v1/m-v1 wiring are next. Shared Improver models own polling/notice and retry policy,diff/status/count presentation,card/revision/undo/request policy,report actions,scoped settings and page/run/log projections. Canonical jobs,revisions,patches,undo and publication retain authority. Typecheck/lint/build and19focused contracts pass. On unchanged product source,1270cases in123complete affected backend files pass(allprior1173retained),with50distinct desktop-light journeys passing across the full run and focused test-adapter correction. 125distinct exact images are retained. Global parity/final integrated backend remain planned;legacy CACHE2/Native PAR6 and the broad account-readiness journey remain unpassed. Installs remain last verified0.7.2;continuation source is unreleased.",
+    "why": "All310baseline component rows have dispositions:305migrated/verified and5client-only. Intake and placement rules are pushed. Active p-v1/m-v1 now passes218cases in16complete affected backend files, static checks and a desktop-light apply/queue/rollback journey. Historical raw-choice rule effects, expanded replay and the new thin Jev page remain in progress. Final integrated backend/desktop parity is pending; legacy CACHE2/NativePAR6 and the broad account-ready journey remain unpassed. Source remains unreleased; installed copies remain last verified0.7.2.",
     "status": "in-progress"
   },
   {
@@ -1064,7 +1064,7 @@
   {
     "id": "br-jev",
     "title": "Complete Jev rules, prompts and replay",
-    "why": "Area10a: actual rule clamps, scope/specificity/floor priority, configured provider/account validation, stable goal/manual/default-type conditions, immutable redacted raw/final inputs, original-device HTTP/MCP reads, member policy/cache and canonical Why pass typecheck/lint/build and168cases in14complete backend files. One desktop-light queue/Why/MCP main action passes without retry or skip; two exact images are retained (vision not run on this existing panel). Active p-v1/m-v1, historical raw-choice rule effects, replay and the missing thin Jev control page follow. No live acceptance, release or final integrated gate is claimed.",
+    "why": "Placement rules are pushed. Area10b wires active p-v1/m-v1 through Hub/member policy, preserves raw choices and exact prompt versions/text, validates proposal/apply/rollback and preserves legacy code defaults. Typecheck/lint/build and218cases in16complete affected backend files pass (6workers,0skip); one desktop-light MCP apply/queue/v2/rollback/queue/v1 journey passes, with two exact images. Historical raw-choice rule effects, expanded replay and the thin Jev page remain in progress. Final integrated gates/live acceptance are not claimed; source unreleased.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Through area8zg, all310 component rows have a disposition:305migrated or verified and5client-only;no phase10 component rows remain. Intake,placement rules and active p-v1/m-v1 wiring are next. Shared Improver models own polling/notice and retry policy,diff/status/count presentation,card/revision/undo/request policy,report actions,scoped settings and page/run/log projections. Canonical jobs,revisions,patches,undo and publication retain authority. Typecheck/lint/build and19focused contracts pass. On unchanged product source,1270cases in123complete affected backend files pass(allprior1173retained),with50distinct desktop-light journeys passing across the full run and focused test-adapter correction. 125distinct exact images are retained. Global parity/final integrated backend remain planned;legacy CACHE2/Native PAR6 and the broad account-readiness journey remain unpassed. Installs remain last verified0.7.2;continuation source is unreleased.",
+    "why": "All310baseline component rows have dispositions:305migrated/verified and5client-only. Intake and placement rules are pushed. Active p-v1/m-v1 now passes218cases in16complete affected backend files, static checks and a desktop-light apply/queue/rollback journey. Historical raw-choice rule effects, expanded replay and the new thin Jev page remain in progress. Final integrated backend/desktop parity is pending; legacy CACHE2/NativePAR6 and the broad account-ready journey remain unpassed. Source remains unreleased; installed copies remain last verified0.7.2.",
     "status": "in-progress"
   },
   {
@@ -1106,7 +1106,7 @@
   {
     "id": "br-engine-071",
     "title": "Remaining engine and remote features",
-    "why": "Intake is pushed. Placement rules reach168 backend passes in14complete files and static checks; one desktop-light queue/Why/MCP main action passes with two exact images. Active p-v1/m-v1 and replay follow. Coordinator fork, member event forwarding and other remote features remain separately planned. No further release without an explicit owner request.",
+    "why": "Intake and placement rules are pushed. Active p-v1/m-v1 passes218backend cases in16complete files, static checks and one desktop-light apply/rollback journey. Historical raw-choice rule effects, expanded replay and the thin Jev page follow. Coordinator fork, member event forwarding, other question-set versions and other remote features remain separately planned. No further release without an explicit owner request.",
     "status": "in-progress"
   },
   {

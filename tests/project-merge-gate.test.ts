@@ -352,3 +352,8 @@ test('verification setup and the alternate provider receive fresh project enviro
   const view = await f.app.projectWork.mergeRoute(f.project.id, thread.id);
   expect(view.records.find(row => row.schema === 'verification-run-v1')).toMatchObject({ state: 'passed', providerChoice: 'other-provider' });
 });
+
+
+test('active m-v1 text reaches actual shadow routing with its version and raw choice',async()=>{
+ const {f,jev}=await setup(),before=f.app.ownerJev.active('m-v1'),original='Small or low-risk change outside the project\'s risky areas, covered by the checks that passed.',changed='Owned merge criterion from the active version.';expect(before.text).toContain(original);const proposed=await f.app.ownerJev.propose('project','m-v1',{edits:[{find:original,replace:changed}],summary:'Owned merge prompt.'});f.app.ownerJev.apply(proposed.match(/^P[1-9][0-9]*/u)![0]);const thread=await published(f);await settings(f,{autoLand:false});await gate(f);expect(jev.state.calls[0]!.questions.merge_route).toMatchObject({type:'choice',criteria:{merge:changed}});const recorded=(await routes(f,thread.id))[0]!;expect(recorded).toMatchObject({promptVersion:2,rawChoice:'merge',inputsRef:recorded.id});expect(f.thread(thread.id).pr?.state).toBe('open');expect(f.github.requests.some(row=>row.method==='PUT'&&row.path.endsWith('/merge'))).toBe(false);
+},90_000);

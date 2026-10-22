@@ -1,5 +1,5 @@
 import {INTAKE_PAGE_BYTES,IntakeDocumentSchema,type IntakeDocument} from '@jevellan/core';
-import { JEV_RULES_NAMESPACE, JevRuleSchema, ProjectJevPolicySchema } from '@jevellan/core';
+import { JEV_RULES_NAMESPACE, JevRuleSchema, JevPromptVersionSchema, ProjectJevPolicySchema } from '@jevellan/core';
 import { ProjectDeploySchema, ProjectDeployBaselineSchema, type ProjectDeploy, type ProjectDeployBaseline } from '@jevellan/core';
 import { ProjectSetupProposalSchema, SetupActionRequestSchema, projectSetupPlan, defaultProjectWorkSettings, type ProjectSetupProposal, type SetupActionRequest } from '@jevellan/core';
 import { HubState } from './state.js';
@@ -259,7 +259,7 @@ export class HubProjectStore {
     return this.#put('project-refill-state', refill.projectId, ProjectRefillStateSchema, refill, expectedRevision);
   }
   settings(projectId: string): Stored<ProjectWorkSettings> | null { return this.#get(SETTINGS, projectId, StoredProjectWorkSettingsSchema); }
-  jevPolicy(projectId: string) { this.#project(projectId); return ProjectJevPolicySchema.parse({ schema: 'project-jev-policy-v1', projectId, rules: this.hub.list(JEV_RULES_NAMESPACE, JevRuleSchema).map(row => row.document).filter(rule => rule.scope === 'global' || rule.projectId === projectId) }); }
+  jevPolicy(projectId: string) { this.#project(projectId); return ProjectJevPolicySchema.parse({ schema: 'project-jev-policy-v1', projectId, rules: this.hub.list(JEV_RULES_NAMESPACE, JevRuleSchema).map(row => row.document).filter(rule => rule.scope === 'global' || rule.projectId === projectId), prompts: this.hub.list('owner-jev-prompts', JevPromptVersionSchema).map(row => row.document).filter(row => row.active) }); }
   tasks(projectId: string, after?: string): Page<ProjectWorkTask> { return this.#page('project-work-tasks', ProjectWorkTaskSchema, projectId, after, () => true); }
   task(taskId: string): Stored<ProjectWorkTask> | null { return this.#get('project-work-tasks', taskId, ProjectWorkTaskSchema); }
   taskHistory(taskId: string) { return this.hub.listByField('project-work-task-history', 'taskId', IdSchema.parse(taskId), TaskHistoryEventSchema).map(row => row.document).sort((a, b) => a.sequence - b.sequence); }

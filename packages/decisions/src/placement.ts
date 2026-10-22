@@ -1,3 +1,4 @@
+import type { PlacementPrompt } from '@jevellan/core';
 import { MAIN_NOT_AVAILABLE, REMOTE_NOT_AVAILABLE } from '@jevellan/core';
 export { MAIN_NOT_AVAILABLE, REMOTE_NOT_AVAILABLE } from '@jevellan/core';
 import { z } from 'zod';
@@ -58,7 +59,7 @@ export type PlacementRuntime = RuntimeSupport & { turns: boolean; displayName: s
 /** Capabilities that later phases build; the Projects placement lifts each gate in its phase (D88). */
 export type PlacementGates = { mainIsolation: boolean; remoteDevices: boolean };
 export type PlacementInput = {
-  settings: Configuration['x-jevellan']; project: Project; defaultIsolation: Isolation;
+  settings: Configuration['x-jevellan']; project: Project; defaultIsolation: Isolation; prompt?: PlacementPrompt | undefined;
   constraints?: NonNullable<PlacementRecord['constraints']> | undefined; projectGuidance?: string | undefined;
   reason?: PlacementRecord['reason']; minimumEffort?: Effort | undefined; excludedModels?: Record<string, string> | undefined;
   continuity?: { modelId: string; effort: Effort; accountId: string } | undefined;
@@ -361,14 +362,14 @@ export function preparePlacementA(input: PlacementInput, candidates: PlacementCa
   const questions: JevQuestions = {};
   if (input.fixed.isolation === undefined && candidates.isolations.length > 1) {
     const manual = input.project.branchPolicy === 'external';
-    questions.isolation = { type: 'choice', instructions: manual ? 'Choose the workspace. This project leaves git to the owner. Existing uncommitted and untracked files are only present in the project checkout; a worktree starts from committed files.' : PLACEMENT_INSTRUCTIONS.isolation,
-      criteria: Object.fromEntries(candidates.isolations.map((isolation) => [isolation, manual && isolation === 'main' ? 'Edit the existing project checkout, including untracked files. Leave changes in place without staging, committing, switching branches, resetting or pushing. Use this for changes to an app served from that checkout.' : PLACEMENT_ISOLATION_CRITERIA[isolation]])) };
+    questions.isolation = { type: 'choice', instructions: manual ? 'Choose the workspace. This project leaves git to the owner. Existing uncommitted and untracked files are only present in the project checkout; a worktree starts from committed files.' : (input.prompt?.instructions.isolation ?? PLACEMENT_INSTRUCTIONS.isolation),
+      criteria: Object.fromEntries(candidates.isolations.map((isolation) => [isolation, manual && isolation === 'main' ? 'Edit the existing project checkout, including untracked files. Leave changes in place without staging, committing, switching branches, resetting or pushing. Use this for changes to an app served from that checkout.' : (input.prompt?.isolation[isolation] ?? PLACEMENT_ISOLATION_CRITERIA[isolation])])) };
   }
   if (input.fixed.modelId === undefined && candidates.models.length > 1) {
-    questions.pick_model = { type: 'choice', instructions: PLACEMENT_INSTRUCTIONS.pick_model, criteria: Object.fromEntries(candidates.models.map(({ model }) => [model.id, model.description])) };
+    questions.pick_model = { type: 'choice', instructions: input.prompt?.instructions.pick_model ?? PLACEMENT_INSTRUCTIONS.pick_model, criteria: Object.fromEntries(candidates.models.map(({ model }) => [model.id, model.description])) };
   }
   const efforts = placementEfforts(input, candidates.models);
-  if (input.fixed.effort === undefined && efforts.length > 1) questions.effort = { type: 'choice', instructions: PLACEMENT_INSTRUCTIONS.effort, criteria: Object.fromEntries(efforts.map(effort => [effort, input.settings.effortGuide[effort]])) };
+  if (input.fixed.effort === undefined && efforts.length > 1) questions.effort = { type: 'choice', instructions: input.prompt?.instructions.effort ?? PLACEMENT_INSTRUCTIONS.effort, criteria: Object.fromEntries(efforts.map(effort => [effort, input.settings.effortGuide[effort]])) };
   return questions;
 }
 
@@ -382,7 +383,7 @@ export function preparePlacementB(input: PlacementInput, candidates: PlacementCa
   if (!entry) throw new Error('This model is not a placement candidate for this isolation.');
   const { devices } = placementDevices(input, options, entry);
   if (input.fixed.deviceId !== undefined || devices.length < 2) return {};
-  return { device: { type: 'choice', instructions: PLACEMENT_INSTRUCTIONS.device, criteria: Object.fromEntries(devices.map((device) => [device.id, deviceCriterion(device)])) } };
+  return { device: { type: 'choice', instructions: input.prompt?.instructions.device ?? PLACEMENT_INSTRUCTIONS.device, criteria: Object.fromEntries(devices.map((device) => [device.id, deviceCriterion(device)])) } };
 }
 
 /** The highest-probability option; exact ties go to Jev's choice, else to the first tied option in criteria order (D30, D251). */

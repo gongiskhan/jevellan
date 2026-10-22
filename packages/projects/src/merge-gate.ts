@@ -1,6 +1,6 @@
 import { ProjectMergeWhyRequestSchema } from '@jevellan/core';
 import { routeWhyView } from './route-why.js';
-import { decideMergeRoute, type DecisionSource } from '@jevellan/decisions';
+import { decideMergeRoute, parseMergePrompt, type DecisionSource } from '@jevellan/decisions';
 import { MergeCorrectionInputSchema, MergeCorrectionSchema, MergeDocumentsViewSchema, MergeRouteSchema, ProjectDecisionSchema, parseGitHubPullUrl,
   type Configuration, type CoordinatorEvent, type DecisionAnswer, type MergeDocument, type MergeRoute, type Project, type ProjectDecision, type ProjectHub, type ProjectWorkSettings, type SecretRedactor, type Thread } from '@jevellan/core';
 import type { ThreadStore } from './stores.js';
@@ -115,10 +115,11 @@ export class ProjectMergeGate {
       const moved = records.filter((row): row is MergeRoute => row.schema === 'merge-route-v1' && row.headMoved === true);
       const failures = Math.min(3, records.filter(row => row.schema === 'verification-run-v1' && row.state === 'failed' && row.report?.result === 'failed' && !row.note).length);
       // One decision under the shared deadline: the client, the configuration read for the model, the key and every attempt (fix-051).
-      const result = await decideMergeRoute(this.o.decisionClient, packet, async () => (await this.o.configuration()).decisions.model, this.o.redactor, this.#abort.signal);
+      const version = settings.jevPolicy?.prompts?.find(row => row.name === 'm-v1' && row.active);
+      const result = await decideMergeRoute(this.o.decisionClient, packet, async () => (await this.o.configuration()).decisions.model, this.o.redactor, this.#abort.signal, version ? () => parseMergePrompt(version.text) : undefined);
       if (this.#closed) return;
       route = await this.#save(MergeRouteSchema.parse({ ...result, schema: 'merge-route-v1', id, projectId: thread.projectId, threadId, deviceId: this.o.deviceId, revision: 0, commit, at: new Date(this.o.now()).toISOString(), prNumber: thread.pr.number,
-        questionSet: 'm-v1', state: 'waiting', failures, verificationRetries: moved.length ? 1 : 0, decisionId: null, verificationId: null,
+        questionSet: 'm-v1', rawChoice: result.route, inputsRef: id, ...(version ? { promptVersion: version.version, promptText: version.text } : {}), state: 'waiting', failures, verificationRetries: moved.length ? 1 : 0, decisionId: null, verificationId: null,
         ...(moved.some(row => row.verificationRetries >= 1) ? { route: 'ask-owner', source: 'guard', reason: 'The pull request head moved during verification again after one retry.' } : {}),
         ...(failures >= 3 ? { route: 'ask-owner', source: 'guard', reason: 'Three verification reports failed on this pull request.' } : {}) }));
     }

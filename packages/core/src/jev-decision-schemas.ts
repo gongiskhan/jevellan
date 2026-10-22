@@ -2,7 +2,7 @@ import {z} from 'zod';
 import {AccountSchema,AccountStatusSchema,ConfigurationSettingsSchema,DeviceFactsSchema,DeviceTagsSchema,EffortSchema,IdSchema,JevCallSchema,ProjectSchema,TimestampSchema} from './schemas.js';
 import {DevicePresenceSchema} from './mesh-schemas.js';
 import {PlacementConstraintsSchema} from './project-parity-schemas.js';
-import {PlacementRawChoiceSchema,ProjectJevPolicySchema} from './jev-control-schemas.js';
+import {JevPromptVersionSchema,PlacementRawChoiceSchema,ProjectJevPolicySchema} from './jev-control-schemas.js';
 const isolation=z.enum(['main','worktree']);
 export const PlacementReplayEnvironmentSchema=z.strictObject({
  schema:z.literal('placement-replay-environment-v1'),settings:ConfigurationSettingsSchema,project:ProjectSchema,defaultIsolation:isolation,
@@ -12,7 +12,7 @@ export const PlacementReplayEnvironmentSchema=z.strictObject({
  maxRunningPerDevice:z.number().int().positive(),perDeviceLimits:z.record(IdSchema,z.number().int().positive()).optional(),needs:DeviceTagsSchema.optional(),ignoreRunningLimit:z.boolean(),deviceId:IdSchema,coordinatorDeviceId:IdSchema,gates:z.strictObject({mainIsolation:z.boolean(),remoteDevices:z.boolean()}),
  fixed:z.strictObject({isolation:isolation.optional(),runtimeId:IdSchema.optional(),accountId:IdSchema.optional(),modelId:IdSchema.optional(),effort:EffortSchema.optional(),deviceId:IdSchema.optional()}),now:z.number().finite(),
 });
-export const PlacementDecisionInputsSchema=z.strictObject({schema:z.literal('placement-decision-inputs-v1'),state:z.string().max(100000),environment:PlacementReplayEnvironmentSchema,policy:ProjectJevPolicySchema});
+export const PlacementDecisionInputsSchema=z.strictObject({schema:z.literal('placement-decision-inputs-v1'),state:z.string().max(100000),environment:PlacementReplayEnvironmentSchema,policy:ProjectJevPolicySchema,prompt:JevPromptVersionSchema.optional()});
 export type PlacementDecisionInputs=z.infer<typeof PlacementDecisionInputsSchema>;
 export const JevPlacementDecisionSchema=z.strictObject({schema:z.literal('jev-placement-decision-v1'),id:IdSchema,projectId:IdSchema,deviceId:IdSchema,at:TimestampSchema,questionSet:z.literal('p-v1'),promptVersion:z.number().int().positive().nullable(),promptSource:z.enum(['code','versioned']),title:z.string().max(1200),source:z.enum(['jev','fallback','fixed']),rawChoice:PlacementRawChoiceSchema,finalChoice:PlacementRawChoiceSchema.nullable(),refusal:z.string().max(4000).nullable(),rulesApplied:z.array(z.string()).max(1000),reason:z.string().max(4000),inputs:PlacementDecisionInputsSchema,calls:z.array(JevCallSchema),overrideModes:z.array(z.enum(['override_undo','override_only'])).optional(),overriddenBy:IdSchema.optional(),gitRef:z.string().regex(/^[a-f0-9]{40,64}$/u).optional()}).refine(row=>row.finalChoice!==null||!!row.refusal,{message:'A refused placement needs its refusal.'});
 export type JevPlacementDecision=z.infer<typeof JevPlacementDecisionSchema>;

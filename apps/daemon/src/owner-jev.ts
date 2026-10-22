@@ -1,6 +1,7 @@
+import { placementPromptText, mergePromptText, parsePlacementPrompt, parseMergePrompt } from '@jevellan/decisions';
 import { AccountSchema, EffortSchema, JevLessonSchema, JevPromptVersionSchema, JevProposalSchema, JevRuleSchema, LandingCorrectionSchema, LandingRouteSchema, MergeCorrectionSchema, unifiedDiff,
   type JevLesson, type JevPromptVersion, type JevProposal, type JevRule, type LandingRoute, type Thread } from '@jevellan/core';
-import { LANDING_CRITERIA, LANDING_INSTRUCTIONS, MERGE_CRITERIA, PLACEMENT_INSTRUCTIONS, PLACEMENT_ISOLATION_CRITERIA, applyJevEffortRules, decideLandingRoute, type LandingPrompt } from '@jevellan/decisions';
+import { LANDING_CRITERIA, LANDING_INSTRUCTIONS, applyJevEffortRules, decideLandingRoute, type LandingPrompt } from '@jevellan/decisions';
 import type { LandingJev } from '@jevellan/projects';
 import type { Application } from './application.js';
 import { OwnerRefusal } from './owner-tools.js';
@@ -19,11 +20,16 @@ export function parseLandingPrompt(text: string): LandingPrompt {
   if (!instructions.length || ROUTES.some(route => !criteria[route])) throw new OwnerRefusal('An l-v1 prompt needs its instructions first, then one line each for land:, verify-then-land: and ask-owner:.', 'invalid_prompt');
   return { instructions: instructions.join(' '), criteria: criteria as Record<Route, string> };
 }
-/** The prompts and question sets Jev uses, as the code defines them (imported as version 1). Only l-v1 is read back by the engine in this version. */
+function validatePrompt(name: string, text: string): void {
+  if (name === 'l-v1') { parseLandingPrompt(text); return; }
+  try { if (name === 'p-v1') parsePlacementPrompt(text); else if (name === 'm-v1') parseMergePrompt(text); }
+  catch { throw new OwnerRefusal(`The ${name} prompt must retain its named instructions and criteria.`, 'invalid_prompt'); }
+}
+/** The prompts and question sets Jev uses, as the code defines them (imported as version 1). All three are read back by their engine services. */
 function codeDefaults(): Array<{ name: string; text: string; wired: boolean }> {
   return [{ name: 'l-v1', text: landingPromptText({ instructions: LANDING_INSTRUCTIONS, criteria: LANDING_CRITERIA }), wired: true },
-    { name: 'p-v1', text: [...Object.entries(PLACEMENT_INSTRUCTIONS).map(([key, value]) => `${key}: ${value}`), ...Object.entries(PLACEMENT_ISOLATION_CRITERIA).map(([key, value]) => `isolation ${key}: ${value}`)].join('\n'), wired: false },
-    { name: 'm-v1', text: Object.entries(MERGE_CRITERIA).map(([key, value]) => `${key}: ${value}`).join('\n'), wired: false }];
+    { name: 'p-v1', text: placementPromptText(), wired: true },
+    { name: 'm-v1', text: mergePromptText(), wired: true }];
 }
 const keyOf = (name: string, version: number) => `${name.replace(/[^A-Za-z0-9]/gu, '_')}_v${version}`;
 
@@ -68,7 +74,7 @@ export class OwnerJev {
       text = text.replace(edit.find, edit.replace);
     });
     if (!input.text && !input.edits) throw new OwnerRefusal('prompt_propose takes the full text or edits.', 'invalid_arguments');
-    if (name === 'l-v1') parseLandingPrompt(text);
+    validatePrompt(name, text);
     if (text === current.text) throw new OwnerRefusal('The proposal is the same as the live version.', 'no_change');
     const proposal = this.#propose(projectId, name, text, input.summary, 'owner');
     const replay = await this.replayText(projectId, proposal, 20);
@@ -79,6 +85,7 @@ export class OwnerJev {
   apply(proposalId: string): string {
     const proposal = this.proposals().find(row => row.id === proposalId.toUpperCase());
     if (!proposal || proposal.state !== 'proposed') throw new OwnerRefusal(`${proposalId} is not an open proposal.`, 'proposal_not_open', 409);
+    validatePrompt(proposal.name, proposal.text);
     const versions = this.versions(proposal.name); const current = versions.find(row => row.active)!; const next = Math.max(...versions.map(row => row.version)) + 1;
     for (const row of versions.filter(entry => entry.active)) this.#put(PROMPTS, row.key, JevPromptVersionSchema, { ...row, active: false });
     this.#put(PROMPTS, keyOf(proposal.name, next), JevPromptVersionSchema, { schema: 'jev-prompt-version-v1', key: keyOf(proposal.name, next), name: proposal.name, version: next, text: proposal.text, summary: proposal.summary,
@@ -89,6 +96,7 @@ export class OwnerJev {
   rollback(name: string, version: number): string {
     const versions = this.versions(name); const target = versions.find(row => row.version === version); const current = versions.find(row => row.active);
     if (!target) throw new OwnerRefusal(`${name} has versions ${versions.map(row => `v${row.version}`).join(', ')}.`, 'version_not_found', 404);
+    validatePrompt(name, target.text);
     if (target.active) return `${name} v${version} is already live.`;
     for (const row of versions.filter(entry => entry.active)) this.#put(PROMPTS, row.key, JevPromptVersionSchema, { ...row, active: false });
     this.#put(PROMPTS, target.key, JevPromptVersionSchema, { ...target, active: true });

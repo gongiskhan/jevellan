@@ -19,7 +19,15 @@ export const JevLessonSchema = z.strictObject({ schema: z.literal('jev-lesson-v1
 export type JevLesson = z.infer<typeof JevLessonSchema>;
 
 export const JEV_RULES_NAMESPACE = 'owner-jev-rules';
-export const ProjectJevPolicySchema = z.strictObject({ schema: z.literal('project-jev-policy-v1'), projectId: IdSchema, rules: z.array(JevRuleSchema).max(1000) });
+export const ProjectJevPolicySchema = z.strictObject({ schema: z.literal('project-jev-policy-v1'), projectId: IdSchema, rules: z.array(JevRuleSchema).max(1000), prompts: z.array(JevPromptVersionSchema).max(100).optional() });
 export type ProjectJevPolicy = z.infer<typeof ProjectJevPolicySchema>;
+const promptText = z.string().trim().min(1).max(12000);
+export const PlacementPromptSchema = z.strictObject({ schema: z.literal('placement-prompt-v1'),
+  instructions: z.strictObject({ isolation: promptText, pick_model: promptText, effort: promptText, device: promptText }),
+  isolation: z.strictObject({ main: promptText, worktree: promptText }) });
+export type PlacementPrompt = z.infer<typeof PlacementPromptSchema>;
+export const MergePromptSchema = z.strictObject({ schema: z.literal('merge-prompt-v1'), instructions: promptText,
+  criteria: z.strictObject({ merge: promptText, 'test-then-merge': promptText, 'ask-owner': promptText }) });
+export type MergePrompt = z.infer<typeof MergePromptSchema>;
 export const PlacementRawChoiceSchema = z.strictObject({ schema: z.literal('placement-raw-choice-v1'), isolation: z.enum(['worktree', 'main']), runtime: IdSchema, modelId: IdSchema, model: z.string().min(1), effortRequested: EffortSchema, effortEffective: EffortSchema, deviceId: IdSchema, accountId: IdSchema });
 export type PlacementRawChoice = z.infer<typeof PlacementRawChoiceSchema>;
