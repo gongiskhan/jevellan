@@ -1,25 +1,22 @@
+import {PROJECT_LIBRARY_POLICY,ProjectLibraryViewSchema,projectLibraryReadCache,projectLibraryReadFailure,projectLibraryFilter,type ProjectLibraryView,type ProjectLibraryFilter} from '@jevellan/core/client';
 import {projectAttachmentAdmission,projectAttachmentUpload,projectAttachmentPreparation,projectAttachmentMessage,ProjectAttachmentMessageSchema} from '@jevellan/core/client';
-import { useEffect, useRef, useState, type ClipboardEvent, type DragEvent } from 'react';
-import { EmptySchema, ErrorDocumentSchema, LibraryListSchema, ProjectLibraryItemSchema, type ProjectLibraryItem } from '@jevellan/core/client';
+import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type DragEvent } from 'react';
+import { EmptySchema, ErrorDocumentSchema, ProjectLibraryItemSchema, type ProjectLibraryItem } from '@jevellan/core/client';
 import { api, ApiError } from './api.js';
 import { Markdown, Modal, dateTime, useTask } from './components.js';
 import { Icon } from './icons.js';
 import * as copy from './project-work-copy.js';
 const base = (projectId: string) => `/api/projects/${projectId}/library`;
 export const libraryContent = (projectId: string, id: string) => `${base(projectId)}/${id}/content`;
-const lists = new Map<string, { at: number; promise: Promise<ProjectLibraryItem[]> }>();
-export async function libraryItems(projectId: string, reload = false): Promise<ProjectLibraryItem[]> {
-  if (reload) lists.delete(projectId); const cached = lists.get(projectId); if (cached && Date.now() - cached.at < 2000) return cached.promise;
-  const pending = (async () => { const items: ProjectLibraryItem[] = []; let cursor: string | null = null;
-    do { const page: ReturnType<typeof LibraryListSchema.parse> = await api(`${base(projectId)}${cursor ? `?after=${cursor}` : ''}`, LibraryListSchema); items.push(...page.items); cursor = page.next; } while (cursor); return items;
-  })(); lists.set(projectId, { at: Date.now(), promise: pending }); pending.catch(() => { if (lists.get(projectId)?.promise === pending) lists.delete(projectId); }); return pending;
-}
+const reads = projectLibraryReadCache();
+export function libraryView(projectId: string, reload = false) { return reads.read(projectId, () => api(`${base(projectId)}/view`, ProjectLibraryViewSchema), reload); }
+export async function libraryItems(projectId: string, reload = false): Promise<ProjectLibraryItem[]> { return (await libraryView(projectId, reload)).rows.map(row => row.item); }
 export const fileSize = copy.libraryFileSize;
 export async function uploadLibrary(projectId: string, file: File, signal?: AbortSignal) {
   const upload = projectAttachmentUpload({ schema: 'project-attachment-upload-request-v1', projectId, name: file.name, mime: file.type, size: file.size });
   const response = await fetch(upload.path, { method: 'PUT', credentials: 'same-origin', redirect: 'error', body: file, headers: { 'Content-Type': upload.mime }, ...(signal ? { signal } : {}) });
   const value: unknown = await response.json(); if (!response.ok) { const error = ErrorDocumentSchema.safeParse(value); throw new ApiError(error.success ? error.data.message : copy.LIBRARY_UPLOAD_FAILED, response.status); }
-  const item = ProjectLibraryItemSchema.parse(value); lists.delete(projectId); return item;
+  const item = ProjectLibraryItemSchema.parse(value); reads.invalidate(projectId); return item;
 }
 type Attached = { key: number; file: File; item?: ProjectLibraryItem };
 /** Uploaded entries survive a failed send; a retry never uploads those bytes twice. */
@@ -64,20 +61,29 @@ export function LibraryMessage({ projectId, text, onOpenImage }: { projectId: st
   return <><Markdown {...(onOpenImage || attached.length ? { onOpenImage: openImage } : {})}>{text.split('\n').filter(line => !attached.some(item => line.startsWith(`Attached file: library/${item.path} (`))).join('\n')}</Markdown>{attached.length > 0 && <div className="pw-library-chips">{attached.map(item => item.mime.startsWith('image/') ? <button type="button" className="pw-library-thumb" key={item.id} onClick={() => setImage(item)}><img src={libraryContent(projectId, item.id)} alt={item.name} /><span>{item.name}</span></button> : <a className="chip" key={item.id} href={libraryContent(projectId, item.id)} target="_blank" rel="noreferrer">{item.name} · {fileSize(item.size)}</a>)}</div>}
     {image && <LibraryImage projectId={projectId} items={items.filter(item => item.mime.startsWith('image/'))} active={image} choose={setImage} close={() => setImage(undefined)} />}</>;
 }
-export function ProjectLibraryPanel({ projectId, threadTitle, onError }: { projectId: string; threadTitle(id: string): string; onError(error: unknown): void }) {
-  const [items, setItems] = useState<ProjectLibraryItem[]>([]), [filter, setFilter] = useState<'all' | 'owner' | 'thread'>('all'), [image, setImage] = useState<ProjectLibraryItem>();
-  const input = useRef<HTMLInputElement>(null), task = useTask(onError), [removing, setRemoving] = useState<ProjectLibraryItem>();
-  const load = async () => setItems(await libraryItems(projectId, true));
-  useEffect(() => { void load().catch(onError); const timer = setInterval(() => { void load().catch(() => undefined); }, 15_000); return () => clearInterval(timer); }, [projectId]);
-  return <section className="pw-section pw-library"><div className="pw-section-heading"><h3>{copy.LIBRARY}</h3><button type="button" disabled={task.busy} onClick={() => input.current?.click()}>{copy.LIBRARY_UPLOAD}</button><input ref={input} type="file" multiple hidden onChange={event => { const files = [...event.target.files ?? []]; event.target.value = ''; void task.run(async signal => { for (const file of files) await uploadLibrary(projectId, file, signal); await load(); }); }} /></div>
-    <div className="actions">{(['all', 'owner', 'thread'] as const).map(value => <button type="button" className="secondary" key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{copy.LIBRARY_FILTERS[value]}</button>)}</div>
-    {!items.length && <p className="pw-empty">{copy.LIBRARY_EMPTY}</p>}
-    {items.filter(item => filter === 'all' || item.source === filter).map(item => <article className="pw-library-row" key={item.id}>
-      {item.mime.startsWith('image/') ? <button type="button" className="pw-library-thumb" aria-label={copy.openLibraryFile(item.name)} onClick={() => setImage(item)}><img src={libraryContent(projectId, item.id)} alt="" /></button> : <Icon name="file" />}
-      <div><strong>{item.name}</strong><p className="muted small-text">{fileSize(item.size)} · {item.source === 'owner' ? copy.LIBRARY_FROM_YOU : copy.libraryFromThread(threadTitle(item.threadId!))} · {dateTime(item.createdAt)}</p>{item.note && <p>{item.note}</p>}
-        <div className="actions"><a href={libraryContent(projectId, item.id)} target="_blank" rel="noreferrer">{copy.LIBRARY_OPEN}</a><a href={`${libraryContent(projectId, item.id)}?download`}>{copy.LIBRARY_DOWNLOAD}</a><button type="button" className="text-button" disabled={task.busy} onClick={() => setRemoving(item)}>{copy.LIBRARY_DELETE}</button></div></div>
+export function ProjectLibraryPanel({ projectId, onError }: { projectId: string; onError(error: unknown): void }) {
+  const [view, setView] = useState<ProjectLibraryView>(), [filter, setFilter] = useState<ProjectLibraryFilter>('all'), [image, setImage] = useState<ProjectLibraryItem>();
+  const input = useRef<HTMLInputElement>(null), task = useTask(onError), [removing, setRemoving] = useState<ProjectLibraryView['rows'][number]>();
+  const currentProject = useRef(projectId); currentProject.current = projectId;
+  const load = async () => { const value = await libraryView(projectId, true); if (currentProject.current === projectId) setView(value); };
+  useEffect(() => {
+    let active = true;
+    const read = async () => { const value = await libraryView(projectId, true); if (active) setView(value); };
+    const failed = (phase: 'initial' | 'poll') => (error: unknown) => { if (projectLibraryReadFailure({ schema: 'project-library-read-failure-context-v1', phase }).route === 'surface') onError(error); };
+    void read().catch(failed('initial'));
+    const timer = setInterval(() => { void read().catch(failed('poll')); }, PROJECT_LIBRARY_POLICY.pollMs);
+    return () => { active = false; clearInterval(timer); };
+  }, [projectId]);
+  const model = useMemo(() => view?.projectId === projectId ? projectLibraryFilter(view, filter) : undefined, [view, projectId, filter]);
+  return <section className="pw-section pw-library"><div className="pw-section-heading"><h3>{model?.labels.title ?? copy.LIBRARY}</h3><button type="button" disabled={task.busy} onClick={() => input.current?.click()}>{model?.labels.upload ?? copy.LIBRARY_UPLOAD}</button><input ref={input} type="file" multiple hidden onChange={event => { const files = [...event.target.files ?? []]; event.target.value = ''; void task.run(async signal => { for (const file of files) await uploadLibrary(projectId, file, signal); await load(); }); }} /></div>
+    <div className="actions">{model?.filters.map(choice => <button type="button" className="secondary" key={choice.value} aria-pressed={filter === choice.value} onClick={() => setFilter(choice.value)}>{choice.label}</button>)}</div>
+    {model?.isEmpty && <p className="pw-empty">{model.labels.empty}</p>}
+    {model?.rows.map(row => <article className="pw-library-row" key={row.item.id}>
+      {row.kind === 'image' ? <button type="button" className="pw-library-thumb" aria-label={row.openLabel} onClick={() => setImage(row.item)}><img src={row.contentPath} alt="" /></button> : <Icon name="file" />}
+      <div><strong>{row.item.name}</strong><p className="muted small-text">{row.sizeLabel} · {row.originLabel} · {dateTime(row.item.createdAt)}</p>{row.item.note && <p>{row.item.note}</p>}
+        <div className="actions"><a href={row.contentPath} target="_blank" rel="noreferrer">{model.labels.open}</a><a href={row.downloadPath}>{model.labels.download}</a><button type="button" className="text-button" disabled={task.busy} onClick={() => setRemoving(row)}>{model.labels.delete}</button></div></div>
     </article>)}
-    {removing && <Modal title={copy.deleteLibraryFile(removing.name)} close={() => setRemoving(undefined)}><div className="actions"><button type="button" disabled={task.busy} onClick={() => { void task.run(async signal => { await api(`${base(projectId)}/${removing.id}`, EmptySchema, 'DELETE', undefined, { signal }); setRemoving(undefined); await load(); }); }}>{copy.LIBRARY_DELETE}</button><button type="button" className="secondary" onClick={() => setRemoving(undefined)}>{copy.CANCEL}</button></div></Modal>}
-    {image && <LibraryImage projectId={projectId} items={items.filter(item => item.mime.startsWith('image/'))} active={image} choose={setImage} close={() => setImage(undefined)} />}
+    {removing && <Modal title={removing.deleteTitle} close={() => setRemoving(undefined)}><div className="actions"><button type="button" disabled={task.busy} onClick={() => { void task.run(async signal => { await api(removing.commandPath, EmptySchema, 'POST', removing.deleteCommand, { signal }); reads.invalidate(removing.item.projectId); setRemoving(undefined); await load(); }); }}>{model?.labels.delete ?? copy.LIBRARY_DELETE}</button><button type="button" className="secondary" onClick={() => setRemoving(undefined)}>{copy.CANCEL}</button></div></Modal>}
+    {image && model && <LibraryImage projectId={model.projectId} items={model.images} active={image} choose={setImage} close={() => setImage(undefined)} />}
   </section>;
 }

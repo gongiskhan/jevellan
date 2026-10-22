@@ -616,7 +616,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             {waitingThreads.map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} navigate={navigate} changed={updated} onError={onError} />)}
             {waiting.answered.length > 0 && <AnsweredList items={waiting.answered} now={now} />}
           </section>
-          <div hidden={overviewTab !== 'library'}>{overviewTab === 'library' && <ProjectLibraryPanel projectId={id} threadTitle={threadId => titles(threadId) ?? threadId} onError={onError} />}</div>
+          <div hidden={overviewTab !== 'library'}>{overviewTab === 'library' && <ProjectLibraryPanel projectId={id} onError={onError} />}</div>
           <section className="pw-section" hidden={overviewTab !== 'queue'} data-tab="queue" aria-labelledby={`${sideId}-queue`}>
             {sectionHeading(`${sideId}-queue`, 'Queue', overview.queueCount)}
             {goalViews && <TaskQueue projectId={id} tasks={tasks} goals={goals} view={goalViews.queue} grouped navigate={navigate} changed={updated} onError={onError} />}

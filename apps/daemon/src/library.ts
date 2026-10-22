@@ -1,3 +1,5 @@
+import {EmptySchema,ProjectLibraryDeleteSchema} from '@jevellan/core';
+import {projectLibraryView} from '@jevellan/core';
 import {ProjectAttachmentRequestSchema,projectAttachmentMessage,projectAttachmentPolicy} from '@jevellan/core';
 import { LIBRARY_FOLDER_ALIAS, LIBRARY_INVALID_PAGE, LIBRARY_FILE_NOT_FOUND, LIBRARY_RELOAD, LIBRARY_CONTENT_TYPE, LIBRARY_THREAD_REQUIRED, LIBRARY_INVALID_FILE, LIBRARY_SHORT_NAME, LIBRARY_INCOMPLETE, LIBRARY_FILE_UNAVAILABLE, LIBRARY_HASH_FAILED } from '@jevellan/projects';
 import { createHash } from 'node:crypto';
@@ -33,6 +35,16 @@ export class ProjectLibraryService implements ProjectLibrary {
       items.push(...page.items); cursor = page.next;
     } while (cursor);
     return items;
+  }
+  async view(projectId: string, raw?: unknown) {
+    const [items, work] = await Promise.all([this.list(projectId), this.app.projectWork.view(projectId)]);
+    return projectLibraryView({ schema: 'project-library-source-v1', projectId, items, threads: work.threads.map(thread => ({ id: thread.id, title: thread.title })) }, raw);
+  }
+  async deleteCommand(projectId: string, raw: unknown, ownerSession?: string) {
+    const command = ProjectLibraryDeleteSchema.parse(raw);
+    if (command.projectId !== projectId) throw Object.assign(new Error('This library command belongs to another project.'), { status: 409, code: 'wrong_resource' });
+    await this.remove(projectId, command.itemId, ownerSession);
+    return EmptySchema.parse({ schema: 'empty-request-v1' });
   }
   async attachmentPolicy(projectId: string) { await this.#project(projectId); return projectAttachmentPolicy(projectId); }
   async attachmentMessage(projectId: string, raw: unknown) {

@@ -9,6 +9,8 @@ import { clientId, resolveGoal, resolveTask } from './common.js';
 export const work: OwnerHandler = async (context) => {
   const { app, tools, project, args, now } = context; const projectId = project.id; const engine = app.projectWork;
   switch (context.action) {
+    case 'library_delete': return { text: 'File deleted.', data: await app.library.deleteCommand(projectId, args.request) };
+    case 'library_view': return { text: 'Project library.', data: await app.library.view(projectId, args.request) };
     case 'attachment_policy': return { text: 'Attachment limits.', data: await app.library.attachmentPolicy(projectId) };
     case 'attachment_message': return { text: 'Prepared attachments.', data: await app.library.attachmentMessage(projectId, args.request) };
     case 'notebook_view': return { text: 'Notebook.', data: await engine.notebookEditor(projectId) };

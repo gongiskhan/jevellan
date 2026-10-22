@@ -358,17 +358,9 @@ export const LIBRARY = 'Library';
 export const ATTACH_FILES = 'Attach files';
 export const removeAttachment = (name: string) => `Remove ${name}`;
 export const LIBRARY_UPLOAD = 'Upload';
-export const LIBRARY_FILTERS = { all: 'All', owner: 'Uploads', thread: 'From threads' };
-export const LIBRARY_OPEN = 'Open';
-export const LIBRARY_DOWNLOAD = 'Download';
 export const LIBRARY_DELETE = 'Delete';
 export const LIBRARY_PREVIOUS = 'Previous image';
 export const LIBRARY_NEXT = 'Next image';
-export const LIBRARY_FROM_YOU = 'From you';
-export const libraryFromThread = (title: string) => `From "${title}"`;
-export const openLibraryFile = (name: string) => `Open ${name}`;
-export const deleteLibraryFile = (name: string) => `Delete ${name} from the library?`;
-export const LIBRARY_EMPTY = 'Nothing in the library yet. Attach files to a message or upload them here.';
 export const RIGGING_PROJECTS = 'Projects';
 export const RIGGING_ALL_PROJECTS = 'All projects';
 

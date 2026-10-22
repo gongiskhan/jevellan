@@ -220,3 +220,5 @@ export * from './project-coordinator-composer.js';
 export * from './project-notebook-editor.js';
 
 export * from './project-attachments.js';
+
+export * from './project-library-view.js';
