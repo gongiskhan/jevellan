@@ -257,3 +257,7 @@ export * from './project-task-interaction-schemas.js';
 export * from './project-task-interaction.js';
 
 export * from './project-task-page-view.js';
+
+export * from './project-chat-schemas.js';
+export * from './project-chat-copy.js';
+export * from './project-chat.js';

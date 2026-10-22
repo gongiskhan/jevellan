@@ -252,7 +252,7 @@ test('the forwarder lists exactly the twelve tools with their descriptions and f
   const listed = (await mcp.listTools()).tools;
   expect(listed.map(tool => tool.name)).toEqual(['status', 'activity', 'ask_coordinator', 'work', 'goals', 'jobs', 'thread', 'respond', 'override', 'jev', 'config', 'login']);
   for (const tool of OWNER_TOOLS) expect(listed.find(row => row.name === tool.name)?.description).toBe(tool.description);
-  expect((listed.find(row => row.name === "work")!.inputSchema as unknown as { properties: { action: { enum: string[] } } }).properties.action.enum).toEqual(['list', 'add', 'reorder', 'cancel', 'inspect', 'editor', 'preview', 'save', 'queue_view', 'task_edit_view', 'task_draft', 'task_command', 'task_page_view']);
+  expect((listed.find(row => row.name === "work")!.inputSchema as unknown as { properties: { action: { enum: string[] } } }).properties.action.enum).toEqual(['list', 'add', 'reorder', 'cancel', 'inspect', 'editor', 'preview', 'save', 'queue_view', 'task_edit_view', 'task_draft', 'task_command', 'task_page_view', 'chat_view']);
   expect((listed.find(row => row.name === 'ask_coordinator')!.inputSchema as unknown as { properties: { mode: { enum: string[] } } }).properties.mode.enum).toEqual(['ask', 'tell', 'restart']);
   expect(mcp.getServerCapabilities()?.experimental).toBeUndefined();
   const status = await mcp.callTool({ name: 'status', arguments: {} });
@@ -554,4 +554,9 @@ test('MCP task interaction edits use captured revisions and shared queue control
 
 test('MCP task page reads the canonical task navigation and polling policy without work',async()=>{
  const made=await taskInteractionFixture(true);f=made.f;const before=await made.work.tasks.read('project',made.queued.id),starts=f.fake.runs.length,mcp=await connect({JEVELLAN_HOME:f.homes.root});const result=OwnerToolResultSchema.parse((await mcp.callTool({name:'work',arguments:{action:'task_page_view',task:made.queued.id}})).structuredContent);expect(result).toMatchObject({ok:true,data:{schema:'project-task-page-view-v1',projectId:'project',taskId:made.queued.id,task:before,meta:'feature · queued',policy:{schema:'project-task-page-policy-v1',pollHintMs:30000},back:{label:'Back to project',href:'/projects/project'},threadLink:null,pullRequest:null}});expect(await made.work.tasks.read('project',made.queued.id)).toEqual(before);expect(f.fake.runs.length).toBe(starts);
+});
+import {projectChatFixture} from './helpers/project-chat-fixture.js';
+
+test('MCP project chat reads canonical recorded headings cards and delivery without work',async()=>{
+ const made=await projectChatFixture(true);f=made.f;const before=made.ledger.events(),starts=f.fake.runs.length,mcp=await connect({JEVELLAN_HOME:f.homes.root});const result=OwnerToolResultSchema.parse((await mcp.callTool({name:'work',arguments:{action:'chat_view'}})).structuredContent);expect(result).toMatchObject({ok:true,data:{schema:'project-chat-view-v1',projectId:'project',deviceId:f.app.device.deviceId,items:expect.arrayContaining([expect.objectContaining({kind:'owner',heading:'You, via CLI',delivered:true}),expect.objectContaining({kind:'reply',text:'Two recorded fixture tasks.'})])}});expect(made.ledger.events()).toEqual(before);expect(f.fake.runs.length).toBe(starts);
 });

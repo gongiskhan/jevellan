@@ -1,3 +1,5 @@
+import {projectChatRequest,projectChatView} from '@jevellan/core';
+import {publicProjectData} from './ledger.js';
 import {projectTaskPageView} from '@jevellan/core';
 import { ProjectTaskCommandSchema, projectTaskQueueRequest, projectTaskQueueInteraction, projectTaskEditView, projectTaskDraft } from '@jevellan/core';
 import { CursorTranscriptSchema, EARLIER_TRANSCRIPT_UNAVAILABLE, transcriptTurnPresentation, TRANSCRIPT_PROMPT, HISTORY_PROMPT_COLLAPSE_CHARACTERS } from '@jevellan/core';
@@ -807,6 +809,12 @@ export class ProjectWork {
     const [work, tasks, goals, daily, roster] = await Promise.all([this.view(projectId), this.taskList(projectId), this.goalList(projectId), this.daily.view(projectId), this.#o.roster()]);
     const names = new Map(roster.devices.map(row => [row.device.id, row.device.name])); names.set(this.#o.deviceId, this.#o.deviceName);
     return projectPageView({ work, tasks: tasks.tasks, goals: goals.goals, daily }, resolvedDays, this.#timers.now(), { ...viewer, runtimeName: id => this.#o.runtimes.get(id)?.displayName ?? id, deviceName: id => names.get(id) ?? id });
+  }
+  async chatView(projectId: string, raw?: unknown) {
+    const input = projectChatRequest(raw), [ledger, work] = await Promise.all([this.coordinatorEvents(projectId), this.view(projectId)]);
+    const records = ledger.events(), head = records.at(-1)?.id ?? 0, through = input.throughEventId ?? head;
+    const events = ledger.redact(records.filter(event => event.id <= through && event.type !== 'journal-source' && event.type !== 'journal-document').map(event => ({ ...event, data: publicProjectData(ledger.data(event)) })));
+    return projectChatView({ schema: 'project-chat-source-v1', projectId, deviceId: this.#o.deviceId, head, threads: work.threads, events }, input);
   }
   async taskPageView(projectId: string, taskId: string) {
     const [task, work] = await Promise.all([this.taskView(projectId, taskId), this.view(projectId)]);

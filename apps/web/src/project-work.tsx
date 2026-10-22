@@ -1,3 +1,4 @@
+import {projectChatThreadTitles} from '@jevellan/core/client';
 import { ProjectTaskEditorSchema, taskEditorCommand, type ProjectTaskEditor, type ProjectTaskEditorFields } from '@jevellan/core/client';
 import { ProjectPageRequestSchema, ProjectStatusEventSchema, ProjectStatusStreamRequestSchema, matchingProjectStatusView, STATUS_REFRESH_WINDOW_MS } from '@jevellan/core/client';
 import { CoordinatorOverrideDialog } from './coordinator-editor.js';
@@ -460,8 +461,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const deviceName = useMemo(() => deviceNames(data), [data]);
   const threads = view?.threads;
   const titles = useMemo<ThreadTitles>(() => {
-    const map = new Map((threads ?? []).map((thread) => [thread.id, thread.title]));
-    return (threadId) => map.get(threadId);
+    return projectChatThreadTitles(threads ?? []);
   }, [threads]);
   const items = useMemo(() => chatItems(events, titles), [events, titles]);
   const proposalGroups = useMemo(() => chatProposalGroups(items, tasks), [items, tasks]);
@@ -703,7 +703,7 @@ function ChatEntry({ item, projectId, navigate, tasks, threads, settings, change
     case 'owner':
       return (
         <article className="user-message pw-owner">
-          <div className="message-heading"><strong>{item.via ? `${copy.YOU}, via ${item.via}` : copy.YOU}</strong><Stamp at={item.at} /></div>
+          <div className="message-heading"><strong>{item.heading}</strong><Stamp at={item.at} /></div>
           <LibraryMessage projectId={projectId} text={item.text} />
           {!item.delivered && <p className="pw-pending">{copy.WAITING_FOR_COORDINATOR}</p>}
         </article>

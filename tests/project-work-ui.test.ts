@@ -17,9 +17,9 @@ import {
 import * as server from '../packages/projects/dist/copy.js';
 import { sidebarOrder } from '../packages/projects/dist/views.js';
 import * as copy from '../apps/web/src/project-work-copy.js';
-import { chatProposalIds, chatProposalGroups } from '../apps/web/src/project-work-model.js';
+import { chatItems, chatProposalIds, chatProposalGroups } from '../packages/core/dist/index.js';
 import {
-  chatItems, deviceBlock, deviceChoices, dotClass,
+  deviceBlock, deviceChoices, dotClass,
   lineParts, mainIsolationBlock, partWords, projectDot,
   projectRoute, rowClockMs, sidebarProjects, threadCreateRequest,
   toolIcon, } from '../apps/web/src/project-work-model.js';
@@ -293,7 +293,7 @@ test('chat items: owner messages, replies, one-liners, event cards and notices i
   ];
   const items = chatItems(events, titles);
   expect(items.map((item) => item.id)).toEqual([1, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
-  expect(items[0]).toEqual({ kind: 'owner', id: 1, text: 'add A and fix B', at: ago(2), delivered: true });
+  expect(items[0]).toEqual({ kind: 'owner', id: 1, text: 'add A and fix B', at: ago(2), heading: 'You', delivered: true });
   expect(items[1]).toEqual({ kind: 'reply', id: 4, text: 'Starting **two** threads.' });
   expect(items[2]).toEqual({ kind: 'tool', id: 5, tool: 'jevellan_thread_start', ok: true, threadId: 'thread_a', summary: 'Started "Fix login" · Codex gpt-x · high · Worktree · Mac mini' });
   expect(items[3]).toEqual({ kind: 'tool', id: 6, tool: 'jevellan_notebook_write', ok: false, summary: 'Could not update the notebook: It changed.' });
