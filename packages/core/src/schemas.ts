@@ -56,7 +56,11 @@ const SettingsFields = {
 export const LegacyConfigurationSchema = z.strictObject({ ...ConfigurationFields, 'x-jevellan': z.strictObject({ schema: z.literal(1), ...SettingsFields }) });
 export const PreCleanupConfigurationSchema = z.strictObject({ ...ConfigurationFields, 'x-jevellan': z.strictObject({ schema: z.literal(2), ...SettingsFields, improver: ImproverSettingsSchema }) });
 export const globalThreadLimit = z.number().int().min(1).max(20).default(6);
-const CurrentConfigurationSchema = PreCleanupConfigurationSchema.extend({ 'x-jevellan': PreCleanupConfigurationSchema.shape['x-jevellan'].extend({ cleanup: CleanupSettingsSchema.default(defaultCleanupSettings), maxRunningThreadsAll: globalThreadLimit }) }).superRefine((value, ctx) => {
+export const ModelPriceTableSchema = z.strictObject({ schema: z.literal('model-price-table-v1'), version: IdSchema,
+  entries: z.array(z.strictObject({ modelId: IdSchema, inputUsdPerMillion: z.number().finite().nonnegative(), outputUsdPerMillion: z.number().finite().nonnegative() })).min(1).max(1000)
+}).refine(table => new Set(table.entries.map(row => row.modelId)).size === table.entries.length, 'Model price ids must be unique.');
+export type ModelPriceTable = z.infer<typeof ModelPriceTableSchema>;
+const CurrentConfigurationSchema = PreCleanupConfigurationSchema.extend({ 'x-jevellan': PreCleanupConfigurationSchema.shape['x-jevellan'].extend({ cleanup: CleanupSettingsSchema.default(defaultCleanupSettings), maxRunningThreadsAll: globalThreadLimit, modelPrices: ModelPriceTableSchema.optional() }) }).superRefine((value, ctx) => {
   const ids = value['x-jevellan'].menu.map((model) => model.id);
   if (new Set(ids).size !== ids.length) ctx.addIssue({ code: 'custom', message: 'Model menu ids must be unique.', path: ['x-jevellan', 'menu'] });
 });

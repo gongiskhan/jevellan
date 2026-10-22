@@ -246,10 +246,11 @@ export class ThreadService {
       if (task.length > 32768) throw refuse('The assembled task exceeds 32768 characters. Shorten the brief or thread rules.', 400);
       const counts = await this.#o.admission.counts(projectId);
       const projectFull = counts.project >= counts.limits.project;
-      const placed = await this.#o.placement.place({ project, workSettings: settings, title: request.title, task, taskContext: request.taskContext, note: request.note, fixed: request.fixed,
+      const proposedThreadId = newId('thread', this.#o.now());
+      const placed = await this.#o.placement.place({ project, workSettings: settings, threadId: proposedThreadId, title: request.title, task, taskContext: request.taskContext, note: request.note, fixed: request.fixed,
         coordinatorDeviceId: request.coordinatorDeviceId, ignoreRunningLimit: projectFull, exclude: request.exclude });
       if (placed.kind === 'refused') throw Object.assign(refuse(placed.message, 409), { resourceRefusal: placed.retryable ?? true });
-      const at = this.#o.now(); const threadId = newId('thread', at); const record = placed.record;
+      const at = this.#o.now(); const threadId = proposedThreadId; const record = placed.record;
       let queued = projectFull ? queuedReason(counts.limits.project, null) : placed.atLimit ? queuedReason(settings.maxRunningPerDevice, placed.labels.deviceName) : undefined;
       let hold: (() => void) | undefined;
       if (queued === undefined) {
@@ -366,7 +367,7 @@ export class ThreadService {
     const fixed: PlacementFixed = { isolation: thread.isolation, deviceId: thread.ownerDeviceId, runtimeId: current.runtime,
       ...(input.modelId === null ? {} : { modelId: input.modelId ?? current.modelId }), ...(input.effort === null ? {} : { effort: input.effort ?? current.effortRequested }),
       ...(input.accountId === null ? {} : input.accountId !== undefined ? { accountId: input.accountId } : current.fixed.includes('account') ? { accountId: current.accountId } : {}) };
-    const chosen = await this.#o.placement.place({ project, workSettings: await this.#o.admission.settings(thread.projectId), title: thread.title, task: thread.task, taskContext: thread.taskContext,
+    const chosen = await this.#o.placement.place({ project, workSettings: await this.#o.admission.settings(thread.projectId), threadId: thread.id, title: thread.title, task: thread.task, taskContext: thread.taskContext,
       note: input.note, fixed, coordinatorDeviceId: thread.coordinatorDeviceId, ignoreRunningLimit: true, exclude: thread.id });
     if (chosen.kind === 'refused') throw refuse(chosen.message, 409);
     const fields = new Set(current.fixed);

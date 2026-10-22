@@ -23,7 +23,7 @@ export type PlacementResult =
   | { kind: 'placed'; record: PlacementRecord; labels: PlacementLabels; atLimit: boolean }
   | { kind: 'refused'; message: string; retryable?: boolean };
 export type PlaceInput = {
-  project: Project; workSettings: ProjectWorkSettings; title: string; task: string; taskContext?: TaskPlacementContext | undefined;
+  project: Project; workSettings: ProjectWorkSettings; threadId?: string; title: string; task: string; taskContext?: TaskPlacementContext | undefined;
   /** The coordinator's one-line reason (`jevellan_thread_start`), or the owner's note of a restart (D252). */
   note?: string | undefined; trouble?: string | undefined; reason?: PlacementRecord['reason']; minimumEffort?: Effort | undefined; excludedModels?: Record<string, string> | undefined;
   continuity?: PlacementInput['continuity'];
@@ -176,15 +176,17 @@ export class Placement {
       input.signal ?? new AbortController().signal);
     if (placed.kind === 'refused') return placed;
     const raw = placed.record;
-    const clamped = clampPlacementRules(decision, raw, policy?.rules ?? [], { taskType: input.taskContext?.type ?? 'feature', goalId: input.taskContext?.goal?.id, label: input.taskContext?.goal?.name ?? 'manual', text: `${input.title} ${input.task}` });
+    const ruleContext = { taskType: input.taskContext?.type ?? 'feature', ...(input.taskContext?.goal?.id ? { goalId: input.taskContext.goal.id } : {}), label: input.taskContext?.goal?.name ?? 'manual', text: `${input.title} ${input.task}` };
+    const redactedContext = this.#o.redactor.document(ruleContext);
+    const clamped = clampPlacementRules(decision, raw, policy?.rules ?? [], ruleContext);
     let inputsRef: string | undefined;
     const rawChoice = PlacementRawChoiceSchema.parse({ schema: 'placement-raw-choice-v1', isolation: raw.isolation, runtime: raw.runtime, modelId: raw.modelId, model: raw.model, effortRequested: raw.effortRequested, effortEffective: raw.effortEffective, deviceId: raw.deviceId, accountId: raw.accountId });
     if (this.#o.recordDecision && (raw.source === 'jev' || policy?.rules.length || version && raw.source !== 'fixed')) {
       const state = buildPlacementState({ ...decision, packet, redactor: this.#o.redactor }).state;
       const environment = { ...decision, schema: 'placement-replay-environment-v1', runtimes: [...decision.runtimes].map(([id, runtime]) => [id, { mcp: runtime.mcp, readOnlyEnforced: runtime.readOnlyEnforced, edit: runtime.edit, shell: runtime.shell, turns: runtime.turns, displayName: runtime.displayName }]) };
-      const inputs = PlacementDecisionInputsSchema.parse(this.#o.redactor.document({ schema: 'placement-decision-inputs-v1', state, environment, policy: policy ?? { schema: 'project-jev-policy-v1', projectId: input.project.id, rules: [] }, ...(version ? { prompt: version } : {}) }));
+      const inputs = PlacementDecisionInputsSchema.parse(this.#o.redactor.document({ schema: 'placement-decision-inputs-v1', state, environment, ruleContext: { ...redactedContext, schema: 'placement-rule-context-v1', complete: JSON.stringify(ruleContext) === JSON.stringify(redactedContext) }, policy: policy ?? { schema: 'project-jev-policy-v1', projectId: input.project.id, rules: [] }, ...(version ? { prompt: version } : {}) }));
       const final = clamped.kind === 'placed' ? clamped.record : null;
-      inputsRef = this.#o.recordDecision({ schema: 'jev-placement-decision-v1', projectId: input.project.id, deviceId: this.#o.deviceId, at: raw.decidedAt, questionSet: 'p-v1', promptSource: version ? 'versioned' : 'code', promptVersion: version?.version ?? null, title: input.title.slice(0,1200), source: raw.source, rawChoice,
+      inputsRef = this.#o.recordDecision({ schema: 'jev-placement-decision-v1', projectId: input.project.id, deviceId: this.#o.deviceId, ...(input.threadId ? { threadId: input.threadId } : {}), at: raw.decidedAt, questionSet: 'p-v1', promptSource: version ? 'versioned' : 'code', promptVersion: version?.version ?? null, title: input.title.slice(0,1200), source: raw.source, rawChoice,
         finalChoice: final ? PlacementRawChoiceSchema.parse({ ...rawChoice, isolation: final.isolation, runtime: final.runtime, modelId: final.modelId, model: final.model, effortRequested: final.effortRequested, effortEffective: final.effortEffective, deviceId: final.deviceId, accountId: final.accountId }) : null,
         refusal: clamped.kind === 'refused' ? clamped.message.slice(0,4000) : null, rulesApplied: clamped.rulesApplied, reason: clamped.reason.slice(0,4000), inputs, calls: raw.jevCalls });
     }
@@ -199,7 +201,7 @@ export class Placement {
   }
   reconsider(project: Project, workSettings: ProjectWorkSettings, thread: Thread, reason: 'model-unavailable' | 'escalation', trouble: string, signal: AbortSignal, floor?: Effort): Promise<PlacementResult> {
     const current = thread.placement;
-    return this.place({ project, workSettings, title: thread.title, task: thread.task, taskContext: thread.taskContext,
+    return this.place({ project, workSettings, threadId: thread.id, title: thread.title, task: thread.task, taskContext: thread.taskContext,
       trouble: trouble.slice(0, 2000), reason, note: 'Continue the existing task in its existing workspace. Choose among the eligible models and efforts.',
       ...(reason === 'escalation' ? { minimumEffort: [current.effortEffective, floor].filter((value): value is Effort => !!value).sort((a, b) => EffortSchema.options.indexOf(b) - EffortSchema.options.indexOf(a))[0], continuity: { modelId: current.modelId, effort: current.effortEffective, accountId: current.accountId } }
         : { excludedModels: { [current.modelId]: trouble } }),

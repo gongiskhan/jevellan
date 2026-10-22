@@ -269,3 +269,5 @@ export * from './project-intake-schemas.js';
 export * from './jev-control-schemas.js';
 
 export * from './jev-decision-schemas.js';
+
+export * from './jev-replay-schemas.js';

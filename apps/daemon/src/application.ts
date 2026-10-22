@@ -78,6 +78,7 @@ export class Application {
   readonly homes: Homes; readonly device: DeviceConfig; readonly redactor: SecretRedactor;
   readonly member: MemberHubClient | undefined;
   readonly version: string;
+  readonly verificationEvidence: 'live' | 'simulated';
   readonly agentAccess: AgentAccess;
   readonly hubAgentAccess: HubAgentAccess | undefined;
   readonly accounts: AccountService; readonly auth: UiAuth | MemberUiAuth; readonly rigging: SharedRigging;
@@ -129,6 +130,7 @@ export class Application {
   get hubAuth(): UiAuth { return this.mesh.auth; }
   constructor(options: ApplicationOptions = {}) {
     this.version = options.version ?? VERSION;
+    this.verificationEvidence = options.decisionFetch || options.runtimes ? 'simulated' : 'live';
     this.#improverTimers = options.timers !== false;
     this.projectVisibility = new ProjectVisibility(options.repositoryVisibility);
     this.homes = options.homes ?? new Homes(); assertHubNotMoved(this.homes, options.forceHub); this.homes.ensure();

@@ -314,7 +314,7 @@ export type PlacementActiveThread = PlacementState['activeThreads'][number];
 export type PlacementOverrideEntry = Pick<PlacementOverride, 'mode' | 'changes' | 'at' | 'taskType'> & { title: string };
 /** Active threads are oldest first. Corrections prefer the newest eight of this type, then four of other types. */
 export type PlacementPacketInput = { title: string; task: string; taskContext?: TaskPlacementContext | undefined; note?: string | undefined; trouble?: string | undefined; activeThreads: PlacementActiveThread[]; overrides: PlacementOverrideEntry[] };
-type PlacementStateInput = PlacementInput & { packet: PlacementPacketInput; redactor: Pick<SecretRedactor, 'document'> };
+type PlacementStateInput = PlacementInput & { storedState?: string; packet: PlacementPacketInput; redactor: Pick<SecretRedactor, 'document'> };
 
 /** `{field} changed from {from} to {to} for '{title}' ({mode})` (brief 10), with the stored values (model ids, D249). */
 export function overrideSentence(change: { field: PlacementField; from: string; to: string }, title: string, mode: PlacementOverride['mode'], type: TaskType = 'feature'): string {
@@ -413,7 +413,7 @@ export async function decidePlacement(client: DecisionClient, input: PlacementSt
   const calls: JevCall[] = []; const probabilities: Record<string, Record<string, number>> = {}; let state: string | undefined;
   const ask = async (questions: JevQuestions) => {
     if (!Object.keys(questions).length) return undefined;
-    state ??= buildPlacementState(input).state;
+    state ??= input.storedState ?? buildPlacementState(input).state;
     return askJev(client, { model: input.jevModel, state, questions, kind: 'placement', calls }, signal);
   };
   const choose = (questions: JevQuestions, response: JevResponse | undefined, id: string): string | undefined => {
@@ -436,7 +436,7 @@ export async function decidePlacement(client: DecisionClient, input: PlacementSt
     const device = devices.find((candidate) => candidate.id === deviceId);
     if (!device) throw new JevError('invalid-response');
     const ranked = ranking(input, entry.model, device.id);
-    const chosenAccount = continuityAccount(input, entry.model, effort.data, ranked) ?? await decideAccount(client, { ranking: ranked, state: () => state ?? buildPlacementState(input).state,
+    const chosenAccount = continuityAccount(input, entry.model, effort.data, ranked) ?? await decideAccount(client, { ranking: ranked, state: () => state ?? input.storedState ?? buildPlacementState(input).state,
       model: input.jevModel, now: input.now, redactor: { text: value => input.redactor.document(value) }, ...(input.fixed.accountId ? { fixed: input.fixed.accountId } : {}) }, signal);
     calls.push(...chosenAccount.jevCalls);
     if (chosenAccount.probabilities) probabilities.account = chosenAccount.probabilities;
@@ -455,7 +455,8 @@ export async function decidePlacement(client: DecisionClient, input: PlacementSt
 import { TaskPlacementContextSchema, type TaskPlacementContext, type TaskType } from '@jevellan/core';
 
 /** Owner clamps narrow the normal candidate evaluation; they never turn a rule into a privileged fixed field. */
-export function clampPlacementRules(input: PlacementInput, raw: PlacementRecord, rules: readonly import('@jevellan/core').JevRule[], context: import('./jev-rules.js').JevRuleContext): {kind:'placed';record:PlacementRecord;rulesApplied:string[];reason:string}|{kind:'refused';message:string;rulesApplied:string[];reason:string} {
+export type PlacementRuleChoice = Pick<PlacementRecord, 'isolation' | 'runtime' | 'modelId' | 'model' | 'effortRequested' | 'effortEffective' | 'deviceId' | 'accountId' | 'source' | 'fixed' | 'jevCalls' | 'accountChoice' | 'probabilities' | 'error'>;
+export function clampPlacementRules<T extends PlacementRuleChoice>(input: PlacementInput, raw: T, rules: readonly import('@jevellan/core').JevRule[], context: import('./jev-rules.js').JevRuleContext): {kind:'placed';record:T|PlacementRecord;rulesApplied:string[];reason:string}|{kind:'refused';message:string;rulesApplied:string[];reason:string} {
   const ranked = matchingJevRules(input.project.id, rules, context).filter(({rule}) => rule.set.minModel || rule.set.minEffort || rule.set.maxEffort || rule.set.account || rule.set.runtime)
     .sort((a,b) => Number(b.rule.scope==='project')-Number(a.rule.scope==='project') || b.fields-a.fields || Number(a.rule.id.slice(1))-Number(b.rule.id.slice(1)));
   if(!ranked.length)return{kind:'placed',record:raw,rulesApplied:[],reason:''};
@@ -484,7 +485,7 @@ export function clampPlacementRules(input: PlacementInput, raw: PlacementRecord,
     if(!device)throw Error('Owner rules leave no eligible device.');const accounts=ranking(narrowed,entry.model,device.id),account=accounts.find(row=>row.eligible&&row.account.id===raw.accountId)??accounts.find(row=>row.eligible);if(!account)throw Error('Owner rules leave no eligible account.');
     const desired=input.fixed.effort??effortRule.effort,choice=accountChoice(accounts,account.account.id,account.account.id===raw.accountId?raw.accountChoice?.source??'only-option':accounts.filter(row=>row.eligible).length===1?'only-option':'fallback',input.now);
     const record=placementRecord(narrowed,{isolation,options,entry,device,effortRequested:desired,accountChoice:choice},{source:raw.source,calls:raw.jevCalls,...(raw.probabilities?{probabilities:raw.probabilities}:{}),...(raw.error?{error:raw.error}:{})});
-    const changed=['isolation','runtime','modelId','effortRequested','effortEffective','deviceId','accountId'].some(key=>record[key as keyof PlacementRecord]!==raw[key as keyof PlacementRecord]);
+    const changed=(['isolation','runtime','modelId','effortRequested','effortEffective','deviceId','accountId'] as const).some(key=>record[key]!==raw[key]);
     const reason=changed?`Owner rules ${[...relevant].join(', ')} changed placement from ${raw.modelId} ${raw.effortEffective} to ${record.modelId} ${record.effortEffective}${account.account.id!==raw.accountId?` on account ${account.account.id}`:''}. ${effortRule.reason}`.trim():'';
     return{kind:'placed',record:{...record,fixed:raw.fixed},rulesApplied:changed?[...relevant]:[],reason};
   }catch(error){return{kind:'refused',message:error instanceof Error?error.message:'The owner rules could not be applied.',rulesApplied:[...relevant],reason:'Owner rules could not produce a guarded placement.'};}

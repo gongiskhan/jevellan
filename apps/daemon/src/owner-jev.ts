@@ -1,3 +1,5 @@
+import {applyHistoricalRules,choiceLabel,choiceOf,currentThreadFacts,newest,placementHistory,sameChoice} from './owner-jev-history.js';
+import {replayPlacement,replaySummary} from './owner-jev-replay.js';
 import { placementPromptText, mergePromptText, parsePlacementPrompt, parseMergePrompt } from '@jevellan/decisions';
 import { AccountSchema, EffortSchema, JevLessonSchema, JevPromptVersionSchema, JevProposalSchema, JevRuleSchema, LandingCorrectionSchema, LandingRouteSchema, MergeCorrectionSchema, unifiedDiff,
   type JevLesson, type JevPromptVersion, type JevProposal, type JevRule, type LandingRoute, type Thread } from '@jevellan/core';
@@ -78,7 +80,8 @@ export class OwnerJev {
     if (text === current.text) throw new OwnerRefusal('The proposal is the same as the live version.', 'no_change');
     const proposal = this.#propose(projectId, name, text, input.summary, 'owner');
     const replay = await this.replayText(projectId, proposal, 20);
-    this.#put(PROPOSALS, proposal.key, JevProposalSchema, { ...proposal, replay });
+    const latest = this.proposals().find(row => row.key === proposal.key)!;
+    this.#put(PROPOSALS, proposal.key, JevProposalSchema, { ...latest, replay });
     const diff = unifiedDiff(name, current.text, text).slice(0, 3000);
     return `${proposal.id} for ${name} (v${current.version} to v${current.version + 1}): ${input.summary}\nDiff:\n${diff}\n${replay}\nNot applied yet.`;
   }
@@ -89,7 +92,7 @@ export class OwnerJev {
     const versions = this.versions(proposal.name); const current = versions.find(row => row.active)!; const next = Math.max(...versions.map(row => row.version)) + 1;
     for (const row of versions.filter(entry => entry.active)) this.#put(PROMPTS, row.key, JevPromptVersionSchema, { ...row, active: false });
     this.#put(PROMPTS, keyOf(proposal.name, next), JevPromptVersionSchema, { schema: 'jev-prompt-version-v1', key: keyOf(proposal.name, next), name: proposal.name, version: next, text: proposal.text, summary: proposal.summary,
-      createdAt: this.now().toISOString(), active: true, source: proposal.source, ...(proposal.replay ? { replay: proposal.replay.slice(0, 4000) } : {}) });
+      createdAt: this.now().toISOString(), active: true, source: proposal.source, ...(proposal.replay ? { replay: proposal.replay.slice(0, 4000) } : {}), ...(proposal.replayReportId ? { replayReportId: proposal.replayReportId } : {}) });
     this.#put(PROPOSALS, proposal.key, JevProposalSchema, { ...proposal, state: 'applied' });
     return `${proposal.name} v${next} is live. The previous version was v${current.version}.`;
   }
@@ -132,7 +135,7 @@ export class OwnerJev {
     const rule = this.rules(projectId).find(row => row.id === id.toUpperCase()); if (!rule) throw new OwnerRefusal(`${id} is not a rule.`, 'rule_not_found', 404);
     this.app.hub.delete(RULES, rule.key); return rule;
   }
-  #matches(rule: JevRule, context: { taskType?: string | undefined; goalId?: string | null; label?: string; text: string }): number {
+  #matches(rule: JevRule, context: { taskType?: string | undefined; goalId?: string | null | undefined; label?: string; text: string }): number {
     if (!rule.enabled) return -1; let fields = 0;
     if (rule.when.taskType) { if (rule.when.taskType !== context.taskType) return -1; fields++; }
     if (rule.when.goalId) { if (rule.when.goalId !== context.goalId) return -1; fields++; }
@@ -141,33 +144,53 @@ export class OwnerJev {
     return fields;
   }
   /** The landing route after the owner's rules: project scope beats global, more `when` fields beat fewer, then the more careful route. */
-  ruleRoute(projectId: string, route: Route, context: { taskType?: string | undefined; goalId?: string | null; text: string }, rules = this.rules(projectId)): { route: Route; rulesApplied: string[]; reason: string } {
+  ruleRoute(projectId: string, route: Route, context: { taskType?: string | undefined; goalId?: string | null | undefined; label?: string; text: string }, rules = this.rules(projectId)): { route: Route; rulesApplied: string[]; reason: string } {
     const ranked = rules.filter(rule => rule.set.landingRoute).map(rule => ({ rule, fields: this.#matches(rule, context) })).filter(row => row.fields >= 0)
       .sort((a, b) => Number(b.rule.scope === 'project') - Number(a.rule.scope === 'project') || b.fields - a.fields || ROUTES.indexOf(b.rule.set.landingRoute!) - ROUTES.indexOf(a.rule.set.landingRoute!));
     const top = ranked[0]; if (!top || top.rule.set.landingRoute === route) return { route, rulesApplied: [], reason: '' };
     return { route: top.rule.set.landingRoute!, rulesApplied: [top.rule.id], reason: `${top.rule.id} changed the landing route from ${route} to ${top.rule.set.landingRoute}${top.rule.note ? ` (${top.rule.note})` : ''}.` };
   }
   /** Effort the owner's rules allow for a placement (used to measure a rule change on past placements). */
-  ruleEffort(projectId: string, effort: string, context: { taskType?: string | undefined; goalId?: string | null; text: string }, rules = this.rules(projectId)): { effort: string; rule?: string } {
+  ruleEffort(projectId: string, effort: string, context: { taskType?: string | undefined; goalId?: string | null | undefined; label?: string; text: string }, rules = this.rules(projectId)): { effort: string; rule?: string } {
     const parsed = EffortSchema.safeParse(effort); if (!parsed.success) return { effort };
     const result = applyJevEffortRules(projectId, parsed.data, rules, context);
     return { effort: result.effort, ...(result.rulesApplied[0] ? { rule: result.rulesApplied[0] } : {}) };
   }
   /** What a rule set would have changed on the last 30 decisions, with no model calls: rules re-applied to the stored raw choices. */
   async ruleEffect(projectId: string, rules = this.rules(projectId)): Promise<string> {
-    const routes = (await this.#routes(projectId)).slice(0, 30); const threads = (await this.app.projectWork.view(projectId)).threads;
-    const changes: string[] = [];
-    for (const route of routes) {
-      const raw = route.rawChoice ?? route.route; const thread = threads.find(row => row.id === route.threadId);
-      const result = this.ruleRoute(projectId, raw, { taskType: route.packet.task.type, text: `${route.packet.title} ${route.packet.summary}` }, rules);
-      if (result.route !== route.route && route.source === 'jev') changes.push(`${this.app.ownerTools.ids.one(projectId, 'D', route.id)} ${thread ? this.app.ownerTools.ids.shortOf(projectId, thread.id) ?? '' : ''} ${route.route} to ${result.route}`.replace(/  +/gu, ' '));
+    const [history, current, documents] = await Promise.all([placementHistory(this.app, projectId, 30), currentThreadFacts(this.app, projectId), this.app.projectWork.landings.records(projectId)]);
+    const routes = documents.filter(row => row.schema === 'landing-route-v1' || row.schema === 'merge-route-v1');
+    const sources = newest([...history.records.map(record => ({ kind: 'placement' as const, id: record.id, at: record.at, record })),
+      ...routes.map(record => ({ kind: 'route' as const, id: record.id, at: record.at, record }))]).slice(0, 30);
+    const changes: string[] = []; let missingContext = 0;
+    for (const source of sources) {
+      if (source.kind === 'placement') {
+        const row = source.record, result = applyHistoricalRules(row, rules);
+        if (!result) { missingContext++; continue; }
+        const final = result.kind === 'placed' ? choiceOf(result.record) : null;
+        if (!sameChoice(row.finalChoice, final)) {
+          const threadId = row.threadId ?? current.facts.find(fact => fact.placement.inputsRef === row.id)?.id;
+          const d = this.app.ownerTools.ids.one(projectId, 'D', row.id), t = threadId ? this.app.ownerTools.ids.shortOf(projectId, threadId) ?? '' : '';
+          changes.push(`${d} ${t} ${choiceLabel(row, row.finalChoice)} to ${choiceLabel(row, final)}${result.kind === 'refused' ? `: ${result.message}` : ''}`.replace(/  +/gu, ' ').slice(0, 400));
+        }
+      } else {
+        const row = source.record;
+        // An explicit hard-guard or unavailable result stays closed; rules cannot make it an automatic route.
+        if (row.source !== 'jev') continue;
+        const raw = row.rawChoice ?? row.route, landing = raw === 'merge' ? 'land' : raw === 'test-then-merge' ? 'verify-then-land' : raw;
+        const result = this.ruleRoute(projectId, landing, { taskType: row.packet.task.type, goalId: row.packet.task.goal?.id, label: row.packet.task.goal?.name ?? 'manual', text: `${row.packet.title} ${row.packet.summary}` }, rules);
+        const final = row.schema === 'merge-route-v1' ? result.route === 'land' ? 'merge' : result.route === 'verify-then-land' ? 'test-then-merge' : result.route : result.route;
+        if (final !== row.route) changes.push(`${this.app.ownerTools.ids.one(projectId, 'D', row.id)} ${this.app.ownerTools.ids.shortOf(projectId, row.threadId) ?? ''} ${row.route} to ${final}`.replace(/  +/gu, ' '));
+      }
     }
-    for (const thread of threads.slice(-Math.max(0, 30 - routes.length))) {
-      const result = this.ruleEffort(projectId, thread.effort, { text: thread.title }, rules);
-      if (result.effort !== thread.effort) changes.push(`${this.app.ownerTools.ids.one(projectId, 'D', `placement-${thread.id}`.slice(0, 128))} ${this.app.ownerTools.ids.shortOf(projectId, thread.id) ?? ''} ${thread.effort} to ${result.effort}`.replace(/  +/gu, ' '));
-    }
-    return `On the last 30 decisions it would have changed ${changes.length}${changes.length ? `: ${changes.join(', ')}` : ''}.`;
+    const legacy = current.facts.filter(row => row.placement.source !== 'fixed' && !row.placement.inputsRef).length;
+    return [`On the last 30 decisions it would have changed ${changes.length}${changes.length ? `: ${changes.join(', ')}` : ''}.`,
+      ...(missingContext ? [`Unavailable original condition contexts: ${missingContext}.`] : []), ...(legacy ? [`Skipped ${legacy} older placements without stored inputs.`] : []),
+      ...(history.unavailableDevices.length ? [`Unavailable input devices: ${history.unavailableDevices.length}; this result is partial.`] : []),
+      ...(history.limitedDevices.length ? [`History read limit reached on ${history.limitedDevices.length} devices; this result is partial.`] : []),
+      ...(current.unavailableThreads.length ? [`Unavailable thread owners: ${current.unavailableThreads.length}.`] : [])].join('\n');
   }
+
   async #routes(projectId: string): Promise<LandingRoute[]> {
     const rows = await this.app.projectWork.landings.records(projectId);
     return rows.filter((row): row is LandingRoute => row.schema === 'landing-route-v1').sort((a, b) => b.at.localeCompare(a.at));
@@ -210,11 +233,20 @@ export class OwnerJev {
       apply: (route, thread: Thread) => this.ruleRoute(projectId, route, { ...(thread.taskContext?.type ? { taskType: thread.taskContext.type } : {}), text: `${thread.title} ${thread.task.slice(0, 2000)}` }) };
   }
 
+  replayReport(projectId: string, id: string) { return replaySummary(this.app, projectId, id); }
+
   /** Re-asks Jev with each stored packet and the proposed prompt or lessons, applies the current rules and compares with what happened. */
   async replayText(projectId: string, proposal: JevProposal | null, n: number, lessonId?: string): Promise<string> {
+    if (proposal?.name === 'p-v1') {
+      const summary = await replayPlacement(this.app, projectId, this.active('p-v1'), proposal, this.rules(projectId), n);
+      const latest = this.proposals().find(row => row.key === proposal.key)!;
+      this.#put(PROPOSALS, latest.key, JevProposalSchema, { ...latest, replayReportId: summary.id });
+      return summary.text;
+    }
+
     const routes = (await this.#routes(projectId)).filter(row => row.source === 'jev' || row.rawChoice).slice(0, n);
     const skipped = (await this.#routes(projectId)).length - routes.length;
-    if (proposal && proposal.name !== 'l-v1') return `Replay is available for l-v1 only in this version; ${proposal.name} is versioned but not yet read by the engine.`;
+    if (proposal && proposal.name !== 'l-v1') return `Stored-input replay for ${proposal.name} is not available yet; the engine uses its active version.`;
     const prompt = proposal ? parseLandingPrompt(proposal.text) : parseLandingPrompt(this.active('l-v1').text);
     const lessons = this.lessons(projectId).filter(row => row.enabled && row.about === 'landing' && (!lessonId || true)).slice(0, 8).map(row => row.text);
     const changed: string[] = []; const model = (await this.app.configuration()).configuration['x-jevellan'].decisions.model;

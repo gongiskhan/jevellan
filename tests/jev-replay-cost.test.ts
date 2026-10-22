@@ -1,0 +1,9 @@
+import {expect,test} from 'vitest';
+import {JevReplayCostSchema,ModelPriceTableSchema,type ThreadUsageTotal} from '../packages/core/dist/index.js';
+import {estimateReplayCost} from '../packages/decisions/dist/index.js';
+const usage:ThreadUsageTotal={turns:1,inputTokens:1000,outputTokens:100,cacheReadTokens:0,cacheWriteTokens:0,costUsd:0.003,costUnknownTurns:0};
+const table=ModelPriceTableSchema.parse({schema:'model-price-table-v1',version:'owned_prices',entries:[{modelId:'small',inputUsdPerMillion:2,outputUsdPerMillion:10},{modelId:'large',inputUsdPerMillion:4,outputUsdPerMillion:20}]});
+test('replay math handles both higher and lower token estimates',()=>{expect(estimateReplayCost(usage,'small','large',table)).toMatchObject({status:'estimated',oldUsd:0.003,newUsd:0.006,deltaUsd:0.003});expect(estimateReplayCost(usage,'large','small',table).deltaUsd).toBeCloseTo(-0.003,9);});
+test('cache counters without price and normalization proof remain unavailable',()=>{expect(estimateReplayCost({...usage,cacheReadTokens:200},'small','large',table)).toMatchObject({status:'unavailable',oldUsd:null,newUsd:null,deltaUsd:null});});
+test('price tables reject duplicate ids and negative or nonfinite rates',()=>{expect(()=>ModelPriceTableSchema.parse({...table,entries:[table.entries[0],table.entries[0]]})).toThrow();expect(()=>ModelPriceTableSchema.parse({...table,entries:[{...table.entries[0],inputUsdPerMillion:-1}]})).toThrow();expect(()=>ModelPriceTableSchema.parse({...table,entries:[{...table.entries[0],inputUsdPerMillion:Infinity}]})).toThrow();});
+test('unavailable or estimated statuses cannot carry contradictory cost evidence',()=>{expect(()=>JevReplayCostSchema.parse({status:'unavailable',reason:'Missing rates.',oldUsd:0,newUsd:0,deltaUsd:0})).toThrow();expect(()=>JevReplayCostSchema.parse({status:'estimated',reason:'No values.',oldUsd:null,newUsd:null,deltaUsd:null})).toThrow();});

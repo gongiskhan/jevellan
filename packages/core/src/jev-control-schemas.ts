@@ -9,10 +9,10 @@ export const JevRuleSchema = z.strictObject({ schema: z.literal('jev-rule-v1'), 
   note: z.string().max(400), enabled: z.boolean(), createdAt: TimestampSchema });
 export type JevRule = z.infer<typeof JevRuleSchema>;
 export const JevPromptVersionSchema = z.strictObject({ schema: z.literal('jev-prompt-version-v1'), key: IdSchema, name: z.string().min(1).max(40), version: z.number().int().positive(), text: z.string().min(1).max(60000),
-  summary: z.string().max(400), createdAt: TimestampSchema, active: z.boolean(), source: z.enum(['code', 'owner']), replay: z.string().max(4000).optional() });
+  summary: z.string().max(400), createdAt: TimestampSchema, active: z.boolean(), source: z.enum(['code', 'owner']), replay: z.string().max(4000).optional(), replayReportId: IdSchema.optional() });
 export type JevPromptVersion = z.infer<typeof JevPromptVersionSchema>;
 export const JevProposalSchema = z.strictObject({ schema: z.literal('jev-prompt-proposal-v1'), key: IdSchema, id: z.string().regex(/^P[1-9][0-9]*$/u), projectId: IdSchema, name: z.string().min(1).max(40), fromVersion: z.number().int().positive(),
-  text: z.string().min(1).max(60000), summary: z.string().max(400), source: z.enum(['owner', 'code']), createdAt: TimestampSchema, state: z.enum(['proposed', 'applied', 'superseded']), replay: z.string().max(12000).optional() });
+  text: z.string().min(1).max(60000), summary: z.string().max(400), source: z.enum(['owner', 'code']), createdAt: TimestampSchema, state: z.enum(['proposed', 'applied', 'superseded']), replay: z.string().max(12000).optional(), replayReportId: IdSchema.optional() });
 export type JevProposal = z.infer<typeof JevProposalSchema>;
 export const JevLessonSchema = z.strictObject({ schema: z.literal('jev-lesson-v1'), key: IdSchema, id: z.string().regex(/^L[1-9][0-9]*$/u), scope: z.enum(['global', 'project']), projectId: IdSchema.optional(),
   about: z.enum(['landing', 'placement', 'other']), text: z.string().min(1).max(1000), source: z.string().regex(/^(?:override:D[1-9][0-9]*|owner|migrated)$/u), enabled: z.boolean(), timesApplied: z.number().int().nonnegative(), createdAt: TimestampSchema });
@@ -31,3 +31,8 @@ export const MergePromptSchema = z.strictObject({ schema: z.literal('merge-promp
 export type MergePrompt = z.infer<typeof MergePromptSchema>;
 export const PlacementRawChoiceSchema = z.strictObject({ schema: z.literal('placement-raw-choice-v1'), isolation: z.enum(['worktree', 'main']), runtime: IdSchema, modelId: IdSchema, model: z.string().min(1), effortRequested: EffortSchema, effortEffective: EffortSchema, deviceId: IdSchema, accountId: IdSchema });
 export type PlacementRawChoice = z.infer<typeof PlacementRawChoiceSchema>;
+
+export const PlacementRuleContextSchema = z.strictObject({ schema: z.literal('placement-rule-context-v1'),
+  taskType: z.string().max(40).optional(), goalId: IdSchema.nullable().optional(), label: z.string().max(200).optional(),
+  text: z.string().max(34000), complete: z.boolean() });
+export type PlacementRuleContext = z.infer<typeof PlacementRuleContextSchema>;

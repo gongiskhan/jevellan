@@ -164,6 +164,7 @@ export const jev: OwnerHandler = async (context) => {
       return { text: `Saved ${describeRule(rule, goals).replace(/^(R\d+) · /u, '$1: ')}. Applies to new decisions from now on.\n${await control.ruleEffect(projectId)}` };
     }
     case 'rule_remove': { const rule = control.removeRule(projectId, String(args.rule)); return { text: `Removed ${rule.id}.\n${await control.ruleEffect(projectId)}` }; }
+    case 'replay_report': return { text: 'Stored Jev replay report.', data: control.replayReport(projectId, String(args.report)) };
     case 'prompts': {
       const versions = control.versions(); const names = [...new Set(versions.map(row => row.name))];
       const lines = names.map(name => { const rows = versions.filter(row => row.name === name); const live = rows.find(row => row.active)!; return `${name} v${live.version} live · ${rows.length} version${rows.length === 1 ? '' : 's'}`; });

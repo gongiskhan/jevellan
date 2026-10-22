@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "All310baseline component rows have dispositions:305migrated/verified and5client-only. Intake and placement rules are pushed. Active p-v1/m-v1 now passes218cases in16complete affected backend files, static checks and a desktop-light apply/queue/rollback journey. Historical raw-choice rule effects, expanded replay and the new thin Jev page remain in progress. Final integrated backend/desktop parity is pending; legacy CACHE2/NativePAR6 and the broad account-ready journey remain unpassed. Source remains unreleased; installed copies remain last verified0.7.2.",
+    "why": "All310baseline component rows have dispositions (305migrated/verified,5client-only);intake,placement rules and activep-v1/m-v1 are pushed. Area10c adds raw-choice placement effects,fullconditioncontext/threadbinding,managedp-v1 replay and recorded-run price evidence. Typecheck/lint/build and239cases in20complete affected backend files pass(6workers,0skip),retaining all218prior cases;one desktop-light history/rules/replay journey passes with two exact images. l-v1/m-v1 report expansion,lesson coverage and the thin Jev page remain in progress. Global final backend/desktop gates are pending;legacy CACHE2/NativePAR6/account-ready journey remain unpassed. Other engine/remote features stay separately planned. No release without explicit owner request;installed copies last verified0.7.2.",
     "status": "in-progress"
   },
   {
@@ -1064,7 +1064,7 @@
   {
     "id": "br-jev",
     "title": "Complete Jev rules, prompts and replay",
-    "why": "Placement rules are pushed. Area10b wires active p-v1/m-v1 through Hub/member policy, preserves raw choices and exact prompt versions/text, validates proposal/apply/rollback and preserves legacy code defaults. Typecheck/lint/build and218cases in16complete affected backend files pass (6workers,0skip); one desktop-light MCP apply/queue/v2/rollback/queue/v1 journey passes, with two exact images. Historical raw-choice rule effects, expanded replay and the thin Jev page remain in progress. Final integrated gates/live acceptance are not claimed; source unreleased.",
+    "why": "All310baseline component rows have dispositions (305migrated/verified,5client-only);intake,placement rules and activep-v1/m-v1 are pushed. Area10c adds raw-choice placement effects,fullconditioncontext/threadbinding,managedp-v1 replay and recorded-run price evidence. Typecheck/lint/build and239cases in20complete affected backend files pass(6workers,0skip),retaining all218prior cases;one desktop-light history/rules/replay journey passes with two exact images. l-v1/m-v1 report expansion,lesson coverage and the thin Jev page remain in progress. Global final backend/desktop gates are pending;legacy CACHE2/NativePAR6/account-ready journey remain unpassed. Other engine/remote features stay separately planned. No release without explicit owner request;installed copies last verified0.7.2.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "All310baseline component rows have dispositions:305migrated/verified and5client-only. Intake and placement rules are pushed. Active p-v1/m-v1 now passes218cases in16complete affected backend files, static checks and a desktop-light apply/queue/rollback journey. Historical raw-choice rule effects, expanded replay and the new thin Jev page remain in progress. Final integrated backend/desktop parity is pending; legacy CACHE2/NativePAR6 and the broad account-ready journey remain unpassed. Source remains unreleased; installed copies remain last verified0.7.2.",
+    "why": "All310baseline component rows have dispositions (305migrated/verified,5client-only);intake,placement rules and activep-v1/m-v1 are pushed. Area10c adds raw-choice placement effects,fullconditioncontext/threadbinding,managedp-v1 replay and recorded-run price evidence. Typecheck/lint/build and239cases in20complete affected backend files pass(6workers,0skip),retaining all218prior cases;one desktop-light history/rules/replay journey passes with two exact images. l-v1/m-v1 report expansion,lesson coverage and the thin Jev page remain in progress. Global final backend/desktop gates are pending;legacy CACHE2/NativePAR6/account-ready journey remain unpassed. Other engine/remote features stay separately planned. No release without explicit owner request;installed copies last verified0.7.2.",
     "status": "in-progress"
   },
   {
@@ -1106,7 +1106,7 @@
   {
     "id": "br-engine-071",
     "title": "Remaining engine and remote features",
-    "why": "Intake and placement rules are pushed. Active p-v1/m-v1 passes218backend cases in16complete files, static checks and one desktop-light apply/rollback journey. Historical raw-choice rule effects, expanded replay and the thin Jev page follow. Coordinator fork, member event forwarding, other question-set versions and other remote features remain separately planned. No further release without an explicit owner request.",
+    "why": "All310baseline component rows have dispositions (305migrated/verified,5client-only);intake,placement rules and activep-v1/m-v1 are pushed. Area10c adds raw-choice placement effects,fullconditioncontext/threadbinding,managedp-v1 replay and recorded-run price evidence. Typecheck/lint/build and239cases in20complete affected backend files pass(6workers,0skip),retaining all218prior cases;one desktop-light history/rules/replay journey passes with two exact images. l-v1/m-v1 report expansion,lesson coverage and the thin Jev page remain in progress. Global final backend/desktop gates are pending;legacy CACHE2/NativePAR6/account-ready journey remain unpassed. Other engine/remote features stay separately planned. No release without explicit owner request;installed copies last verified0.7.2.",
     "status": "in-progress"
   },
   {
