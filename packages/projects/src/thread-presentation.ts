@@ -1,4 +1,4 @@
-import { threadSteeringView } from '@jevellan/core';
+import { threadDisplayText, threadSteeringView } from '@jevellan/core';
 import { IdSchema, RESTARTED_PREFIX, THREAD_READ_POLICY, ThreadControlsSchema, ThreadPresentationSchema, isTerminal, splitSavedCommits,
   type ThreadControls, type ThreadIndex, type ThreadPresentation, type ThreadView } from '@jevellan/core';
 import * as copy from './copy.js';
@@ -62,13 +62,13 @@ export function threadReason(reason: string | undefined): { text: string; restar
 
 /** Render facts from the canonical owner-device reader; no provider or mutation is needed. */
 export function threadPresentation(view: ThreadView): ThreadPresentation {
-  const running = view.thread.state === 'running', block = composerBlock(view);
+  const running = view.thread.state === 'running', block = composerBlock(view), reason = threadReason(view.thread.stateReason);
   return ThreadPresentationSchema.parse({ schema: 'project-thread-presentation-v1',
     actions: { ...threadActions(view), allowTurnsStep: copy.MORE_TURNS, allowTurnsLabel: copy.ALLOW_MORE_TURNS, allowedNotice: copy.MORE_TURNS_ALLOWED },
     composer: { running, ended: !view.canMessage && view.thread.state !== 'attached', block, steering: threadSteeringView({ running, block }),
       continueNotice: ['done', 'stopped', 'failed'].includes(view.thread.state) && view.canMessage ? copy.THREAD_CONTINUE : null },
     live: { text: threadLiveText(view.thread), activity: threadActivity(view) }, transcriptNotice: transcriptNotice(view),
-    reason: threadReason(view.thread.stateReason), readPolicy: THREAD_READ_POLICY, controls: threadControls(view) });
+    reason: reason ? { ...reason, display: threadDisplayText(reason.text) } : null, readPolicy: THREAD_READ_POLICY, controls: threadControls(view) });
 }
 
 /** Existing browser control policy; canonical writers still enforce current resources. */

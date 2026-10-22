@@ -38,7 +38,7 @@ test('CLI status exposes the shared cache view without starting work', async () 
 test('CLI thread view returns the shared presentation without steering work', async () => {
   f = await projectFixture({ control: true }); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Simulated CLI thread ready.' }), forThread());
   const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'cli_thread_presentation', title: 'CLI thread view', task: 'Inspect the simulated fixture.' });
-  await f.waitFor(() => f!.thread(made.threadId), row => row.state === 'idle'); const before = structuredClone(f.thread(made.threadId));
+  await f.waitFor(() => f!.thread(made.threadId), row => row.state === 'idle'); f.app.projectWork.store.update(made.threadId,row=>({...row,stateReason:'Wait until 2026-10-22T04:00:00.000Z'})); const before = structuredClone(f.thread(made.threadId));
   const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
   expect(await callCommand(['thread', 'view', '--thread', made.threadId], f.homes)).toBe(0);
   const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
@@ -49,6 +49,7 @@ test('CLI thread view returns the shared presentation without steering work', as
   expect(result).toMatchObject({ ok: true, data: { presentation: { composer: { steering: { schema: 'project-thread-steering-view-v1', offered: false, label: 'Interrupt current turn' } } } } });
   expect(result).toMatchObject({ ok: true, data: { historyView: { schema: 'session-history-view-v1', projectId: 'project', visible: false, entries: [] } } });
   expect(result).toMatchObject({ok:true,data:{readHint:{schema:'project-thread-read-hint-v1',pollHintMs:10000,policy:{liveMs:1500,restMs:10000,afterActionMs:6000}}}});
+  expect(result).toMatchObject({ok:true,data:{presentation:{reason:{display:{schema:'project-thread-display-text-v1',text:'Wait until 2026-10-22T04:00:00.000Z',parts:[{kind:'text',value:'Wait until '},{kind:'time',value:'2026-10-22T04:00:00.000Z'}]}}}}});
 });
 
 test('CLI task compose editor shares defaults and explicit form normalization', async () => {

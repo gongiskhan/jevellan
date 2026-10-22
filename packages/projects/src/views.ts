@@ -16,7 +16,7 @@ export function sidebarView(rows: ProjectWorkListView['projects']): ProjectSideb
     activeIds: active.map(row => row.projectId), archivedIds: projects.filter(row => row.status === 'archived').map(row => row.projectId),
     defaultProject: active[0]?.projectId ?? null, waitingTotal: active.reduce((total, row) => total + row.waiting, 0) });
 }
-import { boardGroup } from '@jevellan/core';
+import { boardGroup, threadDisplayText } from '@jevellan/core';
 import type { AccountService } from '@jevellan/accounts';
 import {
   ProjectWorkListViewSchema, ProjectWorkViewSchema, ThreadViewSchema, clipRedacted, defaultProjectWorkSettings, deviceAway, isTerminal, openQuestions, projectPathProblem, type AccountView, type Configuration, type CoordinatorState,
@@ -251,12 +251,13 @@ export class ProjectViews {
     const routed = events.findLast(event => event.type === 'thread-message-route');
     const mergesHeld = await this.#o.mergesHeld?.(projectId, threadId).catch(() => undefined);
     const index = { ...this.#o.store.index(thread, this.#o.store.labels(threadId), events.at(-1)?.t ?? thread.createdAt), sessionCache: sessionCacheSummaries(cacheRecords(ledger)).slice(-500) };
+    if (index.stateReason !== undefined) index.stateReason = ledger.redact(index.stateReason);
     const canOverride = { nextTurn: !isTerminal(thread.state), restart: !restartReason, ...(restartReason ? { restartReason } : {}) };
     const view = ThreadViewSchema.parse({ schema: 'project-thread-view-v1', thread: index, overrideEditorPath: overrideOffered({ canOverride }) ? `/api/projects/${projectId}/threads/${threadId}/override-editor` : null, placementNotice: fallbackChip(thread.placement),
       card: threadCardView(index, { deviceName: () => this.#o.deviceName, runtimeName: id => this.#o.runtimes.get(id)?.displayName ?? id, held: mergesHeld ?? index.landingStage === 'held', baseBranch: thread.baseBranch }),
       ...(this.#o.store.local(threadId).memoryRecall ? { memoryRecall: this.#o.store.local(threadId).memoryRecall } : {}),
       ...(this.#o.store.local(threadId).escalations ? { escalations: this.#o.store.local(threadId).escalations } : {}),
-      notices: events.filter(event => event.type === 'notice').slice(-20).map(event => { const notice = ledger.payload(event as ProjectLedgerEvent & { type: 'notice' }); return { at: event.t, text: clipRedacted(notice.text, 4000), kind: notice.kind }; }),
+      notices: events.filter(event => event.type === 'notice').slice(-20).map(event => { const notice = ledger.payload(event as ProjectLedgerEvent & { type: 'notice' }), text = clipRedacted(ledger.redact(notice.text), 4000); return { at: event.t, text, kind: notice.kind, display: threadDisplayText(text) }; }),
       sessionHistory: (this.#o.store.local(threadId).sessionHistory ?? []).map(({ nativeSessionId: _native, ...entry }) => { void _native; return entry; }),
       placement: thread.placement, reports, ...(fixTurns.length ? { fixTurns } : {}), transcript, queuedMessages: thread.queuedMessages,
       ...(routed ? { messageRoute: ledger.payload(routed as typeof routed & { type: 'thread-message-route' }) } : {}),

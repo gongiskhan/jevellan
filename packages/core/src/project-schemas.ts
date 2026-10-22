@@ -1,4 +1,5 @@
 import { SessionHistoryViewSchema } from './session-history-view.js';
+import { ProjectThreadDisplayTextSchema } from './project-thread-display.js';
 import { SessionCacheViewSchema } from './session-cache-view.js';
 import { ThreadImageReferencesSchema, ThreadImagesViewSchema } from './thread-image-view-schemas.js';
 import { ThreadPresentationSchema, ThreadReadHintSchema } from './project-thread-presentation-schemas.js';
@@ -555,7 +556,7 @@ export type ThreadTimeline = z.infer<typeof ThreadTimelineSchema>;
 export const ThreadViewSchema = z.strictObject({ overrideEditorPath: z.string().nullable().optional(), placementNotice: z.string().nullable().optional(), sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-thread-view-v1'),
   readHint: ThreadReadHintSchema.optional(),
   card: ProjectWorkCardSchema.optional(), presentation: ThreadPresentationSchema.optional(), timeline: ThreadTimelineSchema.optional(), images: ThreadImagesViewSchema.optional(), cacheView: SessionCacheViewSchema.optional(), historyView: SessionHistoryViewSchema.optional(),
-  notices: z.array(z.strictObject({ at: TimestampSchema, text: z.string().max(4000), kind: z.enum(['info', 'error']) })).max(20).optional(),
+  notices: z.array(z.strictObject({ at: TimestampSchema, text: z.string().max(4000), kind: z.enum(['info', 'error']), display: ProjectThreadDisplayTextSchema.optional() })).max(20).optional(),
   escalations: ThreadLocalSchema.shape.escalations,
   fixTurns: z.array(z.strictObject({ turn: positive, fix: ThreadFixSchema })).optional(),
   messageRoute: ThreadMessageRouteSchema.optional(),

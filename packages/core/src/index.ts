@@ -281,3 +281,4 @@ export * from './project-library-message.js';
 export * from './project-thread-reader.js';
 
 export * from './project-thread-read-state.js';
+export * from './project-thread-display.js';

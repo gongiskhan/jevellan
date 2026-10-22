@@ -1,4 +1,4 @@
-import { ProjectThreadReadViewSchema, ProjectThreadReadErrorSchema, projectThreadReader, threadMessageInterrupt, threadSteeringView, type ProjectThreadHeld } from '@jevellan/core/client';
+import { ProjectThreadReadViewSchema, ProjectThreadReadErrorSchema, projectThreadReader, threadMessageInterrupt, threadSteeringView, threadDisplayValue, type ProjectThreadHeld } from '@jevellan/core/client';
 import { AttachmentControls, LibraryMessage, useProjectAttachments } from './project-library.js';
 import { ThreadActions } from './thread-actions.js';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
@@ -27,7 +27,7 @@ import { SessionHistory } from './session-history.js';
 import { SessionCache } from './session-cache.js';
 import { imageReferences } from './thread-image-refs.js';
 import { ThreadImageGallery, ThreadImageStrip } from './thread-images.js';
-const readableSessionText = (text: string) => text.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/gu, at => dateTime(at));
+const readableSessionText = (text: string, display: unknown) => threadDisplayValue(text, display, dateTime);
 const readingFacts = (view: ThreadView, cause: 'read' | 'action' = 'read') => ({ schema: 'project-thread-read-facts-v1', projectId: view.thread.projectId, threadId: view.thread.id, state: view.thread.state, ...(view.readHint ? { readHint: view.readHint } : {}), cause });
 
 /**
@@ -232,7 +232,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           {reason?.text && (
             <p className="pw-thread-reason" title={reason.text}>
               {reason.restartedAs
-                ? <>{RESTARTED_PREFIX}<RouteLink href={`${project}/threads/${reason.restartedAs}`} navigate={navigate}>{reason.restartedAs}</RouteLink>.</> : readableSessionText(reason.text)}
+                ? <>{RESTARTED_PREFIX}<RouteLink href={`${project}/threads/${reason.restartedAs}`} navigate={navigate}>{reason.restartedAs}</RouteLink>.</> : readableSessionText(reason.text, reason.display)}
             </p>
           )}
           {reason?.savedRef && <p className="pw-saved-ref">{SAVED_COMMITS_SENTENCE}<code>{reason.savedRef}</code>.</p>}
@@ -257,7 +257,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
             {controls?.attachPanel && <TakeOver device={view.deviceName} command={view.attachCommand} message={message} />}
             <SessionCache view={view.cacheView} />
             <SessionHistory view={view.historyView} />
-            {!!view.notices?.length && <details><summary>{copy.SESSION_NOTICES} ({view.notices.length})</summary><ol>{view.notices.map((notice, index) => <li key={index}><time dateTime={notice.at}>{dateTime(notice.at)}</time>: {readableSessionText(notice.text)}</li>)}</ol></details>}
+            {!!view.notices?.length && <details><summary>{copy.SESSION_NOTICES} ({view.notices.length})</summary><ol>{view.notices.map((notice, index) => <li key={index}><time dateTime={notice.at}>{dateTime(notice.at)}</time>: {readableSessionText(notice.text, notice.display)}</li>)}</ol></details>}
           </section>
         </div>
       </div>

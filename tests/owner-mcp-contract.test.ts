@@ -39,7 +39,7 @@ test('MCP status exposes the shared cache view without starting work', async () 
 test('MCP thread view shares header and composer presentation without steering work', async () => {
   f = await projectFixture({ control: true }); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Simulated MCP thread ready.' }), forThread());
   const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'mcp_thread_presentation', title: 'MCP thread view', task: 'Inspect the simulated fixture.' });
-  await f.waitFor(() => f!.thread(made.threadId), row => row.state === 'idle'); const before = structuredClone(f.thread(made.threadId)), mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  await f.waitFor(() => f!.thread(made.threadId), row => row.state === 'idle'); f.app.projectWork.store.update(made.threadId,row=>({...row,stateReason:'Wait until 2026-10-22T04:00:00.000Z'})); const before = structuredClone(f.thread(made.threadId)), mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'thread', arguments: { action: 'view', thread: made.threadId } })).structuredContent);
   expect(result).toMatchObject({ ok: true, data: { schema: 'project-thread-view-v1', presentation: { schema: 'project-thread-presentation-v1', actions: { allowTurnsStep: 10 }, composer: { block: null } } } }); expect(f.thread(made.threadId)).toEqual(before);
   expect(result).toMatchObject({ ok: true, data: { timeline: { schema: 'project-thread-timeline-v1', projectId: 'project', threadId: made.threadId } } });
@@ -48,6 +48,7 @@ test('MCP thread view shares header and composer presentation without steering w
   expect(result).toMatchObject({ ok: true, data: { presentation: { composer: { steering: { schema: 'project-thread-steering-view-v1', offered: false, label: 'Interrupt current turn' } } } } });
   expect(result).toMatchObject({ ok: true, data: { historyView: { schema: 'session-history-view-v1', projectId: 'project', visible: false, entries: [] } } });
   expect(result).toMatchObject({ok:true,data:{readHint:{schema:'project-thread-read-hint-v1',pollHintMs:10000,policy:{liveMs:1500,restMs:10000,afterActionMs:6000}}}});
+  expect(result).toMatchObject({ok:true,data:{presentation:{reason:{display:{schema:'project-thread-display-text-v1',text:'Wait until 2026-10-22T04:00:00.000Z',parts:[{kind:'text',value:'Wait until '},{kind:'time',value:'2026-10-22T04:00:00.000Z'}]}}}}});
 });
 
 test('MCP task compose editor preserves Automatic placement and performs no work', async () => {
