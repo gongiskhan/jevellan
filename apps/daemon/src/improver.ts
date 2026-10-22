@@ -1,3 +1,4 @@
+import {improverCanRunNow} from '@jevellan/core';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
@@ -110,6 +111,7 @@ export class Improver extends RoutingImprover {
       }
       case 'run-now': {
         const id = hash([deviceId, request.clientRequestId]); const settings = this.options.hub.configuration.current()!.configuration['x-jevellan'].improver;
+        if(!improverCanRunNow(settings))conflict('Enable at least one improver job before running it.');
         const routing = settings.routing.enabled ? this.view(await this.run({ kind: 'manual', id })) : null;
         const requestedAt = this.projects.requestRun(id, deviceId); this.#kick();
         return ImproverRunSchema.parse({ schema: 'improver-run-v1', id, requestedAt, routing, projects: this.projects.plannedJobs(settings) });

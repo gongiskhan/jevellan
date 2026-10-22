@@ -1,3 +1,5 @@
+import {improverEditorResult} from '@jevellan/core';
+import {localImproverEditorOperation} from './improver-editor.js';
 import {RiggingEditorViewSchema,RiggingEditorDetailSchema,riggingActionResult} from '@jevellan/core';
 import {readRiggingEditor,localRiggingDetail,localRiggingAction} from './rigging-editor.js';
 import {AppShellViewSchema} from '@jevellan/core';
@@ -25,6 +27,7 @@ export async function handleProjectDefinitionsPeer(app: Application, request: In
   const caller = PeerLoginSessionInputSchema.safeParse({ schema: 'peer-login-session-input-v1', sourceDeviceId: request.headers['x-jevellan-source-device'], token: authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined });
   if (!caller.success || !await app.peerLoginAuthenticated(caller.data)) throw refuse('Sign in to Jevellan.', 401);
   app.redactor.add(caller.data.token); const input = ProjectDefinitionPeerRequestSchema.parse(await requestBody(request));
+  if(input.operation==='improver-editor'){json(response,app.redactor.document(await localImproverEditorOperation(app,input.input)));return;}
   if(input.operation==='rigging-view'||input.operation==='rigging-detail'||input.operation==='rigging-action'){const result=input.operation==='rigging-view'?await readRiggingEditor(app,input.input):input.operation==='rigging-detail'?await localRiggingDetail(app,input.input):await localRiggingAction(app,input.input);json(response,app.redactor.document(result));return;}
   if(input.operation==='git-view'||input.operation==='git-command'){const result=input.operation==='git-view'?await readGitEditor(app):await localGitEditorCommand(app,input.input);json(response,app.redactor.document(result));return;}
   if (input.operation === 'app-view') { json(response, app.redactor.document(await readAppShell(app))); return; }
@@ -37,6 +40,7 @@ export async function projectDefinitionDeviceOperation(app: Application, targetD
   const input = ProjectDefinitionPeerRequestSchema.parse(raw), target = (await app.roster()).devices.find(row => row.device.id === targetDeviceId);
   if (!target || target.revoked) throw refuse('The project device is no longer available in this mesh.', 409);
   if (target.status === 'offline') throw refuse(`${target.device.name} is offline. Project files remain there.`, 409);
+  if(input.operation==='improver-editor'&&input.input.deviceId!==targetDeviceId)throw refuse('These improver settings belong to another device.',409);
   if((input.operation==='rigging-action'||input.operation==='rigging-detail')&&input.input.deviceId!==targetDeviceId)throw refuse('These rigging settings belong to another device.',409);
   if(input.operation==='git-command'&&input.input.deviceId!==targetDeviceId)throw refuse('These Git settings belong to another device.',409);
   signal?.throwIfAborted();
@@ -50,6 +54,7 @@ export async function projectDefinitionDeviceOperation(app: Application, targetD
     if (response.status >= 300 && response.status < 400) { await response.body?.cancel(); throw refuse('The project device returned an unexpected redirect.', 502); }
     const rawReply: unknown = await response.json().catch(() => null);
     if (!response.ok) { const error = ErrorDocumentSchema.safeParse(rawReply); throw refuse(error.success ? error.data.message : 'The project device could not complete the request.', error.success ? response.status : 502); }
+    if(input.operation==='improver-editor'){try{return improverEditorResult(input.input,rawReply);}catch{throw refuse('The improver device returned an unexpected response.',502);}}
     if(input.operation==='rigging-action'){try{return riggingActionResult(input.input,rawReply);}catch{throw refuse('The rigging device returned an unexpected response.',502);}}
     if(input.operation==='rigging-view'){const value=RiggingEditorViewSchema.parse(rawReply);if(value.deviceId!==targetDeviceId||JSON.stringify(value.query)!==JSON.stringify(input.input))throw refuse('The returned rigging view belongs to another device or filter.',502);return value;}
     if(input.operation==='rigging-detail'){const value=RiggingEditorDetailSchema.parse(rawReply),ref=input.input.ref;if(value.deviceId!==targetDeviceId||value.detail.item.id!==ref.id||value.detail.item.runtime!==ref.runtime||value.detail.item.accountId!==ref.accountId)throw refuse('The returned rigging detail belongs to another account or item.',502);return value;}

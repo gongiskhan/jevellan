@@ -1,3 +1,4 @@
+import {ImproverSettingsSaveSchema,normalizeImproverSettings} from '@jevellan/core';
 import { CleanupSettingsSaveSchema, normalizeCleanupSettings } from '@jevellan/core';
 import { GlobalThreadLimitSaveSchema, normalizeGlobalThreadLimit } from '@jevellan/core';
 import { RuntimeSettingsSaveSchema, normalizeRuntimeSettings, stableJson } from '@jevellan/core';
@@ -39,6 +40,7 @@ export class HubState {
         if (!base) throw Object.assign(new Error('The configuration revision is unavailable. Reload decisions settings.'), { status: 409 });
         return decisionsSettingsEditor(base, latest.revision, offers(), checked(), input);
       },
+      improverPut: raw => {const input=ImproverSettingsSaveSchema.parse(raw);clean(input);return settingsMutation(hub,deviceId,'improver-put',input,input.clientRequestId,ConfigRevisionSchema,()=>{const latest=current(),configuration=normalizeImproverSettings(latest,input);return stableJson(configuration)===stableJson(latest.configuration)?latest:hub.configuration.put(configuration,latest.revision,{deviceId,source:'ui'});});},
       cleanupPut: raw => {
         const input = CleanupSettingsSaveSchema.parse(raw); clean(input);
         return settingsMutation(hub, deviceId, 'cleanup-put', input, input.clientRequestId, ConfigRevisionSchema, () => {
@@ -188,6 +190,7 @@ export class HubState {
       case 'configuration-put': result = { schema: 'shared-configuration-v1', revision: await this.configuration.put(request.input) }; break;
       case 'decisions-editor': result = { schema: 'shared-decisions-editor-v1', editor: await this.configuration.decisionsEditor(request.input) }; break;
       case 'runtimes-put': result = { schema: 'shared-configuration-v1', revision: await this.configuration.runtimesPut(request.input) }; break;
+      case 'improver-put': result={schema:'shared-configuration-v1',revision:await this.configuration.improverPut(request.input)};break;
       case 'cleanup-put': result = { schema: 'shared-configuration-v1', revision: await this.configuration.cleanupPut(request.input) }; break;
       case 'limits-put': result = { schema: 'shared-configuration-v1', revision: await this.configuration.limitsPut(request.input) }; break;
       case 'decisions-put': result = { schema: 'shared-configuration-v1', revision: await this.configuration.decisionsPut(request.input) }; break;
@@ -237,6 +240,7 @@ export class MemberState {
       put: async input => (await request('configuration-put', 'shared-configuration-v1', { input })).revision,
       decisionsEditor: async input => (await request('decisions-editor', 'shared-decisions-editor-v1', input === undefined ? {} : { input })).editor,
       runtimesPut: async input => (await request('runtimes-put', 'shared-configuration-v1', { input })).revision,
+      improverPut: async input => (await request('improver-put','shared-configuration-v1',{input})).revision,
       cleanupPut: async input => (await request('cleanup-put', 'shared-configuration-v1', { input })).revision,
       limitsPut: async input => (await request('limits-put', 'shared-configuration-v1', { input })).revision,
       decisionsPut: async input => (await request('decisions-put', 'shared-configuration-v1', { input })).revision,

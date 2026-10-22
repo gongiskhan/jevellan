@@ -261,3 +261,5 @@ export * from './app-shell.js';
 export * from './device-management.js';
 
 export * from './rigging-editor.js';
+
+export * from './improver-editor.js';

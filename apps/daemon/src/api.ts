@@ -1,3 +1,4 @@
+import {readImproverEditor,saveImproverSettings} from './improver-editor.js';
 import {readRiggingEditor,localRiggingAction,localRiggingDetail} from './rigging-editor.js';
 import {RiggingEditorActionSchema} from '@jevellan/core';
 import {applyGitTokenEditor} from './git-editor.js';
@@ -322,6 +323,8 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       else { const status = await app.accounts.check(id); if (status.auth === 'ready') await app.accounts.discover(id).catch(() => undefined); send((await app.accounts.get(id))); }
       return;
     }
+    if(path==='/api/improver/view'&&method==='GET'){send(await readImproverEditor(app));return;}
+    if(path==='/api/config/improver'&&method==='PUT'){retryable=true;send(await saveImproverSettings(app,await body(request)));return;}
     if(path==='/api/rigging/view'&&method==='GET'){send(await readRiggingEditor(app,{schema:'rigging-editor-read-v1',...(url.searchParams.get('runtime')?{runtime:url.searchParams.get('runtime')}:{}),showInstalled:url.searchParams.get('showInstalled')==='true'}));return;}
     if(path==='/api/rigging/actions'&&method==='POST'){const input=RiggingEditorActionSchema.parse(await body(request));retryable=input.operation==='add'||input.operation==='update'||input.operation==='toggle'?input.clientRequestId!==undefined||('input'in input&&input.input.clientRequestId!==undefined):true;send(await localRiggingAction(app,input));return;}
     if(path==='/api/rigging/detail'&&method==='POST'){retryable=true;send(await localRiggingDetail(app,await body(request)));return;}
