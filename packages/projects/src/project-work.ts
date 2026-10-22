@@ -1,3 +1,4 @@
+import {projectTaskPageView} from '@jevellan/core';
 import { ProjectTaskCommandSchema, projectTaskQueueRequest, projectTaskQueueInteraction, projectTaskEditView, projectTaskDraft } from '@jevellan/core';
 import { CursorTranscriptSchema, EARLIER_TRANSCRIPT_UNAVAILABLE, transcriptTurnPresentation, TRANSCRIPT_PROMPT, HISTORY_PROMPT_COLLAPSE_CHARACTERS } from '@jevellan/core';
 import { taskEditorView } from '@jevellan/core';
@@ -806,6 +807,10 @@ export class ProjectWork {
     const [work, tasks, goals, daily, roster] = await Promise.all([this.view(projectId), this.taskList(projectId), this.goalList(projectId), this.daily.view(projectId), this.#o.roster()]);
     const names = new Map(roster.devices.map(row => [row.device.id, row.device.name])); names.set(this.#o.deviceId, this.#o.deviceName);
     return projectPageView({ work, tasks: tasks.tasks, goals: goals.goals, daily }, resolvedDays, this.#timers.now(), { ...viewer, runtimeName: id => this.#o.runtimes.get(id)?.displayName ?? id, deviceName: id => names.get(id) ?? id });
+  }
+  async taskPageView(projectId: string, taskId: string) {
+    const [task, work] = await Promise.all([this.taskView(projectId, taskId), this.view(projectId)]);
+    return projectTaskPageView(projectId, task.task, work.threads);
   }
   async taskQueueInteraction(projectId: string, raw?: unknown) {
     const input = projectTaskQueueRequest(raw), [goals, tasks, work, daily] = await Promise.all([this.goalList(projectId), this.taskList(projectId), this.view(projectId), this.daily.view(projectId)]);

@@ -9,6 +9,7 @@ import { clientId, resolveGoal, resolveTask } from './common.js';
 export const work: OwnerHandler = async (context) => {
   const { app, tools, project, args, now } = context; const projectId = project.id; const engine = app.projectWork;
   switch (context.action) {
+    case 'task_page_view': return { text: 'Task.', data: await engine.taskPageView(projectId, String(args.task)) };
     case 'queue_view': return { text: 'Task queue.', data: await engine.taskQueueInteraction(projectId, args.request) };
     case 'task_edit_view': return { text: 'Edit task.', data: await engine.taskEditView(projectId, String(args.task)) };
     case 'task_draft': return { text: 'Task preparation.', data: await engine.taskDraft(projectId, String(args.task), args.request) };

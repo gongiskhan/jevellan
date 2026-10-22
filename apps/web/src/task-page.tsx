@@ -1,29 +1,28 @@
 import { useEffect, useState } from 'react';
-import { ProjectWorkViewSchema, TaskViewSchema, type ProjectWorkTask, type ProjectWorkView } from '@jevellan/core/client';
+import { ProjectTaskPageViewSchema, projectTaskPagePolicy, projectTaskPageBack, type ProjectTaskPageView } from '@jevellan/core/client';
 import { api, isCancelled } from './api.js';
 import { Markdown, type PageProps } from './components.js';
 import { MergeWhy } from './merge-route.js';
 
 export function TaskPage({ projectId, taskId, navigate, onError }: PageProps & { projectId: string; taskId: string }) {
-  const [task, setTask] = useState<ProjectWorkTask>(), [project, setProject] = useState<ProjectWorkView>();
+  const [view, setView] = useState<ProjectTaskPageView>();
   useEffect(() => {
     const controller = new AbortController();
     const refresh = async () => {
       try {
-        const [read, work] = await Promise.all([api(`/api/projects/${projectId}/tasks/${taskId}`, TaskViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true }), api(`/api/projects/${projectId}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true })]);
-        setTask(read.task); setProject(work);
+        setView(await api(`/api/projects/${projectId}/tasks/${taskId}/page-view`, ProjectTaskPageViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true }));
       } catch (error) { if (!isCancelled(error)) onError(error); }
     };
-    void refresh(); const timer = setInterval(() => { void refresh(); }, 30_000);
+    void refresh(); const timer = setInterval(() => { void refresh(); }, projectTaskPagePolicy.pollHintMs);
     return () => { controller.abort(); clearInterval(timer); };
   }, [projectId, taskId, onError]);
-  const thread = project?.threads.find(row => row.id === task?.threadId);
-  return <section className="pw-section"><button className="text-button" onClick={() => navigate(`/projects/${projectId}`)}>Back to project</button>
-    {!task ? <p>Loading task…</p> : <><h2>{task.title}</h2><p className="muted">{task.type} · {task.state}</p><Markdown>{task.brief}</Markdown>
-      {task.endNote && <p>{task.endNote}</p>}
-      {thread?.pr && <article className="pw-pr"><a href={thread.pr.url} target="_blank" rel="noopener noreferrer">#{thread.pr.number} · {thread.pr.state}</a>
-        <div className="pw-pr-actions"><MergeWhy projectId={projectId} threadId={thread.id} commit={thread.pr.headSha} /></div></article>}
-      {task.threadId && <button className="secondary small" onClick={() => navigate(`/projects/${projectId}/threads/${task.threadId}`)}>Open thread</button>}
+  const back = projectTaskPageBack(projectId), pr = view?.pullRequest;
+  return <section className="pw-section"><button className="text-button" onClick={() => navigate(back.href)}>{back.label}</button>
+    {!view ? <p>{projectTaskPagePolicy.loadingLabel}</p> : <><h2>{view.task.title}</h2><p className="muted">{view.meta}</p><Markdown>{view.task.brief}</Markdown>
+      {view.task.endNote && <p>{view.task.endNote}</p>}
+      {pr && <article className="pw-pr"><a href={pr.url} target="_blank" rel="noopener noreferrer">{pr.label}</a>
+        <div className="pw-pr-actions"><MergeWhy projectId={projectId} threadId={pr.threadId} commit={pr.headSha} /></div></article>}
+      {view.threadLink && <button className="secondary small" onClick={() => navigate(view.threadLink!.href)}>{view.threadLink.label}</button>}
     </>}
   </section>;
 }

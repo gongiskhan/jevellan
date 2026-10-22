@@ -255,3 +255,5 @@ export * from './conversation-result-policy.js';
 export * from './conversation-stream-policy.js';
 export * from './project-task-interaction-schemas.js';
 export * from './project-task-interaction.js';
+
+export * from './project-task-page-view.js';
