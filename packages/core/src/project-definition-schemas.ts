@@ -29,6 +29,7 @@ export type ProjectDefinitionEditor = z.infer<typeof ProjectDefinitionEditorSche
 export type ProjectDefinitionsView = z.infer<typeof ProjectDefinitionsViewSchema>;
 export const ProjectDefinitionPeerRequestSchema = z.discriminatedUnion('operation', [
   ...ContextEditorDeviceRequestSchema.options,
+  z.strictObject({schema:z.literal('project-definition-peer-request-v1'),operation:z.literal('app-view')}),
   z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('first-run-view'), input: FirstRunReadRequestSchema }),
   z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('first-run-next'), input: FirstRunNextRequestSchema }),
   z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('setup-view'), projectId: IdSchema }),

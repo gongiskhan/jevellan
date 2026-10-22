@@ -1,3 +1,5 @@
+import {AppShellViewSchema} from '@jevellan/core';
+import {readAppShell} from './app-shell-view.js';
 import {contextEditorDeviceResult} from '@jevellan/core';
 import {localContextEditorOperation} from './context-editor.js';
 import {FirstRunViewSchema, FirstRunNavigationSchema} from '@jevellan/core';
@@ -19,6 +21,7 @@ export async function handleProjectDefinitionsPeer(app: Application, request: In
   const caller = PeerLoginSessionInputSchema.safeParse({ schema: 'peer-login-session-input-v1', sourceDeviceId: request.headers['x-jevellan-source-device'], token: authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined });
   if (!caller.success || !await app.peerLoginAuthenticated(caller.data)) throw refuse('Sign in to Jevellan.', 401);
   app.redactor.add(caller.data.token); const input = ProjectDefinitionPeerRequestSchema.parse(await requestBody(request));
+  if (input.operation === 'app-view') { json(response, app.redactor.document(await readAppShell(app))); return; }
   if ('deviceId' in input) { json(response, app.redactor.document(await localContextEditorOperation(app, input))); return; }
   if (input.operation === 'first-run-view' || input.operation === 'first-run-next') { const result = input.operation === 'first-run-view' ? await readFirstRun(app, input.input) : await nextFirstRun(app, input.input); json(response, app.redactor.document(result)); return; }
   const result = input.operation === 'setup-view' ? await app.projectSetupView(input.projectId) : input.operation === 'view' ? await app.projectDefinitions() : input.operation === 'read' ? await app.projectDefinitionRead(input.input) : input.operation === 'preview' ? await app.projectDefinitionPreview(input.input) : await app.saveProjectDefinition(input.input);
@@ -39,6 +42,7 @@ export async function projectDefinitionDeviceOperation(app: Application, targetD
     if (response.status >= 300 && response.status < 400) { await response.body?.cancel(); throw refuse('The project device returned an unexpected redirect.', 502); }
     const rawReply: unknown = await response.json().catch(() => null);
     if (!response.ok) { const error = ErrorDocumentSchema.safeParse(rawReply); throw refuse(error.success ? error.data.message : 'The project device could not complete the request.', error.success ? response.status : 502); }
+    if (input.operation === 'app-view') { const result=AppShellViewSchema.parse(rawReply); if(result.deviceId!==targetDeviceId) throw refuse('The returned app view belongs to another device.',502); return result; }
     if ('deviceId' in input) { try { return contextEditorDeviceResult(input, rawReply); } catch { throw refuse('The context device returned an unexpected response.', 502); } }
     if (input.operation === 'first-run-view' || input.operation === 'first-run-next') { const result = input.operation === 'first-run-view' ? FirstRunViewSchema.parse(rawReply) : FirstRunNavigationSchema.parse(rawReply); if (result.deviceId !== targetDeviceId) throw refuse('The returned setup belongs to another device.', 502); return result; }
     if (input.operation === 'setup-view') { const result = ProjectSetupViewSchema.parse(rawReply); if (result.deviceId !== targetDeviceId || result.projectId !== input.projectId) throw refuse('The returned setup belongs to another device or project.', 502); return result; }

@@ -10,7 +10,11 @@ import {
   AuthStateSchema,
   settingsPage as settingsPageModel,
   ConfigRevisionSchema,
-  DeviceRosterSchema,
+  AppShellViewSchema,
+  APP_ROSTER_POLL_MS,
+  appSignInView,
+  appPostLoginPath,
+  appVersionNotice,
   type Configuration,
 } from '@jevellan/core/client';
 import {
@@ -83,6 +87,7 @@ function SignIn({
   done(value: Auth): Promise<void>;
   onError(error: unknown): void;
 }) {
+  const view=appSignInView(auth);
   const [passphrase, setPassphrase] = useState('');
   const task = useTask(onError);
   return (
@@ -92,11 +97,9 @@ function SignIn({
           <BrandFlag />
           Jevellan
         </span>
-        <h1>{auth.configured ? 'Welcome back' : 'Set your passphrase'}</h1>
+        <h1>{view.title}</h1>
         <p>
-          {auth.configured
-            ? 'Sign in to your conversations and agents.'
-            : 'Use one passphrase to sign in to Jevellan on your devices.'}
+          {view.help}
         </p>
         <form
           onSubmit={(event) => {
@@ -105,11 +108,11 @@ function SignIn({
               try {
                 await done(
                   await api(
-                    `/api/auth/${auth.configured ? 'login' : 'setup'}`,
+                    view.submit.path,
                     AuthStateSchema,
-                    'POST',
+                    view.submit.method,
                     { schema: 'passphrase-input-v1', passphrase },
-                    { signal, waitForHub: auth.configured },
+                    { signal, waitForHub: view.submit.waitForHub },
                   ),
                 );
               } finally {
@@ -119,21 +122,21 @@ function SignIn({
           }}
         >
           <label>
-            Passphrase
+            {view.field.label}
             <input
               autoFocus
               type="password"
               required
-              minLength={8}
-              maxLength={1024}
-              autoComplete={auth.configured ? 'current-password' : 'new-password'}
+              minLength={view.field.minLength}
+              maxLength={view.field.maxLength}
+              autoComplete={view.field.autoComplete}
               value={passphrase}
               onChange={(event) => setPassphrase(event.target.value)}
             />
           </label>
-          {!auth.configured && <p className="muted small-text">At least 8 characters.</p>}
+          {view.field.hint && <p className="muted small-text">{view.field.hint}</p>}
           <button disabled={task.busy}>
-            {task.busy ? 'Signing in…' : auth.configured ? 'Sign in' : 'Set passphrase'}
+            {task.busy ? view.submit.busyLabel : view.submit.label}
           </button>
         </form>
       </div>
@@ -164,14 +167,8 @@ function Toast({ notice, dismiss }: { notice: { text: string; error: boolean }; 
 
 /** B5: a member on another version than its hub says so, with the one command that fixes it. */
 function VersionBanner({ devices }: { devices: SettingsData['devices'] }) {
-  const self = devices.devices.find((device) => device.id === devices.currentDeviceId);
-  const hub = devices.devices.find((device) => device.role === 'hub');
-  if (!self || !hub || self.id === hub.id || self.version === hub.version) return null;
-  return (
-    <div className="version-banner" role="status">
-      This device runs {self.version}. The hub runs {hub.version}. Update this device with <code>jevellan update</code>.
-    </div>
-  );
+  const notice=appVersionNotice(devices);
+  return notice?<div className="version-banner" role="status">{notice.beforeCommand}<code>{notice.command}</code>{notice.afterCommand}</div>:null;
 }
 
 function App() {
@@ -240,20 +237,17 @@ function App() {
     let timer: ReturnType<typeof setTimeout>;
     const refresh = () => {
       timer = setTimeout(() => {
-        void api('/hub/devices/roster', DeviceRosterSchema, 'GET', undefined, {
+        void api('/api/app/view', AppShellViewSchema, 'GET', undefined, {
           signal: controller.signal,
           waitForHub: true,
         })
-          .then((roster) =>
+          .then((view) =>
             setData((current) =>
               current
                 ? {
                     ...current,
-                    roster,
-                    devices: {
-                      currentDeviceId: roster.currentDeviceId,
-                      devices: roster.devices.map((row) => row.device),
-                    },
+                    roster:view.roster,
+                    devices:view.devices,
                   }
                 : current,
             ),
@@ -264,7 +258,7 @@ function App() {
           .finally(() => {
             if (!controller.signal.aborted) refresh();
           });
-      }, 30_000);
+      }, APP_ROSTER_POLL_MS);
     };
     refresh();
     return () => {
@@ -326,7 +320,7 @@ function App() {
           done={async (state) => {
             setAuth(state);
             await reload();
-            navigate(auth.configured ? (setup || path.split('?')[0] === '/' ? path : '/settings/runtimes') : '/setup', true);
+            navigate(appPostLoginPath(appSignInView(auth),path),true);
           }}
         />
         {feedback}

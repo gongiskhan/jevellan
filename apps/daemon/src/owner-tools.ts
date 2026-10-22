@@ -1,3 +1,4 @@
+import {appShellDeviceView} from './app-shell-view.js';
 import {firstRunDeviceOperation} from './first-run-device.js';
 import { ProjectStatusViewSchema } from '@jevellan/core';
 import { appendFileSync, mkdirSync, readFileSync, renameSync, existsSync, writeFileSync } from 'node:fs';
@@ -65,6 +66,7 @@ export class OwnerTools {
     const parsed = action.input.safeParse(rest);
     if (!parsed.success) return fail('invalid_arguments', invalidArguments(tool, tool.single ? '' : action.name, parsed.error));
     try {
+      if (tool.name === 'config' && action.name === 'app_view') { const data=await appShellDeviceView(this.app,request.deviceId??this.app.device.deviceId); log(true); return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text:'App view.',data}); }
       if (tool.name === 'config' && (action.name === 'setup_progress' || action.name === 'setup_next')) {
         const data = await firstRunDeviceOperation(this.app, request.deviceId ?? this.app.device.deviceId, action.name === 'setup_progress' ? 'view' : 'next', (parsed.data as { request?: unknown }).request);
         log(true);

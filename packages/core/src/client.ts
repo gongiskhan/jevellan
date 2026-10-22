@@ -252,3 +252,5 @@ export * from './project-setup-editor.js';
 export * from './context-editor.js';
 
 export * from './memory-editor.js';
+
+export * from './app-shell.js';

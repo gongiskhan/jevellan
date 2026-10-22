@@ -33,3 +33,7 @@ test('a notification click opens a client when none exists and refuses an extern
   const f = fixture(); await f.dispatch('notificationclick', { notification: { data: { url: f.notification.url }, close() {} } });
   await f.dispatch('notificationclick', { notification: { data: { url: '//another.example' }, close() {} } }); expect(f.opened).toEqual([f.notification.url]);
 });
+
+test('notification click skips a foreign window and navigates the first same-origin window',async()=>{
+ const focused:string[]=[],navigated:string[]=[];const f=fixture([{url:'https://other.example/projects/project',focus:async()=>{focused.push('foreign');}},{url:'https://hub.example/new',focus:async()=>{focused.push('first');},navigate:async url=>{navigated.push(url);}},{url:'https://hub.example/settings',focus:async()=>{focused.push('second');}}]);await f.dispatch('notificationclick',{notification:{data:{url:f.notification.url},close(){}}});expect(focused).toEqual(['first']);expect(navigated).toEqual([f.notification.url]);expect(f.opened).toEqual([]);
+});

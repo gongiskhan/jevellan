@@ -1,3 +1,5 @@
+import {appSignInView} from '@jevellan/core';
+import {readAppShell} from './app-shell-view.js';
 import {handleMemoryEditorApi} from './memory-editor.js';
 import {handleContextEditorApi} from './context-editor.js';
 import {handleFirstRunApi} from './first-run-api.js';
@@ -101,6 +103,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       const stretchToken = authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined;
       send(await app.bridges.request(stretchToken, await body(request))); return;
     }
+    if (path === '/api/auth/view') { if(method!=='GET')throw failure('Unsupported app operation.',405); if(url.search)throw failure('Unsupported app query.',400); retryable=true; send(appSignInView(await app.auth.state(token))); return; }
     if (path === '/api/auth' && method === 'GET') { retryable = true; send(await app.auth.state(token)); return; }
     if (['/api/auth/setup', '/api/auth/login'].includes(path) && method === 'POST') {
       const input = await body(request);
@@ -110,6 +113,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     }
     retryable = true; // No UI operation has been admitted before authentication succeeds.
     if (!await app.auth.verify(token)) throw failure('Sign in to Jevellan.', 401);
+    if (path === '/api/app/view') { if(method!=='GET')throw failure('Unsupported app operation.',405); if(url.search)throw failure('Unsupported app query.',400); send(await readAppShell(app)); return; }
     if (/^\/api\/projects\/[A-Za-z0-9_-]+\/library(?:\/|$)/u.test(path)) { retryable = method === 'GET' || method === 'DELETE'; if (await handleLibrary(app, request, response, url, token!)) return; }
     if (path.startsWith('/api/notifications/')) {
       retryable = method === 'GET' || method === 'DELETE' || path === '/api/notifications/subscriptions';
