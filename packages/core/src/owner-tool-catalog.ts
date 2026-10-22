@@ -1,3 +1,4 @@
+import {ProjectThreadReadRequestSchema} from './project-thread-read-state.js';
 import {ProjectLibraryMessageRequestSchema} from './project-library-message.js';
 import {ProjectLibraryViewRequestSchema,ProjectLibraryDeleteSchema} from './project-library-view.js';
 import {ProjectAttachmentRequestSchema} from './project-attachments.js';
@@ -110,7 +111,7 @@ export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
       write('return', { thread: id('Thread id (T31).'), as: z.enum(['resume', 'done', 'stop']).optional(), note: text(4000).optional() }), write('stop', { thread: id('Thread id (T31).'), reason: text(400).optional() }),
       read('actions', { thread: id('Thread id (T31).') }, true),
       write('act', { thread: id('Thread id (T31).'), operation: ThreadMutationActionSchema, clientRequestId: IdSchema, confirm: z.boolean().optional() }),
-      write('merge', { thread: id('Thread id (T31).'), confirm: z.boolean().optional() }), read('view', { thread: id('Thread id (T31).') }, true)] },
+      write('merge', { thread: id('Thread id (T31).'), confirm: z.boolean().optional() }), read('view', { thread: id('Thread id (T31).') }, true), read('read_view', { request: ProjectThreadReadRequestSchema }, true)] },
   { name: 'respond', single: true, description: 'Answer something waiting on the owner: a question, a decision, a deploy message, a failed deploy, a rollback question, an external pull request, a login. Use one of the options the item lists; questions take free text.',
     actions: [write('respond', { item: id('Waiting item id (W12).'), answer: text(20000), note: text(4000).optional() })] },
   { name: 'override', single: true, description: "Override a decision made by Jev, the coordinator or Jevellan. override_undo undoes what followed the decision and redoes it the owner's way; override_only keeps what happened and records the lesson for next time. A reason is required: it becomes the lesson.",

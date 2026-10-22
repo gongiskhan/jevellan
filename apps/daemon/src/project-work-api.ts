@@ -1,4 +1,5 @@
 import {ProjectWorkViewSchema,ProjectCoordinatorCommandSchema,ProjectCoordinatorComposerSchema,projectCoordinatorTransport} from '@jevellan/core';
+import {ProjectThreadReadRequestSchema,ProjectThreadReadErrorSchema,ProjectThreadReadViewSchema,projectThreadReadFailure} from '@jevellan/core';
 import {ProjectChatCardViewRequestSchema,ProjectChatCardViewSchema} from '@jevellan/core';
 import {ProjectChatViewRequestSchema,ProjectChatViewSchema,projectChatRequest} from '@jevellan/core';
 import { TaskViewSchema, ProjectTaskCommandSchema, ProjectTaskIntentRequestSchema, ProjectTaskQueueRequestSchema } from '@jevellan/core';
@@ -40,7 +41,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'notebook-editor' | 'coordinator-composer' | 'chat-card-view' | 'chat-view' | 'task-page-view' | 'task-queue-interaction' | 'task-edit-view' | 'task-draft' | 'task-command' | 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'thread-read-view' | 'notebook-editor' | 'coordinator-composer' | 'chat-card-view' | 'chat-view' | 'task-page-view' | 'task-queue-interaction' | 'task-edit-view' | 'task-draft' | 'task-command' | 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -51,6 +52,7 @@ type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GE
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'thread-read-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/read-view$/, methods: ['POST'], target: 'any' },
   { name: 'chat-card-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/chat-card-view$/, methods: ['POST'], target: 'coordinator' },
   { name: 'chat-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/chat-view$/, methods: ['POST'], target: 'coordinator' },
   { name: 'landing-why', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/landing\/why-view$/, methods: ['GET'], target: 'owner' },
@@ -241,6 +243,41 @@ export async function ownerTaskCommand(app: Application, projectId: string, task
 }
 
 /** Authenticated owner tools reuse the browser's typed owner routes; work never moves to the state point. */
+/** A viewer read keeps startup and device refusals typed while retaining the normal owner route. */
+export async function ownerThreadReadView(app: Application, projectId: string, threadId: string, raw: unknown) {
+  const input = ProjectThreadReadRequestSchema.parse(raw);
+  if (input.projectId !== projectId || input.threadId !== threadId) throw Object.assign(failure('This read request belongs to another thread.', 409), { code: 'wrong_resource' });
+  if (!await app.state.projects.get(projectId)) throw Object.assign(failure('Project not found.', 404), { code: 'not_found' });
+  if (app.member) {
+    const result = await app.member.ownerTool({ schema: 'owner-tool-forward-v1', name: 'thread', request: { schema: 'owner-tool-request-v1', caller: 'ui', action: 'read_view', args: { project: projectId, request: input } } });
+    if (!result.ok) { const status = ({ not_found: 404, project_unknown: 404, wrong_resource: 409, invalid_arguments: 400, unauthenticated: 401, hub_unavailable: 503 } as Record<string, number>)[result.error.code] ?? 500; throw Object.assign(failure(result.error.text, status), { code: result.error.code }); }
+    const frame = ProjectThreadReadViewSchema.parse(result.data); if (frame.projectId !== projectId || frame.threadId !== threadId) throw failure('The returned read belongs to another thread.', 502); return frame;
+  }
+  await app.projectWork.ready;
+  const base = { schema: 'project-thread-read-view-v1', projectId, threadId, request: input };
+  try {
+    const owner = await app.projectWork.threadOwner(projectId, threadId);
+    // A pending dispatch can precede both its index and the local file; a viewer need not hold a long owner stream open.
+    if (owner === null || owner === app.device.deviceId && !app.projectWork.store.get(threadId)) throw failure('Thread not found.', 404);
+    const view = ThreadViewSchema.parse(await ownerThreadOperation(app, projectId, threadId, 'view'));
+    return ProjectThreadReadViewSchema.parse(boundedRedaction(app.redactor, { ...base, kind: 'ready', view, nextRequest: { ...input, viewKnown: true } }));
+  } catch (error) {
+    const status = (error as { status?: unknown }).status;
+    if (status === 401) throw Object.assign(error as Error, { code: 'unauthenticated' });
+    if (typeof status !== 'number' || status < 400 || status > 599) throw error;
+    const message = typeof (error as { message?: unknown }).message === 'string' ? (error as Error).message : 'This thread could not be read.';
+    let facts = ProjectThreadReadErrorSchema.parse(boundedRedaction(app.redactor, { schema: 'project-thread-read-error-v1', projectId, threadId, apiStatus: status, message, indexAttempted: false }));
+    const at = Date.now();
+    const project = () => projectThreadReadFailure({ schema: 'project-thread-read-failure-context-v1', request: input, error: facts, held: null, now: at });
+    let outcome = project();
+    if (outcome.index) {
+      let index: import('@jevellan/core').ThreadIndex | null = null;
+      try { const row = (await app.projectHub.thread(threadId))?.document; if (row?.projectId === projectId) index = row; } catch { /* Keep the refusal even when its optional index cannot be read. */ }
+      facts = ProjectThreadReadErrorSchema.parse({ ...facts, indexAttempted: true, index }); outcome = project();
+    }
+    return ProjectThreadReadViewSchema.parse(boundedRedaction(app.redactor, { ...base, kind: 'failed', error: facts, failure: outcome, nextRequest: { ...input, indexKnown: input.indexKnown || facts.indexAttempted, heldTone: outcome.held?.tone ?? null } }));
+  }
+}
 export async function ownerThreadOperation(app: Application, projectId: string, threadId: string,
   operation: 'view' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'override-editor' | 'override-preview' | 'override-save' | 'why' | 'actions' | 'act' | 'merge', input?: unknown) {
   const work = app.projectWork, read = ['view', 'landing-why', 'merge-why', 'override-editor', 'override-preview', 'why', 'actions'].includes(operation);
@@ -488,7 +525,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
   const work = app.projectWork; await work.ready;
   const projectId = route.projectId ?? ''; const threadId = route.threadId ?? ''; const decisionId = route.decisionId ?? '';
   const write = request.method !== 'GET';
-  if (withClientId.has(route.name) || route.name === 'waiting-answer' || route.name === 'page-view') retryable();
+  if (withClientId.has(route.name) || route.name === 'waiting-answer' || route.name === 'page-view' || route.name === 'thread-read-view') retryable();
   if (route.name === 'answer' || route.name === 'waiting-answer') {
     const owner = await work.decisionOwner(projectId, decisionId);
     if (owner && owner !== app.device.deviceId) {
@@ -647,6 +684,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
       send(DecisionAnsweredViewSchema.parse({ schema: 'decision-answered-view-v1', repeated, ...(closed === undefined ? {} : { closed }) }), 202); return true;
     }
     case 'thread-create': send(await work.createThread(projectId, ThreadCreateRequestSchema.parse(await requestBody(request))), 201); return true;
+    case 'thread-read-view': send(await ownerThreadReadView(app, projectId, threadId, await requestBody(request))); return true;
     case 'thread': send(url.searchParams.has('session') ? await work.sessionTranscript(projectId, url.searchParams.get('session')!, threadId) : await work.threadView(projectId, threadId)); return true;
     case 'thread-image': {
       const thread = work.store.get(threadId);

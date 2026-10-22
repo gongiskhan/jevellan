@@ -32,8 +32,8 @@ export const THREAD_POLL_AFTER_ACTION_MS = THREAD_READ_POLICY.afterActionMs;
  * exists there, and in the hub index, only once that device has read its start from the hub.
  */
 export const THREAD_START_WAIT_MS = THREAD_READ_POLICY.startingMs;
-export function threadStarting(threadId: string, now: number): boolean {
-  const at = idTime(threadId); return at !== null && Math.abs(now - at) < THREAD_START_WAIT_MS;
+export function threadStarting(threadId: string, now: number, policy: ThreadReadPolicy = THREAD_READ_POLICY): boolean {
+  const at = idTime(threadId); return at !== null && Math.abs(now - at) < policy.startingMs;
 }
 /**
  * A thread view read that the thread's device could not answer before any view showed (D276): 409 when the device is offline

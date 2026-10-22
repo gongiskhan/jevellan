@@ -1,11 +1,11 @@
-import { projectThreadReader, threadMessageInterrupt, threadSteeringView } from '@jevellan/core/client';
+import { ProjectThreadReadViewSchema, ProjectThreadReadErrorSchema, projectThreadReader, threadMessageInterrupt, threadSteeringView, type ProjectThreadHeld } from '@jevellan/core/client';
 import { AttachmentControls, LibraryMessage, useProjectAttachments } from './project-library.js';
 import { ThreadActions } from './thread-actions.js';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  formatThreadUsage, threadStarting, deviceRefusal,
+  formatThreadUsage,
   ProjectWorkViewSchema, ProjectThreadOverrideEditorSchema, type ProjectThreadOverrideEditor, type ThreadOverrideEditorFields, ProjectThreadWhyViewSchema, type ProjectThreadWhyView, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema,
-  type ThreadTimeline, type ThreadIndex, type ThreadReport, type ThreadReportPresentation, type ThreadView,
+  type ThreadTimeline, type ThreadReport, type ThreadReportPresentation, type ThreadView,
 } from '@jevellan/core/client';
 import { ApiError, api, empty } from './api.js';
 import { copyText, selectText } from './clipboard.js';
@@ -42,7 +42,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const [view, setView] = useState<ThreadView>();
   const [loadError, setLoadError] = useState('');
   // Before any view: the thread's device refused or could not be reached, and the project's index row that names it (D276).
-  const [held, setHeld] = useState<{ tone: 'notice' | 'error'; thread?: ThreadIndex }>();
+  const [held, setHeld] = useState<ProjectThreadHeld>();
   const [confirming, setConfirming] = useState<'stop' | 'discard'>();
   const [why, setWhy] = useState(false);
   const [overriding, setOverriding] = useState(false);
@@ -56,40 +56,44 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
 
   useEffect(() => {
     const controller = new AbortController();
-    const reader = projectThreadReader({ schema: 'project-thread-reader-request-v1', projectId, threadId, ...(latest.current ? { initial: readingFacts(latest.current) } : {}) });
+    const reader = projectThreadReader({ schema: 'project-thread-reader-request-v1', projectId, threadId, ...(latest.current ? { initial: readingFacts(latest.current) } : {}), initialHeld: held ?? null });
     readerRef.current = reader;
-    let timer: ReturnType<typeof setTimeout> | undefined; let indexed = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     // The hub's index still names a thread whose device cannot answer, so the page shows its title and last state meanwhile.
     const index = async () => {
       try {
         const work = await api(`/api/projects/${projectId}/work`, ProjectWorkViewSchema, 'GET', undefined, { signal: controller.signal });
-        const row = work.threads.find((entry) => entry.id === threadId);
-        if (row && !controller.signal.aborted) setHeld((previous) => previous && { ...previous, thread: row });
+        const next = reader.indexed(work);
+        if (!controller.signal.aborted) setHeld(next ?? undefined);
       } catch { /* the reason alone still shows */ }
     };
     const load = async () => {
       clearTimeout(timer);
       if (!reader.begin()) return;
       let starting = false;
+      const failed = (raw: unknown, original?: unknown) => {
+        const facts = ProjectThreadReadErrorSchema.parse(raw), outcome = reader.failed(facts);
+        starting = outcome.starting;
+        if (outcome.route === 'global') onError(original ?? new ApiError(facts.message, facts.apiStatus ?? 401));
+        else {
+          if (outcome.error.mode === 'set') setLoadError(outcome.error.text);
+          setHeld(outcome.held ?? undefined);
+          if (outcome.index) void index();
+        }
+      };
       try {
-        const next = await api(base, ThreadViewSchema, 'GET', undefined, { signal: controller.signal });
+        const frame = await api(`${base}/read-view`, ProjectThreadReadViewSchema, 'POST', reader.readRequest(), { signal: controller.signal, waitForHub: true });
         if (!controller.signal.aborted) {
-          // A state change seen here (a turn ended, publication started) refreshes the sidebar's counts now, not at its next poll.
-          const observed = reader.accepted(readingFacts(next));
-          latest.current = next; setView(next); setLoadError('');
-          if (observed.refreshSidebar) updated();
+          if (frame.kind === 'failed') failed(frame.error);
+          else {
+            const next = frame.view, observed = reader.accepted(readingFacts(next));
+            latest.current = next; setView(next); setLoadError('');
+            if (observed.refreshSidebar) updated();
+          }
         }
       } catch (failure) {
         if (!controller.signal.aborted) {
-          if (failure instanceof ApiError && failure.status === 401) onError(failure);
-          // A thread started moments ago on another device is not there yet (D274): the page keeps loading and reads again soon.
-          else if (failure instanceof ApiError && failure.status === 404 && !latest.current && threadStarting(threadId, Date.now())) starting = true;
-          else {
-            setLoadError(failureText(failure));
-            const refusal = failure instanceof ApiError && !latest.current ? deviceRefusal(failure.status) : undefined;
-            setHeld((previous) => previous || refusal ? { ...previous, tone: refusal ?? 'error' } : previous);
-            if (refusal && !indexed) { indexed = true; void index(); }
-          }
+          failed({ schema: 'project-thread-read-error-v1', projectId, threadId, message: failureText(failure), ...(failure instanceof ApiError ? { apiStatus: failure.status } : {}) }, failure);
         }
       } finally {
         const next = reader.complete({ schema: 'project-thread-read-completion-request-v1', starting });

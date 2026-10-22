@@ -1,11 +1,13 @@
+import {ProjectThreadReadRequestSchema} from '@jevellan/core';
 import { OwnerRefusal, type OwnerHandler } from '../owner-tools.js';
 import { clientId, resolveTask } from './common.js';
 import { ProjectThreadActionsViewSchema, ThreadActionRequestSchema, ThreadViewSchema } from '@jevellan/core';
-import { ownerThreadOperation } from '../project-work-api.js';
+import { ownerThreadOperation, ownerThreadReadView } from '../project-work-api.js';
 
 /** `thread`: steer a running thread (bridge specification, "Threads: say, takeover, hold rules"). */
 export const thread: OwnerHandler = async (context) => {
   const { app, tools, project, args } = context; const engine = app.projectWork;
+  if (context.action === 'read_view') { const input = ProjectThreadReadRequestSchema.parse(args.request); return { text: 'Thread read state.', data: await ownerThreadReadView(app, project.id, input.threadId, input) }; }
   const token = String(args.thread);
   if (token.toUpperCase() === 'C') throw new OwnerRefusal("The coordinator can't be taken over. Ask it something or tell it what to do instead.", 'coordinator', 409);
   const target = await resolveTask(context, token); const id = target.id; const row = target.thread;
@@ -61,5 +63,5 @@ export const thread: OwnerHandler = async (context) => {
     case 'open': return tools.takeover.open(context, id, row);
     case 'return': return tools.takeover.return(context, id, row, (args.as as 'resume' | 'done' | 'stop' | undefined) ?? 'resume', typeof args.note === 'string' ? args.note : undefined);
   }
-  throw new OwnerRefusal('thread takes say, open, return, stop, actions, act, merge, view.', 'unknown_action');
+  throw new OwnerRefusal('thread takes say, open, return, stop, actions, act, merge, view, read_view.', 'unknown_action');
 };
