@@ -1,3 +1,4 @@
+import {contextDeviceOperation} from '../context-editor.js';
 import {SetupEditorPrepareSchema,SetupEditorCommandSchema} from '@jevellan/core';
 import {ownerSetupEditor,ownerSetupPrepare,ownerSetupAction} from '../project-work-api.js';
 import {projectHealthEditor} from '../project-health-editor.js';
@@ -165,6 +166,10 @@ export const config: OwnerHandler = async (context) => {
       return { text: context.action === 'native_connections_editor' ? 'Native session connections.' : 'Connection settings saved.',
         data: await nativeConnectionsDeviceOperation(context.app, deviceId, { schema: 'native-connections-operation-v1', deviceId,
           ...(context.action === 'native_connections_editor' ? { operation: 'read' } : { operation: 'command', request: args.request }) }) };
+    }
+    case 'context_editor': case 'context_prepare': case 'context_action': case 'context_review': {
+      const operation = { context_editor: 'context-editor', context_prepare: 'context-prepare', context_action: 'context-action', context_review: 'context-review' }[context.action];
+      return { text: 'Project context.', data: await contextDeviceOperation(context.app, { schema: 'project-definition-peer-request-v1', operation, projectId: context.project.id, deviceId: context.request.deviceId ?? context.app.device.deviceId, ...(args.request === undefined ? {} : { request: args.request }) }) };
     }
     case 'setup_editor': return { text: 'Suggested setup.', data: await ownerSetupEditor(context.app, context.project.id, String(args.proposal), args.request) };
     case 'setup_prepare': {

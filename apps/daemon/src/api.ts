@@ -1,3 +1,4 @@
+import {handleContextEditorApi} from './context-editor.js';
 import {handleFirstRunApi} from './first-run-api.js';
 import { handleNativeViewerTitlePeer } from './native-viewer-title.js';
 import { handleConversationStartPeer } from './conversation-start-peer.js';
@@ -180,6 +181,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       else { if (method !== 'POST') throw failure('This setup wait does not support that method.', 405); send(await waitProjectSetupView(app, id, app.device.deviceId, await body(request))); }
       return;
     }
+    if (/^\/api\/projects\/[A-Za-z0-9_-]+\/context\/(editor|prepare|commands)(?:\/|$)/u.test(path)) { retryable = true; if (await handleContextEditorApi(app, request, response, url)) return; }
     const contextOperation = path.match(/^\/api\/projects\/([A-Za-z0-9_-]+)\/context\/(operations|continue|review)$/);
     if (contextOperation) {
       await app.conversations.ready; const id = IdSchema.parse(contextOperation[1]);

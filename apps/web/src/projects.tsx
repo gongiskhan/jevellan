@@ -1,13 +1,12 @@
+import {ContextEditorSchema,ContextEditorReceiptSchema,ContextEditorReviewSchema,contextEditorPolicy,contextEditorWithUi,contextEditorAttempt,contextEditorAccepted} from '@jevellan/core/client';
 import { ProjectForm } from './project-definition-editor.js';
 export { ProjectForm };
 import { ProjectDefinitionsViewSchema, GlobalThreadLimitEditorSchema, ConfigRevisionSchema, type ProjectDefinitionsView } from '@jevellan/core/client';
 import { BranchChangeNotice } from './branch-change-notice.js';
 import { clientId } from './client-id.js';
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import {
-  ContextPanelSchema,
-  ContextReviewSchema,
   MemoryNoteSchema,
   MemorySearchSchema,
   ProjectMemoryViewSchema, ProjectMemoryResultSchema, ProjectWorkSettingsViewSchema,
@@ -15,7 +14,7 @@ import {
   type Project,
 } from '@jevellan/core/client';
 import { timeStamp } from './time.js';
-import { api } from './api.js';
+import { api, isCancelled } from './api.js';
 import { OPEN } from './project-work-copy.js';
 import {
   Markdown,
@@ -66,290 +65,59 @@ function VaultStatus({ vault }: { vault: NonNullable<ProjectDefinitionsView['vau
 }
 function PublicMemoryNotice() { return <p className="notice public-memory-notice">This repository is public. Memory committed here is public too.</p>; }
 function ContextPanel({ project, close, ...props }: PageProps & { project: Project; close(): void }) {
-  const [review, setReview] = useState<z.infer<typeof ContextReviewSchema>>();
-  const [panel, setPanel] = useState<z.infer<typeof ContextPanelSchema>>();
-  const [modelId, setModelId] = useState('');
-  const task = useTask(props.onError);
-  const pending = useRef<{ signature: string; id: string } | undefined>(undefined);
-  const route = `/api/projects/${project.id}/context`;
+  const [view, setView] = useState<ReturnType<typeof ContextEditorSchema.parse>>(), [modelId, setModelId] = useState('');
+  const [review, setReview] = useState<ReturnType<typeof ContextEditorReviewSchema.parse>['review'] | null>(null);
+  const task = useTask(props.onError), pending = useRef<ReturnType<typeof contextEditorAttempt> | null>(null);
+  const route = `/api/projects/${project.id}/context/editor`, current = useRef(route); current.current = route;
+  const model = view?.projectId === project.id ? contextEditorWithUi(view, { schema: 'context-editor-request-v1', modelId, busy: task.busy, review }) : undefined;
+  const policy = model?.policy ?? contextEditorPolicy();
   useEffect(() => {
-    let active = true;
-    let timer: ReturnType<typeof setTimeout>;
+    const controller = new AbortController(); let timer: ReturnType<typeof setTimeout>;
     const refresh = async () => {
+      let delay = contextEditorPolicy().pollMs;
       try {
-        const value = await api(`${route}/operations`, ContextPanelSchema);
-        if (active) setPanel(value);
-      } catch (error) {
-        if (active) props.onError(error);
-      } finally {
-        if (active) timer = setTimeout(() => void refresh(), 1000);
-      }
+        const next = await api(route, ContextEditorSchema, 'GET', undefined, { signal: controller.signal });
+        if (!controller.signal.aborted && current.current === route) {
+          if (next.projectId !== project.id) throw new Error('The context editor belongs to another project.');
+          setView(next); delay = next.policy.pollMs;
+        }
+      } catch (error) { if (!isCancelled(error) && !controller.signal.aborted) props.onError(error); }
+      finally { if (!controller.signal.aborted) timer = setTimeout(() => void refresh(), delay); }
     };
-    void refresh();
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
+    void refresh(); return () => { controller.abort(); clearTimeout(timer); };
   }, [route, props.onError]);
-  const send = async (endpoint: string, value: Record<string, unknown>, signal: AbortSignal) => {
-    const signature = JSON.stringify(value);
-    if (pending.current?.signature !== signature)
-      pending.current = { signature, id: `context_${clientId()}` };
-    setPanel(
-      await api(
-        `${route}/${endpoint}`,
-        ContextPanelSchema,
-        'POST',
-        { ...value, clientRequestId: pending.current.id },
-        { signal, waitForHub: true },
-      ),
-    );
-    pending.current = undefined;
-  };
-  const operation =
-    panel?.operations.find((entry) => !['completed', 'cancelled'].includes(entry.status)) ??
-    panel?.operations.at(-1);
-  const active = operation && !['completed', 'cancelled'].includes(operation.status);
-  const busy = task.busy || panel?.busy;
-  const choose = (choice: string) =>
-    void task.run((signal) =>
-      send(
-        'operations',
-        {
-          schema: 'context-request-v1',
-          revision: panel!.revision,
-          fingerprint: panel!.context.fingerprint,
-          choice,
-          ...(choice === 'merge' && modelId ? { modelId } : {}),
-        },
-        signal,
-      ),
-    );
-  const proceed = (action: string) =>
-    void task.run((signal) =>
-      send(
-        'continue',
-        {
-          schema: 'context-continue-v1',
-          operationId: operation!.id,
-          generation: action === 'accept-changes' ? review!.generation : operation!.generation,
-          action,
-          ...(action === 'accept-changes' ? { fingerprint: review!.fingerprint } : {}),
-        },
-        signal,
-      ),
-    );
-  const separate = panel?.context.files.every((file) => file.kind === 'file');
-  return (
-    <Modal title={`Context · ${project.name}`} close={close}>
-      {!panel ? (
-        <p>Loading context…</p>
-      ) : (
-        <>
-          <p>
-            {panel.context.state === 'linked'
-              ? `Linked: ${panel.context.files.find((file) => file.kind === 'link')?.name ?? 'Claude Code'} → ${panel.context.primary}`
-              : separate
-                ? `${project.name} has both AGENTS.md and CLAUDE.md. Agents should read one file.`
-                : 'Choose the instructions your agents read in this project.'}
-          </p>
-          {panel.context.state === 'left-as-is' && (
-            <p className="muted">Both files are being kept as they are.</p>
-          )}
-          {operation?.branchChange && <BranchChangeNotice change={operation.branchChange} />}
-          {operation && (
-            <section className="context-operation" aria-label="Context operation">
-              <p role="status">
-                {panel.busy
-                  ? operation.status === 'drafting'
-                    ? 'Drafting a merge…'
-                    : 'Applying and verifying the context change…'
-                  : operation.status === 'completed'
-                    ? 'Context change completed.'
-                    : operation.status === 'cancelled'
-                      ? 'Context change cancelled.'
-                      : operation.status === 'draft-ready'
-                        ? 'Review the proposed changes before applying.'
-                        : (operation.reason ?? operation.status)}
-              </p>
-              {operation.status === 'draft-ready' && operation.draft && (
-                <>
-                  <p className="muted small-text">
-                    The draft ran read-only. Apply replaces AGENTS.md with this text and links CLAUDE.md to
-                    it.
-                  </p>
-                  <div className="context-diff" aria-label="Context merge diff">
-                    {operation.before.files.map((file) => (
-                      <div key={file.name}>
-                        <h3>{file.name}</h3>
-                        <pre className="git-diff">
-                          <span className="removal">
-                            {file.content
-                              .split('\n')
-                              .map((line) => `− ${line}`)
-                              .join('\n')}
-                          </span>
-                          {'\n'}
-                          <span className="addition">
-                            {(file.name === 'AGENTS.md' ? operation.draft! : 'Symlink → AGENTS.md')
-                              .split('\n')
-                              .map((line) => `+ ${line}`)
-                              .join('\n')}
-                          </span>
-                        </pre>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="form-actions">
-                    <button className="secondary" disabled={busy} onClick={() => proceed('cancel')}>
-                      Cancel
-                    </button>
-                    <button disabled={busy} onClick={() => proceed('apply')}>
-                      Apply
-                    </button>
-                  </div>
-                </>
-              )}
-              {operation.status === 'blocked' && operation.activityReason && (
-                <section aria-label="Review context changes">
-                  {operation.reason !== operation.activityReason && <p>{operation.activityReason}</p>}
-                  {review?.operationId === operation.id && (
-                    <>
-                      <pre className="git-diff" aria-label="Current context checkout changes">
-                        {review.diff}
-                      </pre>
-                      <p>
-                        Continue accepts all the files shown above as this work’s checkpoint, then verifies
-                        them before publication.
-                      </p>
-                    </>
-                  )}
-                  <div className="actions">
-                    {review?.operationId === operation.id && (
-                      <button disabled={busy} onClick={() => proceed('accept-changes')}>
-                        Continue
-                      </button>
-                    )}
-                    <button
-                      className="secondary"
-                      disabled={busy}
-                      onClick={() =>
-                        void task.run(async () =>
-                          setReview(
-                            await api(
-                              `${route}/review?operation=${encodeURIComponent(operation.id)}`,
-                              ContextReviewSchema,
-                            ),
-                          ),
-                        )
-                      }
-                    >
-                      {review?.operationId === operation.id ? 'Refresh changes' : 'Review changes'}
-                    </button>
-                  </div>
-                </section>
-              )}
-              {operation.status === 'blocked' && !operation.activityReason && (
-                <div className="actions">
-                  <button disabled={busy} onClick={() => proceed('retry')}>
-                    Retry
-                  </button>
-                  {!operation.applied && (
-                    <button className="secondary" disabled={busy} onClick={() => proceed('cancel')}>
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              )}
-              <button
-                className="text-button"
-                onClick={() => {
-                  close();
-                  props.navigate(`/conversations/${operation.conversationId}`);
-                }}
-              >
-                Open work
-              </button>
-            </section>
-          )}
-          {!active && (
-            <>
-              {separate ? (
-                <div className="context-choices">
-                  {project.branchPolicy === 'external' && (
-                    <p className="notice">
-                      This project follows its own git rules. Only untracked files can become local links.
-                    </p>
-                  )}
-                  <button
-                    className="secondary"
-                    disabled={busy || (project.branchPolicy === 'external' && panel.context.files[1].tracked)}
-                    onClick={() => choose('keep-agents')}
-                  >
-                    Keep AGENTS.md and link CLAUDE.md to it
-                  </button>
-                  <button
-                    className="secondary"
-                    disabled={busy || (project.branchPolicy === 'external' && panel.context.files[0].tracked)}
-                    onClick={() => choose('keep-claude')}
-                  >
-                    Keep CLAUDE.md and link AGENTS.md to it
-                  </button>
-                  <label>
-                    Draft model
-                    <select
-                      value={modelId}
-                      onChange={(event) => setModelId(event.target.value)}
-                      disabled={busy || project.branchPolicy === 'external'}
-                    >
-                      <option value="">First eligible model</option>
-                      {props.data.config.configuration['x-jevellan'].menu
-                        .filter((model) => model.enabled)
-                        .map((model) => (
-                          <option key={model.id} value={model.id}>
-                            {model.label}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                  <button
-                    className="secondary"
-                    disabled={busy || project.branchPolicy === 'external'}
-                    onClick={() => choose('merge')}
-                  >
-                    Merge them into AGENTS.md
-                  </button>
-                  <button className="secondary" disabled={busy} onClick={() => choose('leave')}>
-                    Leave both as they are
-                  </button>
-                </div>
-              ) : (
-                panel.context.state === 'none' && (
-                  <button disabled={busy} onClick={() => choose(panel.context.primary ? 'link' : 'create')}>
-                    {panel.context.primary ? 'Link the instruction files' : 'Create AGENTS.md'}
-                  </button>
-                )
-              )}
-            </>
-          )}
-          <details className="context-files">
-            <summary>Current instruction files</summary>
-            {panel.context.files.map((file) => (
-              <div key={file.name}>
-                <h3>{file.name}</h3>
-                <p className="muted small-text">
-                  {file.kind}
-                  {file.target ? ` → ${file.target}` : ''}
-                  {file.tracked ? ' · tracked' : ''}
-                </p>
-                {file.content && <Markdown>{file.content}</Markdown>}
-              </div>
-            ))}
-          </details>
-        </>
-      )}
-    </Modal>
-  );
+  const act = (intent: Parameters<typeof contextEditorAttempt>[2]) => void task.run(async signal => {
+    if (!model) return;
+    const attempt = contextEditorAttempt(pending.current, model, intent, `context_${clientId()}`); pending.current = attempt;
+    const receipt = await api(attempt.path, ContextEditorReceiptSchema, 'POST', attempt.command, { signal, waitForHub: true });
+    const next = contextEditorAccepted(attempt, receipt, { projectId: project.id, deviceId: model.deviceId });
+    if (current.current !== route) return;
+    setView(next); pending.current = null;
+  });
+  const proceed = (action: 'apply' | 'cancel' | 'retry' | 'accept-changes') => act({ schema: 'context-editor-intent-v1', kind: 'continue', action });
+  const loadReview = () => void task.run(async signal => {
+    if (!model?.operation) return;
+    const result = await api(model.paths.review, ContextEditorReviewSchema, 'POST', { schema: 'context-editor-review-request-v1', operationId: model.operation.id }, { signal });
+    if (result.projectId !== model.projectId || result.deviceId !== model.deviceId || result.review.operationId !== model.operation.id) throw new Error('The context review belongs to another operation.');
+    if (current.current === route) setReview(result.review);
+  });
+  return <Modal title={model?.title ?? `Context · ${project.name}`} close={close}>
+    {!model ? <p>{policy.loading}</p> : <>
+      <p>{model.intro}</p>{model.noticeRows.map(notice => <p className={notice.tone} key={notice.text}>{notice.text}</p>)}
+      {model.operation?.branchChange && <BranchChangeNotice change={model.operation.branchChange} />}
+      {model.operation && <section className="context-operation" aria-label={policy.operationLabel}><p role="status">{model.status}</p>
+        {!!model.draftFiles.length && <><p className="muted small-text">{policy.draftNotice}</p><div className="context-diff" aria-label={policy.mergeDiffLabel}>{model.draftFiles.map(file => <div key={file.name}><h3>{file.name}</h3><pre className="git-diff"><span className="removal">{file.beforeLines.join('\n')}</span>{'\n'}<span className="addition">{file.afterLines.join('\n')}</span></pre></div>)}</div></>}
+        {model.actions.review.visible && <section aria-label={policy.reviewLabel}>{model.activityNotice && <p>{model.activityNotice}</p>}{model.review && <><pre className="git-diff" aria-label={policy.reviewDiffLabel}>{model.review.diff}</pre><p>{policy.reviewNotice}</p></>}
+          <div className="actions">{model.actions.accept.visible && <button disabled={!model.actions.accept.enabled} onClick={() => proceed('accept-changes')}>{model.actions.accept.label}</button>}<button className="secondary" disabled={!model.actions.review.enabled} onClick={loadReview}>{model.actions.review.label}</button></div></section>}
+        <div className="actions">{model.actions.cancel.visible && <button className="secondary" disabled={!model.actions.cancel.enabled} onClick={() => proceed('cancel')}>{model.actions.cancel.label}</button>}{model.actions.apply.visible && <button disabled={!model.actions.apply.enabled} onClick={() => proceed('apply')}>{model.actions.apply.label}</button>}{model.actions.retry.visible && <button disabled={!model.actions.retry.enabled} onClick={() => proceed('retry')}>{model.actions.retry.label}</button>}</div>
+        {model.actions.openWork.visible && <button className="text-button" disabled={!model.actions.openWork.enabled} onClick={() => { close(); props.navigate(model.actions.openWork.path!); }}>{model.actions.openWork.label}</button>}
+      </section>}
+      {!!model.choices.length && <div className="context-choices">{model.choices.map(choice => <Fragment key={choice.choice}><button className="secondary" disabled={!choice.enabled} onClick={() => act({ schema: 'context-editor-intent-v1', kind: 'choose', choice: choice.choice })}>{choice.label}</button>
+        {model.modelVisible && model.modelAfterChoice === choice.choice && <label>{policy.draftModelLabel}<select value={model.fields.modelId} disabled={!model.modelEnabled} onChange={event => setModelId(event.target.value)}><option value="">{policy.defaultModelLabel}</option>{model.models.map(row => <option key={row.id} value={row.id}>{row.label}</option>)}</select></label>}
+      </Fragment>)}</div>}
+      <details className="context-files"><summary>{policy.currentFilesLabel}</summary>{model.currentFiles.map(({file,summary}) => <div key={file.name}><h3>{file.name}</h3><p className="muted small-text">{summary}</p>{file.content && <Markdown>{file.content}</Markdown>}</div>)}</details>
+    </>}
+  </Modal>;
 }
 function MemoryViewer({
   project,

@@ -301,3 +301,5 @@ export * from './project-settings-setup.js';
 export * from './first-run.js';
 
 export * from './project-setup-editor.js';
+
+export * from './context-editor.js';
