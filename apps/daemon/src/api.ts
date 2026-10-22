@@ -1,3 +1,4 @@
+import { handleNativeViewerTitlePeer } from './native-viewer-title.js';
 import { handleConversationStartPeer } from './conversation-start-peer.js';
 import { ProjectSetupReadRequestSchema } from '@jevellan/core';
 import { waitProjectSetupView } from './project-setup-wait.js';
@@ -80,6 +81,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path) && !DEVICE_WORKTREES_ROUTE.test(path) && !DEVICE_CLEANUP_ROUTE.test(path) && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
     if (path === '/api/mesh/conversation-start') { await handleConversationStartPeer(app, request, response); return; }
     if (path === '/api/mesh/project-definitions') { await handleProjectDefinitionsPeer(app, request, response); return; }
+    if (path === '/api/mesh/native-viewer-title') { await handleNativeViewerTitlePeer(app, request, response); return; }
     if (path === '/api/mesh/native-connections') { await handleNativeConnectionsPeer(app, request, response); return; }
     if (path.startsWith('/api/mesh/devices/') && await handleDeviceCleanup(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/devices/') && await handleDeviceWorktrees(app, request, response, url)) return;

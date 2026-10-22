@@ -1,3 +1,4 @@
+import { readNativeConversationView, executeNativeMessage } from '../native-conversation-view.js';
 import { ConversationStartRequestSchema } from '@jevellan/core';
 import { readNativeListView, readNativeTranscriptView } from '../native-reading-view.js';
 import { waitProjectSetupView } from '../project-setup-wait.js';
@@ -28,6 +29,8 @@ function describeRule(rule: JevRule, goals: Map<string, string>): string {
 /** `jev` (bridge specification, "Jev control"). */
 export const jev: OwnerHandler = async (context) => {
   const { app, tools, project, args } = context; const control = app.ownerJev; const projectId = project.id;
+  if (context.action === 'native_conversation_view') return { text: 'Native conversation view.', data: await readNativeConversationView(app, args.request, context.request.deviceId) };
+  if (context.action === 'native_message_send' || context.action === 'native_message_cancel') return { text: 'Native message receipt.', data: await executeNativeMessage(app, args.request) };
   if (context.action === 'native_list_view') return { text: 'Native session reading view.', data: await readNativeListView(app) };
   if (context.action === 'native_transcript_view') return { text: 'Native transcript reading view.', data: await readNativeTranscriptView(app, args.request) };
   await tools.status(project); // display ids for every current thread and goal

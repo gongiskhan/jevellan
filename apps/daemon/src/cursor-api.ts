@@ -1,3 +1,5 @@
+import { NativeConversationCommandSchema } from '@jevellan/core';
+import { readNativeConversationView, executeNativeMessage } from './native-conversation-view.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { CursorListSchema, IdSchema, PeerLoginSessionInputSchema, DeviceOriginSchema, parseReply, nativeConversationPolicy, NATIVE_SESSION_HISTORY_MS, nativeSessionReadRef, nativeUnavailableSession } from '@jevellan/core';
 import type { Application } from './application.js';
@@ -32,6 +34,22 @@ export async function handleCursorApi(app: Application, request: IncomingMessage
     const ref = nativeSessionReadRef({ schema: 'native-session-ref-request-v1', id: reading[1]!, currentDeviceId: app.device.deviceId,
       gatewayDeviceId: peer ? app.device.deviceId : gateway, ...(url.searchParams.has('deviceId') ? { ownerDeviceId: url.searchParams.get('deviceId')! } : {}) });
     send(await readNativeTranscriptView(app, ref, token ?? (peer ? request.headers.authorization?.replace(/^Bearer /u, '') : undefined))); return true;
+  }
+  const conversation = /^\/api\/cursor\/((?:cursor|claude|codex)_[a-f0-9]{32})\/(conversation-view|message-command)$/u.exec(path);
+  if (conversation) {
+    if (peer) throw fail('Use the normal native conversation purpose.', 403);
+    if (conversation[2] === 'conversation-view') {
+      if (method !== 'GET') throw fail('Unsupported method.', 405);
+      const ref = nativeSessionReadRef({ schema: 'native-session-ref-request-v1', id: conversation[1]!, currentDeviceId: app.device.deviceId,
+        gatewayDeviceId: gateway, ...(url.searchParams.has('deviceId') ? { ownerDeviceId: url.searchParams.get('deviceId')! } : {}) });
+      send(await readNativeConversationView(app, ref, app.device.deviceId, token));
+    } else {
+      if (method !== 'POST') throw fail('Unsupported method.', 405);
+      const command = NativeConversationCommandSchema.parse(await requestBody(request));
+      if (command.ref.id !== conversation[1]) throw fail('The message belongs to another native session.', 409);
+      send(await executeNativeMessage(app, command, token));
+    }
+    return true;
   }
   if (!peer && gateway !== app.device.deviceId) {
     const target = (await app.roster()).devices.find(row => row.device.id === gateway && !row.revoked);
