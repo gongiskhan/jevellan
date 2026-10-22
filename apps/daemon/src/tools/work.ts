@@ -9,6 +9,8 @@ import { clientId, resolveGoal, resolveTask } from './common.js';
 export const work: OwnerHandler = async (context) => {
   const { app, tools, project, args, now } = context; const projectId = project.id; const engine = app.projectWork;
   switch (context.action) {
+    case 'notebook_view': return { text: 'Notebook.', data: await engine.notebookEditor(projectId) };
+    case 'notebook_command': return { text: 'Notebook saved.', data: await engine.notebookCommand(projectId, args.request) };
     case 'coordinator_composer': return { text: 'Coordinator composer.', data: await engine.coordinatorComposer(projectId) };
     case 'coordinator_command': return { text: 'Coordinator updated.', data: await ownerProjectCoordinatorCommand(app, projectId, args.request) };
     case 'chat_card_view': return { text: 'Work cards.', data: await ownerProjectChatCardView(app, projectId, args.request) };

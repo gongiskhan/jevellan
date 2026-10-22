@@ -1,3 +1,4 @@
+import {projectNotebookEditor,ProjectNotebookCommandSchema} from '@jevellan/core';
 import {projectCoordinatorComposerFromUi} from '@jevellan/core';
 import {chatItems,chatProposalGroups,projectChatThreadTitles,projectChatCardInteraction,ProjectChatCardViewRequestSchema,ProjectChatCardViewSchema} from '@jevellan/core';
 import {projectChatRequest,projectChatView} from '@jevellan/core';
@@ -1152,6 +1153,13 @@ export class ProjectWork {
     const after = (await this.#o.hub.settings(projectId))?.document;
     if (after && before.instructions !== after.instructions) await this.#settingsEvent(projectId, { schema: 'coordinator-event-v1', kind: 'settings-changed', by: 'owner', id: `cev_settings_${projectId}_${after.revision}`, at: new Date(this.#timers.now()).toISOString(), instructions: after.instructions, changes: [{ field: 'instructions', from: before.instructions.slice(0, 400), to: after.instructions.slice(0, 400) }] });
     return this.setupView(projectId, id);
+  }
+  async notebookEditor(projectId: string) { return projectNotebookEditor(projectId, await this.notebookView(projectId)); }
+  async notebookCommand(projectId: string, raw: unknown) {
+    const command = ProjectNotebookCommandSchema.parse(raw);
+    if (command.projectId !== projectId) throw Object.assign(new Error('This notebook command belongs to another project.'), { status: 409, code: 'wrong_resource' });
+    try { return projectNotebookEditor(projectId, await this.putNotebook(projectId, command.body)); }
+    catch (error) { if (statusOf(error) === 409) throw Object.assign(error as Error, { code: 'conflict' }); throw error; }
   }
   async notebookView(projectId: string): Promise<z.infer<typeof ProjectNotebookViewSchema>> {
     await this.#project(projectId); const stored = await this.#o.hub.notebook(projectId);

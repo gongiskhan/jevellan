@@ -1,3 +1,4 @@
+import {ProjectNotebookEditorSchema,projectNotebookEditor,projectNotebookCommand,projectNotebookFailure} from '@jevellan/core/client';
 import {projectClientIds,projectFailureText,projectLocalFailure,projectCoordinatorComposerFromUi,projectCoordinatorComposerState,projectCoordinatorClearedText,projectCoordinatorMessageCommand,projectCoordinatorControlCommand,projectCoordinatorTransport,type ProjectCoordinatorComposer} from '@jevellan/core/client';
 import {projectChatThreadTitles,projectChatCardContext,type ProjectChatCardContext} from '@jevellan/core/client';
 import { ProjectTaskEditorSchema, taskEditorCommand, type ProjectTaskEditor, type ProjectTaskEditorFields } from '@jevellan/core/client';
@@ -978,7 +979,7 @@ function NotebookPanel({ projectId, projectName, revision, close, onError }: {
 }) {
   const { error, setError, fail } = useLocalError(onError);
   const task = useTask(fail);
-  const [notebook, setNotebook] = useState<z.infer<typeof ProjectNotebookViewSchema>>();
+  const [notebook, setNotebook] = useState<z.infer<typeof ProjectNotebookEditorSchema>>();
   const [draft, setDraft] = useState<string>();
   const [conflict, setConflict] = useState(false);
   const reading = draft === undefined;
@@ -989,12 +990,12 @@ function NotebookPanel({ projectId, projectName, revision, close, onError }: {
   useEffect(() => {
     if (!reading) return;
     const controller = new AbortController();
-    api(`/api/projects/${projectId}/notebook`, ProjectNotebookViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true })
+    api(`/api/projects/${projectId}/notebook/editor`, ProjectNotebookEditorSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true })
       .then((value) => { setNotebook(value); setError(''); }, (failure: unknown) => { if (!controller.signal.aborted) fail(failure); });
     return () => controller.abort();
   }, [projectId, revision, reading, fail, setError]);
-  const content = notebook?.notebook?.content ?? '';
-  const stamp = notebook?.notebook ? timeStamp(notebook.notebook.updatedAt) : null;
+  const content = notebook?.content ?? '';
+  const stamp = notebook?.updatedAt ? timeStamp(notebook.updatedAt) : null;
   return (
     <Panel title={copy.NOTEBOOK} eyebrow={projectName} close={close}>
       {!notebook ? (
@@ -1002,11 +1003,11 @@ function NotebookPanel({ projectId, projectName, revision, close, onError }: {
       ) : reading ? (
         <div className="pw-notebook">
           <div className="pw-notebook-bar">
-            <span className="pw-notebook-meta">{notebook.notebook && stamp ? copy.notebookUpdated(notebook.notebook.updatedBy, stamp.label) : ''}</span>
+            <span className="pw-notebook-meta">{notebook.updatedBy && stamp ? copy.notebookUpdated(notebook.updatedBy, stamp.label) : ''}</span>
             <button type="button" className="secondary small" onClick={() => { setConflict(false); setError(''); setDraft(content); }}>{copy.EDIT}</button>
           </div>
           {error && <p className="error">{error}</p>}
-          {content.trim() ? <Markdown>{content}</Markdown> : <p className="pw-empty">{copy.NOTEBOOK_EMPTY}</p>}
+          {notebook.hasContent ? <Markdown>{content}</Markdown> : <p className="pw-empty">{notebook.labels.empty}</p>}
         </div>
       ) : (
         <form className="pw-notebook-edit" onSubmit={(event) => {
@@ -1014,19 +1015,20 @@ function NotebookPanel({ projectId, projectName, revision, close, onError }: {
           void task.run(async (signal) => {
             setError(''); setConflict(false);
             try {
-              const stored = await api(`/api/projects/${projectId}/notebook`, ProjectNotebookViewSchema, 'PUT',
-                { schema: 'notebook-request-v1', expectedRevision: notebook.revision, content: draft }, { signal, waitForHub: true });
-              setNotebook(stored); setDraft(undefined); updated();
+              const command = projectNotebookCommand(projectId, notebook.revision, draft!);
+              const stored = await api(notebook.paths.save, ProjectNotebookViewSchema, 'PUT', command.body, { signal, waitForHub: true });
+              setNotebook(projectNotebookEditor(projectId, stored)); setDraft(undefined); updated();
             } catch (failure) {
-              if (failure instanceof ApiError && failure.status === 409 && failure.code === 'conflict') { setConflict(true); return; }
+              const refusal = projectNotebookFailure({ schema: 'project-notebook-failure-context-v1', ...(failure instanceof ApiError ? { apiStatus: failure.status, apiCode: failure.code } : {}) });
+              if (refusal.conflict) { setConflict(true); return; }
               throw failure;
             }
           });
         }}>
-          <textarea ref={editor} className="pw-notebook-text" aria-label={copy.NOTEBOOK_CONTENT} value={draft} maxLength={65536}
+          <textarea ref={editor} className="pw-notebook-text" aria-label={notebook.labels.content} value={draft} maxLength={notebook.policy.contentMax}
             onChange={(event) => setDraft(event.target.value)} />
           {conflict && (
-            <p className="error">{copy.NOTEBOOK_CHANGED}
+            <p className="error">{notebook.labels.conflict}
               <button type="button" className="text-button" onClick={() => { setConflict(false); setDraft(undefined); }}>{copy.RELOAD}</button>
             </p>
           )}

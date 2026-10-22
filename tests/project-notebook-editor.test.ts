@@ -1,0 +1,32 @@
+import {afterEach,expect,test} from 'vitest';
+import * as core from '../packages/core/dist/index.js';
+import {projectChatFixture} from './helpers/project-chat-fixture.js';
+import type {ProjectFixture} from './helpers/project-fixture.js';
+let f:ProjectFixture|undefined;afterEach(async()=>{await f?.close();f=undefined;});
+const view=(content='',revision=0)=>({schema:'project-notebook-view-v1',revision,notebook:revision?{schema:'project-notebook-v1',projectId:'project',revision:revision-1,content,updatedAt:'2026-10-22T01:00:00.000Z',updatedBy:'coordinator'}:null});
+const command=(expectedRevision:number,content:string,projectId='project')=>({schema:'project-notebook-command-v1',projectId,body:{schema:'notebook-request-v1',expectedRevision,content}});
+
+test('notebook editor shares canonical content limit, empty presentation, paths and reading policy',()=>{
+ const model=core.projectNotebookEditor('project',view());expect(model).toMatchObject({schema:'project-notebook-editor-v1',projectId:'project',revision:0,content:'',hasContent:false,updatedAt:null,updatedBy:null,policy:{schema:'project-notebook-policy-v1',contentMax:65536,readWhileEditing:false,readOnRevisionChange:true},paths:{read:'/api/projects/project/notebook/editor',save:'/api/projects/project/notebook'},labels:{conflict:'The coordinator changed the notebook. Reload to see its version.',content:'Notebook content'}});expect(core.projectNotebookEditor('project',view(' \n ',2)).hasContent).toBe(false);expect(core.projectNotebookEditor('project',view('Recorded note',2))).toMatchObject({revision:2,content:'Recorded note',hasContent:true,updatedBy:'coordinator'});
+});
+test('notebook commands retain captured revision and raw content without following later reads',()=>{
+ const original=core.projectNotebookEditor('project',view('Original',3)),text=' A draft.\n';expect(core.projectNotebookCommand(original.projectId,original.revision,text)).toEqual(command(3,text));core.projectNotebookEditor('project',view('Later',4));expect(core.projectNotebookCommand(original.projectId,original.revision,text)).toEqual(command(3,text));
+});
+test('notebook actor copy preserves owner/coordinator labels and caller-formatted time',()=>{
+ expect(core.projectNotebookUpdated('owner','Today')).toBe('Updated by you · Today');expect(core.projectNotebookUpdated('coordinator','Yesterday')).toBe('Updated by the coordinator · Yesterday');
+});
+test('notebook conflict policy requires both typed status409 and its conflict code',()=>{
+ const facts=(patch:Record<string,unknown>={})=>({schema:'project-notebook-failure-context-v1',...patch});expect(core.projectNotebookFailure(facts({apiStatus:409,apiCode:'conflict'}))).toMatchObject({schema:'project-notebook-failure-v1',conflict:true,notice:'The coordinator changed the notebook. Reload to see its version.'});for(const patch of[{}, {apiStatus:409},{apiStatus:401,apiCode:'conflict'},{apiStatus:409,apiCode:'different'}])expect(core.projectNotebookFailure(facts(patch)).conflict).toBe(false);
+});
+test('notebook documents reject foreign resources, extra fields and overlong content with the canonical bound',()=>{
+ expect(core.ProjectNotebookCommandSchema).toBeDefined();expect(()=>core.ProjectNotebookCommandSchema.parse({...command(0,''),path:'/arbitrary'})).toThrow();expect(()=>core.ProjectNotebookCommandSchema.parse(command(0,'x'.repeat(65537)))).toThrow();expect(()=>core.ProjectNotebookCommandSchema.parse(command(-1,''))).toThrow();expect(()=>core.projectNotebookEditor('other',view('Note',1))).toThrow();expect(()=>core.ProjectNotebookEditorSchema.parse({...core.projectNotebookEditor('project',view()),extra:true})).toThrow();
+});
+test('normal notebook editor and explicit owner reader agree without changing legacy notebook responses or provider work',async()=>{
+ const made=await projectChatFixture(true);f=made.f;const legacy=await(await f.request('/api/projects/project/notebook')).json(),response=await f.request('/api/projects/project/notebook/editor');expect(response.status).toBe(200);const model=core.ProjectNotebookEditorSchema.parse(await response.json());expect(model).toMatchObject({projectId:'project',revision:0,content:'',hasContent:false});expect(await f.app.ownerTools.call('work',{schema:'owner-tool-request-v1',caller:'cli',action:'notebook_view',args:{project:'project'}})).toMatchObject({ok:true,data:model});expect(await(await f.request('/api/projects/project/notebook')).json()).toEqual(legacy);expect(f.fake.runs.length).toBe(0);
+});
+test('captured notebook commands retain canonical CAS conflicts and reload the new revision',async()=>{
+ const made=await projectChatFixture(true);f=made.f;const first=await f.request('/api/projects/project/notebook','PUT',{schema:'notebook-request-v1',expectedRevision:0,content:'Original'});expect(first.status).toBe(200);const result=await f.app.ownerTools.call('work',{schema:'owner-tool-request-v1',caller:'cli',action:'notebook_view',args:{project:'project'}});expect(result.ok).toBe(true);if(!result.ok)throw new Error('Canonical notebook read refused.');const captured=core.ProjectNotebookEditorSchema.parse(result.data),request=command(captured.revision,'My draft');await made.work.putNotebook('project',{schema:'notebook-request-v1',expectedRevision:1,content:'Later note'});expect(await f.app.ownerTools.call('work',{schema:'owner-tool-request-v1',caller:'cli',action:'notebook_command',args:{project:'project',request}})).toMatchObject({ok:false,error:{code:'conflict'}});expect((await made.work.notebookView('project')).notebook?.content).toBe('Later note');expect(await f.app.ownerTools.call('work',{schema:'owner-tool-request-v1',caller:'cli',action:'notebook_command',args:{project:'project',request:command(2,'My draft')}})).toMatchObject({ok:true,data:{schema:'project-notebook-editor-v1',revision:3,content:'My draft',updatedBy:'owner'}});expect(f.fake.runs.length).toBe(0);
+});
+test('notebook commands reject a foreign project before the canonical writer',async()=>{
+ const made=await projectChatFixture(true);f=made.f;const before=await made.work.notebookView('project');expect(await f.app.ownerTools.call('work',{schema:'owner-tool-request-v1',caller:'cli',action:'notebook_command',args:{project:'project',request:command(0,'Other','other')}})).toMatchObject({ok:false,error:{code:'wrong_resource'}});expect(await made.work.notebookView('project')).toEqual(before);expect(f.fake.runs.length).toBe(0);
+});

@@ -94,7 +94,6 @@ export const REFILL_ENABLED = 'Refill goals automatically';
 export const REFILL_INTERVAL = 'Minutes between refills';
 export const ROUTINES_EDIT_HELP = 'Goals, daily items and jobs are edited in the Routines tab.';
 export const PROJECT_NOTIFICATIONS = 'Notifications for this project';
-export const NOTIFICATION_LEVELS = { everything: ['Everything', 'Also each time a thread finishes a turn'], standard: ['Standard', 'Coordinator replies, questions for you and failures'], 'needs-you': ['Only what needs me', 'Questions for you and failures'], off: ['Off', ''] } as const;
 export const NOTIFICATION_DEVICE_HELP = 'Turn on notifications for this device in Settings → Notifications.';
 export const USAGE_EMPTY = 'No usage in this range.';
 export const USAGE_RANGES = { today: 'Today', '7d': '7 days', '30d': '30 days' } as const;
@@ -214,12 +213,9 @@ export { MAIN_NOT_AVAILABLE, REMOTE_NOT_AVAILABLE, deviceUnavailable } from '@je
 // 12.2 Notebook panel
 export const EDIT = 'Edit';
 export const SAVE = 'Save';
-export const NOTEBOOK_CHANGED = 'The coordinator changed the notebook. Reload to see its version.';
+export { PROJECT_NOTEBOOK_CHANGED as NOTEBOOK_CHANGED, projectNotebookUpdated as notebookUpdated } from '@jevellan/core/client';
 export const LOADING_NOTEBOOK = 'Loading notebook…';
-export const NOTEBOOK_EMPTY = 'Nothing in the notebook yet. The coordinator keeps decisions, conventions and the current plan here.';
-export const NOTEBOOK_CONTENT = 'Notebook content';
-export const notebookUpdated = (by: 'coordinator' | 'owner', when: string): string =>
-  `Updated by ${by === 'owner' ? 'you' : 'the coordinator'} · ${when}`;
+
 
 // 12.2 Project settings modal
 export const DEFAULT_ISOLATION = 'Default isolation';
@@ -357,24 +353,6 @@ export const MERGE_HELD = 'Merges are held while the nightly window runs.';
 export const PROPOSED_TASKS = 'Proposed tasks';
 
 
-export const NOTIFICATIONS_TITLE = 'Notifications';
-export const NOTIFICATIONS_ON = 'On for this device.';
-export const NOTIFICATIONS_OFF = 'Off for this device.';
-export const NOTIFICATIONS_ENABLE = 'Turn on for this device';
-export const NOTIFICATIONS_DISABLE = 'Turn off for this device';
-export const NOTIFICATIONS_TEST = 'Send a test notification';
-export const NOTIFICATIONS_DEVICES = 'Devices with notifications';
-export const NOTIFICATIONS_IPHONE = 'On iPhone, add Jevellan to the Home Screen from Safari first, then turn notifications on from the installed app.';
-export const NOTIFICATIONS_HTTPS_MISSING = 'Notifications need an HTTPS address. Reinstall with --https to use them.';
-export const notificationsHttps = (url: string) => `Notifications need Jevellan's HTTPS address. Open ${url} to turn them on.`;
-export const NOTIFICATIONS_UNSUPPORTED = 'This browser does not support push notifications.';
-export const NOTIFICATIONS_REFUSED = 'Notifications are blocked for this device. Allow them in the browser settings, then try again.';
-export const NOTIFICATIONS_WORKER_WAIT = 'The app is still starting. Reload and try again.';
-export const NOTIFICATIONS_KEYS_MISSING = 'This browser did not provide notification keys. Try turning notifications on again.';
-export const NOTIFICATIONS_TEST_SENT = 'Test notification queued.';
-export const NOTIFICATIONS_EMPTY = 'No devices have notifications turned on.';
-export const notificationAdded = (date: string) => `Added ${date}`;
-export const notificationBrowserLabel = (agent: string) => `${agent.includes('Edg/') ? 'Edge' : agent.includes('Firefox/') ? 'Firefox' : agent.includes('Chrome/') ? 'Chrome' : agent.includes('Safari/') ? 'Safari' : 'Browser'} on ${/iPhone|iPad/u.test(agent) ? 'iPhone or iPad' : /Mac/u.test(agent) ? 'macOS' : /Windows/u.test(agent) ? 'Windows' : /Linux/u.test(agent) ? 'Linux' : 'this device'}`;
 
 export const LIBRARY = 'Library';
 export const ATTACH_FILES = 'Attach files';

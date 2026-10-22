@@ -216,3 +216,5 @@ export * from './project-history.js';
 export * from './project-stream-state.js';
 
 export * from './project-coordinator-composer.js';
+
+export * from './project-notebook-editor.js';
