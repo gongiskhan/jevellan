@@ -1,0 +1,56 @@
+import {afterEach,expect,test,vi} from 'vitest';
+import * as core from '../packages/core/dist/index.js';
+import {projectFixture,type ProjectFixture} from './helpers/project-fixture.js';
+let f:ProjectFixture|undefined;afterEach(async()=>{vi.restoreAllMocks();await f?.close();f=undefined;});
+const id='term_stream_fixture',at='2026-10-22T06:00:00.000Z',request={schema:'terminal-read-request-v1' as const,sessionId:id};
+const session=(status:'open'|'closed'='open')=>core.TerminalSessionSchema.parse({schema:'terminal-session-v1',id,deviceId:'device_fixture',cwd:'/simulated/home',title:'Stream fixture',createdAt:at,lastActivityAt:at,status,...(status==='closed'?{closedReason:'Recorded closed terminal.'}:{})});
+const snapshot=(status:'open'|'closed'='open')=>core.TerminalSnapshotSchema.parse({schema:'terminal-snapshot-v1',session:session(status),at,tail:'Recorded terminal output.',commands:[],approximate:false});
+const event=(state:ReturnType<typeof core.terminalStreamInitial>,type:string,fields:Record<string,unknown>={})=>core.terminalStreamEvent(state,{schema:'terminal-stream-event-v1',type,...fields});
+const opened=()=>event(event(core.terminalStreamInitial(id),'ticket',{session:session()}).state,'opened').state;
+const receive=(state:ReturnType<typeof core.terminalStreamInitial>,frame:unknown)=>core.terminalStreamReceive(state,JSON.stringify(frame));
+
+test('terminal stream policy keeps exact reconnect heartbeat and status copy',()=>{
+ expect(core.terminalStreamPolicy()).toMatchObject({schema:'terminal-stream-policy-v1',initialRetryMs:500,maxRetryMs:5000,retryFactor:2,heartbeatMs:15000,labels:{connecting:'Connecting…',connected:'Connected',reconnecting:'Reconnecting…',unavailable:'Terminal unavailable.',closed:'Closed'}});expect(core.terminalStreamInitial(id)).toMatchObject({schema:'terminal-stream-state-v1',sessionId:id,session:null,status:'Connecting…',connected:false,approximate:false,terminalClosed:false,retryDelayMs:500});
+});
+test('terminal stream retry delay doubles to its cap and resets after open without creating a resource',()=>{
+ let state=core.terminalStreamInitial(id);const delays:number[]=[];for(let index=0;index<6;index++){const result=event(state,'transport-closed');delays.push(result.effects.find(effect=>effect.type==='retry')!.delayMs);state=result.state;}expect(delays).toEqual([500,1000,2000,4000,5000,5000]);const open=event(state,'opened');expect(open.state).toMatchObject({status:'Connected',connected:true,retryDelayMs:500});expect(open.effects).toContainEqual({schema:'terminal-stream-effect-v1',type:'heartbeat-start',intervalMs:15000});expect(event(open.state,'transport-closed').effects).toContainEqual({schema:'terminal-stream-effect-v1',type:'retry',delayMs:500});
+});
+test('terminal stream request errors preserve exact message and use the same retry sequence',()=>{
+ const first=event(core.terminalStreamInitial(id),'ticket-failed',{message:'Recorded transport error.'});expect(first.state).toMatchObject({status:'Recorded transport error.',retryDelayMs:1000,connected:false});expect(first.effects).toContainEqual({schema:'terminal-stream-effect-v1',type:'retry',delayMs:500});expect(event(first.state,'ticket-failed',{message:''}).state.status).toBe('Terminal unavailable.');
+});
+test('terminal socket errors change status until close while heartbeat is scoped to the connected open resource',()=>{
+ const state=opened(),errored=event(state,'errored');expect(errored.state).toMatchObject({status:'Reconnecting…',connected:true});expect(core.terminalStreamHeartbeat(state)).toEqual({schema:'terminal-frame-v1',type:'heartbeat'});const closed=event(errored.state,'transport-closed');expect(closed.effects).toContainEqual({schema:'terminal-stream-effect-v1',type:'heartbeat-stop'});expect(core.terminalStreamHeartbeat(closed.state)).toBeNull();
+});
+test('a known closed terminal retains its reason permits initial replay but cannot reconnect or enable input heartbeat',()=>{
+ const ready=event(core.terminalStreamInitial(id),'ticket',{session:session('closed')});expect(ready.state).toMatchObject({terminalClosed:true,status:'Recorded closed terminal.',session:{status:'closed'}});const open=event(ready.state,'opened');expect(open.state).toMatchObject({connected:false,terminalClosed:true,status:'Recorded closed terminal.'});expect(open.effects.some(effect=>effect.type==='heartbeat-start')).toBe(false);expect(core.terminalStreamHeartbeat(open.state)).toBeNull();expect(event(open.state,'transport-closed').effects.some(effect=>effect.type==='retry')).toBe(false);expect(event(open.state,'errored').state.status).toBe('Recorded closed terminal.');
+});
+test('terminal replay start resets the renderer and refreshes only the bound session',()=>{
+ const state=opened(),frame={schema:'terminal-frame-v1',type:'replay-start',session:{...session(),title:'Refreshed fixture'}};const result=receive(state,frame);expect(result.state.session?.title).toBe('Refreshed fixture');expect(result.effects).toEqual([{schema:'terminal-stream-effect-v1',type:'reset'}]);expect(state.session?.title).toBe('Stream fixture');const wrong=receive(state,{...frame,session:{...session(),id:'term_other'}});expect(wrong.state).toEqual(state);expect(wrong.effects).toContainEqual({schema:'terminal-stream-effect-v1',type:'close'});
+});
+test('terminal output effects preserve UTF8 bytes without storing transcript history in stream state',()=>{
+ const state=opened(),text='Recorded café 🧭\n',result=receive(state,{schema:'terminal-frame-v1',type:'output',data:Buffer.from(text).toString('base64')}),write=result.effects.find(effect=>effect.type==='write')!;expect(Buffer.from(write.data,'binary').toString('utf8')).toBe(text);expect(result.state).toEqual(state);expect(Object.keys(result.state)).not.toContain('output');
+});
+test('terminal replay end updates approximate metadata and heartbeat frames are no-op reads',()=>{
+ const state=opened(),result=receive(state,{schema:'terminal-frame-v1',type:'replay-end',approximate:true});expect(result.state.approximate).toBe(true);expect(result.effects).toEqual([]);expect(receive(result.state,{schema:'terminal-frame-v1',type:'heartbeat'})).toMatchObject({state:result.state,effects:[]});
+});
+test('terminal closed frames stop heartbeat close transport and suppress later retries while preserving metadata',()=>{
+ const state=opened(),result=receive(state,{schema:'terminal-frame-v1',type:'closed',reason:'Recorded stream close.'});expect(result.state).toMatchObject({terminalClosed:true,connected:false,status:'Recorded stream close.',session:{id}});expect(result.effects).toContainEqual({schema:'terminal-stream-effect-v1',type:'heartbeat-stop'});expect(result.effects).toContainEqual({schema:'terminal-stream-effect-v1',type:'close'});expect(event(result.state,'transport-closed').effects.some(effect=>effect.type==='retry')).toBe(false);
+});
+test('closed terminal replay still renders saved output and approximate metadata after its closed ticket',()=>{
+ let state=event(core.terminalStreamInitial(id),'ticket',{session:session('closed')}).state;const start=receive(state,{schema:'terminal-frame-v1',type:'replay-start',session:session('closed')});expect(start.effects).toContainEqual({schema:'terminal-stream-effect-v1',type:'reset'});state=start.state;expect(receive(state,{schema:'terminal-frame-v1',type:'output',data:Buffer.from('Preserved closed history.').toString('base64')}).effects[0]).toMatchObject({type:'write',data:'Preserved closed history.'});expect(receive(state,{schema:'terminal-frame-v1',type:'replay-end',approximate:true}).state).toMatchObject({approximate:true,terminalClosed:true,connected:false});
+});
+test('invalid JSON schema or binary frame closes transport without mutating accepted session metadata',()=>{
+ const state=opened();for(const raw of ['{broken',JSON.stringify({schema:'terminal-frame-v1',type:'unknown'}),JSON.stringify({schema:'terminal-frame-v1',type:'output',data:'***'})]){const result=core.terminalStreamReceive(state,raw);expect(result.state).toEqual(state);expect(result.effects).toContainEqual({schema:'terminal-stream-effect-v1',type:'close'});}
+});
+test('terminal stream documents are strict resource bound and contain no ticket or posted history',()=>{
+ const state=core.terminalStreamInitial(id);expect(core.TerminalStreamStateSchema.safeParse(state).success).toBe(true);expect(()=>core.TerminalStreamStateSchema.parse({...state,session:{...session(),id:'term_other'}})).toThrow();expect(()=>core.TerminalStreamEventSchema.parse({schema:'terminal-stream-event-v1',type:'opened',history:[]})).toThrow();expect(()=>event(state,'ticket',{session:{...session(),id:'term_other'}})).toThrow();expect(()=>core.TerminalReadRequestSchema.parse({...request,history:[]})).toThrow();
+});
+test('terminal read view shares canonical snapshot initial state and policy while binding its resource',()=>{
+ const value=core.terminalReadView(request,snapshot('closed'));expect(core.TerminalReadViewSchema.safeParse(value).success).toBe(true);expect(value).toMatchObject({schema:'terminal-read-view-v1',request,snapshot:{session:{id,status:'closed'}},initial:{sessionId:id,terminalClosed:true,status:'Recorded closed terminal.'},policy:{heartbeatMs:15000}});expect(JSON.stringify(value)).not.toContain('ticket');expect(()=>core.terminalReadView({...request,sessionId:'term_other'},snapshot())).toThrow();
+});
+test('terminal read HTTP and owner purposes reuse canonical snapshots without traversing unrelated project work',async()=>{
+ f=await projectFixture({control:true});const opened=await f.json('/api/terminals',core.TerminalTicketSchema,'POST',{schema:'terminal-create-request-v1',clientRequestId:'terminal_read_http_fixture',deviceId:f.app.device.deviceId,cwd:'home',takeover:false}),scope={schema:'terminal-read-request-v1',sessionId:opened.session.id};vi.spyOn(f.app.ownerTools,'status').mockImplementation(async()=>{throw new Error('An isolated terminal read must not traverse all project work.');});const http=await f.json('/api/terminals/'+opened.session.id+'/read-view',core.TerminalReadViewSchema);expect(http).toMatchObject({request:scope,snapshot:{session:{id:opened.session.id,cwd:f.homes.userHome}},policy:{heartbeatMs:15000}});expect(await f.app.ownerTools.call('jev',{schema:'owner-tool-request-v1',caller:'cli',action:'terminal_read_view',args:{request:scope}})).toMatchObject({ok:true,data:{request:scope,snapshot:{session:{id:opened.session.id}},policy:http.policy}});expect(await f.app.ownerTools.call('jev',{schema:'owner-tool-request-v1',caller:'cli',action:'terminal_stream_policy',args:{}})).toMatchObject({ok:true,data:http.policy});expect(f.fake.runs).toHaveLength(0);
+});
+test('terminal read purpose preserves authentication method and snapshot resource guards',async()=>{
+ f=await projectFixture({control:true});expect((await fetch(f.base+'/api/terminals/'+id+'/read-view')).status).toBe(401);expect((await f.request('/api/terminals/'+id+'/read-view','POST',{schema:'empty-request-v1'})).status).toBe(405);f.app.terminals.snapshot=async()=>snapshot();const normal=await f.json('/api/terminals/'+id+'/read-view',core.TerminalReadViewSchema);expect(normal.snapshot.session.id).toBe(id);expect((await f.request('/api/terminals/term_other/read-view')).status).toBe(409);expect(f.fake.runs).toHaveLength(0);
+});

@@ -5,7 +5,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { TerminalAckSchema, TerminalListReadViewSchema, terminalOpenCommand, terminalOpenResult, terminalLauncherContext, terminalLauncherView, terminalLauncherSelection,
   terminalLauncherDeviceChoice, terminalLauncherFolderChoice, terminalLauncherFolders, terminalLaunchAttempt, terminalLauncherListRequest, terminalListReadUrl,
-  terminalListInitial, terminalListFailed, applyTerminalListRead, terminalLauncherRows, type TerminalLaunchAttempt, TerminalOutputFrameSchema, TerminalSnapshotSchema, TerminalTicketSchema,
+  terminalListInitial, terminalListFailed, applyTerminalListRead, terminalLauncherRows, type TerminalLaunchAttempt, terminalStreamInitial, terminalStreamEvent, terminalStreamReceive, terminalStreamHeartbeat, type TerminalStreamTransition, TerminalSnapshotSchema, TerminalTicketSchema,
   type TerminalSession, type ThreadIndex } from '@jevellan/core/client';
 import { api, empty } from './api.js';
 import { clientId } from './client-id.js';
@@ -66,9 +66,10 @@ export function TerminalLauncher({ props, projectId, deviceId, threads = [], coo
 }
 
 export function TerminalPage(props: PageProps & { id: string; navigation: ReactNode }) {
+  const stream = useRef(terminalStreamInitial(props.id));
   const host = useRef<HTMLDivElement>(null), terminal = useRef<Terminal | undefined>(undefined), socket = useRef<WebSocket | undefined>(undefined);
   const fitTerminal = useRef<(() => void) | undefined>(undefined), sendRequest = useRef<{ key: string; id: string } | undefined>(undefined);
-  const [session, setSession] = useState<TerminalSession>(), [state, setState] = useState('Connecting…'), [connected, setConnected] = useState(false), [approximate, setApproximate] = useState(false);
+  const [session, setSession] = useState<TerminalSession>(), [state, setState] = useState(stream.current.status), [connected, setConnected] = useState(false), [approximate, setApproximate] = useState(false);
   const [size, setSize] = useState(fontSize), [text, setText] = useState(''), [direct, setDirect] = useState(false), [ctrl, setCtrl] = useState(false), [alt, setAlt] = useState(false);
   const armed = useRef({ ctrl: false, alt: false }); armed.current = { ctrl, alt };
   const [menu, setMenu] = useState(false), [selecting, setSelecting] = useState(false), [selectionText, setSelectionText] = useState(''), [copied, setCopied] = useState('');
@@ -89,32 +90,41 @@ export function TerminalPage(props: PageProps & { id: string; navigation: ReactN
     const theme = () => { const colors = getComputedStyle(document.documentElement); term.options.theme = { background: colors.getPropertyValue('--card').trim(), foreground: colors.getPropertyValue('--ink').trim(), cursor: colors.getPropertyValue('--jev').trim(), selectionBackground: colors.getPropertyValue('--jev-soft').trim() }; };
     theme(); const themeObserver = new MutationObserver(theme); themeObserver.observe(document.documentElement, { attributes: true });
     const media = window.matchMedia('(prefers-color-scheme: dark)'); media.addEventListener('change', theme);
-    const resize = () => { try { fit.fit(); if (socket.current?.readyState === WebSocket.OPEN) socket.current.send(JSON.stringify({ schema: 'terminal-frame-v1', type: 'resize', cols: term.cols, rows: term.rows })); } catch { /* Layout is not visible yet. */ } };
+    const resize = () => { try { fit.fit(); if (socket.current?.readyState === WebSocket.OPEN && stream.current.connected) socket.current.send(JSON.stringify({ schema: 'terminal-frame-v1', type: 'resize', cols: term.cols, rows: term.rows })); } catch { /* Layout is not visible yet. */ } };
     fitTerminal.current = resize;
     const observer = new ResizeObserver(resize); observer.observe(host.current); window.visualViewport?.addEventListener('resize', resize);
     const input = term.onData(data => send(data, true));
-    let stopped = false, timer: ReturnType<typeof setTimeout> | undefined, heartbeat: ReturnType<typeof setInterval> | undefined, delay = 500;
+    let disposed = false, timer: ReturnType<typeof setTimeout> | undefined, heartbeat: ReturnType<typeof setInterval> | undefined;
+    stream.current = terminalStreamInitial(props.id); setSession(undefined); setState(stream.current.status); setConnected(false); setApproximate(false);
+    const accept = (result: TerminalStreamTransition, transport?: WebSocket) => {
+      if (disposed || transport && transport !== socket.current) return;
+      stream.current = result.state; setSession(result.state.session ?? undefined); setState(result.state.status); setConnected(result.state.connected); setApproximate(result.state.approximate);
+      for (const effect of result.effects) {
+        if (effect.type === 'reset') term.reset();
+        else if (effect.type === 'write') term.write(Uint8Array.from(effect.data, char => char.charCodeAt(0)));
+        else if (effect.type === 'close') (transport ?? socket.current)?.close();
+        else if (effect.type === 'heartbeat-stop') clearInterval(heartbeat);
+        else if (effect.type === 'retry') timer = setTimeout(() => void connect(), effect.delayMs);
+        else if (effect.type === 'heartbeat-start') {
+          clearInterval(heartbeat); const target = transport ?? socket.current;
+          heartbeat = setInterval(() => { const frame = terminalStreamHeartbeat(stream.current); if (target?.readyState === WebSocket.OPEN && frame) target.send(JSON.stringify(frame)); }, effect.intervalMs);
+        }
+      }
+    };
     const connect = async () => {
       try {
-        const receipt = await api(`/api/terminals/${props.id}/ticket`, TerminalTicketSchema, 'POST', empty); if (stopped) return;
-        setSession(receipt.session); if (receipt.session.status === 'closed') setState(receipt.session.closedReason ?? 'Closed');
+        const receipt = await api(`/api/terminals/${props.id}/ticket`, TerminalTicketSchema, 'POST', empty); if (disposed) return;
+        accept(terminalStreamEvent(stream.current, { schema: 'terminal-stream-event-v1', type: 'ticket', session: receipt.session }));
         const url = new URL(`/api/terminals/${props.id}/stream`, window.location.href); url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'; url.searchParams.set('ticket', receipt.ticket);
         const ws = new WebSocket(url); socket.current = ws;
-        ws.onopen = () => { if (stopped) { ws.close(); return; } delay = 500; setConnected(true); setState('Connected'); resize(); heartbeat = setInterval(() => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ schema: 'terminal-frame-v1', type: 'heartbeat' })); }, 15_000); };
-        ws.onmessage = event => {
-          let value: unknown; try { value = JSON.parse(String(event.data)); } catch { ws.close(); return; }
-          const parsed = TerminalOutputFrameSchema.safeParse(value); if (!parsed.success) { ws.close(); return; } const frame = parsed.data;
-          if (frame.type === 'replay-start') { term.reset(); setSession(frame.session); }
-          else if (frame.type === 'output') { const raw = atob(frame.data); term.write(Uint8Array.from(raw, char => char.charCodeAt(0))); }
-          else if (frame.type === 'replay-end') setApproximate(frame.approximate);
-          else if (frame.type === 'closed') { setState(frame.reason); setConnected(false); stopped = true; ws.close(); }
-        };
-        ws.onerror = () => setState('Reconnecting…');
-        ws.onclose = () => { clearInterval(heartbeat); setConnected(false); if (!stopped) { setState('Reconnecting…'); timer = setTimeout(() => void connect(), delay); delay = Math.min(5000, delay * 2); } };
-      } catch (error) { if (!stopped) { setState(error instanceof Error ? error.message : 'Terminal unavailable.'); timer = setTimeout(() => void connect(), delay); delay = Math.min(5000, delay * 2); } }
+        ws.onopen = () => { if (disposed) { ws.close(); return; } accept(terminalStreamEvent(stream.current, { schema: 'terminal-stream-event-v1', type: 'opened' }), ws); resize(); };
+        ws.onmessage = event => accept(terminalStreamReceive(stream.current, String(event.data)), ws);
+        ws.onerror = () => accept(terminalStreamEvent(stream.current, { schema: 'terminal-stream-event-v1', type: 'errored' }), ws);
+        ws.onclose = () => accept(terminalStreamEvent(stream.current, { schema: 'terminal-stream-event-v1', type: 'transport-closed' }), ws);
+      } catch (error) { if (!disposed) accept(terminalStreamEvent(stream.current, { schema: 'terminal-stream-event-v1', type: 'ticket-failed', message: error instanceof Error ? error.message : stream.current.policy.labels.unavailable })); }
     };
     void connect(); resize();
-    return () => { stopped = true; clearTimeout(timer); clearTimeout(press.current); clearInterval(heartbeat); socket.current?.close(); socket.current = undefined; fitTerminal.current = undefined; input.dispose(); observer.disconnect(); themeObserver.disconnect(); media.removeEventListener('change', theme); window.visualViewport?.removeEventListener('resize', resize); term.dispose(); terminal.current = undefined; };
+    return () => { disposed = true; clearTimeout(timer); clearTimeout(press.current); clearInterval(heartbeat); socket.current?.close(); socket.current = undefined; fitTerminal.current = undefined; input.dispose(); observer.disconnect(); themeObserver.disconnect(); media.removeEventListener('change', theme); window.visualViewport?.removeEventListener('resize', resize); term.dispose(); terminal.current = undefined; };
     // Font changes update the existing terminal; reconnects never create a new PTY.
   }, [props.id]);
   useEffect(() => { if (terminal.current) { terminal.current.options.fontSize = size; fitTerminal.current?.(); } try { localStorage.setItem('jevellan-terminal-font', String(size)); } catch { /* Font still changes for this visit. */ } }, [size]);

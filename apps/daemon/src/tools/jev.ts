@@ -1,3 +1,5 @@
+import { terminalStreamPolicy } from '@jevellan/core';
+import { readTerminalView } from '../terminal-reading-view.js';
 import { readTerminalLauncherView, readTerminalListView, createTerminalForTools } from '../terminal-launcher-view.js';
 import { readNativeConversationView, executeNativeMessage } from '../native-conversation-view.js';
 import { ConversationStartRequestSchema } from '@jevellan/core';
@@ -30,6 +32,8 @@ function describeRule(rule: JevRule, goals: Map<string, string>): string {
 /** `jev` (bridge specification, "Jev control"). */
 export const jev: OwnerHandler = async (context) => {
   const { app, tools, project, args } = context; const control = app.ownerJev; const projectId = project.id;
+  if (context.action === 'terminal_stream_policy') return { text: 'Terminal stream policy.', data: terminalStreamPolicy() };
+  if (context.action === 'terminal_read_view') return { text: 'Terminal reading view.', data: await readTerminalView(app, args.request) };
   if (context.action === 'terminal_launcher_view') return { text: 'Terminal launcher.', data: await readTerminalLauncherView(app, args.request, context.request.deviceId) };
   if (context.action === 'terminal_list_view') return { text: 'Open terminals.', data: await readTerminalListView(app, args.request) };
   if (context.action === 'terminal_create') return { text: 'Terminal opened.', data: await createTerminalForTools(app, args.request) };

@@ -1,3 +1,4 @@
+import { readTerminalView } from './terminal-reading-view.js';
 import { readTerminalLauncherView, readTerminalListView } from './terminal-launcher-view.js';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { Duplex } from 'node:stream';
@@ -24,6 +25,11 @@ export async function handleTerminalPeer(app: Application, request: IncomingMess
 export async function handleTerminalApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, token: string): Promise<boolean> {
   if (!url.pathname.startsWith('/api/terminals')) return false;
   const service = app.terminals, method = request.method ?? 'GET', path = url.pathname;
+  const reading = /^\/api\/terminals\/([A-Za-z0-9_-]+)\/read-view$/u.exec(path);
+  if (reading) {
+    if (method !== 'GET') throw refuse('Unsupported terminal read method.', 405);
+    json(response, app.redactor.document(await readTerminalView(app, { schema: 'terminal-read-request-v1', sessionId: reading[1]! }, token))); return true;
+  }
   if (path === '/api/terminals/launcher-view' || path === '/api/terminals/list-view') {
     if (method !== 'GET') throw refuse('Unsupported terminal view method.', 405);
     const projectId = url.searchParams.get('projectId'), deviceId = url.searchParams.get('deviceId');

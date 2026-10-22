@@ -289,3 +289,5 @@ export * from './native-reading.js';
 export * from './native-conversation.js';
 
 export * from './terminal-launcher.js';
+
+export * from './terminal-stream.js';
