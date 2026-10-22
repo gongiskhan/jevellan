@@ -6,7 +6,9 @@ import type { ThreadState } from './project-schemas.js';
 
 export const ThreadReadPolicySchema = z.strictObject({ schema: z.literal('project-thread-read-policy-v1'),
   liveMs: z.number().int().positive(), restMs: z.number().int().positive(), afterActionMs: z.number().int().positive(), startingMs: z.number().int().positive() });
+export type ThreadReadPolicy = z.infer<typeof ThreadReadPolicySchema>;
 export const THREAD_READ_POLICY = ThreadReadPolicySchema.parse({ schema: 'project-thread-read-policy-v1', liveMs: 1500, restMs: 10000, afterActionMs: 6000, startingMs: 120000 });
+export const ThreadReadHintSchema = z.strictObject({ schema: z.literal('project-thread-read-hint-v1'), pollHintMs: z.number().int().positive(), policy: ThreadReadPolicySchema });
 export const ThreadUsageBadgeSchema = z.strictObject({ schema: z.literal('project-thread-usage-badge-v1'), tokens: z.number().int().nonnegative(), costUsd: z.number().nonnegative() });
 export const ThreadControlsSchema = z.strictObject({ schema: z.literal('project-thread-controls-v1'), browserTakeover: z.boolean(), attachPanel: z.boolean(),
   stop: z.strictObject({ title: z.string(), action: z.string(), body: z.string() }),
@@ -41,6 +43,10 @@ export function threadStarting(threadId: string, now: number): boolean {
 export function deviceRefusal(status: number): 'notice' | 'error' | undefined {
   return status === 409 ? 'notice' : status === 502 ? 'error' : undefined;
 }
-export function threadPollDelay(state: ThreadState | undefined, now: number, fastUntil = 0): number {
-  return (state !== undefined && liveWork(state)) || now < fastUntil ? THREAD_POLL_LIVE_MS : THREAD_POLL_REST_MS;
+export function threadPollDelay(state: ThreadState | undefined, now: number, fastUntil = 0, policy: ThreadReadPolicy = THREAD_READ_POLICY): number {
+  return (state !== undefined && liveWork(state)) || now < fastUntil ? policy.liveMs : policy.restMs;
+}
+export function threadReadHint(state: ThreadState | undefined, now = Date.now(), fastUntil = 0, rawPolicy: unknown = THREAD_READ_POLICY) {
+  const policy = ThreadReadPolicySchema.parse(rawPolicy);
+  return ThreadReadHintSchema.parse({ schema: 'project-thread-read-hint-v1', pollHintMs: threadPollDelay(state, now, fastUntil, policy), policy });
 }

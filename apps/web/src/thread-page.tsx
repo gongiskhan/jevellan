@@ -1,9 +1,9 @@
-import { threadMessageInterrupt, threadSteeringView } from '@jevellan/core/client';
+import { projectThreadReader, threadMessageInterrupt, threadSteeringView } from '@jevellan/core/client';
 import { AttachmentControls, LibraryMessage, useProjectAttachments } from './project-library.js';
 import { ThreadActions } from './thread-actions.js';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  formatThreadUsage, THREAD_POLL_AFTER_ACTION_MS, THREAD_POLL_LIVE_MS, threadPollDelay, threadStarting, deviceRefusal,
+  formatThreadUsage, threadStarting, deviceRefusal,
   ProjectWorkViewSchema, ProjectThreadOverrideEditorSchema, type ProjectThreadOverrideEditor, type ThreadOverrideEditorFields, ProjectThreadWhyViewSchema, type ProjectThreadWhyView, RESTARTED_PREFIX, SAVED_COMMITS_SENTENCE, ThreadMessageReceiptSchema, ThreadOverrideViewSchema, ThreadViewSchema,
   type ThreadTimeline, type ThreadIndex, type ThreadReport, type ThreadReportPresentation, type ThreadView,
 } from '@jevellan/core/client';
@@ -28,6 +28,7 @@ import { SessionCache } from './session-cache.js';
 import { imageReferences } from './thread-image-refs.js';
 import { ThreadImageGallery, ThreadImageStrip } from './thread-images.js';
 const readableSessionText = (text: string) => text.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/gu, at => dateTime(at));
+const readingFacts = (view: ThreadView, cause: 'read' | 'action' = 'read') => ({ schema: 'project-thread-read-facts-v1', projectId: view.thread.projectId, threadId: view.thread.id, state: view.thread.state, ...(view.readHint ? { readHint: view.readHint } : {}), cause });
 
 /**
  * The thread page (12.3): the header with the state, its reason, the placement and the pull request; the native transcript
@@ -48,14 +49,16 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
   const [sessionOpen, setSessionOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string>();
   const latest = useRef<ThreadView | undefined>(undefined);
-  const fastUntil = useRef(0);
+  const readerRef = useRef<ReturnType<typeof projectThreadReader> | undefined>(undefined);
   const kick = useRef(() => {});
   const base = `/api/projects/${projectId}/threads/${threadId}`;
   const project = `/projects/${projectId}`;
 
   useEffect(() => {
     const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined; let reading = false; let again = false; let indexed = false;
+    const reader = projectThreadReader({ schema: 'project-thread-reader-request-v1', projectId, threadId, ...(latest.current ? { initial: readingFacts(latest.current) } : {}) });
+    readerRef.current = reader;
+    let timer: ReturnType<typeof setTimeout> | undefined; let indexed = false;
     // The hub's index still names a thread whose device cannot answer, so the page shows its title and last state meanwhile.
     const index = async () => {
       try {
@@ -66,15 +69,15 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
     };
     const load = async () => {
       clearTimeout(timer);
-      if (reading) { again = true; return; }
-      reading = true; let starting = false;
+      if (!reader.begin()) return;
+      let starting = false;
       try {
         const next = await api(base, ThreadViewSchema, 'GET', undefined, { signal: controller.signal });
         if (!controller.signal.aborted) {
           // A state change seen here (a turn ended, publication started) refreshes the sidebar's counts now, not at its next poll.
-          const before = latest.current?.thread.state;
+          const observed = reader.accepted(readingFacts(next));
           latest.current = next; setView(next); setLoadError('');
-          if (before !== undefined && before !== next.thread.state) updated();
+          if (observed.refreshSidebar) updated();
         }
       } catch (failure) {
         if (!controller.signal.aborted) {
@@ -89,19 +92,19 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
           }
         }
       } finally {
-        reading = false;
+        const next = reader.complete({ schema: 'project-thread-read-completion-request-v1', starting });
         if (!controller.signal.aborted) {
-          if (again) { again = false; void load(); }
-          else timer = setTimeout(() => void load(), starting ? THREAD_POLL_LIVE_MS : threadPollDelay(latest.current?.thread.state, Date.now(), fastUntil.current));
+          if (next.readAgain) void load();
+          else timer = setTimeout(() => void load(), next.pollHintMs);
         }
       }
     };
-    kick.current = () => { fastUntil.current = Date.now() + THREAD_POLL_AFTER_ACTION_MS; void load(); };
+    kick.current = () => { reader.action(); void load(); };
     void load();
-    return () => { controller.abort(); clearTimeout(timer); kick.current = () => {}; };
+    return () => { controller.abort(); clearTimeout(timer); if (readerRef.current === reader) readerRef.current = undefined; kick.current = () => {}; };
   }, [base, projectId, threadId, onError]);
   /** Every action answers the thread view; the page shows it, tells the sidebar and keeps reading quickly for a moment. */
-  const acted = (next: ThreadView) => { latest.current = next; setView(next); updated(); kick.current(); };
+  const acted = (next: ThreadView) => { const reader = readerRef.current ?? projectThreadReader({ schema: 'project-thread-reader-request-v1', projectId, threadId }); const observed = reader.accepted(readingFacts(next, 'action')); latest.current = next; setView(next); if (observed.refreshSidebar) updated(); kick.current(); };
 
   // Follow the newest entry unless the reader scrolled up (as the session pages do); the first load opens at the end.
   const page = useRef<HTMLDivElement>(null); const bottom = useRef<HTMLDivElement>(null);

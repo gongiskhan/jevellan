@@ -1,0 +1,20 @@
+import {join} from 'node:path';
+import {Client} from '@modelcontextprotocol/sdk/client/index.js';
+import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
+import {OwnerToolResultSchema,ThreadCreatedViewSchema,ThreadViewSchema} from '../../packages/core/dist/index.js';
+import {forThread} from '../../packages/runtime-contract/dist/index.js';
+import {projectFixture,reportStep} from '../helpers/project-fixture.js';
+import {expect,test} from './fixtures.js';
+
+test('THREADREADPAR1 browser coalesces queued owner messages and matches canonical MCP read hints',async({page,context},info)=>{
+ const f=await projectFixture({control:true});let client:Client|undefined,release=()=>{};
+ try{
+  f.fake.enqueueTurn(reportStep({status:'progress',summary:'Recorded reader fixture ready.'}),forThread());const made=await f.json('/api/projects/project/threads',ThreadCreatedViewSchema,'POST',{schema:'thread-create-request-v1',clientRequestId:'thread_reader_browser_fixture',title:'Thread reader fixture',task:'Inspect the simulated reader.'});await f.waitFor(()=>f.thread(made.threadId),row=>row.state==='idle');f.app.projectWork.store.update(made.threadId,row=>({...row,state:'running'}));
+  const path=`/api/projects/project/threads/${made.threadId}`,url=f.base+path;let gets=0,responses=0,held=false;const hints:unknown[]=[],released=new Promise<void>(resolve=>{release=resolve;});
+  await page.route(url,async route=>{if(route.request().method()==='GET'){gets++;if(gets===2){held=true;await released;}}await route.continue();});page.on('response',async response=>{if(response.url()===url&&response.request().method()==='GET'&&response.status()===200){hints.push(ThreadViewSchema.parse(await response.json()).readHint);responses++;}});
+  const transport=new StdioClientTransport({command:process.execPath,args:[join(import.meta.dirname,'..','..','bin','jevellan.mjs'),'mcp'],cwd:f.checkout,env:{PATH:process.env.PATH??'',HOME:process.env.HOME??'',JEVELLAN_HOME:f.homes.root},stderr:'ignore'});client=new Client({name:'thread-reader-parity',version:'1'});await client.connect(transport);const read=async()=>{const result=OwnerToolResultSchema.parse((await client!.callTool({name:'thread',arguments:{action:'view',thread:made.threadId}})).structuredContent);expect(result.ok).toBe(true);if(!result.ok)throw new Error('Canonical thread reader refused.');return ThreadViewSchema.parse(result.data);};const initial=await read();expect(initial.readHint).toMatchObject({schema:'project-thread-read-hint-v1',pollHintMs:1500,policy:{afterActionMs:6000}});
+  const separator=f.cookie.indexOf('=');await context.addCookies([{name:f.cookie.slice(0,separator),value:f.cookie.slice(separator+1),url:f.base,httpOnly:true,sameSite:'Lax'}]);await page.goto(f.base+`/projects/project/threads/${made.threadId}`);const composer=page.getByRole('textbox',{name:'Message this thread',exact:true});await expect(composer).toBeEnabled();await expect.poll(()=>responses).toBe(1);expect(hints[0]).toEqual(initial.readHint);
+  const words=Array.from({length:3},(_,i)=>`Recorded reader message ${i+1}.`);for(const text of words){await composer.fill(text);await composer.press('Enter');await expect(composer).toHaveValue('');if(text===words[0])await expect.poll(()=>held).toBe(true);}expect(gets).toBe(2);expect(f.thread(made.threadId).queuedMessages.map(row=>row.text)).toEqual(words);await page.screenshot({path:info.outputPath('thread-reader-one-held-flight.png'),fullPage:true});
+  release();await expect.poll(()=>responses>=3).toBe(true);await expect(page.locator('.pw-queued-message')).toHaveCount(3);const canonical=await read();expect(canonical.queuedMessages.map(row=>row.text)).toEqual(words);expect(hints.every(hint=>JSON.stringify(hint)===JSON.stringify(canonical.readHint))).toBe(true);expect(f.fake.turnStarts.filter(turn=>turn.owner.kind==='thread')).toHaveLength(1);await page.screenshot({path:info.outputPath('thread-reader-canonical-queued-messages.png'),fullPage:true});
+ }finally{release();await client?.close().catch(()=>undefined);await f.close();}
+});

@@ -48,6 +48,7 @@ test('CLI thread view returns the shared presentation without steering work', as
   expect(result).toMatchObject({ ok: true, data: { images: { schema: 'project-thread-images-v1', projectId: 'project', threadId: made.threadId } } });
   expect(result).toMatchObject({ ok: true, data: { presentation: { composer: { steering: { schema: 'project-thread-steering-view-v1', offered: false, label: 'Interrupt current turn' } } } } });
   expect(result).toMatchObject({ ok: true, data: { historyView: { schema: 'session-history-view-v1', projectId: 'project', visible: false, entries: [] } } });
+  expect(result).toMatchObject({ok:true,data:{readHint:{schema:'project-thread-read-hint-v1',pollHintMs:10000,policy:{liveMs:1500,restMs:10000,afterActionMs:6000}}}});
 });
 
 test('CLI task compose editor shares defaults and explicit form normalization', async () => {

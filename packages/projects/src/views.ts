@@ -1,4 +1,4 @@
-import { sessionHistoryView } from '@jevellan/core';
+import { sessionHistoryView, threadReadHint } from '@jevellan/core';
 import { sessionCacheDay, sessionCacheView } from '@jevellan/core';
 import { threadImagesView } from './thread-image-view.js';
 import { threadTimeline } from './thread-timeline.js';
@@ -266,6 +266,6 @@ export class ProjectViews {
       canOverride, atTurnLimit: atTurnLimit(thread),
       canDiscard: (thread.state === 'stopped' || thread.state === 'failed') && thread.isolation === 'worktree' && !isDiscarded(thread.stateReason),
       ...(thread.state === 'attached' ? { stopRefusal: attachedRefusal(threadId) } : {}), ...(kept ? { checkoutHeld: checkoutStillHeld(kept) } : {}) });
-    return ThreadViewSchema.parse({ ...view, presentation: threadPresentation(view), timeline: threadTimeline(view), images: threadImagesView(view), historyView: sessionHistoryView({ projectId, threadId, entries: view.sessionHistory }), cacheView: sessionCacheView({ projectId, rows: index.sessionCache, sessionKey: index.cacheSessionKey, timezone: index.sessionCache.at(-1)?.timezone ?? 'UTC', titles: { [thread.id]: thread.title }, now: new Date(this.#o.now?.() ?? Date.now()) }) });
+    return ThreadViewSchema.parse({ ...view, readHint: threadReadHint(thread.state, this.#o.now?.() ?? Date.now()), presentation: threadPresentation(view), timeline: threadTimeline(view), images: threadImagesView(view), historyView: sessionHistoryView({ projectId, threadId, entries: view.sessionHistory }), cacheView: sessionCacheView({ projectId, rows: index.sessionCache, sessionKey: index.cacheSessionKey, timezone: index.sessionCache.at(-1)?.timezone ?? 'UTC', titles: { [thread.id]: thread.title }, now: new Date(this.#o.now?.() ?? Date.now()) }) });
   }
 }
