@@ -1,3 +1,4 @@
+import {projectCoordinatorComposerFromUi} from '@jevellan/core';
 import {chatItems,chatProposalGroups,projectChatThreadTitles,projectChatCardInteraction,ProjectChatCardViewRequestSchema,ProjectChatCardViewSchema} from '@jevellan/core';
 import {projectChatRequest,projectChatView} from '@jevellan/core';
 import {publicProjectData} from './ledger.js';
@@ -817,6 +818,7 @@ export class ProjectWork {
     const events = ledger.redact(records.filter(event => event.id <= through && event.type !== 'journal-source' && event.type !== 'journal-document').map(event => ({ ...event, data: publicProjectData(ledger.data(event)) })));
     return { schema: 'project-chat-source-v1' as const, projectId, deviceId: this.#o.deviceId, head, threads: snapshot.threads, events };
   }
+  async coordinatorComposer(projectId: string) { const page = await this.pageView(projectId); return projectCoordinatorComposerFromUi(projectId, this.#o.deviceId, page.header.current); }
   async chatView(projectId: string, raw?: unknown) {
     const input = projectChatRequest(raw); return projectChatView(await this.#chatSource(projectId, input.throughEventId), input);
   }

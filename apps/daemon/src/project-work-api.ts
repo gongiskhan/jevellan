@@ -1,3 +1,4 @@
+import {ProjectWorkViewSchema,ProjectCoordinatorCommandSchema,ProjectCoordinatorComposerSchema,projectCoordinatorTransport} from '@jevellan/core';
 import {ProjectChatCardViewRequestSchema,ProjectChatCardViewSchema} from '@jevellan/core';
 import {ProjectChatViewRequestSchema,ProjectChatViewSchema,projectChatRequest} from '@jevellan/core';
 import { TaskViewSchema, ProjectTaskCommandSchema, ProjectTaskIntentRequestSchema, ProjectTaskQueueRequestSchema } from '@jevellan/core';
@@ -39,7 +40,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'chat-card-view' | 'chat-view' | 'task-page-view' | 'task-queue-interaction' | 'task-edit-view' | 'task-draft' | 'task-command' | 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'coordinator-composer' | 'chat-card-view' | 'chat-view' | 'task-page-view' | 'task-queue-interaction' | 'task-edit-view' | 'task-draft' | 'task-command' | 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -137,6 +138,7 @@ const rows: readonly Row[] = [
   { name: 'list', pattern: /^\/api\/project-work$/, methods: ['GET'], target: 'any' },
   { name: 'view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/work$/, methods: ['GET'], target: 'any' },
   { name: 'events', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/events$/, methods: ['GET'], target: 'coordinator', stream: true },
+  { name: 'coordinator-composer', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/composer-view$/, methods: ['GET'], target: 'any' },
   { name: 'message', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/messages$/, methods: ['POST'], target: 'coordinator' },
   { name: 'stop', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/stop$/, methods: ['POST'], target: 'coordinator' },
   { name: 'handoff', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/handoff$/, methods: ['POST'], target: 'coordinator' },
@@ -325,6 +327,24 @@ async function ownerProjectJson(app: Application, owner: string, purpose: 'threa
     }
     return value;
   } finally { auth.logout(token); }
+}
+/** Explicit commands reuse existing writers and resource-owner routes. Move always runs here. */
+export async function ownerProjectCoordinatorCommand(app: Application, projectId: string, raw: unknown) {
+  const input = ProjectCoordinatorCommandSchema.parse(raw), transport = projectCoordinatorTransport(input), work = app.projectWork;
+  if (input.projectId !== projectId) throw failure('This command belongs to another project.', 409);
+  if (input.operation === 'move') { await work.moveCoordinatorHere(projectId); return work.view(projectId); }
+  const owner = await work.coordinatorDevice(projectId);
+  if (owner !== null && owner !== app.device.deviceId) {
+    const value = await ownerProjectJson(app, owner, 'coordinator', transport.path, 'POST', input.body);
+    if (input.operation === 'message') return parseReply(CoordinatorMessageReceiptSchema, value);
+    const view = parseReply(ProjectWorkViewSchema, value);
+    if (view.project.id !== projectId) throw failure('The returned view belongs to another project.', 502);
+    return view;
+  }
+  if (input.operation === 'message') return CoordinatorMessageReceiptSchema.parse({ schema: 'coordinator-message-receipt-v1', ...await work.postMessage(projectId, input.body) });
+  if (input.operation === 'stop') await work.stopCoordinator(projectId);
+  else await work.freshCoordinator(projectId);
+  return work.view(projectId);
 }
 export async function ownerProjectChatCardView(app: Application, projectId: string, raw: unknown) {
   const input = ProjectChatCardViewRequestSchema.parse(raw), owner = await app.projectWork.coordinatorDevice(projectId);
@@ -601,6 +621,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
       const ledger = work.ledgers.thread(projectId, threadId);
       streamLedger(ledger, request, response, url, caller.authenticated, projectFrame(ledger)); return true;
     }
+    case 'coordinator-composer': send(ProjectCoordinatorComposerSchema.parse(await work.coordinatorComposer(projectId))); return true;
     case 'message': {
       const { repeated } = await work.postMessage(projectId, CoordinatorMessageRequestSchema.parse(await requestBody(request)));
       send(CoordinatorMessageReceiptSchema.parse({ schema: 'coordinator-message-receipt-v1', repeated }), 202); return true;

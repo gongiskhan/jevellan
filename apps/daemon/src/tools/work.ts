@@ -1,5 +1,5 @@
 import { prepareTaskEditorSave } from '@jevellan/core';
-import { ownerCreateTask, ownerTaskCommand, ownerProjectChatView, ownerProjectChatCardView } from '../project-work-api.js';
+import { ownerCreateTask, ownerTaskCommand, ownerProjectChatView, ownerProjectChatCardView, ownerProjectCoordinatorCommand } from '../project-work-api.js';
 import { ownerClock, ownerDuration } from '@jevellan/core';
 import { capLines, runLabel } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerHandler } from '../owner-tools.js';
@@ -9,6 +9,8 @@ import { clientId, resolveGoal, resolveTask } from './common.js';
 export const work: OwnerHandler = async (context) => {
   const { app, tools, project, args, now } = context; const projectId = project.id; const engine = app.projectWork;
   switch (context.action) {
+    case 'coordinator_composer': return { text: 'Coordinator composer.', data: await engine.coordinatorComposer(projectId) };
+    case 'coordinator_command': return { text: 'Coordinator updated.', data: await ownerProjectCoordinatorCommand(app, projectId, args.request) };
     case 'chat_card_view': return { text: 'Work cards.', data: await ownerProjectChatCardView(app, projectId, args.request) };
     case 'chat_view': return { text: 'Recorded project chat.', data: await ownerProjectChatView(app, projectId, args.request) };
     case 'task_page_view': return { text: 'Task.', data: await engine.taskPageView(projectId, String(args.task)) };

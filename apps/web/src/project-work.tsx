@@ -1,3 +1,4 @@
+import {projectClientIds,projectFailureText,projectLocalFailure,projectCoordinatorComposerFromUi,projectCoordinatorComposerState,projectCoordinatorClearedText,projectCoordinatorMessageCommand,projectCoordinatorControlCommand,projectCoordinatorTransport,type ProjectCoordinatorComposer} from '@jevellan/core/client';
 import {projectChatThreadTitles,projectChatCardContext,type ProjectChatCardContext} from '@jevellan/core/client';
 import { ProjectTaskEditorSchema, taskEditorCommand, type ProjectTaskEditor, type ProjectTaskEditorFields } from '@jevellan/core/client';
 import { ProjectPageRequestSchema, ProjectStatusEventSchema, ProjectStatusStreamRequestSchema, matchingProjectStatusView, STATUS_REFRESH_WINDOW_MS } from '@jevellan/core/client';
@@ -199,7 +200,7 @@ export function afterDialogs(message: (text: string) => void, text: string) {
   };
   requestAnimationFrame(send);
 }
-export const failureText = (failure: unknown) => failure instanceof Error ? failure.message : String(failure);
+export const failureText = projectFailureText;
 
 /**
  * A request failure shown where it happened. Sign-in failures still go to the app's handler; every other refusal (Projects
@@ -208,24 +209,18 @@ export const failureText = (failure: unknown) => failure instanceof Error ? fail
 export function useLocalError(onError: (error: unknown) => void) {
   const [error, setError] = useState('');
   const fail = useCallback((failure: unknown) => {
-    if (isCancelled(failure)) return;
-    if (failure instanceof ApiError && failure.status === 401) onError(failure);
-    else setError(failureText(failure));
+    const model = projectLocalFailure(failure, { schema: 'project-local-failure-context-v1', cancelled: isCancelled(failure), ...(failure instanceof ApiError ? { apiStatus: failure.status } : {}) });
+    if (model.route === 'global') onError(failure);
+    else if (model.route === 'local') setError(model.text!);
   }, [onError]);
   return { error, setError, fail };
 }
 
 /** Idempotency ids: one id per payload until it succeeds, then a fresh one, so a retried send never repeats a message (PJ2e). */
 export function useClientIds(prefix: string) {
-  const pending = useRef<{ signature: string; id: string } | undefined>(undefined);
-  return {
-    id: (value: unknown) => {
-      const signature = JSON.stringify(value);
-      if (pending.current?.signature !== signature) pending.current = { signature, id: `${prefix}_${clientId()}` };
-      return pending.current.id;
-    },
-    done: () => { pending.current = undefined; },
-  };
+  const state = useRef<ReturnType<typeof projectClientIds> | undefined>(undefined);
+  state.current ??= projectClientIds(clientId);
+  return { id: (value: unknown) => state.current!.id(prefix, value), done: () => state.current!.done() };
 }
 
 /** The clock for elapsed times; `interval` follows what the rows show (`rowClockMs`). */
@@ -380,8 +375,9 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         pageRequest(), { signal, waitForHub: true }),
       accept,
       (failure) => {
-        if (failure instanceof ApiError && failure.status === 401) onError(failure);
-        else setLoadError(failureText(failure));
+        const model = projectLocalFailure(failure, { schema: 'project-local-failure-context-v1', cancelled: isCancelled(failure), ...(failure instanceof ApiError ? { apiStatus: failure.status } : {}) });
+        if (model.route === 'global') onError(failure);
+        else if (model.route === 'local') setLoadError(model.text!);
       },
     );
     const read = () => void reads.request();
@@ -481,9 +477,9 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
 
   // Select a newer engine projection; turn interpretation and eligibility stay on the server.
   const coordinatorUi = header.live && coordinatorActivity && coordinatorActivity.seq > header.atEventId ? header.live[coordinatorActivity.state] : header.current;
-  const chip = coordinatorUi.chip, busy = coordinatorUi.working;
+  const chip = coordinatorUi.chip;
   const coordinator = view.coordinator;
-  const offline = coordinatorUi.offline;
+  const composerModel = projectCoordinatorComposerFromUi(id, here, coordinatorUi);
   const taskById = new Map(tasks.map(task => [task.id, task]));
   const drafts = overview.waiting.draftIds.flatMap(id => taskById.get(id) ?? []);
   const open = waiting.open.filter(item => !answered.has(item.decision.id));
@@ -492,16 +488,19 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const waitingThreads = rows(overview.waiting.threadIds);
   const pulls = overview.pullRequests, recentPulls = overview.recentlyMerged;
   const stop = () => void control.run(async (signal) => {
-    setView(await api(`/api/projects/${id}/coordinator/stop`, ProjectWorkViewSchema, 'POST', empty, { signal })); updated();
+    const command = projectCoordinatorControlCommand(id, 'stop'), request = projectCoordinatorTransport(command);
+    setView(await api(request.path, ProjectWorkViewSchema, 'POST', command.body, { signal, waitForHub: request.waitForHub })); updated();
   });
   const fresh = () => void control.run(async (signal) => {
-    setView(await api(`/api/projects/${id}/coordinator/fresh`, ProjectWorkViewSchema, 'POST', empty, { signal })); updated();
+    const command = projectCoordinatorControlCommand(id, 'fresh'), request = projectCoordinatorTransport(command);
+    setView(await api(request.path, ProjectWorkViewSchema, 'POST', command.body, { signal, waitForHub: request.waitForHub })); updated();
     message(copy.FRESH_STARTED);
   });
   // Move coordinator here (brief 9.8, 3.5.3): the answer is the view with this device's coordinator; the page's next read sees the
   // device change and starts the chat over from this device's history.
   const moveHere = async (signal: AbortSignal) => {
-    try { setView(await api(`/api/projects/${id}/coordinator/move`, ProjectWorkViewSchema, 'POST', empty, { signal, waitForHub: true })); }
+    const command = projectCoordinatorControlCommand(id, 'move'), request = projectCoordinatorTransport(command);
+    try { setView(await api(request.path, ProjectWorkViewSchema, 'POST', command.body, { signal, waitForHub: request.waitForHub })); }
     finally { updated(); }
   };
   const move = () => void moving.run(async (signal) => { setMoveError(''); await moveHere(signal); });
@@ -597,7 +596,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
                 startAll={proposalGroups.get(item.id) ?? []} />)}
             </div>
           ) : <p className="pw-chat-empty">{copy.EMPTY_CHAT}</p>}
-          <Composer projectId={id} busy={busy} offline={offline} offlineText={coordinatorUi.offlineNotice ?? ''}
+          <Composer model={composerModel}
             behind={behind && chatShown} jump={() => { pinned.current = true; setBehind(false); window.scrollTo({ top: document.documentElement.scrollHeight }); }}
             stopping={control.busy} stop={stop} onError={onError} />
         </div>
@@ -727,24 +726,26 @@ function ChatEntry({ item, projectId, navigate, cardContext, settings, changed, 
  * The chat composer: a growing textarea, Enter sends and Shift+Enter breaks the line, a send icon, and while a coordinator
  * turn runs the working line with a Stop icon button. Owner messages queue for the next turn, so Send stays available.
  */
-function Composer({ projectId, busy, offline, offlineText, behind, jump, stopping, stop, onError }: {
-  projectId: string; busy: boolean; offline: boolean; offlineText: string; behind: boolean; jump(): void; stopping: boolean; stop(): void; onError(error: unknown): void;
+function Composer({ model, behind, jump, stopping, stop, onError }: {
+  model: ProjectCoordinatorComposer; behind: boolean; jump(): void; stopping: boolean; stop(): void; onError(error: unknown): void;
 }) {
+  const projectId = model.projectId, busy = model.working, offline = model.offline, offlineText = model.offlineText;
   const [text, setText] = useState('');
   const attachments = useProjectAttachments(projectId, onError);
   const send = useTask(onError);
   const ids = useClientIds('message');
+  const state = projectCoordinatorComposerState(model, { schema: 'project-coordinator-composer-input-v1', text, attachmentCount: attachments.entries.length, sending: send.busy, stopping });
   return (
     <form onPaste={attachments.paste} onDragOver={attachments.dragOver} onDrop={attachments.drop} className="composer card pw-composer" ref={composerClearance} onSubmit={(event) => {
       event.preventDefault();
-      if (send.busy || offline || (!text.trim() && !attachments.entries.length)) return;
+      if (!state.canSend) return;
       const typed = text;
       void send.run(async (signal) => {
         const prepared = await attachments.prepare(typed, signal), value = prepared.text;
-        await api(`/api/projects/${projectId}/coordinator/messages`, CoordinatorMessageReceiptSchema, 'POST',
-          { schema: 'coordinator-message-request-v1', clientMessageId: ids.id(value), text: value }, { signal, waitForHub: true });
+        const command = projectCoordinatorMessageCommand(projectId, ids.id(value), value), request = projectCoordinatorTransport(command);
+        await api(request.path, CoordinatorMessageReceiptSchema, 'POST', command.body, { signal, waitForHub: request.waitForHub });
         ids.done(); prepared.clear();
-        setText((current) => current === typed ? '' : current);
+        setText((current) => projectCoordinatorClearedText(current, typed));
         updated();
       });
     }}>
@@ -758,13 +759,13 @@ function Composer({ projectId, busy, offline, offlineText, behind, jump, stoppin
       <div className="message-input-row">
         <MessageInput value={text} change={setText} label={copy.CHAT_INPUT_LABEL} placeholder={copy.CHAT_PLACEHOLDER} />
         <div className="message-actions">
-          {busy && (
-            <button type="button" className="pw-stop-icon" aria-label={copy.STOP} title={copy.STOP_COORDINATOR} disabled={stopping} onClick={stop}>
+          {state.showStop && (
+            <button type="button" className="pw-stop-icon" aria-label={copy.STOP} title={copy.STOP_COORDINATOR} disabled={!state.canStop} onClick={stop}>
               <Icon name="stop" size={18} />
             </button>
           )}
           <button type="submit" className="send-icon" aria-label={copy.SEND} title={offline ? offlineText : undefined}
-            disabled={send.busy || offline || (!text.trim() && !attachments.entries.length)}><Icon name="send" size={20} /></button>
+            disabled={!state.canSend}><Icon name="send" size={20} /></button>
         </div>
       </div>
     </form>
