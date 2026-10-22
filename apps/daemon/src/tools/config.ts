@@ -1,3 +1,4 @@
+import {readMemoryEditor,prepareMemoryEditor,runMemoryEditorCommand} from '../memory-editor.js';
 import {contextDeviceOperation} from '../context-editor.js';
 import {SetupEditorPrepareSchema,SetupEditorCommandSchema} from '@jevellan/core';
 import {ownerSetupEditor,ownerSetupPrepare,ownerSetupAction} from '../project-work-api.js';
@@ -167,6 +168,9 @@ export const config: OwnerHandler = async (context) => {
         data: await nativeConnectionsDeviceOperation(context.app, deviceId, { schema: 'native-connections-operation-v1', deviceId,
           ...(context.action === 'native_connections_editor' ? { operation: 'read' } : { operation: 'command', request: args.request }) }) };
     }
+    case 'memory_editor': return { text: 'Project memory.', data: await readMemoryEditor(context.app, context.project.id, args.request) };
+    case 'memory_prepare': return { text: 'Memory action prepared.', data: await prepareMemoryEditor(context.app, context.project.id, args.request) };
+    case 'memory_action': return { text: 'Memory action accepted.', data: await runMemoryEditorCommand(context.app, context.project.id, args.request) };
     case 'context_editor': case 'context_prepare': case 'context_action': case 'context_review': {
       const operation = { context_editor: 'context-editor', context_prepare: 'context-prepare', context_action: 'context-action', context_review: 'context-review' }[context.action];
       return { text: 'Project context.', data: await contextDeviceOperation(context.app, { schema: 'project-definition-peer-request-v1', operation, projectId: context.project.id, deviceId: context.request.deviceId ?? context.app.device.deviceId, ...(args.request === undefined ? {} : { request: args.request }) }) };

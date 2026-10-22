@@ -1,3 +1,4 @@
+import {MemoryEditorSchema,MemoryEditorReceiptSchema,memoryEditorPolicy,memoryEditorWithUi,memoryEditorAttempt,memoryEditorAccepted,memoryNotePresentation} from '@jevellan/core/client';
 import {ContextEditorSchema,ContextEditorReceiptSchema,ContextEditorReviewSchema,contextEditorPolicy,contextEditorWithUi,contextEditorAttempt,contextEditorAccepted} from '@jevellan/core/client';
 import { ProjectForm } from './project-definition-editor.js';
 export { ProjectForm };
@@ -9,7 +10,6 @@ import { z } from 'zod';
 import {
   MemoryNoteSchema,
   MemorySearchSchema,
-  ProjectMemoryViewSchema, ProjectMemoryResultSchema, ProjectWorkSettingsViewSchema,
   ProjectViewSchema,
   type Project,
 } from '@jevellan/core/client';
@@ -133,56 +133,54 @@ function MemoryViewer({
   const [query, setQuery] = useState('');
   const [notes, setNotes] = useState<z.infer<typeof MemoryNoteSchema>[]>();
   const [selected, setSelected] = useState<z.infer<typeof MemoryNoteSchema>>();
-  const [shared, setShared] = useState<z.infer<typeof ProjectMemoryViewSchema>>();
-  const [settings, setSettings] = useState<z.infer<typeof ProjectWorkSettingsViewSchema>>();
+  const [memoryView, setMemoryView] = useState<ReturnType<typeof MemoryEditorSchema.parse>>();
   const [newTitle, setNewTitle] = useState(''), [newBody, setNewBody] = useState('');
-  const task = useTask(onError);
+  const task = useTask(onError), pending = useRef<ReturnType<typeof memoryEditorAttempt> | null>(null);
+  const route = `/api/projects/${project.id}/memory/editor`, current = useRef(route); current.current = route;
+  const draft = useRef({ title: newTitle, content: newBody }); draft.current = { title: newTitle, content: newBody };
+  const model = memoryView?.projectId === project.id ? memoryEditorWithUi(memoryView, draft.current, { schema: 'memory-editor-ui-v1', busy: task.busy }) : undefined;
+  const policy = model?.policy ?? memoryEditorPolicy(project.memory.mode);
   useEffect(() => {
-    if (project.memory.mode !== 'hub') return;
+    const cadence = memoryEditorPolicy(project.memory.mode).pollMs; if (cadence === null) return;
     const abort = new AbortController();
-    const refresh = () => void Promise.all([api(`/api/projects/${project.id}/memory/shared`, ProjectMemoryViewSchema, 'GET', undefined, { signal: abort.signal }),
-      api(`/api/projects/${project.id}/work-settings`, ProjectWorkSettingsViewSchema, 'GET', undefined, { signal: abort.signal })])
-      .then(([view, work]) => { setShared(view); setSettings(work); }, error => { if (!abort.signal.aborted) onError(error); });
-    refresh(); const timer = setInterval(refresh, 10_000); return () => { clearInterval(timer); abort.abort(); };
+    const refresh = () => void api(route, MemoryEditorSchema, 'GET', undefined, { signal: abort.signal }).then(next => {
+      if (abort.signal.aborted || current.current !== route) return;
+      if (next.projectId !== project.id) throw new Error('The memory editor belongs to another project.');
+      setMemoryView(next); if (next.policy.pollMs === null) clearInterval(timer);
+    }).catch(error => { if (!isCancelled(error) && !abort.signal.aborted) onError(error); });
+    refresh(); const timer = setInterval(refresh, cadence); return () => { clearInterval(timer); abort.abort(); };
   }, [project.id, project.memory.mode, onError]);
-  const memoryAction = (operation: string) => void task.run(async () => {
-    await api(`/api/projects/${project.id}/memory/shared`, ProjectMemoryResultSchema, 'POST', { operation, requestId: clientId() });
-    setShared(await api(`/api/projects/${project.id}/memory/shared`, ProjectMemoryViewSchema));
-  });
-  const saveMemorySettings = (capture: boolean, dreamMode: 'apply' | 'suggest') => void task.run(async () => {
-    if (!settings) return;
-    const { schema: _schema, projectId: _id, revision, ...fields } = settings.settings; void _schema; void _id;
-    setSettings(await api(`/api/projects/${project.id}/work-settings`, ProjectWorkSettingsViewSchema, 'PUT', { schema: 'project-work-settings-request-v1', revision,
-      clientRequestId: clientId(), settings: { ...fields, memory: { mode: 'hub', capture, dreamMode } } }));
+  const act = (intent: Parameters<typeof memoryEditorAttempt>[2]) => void task.run(async signal => {
+    if (!model) return;
+    const attempt = memoryEditorAttempt(pending.current, model, intent, `memory_${clientId()}`); pending.current = attempt;
+    const receipt = await api(attempt.path, MemoryEditorReceiptSchema, 'POST', attempt.command, { signal, waitForHub: true });
+    const accepted = memoryEditorAccepted(attempt, receipt, { projectId: project.id }, draft.current);
+    if (current.current !== route) return;
+    setMemoryView(accepted.editor); pending.current = null;
+    if (accepted.clearNote) { setNewTitle(''); setNewBody(''); }
   });
   return (
     <Modal title={`Memory · ${project.name}`} close={close}>
-      {isPublic && project.memory.mode !== 'hub' && <PublicMemoryNotice />}
-      {project.memory.mode === 'hub' && <section className="memory-shared">
-        <p className="muted">Shared by Claude and Codex on every project device. History stays on the hub.</p>
-        {settings && <div className="stack"><label className="toggle"><input type="checkbox" checked={settings.settings.memory.capture} disabled={task.busy}
-          onChange={event => saveMemorySettings(event.target.checked, settings.settings.memory.dreamMode)} />Capture durable knowledge from sessions</label>
-          <label>Nightly dream<select aria-label="Nightly dream" value={settings.settings.memory.dreamMode} disabled={task.busy} onChange={event => saveMemorySettings(settings.settings.memory.capture, event.target.value as 'apply' | 'suggest')}>
-            <option value="apply">Apply and tell me</option><option value="suggest">Suggest only</option></select></label></div>}
-        <h3>Last night's dream</h3>
-        {shared?.notice && shared.notice !== 'Memory dream: not run.' && <p className="muted">{shared.notice}</p>}
-        {shared?.dream ? <><p>{shared.dream.state}{shared.dream.reason ? `: ${shared.dream.reason}` : ''}</p>
-          {shared.dream.report && <><p>{shared.dream.report.summary}</p><p className="muted">{Object.entries(shared.dream.report.counts).map(([name, count]) => `${name}: ${count}`).join(' · ')}</p></>}
-          {shared.dream.diff && <details><summary>Memory changes</summary><pre className="pw-job-log">{shared.dream.diff}</pre></details>}
-          <div className="actions">{shared.dream.state === 'applied' && <button className="secondary small" disabled={task.busy} onClick={() => memoryAction('dream-undo')}>Undo</button>}
-            {shared.dream.state === 'suggested' && <><button disabled={task.busy} onClick={() => memoryAction('dream-apply')}>Apply</button><button className="secondary" disabled={task.busy} onClick={() => memoryAction('dream-discard')}>Discard suggestion</button></>}</div>
-        </> : <p className="muted">No dream recorded yet.</p>}
-        <button className="secondary small" disabled={task.busy || shared?.dream?.state === 'running'} onClick={() => memoryAction('dream-run')}>Run now</button>
-        <h3>Inbox (from today)</h3>
-        {shared?.inbox.length ? shared.inbox.map(note => <button className="memory-result secondary" key={note.permalink} onClick={() => void task.run(async () => setSelected(await api(`/api/projects/${project.id}/memory?permalink=${encodeURIComponent(note.permalink)}`, MemoryNoteSchema)))}>{note.title}</button>) : <p className="muted">No inbox notes.</p>}
-        <h3>Project notes</h3>{shared?.notes.map(note => <button className="memory-result secondary" key={note.permalink} onClick={() => void task.run(async () => setSelected(await api(`/api/projects/${project.id}/memory?permalink=${encodeURIComponent(note.permalink)}`, MemoryNoteSchema)))}>{note.title}</button>)}
-        {shared?.truncated && <p className="muted">More notes are available through Search memory.</p>}
-        <details><summary>Add an owner note</summary><form className="stack" onSubmit={event => { event.preventDefault(); void task.run(async () => {
-          await api(`/api/projects/${project.id}/memory/shared`, ProjectMemoryResultSchema, 'POST', { operation: 'write', requestId: clientId(), input: { title: newTitle, content: newBody } });
-          setNewTitle(''); setNewBody(''); setShared(await api(`/api/projects/${project.id}/memory/shared`, ProjectMemoryViewSchema));
-        }); }}><label>Title<input required maxLength={300} value={newTitle} onChange={event => setNewTitle(event.target.value)} /></label>
-          <label>Note<textarea required maxLength={256000} rows={4} value={newBody} onChange={event => setNewBody(event.target.value)} /></label><button disabled={task.busy}>Save owner note</button></form></details>
-      </section>}
+      {isPublic && <PublicMemoryNotice />}
+      {model?.supported ? <section className="memory-shared">
+        <p className="muted">{policy.sharedIntro}</p>
+        <div className="stack"><label className="toggle"><input type="checkbox" checked={model.memory!.capture} disabled={!model.actions.settingsEnabled} onChange={event => act({ schema: 'memory-editor-intent-v1', kind: 'capture', value: event.target.checked })} />{policy.captureLabel}</label>
+          <label>{policy.dreamModeLabel}<select aria-label={policy.dreamModeLabel} value={model.memory!.dreamMode} disabled={!model.actions.settingsEnabled} onChange={event => act({ schema: 'memory-editor-intent-v1', kind: 'dream-mode', value: event.target.value })}>{policy.dreamModes.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div>
+        <h3>{policy.dreamTitle}</h3>{model.notice && <p className="muted">{model.notice}</p>}
+        {model.dream ? <><p>{model.dream.stateLine}</p>{model.dream.summary !== null && <p>{model.dream.summary}</p>}{model.dream.countsLine !== null && <p className="muted">{model.dream.countsLine}</p>}
+          {model.dream.diff && <details><summary>{policy.changesLabel}</summary><pre className="pw-job-log">{model.dream.diff}</pre></details>}
+          <div className="actions">{model.actions.undo.visible && <button className="secondary small" disabled={!model.actions.undo.enabled} onClick={() => act({ schema: 'memory-editor-intent-v1', kind: 'dream', operation: 'dream-undo' })}>{model.actions.undo.label}</button>}
+            {model.actions.apply.visible && <button disabled={!model.actions.apply.enabled} onClick={() => act({ schema: 'memory-editor-intent-v1', kind: 'dream', operation: 'dream-apply' })}>{model.actions.apply.label}</button>}{model.actions.discard.visible && <button className="secondary" disabled={!model.actions.discard.enabled} onClick={() => act({ schema: 'memory-editor-intent-v1', kind: 'dream', operation: 'dream-discard' })}>{model.actions.discard.label}</button>}</div>
+        </> : <p className="muted">{policy.noDream}</p>}
+        <button className="secondary small" disabled={!model.actions.run.enabled} onClick={() => act({ schema: 'memory-editor-intent-v1', kind: 'dream', operation: 'dream-run' })}>{model.actions.run.label}</button>
+        <h3>{policy.inboxTitle}</h3>{model.inbox.length ? model.inbox.map(row => <button className="memory-result secondary" key={row.note.permalink} onClick={() => void task.run(async () => setSelected(await api(`/api/projects/${project.id}/memory?permalink=${encodeURIComponent(row.note.permalink)}`, MemoryNoteSchema)))}>{row.label}</button>) : <p className="muted">{policy.noInbox}</p>}
+        <h3>{policy.notesTitle}</h3>{model.notes.map(row => <button className="memory-result secondary" key={row.note.permalink} onClick={() => void task.run(async () => setSelected(await api(`/api/projects/${project.id}/memory?permalink=${encodeURIComponent(row.note.permalink)}`, MemoryNoteSchema)))}>{row.label}</button>)}
+        {model.truncatedLine && <p className="muted">{model.truncatedLine}</p>}
+        <details><summary>{policy.addNoteLabel}</summary><form className="stack" onSubmit={event => { event.preventDefault(); act({ schema: 'memory-editor-intent-v1', kind: 'note' }); }}>
+          <label>{policy.titleLabel}<input required maxLength={policy.noteTitleMax} value={newTitle} onChange={event => setNewTitle(event.target.value)} /></label>
+          <label>{policy.contentLabel}<textarea required maxLength={policy.noteContentMax} rows={4} value={newBody} onChange={event => setNewBody(event.target.value)} /></label><button disabled={!model.actions.noteEnabled}>{policy.saveNoteLabel}</button></form></details>
+      </section> : policy.pollMs !== null && !model ? <p role="status">{policy.loading}</p> : null}
+
       <form
         className="inline-form"
         onSubmit={(event) => {
@@ -220,8 +218,7 @@ function MemoryViewer({
           }
         >
           <span>
-            {note.title}
-            {note.unresolved ? ' (conflicting versions, unresolved)' : ''}
+            {memoryNotePresentation(note, 'search').label}
           </span>
           {note.updatedAt && (
             <time

@@ -1,3 +1,4 @@
+import {handleMemoryEditorApi} from './memory-editor.js';
 import {handleContextEditorApi} from './context-editor.js';
 import {handleFirstRunApi} from './first-run-api.js';
 import { handleNativeViewerTitlePeer } from './native-viewer-title.js';
@@ -149,6 +150,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (path === '/api/projects/editor' && method === 'GET') { send(await app.projectDefinitionRead(ProjectDefinitionReadSchema.parse({ schema: 'project-definition-read-v1', ...(url.searchParams.has('projectId') ? { projectId: url.searchParams.get('projectId') } : {}) }))); return; }
     if (path === '/api/projects/editor/preview' && method === 'POST') { retryable = true; send(await app.projectDefinitionPreview(ProjectDefinitionPreviewSchema.parse(await body(request)))); return; }
     if (await handleProjectWorkApi(app, request, response, url, token!, () => { retryable = true; })) return;
+    if (/^\/api\/projects\/[A-Za-z0-9_-]+\/memory\/(editor|prepare|commands)$/u.test(path)) { retryable = true; if (await handleMemoryEditorApi(app, request, response, url, token!)) return; }
     const sharedMemory = path.match(/^\/api\/projects\/([A-Za-z0-9_-]+)\/memory\/shared$/);
     if (sharedMemory && (method === 'GET' || method === 'POST')) {
       retryable = true;
