@@ -1,3 +1,5 @@
+import {DeviceActionSchema,deviceMaintenanceAction} from '@jevellan/core';
+import {readDeviceManagement,createDeviceInvitation,performDeviceAction} from './device-management.js';
 import {appSignInView} from '@jevellan/core';
 import {readAppShell} from './app-shell-view.js';
 import {handleMemoryEditorApi} from './memory-editor.js';
@@ -83,7 +85,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     const secureCookies = options.secureCookies ?? secureRequest;
     const path = url.pathname; const method = request.method ?? 'GET'; const token = sessionFromCookie(request.headers.cookie);
     // Project hub requests enter the gate in their route once the operation is known: reads are admitted like GET (D247).
-    if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path) && !DEVICE_WORKTREES_ROUTE.test(path) && !DEVICE_CLEANUP_ROUTE.test(path) && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
+    if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path) && !DEVICE_WORKTREES_ROUTE.test(path) && !DEVICE_CLEANUP_ROUTE.test(path) && path !== '/api/devices/actions' && path !== '/hub/mesh/owner-tools' && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
     if (path === '/api/mesh/conversation-start') { await handleConversationStartPeer(app, request, response); return; }
     if (path === '/api/mesh/project-definitions') { await handleProjectDefinitionsPeer(app, request, response); return; }
     if (path === '/api/mesh/native-viewer-title') { await handleNativeViewerTitlePeer(app, request, response); return; }
@@ -113,6 +115,9 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     }
     retryable = true; // No UI operation has been admitted before authentication succeeds.
     if (!await app.auth.verify(token)) throw failure('Sign in to Jevellan.', 401);
+    if (path === '/api/devices/actions') { if(method!=='POST')throw failure('Unsupported device operation.',405); if(url.search)throw failure('Unsupported device query.',400); const input=DeviceActionSchema.parse(await body(request)); if(!deviceMaintenanceAction(input))release=app.lifecycle.enter({kind:'request'}); retryable=false; const result=await performDeviceAction(app,input,{ownerSession:token!,gatewayDeviceId:app.device.deviceId}); if(result.operation==='invite')json(response,result);else send(result); return; }
+    if (path === '/api/devices/view') { if(method!=='GET')throw failure('Unsupported device operation.',405); if(url.search)throw failure('Unsupported device query.',400); send(await readDeviceManagement(app)); return; }
+    if (path === '/api/devices/invitations/view') { if(method!=='POST')throw failure('Unsupported device operation.',405); if(url.search)throw failure('Unsupported device query.',400); EmptySchema.parse(await body(request)); retryable=false; json(response,await createDeviceInvitation(app)); return; }
     if (path === '/api/app/view') { if(method!=='GET')throw failure('Unsupported app operation.',405); if(url.search)throw failure('Unsupported app query.',400); send(await readAppShell(app)); return; }
     if (/^\/api\/projects\/[A-Za-z0-9_-]+\/library(?:\/|$)/u.test(path)) { retryable = method === 'GET' || method === 'DELETE'; if (await handleLibrary(app, request, response, url, token!)) return; }
     if (path.startsWith('/api/notifications/')) {

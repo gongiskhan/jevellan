@@ -15,6 +15,7 @@ import {
   appSignInView,
   appPostLoginPath,
   appVersionNotice,
+  deviceManagementView,
   type Configuration,
 } from '@jevellan/core/client';
 import {
@@ -248,6 +249,7 @@ function App() {
                     ...current,
                     roster:view.roster,
                     devices:view.devices,
+                    deviceManagement:view.deviceManagement??deviceManagementView({schema:'device-management-facts-v1',roster:view.roster,now:Date.now()}),
                   }
                 : current,
             ),

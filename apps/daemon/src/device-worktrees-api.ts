@@ -25,12 +25,14 @@ export async function handleDeviceWorktrees(app: Application, request: IncomingM
     await forwardOwner(request, response, { url: upstream, token: token!, sourceDeviceId: app.device.deviceId, ownerName: target.device.name,
       stream: false, purpose: 'device', timeoutMs: 60_000, ...(body ? { body } : {}) }); return true;
   }
-  await app.started;
-  if (request.method === 'GET') json(response, await app.projectWork.disk.read());
-  else {
-    const input = WorktreeCleanupInputSchema.parse(await requestBody(request));
-    const release = app.lifecycle.tryMaintenance(); if (!release) throw fail('This device has active work. Try cleanup when it is idle.');
-    try { json(response, await app.projectWork.disk.cleanup(input)); } finally { release(); }
-  }
+  json(response, await localDeviceWorktrees(app, request.method === 'GET' ? 'GET' : 'POST', request.method === 'GET' ? undefined : await requestBody(request)));
   return true;
+}
+/** The same exclusive reservation and canonical scanner/writer serve each client. */
+export async function localDeviceWorktrees(app: Application, method: 'GET'|'POST', raw?: unknown) {
+  await app.started;
+  if (method === 'GET') return app.projectWork.disk.read();
+  const input=WorktreeCleanupInputSchema.parse(raw), release=app.lifecycle.tryMaintenance();
+  if (!release) throw fail('This device has active work. Try cleanup when it is idle.');
+  try { return await app.projectWork.disk.cleanup(input); } finally { release(); }
 }

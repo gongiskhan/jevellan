@@ -1,22 +1,16 @@
 import { useEffect, useState } from 'react';
-import { CleanupSettingsEditorSchema, ConfigRevisionSchema, CleanupStateSchema, type CleanupSettingsEditor, type CleanupEditorFields, type CleanupState, type DeviceView } from '@jevellan/core/client';
-import { api, empty } from './api.js';
+import { CleanupSettingsEditorSchema, ConfigRevisionSchema, CleanupStateSchema, type CleanupSettingsEditor, type CleanupEditorFields, type CleanupState } from '@jevellan/core/client';
+import { deviceManagementData } from './devices.js';
+import {DeviceActionReceiptSchema,deviceActionResult,deviceCleanupView,deviceCleanupRead,deviceCleanAction,deviceActionHttp,type DeviceManagementView,type DeviceManagementRow} from '@jevellan/core/client';
+import { api } from './api.js';
 import { SectionHeading, dateTime, useSettingsSave, useTask, type PageProps } from './components.js';
-const size = (bytes: number) => bytes >= 1e9 ? `${(bytes / 1e9).toFixed(2)} GB` : bytes >= 1e6 ? `${(bytes / 1e6).toFixed(1)} MB` : `${Math.ceil(bytes / 1000)} KB`;
-function DeviceCleanup({ row, props }: { row: DeviceView; props: PageProps }) {
-  const [state, setState] = useState<CleanupState>(), task = useTask(props.onError);
-  const available = !row.revoked && (row.device.id === props.data.roster.currentDeviceId || row.status === 'online');
-  const path = `/api/devices/${row.device.id}/cleanup`;
-  useEffect(() => { if (available) void api(path, CleanupStateSchema).then(next => setState(current => current?.lastRun && (!next.lastRun || current.lastRun.endedAt > next.lastRun.endedAt) ? current : next)).catch(props.onError); }, [available, path, props.onError]);
-  const last = state?.lastRun ?? row.heartbeat?.lastCleanup;
-  return <section className="card"><h2>{row.device.name}</h2>
-    {last ? <><p>Last run: freed {size(last.freedBytes)} on {row.device.name} at {dateTime(last.endedAt)}</p>
-      {last.reason && <p className="muted">{last.reason}</p>}
-      <p className="muted small-text">{last.removed} removed · {last.protected} protected · {size(last.freeBytes)} free</p></> : <p className="muted">{available ? 'Cleanup has not run on this device.' : 'This device is offline.'}</p>}
-    <button className="secondary" disabled={task.busy || !available} onClick={() => void task.run(async signal => setState(await api(path, CleanupStateSchema, 'POST', empty, { signal })))}>Clean now</button>
-  </section>;
+function DeviceCleanup({row,management,props}:{row:DeviceManagementRow;management:DeviceManagementView;props:PageProps}) {
+ const [state,setState]=useState<CleanupState>(),task=useTask(props.onError),view=deviceCleanupView(management,row.deviceId,state);
+ useEffect(()=>{if(view.canClean)void api(view.path,CleanupStateSchema).then(next=>setState(current=>deviceCleanupRead(current,next))).catch(props.onError);},[view.canClean,view.path,props.onError]);
+ return <section className="card"><h2>{view.name}</h2>{view.lastRun?<><p>{view.lastRun.lineBeforeTime} {dateTime(view.lastRun.endedAt)}</p>{view.lastRun.reason&&<p className="muted">{view.lastRun.reason}</p>}<p className="muted small-text">{view.lastRun.summary}</p></>:<p className="muted">{view.emptyLine}</p>}<button className="secondary" disabled={task.busy||!view.canClean} onClick={()=>void task.run(async signal=>{const request=deviceActionHttp(deviceCleanAction(management,row.deviceId));setState(CleanupStateSchema.parse(deviceActionResult(request.body,await api(request.path,DeviceActionReceiptSchema,request.method,request.body,{signal}))));})}>Clean now</button></section>;
 }
 export function CleanupPage(props: PageProps) {
+  const devices=deviceManagementData(props.data);
   const [model, setModel] = useState<CleanupSettingsEditor>(), [draft, setDraft] = useState<CleanupEditorFields>(), task = useTask(props.onError), save = useSettingsSave();
   useEffect(() => {
     const controller = new AbortController();
@@ -36,6 +30,6 @@ export function CleanupPage(props: PageProps) {
       <section className="card"><h2>{model.floorTitle}</h2><label>{model.floorLabel}<input type="number" {...model.floor} required value={draft.freeDiskFloorGb} onChange={event => setDraft({ ...draft, freeDiskFloorGb: event.target.value })} /></label><p className="muted">{model.floorHelp}</p></section>
       <div className="actions"><button disabled={task.busy} type="submit">{model.saveLabel}</button></div>
     </form>
-    {props.data.roster.devices.filter(row => !row.revoked).map(row => <DeviceCleanup row={row} props={props} key={row.device.id} />)}
+    {devices.cleanupDeviceIds.map(id=><DeviceCleanup row={devices.devices.find(row=>row.deviceId===id)!} management={devices} props={props} key={id}/>)}
   </>;
 }

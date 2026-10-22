@@ -1,3 +1,5 @@
+import {deviceToolReply} from './device-management.js';
+import {ownerToolMaintenance} from '@jevellan/core';
 import { ProjectHealthRequestSchema } from '@jevellan/core';
 import { handleLibrary } from './library-api.js';
 import { NotificationOwnerRequestSchema } from '@jevellan/core';
@@ -44,9 +46,9 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
     finally { release(); }
   }
   if (path === '/hub/mesh/owner-tools' && method === 'POST') {
-    const input = OwnerToolForwardSchema.parse(await requestBody(request)); const release = app.lifecycle.enter({ kind: 'request' });
-    try { const result = await app.ownerTools.call(input.name, { ...input.request, deviceId: device.id }); app.devices.authenticate(authorization!.slice(7)); send(result); return true; }
-    finally { release(); }
+    const input = OwnerToolForwardSchema.parse(await requestBody(request)); const release = ownerToolMaintenance(input.name,input.request)?undefined:app.lifecycle.enter({ kind: 'request' });
+    try { const result = await app.ownerTools.call(input.name, { ...input.request, deviceId: device.id }); app.devices.authenticate(authorization!.slice(7)); json(response,deviceToolReply(app,input.name,input.request.args,result,input.request.action)); return true; }
+    finally { release?.(); }
   }
   if (path === '/hub/mesh/journal' && method === 'POST') {
     if (!app.projectWork.journal) throw Object.assign(new Error('The project journal is unavailable.'), { status: 503 });

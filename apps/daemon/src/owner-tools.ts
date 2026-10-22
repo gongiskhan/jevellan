@@ -1,3 +1,4 @@
+import {readDeviceManagement,readDevicePurpose,performDeviceAction} from './device-management.js';
 import {appShellDeviceView} from './app-shell-view.js';
 import {firstRunDeviceOperation} from './first-run-device.js';
 import { ProjectStatusViewSchema } from '@jevellan/core';
@@ -66,6 +67,9 @@ export class OwnerTools {
     const parsed = action.input.safeParse(rest);
     if (!parsed.success) return fail('invalid_arguments', invalidArguments(tool, tool.single ? '' : action.name, parsed.error));
     try {
+      if (tool.name === 'config' && action.name === 'device_action') { const data=await performDeviceAction(this.app,(parsed.data as {request:unknown}).request,{gatewayDeviceId:request.deviceId??this.app.device.deviceId}); log(true); return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text:'Device action recorded.',data}); }
+      if (tool.name === 'config' && (action.name === 'device_cleanup'||action.name === 'device_worktrees')) { const data=await readDevicePurpose(this.app,action.name==='device_cleanup'?'cleanup':'worktrees',(parsed.data as {request:unknown}).request,request.deviceId??this.app.device.deviceId); log(true); return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text:'Device view.',data}); }
+      if (tool.name === 'config' && action.name === 'devices_view') { const data=await readDeviceManagement(this.app,request.deviceId??this.app.device.deviceId); log(true); return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text:'Devices.',data}); }
       if (tool.name === 'config' && action.name === 'app_view') { const data=await appShellDeviceView(this.app,request.deviceId??this.app.device.deviceId); log(true); return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text:'App view.',data}); }
       if (tool.name === 'config' && (action.name === 'setup_progress' || action.name === 'setup_next')) {
         const data = await firstRunDeviceOperation(this.app, request.deviceId ?? this.app.device.deviceId, action.name === 'setup_progress' ? 'view' : 'next', (parsed.data as { request?: unknown }).request);

@@ -25,8 +25,12 @@ export async function handleDeviceCleanup(app: Application, request: IncomingMes
     await forwardOwner(request, response, { url: upstream, token: token!, sourceDeviceId: app.device.deviceId, ownerName: target.device.name,
       stream: false, purpose: 'device', timeoutMs: 60_000, ...(body ? { body } : {}) }); return true;
   }
-  await app.started;
-  if (request.method === 'GET') json(response, app.cleanup.state());
-  else { EmptySchema.parse(await requestBody(request)); json(response, await app.cleanup.run()); }
+  json(response, await localDeviceCleanup(app, request.method === 'GET' ? 'GET' : 'POST', request.method === 'GET' ? undefined : await requestBody(request)));
   return true;
+}
+/** The same canonical operation for authenticated HTTP and trusted owner tools. */
+export async function localDeviceCleanup(app: Application, method: 'GET'|'POST', raw?: unknown) {
+  await app.started;
+  if (method === 'GET') return app.cleanup.state();
+  EmptySchema.parse(raw); return app.cleanup.run();
 }

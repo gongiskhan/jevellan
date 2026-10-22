@@ -1,3 +1,4 @@
+import {deviceManagementView} from './device-management.js';
 import { SettingsNavigationSchema, SettingsWorkspaceSchema, type SettingsNavigation } from './settings-workspace-schemas.js';
 import type { z } from 'zod';
 import type { AccountListSchema, RiggingListSchema, RuntimeListSchema, SecretStateSchema } from './client-schemas.js';
@@ -22,6 +23,7 @@ export function settingsWorkspace(input: { config: ConfigRevision; accounts: z.i
   return SettingsWorkspaceSchema.parse({ schema: 'settings-workspace-v1', config: input.config, accounts: input.accounts,
     runtimes: input.runtimeList.runtimes, runtimeSettings: input.runtimeList.settings, offered: input.runtimeList.offered, rigging: input.rigging,
     roster: input.roster, devices: { currentDeviceId: input.roster.currentDeviceId, devices: input.roster.devices.map(row => row.device) }, jev: input.jev,
+    deviceManagement:deviceManagementView({schema:'device-management-facts-v1',roster:input.roster,now:Date.now()}),
     navigation: settingsNavigation(), configurationWrite: { path: '/hub/config', method: 'PUT', body: { schema: 'config-write-v1', revision: input.config.revision }, savedNotice: 'Settings saved.' },
   });
 }

@@ -1,3 +1,4 @@
+import {DeviceManagementViewSchema,deviceManagementView} from './device-management.js';
 import {z} from 'zod';
 import {AuthStateSchema,DevicesListSchema,PassphraseInputSchema} from './client-schemas.js';
 import {DeviceRosterSchema} from './mesh-schemas.js';
@@ -10,7 +11,7 @@ export const AppSignInViewSchema=z.strictObject({schema:z.literal('app-sign-in-v
 export type AppSignInView=z.infer<typeof AppSignInViewSchema>;
 export const AppVersionNoticeSchema=z.strictObject({beforeCommand:z.string(),command:z.literal('jevellan update'),afterCommand:z.literal('.')});
 export const AppShellViewSchema=z.strictObject({schema:z.literal('app-shell-view-v1'),deviceId:IdSchema,roster:DeviceRosterSchema,devices:DevicesListSchema,signIn:AppSignInViewSchema,
- policy:z.strictObject({rosterPollMs:z.literal(APP_ROSTER_POLL_MS)}),versionNotice:AppVersionNoticeSchema.nullable()})
+ policy:z.strictObject({rosterPollMs:z.literal(APP_ROSTER_POLL_MS)}),versionNotice:AppVersionNoticeSchema.nullable(),deviceManagement:DeviceManagementViewSchema.optional()})
  .refine(value=>value.deviceId===value.roster.currentDeviceId&&value.deviceId===value.devices.currentDeviceId&&value.deviceId===value.signIn.deviceId,'The app view belongs to another device.');
 /** Presentation contains no credential or session. Authentication remains in the existing account service. */
 export function appSignInView(raw:unknown):AppSignInView{
@@ -32,5 +33,5 @@ export function appVersionNotice(raw:unknown):z.infer<typeof AppVersionNoticeSch
 }
 export function appShellView(rawRoster:unknown,rawAuth:unknown){
  const roster=DeviceRosterSchema.parse(rawRoster),devices=DevicesListSchema.parse({schema:'devices-list-v1',currentDeviceId:roster.currentDeviceId,devices:roster.devices.map(row=>row.device)});
- return AppShellViewSchema.parse({schema:'app-shell-view-v1',deviceId:roster.currentDeviceId,roster,devices,signIn:appSignInView(rawAuth),policy:{rosterPollMs:APP_ROSTER_POLL_MS},versionNotice:appVersionNotice(devices)});
+ return AppShellViewSchema.parse({schema:'app-shell-view-v1',deviceId:roster.currentDeviceId,roster,devices,signIn:appSignInView(rawAuth),deviceManagement:deviceManagementView({schema:'device-management-facts-v1',roster,now:Date.now()}),policy:{rosterPollMs:APP_ROSTER_POLL_MS},versionNotice:appVersionNotice(devices)});
 }

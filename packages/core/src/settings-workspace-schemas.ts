@@ -1,3 +1,4 @@
+import {DeviceManagementViewSchema} from './device-management.js';
 import { z } from 'zod';
 import { ConfigRevisionSchema, DeviceSchema, IdSchema } from './schemas.js';
 import { AccountListSchema, ConfigWriteSchema, RiggingListSchema, RuntimeListSchema, SecretStateSchema } from './client-schemas.js';
@@ -10,7 +11,7 @@ export const SettingsWorkspaceSchema = z.strictObject({
   schema: z.literal('settings-workspace-v1'), config: ConfigRevisionSchema, accounts: AccountListSchema.shape.accounts,
   runtimes: RuntimeListSchema.shape.runtimes, runtimeSettings: RuntimeListSchema.shape.settings, offered: RuntimeListSchema.shape.offered,
   rigging: RiggingListSchema, roster: DeviceRosterSchema, devices: z.strictObject({ currentDeviceId: IdSchema, devices: z.array(DeviceSchema) }), jev: SecretStateSchema,
-  navigation: SettingsNavigationSchema,
+  navigation: SettingsNavigationSchema, deviceManagement:DeviceManagementViewSchema.optional(),
   configurationWrite: z.strictObject({ path: z.literal('/hub/config'), method: z.literal('PUT'), body: ConfigWriteSchema.omit({ configuration: true, clientRequestId: true }), savedNotice: z.string() }),
 });
 export type SettingsNavigation = z.infer<typeof SettingsNavigationSchema>;

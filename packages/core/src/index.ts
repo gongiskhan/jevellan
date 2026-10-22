@@ -307,3 +307,7 @@ export * from './context-editor.js';
 export * from './memory-editor.js';
 
 export * from './app-shell.js';
+
+export * from './device-management.js';
+
+export * from './owner-tool-maintenance.js';
