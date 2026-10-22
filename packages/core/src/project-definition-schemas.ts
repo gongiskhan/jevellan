@@ -1,4 +1,5 @@
 import {ContextEditorDeviceRequestSchema} from './context-editor.js';
+import {GitEditorCommandSchema} from './git-editor.js';
 import {FirstRunReadRequestSchema, FirstRunNextRequestSchema} from './first-run.js';
 import { z } from 'zod';
 import { IdSchema, ProjectSchema } from './schemas.js';
@@ -28,6 +29,8 @@ export type ProjectDefinitionCommand = z.infer<typeof ProjectDefinitionCommandSc
 export type ProjectDefinitionEditor = z.infer<typeof ProjectDefinitionEditorSchema>;
 export type ProjectDefinitionsView = z.infer<typeof ProjectDefinitionsViewSchema>;
 export const ProjectDefinitionPeerRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({schema:z.literal('project-definition-peer-request-v1'),operation:z.literal('git-view')}),
+  z.strictObject({schema:z.literal('project-definition-peer-request-v1'),operation:z.literal('git-command'),input:GitEditorCommandSchema}),
   ...ContextEditorDeviceRequestSchema.options,
   z.strictObject({schema:z.literal('project-definition-peer-request-v1'),operation:z.literal('app-view')}),
   z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('first-run-view'), input: FirstRunReadRequestSchema }),

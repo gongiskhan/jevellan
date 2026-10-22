@@ -1,0 +1,35 @@
+import {join} from 'node:path';
+import {Client} from '@modelcontextprotocol/sdk/client/index.js';
+import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
+import {GitEditorViewSchema,GitEditorCheckedSchema,GitTokenViewSchema,GitHubTokenStateSchema,OwnerToolResultSchema,SecretInputSchema,gitCheckCommand,gitTokenSaveCommand} from '../../packages/core/dist/index.js';
+import {projectFixture} from '../helpers/project-fixture.js';
+import {expect,test} from './fixtures.js';
+
+test('GITPAR1 browser method check and scoped secret retry share canonical device and MCP policy',async({page,context},info)=>{
+ const f=await projectFixture({control:true});let client:Client|undefined;
+ try{
+  client=new Client({name:'git-editor-parity',version:'1'});await client.connect(new StdioClientTransport({command:process.execPath,args:[join(import.meta.dirname,'..','..','bin','jevellan.mjs'),'mcp'],cwd:f.checkout,env:{PATH:process.env.PATH??'',HOME:process.env.HOME??'',JEVELLAN_HOME:f.homes.root},stderr:'ignore'}));
+  const call=async(action:string,args:Record<string,unknown>={})=>{const reply=OwnerToolResultSchema.parse((await client!.callTool({name:'config',arguments:{action,...args}})).structuredContent);expect(reply.ok).toBe(true);if(!reply.ok)throw Error('Owned Git fixture refused.');return reply.data;};
+  const defaultValue='nonfunctional default browser Git fixture',scopedValue='nonfunctional scoped browser Git fixture';await call('github_token_write',{request:gitTokenSaveCommand(undefined,defaultValue,'browser_git_default')});const initial=GitEditorViewSchema.parse(await call('git_view')),refs=f.git(f.checkout,'show-ref'),config=f.git(f.checkout,'config','--local','--list'),separator=f.cookie.indexOf('=');await context.addCookies([{name:f.cookie.slice(0,separator),value:f.cookie.slice(separator+1),url:f.base,httpOnly:true,sameSite:'Lax'}]);await page.goto(f.base+'/settings/git');
+  await page.getByLabel('Connection method').selectOption('ssh');await expect(page.getByRole('button',{name:'Check connection',exact:true})).toBeDisabled();await expect(page.getByText('Save the connection method before checking.',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Save Git settings',exact:true}).click();await expect(page.getByRole('status').filter({hasText:initial.saveMessage})).toBeVisible();const model=GitEditorViewSchema.parse(await call('git_view'));expect(model.settings.githubTransport).toBe('ssh');const check=page.waitForRequest(request=>request.url()===f.base+'/api/git/check'&&request.method()==='POST');await page.getByRole('button',{name:'Check connection',exact:true}).click();expect((await check).postDataJSON()).toEqual(gitCheckCommand(model,model.defaults).input);const canonical=GitEditorCheckedSchema.parse(await call('git_check',{request:gitCheckCommand(model,model.defaults)}));await expect(page.locator('.git-check-result').getByRole('heading',{name:canonical.presentation.heading,exact:true})).toBeVisible();await page.screenshot({path:info.outputPath('git-saved-method-and-canonical-check.png'),fullPage:true});
+  await page.getByLabel('GitHub token scope').selectOption('project');const card=page.locator('.pw-token');await card.getByRole('button',{name:'Add token',exact:true}).click();const dialog=page.getByRole('dialog'),inputs:Array<ReturnType<typeof SecretInputSchema.parse>>=[];let lose=true;
+  // The input is a fixed nonfunctional fixture value;no native credential or real provider endpoint is used.
+  await page.route(f.base+'/hub/secrets/github?projectId=project',async route=>{
+   if(route.request().method()!=='PUT'){await route.continue();return;}
+   inputs.push(SecretInputSchema.parse(route.request().postDataJSON()));const response=await route.fetch();GitHubTokenStateSchema.parse(await response.json());
+   if(lose){lose=false;await route.fulfill({response,status:503,json:{schema:'error-v1',code:'hub-unavailable',message:'Simulated saved reply interrupted.',retryable:false}});}else await route.fulfill({response});
+  });
+  await dialog.getByLabel('GitHub token',{exact:true}).fill(scopedValue);await dialog.getByRole('button',{name:'Save token',exact:true}).click();await expect(dialog.getByLabel('GitHub token',{exact:true})).toHaveValue('');await expect(dialog.getByText('Simulated saved reply interrupted.',{exact:true})).toBeVisible();await page.screenshot({path:info.outputPath('git-secret-lost-reply-password-cleared.png'),fullPage:true});await dialog.getByLabel('GitHub token',{exact:true}).fill(scopedValue);await dialog.getByRole('button',{name:'Save token',exact:true}).click();await expect(dialog).toHaveCount(0);expect(inputs).toHaveLength(2);expect(inputs[0]).toEqual(inputs[1]);expect(typeof inputs[0]!.clientRequestId==='string').toBe(true);const scoped=GitTokenViewSchema.parse(await call('github_token_view',{request:{schema:'github-token-read-v1',projectId:'project'}}));expect(scoped.state?.saved).toBe(true);await expect(card.getByText(scoped.help,{exact:true})).toBeVisible();expect(await f.app.state.github.credential()).toBe(defaultValue);await page.screenshot({path:info.outputPath('git-scoped-retry-and-mcp-masked-state.png'),fullPage:true});
+  await card.getByRole('button',{name:scoped.removeLabel,exact:true}).click();await page.getByRole('dialog').getByRole('button',{name:scoped.removeLabel,exact:true}).click();await expect(card.getByRole('button',{name:'Add token',exact:true})).toBeEnabled();expect(GitTokenViewSchema.parse(await call('github_token_view',{request:{schema:'github-token-read-v1',projectId:'project'}})).state?.saved).toBe(false);expect(await f.app.state.github.credential()).toBe(defaultValue);expect(f.git(f.checkout,'show-ref')).toBe(refs);expect(f.git(f.checkout,'config','--local','--list')).toBe(config);expect(f.fake.runs).toHaveLength(0);await page.screenshot({path:info.outputPath('git-scoped-remove-preserves-default-and-checkout.png'),fullPage:true});
+ }finally{await client?.close().catch(()=>undefined);await f.close();}
+});
+
+test('GITREADFAIL1 browser reports a mismatched token scope without accepting metadata or losing the error',async({page,context},info)=>{
+ const f=await projectFixture({control:true}),pageErrors:string[]=[];
+ try{
+  page.on('pageerror',error=>pageErrors.push(error.message));
+  await page.route(f.base+'/api/git/token-view',async route=>{const response=await route.fetch(),view=GitTokenViewSchema.parse(await response.json());await route.fulfill({response,json:{...view,projectId:'project'}});});
+  const separator=f.cookie.indexOf('=');await context.addCookies([{name:f.cookie.slice(0,separator),value:f.cookie.slice(separator+1),url:f.base,httpOnly:true,sameSite:'Lax'}]);await page.goto(f.base+'/settings/git');
+  await expect(page.getByText('The token reply belongs to another scope.',{exact:true})).toBeVisible();await expect(page.locator('.pw-token').getByRole('button',{name:'Add token',exact:true})).toBeDisabled();expect(pageErrors).toEqual([]);expect(f.fake.runs).toHaveLength(0);await page.screenshot({path:info.outputPath('git-token-mismatched-scope-reported.png'),fullPage:true});
+ }finally{await f.close();}
+});

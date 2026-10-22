@@ -1,100 +1,47 @@
-import { useEffect, useState } from 'react';
-import { GitHubTokenStateSchema, type GitHubTokenState } from '@jevellan/core/client';
-import { api, empty } from './api.js';
-import { Confirm, Modal, useSettingsSave, useTask, type PageProps } from './components.js';
+import {useEffect,useState} from 'react';
+import {GitHubTokenStateSchema,GitTokenViewSchema,gitTokenView,gitTokenReadResult,gitTokenSummary,gitTokenSaveCommand,gitTokenRemoveCommand,gitTokenCanSubmit,type GitHubTokenState,type GitTokenView} from '@jevellan/core/client';
+import {api} from './api.js';
+import {Confirm,Modal,useSettingsSave,useTask,type PageProps} from './components.js';
 import * as copy from './project-work-copy.js';
-import { afterDialogs, useLocalError } from './project-work.js';
-import { dateOnly, timeStamp } from './time.js';
+import {afterDialogs,useLocalError} from './project-work.js';
+import {dateOnly,timeStamp} from './time.js';
 
-/**
- * Settings, Git: the GitHub token card (12.4). Only the masked summary ever reaches the browser (D57); the card keeps its
- * own state from the GET, PUT and DELETE answers because the token is not part of the settings data.
- */
-export function GitHubToken({ onError, message, projectId }: Pick<PageProps, 'onError' | 'message'> & { projectId?: string | undefined }) {
-  const endpoint = `/hub/secrets/github${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''}`;
-  const [state, setState] = useState<GitHubTokenState>();
-  const [dialog, setDialog] = useState<'save' | 'remove'>();
-  useEffect(() => {
-    const controller = new AbortController();
-    api(endpoint, GitHubTokenStateSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true }).then(setState, onError);
-    return () => controller.abort();
-  }, [onError, endpoint]);
-  const saved = state?.saved ? state : undefined;
-  return (
-    <section className="card pw-token">
-      <h2>{copy.GITHUB_TOKEN}</h2>
-      <p className="saved-secret pw-token-summary">
-        {!state ? copy.LOADING : saved
-          ? <time dateTime={saved.updatedAt} title={timeStamp(saved.updatedAt)?.title}>{copy.savedUpdated(dateOnly(saved.updatedAt))}</time>
-          : copy.NOT_SET}
-      </p>
-      <p className="muted pw-token-help">{projectId ? 'This token is saved for this project. Grant Pull requests, Checks and Actions access, and Contents read/write for publishing and merging. Actions write enables workflow dispatch.' : copy.GITHUB_TOKEN_HELP}</p>
-      <div className="actions pw-token-actions">
-        <button type="button" className="secondary" disabled={!state} onClick={() => setDialog('save')}>{saved ? copy.REPLACE : copy.ADD_TOKEN}</button>
-        {saved && <button type="button" className="secondary" onClick={() => setDialog('remove')}>{copy.REMOVE}</button>}
-      </div>
-      {dialog === 'save' && (
-        <SaveToken endpoint={endpoint} replacing={!!saved} onError={onError} close={() => setDialog(undefined)}
-          saved={(next) => { setState(next); setDialog(undefined); afterDialogs(message, copy.TOKEN_SAVED); }} />
-      )}
-      {dialog === 'remove' && (
-        <RemoveToken endpoint={endpoint} onError={onError} close={() => setDialog(undefined)}
-          removed={(next) => { setState(next); setDialog(undefined); afterDialogs(message, copy.TOKEN_REMOVED); }} />
-      )}
-    </section>
-  );
+/** The engine returns only masked state. The password field is transient and cleared after every save attempt. */
+export function GitHubToken({onError,message,projectId}:Pick<PageProps,'onError'|'message'>&{projectId?:string|undefined}){
+ const [state,setState]=useState<GitHubTokenState|null>(null),[dialog,setDialog]=useState<'save'|'remove'>();
+ const view=gitTokenView(state,projectId),readPath=view.readPath;
+ useEffect(()=>{
+  const controller=new AbortController();
+  void api(readPath,GitTokenViewSchema,'GET',undefined,{signal:controller.signal,waitForHub:true}).then(value=>setState(gitTokenReadResult(projectId,value).state)).catch(onError);
+  return()=>controller.abort();
+ },[onError,readPath,projectId]);
+ return <section className="card pw-token">
+  <h2>{view.label}</h2>
+  <p className="saved-secret pw-token-summary">{view.summaryAt?<time dateTime={view.summaryAt} title={timeStamp(view.summaryAt)?.title}>{gitTokenSummary(view,dateOnly(view.summaryAt))}</time>:gitTokenSummary(view,'')}</p>
+  <p className="muted pw-token-help">{view.help}</p>
+  <div className="actions pw-token-actions">
+   <button type="button" className="secondary" disabled={!view.canSave} onClick={()=>setDialog('save')}>{view.saveLabel}</button>
+   {view.canRemove&&<button type="button" className="secondary" onClick={()=>setDialog('remove')}>{view.removeLabel}</button>}
+  </div>
+  {dialog==='save'&&<SaveToken view={view} onError={onError} close={()=>setDialog(undefined)} saved={next=>{setState(next);setDialog(undefined);afterDialogs(message,view.savedMessage);}} />}
+  {dialog==='remove'&&<RemoveToken view={view} onError={onError} close={()=>setDialog(undefined)} removed={next=>{setState(next);setDialog(undefined);afterDialogs(message,view.removedMessage);}} />}
+ </section>;
 }
-
-/** Add or Replace: a password field saved through the hub with a request id; the field is cleared whatever happens. */
-function SaveToken({ endpoint, replacing, close, saved, onError }: {
-  endpoint: string; replacing: boolean; close(): void; saved(state: GitHubTokenState): void; onError(error: unknown): void;
-}) {
-  const save = useSettingsSave();
-  const { error, setError, fail } = useLocalError(onError);
-  const task = useTask(fail);
-  const [value, setValue] = useState('');
-  return (
-    <Modal title={replacing ? copy.REPLACE_TOKEN_TITLE : copy.ADD_TOKEN_TITLE} close={close}>
-      <form onSubmit={(event) => {
-        event.preventDefault();
-        void task.run(async (signal) => {
-          setError('');
-          try {
-            saved(await save(endpoint, GitHubTokenStateSchema, 'PUT', { schema: 'save-secret-v1', value }, signal));
-          } finally {
-            setValue('');
-          }
-        });
-      }}>
-        <label>
-          {copy.GITHUB_TOKEN}
-          {/* showModal() focuses the element with the autofocus attribute; React's autoFocus prop does not set it. */}
-          <input ref={(element) => element?.setAttribute('autofocus', '')} type="password" autoComplete="off" spellCheck={false} required value={value}
-            onChange={(event) => setValue(event.target.value)} />
-        </label>
-        {replacing && <p className="muted">{copy.TOKEN_REPLACED_NOTE}</p>}
-        {error && <p className="error">{error}</p>}
-        <div className="form-actions">
-          <button type="button" className="secondary" onClick={close}>{copy.CANCEL}</button>
-          <button disabled={task.busy || !value}>{task.busy ? copy.SAVING : copy.SAVE_TOKEN}</button>
-        </div>
-      </form>
-    </Modal>
-  );
+function SaveToken({view,close,saved,onError}:{view:GitTokenView;close():void;saved(state:GitHubTokenState):void;onError(error:unknown):void}){
+ const save=useSettingsSave(),{error,setError,fail}=useLocalError(onError),task=useTask(fail),[value,setValue]=useState('');
+ return <Modal title={view.saveTitle} close={close}><form onSubmit={event=>{
+  event.preventDefault();void task.run(async signal=>{
+   setError('');try{saved(await save(view.endpoint,GitHubTokenStateSchema,'PUT',gitTokenSaveCommand(view.projectId??undefined,value).input,signal));}finally{setValue('');}
+  });
+ }}>
+  <label>{view.label}<input ref={element=>element?.setAttribute('autofocus','')} type="password" autoComplete="off" spellCheck={false} required value={value} onChange={event=>setValue(event.target.value)} /></label>
+  {view.saveNote&&<p className="muted">{view.saveNote}</p>}{error&&<p className="error">{error}</p>}
+  <div className="form-actions"><button type="button" className="secondary" onClick={close}>{copy.CANCEL}</button><button disabled={!gitTokenCanSubmit(value,task.busy)}>{task.busy?copy.SAVING:view.saveButton}</button></div>
+ </form></Modal>;
 }
-
-/** Remove: a destructive confirmation; removing twice leaves the same state, so the request may wait for the hub. */
-function RemoveToken({ endpoint, close, removed, onError }: { endpoint: string; close(): void; removed(state: GitHubTokenState): void; onError(error: unknown): void }) {
-  const { error, setError, fail } = useLocalError(onError);
-  const task = useTask(fail);
-  return (
-    <Confirm title={copy.REMOVE_TOKEN_TITLE} action={copy.REMOVE} danger busy={task.busy} close={close}
-      confirm={() => void task.run(async (signal) => {
-        setError('');
-        removed(await api(endpoint, GitHubTokenStateSchema, 'DELETE', empty, { signal, waitForHub: true }));
-      })}>
-      <p className="pw-confirm-body">{copy.REMOVE_TOKEN_BODY}</p>
-      {error && <p className="error">{error}</p>}
-    </Confirm>
-  );
+function RemoveToken({view,close,removed,onError}:{view:GitTokenView;close():void;removed(state:GitHubTokenState):void;onError(error:unknown):void}){
+ const {error,setError,fail}=useLocalError(onError),task=useTask(fail);
+ return <Confirm title={view.removeTitle} action={view.removeLabel} danger busy={task.busy} close={close} confirm={()=>void task.run(async signal=>{
+  setError('');removed(await api(view.endpoint,GitHubTokenStateSchema,'DELETE',gitTokenRemoveCommand(view.projectId??undefined).input,{signal,waitForHub:true}));
+ })}><p className="pw-confirm-body">{view.removeBody}</p>{error&&<p className="error">{error}</p>}</Confirm>;
 }

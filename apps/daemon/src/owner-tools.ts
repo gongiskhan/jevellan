@@ -1,6 +1,8 @@
 import {readDeviceManagement,readDevicePurpose,performDeviceAction} from './device-management.js';
 import {readAgentAccessEditor,createAgentAccess,revokeAgentAccess} from './agent-access-editor.js';
 import {agentAccessCreatedMessage} from '@jevellan/core';
+import {gitEditorDeviceOperation,readGitTokenEditor,applyGitTokenEditor} from './git-editor.js';
+import {GitEditorSavedSchema,GitTokenViewSchema,GitTokenCommandSchema} from '@jevellan/core';
 import {appShellDeviceView} from './app-shell-view.js';
 import {firstRunDeviceOperation} from './first-run-device.js';
 import { ProjectStatusViewSchema } from '@jevellan/core';
@@ -69,6 +71,14 @@ export class OwnerTools {
     const parsed = action.input.safeParse(rest);
     if (!parsed.success) return fail('invalid_arguments', invalidArguments(tool, tool.single ? '' : action.name, parsed.error));
     try {
+      if(tool.name==='config'&&['git_view','git_save','git_check','github_token_view','github_token_write'].includes(action.name)){
+        const raw=(parsed.data as {request?:unknown}).request;
+        const data=action.name==='github_token_view'?await readGitTokenEditor(this.app,raw):action.name==='github_token_write'?await applyGitTokenEditor(this.app,raw):await gitEditorDeviceOperation(this.app,request.deviceId??this.app.device.deviceId,raw);
+        let text='Git settings.';
+        if(action.name==='git_save')text=GitEditorSavedSchema.parse(data).message;
+        if(action.name==='github_token_write'){const view=GitTokenViewSchema.parse(data);text=GitTokenCommandSchema.parse(raw).operation==='save'?view.savedMessage:view.removedMessage;}
+        log(true);return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text,data});
+      }
       if(tool.name==='config'&&['agent_access_view','agent_access_create','agent_access_revoke'].includes(action.name)){
         const raw=(parsed.data as {request?:unknown}).request;
         const data=action.name==='agent_access_view'?await readAgentAccessEditor(this.app,undefined,request.deviceId??this.app.device.deviceId):action.name==='agent_access_create'?await createAgentAccess(this.app,raw):await revokeAgentAccess(this.app,raw);

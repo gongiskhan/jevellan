@@ -1,3 +1,5 @@
+export * from './git-editor.js';
+export * from './github-token-editor.js';
 export * from './agent-access-editor.js';
 export * from './conversation-start.js';
 export * from './project-setup-view.js';

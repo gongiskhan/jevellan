@@ -32,7 +32,8 @@ export class GitSettings {
     }
     return env;
   }
-  async check(project: Project, deviceId: string, redactor = new SecretRedactor()) {
+  async check(project: Project, deviceId: string, redactor = new SecretRedactor(), expectedTransport?: ReturnType<GitSettings['get']>['githubTransport']) {
+    if (expectedTransport !== undefined && expectedTransport !== this.get().githubTransport) throw Object.assign(new Error('Save the connection method before checking.'), { status: 409 });
     const cwd = resolveProjectPath(project, deviceId); const env = this.environment();
     const base = { schema: 'git-check-v1', projectId: project.id, checkedAt: new Date().toISOString() };
     const names = await runOwnedCommand('git', ['remote'], { cwd, env, redactor });

@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { CheckoutOwnership, GitSettings, GitWorkspace, Homes, ProjectSchema, gitFailureMessage, type Project } from '../packages/core/dist/index.js';
+import { CheckoutOwnership, GitSettings, GitWorkspace, Homes, ProjectSchema, SecretRedactor, gitFailureMessage, type Project } from '../packages/core/dist/index.js';
 import { HubDatabase } from '../packages/mesh/dist/index.js';
 
 let root: string; let homes: Homes; let settings: GitSettings; let project: Project; let origin: string;
@@ -27,6 +27,13 @@ test('Git preferences persist only in the isolated home and reject stale saves',
   expect(() => settings.save(initial)).toThrow('changed');
   expect(readFileSync(native, 'utf8')).toBe('[user]\nname = Native\n');
   expect(() => settings.save({ ...saved, token: 'not-supported' })).toThrow();
+});
+
+test('selected Git check transport must match the saved method before inspecting the checkout',async()=>{
+ const before=git(project.paths.device!,'show-ref'),config=readFileSync(join(project.paths.device!,'.git/config'),'utf8');
+ await expect(settings.check(project,'device',new SecretRedactor(),'ssh')).rejects.toMatchObject({status:409});
+ expect(git(project.paths.device!,'show-ref')).toBe(before);expect(readFileSync(join(project.paths.device!,'.git/config'),'utf8')).toBe(config);
+ settings.save({...settings.get(),githubTransport:'ssh'});expect(await settings.check(project,'device',new SecretRedactor(),'ssh')).toMatchObject({status:'ready'});
 });
 
 test('connection checks inspect a local remote without changing refs or files', async () => {

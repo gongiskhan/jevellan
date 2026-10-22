@@ -1,3 +1,4 @@
+import {GIT_TOKEN_COPY,gitTokenSavedSummary} from '@jevellan/core/client';
 // Every brief-verbatim string of the Projects interface (brief 12 and the interface half of 9.8) plus the interface's own
 // Projects copy. Pages import from here and never retype these texts. The Projects area never says conversation,
 // stretch or handoff (tests/project-work-ui.test.ts scans this module).
@@ -298,22 +299,22 @@ export const NO_JEV_ANSWER = 'No Jev answer was used for this placement.';
 export const PLACED = 'Placed';
 
 // 12.4 Settings, Git
-export const GITHUB_TOKEN = 'GitHub token';
-export const savedUpdated = (date: string): string => `Saved · updated ${date}`;
-export const NOT_SET = 'Not set';
-export const REPLACE = 'Replace';
-export const REMOVE = 'Remove';
-export const GITHUB_TOKEN_HELP = 'Used only to open, read and merge pull requests for Jevellan threads. A fine-grained token with Pull requests read and write, Contents read and write, Checks read and Commit statuses read on your repositories is enough.';
+export const GITHUB_TOKEN = GIT_TOKEN_COPY.label;
+export const savedUpdated = gitTokenSavedSummary;
+export const NOT_SET = GIT_TOKEN_COPY.notSet;
+export const REPLACE = GIT_TOKEN_COPY.replace;
+export const REMOVE = GIT_TOKEN_COPY.remove;
+export const GITHUB_TOKEN_HELP = GIT_TOKEN_COPY.defaultHelp;
 /** The card's first save, when no token is set (Replace would have nothing to replace). */
-export const ADD_TOKEN = 'Add token';
-export const ADD_TOKEN_TITLE = 'Add a GitHub token';
-export const REPLACE_TOKEN_TITLE = 'Replace the GitHub token';
-export const TOKEN_REPLACED_NOTE = 'The saved token is replaced when you submit this form.';
-export const SAVE_TOKEN = 'Save token';
-export const TOKEN_SAVED = 'GitHub token saved.';
-export const REMOVE_TOKEN_TITLE = 'Remove the GitHub token?';
-export const REMOVE_TOKEN_BODY = 'Threads then push their branches without opening pull requests, and their pull requests can no longer be checked or merged from Jevellan.';
-export const TOKEN_REMOVED = 'GitHub token removed.';
+export const ADD_TOKEN = GIT_TOKEN_COPY.add;
+export const ADD_TOKEN_TITLE = GIT_TOKEN_COPY.addTitle;
+export const REPLACE_TOKEN_TITLE = GIT_TOKEN_COPY.replaceTitle;
+export const TOKEN_REPLACED_NOTE = GIT_TOKEN_COPY.replaceNote;
+export const SAVE_TOKEN = GIT_TOKEN_COPY.save;
+export const TOKEN_SAVED = GIT_TOKEN_COPY.saved;
+export const REMOVE_TOKEN_TITLE = GIT_TOKEN_COPY.removeTitle;
+export const REMOVE_TOKEN_BODY = GIT_TOKEN_COPY.removeBody;
+export const TOKEN_REMOVED = GIT_TOKEN_COPY.removed;
 
 // 9.8 Notices
 export const coordinatorUnavailableNotice = (reason: string): string => `The coordinator cannot run: ${reason}`;

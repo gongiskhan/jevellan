@@ -1,3 +1,4 @@
+import {applyGitTokenEditor} from './git-editor.js';
 import {DeviceActionSchema,deviceMaintenanceAction} from '@jevellan/core';
 import {readDeviceManagement,createDeviceInvitation,performDeviceAction} from './device-management.js';
 import {appSignInView} from '@jevellan/core';
@@ -369,8 +370,8 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       const projectId = url.searchParams.has('projectId') ? IdSchema.parse(url.searchParams.get('projectId')) : undefined;
       // Summary only, never the token (D57). Removing twice leaves the same state, so a removal may wait for the hub.
       if (method === 'GET') { send(GitHubTokenStateSchema.parse(await app.state.github.summary(projectId))); return; }
-      if (method === 'PUT') { const input = SecretInputSchema.parse(await body(request)); retryable = input.clientRequestId !== undefined; send(GitHubTokenStateSchema.parse(await app.state.github.put(input.value, input.clientRequestId, projectId))); return; }
-      if (method === 'DELETE') { EmptySchema.parse(await body(request)); retryable = true; send(GitHubTokenStateSchema.parse(await app.state.github.remove(undefined, projectId))); return; }
+      if (method === 'PUT') { const input = SecretInputSchema.parse(await body(request)); retryable = input.clientRequestId !== undefined; send(GitHubTokenStateSchema.parse((await applyGitTokenEditor(app,{schema:'github-token-command-v1',operation:'save',...(projectId?{projectId}:{}),input})).state)); return; }
+      if (method === 'DELETE') { const input=EmptySchema.parse(await body(request)); retryable = true; send(GitHubTokenStateSchema.parse((await applyGitTokenEditor(app,{schema:'github-token-command-v1',operation:'remove',...(projectId?{projectId}:{}),input})).state)); return; }
     }
     if (path === '/hub/devices' && method === 'GET') { send({ schema: 'devices-list-v1', currentDeviceId: app.device.deviceId, devices: (await app.roster()).devices.map((row) => row.device) }); return; }
     throw failure('Not found.', 404);
