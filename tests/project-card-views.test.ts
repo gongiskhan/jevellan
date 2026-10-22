@@ -73,3 +73,8 @@ test('card models preserve state words, outcomes, placement, task operations and
   expect(taskCardView(makeTask('task_held', 'Held', { held: true }), 2)).toMatchObject({ label: 'Held', meta: '#2 in queue', taskStart: { body: { held: false, expectedRevision: 1 } }, taskDismiss: null });
   expect(taskCardView(makeTask('task_done', 'Done', { state: 'done' }))).toMatchObject({ meta: null, taskStart: null, taskDismiss: null });
 });
+
+test('task card start and dismiss require an unlinked task even when its thread index is absent',()=>{
+ for(const state of ['draft','queued']as const){const linked=makeTask('task_linked','Linked fixture',{state,held:true,threadId:'thread_missing'}),model=taskCardView(linked);expect(model.taskStart).toBeNull();expect(model.taskDismiss).toBeNull();}
+ expect(taskCardView(makeTask('task_unlinked','Unlinked fixture',{state:'draft',held:true}))).toMatchObject({taskStart:{body:{action:'approve'}},taskDismiss:{body:{action:'reject',reason:'Dismissed from the chat.'}}});
+});

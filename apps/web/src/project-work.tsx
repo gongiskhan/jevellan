@@ -1,4 +1,4 @@
-import {projectChatThreadTitles} from '@jevellan/core/client';
+import {projectChatThreadTitles,projectChatCardContext,type ProjectChatCardContext} from '@jevellan/core/client';
 import { ProjectTaskEditorSchema, taskEditorCommand, type ProjectTaskEditor, type ProjectTaskEditorFields } from '@jevellan/core/client';
 import { ProjectPageRequestSchema, ProjectStatusEventSchema, ProjectStatusStreamRequestSchema, matchingProjectStatusView, STATUS_REFRESH_WINDOW_MS } from '@jevellan/core/client';
 import { CoordinatorOverrideDialog } from './coordinator-editor.js';
@@ -20,7 +20,7 @@ import {
   CoordinatorMessageReceiptSchema, ProjectWaitingResponseSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema, ProjectThreadActionsViewSchema,
   ProjectPageViewSchema, ProjectSidebarViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskReceiptSchema,
   type ProjectDecision, type ProjectLedgerEvent, type ProjectSidebarView, type ProjectWorkView,
-  type ThreadIndex, type ProjectWorkTask, type ProjectOverview, type OverviewPullRequest, type ProjectHeader, type ProjectCoordinatorActivity, type ProjectWorkCard, type ProjectWaitingItemsView, type ProjectWaitingItem, type ProjectWaitingResponse, type ProjectPageView, type ProjectPageRequest, type ProjectViewNotice,
+  type ProjectWorkTask, type ProjectOverview, type OverviewPullRequest, type ProjectHeader, type ProjectCoordinatorActivity, type ProjectWorkCard, type ProjectWaitingItemsView, type ProjectWaitingItem, type ProjectWaitingResponse, type ProjectPageView, type ProjectPageRequest, type ProjectViewNotice,
 } from '@jevellan/core/client';
 import { ApiError, api, empty, isCancelled } from './api.js';
 import { clientId } from './client-id.js';
@@ -287,6 +287,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
   const [goalViews, setGoalViews] = useState<ProjectGoalViews>();
   const [routines, setRoutines] = useState<ProjectJobsView>();
   const [tasks, setTasks] = useState<ProjectWorkTask[]>([]);
+  const chatCardContext = useMemo(() => projectChatCardContext({ schema: 'project-chat-card-context-v1', projectId: view?.project.id ?? id, tasks: view ? tasks : [], threads: view?.threads ?? [], cards: view ? cards : [] }), [id, view?.project.id, view?.threads, tasks, cards]);
   const [loadError, setLoadError] = useState('');
   const [events, setEvents] = useState<ProjectLedgerEvent[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
@@ -605,7 +606,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         <div className="pw-chat" id={chatId} ref={chat} {...chatPanel}>
           {!historyLoaded ? <p className="page-loading" role="status">{copy.LOADING_CHAT}</p> : items.length ? (
             <div className="timeline pw-timeline" aria-label={copy.CHAT_LABEL}>
-              {items.map((item) => <ChatEntry key={item.id} item={item} projectId={id} navigate={navigate} tasks={tasks} threads={view.threads} settings={view.settings} changed={updated} onError={onError}
+              {items.map((item) => <ChatEntry key={item.id} item={item} projectId={id} navigate={navigate} cardContext={chatCardContext} settings={view.settings} changed={updated} onError={onError}
                 startAll={proposalGroups.get(item.id) ?? []} />)}
             </div>
           ) : <p className="pw-chat-empty">{copy.EMPTY_CHAT}</p>}
@@ -691,13 +692,13 @@ function OfflineNotice({ text, canMove, enabled, refusal, moving, move }: { text
 }
 
 /** One chat entry (12.2): owner messages right-aligned, Markdown replies, muted tool one-liners, event cards and notices. */
-function ChatEntry({ item, projectId, navigate, tasks, threads, settings, changed, onError, startAll }: {
-  item: ChatItem; projectId: string; navigate(path: string): void; tasks: readonly ProjectWorkTask[]; threads: readonly ThreadIndex[];
+function ChatEntry({ item, projectId, navigate, cardContext, settings, changed, onError, startAll }: {
+  item: ChatItem; projectId: string; navigate(path: string): void; cardContext: ProjectChatCardContext;
   settings: ProjectWorkView['settings']; changed(): void; onError(error: unknown): void; startAll: string[];
 }) {
   const thread = (threadId: string) => `/projects/${projectId}/threads/${threadId}`;
   switch (item.kind) {
-    case 'routed': return <ChatWorkCards {...{ item, projectId, tasks, threads, startAll, navigate, changed, onError }} />;
+    case 'routed': return <ChatWorkCards {...{ item, projectId, cardContext, startAll, navigate, changed, onError }} />;
     case 'setup': return <SetupCard projectId={projectId} proposalId={item.proposalId} changed={changed} onError={onError} />;
     case 'settings': return <ChatSettingsChanges projectId={projectId} change={item.change} settings={settings} changed={changed} onError={onError} />;
     case 'owner':

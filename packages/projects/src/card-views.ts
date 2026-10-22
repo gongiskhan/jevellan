@@ -73,10 +73,10 @@ export function threadCardView(thread: ThreadIndex, options: CardPresentationOpt
     threadActions: threadActionView(thread, options.held ?? thread.landingStage === 'held', options.baseBranch ?? null), taskStart: null, taskDismiss: null });
 }
 export function taskCardView(task: ProjectWorkTask, position?: number): ProjectWorkCard {
-  const draft = task.state === 'draft', start = draft ? { path: `/api/projects/${task.projectId}/tasks/${task.id}/action`, body: { schema: 'task-action-request-v1' as const, expectedRevision: task.revision, action: 'approve' as const } }
+  const draft = task.state === 'draft', eligible = !task.threadId, start = !eligible ? null : draft ? { path: `/api/projects/${task.projectId}/tasks/${task.id}/action`, body: { schema: 'task-action-request-v1' as const, expectedRevision: task.revision, action: 'approve' as const } }
     : task.held ? { path: `/api/projects/${task.projectId}/tasks/${task.id}/edit`, body: { schema: 'task-update-request-v1' as const, expectedRevision: task.revision, held: false as const } } : null;
   return ProjectWorkCardSchema.parse({ schema: 'project-work-card-v1', id: task.id, kind: 'task', title: task.title, href: `/projects/${task.projectId}/tasks/${task.id}`,
     group: null, label: draft ? 'Proposed' : task.held ? 'Held' : 'Queued', meta: task.state === 'queued' && position ? `#${position} in queue` : null,
     stateLabel: null, outcome: null, threadMeta: null, placementLine: null, chips: [], headerBadges: [], landingLabel: null, showLandingWhy: false, pr: null, mergedOutcome: null, threadActions: null, taskStart: start,
-    taskDismiss: draft ? { path: `/api/projects/${task.projectId}/tasks/${task.id}/action`, body: { schema: 'task-action-request-v1', expectedRevision: task.revision, action: 'reject', reason: 'Dismissed from the chat.' } } : null });
+    taskDismiss: eligible && draft ? { path: `/api/projects/${task.projectId}/tasks/${task.id}/action`, body: { schema: 'task-action-request-v1', expectedRevision: task.revision, action: 'reject', reason: 'Dismissed from the chat.' } } : null });
 }

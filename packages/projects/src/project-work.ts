@@ -1,3 +1,4 @@
+import {chatItems,chatProposalGroups,projectChatThreadTitles,projectChatCardInteraction,ProjectChatCardViewRequestSchema,ProjectChatCardViewSchema} from '@jevellan/core';
 import {projectChatRequest,projectChatView} from '@jevellan/core';
 import {publicProjectData} from './ledger.js';
 import {projectTaskPageView} from '@jevellan/core';
@@ -810,11 +811,23 @@ export class ProjectWork {
     const names = new Map(roster.devices.map(row => [row.device.id, row.device.name])); names.set(this.#o.deviceId, this.#o.deviceName);
     return projectPageView({ work, tasks: tasks.tasks, goals: goals.goals, daily }, resolvedDays, this.#timers.now(), { ...viewer, runtimeName: id => this.#o.runtimes.get(id)?.displayName ?? id, deviceName: id => names.get(id) ?? id });
   }
-  async chatView(projectId: string, raw?: unknown) {
-    const input = projectChatRequest(raw), [ledger, work] = await Promise.all([this.coordinatorEvents(projectId), this.view(projectId)]);
-    const records = ledger.events(), head = records.at(-1)?.id ?? 0, through = input.throughEventId ?? head;
+  async #chatSource(projectId: string, throughEventId?: number, work?: ProjectWorkView) {
+    const [ledger, snapshot] = await Promise.all([this.coordinatorEvents(projectId), work ?? this.view(projectId)]);
+    const records = ledger.events(), head = records.at(-1)?.id ?? 0, through = throughEventId ?? head;
     const events = ledger.redact(records.filter(event => event.id <= through && event.type !== 'journal-source' && event.type !== 'journal-document').map(event => ({ ...event, data: publicProjectData(ledger.data(event)) })));
-    return projectChatView({ schema: 'project-chat-source-v1', projectId, deviceId: this.#o.deviceId, head, threads: work.threads, events }, input);
+    return { schema: 'project-chat-source-v1' as const, projectId, deviceId: this.#o.deviceId, head, threads: snapshot.threads, events };
+  }
+  async chatView(projectId: string, raw?: unknown) {
+    const input = projectChatRequest(raw); return projectChatView(await this.#chatSource(projectId, input.throughEventId), input);
+  }
+  async chatCardView(projectId: string, raw: unknown) {
+    const input = ProjectChatCardViewRequestSchema.parse(raw), page = await this.pageView(projectId), source = await this.#chatSource(projectId, undefined, page.work);
+    if (input.deviceId !== undefined && input.deviceId !== source.deviceId) throw Object.assign(new Error('The coordinator device changed. Read the chat again.'), { status: 409 });
+    const items = chatItems(source.events, projectChatThreadTitles(source.threads)), item = items.find(row => row.id === input.itemId);
+    if (!item || item.kind !== 'routed') throw Object.assign(new Error('Work card not found.'), { status: 404 });
+    const startAll = chatProposalGroups(items, page.tasks).get(item.id) ?? [];
+    const view = projectChatCardInteraction({ schema: 'project-chat-card-interaction-source-v1', projectId, item, tasks: page.tasks, threads: page.work.threads, cards: page.cards, startAll });
+    return ProjectChatCardViewSchema.parse({ schema: 'project-chat-card-view-v1', projectId, deviceId: source.deviceId, request: { ...input, deviceId: source.deviceId }, view });
   }
   async taskPageView(projectId: string, taskId: string) {
     const [task, work] = await Promise.all([this.taskView(projectId, taskId), this.view(projectId)]);

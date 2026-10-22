@@ -1,3 +1,4 @@
+import {ProjectChatCardViewRequestSchema,ProjectChatCardViewSchema} from '@jevellan/core';
 import {ProjectChatViewRequestSchema,ProjectChatViewSchema,projectChatRequest} from '@jevellan/core';
 import { TaskViewSchema, ProjectTaskCommandSchema, ProjectTaskIntentRequestSchema, ProjectTaskQueueRequestSchema } from '@jevellan/core';
 import { ProjectTaskEditorPreviewSchema, ProjectTaskEditorSaveSchema, prepareTaskEditorSave, TaskReceiptSchema } from '@jevellan/core';
@@ -38,7 +39,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'chat-view' | 'task-page-view' | 'task-queue-interaction' | 'task-edit-view' | 'task-draft' | 'task-command' | 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'chat-card-view' | 'chat-view' | 'task-page-view' | 'task-queue-interaction' | 'task-edit-view' | 'task-draft' | 'task-command' | 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -49,6 +50,7 @@ type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GE
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'chat-card-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/chat-card-view$/, methods: ['POST'], target: 'coordinator' },
   { name: 'chat-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/chat-view$/, methods: ['POST'], target: 'coordinator' },
   { name: 'landing-why', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/landing\/why-view$/, methods: ['GET'], target: 'owner' },
   { name: 'merge-why', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/pr\/why-view$/, methods: ['POST'], target: 'owner' },
@@ -324,6 +326,13 @@ async function ownerProjectJson(app: Application, owner: string, purpose: 'threa
     return value;
   } finally { auth.logout(token); }
 }
+export async function ownerProjectChatCardView(app: Application, projectId: string, raw: unknown) {
+  const input = ProjectChatCardViewRequestSchema.parse(raw), owner = await app.projectWork.coordinatorDevice(projectId);
+  if (owner === null || owner === app.device.deviceId) return app.projectWork.chatCardView(projectId, input);
+  const result = parseReply(ProjectChatCardViewSchema, await ownerProjectJson(app, owner, 'coordinator', `${API_PREFIX}${projectId}/coordinator/chat-card-view`, 'POST', input));
+  if (result.projectId !== projectId || result.deviceId !== owner || result.view.itemId !== input.itemId || input.deviceId !== undefined && result.deviceId !== input.deviceId) throw failure('The returned work card does not match the request.', 502);
+  return result;
+}
 export async function ownerProjectChatView(app: Application, projectId: string, raw?: unknown) {
   const input = projectChatRequest(raw), owner = await app.projectWork.coordinatorDevice(projectId);
   if (owner === null || owner === app.device.deviceId) return app.projectWork.chatView(projectId, input);
@@ -542,6 +551,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'goal-update': send(await work.updateGoal(projectId, route.goalId!, GoalUpdateRequestSchema.parse(await requestBody(request)))); return true;
     case 'task-list': send(await work.taskList(projectId)); return true;
     case 'task-queue-interaction': retryable(); send(await work.taskQueueInteraction(projectId, ProjectTaskQueueRequestSchema.parse(await requestBody(request)))); return true;
+    case 'chat-card-view': retryable(); send(await work.chatCardView(projectId, ProjectChatCardViewRequestSchema.parse(await requestBody(request)))); return true;
     case 'chat-view': retryable(); send(await work.chatView(projectId, ProjectChatViewRequestSchema.parse(await requestBody(request)))); return true;
     case 'task-page-view': send(await work.taskPageView(projectId, route.taskId!)); return true;
     case 'task-edit-view': send(await work.taskEditView(projectId, route.taskId!)); return true;

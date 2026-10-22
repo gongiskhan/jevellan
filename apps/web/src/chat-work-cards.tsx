@@ -1,31 +1,27 @@
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ProjectCardsContext, projectCardKey } from './project-cards.js';
-import { TaskViewSchema, ProjectSettingsChangeViewSchema, ProjectWorkSettingsViewSchema, type ProjectSettingsChangeView, type ProjectSettingsChange, type ProjectWorkSettings, type ProjectWorkTask, type ThreadIndex } from '@jevellan/core/client';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { TaskViewSchema, ProjectSettingsChangeViewSchema, ProjectWorkSettingsViewSchema, type ProjectSettingsChangeView, type ProjectSettingsChange, type ProjectWorkSettings, type ProjectChatCardContext, type ProjectChatCardInteraction } from '@jevellan/core/client';
 import { api } from './api.js';
 import { useTask } from './components.js';
 import { ThreadCard } from './thread-card.js';
 import * as copy from './project-work-copy.js';
 import type { ChatItem } from './project-work-model.js';
 
-export function ChatWorkCards({ item, projectId, tasks, threads, startAll, navigate, changed, onError }: {
-  item: Extract<ChatItem, { kind: 'routed' }>; projectId: string; tasks: readonly ProjectWorkTask[]; threads: readonly ThreadIndex[];
+export function ChatWorkCards({ item, projectId, cardContext, startAll, navigate, changed, onError }: {
+  item: Extract<ChatItem, { kind: 'routed' }>; projectId: string; cardContext: ProjectChatCardContext;
   startAll: string[]; navigate(path: string): void; changed(): void; onError(error: unknown): void;
 }) {
-  const operation = useTask(onError), cards = useContext(ProjectCardsContext);
-  const act = async (task: ProjectWorkTask, dismiss = false, signal?: AbortSignal) => {
-    const model = cards.get(projectCardKey('task', task.id)), request = dismiss ? model?.taskDismiss : model?.taskStart;
-    if (request) await api(request.path, TaskViewSchema, 'POST', request.body, { signal, waitForHub: true });
+  const operation = useTask(onError), model = cardContext.interaction(item, startAll), batch = model.batch;
+  const perform = async (command: ProjectChatCardInteraction['rows'][number]['start'], signal: AbortSignal) => {
+    if (command) await api(`/api/projects/${command.projectId}/tasks/${command.taskId}/command`, TaskViewSchema, 'POST', command, { signal, waitForHub: true });
   };
-  const run = (task: ProjectWorkTask, dismiss = false) => void operation.run(async signal => { await act(task, dismiss, signal); changed(); });
-  const rows = item.taskIds?.map(id => { const task = tasks.find(task => task.id === id); return { id, task, thread: threads.find(thread => thread.id === task?.threadId) }; })
-    ?? [{ id: item.threadId!, task: tasks.find(task => task.threadId === item.threadId), thread: threads.find(thread => thread.id === item.threadId) }];
+  const run = (command: ProjectChatCardInteraction['rows'][number]['start']) => void operation.run(async signal => { await perform(command, signal); changed(); });
   return <div className="pw-chat-work-cards">
-    {item.message && <p className="muted">{copy.SENT_MESSAGE_CARD}</p>}
-    {rows.map(row => <ThreadCard key={row.id} projectId={projectId} task={row.task} thread={row.thread}
-      navigate={navigate} changed={changed} onError={onError} busy={operation.busy} start={task => run(task)} dismiss={task => run(task, true)} />)}
-    {startAll.length > 0 && <button className="secondary" disabled={operation.busy} onClick={() => void operation.run(async signal => {
-      try { for (const id of startAll) { const task = tasks.find(task => task.id === id); if (task) await act(task, false, signal); } } finally { changed(); }
-    })}>{copy.startAllCards(startAll.length)}</button>}
+    {model.messageText && <p className="muted">{model.messageText}</p>}
+    {model.rows.map(row => <ThreadCard key={row.id} projectId={projectId} task={row.task ?? undefined} thread={row.thread ?? undefined} presentation={row.card}
+      navigate={navigate} changed={changed} onError={onError} busy={operation.busy} start={() => run(row.start)} dismiss={() => run(row.dismiss)} />)}
+    {batch && <button className="secondary" disabled={operation.busy} onClick={() => void operation.run(async signal => {
+      try { for (const command of batch.commands) await perform(command, signal); } finally { changed(); }
+    })}>{batch.label}</button>}
   </div>;
 }
 
