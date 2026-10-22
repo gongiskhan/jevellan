@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {ProjectStreamPolicySchema} from './project-stream-state.js';
 import {IdSchema} from './schemas.js';
 import {ProjectLedgerEventSchema,ThreadIndexSchema} from './project-schemas.js';
 import {ProjectSettingsChangeSchema} from './project-parity-schemas.js';
@@ -18,7 +19,7 @@ export const ProjectChatSourceSchema=z.strictObject({schema:z.literal('project-c
  if(source.threads.some(thread=>thread.projectId!==source.projectId))ctx.addIssue({code:'custom',message:'This chat source includes another project.'});
 });
 export const ProjectChatViewRequestSchema=z.strictObject({schema:z.literal('project-chat-view-request-v1'),offset:count.default(0),limit:z.number().int().min(1).max(100).default(100),throughEventId:count.optional(),deviceId:IdSchema.optional()});
-export const ProjectChatViewSchema=z.strictObject({schema:z.literal('project-chat-view-v1'),projectId:IdSchema,deviceId:IdSchema,head:count,request:ProjectChatViewRequestSchema.extend({throughEventId:count,deviceId:IdSchema}),total:count,items:z.array(ProjectChatItemSchema).max(100),nextOffset:count.nullable(),hasMore:z.boolean()}).superRefine((view,ctx)=>{
+export const ProjectChatViewSchema=z.strictObject({schema:z.literal('project-chat-view-v1'),projectId:IdSchema,deviceId:IdSchema,head:count,streamPolicy:ProjectStreamPolicySchema.optional(),request:ProjectChatViewRequestSchema.extend({throughEventId:count,deviceId:IdSchema}),total:count,items:z.array(ProjectChatItemSchema).max(100),nextOffset:count.nullable(),hasMore:z.boolean()}).superRefine((view,ctx)=>{
  if(view.request.deviceId!==view.deviceId||view.request.throughEventId>view.head)ctx.addIssue({code:'custom',message:'This chat page belongs to another source.'});
 });
 export type ProjectChatView=z.infer<typeof ProjectChatViewSchema>;

@@ -264,3 +264,6 @@ export * from './project-chat.js';
 
 export * from './project-chat-card-schemas.js';
 export * from './project-chat-card-interaction.js';
+
+export * from './project-history.js';
+export * from './project-stream-state.js';

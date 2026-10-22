@@ -1,6 +1,7 @@
 import {ProjectLedgerDataSchemas,type CoordinatorEvent,type ProjectLedgerData,type ProjectLedgerEvent,type ProjectLedgerEventType,type ThreadIndex} from './project-schemas.js';
 import {OWNER_STARTED_PREFIX,OWNER_STOPPED_THREAD,OWNER_WORKED_PREFIX} from './project-rules.js';
 import {ProjectChatSourceSchema,ProjectChatViewRequestSchema,ProjectChatViewSchema,type ProjectChatItem,type ProjectChatView} from './project-chat-schemas.js';
+import {PROJECT_STREAM_POLICY} from './project-stream-state.js';
 import * as copy from './project-chat-copy.js';
 
 export function projectChatOwnerHeading(via?:string):string{return via?`You, via ${via}`:'You';}
@@ -14,7 +15,7 @@ export function projectChatView(rawSource:unknown,rawRequest?:unknown):ProjectCh
  const items=chatItems(source.events.filter(event=>event.id<=throughEventId),projectChatThreadTitles(source.threads)),total=items.length;
  if(input.offset>total)refuse('This chat offset is beyond the recorded items.');
  const page=items.slice(input.offset,input.offset+input.limit),hasMore=input.offset+page.length<total;
- return ProjectChatViewSchema.parse({schema:'project-chat-view-v1',projectId:source.projectId,deviceId:source.deviceId,head:source.head,request:{...input,throughEventId,deviceId:source.deviceId},total,items:page,nextOffset:hasMore?input.offset+page.length:null,hasMore});
+ return ProjectChatViewSchema.parse({schema:'project-chat-view-v1',projectId:source.projectId,deviceId:source.deviceId,head:source.head,streamPolicy:PROJECT_STREAM_POLICY,request:{...input,throughEventId,deviceId:source.deviceId},total,items:page,nextOffset:hasMore?input.offset+page.length:null,hasMore});
 }
 
 function payload<T extends ProjectLedgerEventType>(event: ProjectLedgerEvent, type: T): ProjectLedgerData<T> | undefined {

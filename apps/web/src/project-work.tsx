@@ -17,7 +17,7 @@ import { TerminalLauncher } from './terminal.js';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import {
-  CoordinatorMessageReceiptSchema, ProjectWaitingResponseSchema, MergeResultViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema, ProjectThreadActionsViewSchema,
+  CoordinatorMessageReceiptSchema, ProjectWaitingResponseSchema, MergeResultViewSchema, ProjectNotebookViewSchema, ProjectThreadActionsViewSchema,
   ProjectPageViewSchema, ProjectSidebarViewSchema, ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, TaskReceiptSchema,
   type ProjectDecision, type ProjectLedgerEvent, type ProjectSidebarView, type ProjectWorkView,
   type ProjectWorkTask, type ProjectOverview, type OverviewPullRequest, type ProjectHeader, type ProjectCoordinatorActivity, type ProjectWorkCard, type ProjectWaitingItemsView, type ProjectWaitingItem, type ProjectWaitingResponse, type ProjectPageView, type ProjectPageRequest, type ProjectViewNotice,
@@ -34,7 +34,7 @@ import {
   toolIcon, type ChatItem, type ProjectTab, type ThreadTitles,
 } from './project-work-model.js';
 import { queuedRefresh } from './refresh.js';
-import { projectHistory } from './project-history.js';
+import { projectStreamState, type ProjectStreamUpdate } from '@jevellan/core/client';
 import { ProjectGoals, type GoalEntry } from './project-goals.js';
 import { TaskQueue } from './task-queue.js';
 import { shortTime, timeStamp } from './time.js';
@@ -313,25 +313,26 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     let debounce: ReturnType<typeof setTimeout> | undefined;
     // The chat stream resumes by itself after a dropped connection; a refused one (the coordinator lives elsewhere) is
     // reopened from the last event with a growing delay, and the view's notices explain the coordinator meanwhile.
-    let source: EventSource | undefined; let retry: ReturnType<typeof setTimeout> | undefined; let last = 0; let delay = 5000; let stopped = false;
+    let source: EventSource | undefined; let retry: ReturnType<typeof setTimeout> | undefined; let stopped = false;
     const pageRequest = () => ProjectPageRequestSchema.parse({ schema: 'project-page-request-v1', ...viewer.current, resolvedDays: resolvedWindow.current, ...(ackKnown.current ? { ackKnown: ackKnown.current } : {}) });
-    let history = projectHistory(); let historyReady = false;
-    const publishHistory = (snapshot: ProjectLedgerEvent[] | undefined) => {
-      if (!snapshot) return false;
-      historyReady = true; setEvents(snapshot); setHistoryLoaded(true);
-      return true;
+    const state = projectStreamState({ schema: 'project-stream-context-v1', projectId: id, hereDeviceId: here, ...(after.current === undefined ? {} : { baseline: after.current }) });
+    const apply = (update: ProjectStreamUpdate) => {
+      if (update.events !== undefined) { setEvents(update.events); setHistoryLoaded(true); }
+      if (update.notices !== undefined) setNotices(update.notices);
+      if (update.coordinatorActivity !== undefined) setCoordinatorActivity(update.coordinatorActivity);
+      if (update.refresh) refresh.current();
     };
     const open = () => {
       const query = new URLSearchParams({ statusView: JSON.stringify(ProjectStatusStreamRequestSchema.parse({ schema: 'project-status-stream-request-v1', page: pageRequest() })) });
-      if (last) query.set('after', String(last));
+      if (state.after) query.set('after', String(state.after));
       const current = new EventSource(`/api/projects/${id}/coordinator/events?${query}`);
       source = current; setStream('connecting');
-      current.onopen = () => { if (stopped || current !== source) return; delay = 5000; setStream('open'); };
+      current.onopen = () => { if (stopped || current !== source) return; state.opened(); setStream('open'); };
       current.onerror = () => {
         if (stopped || current !== source) return;
         if (current.readyState !== EventSource.CLOSED) { setStream('reconnecting'); return; }
         setStream('closed');
-        if (!stopped) { retry = setTimeout(open, delay); delay = Math.min(delay * 2, 60_000); }
+        if (!stopped) { retry = setTimeout(open, state.retryDelay()); }
       };
       current.addEventListener('status-view', (frame: MessageEvent<string>) => {
         if (stopped || current !== source) return;
@@ -342,24 +343,12 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       });
       current.addEventListener('cursor', (frame: MessageEvent<string>) => {
         if (stopped || current !== source) return;
-        const id = Number((JSON.parse(frame.data) as { id?: unknown }).id); if (!Number.isSafeInteger(id)) return;
-        last = Math.max(last, id);
-        if (!historyReady && publishHistory(history.advance(id))) refresh.current();
+        apply(state.cursor(frame.data));
       });
       current.addEventListener('project', (frame: MessageEvent<string>) => {
         if (stopped || current !== source) return;
         try {
-          const document = ProjectEventFrameSchema.parse(JSON.parse(frame.data)), value = document.event;
-          if (document.notices?.length) setNotices(previous => [...new Map([...previous, ...document.notices!].map(notice => [notice.id, notice])).values()]);
-          const activity = document.coordinatorActivity;
-          if (activity) setCoordinatorActivity(previous => !previous || activity.seq > previous.seq ? activity : previous);
-          last = Math.max(last, value.id);
-          if (!historyReady) {
-            if (publishHistory(history.add(value))) refresh.current();
-            return;
-          }
-          setEvents((previous) => previous.some((entry) => entry.id === value.id) ? previous : [...previous, value].sort((a, b) => a.id - b.id));
-          refresh.current();
+          apply(state.frame(frame.data));
         } catch (failure) {
           stopped = true; current.close(); setStream('closed'); onError(failure);
         }
@@ -368,10 +357,8 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
     // The chat shows one device's ledger: the coordinator's, or this device's before any assignment. When a move changes that
     // device the chat starts over from the new device's history, whose event ids overlap the old one's, so neither the cursor nor
     // the shown events carry over (3.5.3, D272). An open stream to the old device never fails by itself, so the view decides.
-    let streaming: string | undefined;
     const restart = () => {
-      source?.close(); clearTimeout(retry); last = 0; delay = 5000;
-      history = projectHistory(); historyReady = false; setHistoryLoaded(false);
+      source?.close(); clearTimeout(retry); setHistoryLoaded(false);
       seen.current = new Set(); setEvents([]); setCoordinatorActivity(undefined); setNotices([]);
       if (!stopped) open();
     };
@@ -379,11 +366,11 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
       if (stopped || pageView.work.project.id !== id) return;
 
         const next = pageView.work;
-        const device = next.coordinator.deviceId ?? here; const moved = streaming !== undefined && device !== streaming; streaming = device;
-        if (after.current === undefined) setTab(new URLSearchParams(location.search).get('view') === 'overview' ? 'overview' : pageView.overview.defaultSurface);
-        if (after.current === undefined || moved) after.current = next.lastEventId;
-        if (moved) restart();
-        if (!historyReady) publishHistory(history.snapshot(next.lastEventId));
+        const result = state.snapshot({ schema: 'project-stream-snapshot-v1', projectId: next.project.id, coordinatorDeviceId: next.coordinator.deviceId ?? null, lastEventId: next.lastEventId });
+        if (result.initial) setTab(new URLSearchParams(location.search).get('view') === 'overview' ? 'overview' : pageView.overview.defaultSurface);
+        after.current = result.baseline;
+        if (result.moved) restart();
+        apply(result.update);
         setView(next); setTaskEditorRevision(pageView.changeToken); setLoadError('');
         setTasks(pageView.tasks); setGoals(pageView.goals); setGoalViews(pageView.goalViews); setDaily(pageView.daily); setRoutines(pageView.routines); setOverview(pageView.overview); setHeader(pageView.header); setCards(pageView.cards); setWaiting(pageView.waiting);
     };

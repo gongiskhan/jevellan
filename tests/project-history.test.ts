@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import type { ProjectLedgerEvent } from '../packages/core/dist/index.js';
-import { projectHistory } from '../apps/web/src/project-history.js';
+import { projectHistory } from '../packages/core/dist/index.js';
 
 const event = (id: number): ProjectLedgerEvent => ({ schema: 'project-ledger-event-v1', id, type: 'coordinator-text',
   t: '2026-10-16T09:00:00.000Z', data: { schema: 'coordinator-text-v1', text: `Reply ${id}` } });
