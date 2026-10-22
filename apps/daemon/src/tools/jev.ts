@@ -1,4 +1,5 @@
 import { ConversationStartRequestSchema } from '@jevellan/core';
+import { readNativeListView, readNativeTranscriptView } from '../native-reading-view.js';
 import { waitProjectSetupView } from '../project-setup-wait.js';
 import { readConversationCreationDraft } from '../conversation-creation-draft.js';
 import { readConversationNewView } from '../conversation-new-view.js';
@@ -27,6 +28,8 @@ function describeRule(rule: JevRule, goals: Map<string, string>): string {
 /** `jev` (bridge specification, "Jev control"). */
 export const jev: OwnerHandler = async (context) => {
   const { app, tools, project, args } = context; const control = app.ownerJev; const projectId = project.id;
+  if (context.action === 'native_list_view') return { text: 'Native session reading view.', data: await readNativeListView(app) };
+  if (context.action === 'native_transcript_view') return { text: 'Native transcript reading view.', data: await readNativeTranscriptView(app, args.request) };
   await tools.status(project); // display ids for every current thread and goal
   const goals = new Map((await app.projectWork.goalList(projectId)).goals.map(row => [row.goal.id, tools.ids.one(projectId, 'G', row.goal.id)]));
   switch (context.action) {

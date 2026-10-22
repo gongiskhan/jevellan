@@ -1,9 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { CursorListSchema, IdSchema, PeerLoginSessionInputSchema, DeviceOriginSchema, parseReply, nativeConversationPolicy, NATIVE_SESSION_HISTORY_MS } from '@jevellan/core';
+import { CursorListSchema, IdSchema, PeerLoginSessionInputSchema, DeviceOriginSchema, parseReply, nativeConversationPolicy, NATIVE_SESSION_HISTORY_MS, nativeSessionReadRef, nativeUnavailableSession } from '@jevellan/core';
 import type { Application } from './application.js';
 import { json, requestBody } from './http.js';
 import { forwardOwner } from './owner-proxy.js';
 import { nativeConnectionsDeviceOperation } from './native-connection-device.js';
+import { readNativeListView, readNativeTranscriptView } from './native-reading-view.js';
 
 const peerPrefix = '/api/mesh/cursor';
 const snapshots = new WeakMap<Application, Map<string, ReturnType<typeof CursorListSchema.parse>>>();
@@ -21,6 +22,17 @@ export async function handleCursorApi(app: Application, request: IncomingMessage
   const method = request.method ?? 'GET';
   const send = (value: unknown) => json(response, app.redactor.document(value));
   const gateway = IdSchema.parse(url.searchParams.get('gateway') ?? app.device.deviceId);
+  if (path === '/api/cursor/list-view') {
+    if (method !== 'GET') throw fail('Unsupported method.', 405);
+    send(await readNativeListView(app, token ?? (peer ? request.headers.authorization?.replace(/^Bearer /u, '') : undefined), peer)); return true;
+  }
+  const reading = /^\/api\/cursor\/((?:cursor|claude|codex)_[a-f0-9]{32})\/read-view$/u.exec(path);
+  if (reading) {
+    if (method !== 'GET') throw fail('Unsupported method.', 405);
+    const ref = nativeSessionReadRef({ schema: 'native-session-ref-request-v1', id: reading[1]!, currentDeviceId: app.device.deviceId,
+      gatewayDeviceId: peer ? app.device.deviceId : gateway, ...(url.searchParams.has('deviceId') ? { ownerDeviceId: url.searchParams.get('deviceId')! } : {}) });
+    send(await readNativeTranscriptView(app, ref, token ?? (peer ? request.headers.authorization?.replace(/^Bearer /u, '') : undefined))); return true;
+  }
   if (!peer && gateway !== app.device.deviceId) {
     const target = (await app.roster()).devices.find(row => row.device.id === gateway && !row.revoked);
     if (!target) throw fail('The Cursor device is no longer available in this mesh.', 404);
@@ -84,7 +96,7 @@ export async function cursorListSource(app: Application, token?: string, peer = 
       } catch {
         return { schema: 'cursor-list-v1' as const, observedAt: new Date().toISOString(), unavailable: [`${row.device.name}: Cursor sessions are unavailable.`],
           sessions: (cache.get(row.device.id)?.sessions ?? []).filter(session => Date.now() - Date.parse(session.lastActivityAt) < NATIVE_SESSION_HISTORY_MS)
-            .map(session => ({ ...session, connected: false, state: 'unknown' as const, canSteer: false, canSend: false })) };
+            .map(nativeUnavailableSession) };
       }
     }));
     const local = await localPromise;
