@@ -1,3 +1,6 @@
+import {ProjectIntake} from './intake.js';
+import {ProjectIntakeLanding} from './intake-landing.js';
+import {ProjectWorkTaskSchema,stableJson,type IntakeAction,type IntakeCheck,type PublicationLeaseService} from '@jevellan/core';
 import { importJobDeliveries, LegalLandingReceiptsSchema } from './job-deliveries.js';
 import { placeCommandJob } from './job-placement.js';
 import type { DeviceView, ThreadIndex } from '@jevellan/core';
@@ -7,7 +10,7 @@ import { deviceAllowsWork, ProjectDeployJobResultSchema, ProjectJobFindingsSchem
 import { derivedId } from './decision-items.js';
 import { ThreadGit, threadBaseRef } from './git.js';
 import type { GitHubAccess } from './publication.js';
-import type { ProjectTasks } from './tasks.js';
+import {taskRankBetween,type ProjectTasks} from './tasks.js';
 import { outputTail, runThreadCommand, SETUP_TIMEOUT_MS } from './verification.js';
 import { parseWorktrees } from './worktree.js';
 import { readDocument, writeDocument, TurnProcessSchema, type NativeProcess } from '@jevellan/core';
@@ -17,14 +20,34 @@ import { endTurnProcess } from './recovery.js';
 const JobProcessSchema = TurnProcessSchema.extend({ schema: z.literal('project-job-process-v1') });
 
 export class ProjectJobRunner {
+  readonly intake:ProjectIntake;
+  readonly intakeLanding:ProjectIntakeLanding;
   readonly #running = new Map<string, { id: string; controller: AbortController; promise: Promise<void> }>();
   readonly #starting = new Set<string>();
   #closed = false;
-  constructor(readonly o: { library?: import('@jevellan/core').ProjectLibrary | undefined; beforeDeployment?(run: ProjectJobRun): Promise<void>; projectEnvironment?(projectId: string): Promise<Record<string, string>>; homes: Homes; hub: ProjectHub; tasks: ProjectTasks; git: ThreadGit; github: GitHubAccess; deviceId: string; deviceName: string; redactor: SecretRedactor;
+  constructor(readonly o: { leases?:PublicationLeaseService|undefined;assertIntakeLanding?(projectId:string):Promise<void>;library?: import('@jevellan/core').ProjectLibrary | undefined; beforeDeployment?(run: ProjectJobRun): Promise<void>; projectEnvironment?(projectId: string): Promise<Record<string, string>>; homes: Homes; hub: ProjectHub; tasks: ProjectTasks; git: ThreadGit; github: GitHubAccess; deviceId: string; deviceName: string; redactor: SecretRedactor;
     roster?(): Promise<{ devices: DeviceView[] }>; relay?(projectId: string, deviceId: string, runId: string): Promise<void>;
     now(): number; settings(projectId: string): Promise<ProjectWorkSettings>; project(projectId: string): Promise<Project>; baseBranch(repo: string): Promise<string>; event(projectId: string, event: CoordinatorEvent): Promise<void>;
-    windowOpened(projectId: string): Promise<string | undefined>; day(projectId: string): Promise<string>; dayStart(projectId: string, day: string): Promise<number>; changed(): void; facts?(): DeviceFacts }) {}
+    windowOpened(projectId: string): Promise<string | undefined>; day(projectId: string): Promise<string>; dayStart(projectId: string, day: string): Promise<number>; changed(): void; facts?(): DeviceFacts }) {this.intake=new ProjectIntake(o);this.intakeLanding=new ProjectIntakeLanding(o);}
   runningIds(): string[] { return [...this.#running.values()].map(row => row.id); }
+  async prepareIntakeLanding(check:IntakeCheck):Promise<void>{
+    if(!this.o.leases)throw Object.assign(Error('The publication lease service is unavailable.'),{status:409});
+    await this.o.assertIntakeLanding?.(check.projectId);
+    const checked=(await this.o.hub.jobRun(check.runId))?.document,job=checked&&(await this.o.hub.job(checked.jobId))?.document;
+    if(!checked?.conclusion||checked.projectId!==check.projectId||checked.spec.kind!=='command'||!checked.spec.intake||!job||job.projectId!==check.projectId||!job.enabled||job.paused||job.run.kind!=='command'||!job.run.intake)throw Object.assign(Error('The checked intake job is unavailable or changed.'),{status:409});
+  }
+  async queueIntakeLanding(action:IntakeAction,check:IntakeCheck):Promise<void>{
+    await this.prepareIntakeLanding(check);
+    await this.o.tasks.exclusive(check.projectId,async()=>{
+      await this.o.tasks.assertWriter(check.projectId);
+      const stored=(await this.o.hub.intakeDocument(action.id))?.document,decision=(await this.o.hub.decision(action.decisionId))?.document;
+      if(stored?.schema!=='intake-action-v1'||stored.checkId!==check.id||stored.answer.optionLabel!=='merge'||!stored.taskId||decision?.answer?.optionLabel!=='merge')throw Object.assign(Error('This landing has no matching owner approval.'),{status:403});
+      const binding={schema:'intake-landing-binding-v1' as const,actionId:stored.id,checkId:check.id},previous=(await this.o.hub.task(stored.taskId))?.document;
+      if(previous){if(stableJson(previous.intakeLanding)!==stableJson(binding))throw Error('This landing task belongs to another approval.');return;}
+      const source=(await this.o.hub.jobRun(check.runId))!.document,ordered=await this.o.tasks.list(check.projectId),at=new Date(this.o.now()).toISOString();
+      await this.o.tasks.save(ProjectWorkTaskSchema.parse({schema:'project-work-task-v1',id:stored.taskId,projectId:check.projectId,revision:0,title:`Land PR #${check.pull.number}: ${check.pull.title}`.slice(0,120),brief:`Land the owner-approved checked head ${check.pull.headSha} from ${check.pull.url}.`,kind:'job',type:'feature',goalId:null,source:'owner',state:'queued',rank:taskRankBetween(ordered.map(row=>row.rank).sort().at(-1)??null,null),ownerRanked:false,now:false,after:[],needs:[],dailyId:null,jobId:source.jobId,threadId:null,jobRunId:null,fixed:{},intakeLanding:binding,createdAt:at,updatedAt:at}));
+    });this.o.changed();
+  }
   busy(projectId?: string): boolean { return projectId ? this.#running.has(projectId) || this.#starting.has(projectId) : this.#running.size > 0 || this.#starting.size > 0; }
   async mainHead(projectId: string): Promise<string> {
     const project = await this.o.project(projectId), repo = resolveProjectPath(project, this.o.deviceId, this.o.deviceName), branch = await this.o.baseBranch(repo), ref = threadBaseRef(derivedId('review_baseline', projectId));
@@ -50,7 +73,8 @@ export class ProjectJobRunner {
     if (!run.conclusion) return;
     if ((await this.o.hub.coordinator(run.projectId))?.document.deviceId === this.o.deviceId) await this.o.tasks.exclusive(run.projectId, async () => {
       const task = await this.o.tasks.read(run.projectId, run.taskId);
-      if (!['done', 'failed', 'cancelled'].includes(task.state)) await this.o.tasks.save({ ...task, jobRunId: run.id, state: run.conclusion === 'passed' ? 'done' : run.conclusion === 'cancelled' ? 'cancelled' : 'failed', endedAt: run.endedAt!, endNote: run.summary.slice(0, 400) });
+      const idleIntake=run.conclusion==='skipped'&&run.spec.kind==='command'&&!!run.spec.intake&&!!run.intake&&run.intake.errors.length===0&&run.intake.pulls.length===0;
+      if (!['done', 'failed', 'cancelled'].includes(task.state)) await this.o.tasks.save({ ...task, jobRunId: run.id, state: run.conclusion === 'passed'||idleIntake ? 'done' : run.conclusion === 'cancelled' ? 'cancelled' : 'failed', endedAt: run.endedAt!, endNote: run.summary.slice(0, 400) });
     });
     const job = (await this.o.hub.job(run.jobId))?.document;
     if ((await this.o.hub.coordinator(run.projectId))?.document.deviceId === this.o.deviceId) for (const [index, finding] of (run.findings ?? []).entries()) {
@@ -72,6 +96,8 @@ export class ProjectJobRunner {
     const job = task.jobId ? (await this.o.hub.job(task.jobId))?.document : null;
     if (job?.run.kind === 'github-workflow') throw Object.assign(new Error('GitHub workflow jobs retired on 19 October. Use a command job.'), { status: 409 });
     if (!job || job.projectId !== task.projectId || !job.enabled) throw Object.assign(new Error('This job is unavailable or disabled.'), { status: 409 });
+    let intakeSpec:ProjectJobRun['spec']|undefined;
+    if(task.intakeLanding){const check=(await this.o.hub.intakeDocument(task.intakeLanding.checkId))?.document;if(check?.schema!=='intake-check-v1')throw Error('The intake check is unavailable.');await this.prepareIntakeLanding(check);intakeSpec=(await this.o.hub.jobRun(check.runId))!.document.spec;}
     const deploySettings = (await this.o.settings(task.projectId)).deploy;
     if ((job.id === deploySettings.jobId || job.id === deploySettings.desktopJobId) && !task.deployment) throw Object.assign(new Error('Deploy jobs run only from the owner’s deploy message.'), { status: 403 });
     if (task.deployment) {
@@ -87,11 +113,11 @@ export class ProjectJobRunner {
       if (!base) throw Object.assign(new Error('The project has no published base commit for this job.'), { status: 409 });
       if (task.deployment && (await this.o.git.run(repo, ['merge-base', '--is-ancestor', task.deployment.commit, base], { permitted: [1, 128] })).code !== 0) throw Object.assign(new Error(`Commit ${task.deployment.commit} is not on origin/main. Deploys build only from main.`), { status: 409 });
       const window = task.nightlyWindowId ? (await this.o.hub.window(task.nightlyWindowId))?.document : null;
-      const spec = job.run, gateRequired = !!job.gate;
+      const spec = intakeSpec??job.run, gateRequired = !!job.gate;
       const day = task.projectDay ?? await this.o.day(task.projectId), gate = gateRequired ? (await this.runs(task.projectId)).find(row => row.jobId === job.gate!.jobId && row.projectDay === day && row.conclusion === 'passed' && (!window || window.taskIds.includes(row.taskId))) : undefined;
       const at = new Date(this.o.now()).toISOString();
       run = await this.#save(ProjectJobRunSchema.parse({ schema: 'project-job-run-v1', id, projectId: task.projectId, revision: 0, jobId: job.id, taskId: task.id,
-        commit: task.deployment?.commit ?? gate?.commit ?? base, ...(task.deployment ? { deployment: task.deployment } : {}), deviceId: this.o.deviceId, projectDay: day, startedAt: at, conclusion: null, summary: '', logTail: '', spec, baseBranch,
+        commit: task.deployment?.commit ?? gate?.commit ?? base, ...(task.deployment ? { deployment: task.deployment } : {}),...(task.intakeLanding?{intakeLanding:task.intakeLanding}:{}), deviceId: this.o.deviceId, projectDay: day, startedAt: at, conclusion: null, summary: '', logTail: '', spec, baseBranch,
         phase: spec.kind === 'command' ? 'waiting' : 'reserved', requestedByDeviceId: this.o.deviceId, waitingUntil: new Date(window ? Date.parse(window.openedAt) + 7 * 3600000 : this.o.now() + 6 * 3600000).toISOString(), setupCommand: (await this.o.settings(task.projectId)).setupCommand, ...(gate ? { gateRunId: gate.id } : {}), ...(task.nightlyWindowId ? { nightlyWindowId: task.nightlyWindowId } : {}), watchAfter: await this.o.windowOpened(task.projectId) ?? new Date(await this.o.dayStart(task.projectId, day)).toISOString() }));
       if (gateRequired && !gate) await this.o.git.run(repo, ['update-ref', '-d', privateRef]);
       if (gateRequired && !gate) {
@@ -160,14 +186,23 @@ export class ProjectJobRunner {
     this.#running.set(run.projectId, { id: run.id, controller, promise });
   }
   async #execute(initial: ProjectJobRun, _job: ProjectJob, signal: AbortSignal): Promise<void> {
-    let run = (await this.o.hub.jobRun(initial.id))?.document ?? initial;
+    let run = (await this.o.hub.jobRun(initial.id))?.document ?? initial;let intakeTimedOut=false;
     if (run.conclusion) return this.#sync(run);
     if (run.deployment?.mode === 'deploy' && (await this.o.hub.deploy(run.deployment.deployId))?.document.healthBeforeJobRunId !== run.id) return;
     if (run.phase === 'reserved' && (await this.o.settings(run.projectId)).status !== 'active') return;
-    if (run.phase === 'executing') { await this.#stopRecordedProcess(run); run = await this.#recoverDeliveries(run); await this.#finish(run, 'failed', 'The daemon restarted during execution. The operation was not repeated. Run it again explicitly.'); return; }
+    if (run.phase === 'executing') { await this.#stopRecordedProcess(run);if(run.intakeLanding){const recovered=await this.intakeLanding.recover(run);await this.#finish(run,recovered?.conclusion??'failed',recovered?.summary??'The interrupted intake landing has no candidate receipt. No operation was repeated.');return;} run = await this.#recoverDeliveries(run); await this.#finish(run, 'failed', 'The daemon restarted during execution. The operation was not repeated. Run it again explicitly.'); return; }
     try {
       const project = await this.o.project(run.projectId), repo = resolveProjectPath(project, this.o.deviceId, this.o.deviceName);
       if (run.spec.kind === 'command') {
+        if(run.spec.intake){
+          if(run.deployment)throw Object.assign(Error('Intake cannot execute deploys or rollbacks.'),{status:403});
+          run=await this.#save({...run,phase:'executing'});
+          const deadline=AbortSignal.timeout(run.spec.timeoutMinutes*60_000),combined=AbortSignal.any([signal,deadline]);let outcome;
+          try{const onProcess=(native:NativeProcess)=>writeDocument(this.#processPath(run),JobProcessSchema,{...native,schema:'project-job-process-v1',turn:1,startedAt:new Date(this.o.now()).toISOString()});if(run.intakeLanding){const landed=await this.intakeLanding.execute(run,combined,onProcess);await this.#finish(run,landed.conclusion,landed.summary);return;}outcome=await this.intake.check(run,combined,onProcess);}
+          catch(error){intakeTimedOut=deadline.aborted&&!signal.aborted;throw error;}
+          finally{await this.#stopRecordedProcess(run);}
+          run=await this.#save({...run,intake:outcome.result});await this.#finish(run,outcome.conclusion,outcome.summary);return;
+        }
         if (run.deployment) {
           const main = await this.mainHead(run.projectId);
           if ((await this.o.git.run(repo, ['merge-base', '--is-ancestor', run.commit, main], { permitted: [1, 128] })).code !== 0) throw new Error(`Commit ${run.commit} is not on origin/main. Deploys build only from main.`);
@@ -232,7 +267,7 @@ export class ProjectJobRunner {
       }
     } catch (error) {
       run = { ...((await this.o.hub.jobRun(run.id))?.document ?? run), ...(run.deployResult ? { deployResult: run.deployResult } : {}), ...(run.deliveries?.length ? { deliveries: run.deliveries } : {}) };
-      if (!run.conclusion) await this.#finish(run, signal.aborted ? 'cancelled' : 'failed', error instanceof Error ? error.message : 'Job execution failed.');
+      if (!run.conclusion) await this.#finish(run, signal.aborted ? 'cancelled' : intakeTimedOut ? 'timed-out' : 'failed', error instanceof Error ? error.message : 'Job execution failed.');
     }
   }
   async #recoverDeliveries(run: ProjectJobRun): Promise<ProjectJobRun> {

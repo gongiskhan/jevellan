@@ -1,0 +1,32 @@
+import {DecisionAnswerSchema} from './project-answer-schemas.js';
+import {z} from 'zod';
+
+/** Explicit job capability. An ordinary command or job name never enables PR intake. */
+export const IntakeCommandSchema=z.strictObject({schema:z.literal('intake-command-v1'),
+ authors:z.array(z.string().regex(/^[A-Za-z0-9-]{1,39}$/u)).min(1).max(100).nullable().default(null)});
+export type IntakeCommand=z.infer<typeof IntakeCommandSchema>;
+
+import {IdSchema,TimestampSchema} from './schemas.js';
+const sha=z.string().regex(/^[a-f0-9]{40,64}$/u);
+export const IntakePullSchema=z.strictObject({schema:z.literal('intake-pull-v1'),number:z.number().int().positive(),url:z.url(),title:z.string().min(1).max(500),body:z.string().max(65536),author:z.string().min(1).max(100),headSha:sha,headRef:z.string().min(1).max(1024),baseRef:z.string().min(1).max(200),state:z.enum(['open','closed']),merged:z.boolean(),draft:z.boolean(),updatedAt:TimestampSchema});
+export type IntakePull=z.infer<typeof IntakePullSchema>;
+export const IntakeCheckResultSchema=z.strictObject({name:z.string().min(1).max(80),passed:z.boolean(),at:TimestampSchema,exitCode:z.number().int().nullable(),timedOut:z.boolean(),tail:z.string().max(2000)});
+export const IntakeDecisionSchema=z.strictObject({checkId:IdSchema,runId:IdSchema,number:z.number().int().positive(),head:sha});
+export const IntakeCheckSchema=z.strictObject({schema:z.literal('intake-check-v1'),id:IdSchema,projectId:IdSchema,revision:z.number().int().nonnegative(),deviceId:IdSchema,runId:IdSchema,pull:IntakePullSchema,repository:z.strictObject({owner:z.string().min(1).max(100),repo:z.string().min(1).max(100)}),baseCommit:sha,status:z.enum(['checking','checked','error']),checks:z.array(IntakeCheckResultSchema).max(32),selectedChecks:z.array(z.string().min(1).max(80)).max(32).default([]),worktreeRetained:z.boolean().default(false),stats:z.strictObject({files:z.number().int().nonnegative(),added:z.number().int().nonnegative(),deleted:z.number().int().nonnegative()}).nullable(),decisionId:IdSchema.nullable(),error:z.string().max(1200).nullable(),startedAt:TimestampSchema,checkedAt:TimestampSchema.nullable()}).refine(value=>value.status!=='checked'||!!value.stats&&!!value.decisionId&&!!value.checkedAt,{message:'A completed intake check needs its counts,time and owner item.'});
+export type IntakeCheck=z.infer<typeof IntakeCheckSchema>;
+export const IntakeLandingBindingSchema=z.strictObject({schema:z.literal('intake-landing-binding-v1'),actionId:IdSchema,checkId:IdSchema});
+export const IntakeActionSchema=z.strictObject({schema:z.literal('intake-action-v1'),id:IdSchema,projectId:IdSchema,revision:z.number().int().nonnegative(),deviceId:IdSchema,checkId:IdSchema,decisionId:IdSchema,decisionRevision:z.number().int().positive(),clientRequestId:IdSchema,digest:z.string().regex(/^[a-f0-9]{64}$/u),answer:DecisionAnswerSchema.refine(answer=>['merge','redo','close','later'].includes(answer.optionLabel??'')&&(answer.ownerMessage?.length??0)<=20000,'Choose a bounded intake option.'),state:z.enum(['pending','completed']),closed:z.boolean(),commentState:z.enum(['none','posting','posted']),commentId:z.number().int().positive().nullable(),taskId:IdSchema.nullable(),prClosedAt:TimestampSchema.nullable(),createdAt:TimestampSchema,completedAt:TimestampSchema.nullable()}).refine(value=>value.closed===(value.answer.optionLabel!=='later')&&(value.state!=='completed'||!!value.completedAt)&&(value.commentState!=='posted'||!!value.commentId)&&(value.commentState==='none'||!!value.answer.text&&value.answer.optionLabel!=='later'),'The intake action receipt is inconsistent.');
+export type IntakeAction=z.infer<typeof IntakeActionSchema>;
+export const IntakeLandingSchema=z.strictObject({schema:z.literal('intake-landing-v1'),id:IdSchema,projectId:IdSchema,revision:z.number().int().nonnegative(),deviceId:IdSchema,runId:IdSchema,actionId:IdSchema,checkId:IdSchema,source:z.literal('owner'),head:sha,baseCommit:sha,attempt:z.number().int().min(0).max(2),at:TimestampSchema,state:z.enum(['checking','publishing','landed','failed','already-on-main']),candidate:z.strictObject({commit:sha,at:TimestampSchema,method:z.literal('merge-commit'),route:z.literal('land'),checks:z.array(IntakeCheckResultSchema).max(32)}).nullable(),failure:z.string().max(1200).nullable(),decisionId:IdSchema.nullable(),worktreeRetained:z.boolean().default(false),endedAt:TimestampSchema.nullable()}).refine(value=>value.state!=='landed'||!!value.candidate&&!!value.endedAt,{message:'A landed intake needs its exact candidate and completion time.'});
+export type IntakeLanding=z.infer<typeof IntakeLandingSchema>;
+
+export const IntakeDocumentSchema=z.discriminatedUnion('schema',[IntakeCheckSchema,IntakeActionSchema,IntakeLandingSchema]);
+export type IntakeDocument=z.infer<typeof IntakeDocumentSchema>;
+/** Leave room for the RPC wrapper under the member transport's response limit. */
+export const INTAKE_PAGE_BYTES=1_000_000;
+export const IntakeJobResultSchema=z.strictObject({schema:z.literal('intake-job-result-v1'),pulls:z.array(z.strictObject({checkId:IdSchema,number:z.number().int().positive(),head:sha,build:z.enum(['passed','failed','not-run'])})).max(1000),skipped:z.number().int().nonnegative(),errors:z.array(z.strictObject({number:z.number().int().positive(),reason:z.string().max(1200)})).max(1000).default([])});
+export type IntakeJobResult=z.infer<typeof IntakeJobResultSchema>;
+export const IntakeCommentSchema=z.strictObject({schema:z.literal('intake-comment-v1'),id:z.number().int().positive(),body:z.string().max(65536),at:TimestampSchema,author:z.string().max(100).nullable()});
+
+export function intakeBuild(check:Pick<IntakeCheck,'checks'>):'passed'|'failed'|'not-run'{return !check.checks.length?'not-run':check.checks.every(row=>row.passed)?'passed':'failed';}
+export function intakeQuestion(check:IntakeCheck):string{if(check.status!=='checked'||!check.stats)throw Error('This intake check has not finished.');const failed=check.checks.filter(row=>!row.passed).map(row=>row.name).slice(0,5),clean=(text:string)=>text.replace(/\s+/gu,' ').trim();return `PR #${check.pull.number} "${clean(check.pull.title)}" by ${clean(check.pull.author)}: build ${intakeBuild(check)}, ${check.checks.filter(row=>row.passed).length}/${check.selectedChecks.length||check.checks.length} checks${failed.length?` (${failed.map(clean).join(', ')})`:''}. ${check.stats.files} files, +${check.stats.added} -${check.stats.deleted}.`;}

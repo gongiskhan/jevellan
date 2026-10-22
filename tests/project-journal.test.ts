@@ -259,6 +259,7 @@ test('handoffs account for late owner events without requiring previously covere
 test('a journal sweep yields to pending requests between project batches', async () => {
   const { engine, project } = setup();
   const projects = Array.from({ length: 12 }, (_, index) => ({ ...project, id: `project_${index}` }));
+  for (const row of projects) database.put('projects', row.id, ProjectSchema, row, 0);
   const journal = new ProjectJournals({ ...engine.o, projects: async () => projects }); engines.push(journal);
   const order: string[] = [];
   setImmediate(() => order.push('request'));

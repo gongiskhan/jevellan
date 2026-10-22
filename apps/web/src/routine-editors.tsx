@@ -32,14 +32,18 @@ function JobForm({ view, props }: { view: ProjectJobEditor; props: Props }) {
   }); }}>
     <label>Name<input required maxLength={view.constraints.nameMax} value={fields.name} onChange={event => set('name', event.target.value)} /></label>
     <label>Goal<select value={fields.goalId} onChange={event => set('goalId', event.target.value)}><Options values={view.choices.goals} /></select></label>
+    <label className="check"><input type="checkbox" checked={!!fields.intake} onChange={event=>set('intake',event.target.checked)}/>{view.intakePolicy.label}</label>
+    {fields.intake?<><label>{view.intakePolicy.authorsLabel}<input maxLength={view.intakePolicy.authorsMax} value={fields.intakeAuthors??''} onChange={event=>set('intakeAuthors',event.target.value)}/></label><p className="pw-field-note">{view.intakePolicy.authorsHint}</p><p className="pw-field-note">{view.intakePolicy.scheduleText}</p></>:<>
     <label>Command<textarea required maxLength={view.constraints.commandMax} value={fields.command} onChange={event => set('command', event.target.value)} /></label>
     <label>Device tags<input maxLength={view.constraints.needsMax} placeholder="linux, prod-access" value={fields.needs} onChange={event => set('needs', event.target.value)} /></label><p className="pw-field-note">Every tag is required. Leave empty for any eligible project device.</p>
     <label>Working directory<select value={fields.cwd} onChange={event => set('cwd', event.target.value as typeof fields.cwd)}><Options values={view.choices.cwd} /></select></label>
+    </>}
     <label>Timeout in minutes<input required type="number" min={view.constraints.timeoutMinutes.min} max={view.constraints.timeoutMinutes.max} value={fields.timeoutMinutes} onChange={event => set('timeoutMinutes', event.target.value)} /></label>
-    <label>Gate<select value={fields.gate} onChange={event => set('gate', event.target.value)}><Options values={view.choices.gates} /></select></label><p className="pw-field-note">Runs on exactly the commit this job passed on in the project day.</p>
+    {!fields.intake&&<><label>Gate<select value={fields.gate} onChange={event => set('gate', event.target.value)}><Options values={view.choices.gates} /></select></label><p className="pw-field-note">Runs on exactly the commit this job passed on in the project day.</p>
     <label className="check"><input type="checkbox" checked={fields.intervalEnabled} onChange={event => set('intervalEnabled', event.target.checked)} />Interval schedule</label>
     {fields.intervalEnabled && <><label>Every minutes<input required type="number" min={view.constraints.everyMinutes.min} max={view.constraints.everyMinutes.max} value={fields.everyMinutes} onChange={event => set('everyMinutes', event.target.value)} /></label>
       <label>Between start<input required type="time" value={fields.intervalStart} onChange={event => set('intervalStart', event.target.value)} /></label><label>Between end<input required type="time" value={fields.intervalEnd} onChange={event => set('intervalEnd', event.target.value)} /></label></>}
+    </>}
     <label className="check"><input type="checkbox" checked={fields.enabled} onChange={event => set('enabled', event.target.checked)} />Enabled</label>
     <div className="actions"><button disabled={operation.busy}>Save</button><button type="button" className="secondary" onClick={props.close}>Cancel</button></div>
   </form>;

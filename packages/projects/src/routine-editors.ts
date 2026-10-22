@@ -18,7 +18,7 @@ export function jobEditorView(projectId: string, item: ProjectJob | undefined, c
   const run = item?.run.kind === 'command' ? item.run : undefined;
   return ProjectJobEditorSchema.parse({ schema: 'project-job-editor-v1', projectId, itemId: item?.id ?? null, title: item ? 'Edit job' : 'New job', readonly: item?.run.kind === 'github-workflow',
     notice: item?.run.kind === 'github-workflow' ? retired : null,
-    defaults: { name: item?.name ?? '', goalId: item?.goalId ?? '', enabled: item?.enabled ?? true, command: run?.command ?? '', needs: run?.needs.join(', ') ?? '',
+    defaults: { name: item?.name ?? '', goalId: item?.goalId ?? '', enabled: item?.enabled ?? true, command: run?.command ?? '', intake:!!run?.intake,intakeAuthors:run?.intake?.authors?.join(', ')??'', needs: run?.needs.join(', ') ?? '',
       cwd: run?.cwd ?? 'checkout', timeoutMinutes: String(item?.run.timeoutMinutes ?? 30), gate: item?.gate?.jobId ?? '', intervalEnabled: !!item?.interval,
       everyMinutes: String(item?.interval?.everyMinutes ?? 10), intervalStart: item?.interval?.start ?? '08:00', intervalEnd: item?.interval?.end ?? '23:00' },
     constraints: { nameMax: limit(JobCreateRequestSchema.shape.name, 'maxLength'), commandMax: limit(command.shape.command, 'maxLength'),
@@ -53,9 +53,10 @@ export function routineEditorRequest(raw: unknown, item?: ProjectJob | ProjectDa
       if (item && 'run' in item && item.run.kind === 'github-workflow') return refuse(retired);
       if ((input.schema === 'job-editor-update-request-v1') !== !!item) return refuse('The editor request does not match this job.');
       const fields = input.fields, prior = item && 'run' in item && item.run.kind === 'command' ? item.run : undefined;
-      const values = { name: fields.name, goalId: fields.goalId || null, enabled: fields.enabled, gate: fields.gate ? { jobId: fields.gate } : null,
-        run: { ...prior, kind: 'command' as const, command: fields.command, needs: fields.needs.split(/[,\s]+/u).filter(Boolean), cwd: fields.cwd, timeoutMinutes: Number(fields.timeoutMinutes) },
-        interval: fields.intervalEnabled ? { everyMinutes: Number(fields.everyMinutes), start: fields.intervalStart, end: fields.intervalEnd } : undefined };
+      const intake=fields.intake??!!prior?.intake,authors=fields.intakeAuthors===undefined?prior?.intake?.authors??null:fields.intakeAuthors.split(/[,\s]+/u).filter(Boolean),ordinary={...prior};delete ordinary.intake;if(intake)delete ordinary.deliveryGate;
+      const values = { name: fields.name, goalId: fields.goalId || null, enabled: fields.enabled, gate: !intake&&fields.gate ? { jobId: fields.gate } : null,
+        run: intake?{...ordinary,kind:'command' as const,command:'intake',needs:[],cwd:'checkout' as const,timeoutMinutes:Number(fields.timeoutMinutes),intake:{schema:'intake-command-v1' as const,authors:authors?.length?authors:null}}:{ ...ordinary, kind: 'command' as const, command: fields.command, needs: fields.needs.split(/[,\s]+/u).filter(Boolean), cwd: fields.cwd, timeoutMinutes: Number(fields.timeoutMinutes) },
+        interval: intake?{everyMinutes:10,start:'08:00',end:'23:00'}:fields.intervalEnabled ? { everyMinutes: Number(fields.everyMinutes), start: fields.intervalStart, end: fields.intervalEnd } : undefined };
       return input.schema === 'job-editor-create-request-v1' ? JobCreateRequestSchema.parse({ ...values, schema: 'job-create-request-v1', clientRequestId: input.clientRequestId })
         : JobUpdateRequestSchema.parse({ ...values, schema: 'job-update-request-v1', expectedRevision: input.expectedRevision });
     }

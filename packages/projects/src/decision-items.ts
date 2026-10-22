@@ -33,6 +33,7 @@ export type DecisionItemsOptions = {
   /** Bound after construction: the thread service is built later. */
   threads(): DecisionThreadActions;
   deployAnswer?(decision: ProjectDecision, answer: DecisionAnswer, request: { clientRequestId: string; expectedRevision?: number | undefined }): Promise<{ repeated: boolean; closed: boolean }>;
+  intakeAnswer?(decision: ProjectDecision, answer: DecisionAnswer, request: { clientRequestId: string; expectedRevision?: number | undefined }): Promise<{ repeated: boolean; closed: boolean }>;
   mergeAnswer?(decision: ProjectDecision, answer: DecisionAnswer, validateOnly: boolean): Promise<boolean>;
   now?(): number;
 };
@@ -144,6 +145,10 @@ export class DecisionItems {
       if (ownerMessage !== undefined) throw refuse('Use the owner’s deploy message to approve or roll back a deploy.', 403);
       if (!this.#o.deployAnswer) throw refuse('Deploy approval is unavailable.', 409);
       return this.#o.deployAnswer(asked, answer, request);
+    }
+    if (asked.intake) {
+      if (!this.#o.intakeAnswer) throw refuse('Intake owner actions are unavailable.', 409);
+      return this.#o.intakeAnswer(asked, answer, request);
     }
     if (answer.optionLabel !== undefined && !asked.options.some((option) => option.label === answer.optionLabel)) throw refuse(UNKNOWN_OPTION, 400);
     if (asked.automaticFix && !answer.optionLabel) throw refuse('Choose an automatic fix option.', 400);

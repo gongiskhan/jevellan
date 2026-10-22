@@ -1,3 +1,5 @@
+import {DecisionAnswerFieldsSchema,DecisionAnswerSchema,DECISION_ANSWER_REQUIRED,answerPresent} from './project-answer-schemas.js';
+import {IntakeDecisionSchema} from './project-intake-schemas.js';
 import { SessionHistoryViewSchema } from './session-history-view.js';
 import { ProjectThreadDisplayTextSchema } from './project-thread-display.js';
 import { SessionCacheViewSchema } from './session-cache-view.js';
@@ -131,18 +133,9 @@ export function reportHasQuestion(report: { status: string; question?: string | 
 export const ThreadReportSchema = ThreadReportFieldsSchema.refine(reportHasQuestion, { message: NEEDS_DECISION_QUESTION, path: ['question'] });
 export type ThreadReport = z.infer<typeof ThreadReportSchema>;
 
-// 5.9 answer
-export const DecisionAnswerFieldsSchema = z.strictObject({ optionLabel: z.string().max(120).optional(), text: z.string().max(4000).optional() });
-export const DECISION_ANSWER_REQUIRED = 'Choose an option or write an answer.';
-export function answerPresent(answer: { optionLabel?: string | undefined; text?: string | undefined }): boolean {
-  return !!answer.optionLabel || !!answer.text;
-}
-export const DecisionAnswerSchema = DecisionAnswerFieldsSchema.extend({
-  // Missing on historical answers; all new answers name their source.
-  source: z.enum(['panel', 'owner-chat']).optional(), ownerMessage: z.string().min(1).optional(),
-}).refine(answerPresent, DECISION_ANSWER_REQUIRED)
-  .refine(answer => answer.source !== 'owner-chat' || !!answer.ownerMessage, 'A chat answer needs the owner message.');
-export type DecisionAnswer = z.infer<typeof DecisionAnswerSchema>;
+// Shared with the explicit intake action receipts; historical imports remain compatible.
+export {DecisionAnswerFieldsSchema,DecisionAnswerSchema,DECISION_ANSWER_REQUIRED,answerPresent} from './project-answer-schemas.js';
+export type {DecisionAnswer} from './project-answer-schemas.js';
 
 // 5.4 every variant carries schema, kind, id and at.
 const ev = <K extends string, S extends z.ZodRawShape>(kind: K, fields: S) => z.strictObject({
@@ -282,12 +275,14 @@ export const ProjectDecisionSchema = z.strictObject({ schema: z.literal('project
   ownerCommands: OwnerCommandsSchema.optional(),
   // B3: a question that asks the owner to sign in to this account; withdrawn once the account is Ready.
   accountId: IdSchema.optional(),
+  intake: IntakeDecisionSchema.optional(),
   automaticFix: z.strictObject({ prNumber: positive, kind: PrAutoFixKindSchema, maxRounds: positive }).optional(),
   createdAt: TimestampSchema, answeredAt: TimestampSchema.optional(), answer: DecisionAnswerSchema.optional(),
   urgent: z.boolean().optional(), deploy: z.strictObject({ deployId: IdSchema, action: z.enum(['approve', 'retry', 'rollback']).default('approve') }).optional(),
   landing: z.strictObject({ commit: z.string().regex(/^[a-f0-9]{40,64}$/u), routeId: IdSchema }).optional(),
   merge: z.strictObject({ commit: z.string().regex(/^[a-f0-9]{40,64}$/u), prNumber: positive, reason: z.string().max(1200).optional(), failures: z.array(z.strictObject({ what: z.string().max(500), output: z.string().max(2000) })).max(50).optional() }).optional(),
-  withdrawnAt: TimestampSchema.optional() }).refine(value => !!value.deploy || value.question.length <= 2000, { path: ['question'], message: 'Ordinary questions have at most 2000 characters.' });
+  withdrawnAt: TimestampSchema.optional() }).refine(value => !!value.deploy || value.question.length <= 2000, { path: ['question'], message: 'Ordinary questions have at most 2000 characters.' })
+  .refine(value=>!value.intake||value.from==='coordinator'&&!value.threadId&&!value.deploy&&!value.merge&&!value.landing&&!value.automaticFix&&!value.accountId,{path:['intake'],message:'Intake is a separate coordinator owner item.'});
 export type ProjectDecision = z.infer<typeof ProjectDecisionSchema>;
 // 5.10 hub namespace project-notebooks, key projectId
 export const ProjectNotebookSchema = z.strictObject({ schema: z.literal('project-notebook-v1'), projectId: IdSchema,

@@ -1,5 +1,11 @@
 import { ProjectDeploySummarySchema, type ProjectDeploy, type ProjectDeployBaseline } from '@jevellan/core';
 
+/** Existing thread-only copy stays stable; outside contributions keep their own source kind. */
+export function projectDeployWorkLabel(row:Pick<ProjectDeploy,'threads'|'intake'>,style:'question'|'progress'='progress'){
+  const threads=style==='question'?`${row.threads.length} landed thread(s)`:`${row.threads.length} threads`,count=row.intake?.length??0;
+  if(!count)return threads;const pulls=`${count} outside pull request(s)`;return row.threads.length?`${threads} and ${pulls}`:pulls;
+}
+
 /** Shared by deployment guards and all clients; a baseline records state, not an attested deployment event. */
 export function currentProjectDeploy(rows: readonly ProjectDeploy[], baseline: ProjectDeployBaseline | null) {
   const events = rows.flatMap(row => [
@@ -43,7 +49,7 @@ export function projectDeploySummary(projectId: string, rows: readonly ProjectDe
     desktopLine: record?.desktop?.state === 'skipped' ? `Desktop build skipped: ${record.desktop.reason ?? 'not available'}` : null,
     rollback: candidate ? { deployId: candidate.id, enabled: refusal === null, pending: candidate.rollbackPending?.reason === 'owner', refusal,
       label: `Roll back to ${short(candidate.previousCommit)}`, confirmation: `Roll back production to ${short(candidate.previousCommit)}?`,
-      detail: `Rolling production back to ${short(candidate.previousCommit)} replaces ${short(candidate.commit)} (deployed ${clock(candidate.deployedAt!, candidate.timezone)}, ${candidate.threads.length} threads). Call again with confirm to do it.`,
+      detail: `Rolling production back to ${short(candidate.previousCommit)} replaces ${short(candidate.commit)} (deployed ${clock(candidate.deployedAt!, candidate.timezone)}, ${projectDeployWorkLabel(candidate)}). Call again with confirm to do it.`,
       path: `/api/projects/${projectId}/deploys/${candidate.id}/rollback`, body: { schema: 'project-deploy-rollback-request-v1', clientRequestId: `rollback_${candidate.id}_${candidate.revision}`, expectedRevision: candidate.revision },
     } : null,
   });

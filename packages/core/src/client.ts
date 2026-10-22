@@ -263,3 +263,5 @@ export * from './device-management.js';
 export * from './rigging-editor.js';
 
 export * from './improver-editor.js';
+
+export * from './project-intake-schemas.js';

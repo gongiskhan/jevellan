@@ -1,0 +1,13 @@
+import {expect,test} from 'vitest';
+import {GitHubClient} from '../packages/core/dist/index.js';
+const repository={owner:'fixture',repo:'repo'};
+const pull=(number:number)=>({number,html_url:`https://github.com/fixture/repo/pull/${number}`,state:'open',title:`Change ${number}`,body:'Contributor description.',user:{login:'outside-contributor'},draft:false,updated_at:'2026-10-20T10:00:00.000Z',head:{sha:number.toString(16).padStart(40,'0'),ref:`outside-${number}`},base:{ref:'main'}});
+test('intake pull listing walks bounded REST pages and retains body author and exact head without changing awareness limits',async()=>{
+ const requests:{page:string|null,size:string|null,state:string|null}[]=[];const client=new GitHubClient({token:async()=>'fixture-credential',fetch:async(input)=>{const url=new URL(String(input)),page=Number(url.searchParams.get('page'));requests.push({page:url.searchParams.get('page'),size:url.searchParams.get('per_page'),state:url.searchParams.get('state')});const start=(page-1)*100;return Response.json(Array.from({length:Math.max(0,Math.min(100,201-start))},(_,i)=>pull(start+i+1)));}});const rows=await client.intakePulls(repository);expect(rows).toHaveLength(201);expect(rows[200]).toMatchObject({schema:'intake-pull-v1',number:201,author:'outside-contributor',body:'Contributor description.',headSha:pull(201).head.sha,baseRef:'main'});expect(requests).toEqual([1,2,3].map(page=>({page:String(page),size:'100',state:'open'})));await expect(client.recentPulls(repository,'open',100)).rejects.toThrow('Invalid pull request limit.');
+});
+test('intake never calls a full capacity result a complete listing',async()=>{
+ let calls=0;const client=new GitHubClient({token:async()=>'fixture-credential',fetch:async()=>{calls++;return Response.json(Array.from({length:100},(_,i)=>pull(i+1)));}});await expect(client.intakePulls(repository)).rejects.toThrow(/limit|too many|capacity/iu);expect(calls).toBeLessThanOrEqual(11);
+});
+test('ordinary contributor notes use the issue comment endpoint and preserve exact owner text',async()=>{
+ const requests:{path:string;method:string;body:unknown}[]=[];const client=new GitHubClient({token:async()=>'fixture-credential',fetch:async(input,init)=>{requests.push({path:new URL(String(input)).pathname,method:init!.method!,body:JSON.parse(String(init!.body))});return Response.json({id:41,body:'Owner note.\nNext line.',created_at:'2026-10-20T10:00:00.000Z',user:{login:'fixture'}},{status:201});}});expect(await client.commentPull(repository,4,'Owner note.\nNext line.')).toMatchObject({id:41});expect(requests).toEqual([{path:'/repos/fixture/repo/issues/4/comments',method:'POST',body:{body:'Owner note.\nNext line.'}}]);
+});

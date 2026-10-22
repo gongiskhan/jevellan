@@ -1,3 +1,4 @@
+import {IntakeDocumentSchema} from './project-intake-schemas.js';
 import { ProjectDeploySchema, ProjectDeployBaselineSchema } from './project-deploy-schemas.js';
 import { ProjectSetupProposalSchema, SetupActionRequestSchema } from './project-setup-schemas.js';
 import { MergeDocumentSchema } from './merge-schemas.js';
@@ -19,7 +20,7 @@ import { ProjectGoalSchema, ProjectRefillStateSchema } from './project-goal-sche
 // Members reach project hub state through POST /hub/mesh/projects/<collection> with operation-discriminated bodies (D7).
 // The main isolation phase adds the held checkouts read (6).
 export const ProjectHubCollectionSchema = z.enum(['settings', 'coordinators', 'threads', 'decisions', 'notebooks', 'overrides',
-  'envelopes', 'work', 'mail', 'reservations', 'checkouts', 'tasks', 'goals', 'jobs', 'dailies', 'job-runs', 'windows', 'deploys']);
+  'envelopes', 'work', 'mail', 'reservations', 'checkouts', 'tasks', 'goals', 'jobs', 'dailies', 'job-runs', 'windows', 'deploys', 'intake']);
 export type ProjectHubCollection = z.infer<typeof ProjectHubCollectionSchema>;
 export const PROJECT_HUB_PAGE = 100;
 /** A pending-envelope page also stops near this many serialized bytes (at least one envelope), under the member's 2 MiB reply cap (D260). */
@@ -60,6 +61,9 @@ const project = { projectId: IdSchema };
 const page = { projectId: IdSchema, after: IdSchema.optional() };
 const expectedRevision = z.number().int().nonnegative();
 export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({...request,operation:z.literal('intake-documents'),...page}),
+  z.strictObject({...request,operation:z.literal('intake-document-get'),id:IdSchema}),
+  z.strictObject({...request,operation:z.literal('intake-document-put'),document:IntakeDocumentSchema,expectedRevision}),
   z.strictObject({ ...request, operation: z.literal('deploys-list'), ...page }),
   z.strictObject({ ...request, operation: z.literal('deploy-get'), id: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('deploy-put'), document: ProjectDeploySchema, expectedRevision }),
@@ -137,6 +141,7 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
 export type ProjectHubRequest = z.infer<typeof ProjectHubRequestSchema>;
 export type ProjectHubOperation = ProjectHubRequest['operation'];
 const collections = {
+  'intake-documents':'intake','intake-document-get':'intake','intake-document-put':'intake',
   'deploys-list': 'deploys', 'deploy-get': 'deploys', 'deploy-put': 'deploys', 'deploy-baseline-get': 'deploys', 'deploy-baseline-put': 'deploys', 'deploy-decision-update': 'deploys',
   'setup-get': 'work', 'setup-put': 'work', 'setup-action': 'work',
   'notification-put': 'work', 'session-caches': 'work', 'session-cache-put': 'work', 'usage-days': 'work', 'usage-day-put': 'work',
@@ -163,6 +168,7 @@ const collections = {
 export function collectionOf(operation: ProjectHubOperation): ProjectHubCollection { return collections[operation]; }
 // Every operation is classified, so an operation added by a later phase cannot skip the lifecycle gate unnoticed.
 const access = {
+  'intake-documents':'read','intake-document-get':'read','intake-document-put':'write',
   'deploys-list': 'read', 'deploy-get': 'read', 'deploy-put': 'write', 'deploy-baseline-get': 'read', 'deploy-baseline-put': 'write', 'deploy-decision-update': 'write',
   'setup-get': 'read', 'setup-put': 'write', 'setup-action': 'write',
   'notification-put': 'write', 'session-caches': 'read', 'session-cache-put': 'write', 'usage-days': 'read', 'usage-day-put': 'write',
@@ -196,6 +202,9 @@ function stored<T extends z.ZodType<{ revision: number }>>(document: T) {
 const result = { schema: z.literal('project-hub-result-v1') };
 const records = <T extends z.ZodType>(document: T) => ({ records: z.array(document).max(PROJECT_HUB_PAGE), next: IdSchema.nullable() });
 export const ProjectHubResultSchema = z.discriminatedUnion('operation', [
+  z.strictObject({...result,operation:z.literal('intake-documents'),...records(IntakeDocumentSchema)}),
+  z.strictObject({...result,operation:z.literal('intake-document-get'),record:stored(IntakeDocumentSchema).nullable()}),
+  z.strictObject({...result,operation:z.literal('intake-document-put'),record:stored(IntakeDocumentSchema)}),
   z.strictObject({ ...result, operation: z.literal('setup-get'), record: stored(ProjectSetupProposalSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('setup-put'), record: stored(ProjectSetupProposalSchema) }),
   z.strictObject({ ...result, operation: z.literal('setup-action'), record: stored(ProjectSetupProposalSchema) }),

@@ -58,18 +58,18 @@ export class ThreadGit {
    * The only fetch threads run (D14, D143): into a private ref, with an empty refmap so `refs/remotes/origin/<base>`
    * stays put, no FETCH_HEAD and no followed tags, so a conversation step on the same checkout sees no change.
    */
-  async fetchPrivate(repo: string, base: string, ref: string, signal?: AbortSignal): Promise<string> {
+  async fetchPrivate(repo: string, base: string, ref: string, signal?: AbortSignal, env?: Record<string,string>): Promise<string> {
     if (!ref.startsWith(THREAD_REF_PREFIX)) throw new Error('Thread fetches write only private thread refs.');
     await this.run(repo, ['check-ref-format', '--branch', base]);
-    await this.run(repo, ['fetch', '--refmap=', '--no-write-fetch-head', '--no-tags', 'origin', `refs/heads/${base}:${ref}`], { timeoutMs: GIT_NETWORK_TIMEOUT_MS, ...(signal ? { signal } : {}) });
+    await this.run(repo, ['fetch', '--refmap=', '--no-write-fetch-head', '--no-tags', 'origin', `refs/heads/${base}:${ref}`], { timeoutMs: GIT_NETWORK_TIMEOUT_MS, ...(signal ? { signal } : {}), ...(env?{env}:{}) });
     const sha = await this.resolve(repo, ref);
     if (!sha) throw new Error('The fetched base branch could not be read.');
     return sha;
   }
   /** A pull request's current head on GitHub (`refs/pull/<n>/head`), into a private thread ref like `fetchPrivate`. */
-  async fetchPullHead(repo: string, number: number, ref: string, signal?: AbortSignal): Promise<string> {
+  async fetchPullHead(repo: string, number: number, ref: string, signal?: AbortSignal, env?: Record<string,string>): Promise<string> {
     if (!ref.startsWith(THREAD_REF_PREFIX) || !Number.isSafeInteger(number) || number < 1) throw new Error('Thread fetches write only private thread refs.');
-    await this.run(repo, ['fetch', '--refmap=', '--no-write-fetch-head', '--no-tags', 'origin', `+refs/pull/${number}/head:${ref}`], { timeoutMs: GIT_NETWORK_TIMEOUT_MS, ...(signal ? { signal } : {}) });
+    await this.run(repo, ['fetch', '--refmap=', '--no-write-fetch-head', '--no-tags', 'origin', `+refs/pull/${number}/head:${ref}`], { timeoutMs: GIT_NETWORK_TIMEOUT_MS, ...(signal ? { signal } : {}), ...(env?{env}:{}) });
     const sha = await this.resolve(repo, ref);
     if (!sha) throw new Error('The fetched pull request head could not be read.');
     return sha;

@@ -318,3 +318,5 @@ export * from './owner-tool-maintenance.js';
 export * from './rigging-editor.js';
 
 export * from './improver-editor.js';
+
+export * from './project-intake-schemas.js';

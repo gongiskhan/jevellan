@@ -1,3 +1,4 @@
+import {IntakePullSchema,IntakeCommentSchema,type IntakePull} from './project-intake-schemas.js';
 import { GitHubWorkflowRunSchema, GitHubWorkflowJobsSchema, GitHubWorkflowRunsSchema } from './github-actions.js';
 import { z } from 'zod';
 import { createHash } from 'node:crypto';
@@ -39,6 +40,7 @@ export const GitHubPullResponseSchema = z.object({
 });
 export const GitHubPullListResponseSchema = z.array(GitHubPullResponseSchema);
 export const GitHubAwarenessPullResponseSchema = GitHubPullResponseSchema.extend({ title: z.string(), user: z.object({ login: z.string() }), draft: z.boolean(), updated_at: z.iso.datetime() });
+const GitHubIntakePullResponseSchema=GitHubAwarenessPullResponseSchema.extend({body:z.string().nullable().optional()});
 const GitHubCommitsResponseSchema = z.array(z.object({ sha: z.string().regex(sha), commit: z.object({ message: z.string(),
   author: z.object({ name: z.string(), date: z.iso.datetime() }) }) })).max(30);
 export const GitHubCheckRunsResponseSchema = z.object({ total_count: z.number().int().nonnegative(),
@@ -141,6 +143,21 @@ export class GitHubClient {
   }
   async awarenessPull(repository: GitHubRepository, number: number) {
     return this.#request('GET', `${repo(repository)}/pulls/${pullNumber(number)}`, GitHubAwarenessPullResponseSchema);
+  }
+  /** Intake walks every page; a full capacity response is blocked instead of silently treated as complete. */
+  async intakePulls(repository:GitHubRepository):Promise<IntakePull[]>{
+    const rows:IntakePull[]=[];
+    for(let page=1;page<=PAGE_LIMIT;page++){
+      const query=new URLSearchParams({state:'open',per_page:'100',page:String(page)});
+      const pulls=await this.#request('GET',`${repo(repository)}/pulls?${query}`,z.array(GitHubIntakePullResponseSchema).max(100));
+      rows.push(...pulls.map(intakePull));if(pulls.length<100)return rows;
+    }
+    throw new GitHubError('invalid-response','The intake pull request listing reached its page limit; no complete listing is available.');
+  }
+  async intakePull(repository:GitHubRepository,number:number):Promise<IntakePull>{return intakePull(await this.#request('GET',`${repo(repository)}/pulls/${pullNumber(number)}`,GitHubIntakePullResponseSchema));}
+  async commentPull(repository:GitHubRepository,number:number,body:string){
+    const result=await this.#request('POST',`${repo(repository)}/issues/${pullNumber(number)}/comments`,z.object({id:z.number().int().positive(),body:z.string(),created_at:z.iso.datetime(),user:z.object({login:z.string()}).nullable()}),{body});
+    return IntakeCommentSchema.parse({schema:'intake-comment-v1',id:result.id,body:result.body,at:result.created_at,author:result.user?.login??null});
   }
   async recentPulls(repository: GitHubRepository, state: 'open' | 'closed', limit: number) {
     if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error('Invalid pull request limit.');
@@ -302,3 +319,5 @@ async function readTail(response: Response, signal: AbortSignal): Promise<string
     throw signal.aborted ? timedOut() : new GitHubError('network', 'GitHub could not be reached.');
   } finally { reader.releaseLock(); }
 }
+
+function intakePull(value:z.infer<typeof GitHubIntakePullResponseSchema>):IntakePull{return IntakePullSchema.parse({schema:'intake-pull-v1',number:value.number,url:value.html_url,title:value.title,body:value.body??'',author:value.user.login,headSha:value.head.sha,headRef:value.head.ref,baseRef:value.base.ref,state:value.state,merged:value.merged===true||!!value.merged_at,draft:value.draft,updatedAt:value.updated_at});}

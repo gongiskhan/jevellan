@@ -10,6 +10,7 @@ function setup(options: { before?: boolean; database?: boolean; rollbackAvailabl
   const baseline = ProjectDeployBaselineSchema.parse({ schema: 'project-deploy-baseline-v1', id: 'project', projectId: 'project', revision: 1, commit: a, rollbackAvailable: options.rollbackAvailable ?? true, migrationPaths: ['db/migrations/'], updatedAt: at });
   const indexes: ThreadIndex[] = [{ id: 'thread_a', title: 'Fix app', landing: { commit: b }, state: 'done' } as ThreadIndex];
   const hub = {
+    intakeDocuments: async () => ({ records: [], next: null }),
     mergeDocuments: async () => ({ records: [], next: null }), coordinator: async () => ({ document: { deviceId: 'device' } }), deploys: async () => ({ records: [...deploys.values()], next: null }), deploy: async (id: string) => deploys.has(id) ? { document: deploys.get(id) } : null,
     putDeploy: async (row: ProjectDeploy, revision: number) => { expect(deploys.get(row.id)?.revision ?? 0).toBe(revision); const saved = ProjectDeploySchema.parse({ ...row, revision: revision + 1 }); deploys.set(row.id, saved); return { document: saved }; },
     deployBaseline: async () => ({ document: baseline }), threads: async () => ({ records: indexes, next: null }),

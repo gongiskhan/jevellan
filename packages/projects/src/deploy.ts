@@ -5,7 +5,7 @@ import type { ProjectJobRunner } from './job-runner.js';
 import type { ProjectTasks } from './tasks.js';
 import { derivedId } from './decision-items.js';
 import { taskRankBetween } from './tasks.js';
-import { currentProjectDeploy, deployBusy, DEPLOY_BUSY, projectDeploySummary, projectRollbackRefusal } from './deploy-summary.js';
+import { currentProjectDeploy, deployBusy, DEPLOY_BUSY, projectDeploySummary, projectRollbackRefusal,projectDeployWorkLabel } from './deploy-summary.js';
 const short = (sha: string | null) => sha?.slice(0, 7) ?? 'unknown';
 const time = (at: string, timezone: string) => new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(at));
 const refuse = (message: string, status = 409): never => { throw Object.assign(new Error(message), { status }); };
@@ -52,7 +52,7 @@ export class ProjectDeployService {
   }
   async #threads(id: string): Promise<ThreadIndex[]> { const rows: ThreadIndex[] = []; let after: string | undefined; do { const page = await this.o.hub.threads(id, after); rows.push(...page.records); after = page.next ?? undefined; } while (after); return rows; }
   #question(row: ProjectDeploy): string {
-    const lines = [`Deploy ${row.threads.length} landed thread(s) to production at ${short(row.commit)}?`, ...row.threads.map(thread => `- ${thread.title} (${short(thread.landingCommit)})`), `Full suite on ${short(row.commit)}: ${row.suite.conclusion ?? 'not run yet'}.`];
+    const lines = [`Deploy ${projectDeployWorkLabel(row,'question')} to production at ${short(row.commit)}?`, ...row.threads.map(thread => `- ${thread.title} (${short(thread.landingCommit)})`),...(row.intake??[]).map(pull=>`- PR #${pull.number}: ${pull.title} (${short(pull.landingCommit)})`), `Full suite on ${short(row.commit)}: ${row.suite.conclusion ?? 'not run yet'}.`];
     for (const check of row.checks) {
       const run = row.messageHealth.find(run => run.checkId === check.id), failed = run?.steps.find(step => !step.passed);
       lines.push(`${check.name}: ${run ? `${run.passed ? 'passed' : 'failed'} at ${time(run.at, row.timezone)}${failed ? `: ${failed.name}: ${failed.reason ?? 'failed'}` : ''}` : 'not run yet'}`);
@@ -74,22 +74,25 @@ export class ProjectDeployService {
     let row = rows.findLast(row => row.state === 'open');
     const held = new Set(rows.filter(item => ['approved', 'running', 'deployed'].includes(item.state)).flatMap(item => item.threads.map(thread => `${thread.threadId}:${thread.landingCommit}`)));
     const landings = new Map([...rows.filter(item => item.state === 'failed').flatMap(item => item.threads), ...(row?.threads ?? [])].map(thread => [thread.threadId, thread]));
+    const heldIntake=new Set(rows.filter(item=>['approved','running','deployed'].includes(item.state)).flatMap(item=>(item.intake??[]).map(pull=>`${pull.checkId}:${pull.landingCommit}`))),intakeLandings=new Map([...rows.filter(item=>item.state==='failed').flatMap(item=>item.intake??[]),...(row?.intake??[])].map(pull=>[pull.checkId,pull]));
     const routes = []; let after: string | undefined;
     do { const page = await this.o.hub.mergeDocuments(id, after); routes.push(...page.records); after = page.next ?? undefined; } while (after);
     for (const route of routes.filter(item => item.schema === 'landing-route-v1').sort((a, b) => a.at.localeCompare(b.at))) if (route.state === 'landed' && route.candidate) landings.set(route.threadId, { threadId: route.threadId, title: route.packet.title, landingCommit: route.candidate.commit });
     for (const thread of await this.#threads(id)) if (thread.landing) landings.set(thread.id, { threadId: thread.id, title: thread.title, landingCommit: thread.landing.commit });
+    let intakeAfter:string|undefined;do{const page=await this.o.hub.intakeDocuments(id,intakeAfter);for(const landing of page.records)if(landing.schema==='intake-landing-v1'&&landing.state==='landed'&&landing.candidate){const check=(await this.o.hub.intakeDocument(landing.checkId))?.document;if(check?.schema==='intake-check-v1')intakeLandings.set(check.id,{schema:'intake-deploy-ref-v1',checkId:check.id,number:check.pull.number,title:check.pull.title.slice(0,120),url:check.pull.url,landingCommit:landing.candidate.commit});}intakeAfter=page.next??undefined;}while(intakeAfter);
     const threads = [...landings.values()].filter(thread => !held.has(`${thread.threadId}:${thread.landingCommit}`));
-    if (!threads.length) return;
-    if (!row && threads.every(thread => rows.some(item => item.state === 'failed' && item.threads.some(prior => prior.threadId === thread.threadId && prior.landingCommit === thread.landingCommit)))) return;
+    const intake=[...intakeLandings.values()].filter(pull=>!heldIntake.has(`${pull.checkId}:${pull.landingCommit}`));
+    if (!threads.length&&!intake.length) return;
+    if (!row && threads.every(thread => rows.some(item => item.state === 'failed' && item.threads.some(prior => prior.threadId === thread.threadId && prior.landingCommit === thread.landingCommit)))&&intake.every(pull=>rows.some(item=>item.state==='failed'&&(item.intake??[]).some(prior=>prior.checkId===pull.checkId&&prior.landingCommit===pull.landingCommit)))) return;
     let baseline = (await this.o.hub.deployBaseline(id))?.document ?? null;
     if (!baseline && this.o.discoverBaseline) { const commit = await this.o.discoverBaseline(id); baseline = await this.baseline(id, { commit, rollbackAvailable: false, migrationPaths: [], desktopPaths: [], desktopSecretNames: [], desktopSecretAlternatives: [] }, 0); }
-    const current = this.#current(rows, baseline), commit = row && stableJson(row.threads) === stableJson(threads) ? row.commit : await this.o.jobs.mainHead(id);
+    const current = this.#current(rows, baseline), commit = row && stableJson(row.threads) === stableJson(threads)&&stableJson(row.intake??[])===stableJson(intake) ? row.commit : await this.o.jobs.mainHead(id);
     const checks = settings.healthChecks.filter(check => check.enabled), runs = await this.o.jobs.runs(id), suiteRun = runs.find(run => run.jobId === settings.deploy.suiteJobId && run.commit === commit);
     const suite = { commit, conclusion: suiteRun?.conclusion === 'passed' ? 'passed' as const : suiteRun?.conclusion && suiteRun.conclusion !== 'skipped' ? 'failed' as const : null, ...(suiteRun ? { runId: suiteRun.id } : {}) };
     const at = this.#at(), deployId = row?.id ?? derivedId('deploy', id, commit, at);
-    const draft = ProjectDeploySchema.parse({ ...(row ?? { schema: 'project-deploy-v1', id: deployId, projectId: id, revision: 0, state: 'open', health: { before: [], after: [] }, decisionId: derivedId('pdec', deployId), createdAt: at }), commit, threads, suite, checks, timezone: settings.nightlyWindow.timezone, previousCommit: current.commit, rollbackAvailable: current.rollbackAvailable, updatedAt: at });
+    const draft = ProjectDeploySchema.parse({ ...(row ?? { schema: 'project-deploy-v1', id: deployId, projectId: id, revision: 0, state: 'open', health: { before: [], after: [] }, decisionId: derivedId('pdec', deployId), createdAt: at }), commit, threads,...(intake.length||row?.intake?{intake}:{}), suite, checks, timezone: settings.nightlyWindow.timezone, previousCommit: current.commit, rollbackAvailable: current.rollbackAvailable, updatedAt: at });
     draft.desktopPlan = await this.#desktopPlan(draft, settings, baseline);
-    const fingerprint = (item: ProjectDeploy) => stableJson({ commit: item.commit, threads: item.threads, suite: item.suite, checks: item.checks, timezone: item.timezone, previousCommit: item.previousCommit, rollbackAvailable: item.rollbackAvailable, desktopPlan: item.desktopPlan });
+    const fingerprint = (item: ProjectDeploy) => stableJson({ commit: item.commit, threads: item.threads,intake:item.intake??[], suite: item.suite, checks: item.checks, timezone: item.timezone, previousCommit: item.previousCommit, rollbackAvailable: item.rollbackAvailable, desktopPlan: item.desktopPlan });
     if (row && fingerprint(row) === fingerprint(draft)) { await this.#message(row); return; }
     row = await this.#save({ ...draft, messageHealth: await this.o.health(id, checks, 'manual', deployId) }); await this.#message(row);
   }

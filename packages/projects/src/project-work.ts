@@ -1,3 +1,4 @@
+import {ProjectIntakeActions} from './intake-actions.js';
 import {projectNotebookEditor,ProjectNotebookCommandSchema} from '@jevellan/core';
 import {projectCoordinatorComposerFromUi} from '@jevellan/core';
 import {chatItems,chatProposalGroups,projectChatThreadTitles,projectChatCardInteraction,ProjectChatCardViewRequestSchema,ProjectChatCardViewSchema} from '@jevellan/core';
@@ -183,6 +184,7 @@ export class ProjectWork {
   readonly captures: ProjectCaptureQueue;
   readonly memoryProgramme: ProjectMemoryProgramme | undefined;
   readonly reviews: NightlyReview; readonly daily: ProjectDailyWork; readonly jobs: ProjectJobRunner;
+  readonly intakeActions:ProjectIntakeActions;
   readonly goals: ProjectGoals; readonly tasks: ProjectTasks; readonly dispatcher: ProjectDispatcher;
   readonly deploys: ProjectDeployService;
   readonly mergeGate: ProjectMergeGate; readonly landings: ThreadLandingService;
@@ -279,7 +281,7 @@ export class ProjectWork {
       deviceName: o.deviceName, hub: o.hub, redactor: o.redactor, now, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}),
       local: (projectId) => this.store.list(projectId).map((thread) => threadIndex(thread, this.store.labels(thread.id), thread.createdAt)),
       pendingMain: (projectId) => this.threads.pendingMain(projectId) });
-    this.decisions = new DecisionItems({ deployAnswer: (decision, answer, request) => this.deploys.answer(decision, answer, request), hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), mergeAnswer: (decision, answer, validateOnly) => decision.landing ? this.landings.answer(decision, answer, validateOnly) : this.mergeGate.answer(decision, answer, validateOnly), threads: () => ({
+    this.decisions = new DecisionItems({ intakeAnswer:(decision,answer,request)=>this.intakeActions.answer(decision,answer,request), deployAnswer: (decision, answer, request) => this.deploys.answer(decision, answer, request), hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), mergeAnswer: (decision, answer, validateOnly) => decision.landing ? this.landings.answer(decision, answer, validateOnly) : this.mergeGate.answer(decision, answer, validateOnly), threads: () => ({
       automaticFixAnswer: (projectId, threadId, prNumber, allow, commandId) => this.threads.automaticFixAnswer(projectId, threadId, prNumber, allow, commandId),
       allowTurns: (projectId, threadId, commandId) => this.threads.allowTurns(projectId, threadId, commandId),
       stop: (projectId, threadId, reason, commandId) => this.threads.stop(projectId, threadId, reason, true, commandId),
@@ -437,9 +439,10 @@ export class ProjectWork {
         },
         runtimeName: (runtime) => o.runtimes.get(runtime)?.displayName ?? runtime, enterOperation: o.enterOperation,
         timers: { threadTurnTimeoutMs: timers.threadTurnTimeoutMs, setupTimeoutMs: timers.setupTimeoutMs }, now } });
-    this.jobs = new ProjectJobRunner({ library: o.library, beforeDeployment: run => this.deploys.beforeJob(run), roster: o.roster, relay: async (projectId, deviceId, runId) => { this.outbox.enqueue(projectId, deviceId, { kind: 'job-run', runId, commandId: derivedId('jobcmd', runId, deviceId) }); await this.outbox.drain(); }, projectEnvironment, homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
+    this.jobs = new ProjectJobRunner({ leases:o.leases,assertIntakeLanding:id=>this.daily.assertMerge(id),library: o.library, beforeDeployment: run => this.deploys.beforeJob(run), roster: o.roster, relay: async (projectId, deviceId, runId) => { this.outbox.enqueue(projectId, deviceId, { kind: 'job-run', runId, commandId: derivedId('jobcmd', runId, deviceId) }); await this.outbox.drain(); }, projectEnvironment, homes: o.homes, hub: o.hub, tasks: this.tasks, git, github, deviceId: o.deviceId, deviceName: o.deviceName, redactor: o.redactor, now, facts,
       project: id => this.#project(id), settings: id => this.admission.settings(id), baseBranch: repo => worktrees.baseBranch(repo), event: (id, event) => delivery.toCoordinator(id, event),
       windowOpened: async id => (await this.daily.window(id))?.openedAt, day: id => this.daily.day(id), dayStart: (id, day) => this.daily.dayStart(id, day), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
+    this.intakeActions=new ProjectIntakeActions({prepareMerge:check=>this.jobs.prepareIntakeLanding(check),queueMerge:(action,check)=>this.jobs.queueIntakeLanding(action,check),hub:o.hub,github,tasks:this.tasks,deviceId:o.deviceId,redactor:o.redactor,now,changed:()=>{void this.#sweepTasks(true).catch(()=>undefined);}});
     this.daily = new ProjectDailyWork({ landing: (threadId, held) => { if (!this.store.get(threadId)) return; if (held) this.store.setIndexFields(threadId, { landing: 'held' }); else if (this.store.local(threadId).landing === 'held') this.store.setIndexFields(threadId, { landing: undefined }); }, fixCutoffMinutes: nightlyFixMinutes(o.homes), hub: o.hub, tasks: this.tasks, runner: this.jobs, redactor: o.redactor, now, deviceId: o.deviceId, settings: id => this.admission.settings(id),
       memoryDream: async (id, requestId) => { if (!this.memoryProgramme) throw new Error('The memory dream runs on the hub.'); return this.memoryProgramme.runNow(await this.#project(id), requestId); },
       memoryDreamLine: id => this.memoryProgramme?.line(id), ...(o.nightGuard ? { nightGuard: o.nightGuard } : {}),
@@ -1250,7 +1253,7 @@ export class ProjectWork {
   async mergeCorrection(projectId: string, threadId: string, input: unknown) { await this.#project(projectId); return this.mergeGate.correct(projectId, threadId, input); }
   async decisionOwner(projectId: string, decisionId: string) {
     const decision = (await this.#o.hub.decision(decisionId))?.document;
-    if (decision?.projectId === projectId && decision.deploy) return (await this.#o.hub.coordinator(projectId))?.document.deviceId ?? null;
+    if (decision?.projectId === projectId && (decision.deploy || decision.intake)) return (await this.#o.hub.coordinator(projectId))?.document.deviceId ?? null;
     return decision?.projectId === projectId && (decision.merge || decision.landing) && decision.threadId ? this.threadOwner(projectId, decision.threadId) : null;
   }
   async refreshPullRequest(projectId: string, threadId: string): Promise<void> { this.#thread(projectId, threadId); await this.tracker.refresh(threadId); }

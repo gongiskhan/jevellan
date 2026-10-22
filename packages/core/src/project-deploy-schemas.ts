@@ -18,10 +18,12 @@ export const ProjectDeployBaselineSchema = z.strictObject({ schema: z.literal('p
   desktopPaths: z.array(ProjectRelativePathSchema).max(30).default([]), desktopSecretNames: z.array(z.string().regex(/^[A-Z][A-Z0-9_]{0,79}$/u)).max(30).default([]), desktopSecretAlternatives: z.array(z.array(z.string().regex(/^[A-Z][A-Z0-9_]{0,79}$/u)).min(1).max(20)).max(10).default([]), updatedAt: TimestampSchema });
 export type ProjectDeployBaseline = z.infer<typeof ProjectDeployBaselineSchema>;
 const healthResult = z.strictObject({ checkId: IdSchema, passed: z.boolean() });
+export const IntakeDeployRefSchema=z.strictObject({schema:z.literal('intake-deploy-ref-v1'),checkId:IdSchema,number:z.number().int().positive(),title:z.string().min(1).max(120),url:z.url(),landingCommit:commit});
 export const ProjectDeploySchema = z.strictObject({ schema: z.literal('project-deploy-v1'), id: IdSchema, projectId: IdSchema, revision,
   timezone: z.string().min(1).max(100).default('UTC').refine(value => { try { new Intl.DateTimeFormat('en', { timeZone: value }); return true; } catch { return false; } }, 'Choose a valid timezone.'),
   state: z.enum(['open', 'approved', 'running', 'deployed', 'failed', 'rolled-back']), commit, previousCommit: commit.nullable(),
   threads: z.array(z.strictObject({ threadId: IdSchema, title: z.string().max(120), landingCommit: commit })).max(1000),
+  intake:z.array(IntakeDeployRefSchema).max(1000).optional(),
   suite: z.strictObject({ commit, conclusion: z.enum(['passed', 'failed']).nullable(), runId: IdSchema.optional() }),
   health: z.strictObject({ before: z.array(healthResult).max(20), after: z.array(healthResult).max(100) }),
   messageHealth: z.array(ProjectHealthRunSchema).max(10).default([]), supersedes: IdSchema.optional(), rollbackNotice: z.string().max(1200).optional(),

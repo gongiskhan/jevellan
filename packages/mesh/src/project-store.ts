@@ -1,3 +1,4 @@
+import {INTAKE_PAGE_BYTES,IntakeDocumentSchema,type IntakeDocument} from '@jevellan/core';
 import { ProjectDeploySchema, ProjectDeployBaselineSchema, type ProjectDeploy, type ProjectDeployBaseline } from '@jevellan/core';
 import { ProjectSetupProposalSchema, SetupActionRequestSchema, projectSetupPlan, defaultProjectWorkSettings, type ProjectSetupProposal, type SetupActionRequest } from '@jevellan/core';
 import { HubState } from './state.js';
@@ -214,6 +215,7 @@ export class HubProjectStore {
     if (this.devices?.().find(view => view.device.id === this.deviceId)?.device.workPolicy?.mode === 'apps-only') refuse('This device serves apps only; project work runs on a working device.', 409);
     const task = this.task(document.taskId)?.document;
     if (!task || task.projectId !== document.projectId || task.jobId !== document.jobId) refuse('The job run must belong to its task.', 400);
+    if(stableJson(task.intakeLanding)!==stableJson(document.intakeLanding)||previous&&stableJson(previous.intakeLanding)!==stableJson(document.intakeLanding)||document.intakeLanding&&(document.deployment||document.spec.kind!=='command'||!document.spec.intake))refuse('The intake execution must retain its approved task binding.',403);
     if (previous && stableJson(previous.workflowHandoff) !== stableJson(document.workflowHandoff)) refuse('The workflow handoff receipt cannot change.', 409);
     if (previous && (stableJson(previous.workflowScheduler) !== stableJson(document.workflowScheduler) || previous.nightlyWindowId !== document.nightlyWindowId)) refuse('The workflow scheduler receipt cannot change.', 409);
     if (previous?.deploymentCommandStartedAt && previous.deploymentCommandStartedAt !== document.deploymentCommandStartedAt) refuse('The deploy command start receipt cannot change.', 409);
@@ -265,6 +267,11 @@ export class HubProjectStore {
       this.#project(task.projectId);
       if (this.coordinator(task.projectId)?.document.deviceId !== this.deviceId) refuse('Only the current coordinator device can write the task queue.', 403);
       const current = this.task(task.id);
+      if(current&&stableJson(current.document.intakeLanding)!==stableJson(task.intakeLanding))refuse('An intake task cannot change its owner approval.');
+      if(task.intakeLanding){
+        const action=this.intakeDocument(task.intakeLanding.actionId)?.document,check=this.intakeDocument(task.intakeLanding.checkId)?.document,decision=action?.schema==='intake-action-v1'?this.decision(action.decisionId)?.document:null,source=check?.schema==='intake-check-v1'?this.jobRun(check.runId)?.document:null;
+        if(action?.schema!=='intake-action-v1'||check?.schema!=='intake-check-v1'||!source||action.projectId!==task.projectId||check.projectId!==task.projectId||action.checkId!==check.id||action.taskId!==task.id||action.answer.optionLabel!=='merge'||decision?.answer?.optionLabel!=='merge'||task.kind!=='job'||task.source!=='owner'||task.deployment||task.jobId!==source.jobId||source.spec.kind!=='command'||!source.spec.intake)refuse('The intake task needs a matching pinned owner merge approval.',403);
+      }
       if (current && current.document.projectId !== task.projectId) refuse('This task belongs to another project.', 403);
       if (current && stableJson(current.document.workflowHandoff) !== stableJson(task.workflowHandoff)) refuse('The task workflow handoff cannot change.', 409);
       if (task.nightlyReview && (task.source !== 'daily' || task.type !== 'review' || task.kind !== 'session' || task.threadId)) refuse('Nightly reviews are read-only daily sessions.', 400);
@@ -402,6 +409,62 @@ export class HubProjectStore {
       if (!previous || indexDigest(previous.document) !== digest) this.#put(THREADS, index.id, ThreadIndexSchema, index, previous?.revision ?? 0);
       this.hub.put(CURSORS, index.id, ThreadIndexCursorSchema, { schema: 'project-thread-cursor-v1', threadId: index.id, deviceId: this.deviceId, eventId, digest }, cursor?.revision ?? 0);
       return { eventId };
+    });
+  }
+
+  intakeDocuments(projectId:string,after?:string){
+    this.#project(projectId);const records:IntakeDocument[]=[];let bytes=0;
+    const rows=this.hub.listByField('project-intake','projectId',projectId,IntakeDocumentSchema,{limit:PROJECT_HUB_PAGE+1,...(after?{after}:{})});
+    for(const row of rows){const document=checkHubRevision(row).document,size=Buffer.byteLength(JSON.stringify(document));
+      if(size>INTAKE_PAGE_BYTES)refuse('This intake source exceeds the page transport budget.',413);
+      if(records.length&&(records.length===PROJECT_HUB_PAGE||bytes+size>INTAKE_PAGE_BYTES))return{records,next:records.at(-1)!.id};
+      records.push(document);bytes+=size;
+    }
+    return{records,next:null};
+  }
+  intakeDocument(id:string){return this.#get('project-intake',id,IntakeDocumentSchema);}
+  putIntakeDocument(raw:IntakeDocument,expectedRevision:number){
+    const document=IntakeDocumentSchema.parse(raw);
+    return this.hub.transaction(()=>{
+      this.#project(document.projectId);
+      const previous=this.intakeDocument(document.id)?.document;
+      if(previous&&previous.schema!==document.schema)refuse('An intake document cannot change its kind.');
+      if(document.schema==='intake-action-v1'){
+        if(this.coordinator(document.projectId)?.document.deviceId!==this.deviceId)refuse('Only the coordinator can record an intake choice.',403);
+        const check=this.intakeDocument(document.checkId)?.document,decision=this.decision(document.decisionId)?.document;
+        if(check?.schema!=='intake-check-v1'||check.status!=='checked'||check.projectId!==document.projectId||decision?.projectId!==document.projectId||decision.intake?.checkId!==check.id||decision.intake.head!==check.pull.headSha||decision.intake.number!==check.pull.number||decision.intake.runId!==check.runId)refuse('The intake choice must belong to its checked owner item.');
+        if(previous?.schema==='intake-action-v1'){
+          const identity=(value:typeof document)=>{const{revision:_revision,state:_state,commentState:_comment,commentId:_commentId,taskId:_task,prClosedAt:_closed,completedAt:_completed,...fixed}=value;void _revision;void _state;void _comment;void _commentId;void _task;void _closed;void _completed;return fixed;};
+          if(stableJson(identity(previous))!==stableJson(identity(document)))refuse('The pinned intake answer cannot change.');
+          if(previous.state==='completed')refuse('A completed intake action is immutable.');
+          if(['none','posting','posted'].indexOf(document.commentState)<['none','posting','posted'].indexOf(previous.commentState)||previous.commentId!==null&&previous.commentId!==document.commentId||previous.taskId!==null&&previous.taskId!==document.taskId||previous.prClosedAt!==null&&previous.prClosedAt!==document.prClosedAt)refuse('An intake effect receipt cannot be replaced.');
+        }else{
+          if(document.deviceId!==this.deviceId||decision.answer||decision.withdrawnAt||decision.revision!==document.decisionRevision||!decision.options.some(option=>option.label===document.answer.optionLabel))refuse('The intake owner item changed. Reload it.');
+          if(document.state!=='pending'||document.commentState!=='none'||document.commentId!==null||document.prClosedAt!==null||document.completedAt!==null)refuse('An intake action must start without effect receipts.');
+          for(const row of this.hub.listByField('project-intake','decisionId',document.decisionId,IntakeDocumentSchema))if(row.document.schema==='intake-action-v1'&&(row.document.state!=='completed'||row.document.closed))refuse('This intake item already has a recorded choice.');
+        }
+        return this.#put('project-intake',document.id,IntakeDocumentSchema,document,expectedRevision);
+      }
+      const run=this.jobRun(document.runId)?.document;
+      if(document.schema==='intake-landing-v1'){
+        const binding=run?.intakeLanding,check=this.intakeDocument(document.checkId)?.document,action=this.intakeDocument(document.actionId)?.document;
+        if(document.deviceId!==this.deviceId||!run||run.deviceId!==this.deviceId||run.projectId!==document.projectId||run.phase!=='executing'||run.conclusion!==null||!binding||binding.actionId!==document.actionId||binding.checkId!==document.checkId||check?.schema!=='intake-check-v1'||check.projectId!==document.projectId||check.pull.headSha!==document.head||action?.schema!=='intake-action-v1'||action.checkId!==check.id||action.taskId!==run.taskId||action.answer.optionLabel!=='merge')refuse('Only the executing approved intake job can record its landing.',403);
+        if(previous?.schema==='intake-landing-v1'){
+          for(const key of ['projectId','deviceId','runId','actionId','checkId','source','head','at'] as const)if(previous[key]!==document[key])refuse('The intake landing cannot replace its pinned identity.');
+          if(previous.state==='landed'||previous.state==='already-on-main')refuse('A completed intake landing is immutable.');
+        }else if(document.state!=='checking'||document.candidate||document.failure||document.endedAt)refuse('An intake landing must start before its checks or push.');
+        if((document.state==='publishing'||document.state==='landed')&&(!document.candidate?.checks.length||document.candidate.checks.some(check=>!check.passed)))refuse('An intake push needs its successful candidate checks.');
+        return this.#put('project-intake',document.id,IntakeDocumentSchema,document,expectedRevision);
+      }
+      if(document.deviceId!==this.deviceId||!run||run.deviceId!==this.deviceId||run.projectId!==document.projectId||run.spec.kind!=='command'||!run.spec.intake||run.intakeLanding||run.phase!=='executing'||run.conclusion!==null)refuse('Only the executing intake job device can record this check.',403);
+      if(previous?.schema==='intake-check-v1'){
+        if(previous.projectId!==document.projectId||previous.pull.headSha!==document.pull.headSha||previous.pull.number!==document.pull.number||stableJson(previous.repository)!==stableJson(document.repository))refuse('An intake check cannot change its pinned identity.');
+        const takeover=previous.runId!==document.runId||previous.deviceId!==document.deviceId;
+        if(takeover){const prior=this.jobRun(previous.runId)?.document;if(previous.status==='checked'||!prior?.conclusion)refuse('This head is already being checked on its owning job device.');}
+        else if(stableJson(previous.pull)!==stableJson(document.pull)||previous.baseCommit!==document.baseCommit||previous.startedAt!==document.startedAt)refuse('An intake check cannot replace its captured input.');
+        if(previous.status==='checked')refuse('A completed intake check is immutable.');
+      }
+      return this.#put('project-intake',document.id,IntakeDocumentSchema,document,expectedRevision);
     });
   }
 
@@ -731,6 +794,9 @@ export class HubProjectStore {
     if (['mail-send', 'mail-inbox', 'mail-read', 'reserve', 'release', 'reservations-list', 'checkouts-held'].includes(request.operation)) refuse('Mail, reservations and Main isolation have been retired.', 410); const base = { schema: 'project-hub-result-v1', operation: request.operation };
     let result: unknown;
     switch (request.operation) {
+      case 'intake-documents':result={...base,...this.intakeDocuments(request.projectId,request.after)};break;
+      case 'intake-document-get':result={...base,record:this.intakeDocument(request.id)};break;
+      case 'intake-document-put':result={...base,record:this.putIntakeDocument(request.document,request.expectedRevision)};break;
       case 'deploys-list': result = { ...base, ...this.deploys(request.projectId, request.after) }; break;
       case 'deploy-get': result = { ...base, record: this.deploy(request.id) }; break;
       case 'deploy-put': result = { ...base, record: this.putDeploy(request.document, request.expectedRevision) }; break;
@@ -856,6 +922,9 @@ export class HubProjectAccess implements ProjectHub {
   async thread(threadId: string) { return this.#store.thread(threadId); }
   async admitThread(projectId: string, threadId: string, deviceId: string, reserve = true) { return this.#store.admitThread(projectId, threadId, deviceId, reserve); }
   async publishThread(index: ThreadIndex, eventId: number) { return this.#store.publishThread(index, eventId); }
+  async intakeDocuments(projectId:string,after?:string){return this.#store.intakeDocuments(projectId,after);}
+  async intakeDocument(id:string){return this.#store.intakeDocument(id);}
+  async putIntakeDocument(document:IntakeDocument,expectedRevision:number){return this.#store.putIntakeDocument(document,expectedRevision);}
   async mergeDocuments(projectId: string, after?: string, threadId?: string) { return this.#store.mergeDocuments(projectId, after, threadId); }
   async mergeDocument(id: string) { return this.#store.mergeDocument(id); }
   async putMergeDocument(document: MergeDocument, expectedRevision: number) { return this.#store.putMergeDocument(document, expectedRevision); }
@@ -965,6 +1034,9 @@ export class MemberProjectStore implements ProjectHub {
   }
   async threads(projectId: string, after?: string) { return this.#page((await this.#call('threads-list', { projectId, ...(after === undefined ? {} : { after }) })), projectId, after); }
   async thread(threadId: string) { return this.#check((await this.#call('thread-get', { threadId })).record, (row) => !row || row.document.id === threadId); }
+  async intakeDocuments(projectId:string,after?:string){return this.#page(await this.#call('intake-documents',{projectId,...(after?{after}:{})}),projectId,after);}
+  async intakeDocument(id:string){return this.#check((await this.#call('intake-document-get',{id})).record,row=>!row||row.document.id===id);}
+  async putIntakeDocument(document:IntakeDocument,expectedRevision:number){return this.#check((await this.#call('intake-document-put',{document,expectedRevision})).record,row=>row.document.id===document.id&&row.document.projectId===document.projectId&&row.document.revision===expectedRevision+1);}
   async mergeDocuments(projectId: string, after?: string, threadId?: string) { const page = this.#page(await this.#call('merge-documents', { projectId, ...(after ? { after } : {}), ...(threadId ? { threadId } : {}) }), projectId, after); if (threadId && page.records.some(row => row.threadId !== threadId)) throw new HubProtocolError(); return page; }
   async mergeDocument(id: string) { return this.#check((await this.#call('merge-document-get', { id })).record, row => !row || row.document.id === id); }
   async putMergeDocument(document: MergeDocument, expectedRevision: number) { return this.#check((await this.#call('merge-document-put', { document, expectedRevision })).record, row => row.document.id === document.id && (row.revision === expectedRevision + 1 || (document.schema === 'merge-correction-v1' || document.schema === 'landing-correction-v1') && stableJson({ ...row.document, revision: 0, at: '', receivedOrder: 0 }) === stableJson({ ...document, revision: 0, at: '', receivedOrder: 0 }))); }

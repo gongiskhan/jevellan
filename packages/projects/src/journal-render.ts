@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
 import { JournalConfigSchema, JournalDocumentSchema, JournalThreadSchema, parseProjectLedgerData, type JournalThread, type ProjectJournalRecord, type ProjectLedgerEventType } from '@jevellan/core';
-import { MemoryDreamReportSchema, MergeDocumentSchema, ProjectDecisionSchema, ProjectJobRunSchema, ProjectRefillStateSchema, ProjectWindowSchema, ProjectWorkTaskSchema, TaskHistoryEventSchema } from '@jevellan/core';
+import { IntakeDocumentSchema, MemoryDreamReportSchema, MergeDocumentSchema, ProjectDecisionSchema, ProjectJobRunSchema, ProjectRefillStateSchema, ProjectWindowSchema, ProjectWorkTaskSchema, TaskHistoryEventSchema } from '@jevellan/core';
 
 export function validateJournalDocument(raw: unknown) {
   const data = JournalDocumentSchema.parse(raw);
   const schemas = { task: ProjectWorkTaskSchema, 'task-history': TaskHistoryEventSchema, question: ProjectDecisionSchema, job: ProjectJobRunSchema,
-    refill: ProjectRefillStateSchema, window: ProjectWindowSchema, merge: MergeDocumentSchema, dream: MemoryDreamReportSchema };
+    refill: ProjectRefillStateSchema, window: ProjectWindowSchema, merge: MergeDocumentSchema, dream: MemoryDreamReportSchema, intake: IntakeDocumentSchema };
   schemas[data.collection].parse(data.document); return data;
 }
 

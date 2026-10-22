@@ -249,6 +249,17 @@ export async function ownerTaskCommand(app: Application, projectId: string, task
   return result;
 }
 
+/** Intake answers run on the coordinator, through the same authenticated decision route as the browser. */
+export async function ownerIntakeAnswer(app: Application, projectId: string, decisionId: string, raw: unknown) {
+  IdSchema.parse(projectId); IdSchema.parse(decisionId);
+  const input = DecisionAnswerRequestSchema.parse(raw), work = app.projectWork;
+  const decision = (await app.projectHub.decision(decisionId))?.document;
+  if (decision?.projectId !== projectId || !decision.intake) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
+  const owner = await work.decisionOwner(projectId, decisionId);
+  if (owner === null || owner === app.device.deviceId) return DecisionAnsweredViewSchema.parse({ schema: 'decision-answered-view-v1', ...await work.answerDecision(projectId, decisionId, input) });
+  return parseReply(DecisionAnsweredViewSchema, await ownerProjectJson(app, owner, 'intake', `${API_PREFIX}${projectId}/decisions/${decisionId}/answer`, 'POST', input));
+}
+
 /** Authenticated owner tools reuse the browser's typed owner routes; work never moves to the state point. */
 /** A viewer read keeps startup and device refusals typed while retaining the normal owner route. */
 export async function ownerThreadReadView(app: Application, projectId: string, threadId: string, raw: unknown) {
@@ -347,10 +358,14 @@ export async function ownerThreadOperation(app: Application, projectId: string, 
   return parseReply(MergeResultViewSchema, value);
 }
 /** Only a registered resource-owner route can receive the in-memory authority of an authenticated owner call. */
-async function ownerProjectJson(app: Application, owner: string, purpose: 'thread' | 'coordinator', path: string, method: 'GET' | 'POST', body?: unknown): Promise<unknown> {
+async function ownerProjectJson(app: Application, owner: string, purpose: 'thread' | 'coordinator' | 'intake', path: string, method: 'GET' | 'POST', body?: unknown): Promise<unknown> {
   const route = projectWorkRoute(path, method);
-  if (!route || route.target !== (purpose === 'thread' ? 'owner' : 'coordinator')) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
-  const row = await target(app, owner, purpose), auth = app.auth;
+  if (purpose === 'intake') {
+    if (!route || route.name !== 'answer' || route.target !== 'any' || method !== 'POST' || !route.projectId || !route.decisionId) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
+    const decision = (await app.projectHub.decision(route.decisionId))?.document;
+    if (decision?.projectId !== route.projectId || !decision.intake || await app.projectWork.decisionOwner(route.projectId, route.decisionId) !== owner) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
+  } else if (!route || route.target !== (purpose === 'thread' ? 'owner' : 'coordinator')) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
+  const row = await target(app, owner, purpose === 'intake' ? 'coordinator' : purpose), auth = app.auth;
   if (!(auth instanceof UiAuth)) throw failure('Owner tools must run on the state point.', 409);
   const upstream = new URL(DeviceOriginSchema.parse(row.device.url));
   upstream.pathname = peerPath(route, path);

@@ -19,7 +19,7 @@ export const JournalThreadSchema = z.strictObject({
 });
 export type JournalThread = z.infer<typeof JournalThreadSchema>;
 export const JournalDocumentSchema = z.strictObject({ schema: z.literal('journal-document-v1'),
-  collection: z.enum(['task', 'task-history', 'question', 'refill', 'job', 'window', 'merge', 'dream']), key: IdSchema,
+  collection: z.enum(['task', 'task-history', 'question', 'refill', 'job', 'window', 'merge', 'dream', 'intake']), key: IdSchema,
   nightlyWindowId: IdSchema.optional(),
   document: z.record(z.string(), z.unknown()).refine(value => typeof value.schema === 'string', 'A journal document needs its source schema.'),
 });

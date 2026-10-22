@@ -1,3 +1,4 @@
+import type {IntakeDocument} from './project-intake-schemas.js';
 import type { ProjectDeploy, ProjectDeployBaseline } from './project-deploy-schemas.js';
 import type { ProjectSetupProposal, SetupActionRequest } from './project-setup-schemas.js';
 import type { MergeDocument } from './merge-schemas.js';
@@ -28,6 +29,9 @@ export type ReserveOutcome = { granted: true; reservation: Stored<FileReservatio
  * Phase 6 adds mail, reservations and held checkouts.
  */
 export interface ProjectHub {
+  intakeDocuments(projectId:string,after?:string):Promise<{records:IntakeDocument[];next:string|null}>;
+  intakeDocument(id:string):Promise<Stored<IntakeDocument>|null>;
+  putIntakeDocument(document:IntakeDocument,expectedRevision:number):Promise<Stored<IntakeDocument>>;
   admitThread(projectId: string, threadId: string, deviceId: string, reserve?: boolean): Promise<ThreadAdmission>;
   deploys(projectId: string, after?: string): Promise<{ records: ProjectDeploy[]; next: string | null }>;
   deploy(id: string): Promise<Stored<ProjectDeploy> | null>;

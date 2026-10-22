@@ -113,8 +113,13 @@ export async function startGitHubFixture({ token, repositories = {}, port = 0, o
       const head = url.searchParams.get('head'); const state = url.searchParams.get('state') ?? 'open';
       const ref = head && (head.includes(':') ? (head.startsWith(`${owner}:`) ? head.slice(owner.length + 1) : null) : head);
       if (head && ref === null) return send(response, 200, []);
+      const size=Number(url.searchParams.get('per_page')??pulls.length),page=Number(url.searchParams.get('page')??'1');
       return send(response, 200, pulls.filter((pull) => pull.repo === repo && (state === 'all' || pull.state === state) && (!ref || pull.head === ref))
-        .slice(0, Number(url.searchParams.get('per_page') ?? pulls.length)).map((pull) => view(refresh(pull), true)));
+        .slice((page-1)*size,page*size).map((pull) => view(refresh(pull), true)));
+    }
+    if((match=/^\/issues\/(\d+)\/comments$/.exec(rest))&&method==='POST'){
+      if(typeof body?.body!=='string'||!body.body.trim())return send(response,422,{message:'A comment needs text.'});
+      const pull=find(match[1],repo);pull.issueComments??=[];const comment={id:pulls.reduce((n,row)=>n+(row.issueComments?.length??0),0)+1,user:{login:'fixture'},body:body.body,created_at:new Date().toISOString()};pull.issueComments.push(comment);return send(response,201,comment);
     }
     if (rest === '/pulls' && method === 'POST') {
       const { title, head, base, body: description = '' } = body ?? {};

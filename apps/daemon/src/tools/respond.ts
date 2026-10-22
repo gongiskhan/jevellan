@@ -1,6 +1,7 @@
-import { waitingKind } from '@jevellan/projects';
+import { waitingKind,projectDeployWorkLabel } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerHandler } from '../owner-tools.js';
 import { clientId, matchOption, resolveWaiting } from './common.js';
+import { ownerIntakeAnswer } from '../project-work-api.js';
 
 /**
  * `respond`: answers through the same path as the decision card and the external task mirror, so the item updates everywhere
@@ -36,12 +37,14 @@ export const respond: OwnerHandler = async (context) => {
   if (!option) throw new OwnerRefusal(`${item.id} takes ${options.join(', ')}.`, 'invalid_answer');
   const paused = await context.tools.deployPaused(project.id);
   if (kind === 'deploy' && option.startsWith('Deploy ') && paused) throw new OwnerRefusal('Deploys are paused. Turn them back on with config deploy.paused.', 'deploys_paused', 409);
-  await engine.answerDecision(project.id, decision.id, { schema: 'decision-answer-request-v1', clientRequestId: clientId('owner_answer'), expectedRevision: decision.revision, optionLabel: option, ...(note ? { text: note } : {}) });
+  const input = { schema: 'decision-answer-request-v1' as const, clientRequestId: clientId('owner_answer'), expectedRevision: decision.revision, optionLabel: option, ...(note ? { text: note } : {}) };
+  if (decision.intake) await ownerIntakeAnswer(app, project.id, decision.id, input);
+  else await engine.answerDecision(project.id, decision.id, input);
   if (kind === 'deploy') {
     if (option === 'Not now') return { text: `Not now. ${item.id} stays open and keeps updating.` };
     const deploy = (await engine.deploys.view(project.id)).records.find(row => row.id === decision.deploy!.deployId);
     const run = deploy?.jobRunId ? await context.tools.runId(project.id, deploy.jobRunId) : undefined;
-    return { text: `Deploying ${option.slice('Deploy '.length)} with ${deploy?.threads.length ?? 0} threads${run ? ` (${run})` : ''}. Health checks run 1 and 5 minutes after; the result is pushed.` };
+    return { text: `Deploying ${option.slice('Deploy '.length)} with ${deploy?projectDeployWorkLabel(deploy):'0 threads'}${run ? ` (${run})` : ''}. Health checks run 1 and 5 minutes after; the result is pushed.` };
   }
   if (kind === 'deploy_failed') return { text: option === 'Try again' ? 'Trying the deploy again.' : 'Left it.' };
   if (kind === 'rollback_question') {

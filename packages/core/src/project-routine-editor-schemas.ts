@@ -5,6 +5,7 @@ import { TaskTypeSchema } from './project-loop-schemas.js';
 
 const selectedId = z.union([z.literal(''), IdSchema]);
 export const JobEditorFieldsSchema = z.strictObject({ name: z.string().max(80), goalId: selectedId, enabled: z.boolean(), command: z.string().max(2000),
+  intake: z.boolean().optional(), intakeAuthors: z.string().max(4200).optional(),
   needs: z.string().max(264), cwd: z.enum(['checkout', 'workspace']), timeoutMinutes: z.string().max(12), gate: selectedId,
   intervalEnabled: z.boolean(), everyMinutes: z.string().max(12), intervalStart: z.string().max(5), intervalEnd: z.string().max(5) });
 export const DailyEditorFieldsSchema = z.strictObject({ name: z.string().max(80), goalId: selectedId, enabled: z.boolean(), order: z.string().max(12),
@@ -21,6 +22,7 @@ export type RoutineEditorChoice = z.infer<typeof choice>;
 const numberLimits = z.strictObject({ min: z.number(), max: z.number() });
 export const ProjectJobEditorSchema = z.strictObject({ schema: z.literal('project-job-editor-v1'), projectId: IdSchema, itemId: IdSchema.nullable(), title: z.string(),
   readonly: z.boolean(), notice: z.string().nullable(), defaults: JobEditorFieldsSchema,
+  intakePolicy:z.strictObject({label:z.string(),authorsLabel:z.string(),authorsHint:z.string(),authorsMax:z.number().int().positive(),scheduleText:z.string()}).default({label:'Check outside pull requests',authorsLabel:'Contributor GitHub logins',authorsHint:"Leave empty for everyone except your GitHub login. Separate logins with commas.",authorsMax:4200,scheduleText:'Checks every 10 minutes between 08:00 and 23:00 on an eligible work device. Merge, redo and close always wait for your choice.'}),
   constraints: z.strictObject({ nameMax: z.number(), commandMax: z.number(), needsMax: z.number(), timeoutMinutes: numberLimits, everyMinutes: numberLimits }),
   choices: z.strictObject({ goals: z.array(choice), gates: z.array(choice), cwd: z.array(choice.extend({ value: JobEditorFieldsSchema.shape.cwd })) }),
   request: z.strictObject({ path: z.string().startsWith('/api/projects/'), base: z.discriminatedUnion('schema', [JobEditorCreateRequestSchema.omit({ fields: true }), JobEditorUpdateRequestSchema.omit({ fields: true })]) }) });

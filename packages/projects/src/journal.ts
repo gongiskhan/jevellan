@@ -170,6 +170,7 @@ export class ProjectJournals {
       this.o.hub.decisions(projectId).then(rows => rows.map(document => ({ collection: 'question' as const, key: document.id, document }))),
       this.#all(projectId, after => this.o.hub.jobRuns(projectId, after)).then(rows => rows.map(document => ({ collection: 'job' as const, key: document.id, document }))),
       this.#all(projectId, after => this.o.hub.mergeDocuments(projectId, after)).then(rows => rows.map(document => ({ collection: 'merge' as const, key: document.id, document }))),
+      this.#all(projectId, after => this.o.hub.intakeDocuments(projectId, after)).then(rows => rows.map(document => ({ collection: 'intake' as const, key: document.id, document }))),
       this.o.hub.refill(projectId).then(row => row ? [{ collection: 'refill' as const, key: projectId, document: row.document }] : []),
     ]);
     const dream = hubMemory ? this.o.dream?.(projectId) : undefined;

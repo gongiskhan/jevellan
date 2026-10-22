@@ -31,9 +31,10 @@ export function overviewBoard(threads: readonly ThreadIndex[]): Record<BoardGrou
 }
 
 /** The waiting-item kind of a decision item, from the fields the engine already sets on it. */
-export function waitingKind(decision: Pick<ProjectDecision, 'deploy' | 'accountId' | 'options' | 'question'>): WaitingKind {
+export function waitingKind(decision: Pick<ProjectDecision, 'deploy' | 'accountId' | 'options' | 'question' | 'intake'>): WaitingKind {
   if (decision.deploy) return decision.deploy.action === 'retry' ? 'deploy_failed' : decision.deploy.action === 'rollback' ? 'rollback_question' : 'deploy';
   if (decision.accountId) return 'login';
+  if (decision.intake) return 'intake_pr';
   return decision.options.length ? 'decision' : 'question';
 }
 
