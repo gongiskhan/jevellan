@@ -1,4 +1,4 @@
-import {deviceToolReply} from './device-management.js';
+import {ownerToolReply} from './owner-tool-reply.js';
 import {ownerToolMaintenance} from '@jevellan/core';
 import { healthRefusal } from '@jevellan/core';
 import { ProjectHealthRequestSchema } from '@jevellan/core';
@@ -117,9 +117,9 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
       const localRuntimeEditor = tool[1] === 'config' && (input.action ?? input.args.action) === 'runtimes_editor';
       if (app.member) {
         const result = await app.member.ownerTool({ schema: 'owner-tool-forward-v1', name: tool[1]!, request: input });
-        json(response, deviceToolReply(app,tool[1]!,input.args,localRuntimeEditor && result.ok ? { ...result, data: await app.runtimeSettings() } : result,input.action)); return;
+        json(response, ownerToolReply(app,tool[1]!,input.args,localRuntimeEditor && result.ok ? { ...result, data: await app.runtimeSettings() } : result,input.action)); return;
       }
-      json(response, deviceToolReply(app,tool[1]!,input.args,await app.ownerTools.call(tool[1]!, input),input.action)); return;
+      json(response, ownerToolReply(app,tool[1]!,input.args,await app.ownerTools.call(tool[1]!, input),input.action)); return;
     }
     if (path === '/api/local/statusline') {
       if (request.method !== 'POST') throw failure('This operation does not support that method.', 405);

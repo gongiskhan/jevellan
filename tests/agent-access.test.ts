@@ -71,3 +71,18 @@ test('member management requires an owner session for the authenticated source d
   auth.logout(owner);
   expect(() => access.request({ schema: 'agent-access-hub-request-v1', operation: 'list', ownerSession: owner }, 'hub', auth)).toThrow('Sign in');
 });
+
+test('relative agent lifetime uses the authoritative clock once and preserves issuance retry identity', () => {
+  const input = { ...request('relative_lifetime'), lifetimeDays: 7 };
+  const first = access.create(input);
+  expect(first.connection.expiresAt).toBe(new Date(now + 7 * 86_400_000).toISOString());
+  now += 86_400_000;
+  const repeated = access.create(input);
+  expect(repeated.created).toBe(false);
+  expect(repeated.token === undefined).toBe(true);
+  expect(repeated.connection).toEqual(first.connection);
+  expect(access.list()).toHaveLength(1);
+  expect(() => access.create({ ...input, lifetimeDays: 30 })).toThrow('already used');
+  expect(() => access.create({ ...request('two_expiries'), lifetimeDays: 1, expiresAt: new Date(now + 1000).toISOString() })).toThrow();
+  expect(() => access.create({ ...request('unsupported_lifetime'), lifetimeDays: 2 })).toThrow();
+});

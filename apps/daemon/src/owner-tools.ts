@@ -1,4 +1,6 @@
 import {readDeviceManagement,readDevicePurpose,performDeviceAction} from './device-management.js';
+import {readAgentAccessEditor,createAgentAccess,revokeAgentAccess} from './agent-access-editor.js';
+import {agentAccessCreatedMessage} from '@jevellan/core';
 import {appShellDeviceView} from './app-shell-view.js';
 import {firstRunDeviceOperation} from './first-run-device.js';
 import { ProjectStatusViewSchema } from '@jevellan/core';
@@ -67,6 +69,11 @@ export class OwnerTools {
     const parsed = action.input.safeParse(rest);
     if (!parsed.success) return fail('invalid_arguments', invalidArguments(tool, tool.single ? '' : action.name, parsed.error));
     try {
+      if(tool.name==='config'&&['agent_access_view','agent_access_create','agent_access_revoke'].includes(action.name)){
+        const raw=(parsed.data as {request?:unknown}).request;
+        const data=action.name==='agent_access_view'?await readAgentAccessEditor(this.app,undefined,request.deviceId??this.app.device.deviceId):action.name==='agent_access_create'?await createAgentAccess(this.app,raw):await revokeAgentAccess(this.app,raw);
+        log(true);return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text:action.name==='agent_access_view'?'Agent connections.':action.name==='agent_access_create'?agentAccessCreatedMessage(data)??'Connection recorded.':'Connection revoked.',data});
+      }
       if (tool.name === 'config' && action.name === 'device_action') { const data=await performDeviceAction(this.app,(parsed.data as {request:unknown}).request,{gatewayDeviceId:request.deviceId??this.app.device.deviceId}); log(true); return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text:'Device action recorded.',data}); }
       if (tool.name === 'config' && (action.name === 'device_cleanup'||action.name === 'device_worktrees')) { const data=await readDevicePurpose(this.app,action.name==='device_cleanup'?'cleanup':'worktrees',(parsed.data as {request:unknown}).request,request.deviceId??this.app.device.deviceId); log(true); return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text:'Device view.',data}); }
       if (tool.name === 'config' && action.name === 'devices_view') { const data=await readDeviceManagement(this.app,request.deviceId??this.app.device.deviceId); log(true); return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text:'Devices.',data}); }

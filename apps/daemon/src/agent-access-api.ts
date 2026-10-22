@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { AgentAccessCapabilitiesSchema, AgentAccessCreateSchema, AgentAccessListSchema, EmptySchema, IdSchema } from '@jevellan/core';
+import { AgentAccessCapabilitiesSchema, AgentAccessCreateSchema, AgentAccessListSchema, EmptySchema, IdSchema, agentAccessSetup } from '@jevellan/core';
+import {readAgentAccessEditor,agentAccessEditorReply} from './agent-access-editor.js';
 import type { Application } from './application.js';
 import { json, requestBody } from './http.js';
 
@@ -7,6 +8,7 @@ import { json, requestBody } from './http.js';
 export async function handleAgentAccessApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, ownerSession: string): Promise<boolean> {
   const method = request.method ?? 'GET'; const path = url.pathname;
   const mcpUrl = `${app.device.url.replace(/\/$/, '')}/mcp`;
+  if(path==='/api/agent-access/view'&&method==='GET'){json(response,agentAccessEditorReply(app,await readAgentAccessEditor(app,ownerSession)));return true;}
   if (path === '/api/agent-access') {
     if (method === 'GET') { json(response, app.redactor.document(AgentAccessListSchema.parse({ schema: 'agent-access-list-v1', connections: await app.agentAccess.list(ownerSession), mcpUrl }))); return true; }
     if (method === 'POST') {
@@ -19,7 +21,7 @@ export async function handleAgentAccessApi(app: Application, request: IncomingMe
   if (path === '/api/agent-access/capabilities' && method === 'GET') {
     json(response, AgentAccessCapabilitiesSchema.parse({ schema: 'agent-access-capabilities-v1', mcpUrl, authentication: 'bearer', tokenShownOnce: true,
       stdioCommand: 'jevellan mcp-server', environment: { url: 'JEVELLAN_MCP_URL', token: 'JEVELLAN_MCP_TOKEN' },
-      supports: ['projects', 'conversations', 'threads', 'coordinators', 'messages', 'decisions', 'notebooks', 'pull-requests', 'apps', 'resumable-output'] })); return true;
+      setup:agentAccessSetup(mcpUrl),supports: ['projects', 'conversations', 'threads', 'coordinators', 'messages', 'decisions', 'notebooks', 'pull-requests', 'apps', 'resumable-output'] })); return true;
   }
   const revoke = path.match(/^\/api\/agent-access\/([A-Za-z0-9_-]+)\/revoke$/);
   if (revoke && method === 'POST') { EmptySchema.parse(await requestBody(request)); json(response, app.redactor.document(await app.agentAccess.revoke(IdSchema.parse(revoke[1]), ownerSession))); return true; }

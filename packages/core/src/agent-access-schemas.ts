@@ -11,8 +11,8 @@ export const AgentConnectionSchema = z.strictObject({
 export type AgentConnection = z.infer<typeof AgentConnectionSchema>;
 export const AgentAccessCreateSchema = z.strictObject({
   schema: z.literal('agent-access-create-v1'), clientRequestId: IdSchema, label: z.string().trim().min(1).max(120),
-  projectIds: projectIds.optional(), expiresAt: TimestampSchema.optional(),
-});
+  projectIds: projectIds.optional(), expiresAt: TimestampSchema.optional(), lifetimeDays: z.union([z.literal(1),z.literal(7),z.literal(30)]).optional(),
+}).refine(value=>value.expiresAt===undefined||value.lifetimeDays===undefined,'Choose an absolute expiry or a lifetime, not both.');
 export type AgentAccessCreate = z.infer<typeof AgentAccessCreateSchema>;
 export const AgentAccessCreatedSchema = z.strictObject({
   schema: z.literal('agent-access-created-v1'), connection: AgentConnectionSchema,
@@ -34,6 +34,7 @@ export const AgentAccessCapabilitiesSchema = z.strictObject({
   schema: z.literal('agent-access-capabilities-v1'), mcpUrl: z.url(), authentication: z.literal('bearer'),
   tokenShownOnce: z.literal(true), stdioCommand: z.literal('jevellan mcp-server'),
   environment: z.strictObject({ url: z.literal('JEVELLAN_MCP_URL'), token: z.literal('JEVELLAN_MCP_TOKEN') }),
+  setup: z.strictObject({http:z.string(),stdio:z.string()}).optional(),
   supports: z.array(z.enum(['projects', 'conversations', 'threads', 'coordinators', 'messages', 'decisions', 'notebooks', 'mail', 'pull-requests', 'apps', 'resumable-output'])),
 });
 

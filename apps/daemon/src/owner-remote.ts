@@ -1,4 +1,4 @@
-import {deviceToolReply} from './device-management.js';
+import {ownerToolReply} from './owner-tool-reply.js';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -166,7 +166,7 @@ export class OwnerRemote {
       if (action?.access === 'write' && tool?.name !== 'respond' && !this.settings.writeEnabled) return refuse(REMOTE_WRITES_OFF);
       const { action: _a, ...rest } = args; void _a;
       const result = await this.app.ownerTools.call(call.params.name, { schema: 'owner-tool-request-v1', ...(action ? { action: action.name } : {}), args: rest, caller });
-      return ownerToolOutput(call.params.name, args, OwnerToolResultSchema.parse(deviceToolReply(this.app,call.params.name,args,result,action?.name)));
+      return ownerToolOutput(call.params.name, args, OwnerToolResultSchema.parse(ownerToolReply(this.app,call.params.name,args,result,action?.name)));
     });
     const transport = new StreamableHTTPServerTransport({});
     response.once('close', () => { void transport.close().catch(() => undefined); void server.close().catch(() => undefined); });

@@ -29,6 +29,11 @@ async function connect(env: Record<string, string>): Promise<Client> {
   client = new Client({ name: 'contract', version: '1.0.0' }); await client.connect(transport); return client;
 }
 
+test('MCP agent access shares owner view first issuance retry and canonical revocation',async()=>{
+ f=await projectFixture({control:true});const core=await import('../packages/core/dist/index.js'),mcp=await connect({JEVELLAN_HOME:f.homes.root}),call=async(action:string,args:Record<string,unknown>={})=>OwnerToolResultSchema.parse((await mcp.callTool({name:'config',arguments:{action,...args}})).structuredContent);const view=await call('agent_access_view');expect(view.ok).toBe(true);if(!view.ok)throw Error('Owned MCP view refused.');expect(core.AgentAccessEditorViewSchema.parse(view.data).defaults.lifetime).toBe('30');
+ const request={schema:'agent-access-create-v1',clientRequestId:'create_mcp_agent_fixture',label:'MCP fixture',lifetimeDays:7},result=await call('agent_access_create',{request});expect(result.ok).toBe(true);if(!result.ok)throw Error('Owned MCP create refused.');const created=core.AgentAccessCreatedSchema.parse(result.data);expect(typeof created.token==='string').toBe(true);expect((await f.app.agentAccess.authenticateBearer('Bearer '+created.token))?.connectionId).toBe(created.connection.id);const repeated=await call('agent_access_create',{request});expect(repeated.ok&&core.AgentAccessCreatedSchema.parse(repeated.data).token===undefined).toBe(true);expect(await call('agent_access_revoke',{request:{schema:'agent-access-revoke-request-v1',connectionId:created.connection.id}})).toMatchObject({ok:true,data:{id:created.connection.id,revokedAt:expect.any(String)}});expect(await f.app.agentAccess.authenticateBearer('Bearer '+created.token)).toBeNull();expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP status exposes the shared cache view without starting work', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'status', arguments: {} })).structuredContent);

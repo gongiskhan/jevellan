@@ -1,4 +1,4 @@
-import {deviceToolReply} from './device-management.js';
+import {ownerToolReply} from './owner-tool-reply.js';
 import {ownerToolMaintenance} from '@jevellan/core';
 import { ProjectHealthRequestSchema } from '@jevellan/core';
 import { handleLibrary } from './library-api.js';
@@ -47,7 +47,7 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
   }
   if (path === '/hub/mesh/owner-tools' && method === 'POST') {
     const input = OwnerToolForwardSchema.parse(await requestBody(request)); const release = ownerToolMaintenance(input.name,input.request)?undefined:app.lifecycle.enter({ kind: 'request' });
-    try { const result = await app.ownerTools.call(input.name, { ...input.request, deviceId: device.id }); app.devices.authenticate(authorization!.slice(7)); json(response,deviceToolReply(app,input.name,input.request.args,result,input.request.action)); return true; }
+    try { const result = await app.ownerTools.call(input.name, { ...input.request, deviceId: device.id }); app.devices.authenticate(authorization!.slice(7)); json(response,ownerToolReply(app,input.name,input.request.args,result,input.request.action)); return true; }
     finally { release?.(); }
   }
   if (path === '/hub/mesh/journal' && method === 'POST') {

@@ -27,6 +27,13 @@ let f: ProjectFixture | undefined;
 afterEach(async () => { vi.restoreAllMocks(); await f?.close(); f = undefined; });
 const claudeAvailable = spawnSync('claude', ['--version'], { stdio: 'ignore' }).status === 0;
 
+test('CLI agent access shares owner view first issuance retry and canonical revocation',async()=>{
+ f=await projectFixture({control:true});const core=await import('../packages/core/dist/index.js'),output=vi.spyOn(console,'log').mockImplementation(()=>undefined);vi.spyOn(console,'error').mockImplementation(()=>undefined);const reply=()=>OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row=>String(row[0]).startsWith('{'))?.[0])));
+ expect(await callCommand(['config','agent_access_view'],f.homes)).toBe(0);const view=reply();expect(view.ok).toBe(true);if(!view.ok)throw Error('Owned CLI view refused.');expect(core.AgentAccessEditorViewSchema.parse(view.data).defaults.lifetime).toBe('30');
+ const request={schema:'agent-access-create-v1',clientRequestId:'create_cli_agent_fixture',label:'CLI fixture',lifetimeDays:1};output.mockClear();expect(await callCommand(['config','agent_access_create','--request',JSON.stringify(request)],f.homes)).toBe(0);const result=reply();expect(result.ok).toBe(true);if(!result.ok)throw Error('Owned CLI create refused.');const created=core.AgentAccessCreatedSchema.parse(result.data);expect(typeof created.token==='string').toBe(true);expect((await f.app.agentAccess.authenticateBearer('Bearer '+created.token))?.connectionId).toBe(created.connection.id);
+ output.mockClear();expect(await callCommand(['config','agent_access_create','--request',JSON.stringify(request)],f.homes)).toBe(0);const repeated=reply();expect(repeated.ok&&core.AgentAccessCreatedSchema.parse(repeated.data).token===undefined).toBe(true);output.mockClear();expect(await callCommand(['config','agent_access_revoke','--request',JSON.stringify({schema:'agent-access-revoke-request-v1',connectionId:created.connection.id})],f.homes)).toBe(0);expect(await f.app.agentAccess.authenticateBearer('Bearer '+created.token)).toBeNull();expect(f.fake.runs).toHaveLength(0);
+});
+
 test('CLI status exposes the shared cache view without starting work', async () => {
   f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
   expect(await callCommand(['status'], f.homes)).toBe(0);

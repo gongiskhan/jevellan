@@ -23,11 +23,13 @@ export class HubAgentAccess {
         if (existing.document.requestFingerprint !== fingerprint) throw failure('This connection request was already used with other choices.', 409);
         return AgentAccessCreatedSchema.parse({ schema: 'agent-access-created-v1', connection: existing.document.connection, created: false });
       }
-      if (request.expiresAt && Date.parse(request.expiresAt) <= this.now()) throw failure('Choose an expiry in the future.', 400);
+      const now = this.now();
+      const expiresAt = request.lifetimeDays === undefined ? request.expiresAt : new Date(now + request.lifetimeDays * 86_400_000).toISOString();
+      if (expiresAt && Date.parse(expiresAt) <= now) throw failure('Choose an expiry in the future.', 400);
       for (const projectId of request.projectIds ?? []) if (!this.hub.db.prepare("SELECT 1 FROM documents WHERE namespace='projects' AND id=?").get(projectId)) throw failure('One of the selected projects does not exist.', 404);
       const id = newId('agent'); const token = `jva_${id}.${randomBytes(32).toString('base64url')}`; const tokenRef = newId('agent_token');
-      const connection = AgentConnectionSchema.parse({ schema: 'agent-connection-v1', id, label: request.label, createdAt: new Date(this.now()).toISOString(), tokenSuffix: token.slice(-4),
-        ...(request.projectIds ? { projectIds: request.projectIds } : {}), ...(request.expiresAt ? { expiresAt: request.expiresAt } : {}) });
+      const connection = AgentConnectionSchema.parse({ schema: 'agent-connection-v1', id, label: request.label, createdAt: new Date(now).toISOString(), tokenSuffix: token.slice(-4),
+        ...(request.projectIds ? { projectIds: request.projectIds } : {}), ...(expiresAt ? { expiresAt } : {}) });
       this.hub.vault.put(tokenRef, token);
       this.hub.put(namespace, id, AgentAccessRecordSchema, { schema: 'agent-access-record-v1', connection, tokenRef, tokenFingerprint: this.hub.vault.requestFingerprint(token), clientRequestId: request.clientRequestId, requestFingerprint: fingerprint }, 0);
       return AgentAccessCreatedSchema.parse({ schema: 'agent-access-created-v1', connection, token, created: true });

@@ -1,3 +1,4 @@
+export * from './agent-access-editor.js';
 export * from './conversation-start.js';
 export * from './project-setup-view.js';
 export * from './conversation-creation-draft.js';
