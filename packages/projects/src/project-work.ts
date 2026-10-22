@@ -1,3 +1,4 @@
+import { ProjectTaskCommandSchema, projectTaskQueueRequest, projectTaskQueueInteraction, projectTaskEditView, projectTaskDraft } from '@jevellan/core';
 import { CursorTranscriptSchema, EARLIER_TRANSCRIPT_UNAVAILABLE, transcriptTurnPresentation, TRANSCRIPT_PROMPT, HISTORY_PROMPT_COLLAPSE_CHARACTERS } from '@jevellan/core';
 import { taskEditorView } from '@jevellan/core';
 import { projectSetupPresentation } from '@jevellan/core';
@@ -805,6 +806,22 @@ export class ProjectWork {
     const [work, tasks, goals, daily, roster] = await Promise.all([this.view(projectId), this.taskList(projectId), this.goalList(projectId), this.daily.view(projectId), this.#o.roster()]);
     const names = new Map(roster.devices.map(row => [row.device.id, row.device.name])); names.set(this.#o.deviceId, this.#o.deviceName);
     return projectPageView({ work, tasks: tasks.tasks, goals: goals.goals, daily }, resolvedDays, this.#timers.now(), { ...viewer, runtimeName: id => this.#o.runtimes.get(id)?.displayName ?? id, deviceName: id => names.get(id) ?? id });
+  }
+  async taskQueueInteraction(projectId: string, raw?: unknown) {
+    const input = projectTaskQueueRequest(raw), [goals, tasks, work, daily] = await Promise.all([this.goalList(projectId), this.taskList(projectId), this.view(projectId), this.daily.view(projectId)]);
+    return projectTaskQueueInteraction({ projectId, tasks: tasks.tasks, queue: projectGoalViews(projectId, goals.goals, tasks.tasks, work.threads, daily).queue }, input);
+  }
+  async taskEditView(projectId: string, taskId: string) {
+    const [view, goals] = await Promise.all([this.taskView(projectId, taskId), this.goalList(projectId)]);
+    return projectTaskEditView(view.task, goals.goals);
+  }
+  async taskDraft(projectId: string, taskId: string, raw: unknown) {
+    const draft = projectTaskDraft(projectId, taskId, raw); await this.taskView(projectId, taskId); return draft;
+  }
+  async taskCommand(projectId: string, taskId: string, raw: unknown) {
+    const command = ProjectTaskCommandSchema.parse(raw);
+    if (command.projectId !== projectId || command.taskId !== taskId) throw Object.assign(new Error('This command belongs to another task or project.'), { status: 409 });
+    return command.operation === 'update' ? this.updateTask(projectId, taskId, command.body) : this.taskAction(projectId, taskId, command.body);
   }
   async taskEditor(projectId: string, deviceId = this.#o.deviceId, preview?: unknown) {
     const [page, configuration, roster] = await Promise.all([this.pageView(projectId), this.#o.settings(), this.#o.roster()]);

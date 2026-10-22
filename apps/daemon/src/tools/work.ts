@@ -1,5 +1,5 @@
 import { prepareTaskEditorSave } from '@jevellan/core';
-import { ownerCreateTask } from '../project-work-api.js';
+import { ownerCreateTask, ownerTaskCommand } from '../project-work-api.js';
 import { ownerClock, ownerDuration } from '@jevellan/core';
 import { capLines, runLabel } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerHandler } from '../owner-tools.js';
@@ -9,6 +9,10 @@ import { clientId, resolveGoal, resolveTask } from './common.js';
 export const work: OwnerHandler = async (context) => {
   const { app, tools, project, args, now } = context; const projectId = project.id; const engine = app.projectWork;
   switch (context.action) {
+    case 'queue_view': return { text: 'Task queue.', data: await engine.taskQueueInteraction(projectId, args.request) };
+    case 'task_edit_view': return { text: 'Edit task.', data: await engine.taskEditView(projectId, String(args.task)) };
+    case 'task_draft': return { text: 'Task preparation.', data: await engine.taskDraft(projectId, String(args.task), args.request) };
+    case 'task_command': return { text: 'Task updated.', data: await ownerTaskCommand(app, projectId, String(args.task), args.request) };
     case 'editor': return { text: 'New task.', data: await engine.taskEditor(projectId, context.request.deviceId ?? app.device.deviceId) };
     case 'preview': return { text: 'New task.', data: await engine.taskEditor(projectId, context.request.deviceId ?? app.device.deviceId, args.request) };
     case 'save': return { text: 'Task queued.', data: await ownerCreateTask(app, projectId, prepareTaskEditorSave(args.request)) };
