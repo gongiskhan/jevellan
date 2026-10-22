@@ -1,3 +1,4 @@
+import {projectLibraryView,projectLibraryMessageContext,projectLibraryMessage,projectLibraryMessageImage,projectLibraryMessageReadNeeded,projectLibraryMessageRead,type ProjectLibraryMessageContext} from '@jevellan/core/client';
 import {PROJECT_LIBRARY_POLICY,ProjectLibraryViewSchema,projectLibraryReadCache,projectLibraryReadFailure,projectLibraryFilter,type ProjectLibraryView,type ProjectLibraryFilter} from '@jevellan/core/client';
 import {projectAttachmentAdmission,projectAttachmentUpload,projectAttachmentPreparation,projectAttachmentMessage,ProjectAttachmentMessageSchema} from '@jevellan/core/client';
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type DragEvent } from 'react';
@@ -53,13 +54,14 @@ export function LibraryImage({ projectId, items, active, close, choose }: { proj
   </div></Modal>;
 }
 export function LibraryMessage({ projectId, text, onOpenImage }: { projectId: string; text: string; onOpenImage?: ((ref: string) => void) | undefined }) {
-  const [items, setItems] = useState<ProjectLibraryItem[]>([]), [image, setImage] = useState<ProjectLibraryItem>();
-  const paths = [...text.matchAll(/^Attached file: library\/(.+) \([^\n]+\)$/gmu)].map(match => match[1]!);
-  useEffect(() => { if (!text.includes('library/')) return; let active = true; void libraryItems(projectId).then(value => { if (active) setItems(value); }).catch(() => undefined); return () => { active = false; }; }, [projectId, text]);
-  const attached = items.filter(item => paths.includes(item.path) || text.includes(`library/${item.path}`));
-  const openImage = (ref: string) => { const item = items.find(item => ref === `library/${item.path}`); if (item) setImage(item); else if (!ref.startsWith('library/')) onOpenImage?.(ref); }; 
-  return <><Markdown {...(onOpenImage || attached.length ? { onOpenImage: openImage } : {})}>{text.split('\n').filter(line => !attached.some(item => line.startsWith(`Attached file: library/${item.path} (`))).join('\n')}</Markdown>{attached.length > 0 && <div className="pw-library-chips">{attached.map(item => item.mime.startsWith('image/') ? <button type="button" className="pw-library-thumb" key={item.id} onClick={() => setImage(item)}><img src={libraryContent(projectId, item.id)} alt={item.name} /><span>{item.name}</span></button> : <a className="chip" key={item.id} href={libraryContent(projectId, item.id)} target="_blank" rel="noreferrer">{item.name} · {fileSize(item.size)}</a>)}</div>}
-    {image && <LibraryImage projectId={projectId} items={items.filter(item => item.mime.startsWith('image/'))} active={image} choose={setImage} close={() => setImage(undefined)} />}</>;
+  const empty = useMemo(() => projectLibraryMessageContext(projectLibraryView({ schema: 'project-library-source-v1', projectId, items: [], threads: [] })), [projectId]);
+  const [context, setContext] = useState<ProjectLibraryMessageContext>(), [image, setImage] = useState<ProjectLibraryItem>();
+  const captured = context?.projectId === projectId ? context : empty;
+  useEffect(() => { if (!projectLibraryMessageReadNeeded(text)) return; let active = true; void projectLibraryMessageRead(captured, () => libraryView(projectId)).then(value => { if (active) setContext(value); }); return () => { active = false; }; }, [projectId, text]);
+  const message = useMemo(() => projectLibraryMessage(captured, { schema: 'project-library-message-input-v1', projectId, text }), [captured, projectId, text]);
+  const openImage = (ref: string) => { const target = projectLibraryMessageImage(captured, ref); if (target.kind === 'library') setImage(target.item); else if (target.kind === 'external') onOpenImage?.(target.ref); };
+  return <><Markdown {...(onOpenImage || message.attachments.length ? { onOpenImage: openImage } : {})}>{message.text}</Markdown>{message.attachments.length > 0 && <div className="pw-library-chips">{message.attachments.map(item => item.kind === 'image' ? <button type="button" className="pw-library-thumb" key={item.id} onClick={() => openImage(`library/${item.path}`)}><img src={item.contentPath} alt={item.name} /><span>{item.name}</span></button> : <a className="chip" key={item.id} href={item.contentPath} target="_blank" rel="noreferrer">{item.name} · {item.sizeLabel}</a>)}</div>}
+    {image && <LibraryImage projectId={projectId} items={captured.images} active={image} choose={setImage} close={() => setImage(undefined)} />}</>;
 }
 export function ProjectLibraryPanel({ projectId, onError }: { projectId: string; onError(error: unknown): void }) {
   const [view, setView] = useState<ProjectLibraryView>(), [filter, setFilter] = useState<ProjectLibraryFilter>('all'), [image, setImage] = useState<ProjectLibraryItem>();

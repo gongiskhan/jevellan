@@ -12,6 +12,7 @@ export async function handleLibrary(app: Application, request: IncomingMessage, 
   if (!match || !(url.pathname.startsWith('/hub/mesh/library/') || /\/library(?:\/|$)/u.test(url.pathname))) return false;
   const projectId = IdSchema.parse(match[1]), tail = match[2] ?? '', method = request.method ?? 'GET';
   const owner = () => { if (!ownerSession) throw failure('Sign in to Jevellan.', 401); };
+  if (tail === 'message-view' && method === 'POST') { owner(); json(response, await app.library.messageView(projectId, await requestBody(request))); return true; }
   if (tail === 'command' && method === 'POST') { owner(); json(response, await app.library.deleteCommand(projectId, await requestBody(request), ownerSession)); return true; }
   if (tail === 'view' && method === 'GET') { json(response, await app.library.view(projectId, { schema: 'project-library-view-request-v1', ...Object.fromEntries(url.searchParams) })); return true; }
   if (tail === 'attachment-policy' && method === 'GET') { json(response, await app.library.attachmentPolicy(projectId)); return true; }

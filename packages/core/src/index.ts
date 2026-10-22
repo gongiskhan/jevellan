@@ -275,3 +275,5 @@ export * from './project-notebook-editor.js';
 export * from './project-attachments.js';
 
 export * from './project-library-view.js';
+
+export * from './project-library-message.js';

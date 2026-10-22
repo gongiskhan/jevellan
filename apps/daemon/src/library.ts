@@ -1,4 +1,6 @@
 import {EmptySchema,ProjectLibraryDeleteSchema} from '@jevellan/core';
+import {ProjectLibraryMessageRequestSchema,ProjectLibraryMessageViewSchema,ProjectChatViewSchema,ThreadViewSchema,boundedRedaction,projectLibraryMessageContext,projectLibraryMessage} from '@jevellan/core';
+import {ownerProjectChatView,ownerThreadOperation} from './project-work-api.js';
 import {projectLibraryView} from '@jevellan/core';
 import {ProjectAttachmentRequestSchema,projectAttachmentMessage,projectAttachmentPolicy} from '@jevellan/core';
 import { LIBRARY_FOLDER_ALIAS, LIBRARY_INVALID_PAGE, LIBRARY_FILE_NOT_FOUND, LIBRARY_RELOAD, LIBRARY_CONTENT_TYPE, LIBRARY_THREAD_REQUIRED, LIBRARY_INVALID_FILE, LIBRARY_SHORT_NAME, LIBRARY_INCOMPLETE, LIBRARY_FILE_UNAVAILABLE, LIBRARY_HASH_FAILED } from '@jevellan/projects';
@@ -39,6 +41,34 @@ export class ProjectLibraryService implements ProjectLibrary {
   async view(projectId: string, raw?: unknown) {
     const [items, work] = await Promise.all([this.list(projectId), this.app.projectWork.view(projectId)]);
     return projectLibraryView({ schema: 'project-library-source-v1', projectId, items, threads: work.threads.map(thread => ({ id: thread.id, title: thread.title })) }, raw);
+  }
+  async messageView(projectId: string, raw: unknown) {
+    const input = ProjectLibraryMessageRequestSchema.parse(raw);
+    if (this.app.member) {
+      const result = await this.app.member.ownerTool({ schema: 'owner-tool-forward-v1', name: 'work', request: { schema: 'owner-tool-request-v1', caller: 'ui', action: 'library_message_view', args: { project: projectId, request: input } } });
+      if (!result.ok) { const status = ({ not_found: 404, project_unknown: 404, conflict: 409, invalid_arguments: 400, invalid_value: 400, hub_unavailable: 503 } as Record<string, number>)[result.error.code] ?? 500; throw Object.assign(failure(result.error.text, status), { code: result.error.code }); }
+      const view = ProjectLibraryMessageViewSchema.parse(result.data); if (view.projectId !== projectId) throw failure('This recorded message belongs to another project.', 502); return view;
+    }
+    try {
+      let text: string | undefined;
+      if (input.kind === 'coordinator') {
+        // An owner message is the boundary event. At most two bounded reads locate it without a history-page loop.
+        const first = ProjectChatViewSchema.parse(await ownerProjectChatView(this.app, projectId, { schema: 'project-chat-view-request-v1', throughEventId: input.itemId, ...(input.deviceId ? { deviceId: input.deviceId } : {}) }));
+        const page = first.total > 100 ? ProjectChatViewSchema.parse(await ownerProjectChatView(this.app, projectId, { ...first.request, offset: first.total - 100 })) : first;
+        const item = page.items.find(row => row.id === input.itemId); if (item?.kind === 'owner') text = item.text;
+      } else {
+        const view = ThreadViewSchema.parse(await ownerThreadOperation(this.app, projectId, input.threadId, 'view'));
+        text = input.kind === 'thread-report' ? view.reports.find(row => row.turn === input.turn)?.summary : view.queuedMessages.find(row => row.id === input.messageId)?.text;
+      }
+      if (text === undefined) throw failure('Recorded message not found.', 404);
+      const context = projectLibraryMessageContext(await this.view(projectId));
+      const view = projectLibraryMessage(context, { schema: 'project-library-message-input-v1', projectId, text: boundedRedaction(this.app.redactor, text) });
+      return ProjectLibraryMessageViewSchema.parse(boundedRedaction(this.app.redactor, view));
+    } catch (error) {
+      const status = (error as { status?: unknown }).status;
+      if (status === 404 || status === 409) throw Object.assign(error as Error, { code: (error as { code?: string }).code ?? (status === 404 ? 'not_found' : 'conflict') });
+      throw error;
+    }
   }
   async deleteCommand(projectId: string, raw: unknown, ownerSession?: string) {
     const command = ProjectLibraryDeleteSchema.parse(raw);

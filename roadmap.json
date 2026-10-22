@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "Unreleased areas through 8i migrate/refine 221 of 310 rows, with 2 browser-only dispositions; 87 phase10 rows remain before intake and placement/p-v1/m-v1. Strict Core library snapshots own all four source filters, ordered rows, origin labels, file actions, captured delete commands and metadata. Job files have their own origin instead of an undefined thread. Core owns the per-project two-second in-flight cache, forced refresh, conditional failure eviction, fifteen-second polling metadata and initial-versus-polling failure choice. Normal owner purposes and explicit work actions use the same canonical scoped facts and unchanged remove writer; browser timers, native IO and gallery gestures remain local. Final typecheck/lint/build,435cases in40complete relevant backend files and11desktop-light journeys pass without failures/skips/retries;21exact images retained. Provider work simulated;vision not run on existing screens. Library message presentation row282 remains open. Global parity incomplete,legacy CACHE2/Native PAR6 unpassed,final full integrated backend planned. Both installs remain last verified0.7.2;source unreleased. No release,review or actual account/login/bridge/tmux/native-home/owner-project/production operation.",
+    "why": "Unreleased areas through 8j migrate/refine 222 of 310 rows, with 2 browser-only dispositions; 86 phase10 rows remain before intake and placement/p-v1/m-v1. Strict shared Core library message views own structured attachments,known protocol marker removal,legacy reference association,ordering,kind,size,links,image reference decisions and best-effort metadata hydration. Captured immutable library contexts are indexed once per snapshot and retain whole-project gallery scope. Known short artifact markers are now hidden beside their file chips;stored text and writers stay unchanged. Normal owner reads bind canonical coordinator item/device,thread report turn or queued message id;posted history is refused,member reads use existing forwarding,and read-time redaction applies. Final typecheck/lint/build,454cases in43complete relevant backend files and13desktop-light journeys pass without failures/skips/retries;24exact images retained. Provider work simulated;vision not run on existing screens. Global parity incomplete,legacy CACHE2/Native PAR6 unpassed,final full integrated backend planned. Both installs remain last verified0.7.2;source unreleased. No release,review or actual account/login/bridge/tmux/native-home/owner-project/production operation.",
     "status": "in-progress"
   },
   {
@@ -1034,13 +1034,13 @@
   {
     "id": "br-plugin",
     "title": "Generated plugin and terminal clients",
-    "why": "The frozen working baseline is published and included in installed0.7.1 on both devices with doctor10/10each. Interactive bridge authentication is externally blocked; actual status/push remain unpassed. Expanded parity and remaining integrations are planned. Native plugin/statusline installation stays optional and owner-only.",
+    "why": "The frozen working baseline is included in published0.7.2,last verified installed on both devices with doctor10/10each at16:50:18UTC on20October. Managed interactive authentication remains externally blocked in the last authorized authentication check;actual bridge status/push remain unpassed. Later UI/engine source work is unreleased. No new authentication or bridge process operation occurred. Native plugin/statusline installation remains optional and owner-only.",
     "status": "complete-with-blockers"
   },
   {
     "id": "br-bridge",
     "title": "Bridge and durable push",
-    "why": "Frozen bridge source is included in published0.7.0 and installed0.7.1 on both devices, doctor10/10each. Managed interactive authentication is externally blocked by first-party browser verification; actual bridge status/push remain unpassed. No bridge Ready or owner-acceptance claim. Optional UI parity, intake and remaining engine work stay planned.",
+    "why": "The frozen working baseline is included in published0.7.2,last verified installed on both devices with doctor10/10each at16:50:18UTC on20October. Managed interactive authentication remains externally blocked in the last authorized authentication check;actual bridge status/push remain unpassed. Later UI/engine source work is unreleased. No new authentication or bridge process operation occurred. Native plugin/statusline installation remains optional and owner-only.",
     "status": "complete-with-blockers"
   },
   {
@@ -1070,7 +1070,7 @@
   {
     "id": "br-accounts",
     "title": "Managed account login and secrets",
-    "why": "The frozen working baseline is published and included in installed0.7.1 on both devices with doctor10/10each. Interactive bridge authentication is externally blocked; actual status/push remain unpassed. Expanded parity and remaining integrations are planned. Native plugin/statusline installation stays optional and owner-only.",
+    "why": "The frozen working baseline is included in published0.7.2,last verified installed on both devices with doctor10/10each at16:50:18UTC on20October. Managed interactive authentication remains externally blocked in the last authorized authentication check;actual bridge status/push remain unpassed. Later UI/engine source work is unreleased. No new authentication or bridge process operation occurred. Native plugin/statusline installation remains optional and owner-only.",
     "status": "complete-with-blockers"
   },
   {
@@ -1082,7 +1082,7 @@
   {
     "id": "br-release",
     "title": "Bridge gate, 0.7.0 and installation",
-    "why": "Frozenac98492f merged into main once;0.7.0 published fromba983982 at09:13:25UTC and installed both with doctor10/10/Online/vault sync09:24:41UTC. All five desktop-light core smokes pass. Backend2602selected:2584initial passes,3harness-induced failures cleared by exact once-reruns,15notrun. Bridge status/push remain externally authentication-blocked. One scoped closing review is complete; three essential repairs are gated for0.7.1. Essential0.7.1 repairs published10:35:59UTC and installed both/doctor10/10each10:47:15UTC; actual bridge status/push remain blocked. Morning scoped verification closed with explicit private blockers and the daily-use goal not fully met. The afternoon owner instruction supersedes that STOP, requesting0.7.2 then ordered source work; see br-release-072 for its blocked integration prerequisite.",
+    "why": "Frozenac98492f merged into main once;0.7.0 published fromba983982 at09:13:25UTC and installed both with doctor10/10/Online/vault sync09:24:41UTC. All five desktop-light core smokes pass. Backend2602selected:2584initial passes,3harness-induced failures cleared by exact once-reruns,15notrun. Bridge status/push remain externally authentication-blocked. One scoped closing review is complete; three essential repairs are gated for0.7.1. Essential0.7.1 repairs published10:35:59UTC and installed both/doctor10/10each10:47:15UTC; actual bridge status/push remain blocked. Morning scoped verification closed with explicit private blockers and the daily-use goal not fully met. The afternoon owner instruction supersedes that STOP, requesting0.7.2 then ordered source work; see br-release-072 for its completed publication and installation.",
     "status": "complete-with-blockers"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Unreleased areas through 8i migrate/refine 221 of 310 rows, with 2 browser-only dispositions; 87 phase10 rows remain before intake and placement/p-v1/m-v1. Strict Core library snapshots own all four source filters, ordered rows, origin labels, file actions, captured delete commands and metadata. Job files have their own origin instead of an undefined thread. Core owns the per-project two-second in-flight cache, forced refresh, conditional failure eviction, fifteen-second polling metadata and initial-versus-polling failure choice. Normal owner purposes and explicit work actions use the same canonical scoped facts and unchanged remove writer; browser timers, native IO and gallery gestures remain local. Final typecheck/lint/build,435cases in40complete relevant backend files and11desktop-light journeys pass without failures/skips/retries;21exact images retained. Provider work simulated;vision not run on existing screens. Library message presentation row282 remains open. Global parity incomplete,legacy CACHE2/Native PAR6 unpassed,final full integrated backend planned. Both installs remain last verified0.7.2;source unreleased. No release,review or actual account/login/bridge/tmux/native-home/owner-project/production operation.",
+    "why": "Unreleased areas through 8j migrate/refine 222 of 310 rows, with 2 browser-only dispositions; 86 phase10 rows remain before intake and placement/p-v1/m-v1. Strict shared Core library message views own structured attachments,known protocol marker removal,legacy reference association,ordering,kind,size,links,image reference decisions and best-effort metadata hydration. Captured immutable library contexts are indexed once per snapshot and retain whole-project gallery scope. Known short artifact markers are now hidden beside their file chips;stored text and writers stay unchanged. Normal owner reads bind canonical coordinator item/device,thread report turn or queued message id;posted history is refused,member reads use existing forwarding,and read-time redaction applies. Final typecheck/lint/build,454cases in43complete relevant backend files and13desktop-light journeys pass without failures/skips/retries;24exact images retained. Provider work simulated;vision not run on existing screens. Global parity incomplete,legacy CACHE2/Native PAR6 unpassed,final full integrated backend planned. Both installs remain last verified0.7.2;source unreleased. No release,review or actual account/login/bridge/tmux/native-home/owner-project/production operation.",
     "status": "in-progress"
   },
   {
