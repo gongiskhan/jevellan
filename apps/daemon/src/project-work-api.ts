@@ -1,3 +1,4 @@
+import {SetupEditorPreviewSchema,SetupEditorPrepareSchema,SetupEditorCommandSchema,setupProposalEditor,setupProposalAttempt,setupProposalReceipt} from '@jevellan/core';
 import {projectHealthEditor, projectHealthHistory} from './project-health-editor.js';
 import {ProjectWorkViewSchema,ProjectCoordinatorCommandSchema,ProjectCoordinatorComposerSchema,projectCoordinatorTransport} from '@jevellan/core';
 import {ProjectThreadReadRequestSchema,ProjectThreadReadErrorSchema,ProjectThreadReadViewSchema,projectThreadReadFailure} from '@jevellan/core';
@@ -42,7 +43,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'thread-read-view' | 'notebook-editor' | 'coordinator-composer' | 'chat-card-view' | 'chat-view' | 'task-page-view' | 'task-queue-interaction' | 'task-edit-view' | 'task-draft' | 'task-command' | 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-editor' | 'health-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'thread-read-view' | 'notebook-editor' | 'coordinator-composer' | 'chat-card-view' | 'chat-view' | 'task-page-view' | 'task-queue-interaction' | 'task-edit-view' | 'task-draft' | 'task-command' | 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-editor' | 'health-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-editor' | 'setup-prepare' | 'setup-command' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -89,6 +90,9 @@ const rows: readonly Row[] = [
   { name: 'sidebar-view', pattern: /^\/api\/project-work\/sidebar$/, methods: ['GET'], target: 'any' },
   { name: 'page-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/status-view$/, methods: ['GET', 'POST'], target: 'any' },
   { name: 'setup-request', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-request$/, methods: ['POST'], target: 'coordinator' },
+  { name: 'setup-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-proposals\/([A-Za-z0-9_-]+)\/editor$/, methods: ['GET', 'POST'], target: 'any', ids: ['projectId', 'proposalId'] },
+  { name: 'setup-prepare', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-proposals\/([A-Za-z0-9_-]+)\/prepare$/, methods: ['POST'], target: 'any', ids: ['projectId', 'proposalId'] },
+  { name: 'setup-command', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-proposals\/([A-Za-z0-9_-]+)\/commands$/, methods: ['POST'], target: 'any', ids: ['projectId', 'proposalId'] },
   { name: 'setup-get', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-proposals\/([A-Za-z0-9_-]+)$/, methods: ['GET'], target: 'any', ids: ['projectId', 'proposalId'] },
   { name: 'setup-action', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/setup-proposals\/([A-Za-z0-9_-]+)\/actions$/, methods: ['POST'], target: 'any', ids: ['projectId', 'proposalId'] },
   { name: 'usage', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/usage$/, methods: ['GET'], target: 'any' },
@@ -175,7 +179,7 @@ const rows: readonly Row[] = [
  * Requests carrying a client id repeat safely, so a hub outage during them is reported as retryable (settings only when the body has
  * one); so does Move coordinator here, whose repeat completes the first one (D269).
  */
-const withClientId = new Set<ProjectWorkRouteName>(['settings-editor-save', 'setup-request', 'setup-action', 'thread-action', 'message', 'move', 'thread-create', 'thread-message', 'thread-override', 'answer', 'landing-correction', 'pr-correction', 'task-create', 'goal-create', 'job-create', 'daily-create', 'job-run', 'daily-run']);
+const withClientId = new Set<ProjectWorkRouteName>(['setup-command', 'settings-editor-save', 'setup-request', 'setup-action', 'thread-action', 'message', 'move', 'thread-create', 'thread-message', 'thread-override', 'answer', 'landing-correction', 'pr-correction', 'task-create', 'goal-create', 'job-create', 'daily-create', 'job-run', 'daily-run']);
 const failure = (message: string, status: number) => Object.assign(new Error(message), { status });
 const API_PREFIX = '/api/projects/';
 /** UI-proxied requests from another device (phase 5, D41, D266): the owner and coordinator routes of the table. */
@@ -401,6 +405,26 @@ export async function ownerProjectChatView(app: Application, projectId: string, 
   if (result.projectId !== projectId || result.deviceId !== owner || result.request.offset !== input.offset || result.request.limit !== input.limit || input.deviceId !== undefined && result.request.deviceId !== input.deviceId || input.throughEventId !== undefined && result.request.throughEventId !== input.throughEventId) throw failure('The returned chat does not match the request.', 502);
   return result;
 }
+/** Captured editor context is a draft; only the existing canonical action writer admits changes. */
+export async function ownerSetupEditor(app: Application, projectId: string, proposalId: string, raw?: unknown) {
+  const current = await app.projectWork.setupView(projectId, proposalId);
+  if (raw === undefined) return setupProposalEditor(current);
+  const input = SetupEditorPreviewSchema.parse(raw);
+  if (input.view.proposal.projectId !== projectId || input.view.proposal.id !== proposalId) throw failure('The setup draft belongs to another proposal.', 400);
+  return setupProposalEditor(input.view, input.fields, input.ui);
+}
+export async function ownerSetupPrepare(app: Application, projectId: string, proposalId: string, raw: unknown) {
+  const input = SetupEditorPrepareSchema.parse(raw);
+  if (input.editor.projectId !== projectId || input.editor.proposalId !== proposalId) throw failure('The setup draft belongs to another proposal.', 400);
+  await app.projectWork.setupView(projectId, proposalId);
+  return setupProposalAttempt(input.previous, input.editor, input.action, input.candidateId);
+}
+export async function ownerSetupAction(app: Application, projectId: string, proposalId: string, raw: unknown) {
+  const input = SetupEditorCommandSchema.parse(raw);
+  if (input.projectId !== projectId || input.proposalId !== proposalId) throw failure('The setup action belongs to another proposal.', 400);
+  // Keep receipt replay ahead of fresh revision admission inside the canonical writer.
+  return setupProposalReceipt(input, await app.projectWork.setupAction(projectId, proposalId, input.body));
+}
 export async function ownerRoutineSave(app: Application, projectId: string, itemId: string | undefined, raw: unknown) {
   const input = RoutineEditorSaveRequestSchema.parse(raw), work = app.projectWork;
   const kind = input.schema === 'job-editor-create-request-v1' || input.schema === 'job-editor-update-request-v1' ? 'job' : 'daily';
@@ -554,6 +578,9 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
   if (route.target === 'coordinator' && /^(job|daily)-(create|run)$/u.test(route.name)) await work.prepareDailyWork(projectId);
   switch (route.name) {
     case 'setup-request': send(await work.requestSetup(projectId, await requestBody(request)), 202); return true;
+    case 'setup-editor': send(await ownerSetupEditor(app, projectId, route.proposalId!, request.method === 'POST' ? await requestBody(request) : undefined)); return true;
+    case 'setup-prepare': send(await ownerSetupPrepare(app, projectId, route.proposalId!, await requestBody(request))); return true;
+    case 'setup-command': send(await ownerSetupAction(app, projectId, route.proposalId!, await requestBody(request))); return true;
     case 'setup-get': send(await work.setupView(projectId, route.proposalId!)); return true;
     case 'setup-action': send(await work.setupAction(projectId, route.proposalId!, SetupActionRequestSchema.parse(await requestBody(request)))); return true;
     case 'usage': send(await work.usage.view(projectId, url.searchParams.get('range') ?? undefined)); return true;

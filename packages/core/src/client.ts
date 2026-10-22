@@ -246,3 +246,5 @@ export * from './health-editor.js';
 export * from './project-settings-setup.js';
 
 export * from './first-run.js';
+
+export * from './project-setup-editor.js';

@@ -1,3 +1,5 @@
+import {SetupEditorPrepareSchema,SetupEditorCommandSchema} from '@jevellan/core';
+import {ownerSetupEditor,ownerSetupPrepare,ownerSetupAction} from '../project-work-api.js';
 import {projectHealthEditor} from '../project-health-editor.js';
 import { ekoaEditor, prepareEkoaEditorSave } from '@jevellan/core';
 import { settingsNavigation, nativeConversationPolicy } from '@jevellan/core';
@@ -163,6 +165,15 @@ export const config: OwnerHandler = async (context) => {
       return { text: context.action === 'native_connections_editor' ? 'Native session connections.' : 'Connection settings saved.',
         data: await nativeConnectionsDeviceOperation(context.app, deviceId, { schema: 'native-connections-operation-v1', deviceId,
           ...(context.action === 'native_connections_editor' ? { operation: 'read' } : { operation: 'command', request: args.request }) }) };
+    }
+    case 'setup_editor': return { text: 'Suggested setup.', data: await ownerSetupEditor(context.app, context.project.id, String(args.proposal), args.request) };
+    case 'setup_prepare': {
+      const input = SetupEditorPrepareSchema.parse(args.request);
+      return { text: 'Setup action prepared.', data: await ownerSetupPrepare(context.app, context.project.id, input.editor.proposalId, input) };
+    }
+    case 'setup_action': {
+      const input = SetupEditorCommandSchema.parse(args.request);
+      return { text: 'Setup action completed.', data: await ownerSetupAction(context.app, context.project.id, input.proposalId, input) };
     }
     case 'setup_view': return { text: 'Suggested setup.', data: await context.app.projectWork.setupView(context.project.id, String(args.proposal)) };
     case 'mirror_editor': return { text: 'Task mirror settings.', data: ekoaEditor(context.app.ekoa!.state()) };

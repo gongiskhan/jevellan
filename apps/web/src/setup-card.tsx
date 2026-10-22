@@ -1,41 +1,47 @@
 import { useEffect, useRef, useState } from 'react';
-import { SetupProposalViewSchema } from '@jevellan/core/client';
+import { SetupProposalEditorSchema, SetupEditorReceiptSchema, setupEditorPolicy, setupProposalEdit, setupProposalUi, setupProposalAttempt, setupProposalAccepted } from '@jevellan/core/client';
 import { ApiError, api, isCancelled } from './api.js';
 import { clientId } from './client-id.js';
 import { useTask } from './components.js';
-import * as copy from './project-work-copy.js';
-type View = ReturnType<typeof SetupProposalViewSchema.parse>;
+type Editor = ReturnType<typeof SetupProposalEditorSchema.parse>;
+type Attempt = ReturnType<typeof setupProposalAttempt>;
 export function SetupCard({ projectId, proposalId, changed, onError }: { projectId: string; proposalId: string; changed(): void; onError(error: unknown): void }) {
-  const path = `/api/projects/${projectId}/setup-proposals/${proposalId}`, [view, setView] = useState<View>(), [values, setValues] = useState<string[]>([]), [selected, setSelected] = useState<number[]>([]), [reload, setReload] = useState(0), [stale, setStale] = useState('');
-  const error = useRef(onError); error.current = onError; const operation = useTask(onError);
+  const path = `/api/projects/${projectId}/setup-proposals/${proposalId}/editor`, [editor, setEditor] = useState<Editor>(), [reload, setReload] = useState(0);
+  const current = useRef(path); current.current = path;
+  const pending = useRef<Attempt | null>(null), error = useRef(onError); error.current = onError;
+  const operation = useTask(onError), policy = editor?.policy ?? setupEditorPolicy();
+  const model = editor?.projectId === projectId && editor.proposalId === proposalId ? setupProposalUi(editor, { ...editor.ui, busy: operation.busy }) : undefined;
   useEffect(() => {
     const controller = new AbortController();
-    void api(path, SetupProposalViewSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true }).then(value => {
-      setView(value); setValues(value.proposal.items.map(item => item.value)); setSelected(value.proposal.items.map((_, index) => index)); setStale('');
+    void api(path, SetupProposalEditorSchema, 'GET', undefined, { signal: controller.signal, waitForHub: true }).then(value => {
+      if (current.current !== path || controller.signal.aborted) return;
+      if (value.projectId !== projectId || value.proposalId !== proposalId) throw new Error('The setup editor belongs to another proposal.');
+      pending.current = null; setEditor(value);
     }).catch(reason => { if (!isCancelled(reason)) error.current(reason); });
     return () => controller.abort();
-  }, [path, reload]);
+  }, [path, projectId, proposalId, reload]);
   const act = (action: 'apply' | 'dismiss') => void operation.run(async signal => {
-    if (!view) return;
+    if (!model) return;
+    const attempt = setupProposalAttempt(pending.current, model, action, `setup_${clientId()}`); pending.current = attempt;
     try {
-      const next = await api(`${path}/actions`, SetupProposalViewSchema, 'POST', { schema: 'setup-action-request-v1', clientRequestId: `setup_${clientId()}`, expectedRevision: view.proposal.revision, action,
-        ...(action === 'apply' ? { settingsRevision: view.settingsRevision, projectRevision: view.projectRevision, selected: selected.map(index => ({ index, value: values[index] })) } : {}) }, { signal, waitForHub: true });
-      setView(next); changed();
-    } catch (reason) { if (reason instanceof ApiError && reason.status === 409) setStale(reason.message); throw reason; }
+      const receipt = await api(attempt.path, SetupEditorReceiptSchema, 'POST', attempt.command, { signal, waitForHub: true });
+      const next = setupProposalAccepted(attempt, receipt, { projectId, proposalId });
+      if (current.current !== path) return;
+      pending.current = null; setEditor(next); changed();
+    } catch (reason) {
+      if (reason instanceof ApiError && reason.status === 409 && current.current === path) setEditor(value => value ? setupProposalUi(value, { ...value.ui, stale: reason.message }) : value);
+      throw reason;
+    }
   });
-  const proposal = view?.proposal;
-  return <article className="pw-setup-card" aria-label={copy.SUGGESTED_SETUP}><h3>{copy.SUGGESTED_SETUP}</h3>
-    {!proposal ? <p role="status">{copy.LOADING}</p> : proposal.appliedAt ? <><p role="status">{copy.setupApplied(proposal.applied?.length ?? 0)}</p>
-      {proposal.items.some((item, index) => proposal.applied?.includes(index) && ['variables', 'secrets'].includes(item.key)) && <p>{copy.SETUP_FILL_VALUES}</p>}</>
-      : proposal.dismissedAt ? <p role="status">{copy.SETUP_DISMISSED}</p> : <>
-        {proposal.items.map((item, index) => {
-          const label = item.key === 'goal' ? copy.setupGoalLabel(values[index] ?? item.value) : copy.SETUP_LABELS[item.key];
-          return <div className="pw-setup-item" key={index}><label className="check-label"><input type="checkbox" checked={selected.includes(index)} disabled={operation.busy} onChange={event => setSelected(rows => event.target.checked ? [...rows, index] : rows.filter(row => row !== index))} />{label}</label>
-            <textarea aria-label={label} maxLength={16000} value={values[index] ?? ''} disabled={operation.busy} onChange={event => setValues(rows => rows.map((value, i) => i === index ? event.target.value : value))} />
-            {item.note && <p className="muted">{item.note}</p>}</div>;
-        })}
-        {stale && <p className="notice" role="status">{stale} <button className="secondary" onClick={() => setReload(value => value + 1)}>{copy.RELOAD}</button></p>}
-        <div className="actions"><button disabled={operation.busy || Boolean(stale) || !selected.length || selected.some(index => !values[index]?.trim())} onClick={() => act('apply')}>{copy.APPLY_SETUP}</button><button className="secondary" disabled={operation.busy || Boolean(stale)} onClick={() => act('dismiss')}>{copy.SETUP_NOT_NOW}</button></div>
+  const edit = (event: Parameters<typeof setupProposalEdit>[1]) => setEditor(value => value ? setupProposalEdit(value, event) : value);
+  return <article className="pw-setup-card" aria-label={policy.title}><h3>{policy.title}</h3>
+    {!model ? <p role="status">{policy.loading}</p> : model.state === 'applied' ? <><p role="status">{model.appliedLine}</p>{model.followUp && <p>{model.followUp}</p>}</>
+      : model.state === 'dismissed' ? <p role="status">{policy.dismissedLabel}</p> : <>
+        {model.items.map(item => <div className="pw-setup-item" key={item.index}><label className="check-label"><input type="checkbox" checked={item.selected} disabled={model.ui.busy} onChange={event => edit({ schema: 'setup-editor-event-v1', type: 'selection', index: item.index, checked: event.target.checked })} />{item.label}</label>
+          <textarea aria-label={item.label} maxLength={policy.valueMax} value={item.value} disabled={model.ui.busy} onChange={event => edit({ schema: 'setup-editor-event-v1', type: 'value', index: item.index, value: event.target.value })} />
+          {item.note && <p className="muted">{item.note}</p>}</div>)}
+        {model.actions.reloadVisible && <p className="notice" role="status">{model.ui.stale} <button className="secondary" onClick={() => setReload(value => value + 1)}>{policy.reloadLabel}</button></p>}
+        <div className="actions"><button disabled={!model.actions.applyEnabled} onClick={() => act('apply')}>{policy.applyLabel}</button><button className="secondary" disabled={!model.actions.dismissEnabled} onClick={() => act('dismiss')}>{policy.dismissLabel}</button></div>
       </>}
   </article>;
 }
