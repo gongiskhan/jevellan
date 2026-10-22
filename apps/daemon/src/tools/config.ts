@@ -1,3 +1,4 @@
+import {projectHealthEditor} from '../project-health-editor.js';
 import { ekoaEditor, prepareEkoaEditorSave } from '@jevellan/core';
 import { settingsNavigation, nativeConversationPolicy } from '@jevellan/core';
 import { ProjectRoutineSettingsSaveSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsRequestSchema, NotificationBrowserFactsSchema } from '@jevellan/core';
@@ -214,6 +215,7 @@ export const config: OwnerHandler = async (context) => {
     case 'environment_save': return { text: 'Project environment settings saved.', data: await context.app.projectWork.saveEnvironmentEditor(context.project.id, args.request) };
     case 'placement_editor': case 'placement_preview': return { text: 'Project placement choices.', data: await context.app.projectWork.placementEditor(context.project.id, context.action === 'placement_preview' ? args.request : undefined) };
     case 'placement_save': return { text: 'Project placement settings saved.', data: await context.app.projectWork.savePlacementEditor(context.project.id, args.request) };
+    case 'health_editor': case 'health_preview': return { text: 'Health check settings.', data: await projectHealthEditor(context.app, context.project.id, context.action === 'health_preview' ? args.request : undefined) };
     case 'landing_editor': case 'landing_preview': return { text: 'Landing settings.', data: await context.app.projectWork.landingEditor(context.project.id, context.action === 'landing_preview' ? args.request : undefined) };
     case 'landing_save': return { text: 'Landing settings saved.', data: await context.app.projectWork.saveLandingEditor(context.project.id, args.request) };
     case 'settings_change': return { text: 'Recorded settings changes.', data: await context.app.projectWork.settingsChangeView(context.project.id, args.request) };

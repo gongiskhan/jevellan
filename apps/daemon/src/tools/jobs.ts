@@ -1,3 +1,5 @@
+import {healthHistoryView} from '@jevellan/core';
+import {projectHealthHistory} from '../project-health-editor.js';
 import { newId, ownerClock, type ProjectDaily, type ProjectJob, type ProjectJobRun } from '@jevellan/core';
 import { capLines, projectJobsView } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
@@ -38,6 +40,7 @@ const itemName = (item: Item) => item.kind === 'daily' ? item.daily.name : item.
 /** `jobs` (bridge specification, "Jobs and nights, deploy switch, intake, goals"). */
 export const jobs: OwnerHandler = async (context) => {
   const { app, tools, project, args, now } = context; const engine = app.projectWork; const projectId = project.id;
+  if (context.action === 'health_view') return { text: 'Health check results.', data: await projectHealthHistory(app, projectId) };
   const data = await load(context); const { daily, settings, tz } = data;
   const nameOfRun = (run: ProjectJobRun) => daily.dailies.find(row => row.target.kind === 'job' && row.target.jobId === run.jobId)?.name ?? daily.jobs.find(job => job.id === run.jobId)?.name ?? 'job';
   const nightOrder = () => [...daily.dailies].filter(row => row.enabled).sort((a, b) => a.order - b.order).map(row => row.name);
@@ -155,8 +158,8 @@ export const jobs: OwnerHandler = async (context) => {
       throw new OwnerRefusal('schedule takes windowStart (HH:MM), order (night items), days (mon to sun) or everyMinutes with between (HH:MM-HH:MM).', 'invalid_schedule');
     }
     case 'health_run': {
-      const view = await app.projectHealthRequest({ schema: 'project-health-request-v1', project: projectId, operation: 'run', ...(typeof args.check === 'string' ? { check: args.check } : {}) });
-      return { text: capLines(view.runs.map(run => `${settings.healthChecks.find(check => check.id === run.checkId)?.name ?? run.checkId}: ${run.passed ? 'passed' : 'failed'} · ${run.steps.map(step => `${step.name} ${step.passed ? 'ok' : `failed${step.reason ? `: ${step.reason}` : ''}`}${step.ms ? ` (${Math.round(step.ms)} ms)` : ''}`).join(', ')}`)) };
+      const view = await app.projectHealthRequest({ schema: 'project-health-request-v1', project: projectId, operation: 'run', ...(typeof args.check === 'string' ? { check: args.check } : {}), ...(args.definition ? { definition: args.definition as Parameters<typeof app.projectHealthRequest>[0]['definition'] } : {}) });
+      return { text: capLines(view.runs.map(run => `${settings.healthChecks.find(check => check.id === run.checkId)?.name ?? run.checkId}: ${run.passed ? 'passed' : 'failed'} · ${run.steps.map(step => `${step.name} ${step.passed ? 'ok' : `failed${step.reason ? `: ${step.reason}` : ''}`}${step.ms ? ` (${Math.round(step.ms)} ms)` : ''}`).join(', ')}`)), data: healthHistoryView(view) };
     }
     case 'rollback': {
       if (context.request.caller.startsWith('remote:')) throw new OwnerRefusal('Deploys and rollbacks are not available remotely.', 'remote_refused', 403);

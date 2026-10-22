@@ -28,6 +28,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const [coordinatorReady, setCoordinatorReady] = useState(false);
   const [placementReady, setPlacementReady] = useState(false);
   const [environmentReady, setEnvironmentReady] = useState(false);
+  const [healthReady, setHealthReady] = useState(false);
   const [work, setWork] = useState<ProjectWorkView>();
   const [routines, setRoutines] = useState<ProjectRoutineSettingsView>();
   const [stale, setStale] = useState(false);
@@ -83,7 +84,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
       <button type="button" className="text-button" onClick={() => navigate(editor?.backPath ?? `/projects/${id}`)}>{copy.BACK_TO_PROJECT}</button></header>
     {!draft || !base || !work || !routines || !editor ? <p role="status">{copy.LOADING}</p> : !configuration || !controls || !editor.rigging ? <p role="status">Project configuration metadata is unavailable. Reload after the daemon is updated.</p> : <div className="pw-settings-layout">
       <nav aria-label={copy.SETTINGS_SECTIONS}>{editor.sections.map(row => <a key={row.key} href={`#project-settings-${row.key}`}>{row.label}</a>)}</nav>
-      <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); if (landingReady && coordinatorReady && placementReady && environmentReady && !stale) saveAll(); }}>
+      <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); if (landingReady && coordinatorReady && placementReady && environmentReady && healthReady && !stale) saveAll(); }}>
         <fieldset disabled={task.busy} className="pw-fields">
           {section('general', <>
             <fieldset><legend>{copy.PROJECT_STATUS}</legend><div className="form-actions">{editor.statusOptions.map(option => <button key={option.value} type="button" className="secondary" aria-pressed={base.status === option.value} onClick={() => setStatus(option.value)}>{option.label}</button>)}</div>
@@ -122,7 +123,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
             <label className="checkbox"><input type="checkbox" checked={draft.refill.enabled} onChange={event => change({ refill: { ...draft.refill, enabled: event.target.checked } })} />{copy.REFILL_ENABLED}</label>
             {number('refill', draft.refill.minIntervalMinutes, minIntervalMinutes => change({ refill: { ...draft.refill, minIntervalMinutes } }))}<p className="pw-field-note">{copy.ROUTINES_EDIT_HELP}</p>
           </>)}
-          {section('health', <ProjectHealthEditor projectId={id} checks={draft.healthChecks} change={healthChecks => change({ healthChecks })} fail={local.fail} />)}
+          {section('health', <ProjectHealthEditor key={loadEpoch} ready={setHealthReady} projectId={id} checks={draft.healthChecks} change={healthChecks => change({ healthChecks })} fail={local.fail} />)}
           {section('notifications', editor.notificationInfo ? <fieldset><legend>{copy.PROJECT_NOTIFICATIONS}</legend>{editor.notificationInfo.levels.map(({ value: level, label, help }) => <label className="pw-notification-level" key={level}><span className="checkbox"><input type="radio" name="notification-level" aria-label={label} aria-describedby={help ? `notification-${level}-help` : undefined} checked={draft.notifications.level === level} onChange={() => change({ notifications: { ...draft.notifications, level } })} />{label}</span>{help && <span id={`notification-${level}-help`} className="pw-field-note">{help}</span>}</label>)}<label className="check"><input type="checkbox" checked={draft.notifications.quietHours.enabled} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, enabled: event.target.checked } } })} />{editor.notificationInfo.quietHours.label}</label>
             <div className="form-grid"><label>{editor.notificationInfo.quietHours.startLabel}<input type="time" required pattern={editor.notificationInfo.quietHours.timePattern} value={draft.notifications.quietHours.start} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, start: event.target.value } } })} /></label><label>{editor.notificationInfo.quietHours.endLabel}<input type="time" required pattern={editor.notificationInfo.quietHours.timePattern} value={draft.notifications.quietHours.end} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, end: event.target.value } } })} /></label></div>
             <label>{editor.notificationInfo.quietHours.timezoneLabel}<input required maxLength={editor.notificationInfo.quietHours.timezoneMaxLength} value={draft.notifications.quietHours.timezone} onChange={event => change({ notifications: { ...draft.notifications, quietHours: { ...draft.notifications.quietHours, timezone: event.target.value } } })} /></label>
@@ -132,7 +133,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
         {local.error && <p role="alert" className="error">{local.error}{stale && <button type="button" className="text-button" disabled={task.busy} onClick={() => void task.run(read)}>{copy.RELOAD}</button>}</p>}
         <div className="form-actions pw-settings-savebar">
           {work.project.name === 'Ekoa Code' && <button type="button" className="secondary" disabled={task.busy || !draft.coordinator.modelId} onClick={() => void task.run(async signal => { await api(`/api/projects/${id}/ekoa-code-setup`, EkoaCodeSetupReceiptSchema, 'POST', { schema: 'ekoa-code-setup-request-v1', modelId: draft.coordinator.modelId, workflowPull: 208 }, { signal, waitForHub: true }); await read(signal); updated(); })}>{copy.APPLY_EKOA_SETUP}</button>}
-          <button type="button" className="secondary" onClick={() => navigate(editor.backPath)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale || !landingReady || !coordinatorReady || !placementReady || !environmentReady}>{task.busy ? copy.SAVING : copy.SAVE}</button>
+          <button type="button" className="secondary" onClick={() => navigate(editor.backPath)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale || !landingReady || !coordinatorReady || !placementReady || !environmentReady || !healthReady}>{task.busy ? copy.SAVING : copy.SAVE}</button>
         </div>
       </form><RoutinePreferences model={routines} saved={setRoutines} /></div>
     </div>}
