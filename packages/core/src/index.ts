@@ -287,3 +287,5 @@ export * from './native-connection-editor.js';
 export * from './native-reading.js';
 
 export * from './native-conversation.js';
+
+export * from './terminal-launcher.js';

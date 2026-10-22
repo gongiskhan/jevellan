@@ -1,3 +1,4 @@
+import { readTerminalLauncherView, readTerminalListView } from './terminal-launcher-view.js';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
@@ -23,6 +24,13 @@ export async function handleTerminalPeer(app: Application, request: IncomingMess
 export async function handleTerminalApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, token: string): Promise<boolean> {
   if (!url.pathname.startsWith('/api/terminals')) return false;
   const service = app.terminals, method = request.method ?? 'GET', path = url.pathname;
+  if (path === '/api/terminals/launcher-view' || path === '/api/terminals/list-view') {
+    if (method !== 'GET') throw refuse('Unsupported terminal view method.', 405);
+    const projectId = url.searchParams.get('projectId'), deviceId = url.searchParams.get('deviceId');
+    if (path.endsWith('/launcher-view')) json(response, app.redactor.document(await readTerminalLauncherView(app, { schema: 'terminal-launcher-view-request-v1', ...(projectId ? { projectId } : {}), ...(deviceId ? { deviceId } : {}) })));
+    else json(response, app.redactor.document(await readTerminalListView(app, { schema: 'terminal-list-request-v1', ...(projectId ? { projectId } : { deviceId: deviceId ?? app.device.deviceId }) }, token)));
+    return true;
+  }
   if (path === '/api/terminals' && method === 'GET') {
     const projectId = url.searchParams.get('projectId'), deviceId = url.searchParams.get('deviceId');
     json(response, await service.list(token, { ...(projectId ? { projectId: IdSchema.parse(projectId) } : {}), ...(deviceId ? { deviceId: IdSchema.parse(deviceId) } : {}) })); return true;

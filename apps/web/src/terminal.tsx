@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
-import { TerminalAckSchema, TerminalListSchema, TerminalOutputFrameSchema, TerminalSnapshotSchema, TerminalTicketSchema,
+import { TerminalAckSchema, TerminalListReadViewSchema, terminalOpenCommand, terminalOpenResult, terminalLauncherContext, terminalLauncherView, terminalLauncherSelection,
+  terminalLauncherDeviceChoice, terminalLauncherFolderChoice, terminalLauncherFolders, terminalLaunchAttempt, terminalLauncherListRequest, terminalListReadUrl,
+  terminalListInitial, terminalListFailed, applyTerminalListRead, terminalLauncherRows, type TerminalLaunchAttempt, TerminalOutputFrameSchema, TerminalSnapshotSchema, TerminalTicketSchema,
   type TerminalSession, type ThreadIndex } from '@jevellan/core/client';
 import { api, empty } from './api.js';
 import { clientId } from './client-id.js';
@@ -17,45 +19,49 @@ const bytes = (text: string) => { const input = new TextEncoder().encode(text); 
 const plain = (terminal: Terminal) => { const buffer = terminal.buffer.active; let text = ''; for (let index = 0; index < buffer.length; index++) { const line = buffer.getLine(index); text += `${index && !line?.isWrapped ? '\n' : ''}${line?.translateToString(true) ?? ''}`; } return text.trimEnd(); };
 async function copy(text: string) { if (!await copyText(text)) throw new Error('Select the text and use the browser’s Copy action.'); }
 
-export function OpenTerminalButton({ props, projectId, threadId, deviceId, cwd = 'worktree', takeover = false, label = 'Open terminal here' }:
+export function OpenTerminalButton({ props, projectId, threadId, deviceId, cwd, takeover, label = 'Open terminal here' }:
   { props: Pick<PageProps, 'navigate' | 'onError'>; projectId?: string; threadId?: string; deviceId?: string; cwd?: string; takeover?: boolean; label?: string }) {
   const task = useTask(props.onError), requestId = useRef(clientId());
   return <button type="button" className="secondary terminal-launch-button" disabled={task.busy} onClick={() => void task.run(async signal => {
-    const result = await api('/api/terminals', TerminalTicketSchema, 'POST', { schema: 'terminal-create-request-v1', clientRequestId: requestId.current,
-      ...(projectId ? { projectId } : {}), ...(threadId ? { threadId } : {}), ...(deviceId ? { deviceId } : {}), cwd, takeover }, { signal });
-    props.navigate(`/terminals/${result.session.id}`);
+    const result = await api('/api/terminals', TerminalTicketSchema, 'POST', terminalOpenCommand({ schema: 'terminal-open-input-v1', clientRequestId: requestId.current,
+      ...(projectId ? { projectId } : {}), ...(threadId ? { threadId } : {}), ...(deviceId ? { deviceId } : {}), ...(cwd ? { cwd } : {}), ...(takeover === undefined ? {} : { takeover }) }), { signal });
+    props.navigate(terminalOpenResult(result.session).url);
   })}>{label}</button>;
 }
 
 export function TerminalLauncher({ props, projectId, deviceId, threads = [], coordinatorDeviceId }:
   { props: PageProps; projectId?: string; deviceId?: string; threads?: ThreadIndex[]; coordinatorDeviceId?: string }) {
-  const [selectedDevice, setDevice] = useState(deviceId ?? coordinatorDeviceId ?? props.data.roster.currentDeviceId), [folder, setFolder] = useState(projectId ? 'checkout' : 'home');
-  const [sessions, setSessions] = useState<TerminalSession[]>([]), task = useTask(props.onError), [error, setError] = useState('');
-  const request = useRef<{ key: string; id: string } | undefined>(undefined);
+  const model = useMemo(() => terminalLauncherView(terminalLauncherContext(props.data.roster, { ...(projectId ? { projectId } : {}), ...(deviceId ? { deviceId } : {}),
+    ...(coordinatorDeviceId ? { coordinatorDeviceId } : {}), threads })), [props.data.roster, projectId, deviceId, coordinatorDeviceId, threads]);
+  const [choice, setChoice] = useState(() => terminalLauncherSelection(model)), task = useTask(props.onError);
+  const scope = terminalLauncherListRequest(model, choice), [reading, setReading] = useState(() => terminalListInitial(scope));
+  const request = useRef<TerminalLaunchAttempt | null>(null);
   useEffect(() => {
-    const controller = new AbortController(); const load = () => api(`/api/terminals?${projectId ? `projectId=${projectId}` : `deviceId=${selectedDevice}`}`, TerminalListSchema, 'GET', undefined, { signal: controller.signal }).then(value => { if (!controller.signal.aborted) setSessions(value.sessions); }).catch(() => { if (!controller.signal.aborted) setError('Open terminals are unavailable.'); });
-    void load(); const timer = setInterval(() => void load(), 5000); return () => { controller.abort(); clearInterval(timer); };
-  }, [projectId, selectedDevice]);
-  const folderThreads = threads.filter(row => row.ownerDeviceId === selectedDevice);
+    const controller = new AbortController(); setReading(current => terminalListInitial(scope, current));
+    const load = async () => {
+      try { const frame = await api(terminalListReadUrl(scope), TerminalListReadViewSchema, 'GET', undefined, { signal: controller.signal });
+        if (!controller.signal.aborted) setReading(current => applyTerminalListRead(current, frame)); }
+      catch { if (!controller.signal.aborted) setReading(current => applyTerminalListRead(current, terminalListFailed(scope))); }
+    };
+    void load(); const timer = setInterval(() => void load(), model.policy.pollMs); return () => { controller.abort(); clearInterval(timer); };
+  }, [scope.projectId, scope.deviceId, choice.deviceId, model.policy.pollMs]);
+  const rows = useMemo(() => terminalLauncherRows(model, reading.list), [model, reading.list]);
   return <section className="terminal-launcher" aria-label="Project terminals">
     <h2>Terminal</h2><p className="muted">Open a shell on one of your devices. It stays open when you disconnect.</p>
     <form onSubmit={event => { event.preventDefault(); void task.run(async signal => {
-      const threadId = folder.startsWith('thread:') ? folder.slice(7) : undefined, key = `${selectedDevice}:${folder}`;
-      if (request.current?.key !== key) request.current = { key, id: clientId() };
-      const result = await api('/api/terminals', TerminalTicketSchema, 'POST', { schema: 'terminal-create-request-v1', clientRequestId: request.current.id,
-        deviceId: selectedDevice, ...(projectId ? { projectId } : {}), ...(threadId ? { threadId } : {}), cwd: threadId ? 'worktree' : folder, takeover: false }, { signal });
-      props.navigate(`/terminals/${result.session.id}`);
+      request.current = terminalLaunchAttempt(request.current, model, choice, clientId());
+      const result = await api('/api/terminals', TerminalTicketSchema, 'POST', request.current.command, { signal });
+      props.navigate(terminalOpenResult(result.session).url);
     }); }}>
-      <label>Device<select aria-label="Terminal device" value={selectedDevice} onChange={event => { setDevice(event.target.value); setFolder(projectId ? 'checkout' : 'home'); }}>
-        {props.data.roster.devices.filter(row => !row.revoked).map(row => <option key={row.device.id} value={row.device.id} disabled={row.status === 'offline' && row.device.id !== props.data.roster.currentDeviceId}>{row.device.name}</option>)}
+      <label>Device<select aria-label="Terminal device" value={choice.deviceId} onChange={event => setChoice(terminalLauncherDeviceChoice(model, event.target.value))}>
+        {model.devices.map(row => <option key={row.id} value={row.id} disabled={row.disabled}>{row.label}</option>)}
       </select></label>
-      <label>Folder<select aria-label="Terminal folder" value={folder} onChange={event => setFolder(event.target.value)}>
-        {projectId && <option value="checkout">Project checkout</option>}<option value="home">Home</option>
-        {folderThreads.map(row => <option value={`thread:${row.id}`} key={row.id}>{row.title} · Worktree</option>)}
+      <label>Folder<select aria-label="Terminal folder" value={choice.folder} onChange={event => setChoice(current => terminalLauncherFolderChoice(current, event.target.value))}>
+        {terminalLauncherFolders(model, choice).map(row => <option key={row.value} value={row.value}>{row.label}</option>)}
       </select></label><button disabled={task.busy}>Open terminal</button>
     </form>
-    {error && <p className="notice">{error}</p>}
-    <h3>Open terminals</h3>{sessions.length ? <ul className="terminal-session-list">{sessions.map(session => <li key={session.id}><button className="text-button" onClick={() => props.navigate(`/terminals/${session.id}`)}>{session.title}</button><span className="muted small-text">{props.data.roster.devices.find(row => row.device.id === session.deviceId)?.device.name} · {session.cwd}</span></li>)}</ul> : <p className="muted">No open terminals.</p>}
+    {reading.error && <p className="notice">{reading.error}</p>}
+    <h3>Open terminals</h3>{rows.length ? <ul className="terminal-session-list">{rows.map(row => <li key={row.session.id}><button className="text-button" onClick={() => props.navigate(row.url)}>{row.session.title}</button><span className="muted small-text">{row.deviceName} · {row.session.cwd}</span></li>)}</ul> : <p className="muted">No open terminals.</p>}
   </section>;
 }
 
