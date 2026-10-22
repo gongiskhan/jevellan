@@ -1,3 +1,4 @@
+import { readTerminalActions, readTerminalCopyPlan, readTerminalCopyView, readTerminalRunPlan, executeTerminalAction } from '../terminal-actions-view.js';
 import { terminalStreamPolicy } from '@jevellan/core';
 import { readTerminalView } from '../terminal-reading-view.js';
 import { readTerminalLauncherView, readTerminalListView, createTerminalForTools } from '../terminal-launcher-view.js';
@@ -32,6 +33,11 @@ function describeRule(rule: JevRule, goals: Map<string, string>): string {
 /** `jev` (bridge specification, "Jev control"). */
 export const jev: OwnerHandler = async (context) => {
   const { app, tools, project, args } = context; const control = app.ownerJev; const projectId = project.id;
+  if (context.action === 'terminal_actions_view') return { text: 'Terminal actions.', data: await readTerminalActions(app, args.request) };
+  if (context.action === 'terminal_copy_plan') return { text: 'Terminal copy source.', data: await readTerminalCopyPlan(app, args.request) };
+  if (context.action === 'terminal_copy_view') return { text: 'Terminal command excerpt.', data: await readTerminalCopyView(app, args.request) };
+  if (context.action === 'terminal_run_plan') return { text: 'Terminal input plan; not executed.', data: await readTerminalRunPlan(app, args.request) };
+  if (context.action === 'terminal_action') return { text: 'Terminal action receipt.', data: await executeTerminalAction(app, args.request) };
   if (context.action === 'terminal_stream_policy') return { text: 'Terminal stream policy.', data: terminalStreamPolicy() };
   if (context.action === 'terminal_read_view') return { text: 'Terminal reading view.', data: await readTerminalView(app, args.request) };
   if (context.action === 'terminal_launcher_view') return { text: 'Terminal launcher.', data: await readTerminalLauncherView(app, args.request, context.request.deviceId) };

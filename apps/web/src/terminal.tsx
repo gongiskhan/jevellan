@@ -3,9 +3,11 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
-import { TerminalAckSchema, TerminalListReadViewSchema, terminalOpenCommand, terminalOpenResult, terminalLauncherContext, terminalLauncherView, terminalLauncherSelection,
+import { TerminalListReadViewSchema, terminalOpenCommand, terminalOpenResult, terminalLauncherContext, terminalLauncherView, terminalLauncherSelection,
   terminalLauncherDeviceChoice, terminalLauncherFolderChoice, terminalLauncherFolders, terminalLaunchAttempt, terminalLauncherListRequest, terminalListReadUrl,
-  terminalListInitial, terminalListFailed, applyTerminalListRead, terminalLauncherRows, type TerminalLaunchAttempt, terminalStreamInitial, terminalStreamEvent, terminalStreamReceive, terminalStreamHeartbeat, type TerminalStreamTransition, TerminalSnapshotSchema, TerminalTicketSchema,
+  terminalListInitial, terminalListFailed, applyTerminalListRead, terminalLauncherRows, type TerminalLaunchAttempt, terminalStreamInitial, terminalStreamEvent, terminalStreamReceive, terminalStreamHeartbeat, type TerminalStreamTransition, TerminalActionsViewSchema, TerminalActionReceiptSchema, TerminalCopyViewSchema, terminalActionsPolicy, terminalActionsCurrent,
+  terminalCopyPlan, terminalCopyView, verifyTerminalCopyView, terminalCopyFeedback, terminalSendAttempt, terminalCloseCommand, verifyTerminalActionReceipt, terminalRunPlan, terminalOwnerClosed,
+  type TerminalActionsView, type TerminalSendAttempt, TerminalTicketSchema,
   type TerminalSession, type ThreadIndex } from '@jevellan/core/client';
 import { api, empty } from './api.js';
 import { clientId } from './client-id.js';
@@ -17,7 +19,7 @@ import './terminal.css';
 function fontSize() { try { const value = Number(localStorage.getItem('jevellan-terminal-font')); return value >= 10 && value <= 26 ? value : 14; } catch { return 14; } }
 const bytes = (text: string) => { const input = new TextEncoder().encode(text); let binary = ''; for (const value of input) binary += String.fromCharCode(value); return btoa(binary); };
 const plain = (terminal: Terminal) => { const buffer = terminal.buffer.active; let text = ''; for (let index = 0; index < buffer.length; index++) { const line = buffer.getLine(index); text += `${index && !line?.isWrapped ? '\n' : ''}${line?.translateToString(true) ?? ''}`; } return text.trimEnd(); };
-async function copy(text: string) { if (!await copyText(text)) throw new Error('Select the text and use the browser’s Copy action.'); }
+async function copy(text: string) { if (!await copyText(text)) throw new Error(terminalActionsPolicy().copyFailureLabel); }
 
 export function OpenTerminalButton({ props, projectId, threadId, deviceId, cwd, takeover, label = 'Open terminal here' }:
   { props: Pick<PageProps, 'navigate' | 'onError'>; projectId?: string; threadId?: string; deviceId?: string; cwd?: string; takeover?: boolean; label?: string }) {
@@ -67,13 +69,16 @@ export function TerminalLauncher({ props, projectId, deviceId, threads = [], coo
 
 export function TerminalPage(props: PageProps & { id: string; navigation: ReactNode }) {
   const stream = useRef(terminalStreamInitial(props.id));
+  const [actionPolicy] = useState(terminalActionsPolicy), applyStream = useRef<((result: TerminalStreamTransition) => void) | undefined>(undefined);
   const host = useRef<HTMLDivElement>(null), terminal = useRef<Terminal | undefined>(undefined), socket = useRef<WebSocket | undefined>(undefined);
-  const fitTerminal = useRef<(() => void) | undefined>(undefined), sendRequest = useRef<{ key: string; id: string } | undefined>(undefined);
+  const fitTerminal = useRef<(() => void) | undefined>(undefined), sendRequest = useRef<TerminalSendAttempt | null>(null);
   const [session, setSession] = useState<TerminalSession>(), [state, setState] = useState(stream.current.status), [connected, setConnected] = useState(false), [approximate, setApproximate] = useState(false);
   const [size, setSize] = useState(fontSize), [text, setText] = useState(''), [direct, setDirect] = useState(false), [ctrl, setCtrl] = useState(false), [alt, setAlt] = useState(false);
   const armed = useRef({ ctrl: false, alt: false }); armed.current = { ctrl, alt };
   const [menu, setMenu] = useState(false), [selecting, setSelecting] = useState(false), [selectionText, setSelectionText] = useState(''), [copied, setCopied] = useState('');
-  const [sendOpen, setSendOpen] = useState(false), [sendContent, setSendContent] = useState<'last' | 'last-five' | 'selection'>('last'), [target, setTarget] = useState('coordinator'), [active, setActive] = useState<ThreadIndex[]>([]);
+  const [sendOpen, setSendOpen] = useState(false), [sendContent, setSendContent] = useState(actionPolicy.defaultContent), [target, setTarget] = useState(actionPolicy.defaultTarget), [actions, setActions] = useState<TerminalActionsView | null>(null);
+  const currentActions = useMemo(() => terminalActionsCurrent(session, actions), [session, actions]);
+  const runPlan = terminalRunPlan(stream.current, { schema: 'terminal-run-request-v1', sessionId: stream.current.sessionId, text, transportOpen: stream.current.sessionId === props.id && socket.current?.readyState === WebSocket.OPEN });
   const task = useTask(props.onError), press = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const send = (value: string, modified = false) => {
     if (socket.current?.readyState !== WebSocket.OPEN) return;
@@ -104,6 +109,7 @@ export function TerminalPage(props: PageProps & { id: string; navigation: ReactN
         else if (effect.type === 'write') term.write(Uint8Array.from(effect.data, char => char.charCodeAt(0)));
         else if (effect.type === 'close') (transport ?? socket.current)?.close();
         else if (effect.type === 'heartbeat-stop') clearInterval(heartbeat);
+        else if (effect.type === 'cancel-retry') clearTimeout(timer);
         else if (effect.type === 'retry') timer = setTimeout(() => void connect(), effect.delayMs);
         else if (effect.type === 'heartbeat-start') {
           clearInterval(heartbeat); const target = transport ?? socket.current;
@@ -111,6 +117,7 @@ export function TerminalPage(props: PageProps & { id: string; navigation: ReactN
         }
       }
     };
+    applyStream.current = accept;
     const connect = async () => {
       try {
         const receipt = await api(`/api/terminals/${props.id}/ticket`, TerminalTicketSchema, 'POST', empty); if (disposed) return;
@@ -124,28 +131,29 @@ export function TerminalPage(props: PageProps & { id: string; navigation: ReactN
       } catch (error) { if (!disposed) accept(terminalStreamEvent(stream.current, { schema: 'terminal-stream-event-v1', type: 'ticket-failed', message: error instanceof Error ? error.message : stream.current.policy.labels.unavailable })); }
     };
     void connect(); resize();
-    return () => { disposed = true; clearTimeout(timer); clearTimeout(press.current); clearInterval(heartbeat); socket.current?.close(); socket.current = undefined; fitTerminal.current = undefined; input.dispose(); observer.disconnect(); themeObserver.disconnect(); media.removeEventListener('change', theme); window.visualViewport?.removeEventListener('resize', resize); term.dispose(); terminal.current = undefined; };
+    return () => { disposed = true; if (applyStream.current === accept) applyStream.current = undefined; clearTimeout(timer); clearTimeout(press.current); clearInterval(heartbeat); socket.current?.close(); socket.current = undefined; fitTerminal.current = undefined; input.dispose(); observer.disconnect(); themeObserver.disconnect(); media.removeEventListener('change', theme); window.visualViewport?.removeEventListener('resize', resize); term.dispose(); terminal.current = undefined; };
     // Font changes update the existing terminal; reconnects never create a new PTY.
   }, [props.id]);
   useEffect(() => { if (terminal.current) { terminal.current.options.fontSize = size; fitTerminal.current?.(); } try { localStorage.setItem('jevellan-terminal-font', String(size)); } catch { /* Font still changes for this visit. */ } }, [size]);
-  useEffect(() => { if (!session?.projectId || !sendOpen) return; const controller = new AbortController();
-    void import('@jevellan/core/client').then(async core => { const view = await api(`/api/projects/${session.projectId}/work`, core.ProjectWorkViewSchema, 'GET', undefined, { signal: controller.signal }); if (!controller.signal.aborted) setActive(view.threads.filter(row => !['done', 'failed', 'stopped'].includes(row.state))); }).catch(props.onError); return () => controller.abort();
-  }, [session?.projectId, sendOpen, props.onError]);
+  useEffect(() => { if (!currentActions?.canSend || !sendOpen) return; const controller = new AbortController();
+    void api(`/api/terminals/${props.id}/actions-view`, TerminalActionsViewSchema, 'GET', undefined, { signal: controller.signal }).then(view => { if (!controller.signal.aborted) setActions(view); }).catch(props.onError); return () => controller.abort();
+  }, [props.id, currentActions?.canSend, sendOpen, props.onError]);
   const copying = (kind: 'all' | 'last' | 'five') => void task.run(async () => {
     setCopied(''); if (!terminal.current) return;
-    const value = kind === 'all' ? Promise.resolve(plain(terminal.current)) : api(`/api/terminals/${props.id}`, TerminalSnapshotSchema)
-      .then(snapshot => snapshot.commands.slice(kind === 'last' ? -1 : -5).map(command => `$ ${command.command}\n${command.output}`).join('\n\n'));
-    if (await copyPendingText(value)) setCopied('Copied');
-    else { setSelectionText(await value); setSelecting(true); }
+    const plan = terminalCopyPlan({ schema: 'terminal-copy-request-v1', sessionId: props.id, kind });
+    const value = plan.source === 'buffer' ? Promise.resolve(terminalCopyView(plan, { schema: 'terminal-copy-source-v1', buffer: plain(terminal.current) }).text)
+      : api(`/api/terminals/${props.id}/copy-view?kind=${plan.request.kind}`, TerminalCopyViewSchema).then(view => verifyTerminalCopyView(plan.request, view).text);
+    const feedback = terminalCopyFeedback(await copyPendingText(value)); setCopied(feedback.status);
+    if (feedback.select) { setSelectionText(await value); setSelecting(true); }
   });
   const toolbar = <>
     <button className="secondary" disabled={task.busy} onClick={() => copying('all')}>Copy all</button><button className="secondary" disabled={task.busy} onClick={() => copying('last')}>Copy last command</button><button className="secondary" disabled={task.busy} onClick={() => copying('five')}>Copy last 5 commands</button>
-    <button className="secondary" disabled={!session?.projectId} onClick={() => { setSendOpen(true); setMenu(false); }}>Send to…</button>
+    <button className="secondary" disabled={!currentActions?.canSend} onClick={() => { setSendOpen(true); setMenu(false); }}>Send to…</button>
   </>;
   const device = props.data.roster.devices.find(row => row.device.id === session?.deviceId)?.device.name ?? '';
   return <section className="owner-terminal-page" aria-label="Owner terminal">
     <header className="terminal-heading"><h1>{props.navigation}<span>{session?.title ?? 'Terminal'}</span></h1><span className="small-text terminal-location">{device}{session && ` · ${session.cwd}`}</span>
-      <div className="terminal-heading-actions"><span className="terminal-status" role="status">{state}</span>{session?.projectId && <button className="text-button" onClick={() => props.navigate(`/projects/${session.projectId}`)}>Project</button>}<button className="secondary" onClick={() => void task.run(async () => { await api(`/api/terminals/${props.id}/close`, TerminalAckSchema, 'POST', empty); setConnected(false); setState('Closed by the owner.'); })}>Close terminal</button></div>
+      <div className="terminal-heading-actions"><span className="terminal-status" role="status">{state}</span>{session?.projectId && <button className="text-button" onClick={() => props.navigate(`/projects/${session.projectId}`)}>Project</button>}<button className="secondary" onClick={() => void task.run(async () => { const command = terminalCloseCommand(stream.current.sessionId); const receipt = await api(`/api/terminals/${props.id}/action-command`, TerminalActionReceiptSchema, 'POST', command); verifyTerminalActionReceipt(command, receipt, stream.current.sessionId); applyStream.current?.(terminalOwnerClosed(stream.current, receipt)); })}>Close terminal</button></div>
     </header>
     <div className="terminal-toolbar">{toolbar}<span role="status">{copied}</span></div>
     <div className="terminal-host" ref={host} onPointerDown={event => { if (event.pointerType === 'touch') press.current = setTimeout(() => { if (terminal.current) { setSelectionText(plain(terminal.current)); setSelecting(true); } }, 650); }} onPointerMove={() => clearTimeout(press.current)} onPointerUp={() => clearTimeout(press.current)} onPointerCancel={() => clearTimeout(press.current)} />
@@ -161,17 +169,18 @@ export function TerminalPage(props: PageProps & { id: string; navigation: ReactN
       <button aria-label="Terminal menu" aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
     </div>
     {menu && <div className="terminal-phone-menu">{toolbar}<button className="secondary" onClick={() => { if (terminal.current) { setSelectionText(plain(terminal.current)); setSelecting(true); setMenu(false); } }}>Select text</button><span role="status">{copied}</span></div>}
-    <form className="terminal-commandline" onSubmit={event => { event.preventDefault(); if (!text.trim() || !connected) return; send(`${text}\r`); setText(''); }}>
-      {!direct && <><input aria-label="Type or dictate a command" placeholder="Type or dictate a command" value={text} maxLength={4000} autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="send" onChange={event => setText(event.target.value)} /><button disabled={!connected || !text.trim()}>Run</button></>}
+    <form className="terminal-commandline" onSubmit={event => { event.preventDefault(); const transport = socket.current, plan = terminalRunPlan(stream.current, { schema: 'terminal-run-request-v1', sessionId: stream.current.sessionId, text, transportOpen: stream.current.sessionId === props.id && transport?.readyState === WebSocket.OPEN }); if (!plan.allowed || !plan.frame) return; transport!.send(JSON.stringify(plan.frame)); setText(''); }}>
+      {!direct && <><input aria-label="Type or dictate a command" placeholder="Type or dictate a command" value={text} maxLength={actionPolicy.commandMaxLength} autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="send" onChange={event => setText(event.target.value)} /><button disabled={!runPlan.allowed}>Run</button></>}
       <label className="terminal-direct"><input type="checkbox" checked={direct} onChange={event => { setDirect(event.target.checked); if (event.target.checked) terminal.current?.focus(); }} />Type straight into terminal</label>
     </form>
-    {selecting && <Modal title="Select terminal text" close={() => setSelecting(false)}><p>Select or long press the text to copy it.</p><textarea className="terminal-selection" readOnly value={selectionText} aria-label="Terminal output to select" onSelect={event => { const element = event.currentTarget; if (element.selectionEnd > element.selectionStart) setCopied('Text selected'); }} /><button onClick={() => void task.run(async () => { const element = document.querySelector<HTMLTextAreaElement>('.terminal-selection'); const value = element && element.selectionEnd > element.selectionStart ? element.value.slice(element.selectionStart, element.selectionEnd) : selectionText; await copy(value); setCopied('Copied'); })}>Copy</button></Modal>}
+    {selecting && <Modal title="Select terminal text" close={() => setSelecting(false)}><p>Select or long press the text to copy it.</p><textarea className="terminal-selection" readOnly value={selectionText} aria-label="Terminal output to select" onSelect={event => { const element = event.currentTarget; if (element.selectionEnd > element.selectionStart) setCopied(actionPolicy.textSelectedLabel); }} /><button onClick={() => void task.run(async () => { const element = document.querySelector<HTMLTextAreaElement>('.terminal-selection'); const value = element && element.selectionEnd > element.selectionStart ? element.value.slice(element.selectionStart, element.selectionEnd) : selectionText; await copy(value); setCopied(actionPolicy.copiedLabel); })}>Copy</button></Modal>}
     {sendOpen && <Modal title="Send terminal output" close={() => setSendOpen(false)}><form onSubmit={event => { event.preventDefault(); void task.run(async signal => {
-      const selection = terminal.current?.getSelection() || selectionText, key = JSON.stringify([props.id, target, sendContent, sendContent === 'selection' ? selection : '']);
-      if (sendRequest.current?.key !== key) sendRequest.current = { key, id: clientId() };
-      await api(`/api/terminals/${props.id}/send`, TerminalAckSchema, 'POST', { schema: 'terminal-send-request-v1', clientMessageId: sendRequest.current.id, target: target === 'coordinator' ? { kind: 'coordinator' } : { kind: 'thread', threadId: target }, content: sendContent,
-        ...(sendContent === 'selection' ? { selection } : {}) }, { signal }); props.message('Sent'); setSendOpen(false); sendRequest.current = undefined;
-    }); }}><label>Send to<select aria-label="Send terminal output to" value={target} onChange={event => setTarget(event.target.value)}><option value="coordinator">Coordinator</option>{active.map(row => <option value={row.id} key={row.id}>{row.title}</option>)}</select></label>
-      <label>Output<select value={sendContent} onChange={event => setSendContent(event.target.value as typeof sendContent)}><option value="last">Last command</option><option value="last-five">Last 5 commands</option><option value="selection">Current selection</option></select></label><button disabled={task.busy}>Send</button></form></Modal>}
+      const model = terminalActionsCurrent(session, actions); if (!model) return;
+      sendRequest.current = terminalSendAttempt(sendRequest.current, model, { schema: 'terminal-send-choice-v1', target, content: sendContent,
+        activeSelection: terminal.current?.getSelection() ?? '', selectionText }, clientId());
+      const command = sendRequest.current.command, receipt = await api(`/api/terminals/${props.id}/action-command`, TerminalActionReceiptSchema, 'POST', command, { signal });
+      verifyTerminalActionReceipt(command, receipt, stream.current.sessionId); props.message(actionPolicy.sentLabel); setSendOpen(false); sendRequest.current = null;
+    }); }}><label>Send to<select aria-label="Send terminal output to" value={target} onChange={event => setTarget(event.target.value)}>{currentActions?.targets.map(row => <option value={row.value} key={row.value}>{row.label}</option>)}</select></label>
+      <label>Output<select value={sendContent} onChange={event => setSendContent(event.target.value as typeof sendContent)}>{actionPolicy.contentOptions.map(row => <option key={row.value} value={row.value}>{row.label}</option>)}</select></label><button disabled={task.busy}>Send</button></form></Modal>}
   </section>;
 }

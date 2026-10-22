@@ -1,14 +1,16 @@
+import { TerminalActionCommandSchema, TerminalRunRequestSchema } from '@jevellan/core';
+import { readTerminalActions, readTerminalCopyPlan, readTerminalCopyView, readTerminalRunPlan, executeTerminalAction } from './terminal-actions-view.js';
+import { sendTerminalOutput } from './terminal-output.js';
 import { readTerminalView } from './terminal-reading-view.js';
 import { readTerminalLauncherView, readTerminalListView } from './terminal-launcher-view.js';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
-import { EmptySchema, IdSchema, PeerLoginSessionInputSchema, TerminalAckSchema, TerminalCreateRequestSchema, TerminalInputFrameSchema, TerminalOutputFrameSchema,
-  TerminalPeerRequestSchema, TerminalSendRequestSchema, type TerminalSession } from '@jevellan/core';
+import { EmptySchema, IdSchema, PeerLoginSessionInputSchema, TerminalCreateRequestSchema, TerminalInputFrameSchema, TerminalOutputFrameSchema,
+  TerminalPeerRequestSchema, type TerminalSession } from '@jevellan/core';
 import { sessionFromCookie } from '@jevellan/mesh';
 import type { Application } from './application.js';
 import { requestBody, json } from './http.js';
-import { terminalPlain } from './terminal-buffer.js';
 
 const refuse = (message: string, status: number) => Object.assign(new Error(message), { status });
 const peerAuth = (request: IncomingMessage) => PeerLoginSessionInputSchema.parse({ schema: 'peer-login-session-input-v1', sourceDeviceId: request.headers['x-jevellan-source-device'], token: request.headers.authorization?.startsWith('Bearer ') ? request.headers.authorization.slice(7) : undefined });
@@ -25,6 +27,27 @@ export async function handleTerminalPeer(app: Application, request: IncomingMess
 export async function handleTerminalApi(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, token: string): Promise<boolean> {
   if (!url.pathname.startsWith('/api/terminals')) return false;
   const service = app.terminals, method = request.method ?? 'GET', path = url.pathname;
+  const action = /^\/api\/terminals\/([A-Za-z0-9_-]+)\/(actions-view|copy-plan|copy-view|run-plan|action-command)$/u.exec(path);
+  if (action) {
+    const id = action[1]!;
+    if (action[2] === 'action-command') {
+      if (method !== 'POST') throw refuse('Unsupported terminal action method.', 405);
+      const command = TerminalActionCommandSchema.parse(await requestBody(request));
+      if (command.sessionId !== id) throw refuse('The action belongs to another terminal.', 409);
+      json(response, app.redactor.document(await executeTerminalAction(app, command, token)));
+    } else if (action[2] === 'run-plan') {
+      if (method !== 'POST') throw refuse('Unsupported terminal plan method.', 405);
+      const input = TerminalRunRequestSchema.parse(await requestBody(request));
+      if (input.sessionId !== id) throw refuse('The input plan belongs to another terminal.', 409);
+      json(response, app.redactor.document(await readTerminalRunPlan(app, input, token)));
+    } else {
+      if (method !== 'GET') throw refuse('Unsupported terminal action read method.', 405);
+      const copy = { schema: 'terminal-copy-request-v1', sessionId: id, kind: url.searchParams.get('kind') };
+      json(response, app.redactor.document(action[2] === 'actions-view' ? await readTerminalActions(app, { schema: 'terminal-read-request-v1', sessionId: id }, token)
+        : action[2] === 'copy-plan' ? await readTerminalCopyPlan(app, copy, token) : await readTerminalCopyView(app, copy, token)));
+    }
+    return true;
+  }
   const reading = /^\/api\/terminals\/([A-Za-z0-9_-]+)\/read-view$/u.exec(path);
   if (reading) {
     if (method !== 'GET') throw refuse('Unsupported terminal read method.', 405);
@@ -52,19 +75,7 @@ export async function handleTerminalApi(app: Application, request: IncomingMessa
   if (match[2] === 'ticket' && method === 'POST') { EmptySchema.parse(await requestBody(request)); json(response, service.ticket(await service.indexed(id, token), token)); return true; }
   if (match[2] === 'close' && method === 'POST') { EmptySchema.parse(await requestBody(request)); json(response, await service.stop(id, token)); return true; }
   if (match[2] === 'send' && method === 'POST') {
-    const input = TerminalSendRequestSchema.parse(await requestBody(request)), snapshot = await service.snapshot(id, token), projectId = snapshot.session.projectId;
-    if (!projectId) throw refuse('Choose a project terminal to send its output.', 400);
-    let text: string;
-    if (input.content === 'selection') { if (!input.selection) throw refuse('Select text to send.', 400); text = input.selection; }
-    else text = snapshot.commands.slice(input.content === 'last' ? -1 : -5).map(row => `$ ${row.command}\n${row.output}\nExit code: ${row.exitCode ?? 'unknown'}`).join('\n\n');
-    text = app.redactor.text(terminalPlain(text)).slice(-30000); if (!text.trim()) throw refuse('This terminal has no command output yet.', 400);
-    if (input.target.kind === 'thread') {
-      const thread = (await app.projectHub.thread(input.target.threadId))?.document;
-      if (!thread || thread.projectId !== projectId || ['done', 'failed', 'stopped'].includes(thread.state)) throw refuse('Choose an active thread of this project.', 400);
-    }
-    await app.projectWork.terminalMessage(projectId, input.target.kind === 'thread' ? { threadId: input.target.threadId } : { coordinator: true },
-      `The owner sent output from the terminal on ${(await service.device(snapshot.session.deviceId)).name} in ${snapshot.session.cwd}:\n${text}`, input.clientMessageId);
-    json(response, TerminalAckSchema.parse({ schema: 'terminal-ack-v1', ok: true })); return true;
+    json(response, await sendTerminalOutput(app, id, await requestBody(request), token)); return true;
   }
   throw refuse('Terminal operation not found.', 404);
 }

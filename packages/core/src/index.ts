@@ -291,3 +291,5 @@ export * from './native-conversation.js';
 export * from './terminal-launcher.js';
 
 export * from './terminal-stream.js';
+
+export * from './terminal-actions.js';

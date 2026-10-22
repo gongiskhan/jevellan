@@ -35,6 +35,7 @@ export const TerminalStreamEffectSchema = z.discriminatedUnion('type', [
   z.strictObject({ schema: z.literal('terminal-stream-effect-v1'), type: z.literal('retry'), delayMs: z.number().int().positive() }),
   z.strictObject({ schema: z.literal('terminal-stream-effect-v1'), type: z.literal('heartbeat-start'), intervalMs: z.number().int().positive() }),
   z.strictObject({ schema: z.literal('terminal-stream-effect-v1'), type: z.literal('heartbeat-stop') }),
+  z.strictObject({ schema: z.literal('terminal-stream-effect-v1'), type: z.literal('cancel-retry') }),
 ]);
 export type TerminalStreamEffect = z.infer<typeof TerminalStreamEffectSchema>;
 export const TerminalStreamTransitionSchema = z.strictObject({ schema: z.literal('terminal-stream-transition-v1'), state: TerminalStreamStateSchema, effects: z.array(TerminalStreamEffectSchema) });
