@@ -1,3 +1,5 @@
+import {LandingPromptSchema,type LandingPromptText} from '@jevellan/core';
+import {LANDING_CRITERIA,LANDING_INSTRUCTIONS,type LandingPrompt} from './landing-route.js';
 import { MergePromptSchema, PlacementPromptSchema, type MergePrompt, type PlacementPrompt } from '@jevellan/core';
 import { MERGE_CRITERIA, MERGE_INSTRUCTIONS } from './merge-route.js';
 import { PLACEMENT_INSTRUCTIONS, PLACEMENT_ISOLATION_CRITERIA } from './placement.js';
@@ -30,4 +32,11 @@ export function parseMergePrompt(text: string): MergePrompt {
   // Imported m-v1 v1 had only three criteria. Its original instruction stays fixed; a new code default is a proposal.
   return MergePromptSchema.parse({ schema: 'merge-prompt-v1', instructions: lines.instructions ?? 'Choose how this checked pull request reaches main.',
     criteria: { merge: lines.merge, 'test-then-merge': lines['test-then-merge'], 'ask-owner': lines['ask-owner'] } });
+}
+
+export function landingPromptText(prompt:LandingPrompt={instructions:LANDING_INSTRUCTIONS,criteria:LANDING_CRITERIA}):string{return[prompt.instructions,...Object.entries(prompt.criteria).map(([key,value])=>`${key}: ${value}`)].join('\n');}
+export function parseLandingPrompt(text:string):LandingPromptText{
+  const routes=['land','verify-then-land','ask-owner'] as const,criteria:Record<string,string>={},instructions:string[]=[];
+  for(const line of text.split('\n').map(value=>value.trim()).filter(Boolean)){const route=routes.find(route=>line.startsWith(`${route}:`));if(route){if(Object.hasOwn(criteria,route))throw Error('Duplicate landing criterion.');criteria[route]=line.slice(route.length+1).trim();}else if(!Object.keys(criteria).length)instructions.push(line);else throw Error('Unexpected landing prompt field.');}
+  return LandingPromptSchema.parse({schema:'landing-prompt-v1',instructions:instructions.join(' '),criteria});
 }

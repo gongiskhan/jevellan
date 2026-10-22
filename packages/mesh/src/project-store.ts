@@ -489,6 +489,7 @@ export class HubProjectStore {
       if (!['merge-correction-v1', 'landing-correction-v1'].includes(document.schema) && thread.ownerDeviceId !== this.deviceId) refuse('Only the thread owner can advance its merge gate.', 403);
       const old = this.mergeDocument(document.id);
       if (old && (old.document.schema !== document.schema || old.document.projectId !== document.projectId || old.document.threadId !== document.threadId || old.document.commit !== document.commit || old.document.deviceId !== document.deviceId)) refuse('A merge receipt cannot change identity.');
+      if (old && 'inputPacket' in old.document && old.document.inputPacket && (!('inputPacket' in document) || stableJson(document.inputPacket) !== stableJson(old.document.inputPacket))) refuse('The original Jev input packet is immutable.');
       if (old && (document.schema === 'merge-correction-v1' || document.schema === 'landing-correction-v1')) {
         if (stableJson({ ...old.document, revision: 0, at: '', receivedOrder: 0 }) !== stableJson({ ...document, revision: 0, at: '', receivedOrder: 0 })) refuse('This correction ID already stores a different correction.');
         return old;

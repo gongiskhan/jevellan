@@ -1,3 +1,4 @@
+import {landingPromptText} from '@jevellan/decisions';
 import { routeWhyView } from './route-why.js';
 import { deliveryDirectory, JobGateResultSchema, PrivateJobDeliverySchema } from './job-deliveries.js';
 import { readDocument, writeDocument } from '@jevellan/core';
@@ -220,7 +221,8 @@ export class ThreadLandingService {
         const asked = jev?.lessons ? { ...packet, corrections: jev.lessons.texts.slice(0, 8) } : packet;
         const answered = await decideLandingRoute(this.o.decisionClient, asked, async () => (await this.o.configuration()).decisions.model, this.o.redactor, signal ?? new AbortController().signal, jev?.prompt);
         const ruled = answered.source === 'jev' && jev ? jev.apply(answered.route, thread) : undefined;
-        const result = { ...answered, ...(answered.source === 'jev' ? { rawChoice: answered.route } : {}), ...(ruled && ruled.rulesApplied.length ? { route: ruled.route, reason: ruled.reason, rulesApplied: ruled.rulesApplied } : {}),
+        const condition = { taskType: thread.taskContext?.type ?? 'feature', ...(thread.taskContext?.goal?.id ? { goalId: thread.taskContext.goal.id } : {}), label: thread.taskContext?.goal?.name ?? 'manual', text: `${thread.title} ${thread.task}` }, redactedCondition = this.o.redactor.document(condition);
+        const result = { ...answered, ruleContext: { ...redactedCondition, schema: 'placement-rule-context-v1', complete: JSON.stringify(condition) === JSON.stringify(redactedCondition) }, inputPacket: answered.packet, inputsRef: id, ...(jev ? { promptText: landingPromptText(jev.prompt) } : {}), ...(answered.source === 'jev' ? { rawChoice: answered.route } : {}), ...(ruled && ruled.rulesApplied.length ? { route: ruled.route, reason: ruled.reason, rulesApplied: ruled.rulesApplied } : {}),
           ...(jev ? { promptVersion: jev.version, lessons: jev.lessons.ids.slice(0, 8) } : {}) };
         route = await this.#save(LandingRouteSchema.parse({ ...result, schema: 'landing-route-v1', id, projectId: project.id, threadId: thread.id, deviceId: this.o.deviceId,
           revision: 0, settingsDigest, gateValidUntil: ready.gateValidUntil, commit: ready.head, checkedCommit: ready.head, baseCommit: base, at: new Date(this.o.now()).toISOString(), questionSet: 'l-v1', state: 'waiting' }));

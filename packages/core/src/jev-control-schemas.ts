@@ -36,3 +36,7 @@ export const PlacementRuleContextSchema = z.strictObject({ schema: z.literal('pl
   taskType: z.string().max(40).optional(), goalId: IdSchema.nullable().optional(), label: z.string().max(200).optional(),
   text: z.string().max(34000), complete: z.boolean() });
 export type PlacementRuleContext = z.infer<typeof PlacementRuleContextSchema>;
+
+export const LandingPromptSchema=z.strictObject({schema:z.literal('landing-prompt-v1'),instructions:promptText,
+  criteria:z.strictObject({land:promptText,'verify-then-land':promptText,'ask-owner':promptText})});
+export type LandingPromptText=z.infer<typeof LandingPromptSchema>;

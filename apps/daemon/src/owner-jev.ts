@@ -1,5 +1,6 @@
+import {applyJevRouteRules,landingPromptText as formatLandingPrompt,parseLandingPrompt as parseEngineLandingPrompt} from '@jevellan/decisions';
 import {applyHistoricalRules,choiceLabel,choiceOf,currentThreadFacts,newest,placementHistory,sameChoice} from './owner-jev-history.js';
-import {replayPlacement,replaySummary} from './owner-jev-replay.js';
+import {replayPlacement,replayRoutes,replaySummary} from './owner-jev-replay.js';
 import { placementPromptText, mergePromptText, parsePlacementPrompt, parseMergePrompt } from '@jevellan/decisions';
 import { AccountSchema, EffortSchema, JevLessonSchema, JevPromptVersionSchema, JevProposalSchema, JevRuleSchema, LandingCorrectionSchema, LandingRouteSchema, MergeCorrectionSchema, unifiedDiff,
   type JevLesson, type JevPromptVersion, type JevProposal, type JevRule, type LandingRoute, type Thread } from '@jevellan/core';
@@ -10,18 +11,12 @@ import { OwnerRefusal } from './owner-tools.js';
 
 const RULES = 'owner-jev-rules', PROMPTS = 'owner-jev-prompts', PROPOSALS = 'owner-jev-proposals', LESSONS = 'owner-jev-lessons', MIGRATED = 'owner-jev-migrated';
 const ID_SPACE = 'jev';
-const ROUTES = ['land', 'verify-then-land', 'ask-owner'] as const;
-type Route = typeof ROUTES[number];
+type Route = keyof LandingPrompt['criteria'];
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
 
 /** l-v1 as text the owner edits: the instructions, then one `route: criterion` line per route. */
-export function landingPromptText(prompt: LandingPrompt): string { return [prompt.instructions, ...ROUTES.map(route => `${route}: ${prompt.criteria[route]}`)].join('\n'); }
-export function parseLandingPrompt(text: string): LandingPrompt {
-  const lines = text.split('\n').map(line => line.trim()).filter(Boolean); const criteria: Partial<Record<Route, string>> = {}; const instructions: string[] = [];
-  for (const line of lines) { const route = ROUTES.find(name => line.startsWith(`${name}:`)); if (route) criteria[route] = line.slice(route.length + 1).trim(); else if (!Object.keys(criteria).length) instructions.push(line); }
-  if (!instructions.length || ROUTES.some(route => !criteria[route])) throw new OwnerRefusal('An l-v1 prompt needs its instructions first, then one line each for land:, verify-then-land: and ask-owner:.', 'invalid_prompt');
-  return { instructions: instructions.join(' '), criteria: criteria as Record<Route, string> };
-}
+export const landingPromptText=formatLandingPrompt;
+export function parseLandingPrompt(text:string):LandingPrompt{try{return parseEngineLandingPrompt(text);}catch{throw new OwnerRefusal('An l-v1 prompt needs its instructions first, then one line each for land:, verify-then-land: and ask-owner:.','invalid_prompt');}}
 function validatePrompt(name: string, text: string): void {
   if (name === 'l-v1') { parseLandingPrompt(text); return; }
   try { if (name === 'p-v1') parsePlacementPrompt(text); else if (name === 'm-v1') parseMergePrompt(text); }
@@ -135,21 +130,8 @@ export class OwnerJev {
     const rule = this.rules(projectId).find(row => row.id === id.toUpperCase()); if (!rule) throw new OwnerRefusal(`${id} is not a rule.`, 'rule_not_found', 404);
     this.app.hub.delete(RULES, rule.key); return rule;
   }
-  #matches(rule: JevRule, context: { taskType?: string | undefined; goalId?: string | null | undefined; label?: string; text: string }): number {
-    if (!rule.enabled) return -1; let fields = 0;
-    if (rule.when.taskType) { if (rule.when.taskType !== context.taskType) return -1; fields++; }
-    if (rule.when.goalId) { if (rule.when.goalId !== context.goalId) return -1; fields++; }
-    if (rule.when.label) { if (rule.when.label.toLowerCase() !== (context.label ?? '').toLowerCase()) return -1; fields++; }
-    if (rule.when.keywords?.length) { if (!rule.when.keywords.some(word => context.text.toLowerCase().includes(word.toLowerCase()))) return -1; fields++; }
-    return fields;
-  }
-  /** The landing route after the owner's rules: project scope beats global, more `when` fields beat fewer, then the more careful route. */
-  ruleRoute(projectId: string, route: Route, context: { taskType?: string | undefined; goalId?: string | null | undefined; label?: string; text: string }, rules = this.rules(projectId)): { route: Route; rulesApplied: string[]; reason: string } {
-    const ranked = rules.filter(rule => rule.set.landingRoute).map(rule => ({ rule, fields: this.#matches(rule, context) })).filter(row => row.fields >= 0)
-      .sort((a, b) => Number(b.rule.scope === 'project') - Number(a.rule.scope === 'project') || b.fields - a.fields || ROUTES.indexOf(b.rule.set.landingRoute!) - ROUTES.indexOf(a.rule.set.landingRoute!));
-    const top = ranked[0]; if (!top || top.rule.set.landingRoute === route) return { route, rulesApplied: [], reason: '' };
-    return { route: top.rule.set.landingRoute!, rulesApplied: [top.rule.id], reason: `${top.rule.id} changed the landing route from ${route} to ${top.rule.set.landingRoute}${top.rule.note ? ` (${top.rule.note})` : ''}.` };
-  }
+  /** The same scope/specificity/careful-floor policy used by every project route. */
+  ruleRoute(projectId:string,route:Route,context:import('@jevellan/decisions').JevRuleContext,rules=this.rules(projectId)){return applyJevRouteRules(projectId,route,rules,context);}
   /** Effort the owner's rules allow for a placement (used to measure a rule change on past placements). */
   ruleEffort(projectId: string, effort: string, context: { taskType?: string | undefined; goalId?: string | null | undefined; label?: string; text: string }, rules = this.rules(projectId)): { effort: string; rule?: string } {
     const parsed = EffortSchema.safeParse(effort); if (!parsed.success) return { effort };
@@ -178,7 +160,9 @@ export class OwnerJev {
         // An explicit hard-guard or unavailable result stays closed; rules cannot make it an automatic route.
         if (row.source !== 'jev') continue;
         const raw = row.rawChoice ?? row.route, landing = raw === 'merge' ? 'land' : raw === 'test-then-merge' ? 'verify-then-land' : raw;
-        const result = this.ruleRoute(projectId, landing, { taskType: row.packet.task.type, goalId: row.packet.task.goal?.id, label: row.packet.task.goal?.name ?? 'manual', text: `${row.packet.title} ${row.packet.summary}` }, rules);
+        const context = row.ruleContext?.complete ? row.ruleContext : rules.some(rule => rule.enabled && Object.keys(rule.when).length) ? null : { text: '' };
+        if (!context) { missingContext++; continue; }
+        const result = this.ruleRoute(projectId, landing, context, rules);
         const final = row.schema === 'merge-route-v1' ? result.route === 'land' ? 'merge' : result.route === 'verify-then-land' ? 'test-then-merge' : result.route : result.route;
         if (final !== row.route) changes.push(`${this.app.ownerTools.ids.one(projectId, 'D', row.id)} ${this.app.ownerTools.ids.shortOf(projectId, row.threadId) ?? ''} ${row.route} to ${final}`.replace(/  +/gu, ' '));
       }
@@ -228,9 +212,8 @@ export class OwnerJev {
   async landingHook(projectId: string): Promise<LandingJev> {
     const version = this.active('l-v1'); const prompt = parseLandingPrompt(version.text);
     const lessons = this.lessons(projectId).filter(row => row.enabled && row.about === 'landing').slice(0, 30);
-    for (const lesson of lessons.slice(0, 8)) this.#put(LESSONS, lesson.key, JevLessonSchema, { ...lesson, timesApplied: lesson.timesApplied + 1 });
     return { version: version.version, prompt, lessons: { ids: lessons.slice(0, 8).map(row => row.id), texts: lessons.slice(0, 8).map(row => row.text) },
-      apply: (route, thread: Thread) => this.ruleRoute(projectId, route, { ...(thread.taskContext?.type ? { taskType: thread.taskContext.type } : {}), text: `${thread.title} ${thread.task.slice(0, 2000)}` }) };
+      apply: (route, thread: Thread) => this.ruleRoute(projectId, route, { ...(thread.taskContext?.type ? { taskType: thread.taskContext.type } : {}), text: `${thread.title} ${thread.task}` }) };
   }
 
   replayReport(projectId: string, id: string) { return replaySummary(this.app, projectId, id); }
@@ -244,6 +227,12 @@ export class OwnerJev {
       return summary.text;
     }
 
+    if (proposal?.name === 'l-v1' || proposal?.name === 'm-v1') {
+      const summary = await replayRoutes(this.app, projectId, proposal.name, this.active(proposal.name), proposal, this.rules(projectId), n);
+      const latest = this.proposals().find(row => row.key === proposal.key)!;
+      this.#put(PROPOSALS, latest.key, JevProposalSchema, { ...latest, replayReportId: summary.id });
+      return summary.text;
+    }
     const routes = (await this.#routes(projectId)).filter(row => row.source === 'jev' || row.rawChoice).slice(0, n);
     const skipped = (await this.#routes(projectId)).length - routes.length;
     if (proposal && proposal.name !== 'l-v1') return `Stored-input replay for ${proposal.name} is not available yet; the engine uses its active version.`;

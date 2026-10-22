@@ -39,3 +39,10 @@ export function applyJevEffortRules(projectId: string, effort: Effort, rules: re
   return { effort: effective, minimum: bounds.minimum, maximum: bounds.maximum, rulesApplied: rule ? [rule.id] : [], ignored: bounds.ignored,
     reason: rule ? `${rule.id} ${raised ? 'raised' : 'lowered'} effort from ${effort} to ${effective}${rule.note ? ` (${rule.note})` : ''}.` : '' };
 }
+
+/** Route rules are shared by landing, merge routing, historical measurement and replay. */
+export function applyJevRouteRules(projectId:string,route:'land'|'verify-then-land'|'ask-owner',rules:readonly JevRule[],context:JevRuleContext){
+  const routes=['land','verify-then-land','ask-owner'] as const,ranked=matchingJevRules(projectId,rules,context).filter(row=>row.rule.set.landingRoute).sort((a,b)=>Number(b.rule.scope==='project')-Number(a.rule.scope==='project')||b.fields-a.fields||routes.indexOf(b.rule.set.landingRoute!)-routes.indexOf(a.rule.set.landingRoute!));
+  const top=ranked[0];if(!top||top.rule.set.landingRoute===route)return{route,rulesApplied:[] as string[],reason:''};
+  return{route:top.rule.set.landingRoute!,rulesApplied:[top.rule.id],reason:`${top.rule.id} changed the landing route from ${route} to ${top.rule.set.landingRoute}${top.rule.note?` (${top.rule.note})`:''}.`};
+}

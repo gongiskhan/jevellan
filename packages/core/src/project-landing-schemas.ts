@@ -1,3 +1,4 @@
+import {PlacementRuleContextSchema} from './jev-control-schemas.js';
 import { z } from 'zod';
 import { IdSchema, JevCallSchema, TimestampSchema } from './schemas.js';
 import { TaskPlacementContextSchema } from './task-types.js';
@@ -23,7 +24,7 @@ export const LandingRouteSchema = z.strictObject({ schema: z.literal('landing-ro
   gateValidUntil: TimestampSchema.optional(),
   settingsDigest: z.string().regex(/^[a-f0-9]{64}$/u).optional(), candidate: ThreadLandingSchema.optional(), backupDeletedAt: TimestampSchema.optional(),
   // bridge: Jev's answer before the owner's rules, the rules that changed it, the prompt version asked and the lessons Jev saw.
-  rawChoice: LandingRouteNameSchema.optional(), rulesApplied: z.array(z.string().max(20)).max(20).optional(), promptVersion: z.number().int().positive().optional(), lessons: z.array(z.string().max(20)).max(30).optional() });
+  inputPacket: LandingRouteStateSchema.optional(), ruleContext: PlacementRuleContextSchema.optional(), inputsRef: IdSchema.optional(), promptText: z.string().min(1).max(60000).optional(), rawChoice: LandingRouteNameSchema.optional(), rulesApplied: z.array(z.string().max(20)).max(20).optional(), promptVersion: z.number().int().positive().optional(), lessons: z.array(z.string().max(20)).max(30).optional() });
 export type LandingRoute = z.infer<typeof LandingRouteSchema>;
 export const LandingCorrectionSchema = z.strictObject({ schema: z.literal('landing-correction-v1'), ...identity, title: z.string().max(120),
   correction: z.enum(['should-have-asked', 'did-not-need-asking']), receivedOrder: z.number().int().positive().optional() });
