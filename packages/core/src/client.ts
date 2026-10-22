@@ -265,3 +265,7 @@ export * from './rigging-editor.js';
 export * from './improver-editor.js';
 
 export * from './project-intake-schemas.js';
+
+export * from './jev-control-schemas.js';
+
+export * from './jev-decision-schemas.js';

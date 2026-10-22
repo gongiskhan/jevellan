@@ -1,4 +1,5 @@
 import {ProjectIntakeActions} from './intake-actions.js';
+import { ProjectJevDecisions } from './jev-decisions.js';
 import {projectNotebookEditor,ProjectNotebookCommandSchema} from '@jevellan/core';
 import {projectCoordinatorComposerFromUi} from '@jevellan/core';
 import {chatItems,chatProposalGroups,projectChatThreadTitles,projectChatCardInteraction,ProjectChatCardViewRequestSchema,ProjectChatCardViewSchema} from '@jevellan/core';
@@ -173,6 +174,7 @@ const statusOf = (error: unknown) => (error as { status?: unknown } | undefined)
  * states for recovery (D24).
  */
 export class ProjectWork {
+  readonly jevDecisions: ProjectJevDecisions;
   readonly journal: ProjectJournals | undefined;
   readonly ready: Promise<void>;
   /** The daemon's own URL for bridge calls; empty until `Application.bindDaemonUrl`. */
@@ -276,7 +278,8 @@ export class ProjectWork {
         return deviceId !== o.deviceId ? deviceResourceRefusal(view?.device.name ?? deviceId, view?.heartbeat?.facts) : undefined;
       },
       nameOf: async (deviceId) => (await o.roster()).devices.find((view) => view.device.id === deviceId)?.device.name, now });
-    const placement = new Placement({ settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, roster: o.roster, admission: this.admission, deviceId: o.deviceId,
+    this.jevDecisions = new ProjectJevDecisions({ homes: o.homes, deviceId: o.deviceId, redactor: o.redactor });
+    const placement = new Placement({ recordDecision: decision => this.jevDecisions.recordNew(decision), settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, roster: o.roster, admission: this.admission, deviceId: o.deviceId,
       facts,
       deviceName: o.deviceName, hub: o.hub, redactor: o.redactor, now, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}),
       local: (projectId) => this.store.list(projectId).map((thread) => threadIndex(thread, this.store.labels(thread.id), thread.createdAt)),
@@ -458,7 +461,7 @@ export class ProjectWork {
       text: async task => {
         const goal = task.goalId ? await this.goals.read(task.projectId, task.goalId) : null;
         const brief = `${task.brief}${goal ? `\n\nGoal: ${goal.name}. Why it matters: ${goal.motivation}` : ''}\n\nTask type: ${task.type}.`;
-        return { brief, taskContext: { taskId: task.id, type: task.type, needs: task.needs, goal: goal ? { name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: brief };
+        return { brief, taskContext: { taskId: task.id, type: task.type, needs: task.needs, goal: goal ? { id: goal.id, name: o.redactor.text(goal.name), motivation: o.redactor.text(goal.motivation).slice(0, 600) } : null }, assembled: brief };
       }, review: task => this.reviews.start(task), job: task => this.jobs.start(task), eligible: async (task, tasks) => await this.daily.eligible(task, tasks) && await this.goals.eligible(task, tasks), event: (projectId, event) => delivery.toCoordinator(projectId, event) });
     this.deploys = new ProjectDeployService({ discoverBaseline: async id => {
       const repo = worktrees.repository(await this.#project(id)); if (!await git.remoteUrl(repo)) return null;
@@ -1251,6 +1254,8 @@ export class ProjectWork {
   async landingCorrection(projectId: string, threadId: string, input: unknown) { await this.#project(projectId); return this.landings.correct(projectId, threadId, input); }
   async mergeRoute(projectId: string, threadId: string) { await this.#project(projectId); return this.mergeGate.view(projectId, threadId); }
   async mergeCorrection(projectId: string, threadId: string, input: unknown) { await this.#project(projectId); return this.mergeGate.correct(projectId, threadId, input); }
+  async jevDecisionPage(projectId: string, after?: string) { await this.#project(projectId); return this.jevDecisions.page(projectId, after); }
+  async jevDecisionRead(projectId: string, id: string) { await this.#project(projectId); const record = this.jevDecisions.read(projectId, id); if (!record) throw refuse('Jev decision inputs not found.', 404); return record; }
   async decisionOwner(projectId: string, decisionId: string) {
     const decision = (await this.#o.hub.decision(decisionId))?.document;
     if (decision?.projectId === projectId && (decision.deploy || decision.intake)) return (await this.#o.hub.coordinator(projectId))?.document.deviceId ?? null;

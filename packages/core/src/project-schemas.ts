@@ -1,5 +1,6 @@
 import {DecisionAnswerFieldsSchema,DecisionAnswerSchema,DECISION_ANSWER_REQUIRED,answerPresent} from './project-answer-schemas.js';
 import {IntakeDecisionSchema} from './project-intake-schemas.js';
+import { PlacementRawChoiceSchema, ProjectJevPolicySchema } from './jev-control-schemas.js';
 import { SessionHistoryViewSchema } from './session-history-view.js';
 import { ProjectThreadDisplayTextSchema } from './project-thread-display.js';
 import { SessionCacheViewSchema } from './session-cache-view.js';
@@ -77,7 +78,7 @@ export const ProjectWorkSettingsSchemaV4 = ProjectWorkSettingsSchemaV3.omit({ th
   notifications: z.enum(['everything', 'standard', 'needs-you', 'off']).default('standard'),
 });
 export const ProjectWorkSettingsSchemaV5 = ProjectWorkSettingsSchemaV4.omit({ defaultIsolation: true, allowMainIsolation: true, autoMerge: true, requiredChecks: true }).extend({ schema: z.literal('project-work-settings-v5'), notifications: ProjectNotificationPreferencesSchema.default(() => structuredClone(defaultProjectNotifications)), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).default(70), healthChecks: ProjectHealthChecksSchema, deploy: ProjectDeploySettingsSchema.default({ mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }), delivery: DeliverySchema.default('land'), autoLand: z.boolean().default(false), pullRequestAutoMerge: z.boolean().default(false), landingChecks: z.array(LandingCheckSchema).max(30).default([]), smokeCheck: z.string().max(2000).nullable().default(null), mergeCommitPaths: z.array(ProjectRelativePathSchema).max(20).default([]) });
-export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV5;
+export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV5.extend({ jevPolicy: ProjectJevPolicySchema.optional() });
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
 export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4, ProjectWorkSettingsSchemaV5.extend({ notifications: z.union([NotificationLevelSchema, ProjectNotificationPreferencesSchema]).default(() => structuredClone(defaultProjectNotifications)), pullRequestAutoMerge: z.boolean().optional(), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).optional() })])
   .transform(value => {
@@ -212,6 +213,7 @@ export const PlacementAccountChoiceSchema = z.strictObject({ schema: z.literal('
 export type PlacementAccountChoice = z.infer<typeof PlacementAccountChoiceSchema>;
 export const PlacementRecordSchema = z.strictObject({ schema: z.literal('placement-v1'), questionSet: z.literal('p-v1'),
   source: z.enum(['jev', 'fixed', 'fallback']), fixed: z.array(PlacementFieldSchema), isolation: IsolationSchema,
+  rawChoice: PlacementRawChoiceSchema.optional(), inputsRef: IdSchema.optional(), inputsDeviceId: IdSchema.optional(), rulesApplied: z.array(z.string().regex(/^R[1-9][0-9]*$/u)).max(1000).optional(), rulesReason: z.string().max(4000).optional(),
   runtime: IdSchema, modelId: IdSchema, model: text, effortRequested: EffortSchema, effortEffective: EffortSchema,
   deviceId: IdSchema, accountId: IdSchema,
   accountChoice: PlacementAccountChoiceSchema.optional(),

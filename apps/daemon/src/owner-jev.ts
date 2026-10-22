@@ -1,6 +1,6 @@
-import { JevLessonSchema, JevPromptVersionSchema, JevProposalSchema, JevRuleSchema, LandingCorrectionSchema, LandingRouteSchema, MergeCorrectionSchema, unifiedDiff,
+import { AccountSchema, EffortSchema, JevLessonSchema, JevPromptVersionSchema, JevProposalSchema, JevRuleSchema, LandingCorrectionSchema, LandingRouteSchema, MergeCorrectionSchema, unifiedDiff,
   type JevLesson, type JevPromptVersion, type JevProposal, type JevRule, type LandingRoute, type Thread } from '@jevellan/core';
-import { LANDING_CRITERIA, LANDING_INSTRUCTIONS, MERGE_CRITERIA, PLACEMENT_INSTRUCTIONS, PLACEMENT_ISOLATION_CRITERIA, decideLandingRoute, type LandingPrompt } from '@jevellan/decisions';
+import { LANDING_CRITERIA, LANDING_INSTRUCTIONS, MERGE_CRITERIA, PLACEMENT_INSTRUCTIONS, PLACEMENT_ISOLATION_CRITERIA, applyJevEffortRules, decideLandingRoute, type LandingPrompt } from '@jevellan/decisions';
 import type { LandingJev } from '@jevellan/projects';
 import type { Application } from './application.js';
 import { OwnerRefusal } from './owner-tools.js';
@@ -97,12 +97,25 @@ export class OwnerJev {
 
   // Rules.
   rules(projectId: string): JevRule[] { return this.app.hub.list(RULES, JevRuleSchema).map(row => row.document).filter(rule => rule.scope === 'global' || rule.projectId === projectId).sort((a, b) => Number(a.id.slice(1)) - Number(b.id.slice(1))); }
-  saveRule(projectId: string, input: { rule?: string; scope?: 'global' | 'project'; when?: JevRule['when']; set?: Partial<JevRule['set']>; note?: string; enabled?: boolean }): JevRule {
+  async saveRule(projectId: string, input: { rule?: string; scope?: 'global' | 'project'; when?: JevRule['when']; set?: Partial<JevRule['set']>; note?: string; enabled?: boolean }): Promise<JevRule> {
+    const configuration = (await this.app.configuration()).configuration['x-jevellan'];
     const existing = input.rule ? this.rules(projectId).find(rule => rule.id === input.rule!.toUpperCase()) : undefined;
     if (input.rule && !existing) throw new OwnerRefusal(`${input.rule} is not a rule. Rules: ${this.rules(projectId).map(rule => rule.id).join(', ') || 'none'}.`, 'rule_not_found', 404);
     const set = { ...existing?.set, ...input.set } as JevRule['set'];
     if (!existing && !Object.keys(set).length) throw new OwnerRefusal('rule_set needs something to set: minModel, minEffort, maxEffort, account, runtime or landingRoute.', 'invalid_rule');
     if (set.minEffort && set.maxEffort && EFFORTS.indexOf(set.minEffort) > EFFORTS.indexOf(set.maxEffort)) throw new OwnerRefusal('minEffort must not exceed maxEffort.', 'invalid_rule');
+    const accounts = this.app.hub.list('accounts', AccountSchema).map(row => row.document);
+    if (set.account) {
+      const matches = accounts.filter(account => account.id === set.account || account.label.toLowerCase() === set.account!.toLowerCase());
+      if (matches.length !== 1) throw new OwnerRefusal('The rule account must identify one existing account.', 'invalid_rule');
+      set.account = matches[0]!.id;
+    }
+    if (set.runtime && (!this.app.runtimes.has(set.runtime) || !accounts.some(account => account.runtime === set.runtime))) throw new OwnerRefusal('The rule runtime must be installed and have an account.', 'invalid_rule');
+    if (set.minModel) {
+      const matches = configuration.menu.filter(model => model.id === set.minModel || model.label.toLowerCase() === set.minModel!.toLowerCase());
+      if (matches.length !== 1 || !accounts.some(account => account.runtime === matches[0]!.runtime)) throw new OwnerRefusal('The rule model must identify one configured model whose provider has an account.', 'invalid_rule');
+      set.minModel = matches[0]!.id;
+    }
     const key = existing?.key ?? `rule_${this.app.hub.list(RULES, JevRuleSchema).length + 1}_${Date.now().toString(36)}`;
     return this.#put(RULES, key, JevRuleSchema, JevRuleSchema.parse({ schema: 'jev-rule-v1', key, id: existing?.id ?? this.#id('R', key), scope: input.scope ?? existing?.scope ?? 'project', ...((input.scope ?? existing?.scope ?? 'project') === 'project' ? { projectId } : {}),
       when: { ...existing?.when, ...input.when }, set, note: input.note ?? existing?.note ?? '', enabled: input.enabled ?? existing?.enabled ?? true, createdAt: existing?.createdAt ?? this.now().toISOString() }));
@@ -128,13 +141,9 @@ export class OwnerJev {
   }
   /** Effort the owner's rules allow for a placement (used to measure a rule change on past placements). */
   ruleEffort(projectId: string, effort: string, context: { taskType?: string | undefined; goalId?: string | null; text: string }, rules = this.rules(projectId)): { effort: string; rule?: string } {
-    let result = effort; let applied: string | undefined;
-    for (const rule of rules.filter(row => row.set.minEffort || row.set.maxEffort).map(rule => ({ rule, fields: this.#matches(rule, context) })).filter(row => row.fields >= 0).sort((a, b) => a.fields - b.fields)) {
-      const index = EFFORTS.indexOf(result as typeof EFFORTS[number]);
-      if (rule.rule.set.minEffort && index < EFFORTS.indexOf(rule.rule.set.minEffort)) { result = rule.rule.set.minEffort; applied = rule.rule.id; }
-      if (rule.rule.set.maxEffort && EFFORTS.indexOf(result as typeof EFFORTS[number]) > EFFORTS.indexOf(rule.rule.set.maxEffort)) { result = rule.rule.set.maxEffort; applied = rule.rule.id; }
-    }
-    return { effort: result, ...(applied ? { rule: applied } : {}) };
+    const parsed = EffortSchema.safeParse(effort); if (!parsed.success) return { effort };
+    const result = applyJevEffortRules(projectId, parsed.data, rules, context);
+    return { effort: result.effort, ...(result.rulesApplied[0] ? { rule: result.rulesApplied[0] } : {}) };
   }
   /** What a rule set would have changed on the last 30 decisions, with no model calls: rules re-applied to the stored raw choices. */
   async ruleEffect(projectId: string, rules = this.rules(projectId)): Promise<string> {

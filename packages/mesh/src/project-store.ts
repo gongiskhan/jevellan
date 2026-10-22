@@ -1,4 +1,5 @@
 import {INTAKE_PAGE_BYTES,IntakeDocumentSchema,type IntakeDocument} from '@jevellan/core';
+import { JEV_RULES_NAMESPACE, JevRuleSchema, ProjectJevPolicySchema } from '@jevellan/core';
 import { ProjectDeploySchema, ProjectDeployBaselineSchema, type ProjectDeploy, type ProjectDeployBaseline } from '@jevellan/core';
 import { ProjectSetupProposalSchema, SetupActionRequestSchema, projectSetupPlan, defaultProjectWorkSettings, type ProjectSetupProposal, type SetupActionRequest } from '@jevellan/core';
 import { HubState } from './state.js';
@@ -258,6 +259,7 @@ export class HubProjectStore {
     return this.#put('project-refill-state', refill.projectId, ProjectRefillStateSchema, refill, expectedRevision);
   }
   settings(projectId: string): Stored<ProjectWorkSettings> | null { return this.#get(SETTINGS, projectId, StoredProjectWorkSettingsSchema); }
+  jevPolicy(projectId: string) { this.#project(projectId); return ProjectJevPolicySchema.parse({ schema: 'project-jev-policy-v1', projectId, rules: this.hub.list(JEV_RULES_NAMESPACE, JevRuleSchema).map(row => row.document).filter(rule => rule.scope === 'global' || rule.projectId === projectId) }); }
   tasks(projectId: string, after?: string): Page<ProjectWorkTask> { return this.#page('project-work-tasks', ProjectWorkTaskSchema, projectId, after, () => true); }
   task(taskId: string): Stored<ProjectWorkTask> | null { return this.#get('project-work-tasks', taskId, ProjectWorkTaskSchema); }
   taskHistory(taskId: string) { return this.hub.listByField('project-work-task-history', 'taskId', IdSchema.parse(taskId), TaskHistoryEventSchema).map(row => row.document).sort((a, b) => a.sequence - b.sequence); }
@@ -313,6 +315,8 @@ export class HubProjectStore {
   /** Compare-and-swap on the row revision; a repeated clientRequestId returns the first result. */
   putSettings(raw: ProjectWorkSettings, expectedRevision: number, clientRequestId?: string): Stored<ProjectWorkSettings> {
     const parsed = ProjectWorkSettingsSchema.parse(raw);
+    // Settings writes cannot replace or clear the canonical rule projection.
+    delete parsed.jevPolicy;
     const settings = parsed.delivery === 'pull-request' ? { ...parsed, pullRequestAutoMerge: parsed.autoLand } : parsed;
     return settingsMutation(this.hub, this.deviceId, 'project-work-settings-put', { settings, expectedRevision }, clientRequestId, StoredSettingsSchema, () => {
       this.#project(settings.projectId); return this.#put(SETTINGS, settings.projectId, StoredProjectWorkSettingsSchema, settings, expectedRevision);
@@ -824,6 +828,7 @@ export class HubProjectStore {
       case 'task-get': result = { ...base, record: this.task(request.taskId) }; break;
       case 'task-put': result = { ...base, record: this.putTask(request.task, request.expectedRevision) }; break;
       case 'task-history': result = { ...base, records: this.taskHistory(request.taskId) }; break;
+      case 'jev-policy-get': result = { ...base, policy: this.jevPolicy(request.projectId) }; break;
       case 'settings-get': result = { ...base, record: this.settings(request.projectId) }; break;
       case 'settings-put': result = { ...base, record: this.putSettings(request.settings, request.expectedRevision, request.clientRequestId) }; break;
       case 'coordinator-get': result = { ...base, record: this.coordinator(request.projectId) }; break;
@@ -904,6 +909,7 @@ export class HubProjectAccess implements ProjectHub {
   readonly #store: HubProjectStore;
   constructor(hub: HubDatabase, deviceId: string, now?: () => number, devices?: () => readonly DeviceView[]) { this.#store = new HubProjectStore(hub, deviceId, now, devices); }
   async settings(projectId: string) { return this.#store.settings(projectId); }
+  async jevPolicy(projectId: string) { return this.#store.jevPolicy(projectId); }
   async goals(projectId: string, after?: string) { return this.#store.goals(projectId, after); }
   async goal(goalId: string) { return this.#store.goal(goalId); }
   async putGoal(goal: ProjectGoal, expectedRevision: number) { return this.#store.putGoal(goal, expectedRevision); }
@@ -992,6 +998,7 @@ export class MemberProjectStore implements ProjectHub {
   #check<T>(record: T, valid: (value: T) => boolean): T { if (!valid(record)) throw new HubProtocolError(); return record; }
 
   async settings(projectId: string) { return this.#check((await this.#call('settings-get', { projectId })).record, (row) => !row || row.document.projectId === projectId); }
+  async jevPolicy(projectId: string) { return this.#check((await this.#call('jev-policy-get', { projectId })).policy, row => row.projectId === projectId); }
   async deploys(projectId: string, after?: string) { return this.#page(await this.#call('deploys-list', { projectId, ...(after ? { after } : {}) }), projectId, after); }
   async deploy(id: string) { return this.#check((await this.#call('deploy-get', { id })).record, row => !row || row.document.id === id); }
   async putDeploy(document: ProjectDeploy, expectedRevision: number) { return this.#check((await this.#call('deploy-put', { document, expectedRevision })).record, row => row.document.id === document.id && row.document.projectId === document.projectId && row.revision === expectedRevision + 1); }

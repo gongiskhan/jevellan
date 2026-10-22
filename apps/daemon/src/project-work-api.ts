@@ -1,3 +1,4 @@
+import { JevDecisionPageRequestSchema, JevDecisionReadRequestSchema, JevDecisionPageSchema, JevPlacementDecisionSchema } from '@jevellan/core';
 import {SetupEditorPreviewSchema,SetupEditorPrepareSchema,SetupEditorCommandSchema,setupProposalEditor,setupProposalAttempt,setupProposalReceipt} from '@jevellan/core';
 import {projectHealthEditor, projectHealthHistory} from './project-health-editor.js';
 import {ProjectWorkViewSchema,ProjectCoordinatorCommandSchema,ProjectCoordinatorComposerSchema,projectCoordinatorTransport} from '@jevellan/core';
@@ -43,7 +44,7 @@ import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
 import { ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, ProjectThreadActionsViewSchema, ThreadViewSchema } from '@jevellan/core';
 
-export type ProjectWorkRouteName = 'thread-read-view' | 'notebook-editor' | 'coordinator-composer' | 'chat-card-view' | 'chat-view' | 'task-page-view' | 'task-queue-interaction' | 'task-edit-view' | 'task-draft' | 'task-command' | 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-editor' | 'health-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-editor' | 'setup-prepare' | 'setup-command' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'jev-inputs-page' | 'jev-inputs-read' | 'thread-read-view' | 'notebook-editor' | 'coordinator-composer' | 'chat-card-view' | 'chat-view' | 'task-page-view' | 'task-queue-interaction' | 'task-edit-view' | 'task-draft' | 'task-command' | 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-editor' | 'health-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-editor' | 'setup-prepare' | 'setup-command' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -54,6 +55,8 @@ type Row = { name: ProjectWorkRouteName; pattern: RegExp; methods: readonly ('GE
 
 // The closed route table (brief 11, design 2.10). Paths are matched whole; ids are validated after a match.
 const rows: readonly Row[] = [
+  { name: 'jev-inputs-page', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jev-decisions$/, methods: ['GET'], target: 'local' },
+  { name: 'jev-inputs-read', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jev-decisions\/([A-Za-z0-9_-]+)$/, methods: ['GET'], target: 'local', ids: ['projectId', 'decisionId'] },
   { name: 'thread-read-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/read-view$/, methods: ['POST'], target: 'any' },
   { name: 'chat-card-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/chat-card-view$/, methods: ['POST'], target: 'coordinator' },
   { name: 'chat-view', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/coordinator\/chat-view$/, methods: ['POST'], target: 'coordinator' },
@@ -358,17 +361,22 @@ export async function ownerThreadOperation(app: Application, projectId: string, 
   return parseReply(MergeResultViewSchema, value);
 }
 /** Only a registered resource-owner route can receive the in-memory authority of an authenticated owner call. */
-async function ownerProjectJson(app: Application, owner: string, purpose: 'thread' | 'coordinator' | 'intake', path: string, method: 'GET' | 'POST', body?: unknown): Promise<unknown> {
-  const route = projectWorkRoute(path, method);
-  if (purpose === 'intake') {
+async function ownerProjectJson(app: Application, owner: string, purpose: 'thread' | 'coordinator' | 'intake' | 'jev-read', path: string, method: 'GET' | 'POST', body?: unknown): Promise<unknown> {
+  const location = purpose === 'jev-read' ? new URL(path, 'http://jevellan.invalid') : undefined;
+  if (location && !path.startsWith(API_PREFIX)) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
+  const pathname = location?.pathname ?? path, route = projectWorkRoute(pathname, method);
+  if (purpose === 'jev-read') {
+    if (!route || route.target !== 'local' || !['jev-inputs-page','jev-inputs-read'].includes(route.name) || method !== 'GET' || !route.projectId || !await app.state.projects.get(route.projectId)) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
+  } else if (purpose === 'intake') {
     if (!route || route.name !== 'answer' || route.target !== 'any' || method !== 'POST' || !route.projectId || !route.decisionId) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
     const decision = (await app.projectHub.decision(route.decisionId))?.document;
     if (decision?.projectId !== route.projectId || !decision.intake || await app.projectWork.decisionOwner(route.projectId, route.decisionId) !== owner) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
   } else if (!route || route.target !== (purpose === 'thread' ? 'owner' : 'coordinator')) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
-  const row = await target(app, owner, purpose === 'intake' ? 'coordinator' : purpose), auth = app.auth;
+  const transportPurpose = purpose === 'jev-read' ? 'thread' : purpose === 'intake' ? 'coordinator' : purpose;
+  const row = await target(app, owner, transportPurpose), auth = app.auth;
   if (!(auth instanceof UiAuth)) throw failure('Owner tools must run on the state point.', 409);
   const upstream = new URL(DeviceOriginSchema.parse(row.device.url));
-  upstream.pathname = peerPath(route, path);
+  upstream.pathname = peerPath(route, pathname); if (location) upstream.search = location.search;
   // This authenticated owner call holds the same authority as the UI. The peer session stays in memory,
   // is never returned, and is revoked afterward; the receiver retains its owner/lifecycle/guard checks.
   const token = auth.issue(); app.redactor.add(token);
@@ -378,15 +386,34 @@ async function ownerProjectJson(app: Application, owner: string, purpose: 'threa
       answer = await fetch(upstream, { method, redirect: 'manual', signal: AbortSignal.timeout(OWNER_REQUEST_TIMEOUT_MS),
         headers: { Authorization: `Bearer ${token}`, 'X-Jevellan-Source-Device': app.device.deviceId, Accept: 'application/json', ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
-    } catch { throw failure(purpose === 'thread' ? threadDeviceUnreachable(row.device.name) : coordinatorUnreachable(row.device.name), 502); }
-    if (answer.status >= 300 && answer.status < 400) { await answer.body?.cancel(); throw failure(purpose === 'thread' ? THREAD_DEVICE_REDIRECT : COORDINATOR_DEVICE_REDIRECT, 502); }
+    } catch { throw failure(transportPurpose === 'thread' ? threadDeviceUnreachable(row.device.name) : coordinatorUnreachable(row.device.name), 502); }
+    if (answer.status >= 300 && answer.status < 400) { await answer.body?.cancel(); throw failure(transportPurpose === 'thread' ? THREAD_DEVICE_REDIRECT : COORDINATOR_DEVICE_REDIRECT, 502); }
     const value: unknown = await answer.json().catch(() => null);
     if (!answer.ok) {
       const refusal = ErrorDocumentSchema.safeParse(value);
-      throw refusal.success ? failure(refusal.data.message, answer.status) : failure(purpose === 'thread' ? threadDeviceUnreachable(row.device.name) : coordinatorUnreachable(row.device.name), 502);
+      throw refusal.success ? failure(refusal.data.message, answer.status) : failure(transportPurpose === 'thread' ? threadDeviceUnreachable(row.device.name) : coordinatorUnreachable(row.device.name), 502);
     }
     return value;
   } finally { auth.logout(token); }
+}
+/** The decision actor can differ from the execution device; only these two registered reads cross devices. */
+export async function ownerJevDecisionRead(app: Application, projectId: string, raw: unknown) {
+  const input = JevDecisionReadRequestSchema.parse(raw);
+  if (input.projectId !== projectId) throw failure('This input request belongs to another project.', 409);
+  let value: unknown;
+  if (input.deviceId === app.device.deviceId) value = input.operation === 'page' ? await app.projectWork.jevDecisionPage(projectId, input.after) : await app.projectWork.jevDecisionRead(projectId, input.id);
+  else {
+    const path = `${API_PREFIX}${projectId}/jev-decisions${input.operation === 'read' ? `/${input.id}` : input.after ? `?after=${input.after}` : ''}`;
+    value = await ownerProjectJson(app, input.deviceId, 'jev-read', path, 'GET');
+  }
+  if (input.operation === 'page') {
+    const page = parseReply(JevDecisionPageSchema, value);
+    if (page.projectId !== projectId || page.deviceId !== input.deviceId || page.records.some(row => row.projectId !== projectId || row.deviceId !== input.deviceId)) throw failure('The returned inputs do not match the project and device.', 502);
+    return page;
+  }
+  const record = parseReply(JevPlacementDecisionSchema, value);
+  if (record.projectId !== projectId || record.deviceId !== input.deviceId || record.id !== input.id) throw failure('The returned input does not match the project, device and decision.', 502);
+  return record;
 }
 /** Explicit commands reuse existing writers and resource-owner routes. Move always runs here. */
 export async function ownerProjectCoordinatorCommand(app: Application, projectId: string, raw: unknown) {
@@ -550,7 +577,7 @@ export async function handleProjectWorkPeer(app: Application, request: IncomingM
   const local = localPath(url.pathname); let route: ProjectWorkRoute | null = null;
   // A method the local route does not take is as absent here as an unknown path.
   if (local !== null) { try { route = projectWorkRoute(local, request.method ?? 'GET'); } catch { route = null; } }
-  if (!route || (route.target !== 'owner' && route.target !== 'coordinator' && route.name !== 'answer')) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
+  if (!route || (route.target !== 'owner' && route.target !== 'coordinator' && route.name !== 'answer' && route.name !== 'jev-inputs-page' && route.name !== 'jev-inputs-read')) throw failure(PROJECT_OPERATION_NOT_FOUND, 404);
   const authorization = request.headers.authorization;
   const input = PeerLoginSessionInputSchema.safeParse({ schema: 'peer-login-session-input-v1', sourceDeviceId: request.headers['x-jevellan-source-device'],
     token: authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined });
@@ -567,6 +594,8 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
   const work = app.projectWork; await work.ready;
   const projectId = route.projectId ?? ''; const threadId = route.threadId ?? ''; const decisionId = route.decisionId ?? '';
   const write = request.method !== 'GET';
+  if (route.name === 'jev-inputs-page') { const input = JevDecisionPageRequestSchema.parse({ schema: 'jev-decision-page-request-v1', ...Object.fromEntries(url.searchParams) }); send(await work.jevDecisionPage(projectId, input.after)); return true; }
+  if (route.name === 'jev-inputs-read') { send(await work.jevDecisionRead(projectId, decisionId)); return true; }
   if (withClientId.has(route.name) || route.name === 'waiting-answer' || route.name === 'page-view' || route.name === 'thread-read-view') retryable();
   if (route.name === 'answer' || route.name === 'waiting-answer') {
     const owner = await work.decisionOwner(projectId, decisionId);

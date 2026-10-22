@@ -1,3 +1,4 @@
+import { ProjectJevPolicySchema } from './jev-control-schemas.js';
 import {IntakeDocumentSchema} from './project-intake-schemas.js';
 import { ProjectDeploySchema, ProjectDeployBaselineSchema } from './project-deploy-schemas.js';
 import { ProjectSetupProposalSchema, SetupActionRequestSchema } from './project-setup-schemas.js';
@@ -102,6 +103,7 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...request, operation: z.literal('task-get'), taskId: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('task-put'), task: ProjectWorkTaskSchema, expectedRevision }),
   z.strictObject({ ...request, operation: z.literal('task-history'), taskId: IdSchema }),
+  z.strictObject({ ...request, operation: z.literal('jev-policy-get'), ...project }),
   z.strictObject({ ...request, operation: z.literal('settings-get'), ...project }),
   z.strictObject({ ...request, operation: z.literal('settings-put'), settings: ProjectWorkSettingsSchema, expectedRevision, clientRequestId: IdSchema.optional() }),
   z.strictObject({ ...request, operation: z.literal('coordinator-get'), ...project }),
@@ -152,7 +154,7 @@ const collections = {
   'windows-list': 'windows', 'window-get': 'windows', 'window-put': 'windows',
   'goals-list': 'goals', 'goal-get': 'goals', 'goal-put': 'goals', 'refill-get': 'goals', 'refill-put': 'goals',
   'tasks-list': 'tasks', 'task-get': 'tasks', 'task-put': 'tasks', 'task-history': 'tasks',
-  'settings-get': 'settings', 'settings-put': 'settings',
+  'jev-policy-get': 'settings', 'settings-get': 'settings', 'settings-put': 'settings',
   'coordinator-get': 'coordinators', 'coordinator-assign': 'coordinators', 'coordinator-status-get': 'coordinators', 'coordinator-status-put': 'coordinators',
   'thread-admit': 'threads', 'threads-list': 'threads', 'thread-get': 'threads', 'thread-publish': 'threads',
   'decisions-list': 'decisions', 'decision-get': 'decisions', 'decision-create': 'decisions', 'decision-withdraw': 'decisions', 'decision-answer': 'decisions',
@@ -179,7 +181,7 @@ const access = {
   'windows-list': 'read', 'window-get': 'read', 'window-put': 'write',
   'goals-list': 'read', 'goal-get': 'read', 'goal-put': 'write', 'refill-get': 'read', 'refill-put': 'write',
   'tasks-list': 'read', 'task-get': 'read', 'task-put': 'write', 'task-history': 'read',
-  'settings-get': 'read', 'settings-put': 'write',
+  'jev-policy-get': 'read', 'settings-get': 'read', 'settings-put': 'write',
   'coordinator-get': 'read', 'coordinator-assign': 'write', 'coordinator-status-get': 'read', 'coordinator-status-put': 'write',
   'thread-admit': 'write', 'threads-list': 'read', 'thread-get': 'read', 'thread-publish': 'write',
   'decisions-list': 'read', 'decision-get': 'read', 'decision-create': 'write', 'decision-withdraw': 'write', 'decision-answer': 'write',
@@ -243,6 +245,7 @@ export const ProjectHubResultSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...result, operation: z.literal('task-get'), record: stored(ProjectWorkTaskSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('task-put'), record: stored(ProjectWorkTaskSchema) }),
   z.strictObject({ ...result, operation: z.literal('task-history'), records: z.array(TaskHistoryEventSchema) }),
+  z.strictObject({ ...result, operation: z.literal('jev-policy-get'), policy: ProjectJevPolicySchema }),
   z.strictObject({ ...result, operation: z.literal('settings-get'), record: stored(ProjectWorkSettingsSchema).nullable() }),
   z.strictObject({ ...result, operation: z.literal('settings-put'), record: stored(ProjectWorkSettingsSchema) }),
   z.strictObject({ ...result, operation: z.literal('coordinator-get'), record: stored(ProjectCoordinatorSchema).nullable() }),

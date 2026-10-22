@@ -17,6 +17,7 @@ const probabilities = z.record(z.string(), z.number().min(0).max(1));
 export const ModelOptionSchema = z.strictObject({
   id: IdSchema, runtime: IdSchema, model: text, efforts: z.array(EffortSchema).min(1),
   label: text, description: text, enabled: z.boolean(), unavailableReason: z.string().optional(), endpointAccountId: IdSchema.optional(),
+  qualityRank: z.number().int().min(0).max(1_000_000).optional(),
 });
 export type ModelOption = z.infer<typeof ModelOptionSchema>;
 export const MODEL_MENU_LIMIT = 19;
@@ -59,6 +60,7 @@ const CurrentConfigurationSchema = PreCleanupConfigurationSchema.extend({ 'x-jev
   const ids = value['x-jevellan'].menu.map((model) => model.id);
   if (new Set(ids).size !== ids.length) ctx.addIssue({ code: 'custom', message: 'Model menu ids must be unique.', path: ['x-jevellan', 'menu'] });
 });
+export const ConfigurationSettingsSchema = CurrentConfigurationSchema.shape['x-jevellan'];
 export const ConfigurationSchema = z.union([CurrentConfigurationSchema, LegacyConfigurationSchema]).transform((value): z.input<typeof CurrentConfigurationSchema> => {
   const settings = value['x-jevellan'];
   return { ...value, 'x-jevellan': { ...settings, schema: 2 as const, improver: settings.schema === 2 ? settings.improver : defaultImproverSettings() } };

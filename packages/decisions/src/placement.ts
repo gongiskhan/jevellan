@@ -8,6 +8,7 @@ import { askJev, type DecisionClient } from './engine.js';
 import type { RuntimeSupport } from './selection.js';
 import { approximateTokens } from './state.js';
 import { accountChoice, decideAccount } from './account-choice.js';
+import { applyJevEffortRules, jevEffortBounds, matchingJevRules } from './jev-rules.js';
 import type { PlacementAccountChoice } from '@jevellan/core';
 
 export const PLACEMENT_QUESTION_SET = 'p-v1';
@@ -451,3 +452,39 @@ export async function decidePlacement(client: DecisionClient, input: PlacementSt
   }
 }
 import { TaskPlacementContextSchema, type TaskPlacementContext, type TaskType } from '@jevellan/core';
+
+/** Owner clamps narrow the normal candidate evaluation; they never turn a rule into a privileged fixed field. */
+export function clampPlacementRules(input: PlacementInput, raw: PlacementRecord, rules: readonly import('@jevellan/core').JevRule[], context: import('./jev-rules.js').JevRuleContext): {kind:'placed';record:PlacementRecord;rulesApplied:string[];reason:string}|{kind:'refused';message:string;rulesApplied:string[];reason:string} {
+  const ranked = matchingJevRules(input.project.id, rules, context).filter(({rule}) => rule.set.minModel || rule.set.minEffort || rule.set.maxEffort || rule.set.account || rule.set.runtime)
+    .sort((a,b) => Number(b.rule.scope==='project')-Number(a.rule.scope==='project') || b.fields-a.fields || Number(a.rule.id.slice(1))-Number(b.rule.id.slice(1)));
+  if(!ranked.length)return{kind:'placed',record:raw,rulesApplied:[],reason:''};
+  const relevant=new Set<string>();
+  const constraint=(field:'account'|'runtime')=>{
+    const rows=ranked.filter(row=>row.rule.set[field]);const top=rows[0];if(!top)return undefined;
+    const tied=rows.filter(row=>row.rule.scope===top.rule.scope&&row.fields===top.fields);if(new Set(tied.map(row=>row.rule.set[field])).size>1)throw Error(`Equally specific owner rules disagree on ${field}: ${tied.map(row=>row.rule.id).join(', ')}.`);
+    relevant.add(top.rule.id);return top.rule.set[field];
+  };
+  try{
+    const accountId=input.fixed.accountId?undefined:constraint('account'),runtimeId=input.fixed.runtimeId||input.fixed.modelId?undefined:constraint('runtime');
+    const floors=input.fixed.modelId?[]:ranked.filter(row=>row.rule.set.minModel),firstFloor=floors[0];let floor:ModelOption|undefined;
+    if(firstFloor){const tied=floors.filter(row=>row.rule.scope===firstFloor.rule.scope&&row.fields===firstFloor.fields);const models=tied.map(row=>input.settings.menu.find(model=>model.id===row.rule.set.minModel));if(models.some(model=>!model))throw Error('An owner rule model is no longer configured.');
+      const distinct=[...new Map(models.map(model=>[model!.id,model!])).values()];if(distinct.length>1&&distinct.some(model=>model.qualityRank===undefined))throw Error('Conflicting owner model floors need explicit quality ranks.');floor=distinct.toSorted((a,b)=>(b.qualityRank??0)-(a.qualityRank??0)||a.id.localeCompare(b.id))[0];
+      const selected=tied.find(row=>row.rule.set.minModel===floor!.id)!;relevant.add(selected.rule.id);
+    }
+    const bounds=jevEffortBounds(input.project.id,rules,context),effortRule=applyJevEffortRules(input.project.id,raw.effortRequested,rules,context);for(const id of effortRule.rulesApplied)relevant.add(id);
+    const allowedEffort=(effort:Effort)=>input.fixed.effort!==undefined||EffortSchema.options.indexOf(effort)>=EffortSchema.options.indexOf(bounds.minimum)&&EffortSchema.options.indexOf(effort)<=EffortSchema.options.indexOf(bounds.maximum);
+    const narrowed:PlacementInput={...input,accounts:accountId?input.accounts.filter(account=>account.id===accountId):input.accounts,settings:{...input.settings,menu:input.settings.menu.map(model=>{
+      const modelAllowed=(!runtimeId||model.runtime===runtimeId)&&(!floor||model.id===floor.id||model.qualityRank!==undefined&&floor.qualityRank!==undefined&&model.qualityRank>=floor.qualityRank),efforts=model.efforts.filter(allowedEffort);
+      return{...model,enabled:model.enabled&&modelAllowed&&efforts.length>0,efforts:efforts.length?efforts:model.efforts};
+    })}};
+    const candidates=placementCandidates(narrowed);if('refused'in candidates)return{kind:'refused',message:`Owner rules ${[...relevant].join(', ')} leave no eligible placement. ${candidates.refused}`,rulesApplied:[...relevant],reason:'Owner rules retain the normal account, project and device guards.'};
+    const isolation=candidates.isolations.includes(raw.isolation)?raw.isolation:candidates.isolations[0]!,options=placementOptions(candidates,isolation),entry=options.models.find(row=>row.model.id===raw.modelId)??options.models.find(row=>row.model.id===floor?.id)??options.models.toSorted((a,b)=>(a.model.qualityRank??Number.MAX_SAFE_INTEGER)-(b.model.qualityRank??Number.MAX_SAFE_INTEGER)||a.model.id.localeCompare(b.model.id))[0]!;
+    const {devices}=placementDevices(narrowed,options,entry),device=devices.find(row=>row.id===raw.deviceId)??devices.find(row=>row.id===input.coordinatorDeviceId)??devices.toSorted((a,b)=>a.running-b.running||a.name.localeCompare(b.name)||a.id.localeCompare(b.id))[0];
+    if(!device)throw Error('Owner rules leave no eligible device.');const accounts=ranking(narrowed,entry.model,device.id),account=accounts.find(row=>row.eligible&&row.account.id===raw.accountId)??accounts.find(row=>row.eligible);if(!account)throw Error('Owner rules leave no eligible account.');
+    const desired=input.fixed.effort??effortRule.effort,choice=accountChoice(accounts,account.account.id,account.account.id===raw.accountId?raw.accountChoice?.source??'only-option':accounts.filter(row=>row.eligible).length===1?'only-option':'fallback',input.now);
+    const record=placementRecord(narrowed,{isolation,options,entry,device,effortRequested:desired,accountChoice:choice},{source:raw.source,calls:raw.jevCalls,...(raw.probabilities?{probabilities:raw.probabilities}:{}),...(raw.error?{error:raw.error}:{})});
+    const changed=['isolation','runtime','modelId','effortRequested','effortEffective','deviceId','accountId'].some(key=>record[key as keyof PlacementRecord]!==raw[key as keyof PlacementRecord]);
+    const reason=changed?`Owner rules ${[...relevant].join(', ')} changed placement from ${raw.modelId} ${raw.effortEffective} to ${record.modelId} ${record.effortEffective}${account.account.id!==raw.accountId?` on account ${account.account.id}`:''}. ${effortRule.reason}`.trim():'';
+    return{kind:'placed',record:{...record,fixed:raw.fixed},rulesApplied:changed?[...relevant]:[],reason};
+  }catch(error){return{kind:'refused',message:error instanceof Error?error.message:'The owner rules could not be applied.',rulesApplied:[...relevant],reason:'Owner rules could not produce a guarded placement.'};}
+}

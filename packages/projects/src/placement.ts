@@ -2,11 +2,11 @@ import type { TaskPlacementContext } from '@jevellan/core';
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  HubUnavailable, EffortSchema, ProjectDeviceSetupSchema, isTerminal, type AccountView, type Configuration, type DeviceRosterSchema, type PlacementRecord, type Project, type ProjectDeviceSetup, type ProjectHub,
+  HubUnavailable, EffortSchema, PlacementRawChoiceSchema, PlacementDecisionInputsSchema, ProjectDeviceSetupSchema, isTerminal, type JevPlacementDecision, type AccountView, type Configuration, type DeviceRosterSchema, type PlacementRecord, type Project, type ProjectDeviceSetup, type ProjectHub,
   type DeviceFacts, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex, type Thread, type Effort,
 } from '@jevellan/core';
 import {
-  deadlineClient, decidePlacement, fixedPlacementFields, placementCandidates, placementDeviceSetup, type DecisionSource, type PlacementActiveThread, type PlacementDevice, type PlacementFixed,
+  buildPlacementState, clampPlacementRules, deadlineClient, decidePlacement, fixedPlacementFields, placementCandidates, placementDeviceSetup, type DecisionSource, type PlacementActiveThread, type PlacementDevice, type PlacementFixed,
   type PlacementGates, type PlacementInput, type PlacementPacketInput,
 } from '@jevellan/decisions';
 import type { RuntimeAdapter } from '@jevellan/runtime-contract';
@@ -47,6 +47,7 @@ export type PlacementOptions = {
   redactor: Pick<SecretRedactor, 'document'>;
   now?(): number; gates?: PlacementGates;
   facts?(): DeviceFacts;
+  recordDecision?(decision: Omit<JevPlacementDecision, 'id'>): string;
 };
 /** Packet reads are best effort: during a hub outage Jev still places the thread with what this device knows. */
 const bestEffort = <T>(read: Promise<T>, fallback: T): Promise<T> => read.catch((error: unknown) => { if (error instanceof HubUnavailable) return fallback; throw error; });
@@ -158,6 +159,8 @@ export class Placement {
       overrides: overrides.map((entry) => ({ mode: entry.mode, taskType: entry.taskType, changes: entry.changes, at: entry.at, title: indexes.get(entry.threadId)?.title ?? UNKNOWN_THREAD })) };
   }
   async place(input: PlaceInput): Promise<PlacementResult> {
+    const policy = input.workSettings.jevPolicy;
+    if (policy && policy.projectId !== input.project.id) return { kind: 'refused', message: 'The Jev policy belongs to another project.' };
     const decision = await this.input(input);
     const candidates = placementCandidates(decision);
     if ('refused' in candidates) return { kind: 'refused', message: candidates.refused, retryable: candidates.retryable ?? false };
@@ -168,7 +171,21 @@ export class Placement {
     const placed = await decidePlacement(client, { ...decision, jevModel: decision.settings.decisions.model, packet, redactor: this.#o.redactor },
       input.signal ?? new AbortController().signal);
     if (placed.kind === 'refused') return placed;
-    const { record } = placed;
+    const raw = placed.record;
+    const clamped = clampPlacementRules(decision, raw, policy?.rules ?? [], { taskType: input.taskContext?.type ?? 'feature', goalId: input.taskContext?.goal?.id, label: input.taskContext?.goal?.name ?? 'manual', text: `${input.title} ${input.task}` });
+    let inputsRef: string | undefined;
+    const rawChoice = PlacementRawChoiceSchema.parse({ schema: 'placement-raw-choice-v1', isolation: raw.isolation, runtime: raw.runtime, modelId: raw.modelId, model: raw.model, effortRequested: raw.effortRequested, effortEffective: raw.effortEffective, deviceId: raw.deviceId, accountId: raw.accountId });
+    if (this.#o.recordDecision && (raw.source === 'jev' || policy?.rules.length)) {
+      const state = buildPlacementState({ ...decision, packet, redactor: this.#o.redactor }).state;
+      const environment = { ...decision, schema: 'placement-replay-environment-v1', runtimes: [...decision.runtimes].map(([id, runtime]) => [id, { mcp: runtime.mcp, readOnlyEnforced: runtime.readOnlyEnforced, edit: runtime.edit, shell: runtime.shell, turns: runtime.turns, displayName: runtime.displayName }]) };
+      const inputs = PlacementDecisionInputsSchema.parse(this.#o.redactor.document({ schema: 'placement-decision-inputs-v1', state, environment, policy: policy ?? { schema: 'project-jev-policy-v1', projectId: input.project.id, rules: [] } }));
+      const final = clamped.kind === 'placed' ? clamped.record : null;
+      inputsRef = this.#o.recordDecision({ schema: 'jev-placement-decision-v1', projectId: input.project.id, deviceId: this.#o.deviceId, at: raw.decidedAt, questionSet: 'p-v1', promptSource: 'code', promptVersion: null, title: input.title.slice(0,1200), source: raw.source, rawChoice,
+        finalChoice: final ? PlacementRawChoiceSchema.parse({ ...rawChoice, isolation: final.isolation, runtime: final.runtime, modelId: final.modelId, model: final.model, effortRequested: final.effortRequested, effortEffective: final.effortEffective, deviceId: final.deviceId, accountId: final.accountId }) : null,
+        refusal: clamped.kind === 'refused' ? clamped.message.slice(0,4000) : null, rulesApplied: clamped.rulesApplied, reason: clamped.reason.slice(0,4000), inputs, calls: raw.jevCalls });
+    }
+    if (clamped.kind === 'refused') return { kind: 'refused', message: clamped.message };
+    const record: PlacementRecord = { ...clamped.record, ...(inputsRef ? { rawChoice, inputsRef, inputsDeviceId: this.#o.deviceId, rulesApplied: clamped.rulesApplied, rulesReason: clamped.reason } : {}) };
     const model = decision.settings.menu.find((entry) => entry.id === record.modelId);
     return { kind: 'placed', record, atLimit: placed.atLimit, labels: {
       modelLabel: model?.label ?? record.modelId,

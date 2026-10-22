@@ -2,22 +2,24 @@ import { PlacementFieldSchema, ProjectThreadWhyViewSchema, type PlacementField, 
 import { placedWithoutJev } from './copy.js';
 
 const fieldLabels: Record<PlacementField, string> = { isolation: 'Isolation', runtime: 'Runtime', account: 'Account', model: 'Model', effort: 'Effort', device: 'Device' };
-const sourceLabels = { changed: 'changed by you', fixed: 'fixed', jev: 'Jev', fallback: 'fallback rule', only: 'only option' } as const;
+const sourceLabels = { changed: 'changed by you', rule: 'owner rule', fixed: 'fixed', jev: 'Jev', fallback: 'fallback rule', only: 'only option' } as const;
 export const PLACEMENT_QUESTIONS: Partial<Record<PlacementField, string>> = { isolation: 'isolation', model: 'pick_model', effort: 'effort', device: 'device', account: 'account' };
 export type FieldSource = keyof typeof sourceLabels;
 export type WhyField = { field: PlacementField; value: string; source: FieldSource; bars: Array<{ option: string; p: number; chosen: boolean }> };
 export function fallbackChip(placement: Pick<PlacementRecord, 'source' | 'error'>): string | null {
   return placement.source === 'fallback' && placement.error ? placedWithoutJev(placement.error.message) : null;
 }
-const fieldValue = (placement: PlacementRecord, field: PlacementField): string => field === 'isolation' ? placement.isolation : field === 'runtime' ? placement.runtime
+const fieldValue = (placement: Pick<PlacementRecord, 'isolation' | 'runtime' | 'accountId' | 'modelId' | 'effortRequested' | 'deviceId'>, field: PlacementField): string => field === 'isolation' ? placement.isolation : field === 'runtime' ? placement.runtime
   : field === 'account' ? placement.accountId : field === 'model' ? placement.modelId : field === 'effort' ? placement.effortRequested : placement.deviceId;
+const ruleChanged = (placement: PlacementRecord, field: PlacementField): boolean => !!placement.rawChoice && !!placement.rulesApplied?.length
+  && !placement.fixed.includes(field) && fieldValue(placement.rawChoice, field) !== fieldValue(placement, field);
 /** The held value is authoritative; recorded probabilities remain intact after an owner override. */
 export function whyFields(placement: PlacementRecord): WhyField[] {
-  return PlacementFieldSchema.options.filter(field => !['runtime', 'account'].includes(field) || placement.fixed.includes(field) || field === 'account' && placement.accountChoice).map(field => {
+  return PlacementFieldSchema.options.filter(field => !['runtime', 'account'].includes(field) || placement.fixed.includes(field) || ruleChanged(placement, field) || field === 'account' && placement.accountChoice).map(field => {
     const value = fieldValue(placement, field), question = PLACEMENT_QUESTIONS[field], answered = question ? placement.probabilities?.[question] : undefined;
     const bars = Object.entries(answered ?? {}).sort((a, b) => b[1] - a[1]).map(([option, p]) => ({ option, p, chosen: option === value }));
     const top = Math.max(...bars.map(bar => bar.p));
-    const source: FieldSource = answered && (answered[value] ?? -1) < top ? 'changed' : placement.fixed.includes(field) ? 'fixed' : answered ? 'jev'
+    const source: FieldSource = ruleChanged(placement, field) ? 'rule' : answered && (answered[value] ?? -1) < top ? 'changed' : placement.fixed.includes(field) ? 'fixed' : answered ? 'jev'
       : (field === 'account' ? placement.accountChoice?.source : placement.source) === 'fallback' ? 'fallback' : 'only';
     return { field, value, source, bars };
   });
@@ -29,12 +31,15 @@ export function threadWhyView(projectId: string, view: ThreadView, names: Thread
   const label = (field: PlacementField, value: string) => field === 'isolation' ? value === 'main' ? 'Main' : 'Worktree' : field === 'model' ? names.model(value)
     : field === 'device' ? names.device(value) : field === 'account' ? names.account(value) : field === 'runtime' ? names.runtime(value) : value;
   const fixed = placement.fixed.map(field => fieldLabels[field]).join(', '), constraints = placement.constraints;
+  const changes = PlacementFieldSchema.options.filter(field => ruleChanged(placement, field)).map(field =>
+    `${fieldLabels[field]} ${label(field, fieldValue(placement.rawChoice!, field))} → ${label(field, fieldValue(placement, field))}`);
+  const ruleLine = changes.length ? `Owner rules ${placement.rulesApplied!.join(', ')}: ${changes.join('; ')}` : null;
   return ProjectThreadWhyViewSchema.parse({ schema: 'project-thread-why-view-v1', projectId, threadId: thread.id, title: thread.title,
     followup: view.messageRoute ? view.messageRoute.outcome.source === 'jev' ? `Jev: ${view.messageRoute.outcome.goal}` : 'Jev unavailable; your full request is preserved.' : null,
     memory: view.memoryRecall ? { summary: view.memoryRecall.source === 'unavailable' ? view.memoryRecall.section : 'Recalled for the first turn or after compaction.',
       notes: view.memoryRecall.notes.map(({ permalink, title, reason }) => ({ permalink, title, reason })) } : null,
     placement: { sourceLabel: ({ jev: 'Jev', fixed: 'fixed', fallback: 'without Jev' } as const)[placement.source], fixedLine: fixed ? `Fixed: ${fixed}` : 'Fixed: none',
-      reasonLine: placement.reason ? `Placement reason: ${placement.reason}` : null,
+      reasonLine: [placement.reason ? `Placement reason: ${placement.reason}` : null, ruleLine].filter(Boolean).join('. ') || null,
       constraintsLine: constraints ? `Project placement constraints: ${placementConstraintText(constraints.allowedModelIds?.map(names.model) ?? null, constraints.minEffort)}` : null,
       fallbackNotice: fallbackChip(placement) },
     fields: whyFields(placement).map(({ field, value, source, bars }) => {

@@ -1,0 +1,12 @@
+import {expect,test} from 'vitest';
+import {JevRuleSchema,type JevRule} from '../packages/core/dist/index.js';
+import {applyJevEffortRules} from '../packages/decisions/dist/index.js';
+const rule=(id:number,scope:'global'|'project',set:JevRule['set'],when:JevRule['when']={})=>JevRuleSchema.parse({schema:'jev-rule-v1',id:`R${id}`,key:`rule_${id}`,scope,...(scope==='project'?{projectId:'project'}:{}),when,set,note:'',enabled:true,createdAt:'2026-10-22T12:00:00Z'});
+const context={taskType:'fix',text:'parser change'};
+test('a project value for the same effort field wins over the global value',()=>{const rules=[rule(1,'project',{minEffort:'low'}),rule(2,'global',{minEffort:'high'})];expect(applyJevEffortRules('project','low',rules,context).effort).toBe('low');});
+test('a more specific value for the same effort field wins over a less specific value',()=>{const rules=[rule(1,'project',{minEffort:'low'},{taskType:'fix',keywords:['parser']}),rule(2,'project',{minEffort:'high'},{taskType:'fix'})];expect(applyJevEffortRules('project','low',rules,context).effort).toBe('low');});
+test('equally specific minimum efforts choose the higher floor',()=>{expect(applyJevEffortRules('project','low',[rule(1,'project',{minEffort:'medium'}),rule(2,'project',{minEffort:'high'})],context).effort).toBe('high');});
+test('a project maximum wins over a conflicting global minimum',()=>{expect(applyJevEffortRules('project','high',[rule(1,'project',{maxEffort:'medium'}),rule(2,'global',{minEffort:'high'})],context).effort).toBe('medium');});
+test('equal-priority opposing effort bounds retain the higher floor',()=>{expect(applyJevEffortRules('project','medium',[rule(1,'project',{maxEffort:'low'}),rule(2,'project',{minEffort:'high'})],context).effort).toBe('high');});
+test('unrelated project disabled and unmatched explicit predicates do not clamp',()=>{const other={...rule(1,'project',{minEffort:'max'}),projectId:'other'},disabled={...rule(2,'global',{minEffort:'max'}),enabled:false};expect(applyJevEffortRules('project','medium',[other,disabled,rule(3,'global',{minEffort:'max'},{goalId:'goal_missing'}),rule(4,'global',{minEffort:'max'},{label:'explicit-label'})],context).effort).toBe('medium');});
+test('compatible bounds on different effort fields both apply',()=>{expect(applyJevEffortRules('project','max',[rule(1,'project',{minEffort:'medium'}),rule(2,'global',{maxEffort:'high'})],context).effort).toBe('high');});

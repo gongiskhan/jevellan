@@ -21,7 +21,7 @@ import { ProjectRouteCorrectionRequestSchema, ProjectRouteWhyViewSchema } from '
 import { capLines } from '@jevellan/projects';
 import { ProjectThreadOverrideEditorSchema, ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, type JevRule } from '@jevellan/core';
 import { OwnerRefusal, type OwnerHandler } from '../owner-tools.js';
-import { ownerThreadOperation } from '../project-work-api.js';
+import { ownerJevDecisionRead, ownerThreadOperation } from '../project-work-api.js';
 import { resolveGoal, resolveTask } from './common.js';
 
 function describeRule(rule: JevRule, goals: Map<string, string>): string {
@@ -33,6 +33,7 @@ function describeRule(rule: JevRule, goals: Map<string, string>): string {
 /** `jev` (bridge specification, "Jev control"). */
 export const jev: OwnerHandler = async (context) => {
   const { app, tools, project, args } = context; const control = app.ownerJev; const projectId = project.id;
+  if (context.action === 'decision_inputs') return { text: 'Stored Jev inputs.', data: await ownerJevDecisionRead(app, projectId, args.request) };
   if (context.action === 'terminal_actions_view') return { text: 'Terminal actions.', data: await readTerminalActions(app, args.request) };
   if (context.action === 'terminal_copy_plan') return { text: 'Terminal copy source.', data: await readTerminalCopyPlan(app, args.request) };
   if (context.action === 'terminal_copy_view') return { text: 'Terminal command excerpt.', data: await readTerminalCopyView(app, args.request) };
@@ -157,7 +158,7 @@ export const jev: OwnerHandler = async (context) => {
     case 'rule_set': {
       const when = (args.when ?? {}) as { taskType?: string; goal?: string; label?: string; keywords?: string[] };
       const goalId = when.goal ? (await resolveGoal(context, when.goal)).goal.id : undefined;
-      const rule = control.saveRule(projectId, { ...(typeof args.rule === 'string' ? { rule: args.rule } : {}), ...(args.scope ? { scope: args.scope as 'global' | 'project' } : {}),
+      const rule = await control.saveRule(projectId, { ...(typeof args.rule === 'string' ? { rule: args.rule } : {}), ...(args.scope ? { scope: args.scope as 'global' | 'project' } : {}),
         when: { ...(when.taskType ? { taskType: when.taskType } : {}), ...(goalId ? { goalId } : {}), ...(when.label ? { label: when.label } : {}), ...(when.keywords ? { keywords: when.keywords } : {}) },
         ...(args.set ? { set: args.set as JevRule['set'] } : {}), ...(typeof args.note === 'string' ? { note: args.note } : {}), ...(typeof args.enabled === 'boolean' ? { enabled: args.enabled } : {}) });
       return { text: `Saved ${describeRule(rule, goals).replace(/^(R\d+) · /u, '$1: ')}. Applies to new decisions from now on.\n${await control.ruleEffect(projectId)}` };

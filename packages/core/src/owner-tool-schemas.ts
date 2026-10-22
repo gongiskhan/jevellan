@@ -125,22 +125,7 @@ export const OwnerInPlaceAccountRequestSchema = z.strictObject({ schema: z.liter
 export const OwnerInPlaceAccountResultSchema = z.strictObject({ schema: z.literal('owner-in-place-account-result-v1'), ok: z.boolean(), text: z.string().max(2000) });
 export const OwnerBridgeResultSchema = z.strictObject({ schema: z.literal('owner-bridge-result-v1'), ok: z.boolean(), text: z.string().max(2000) });
 
-// Jev control (bridge specification, "Jev control"), state point hub namespaces owner-jev-rules, owner-jev-prompts, owner-jev-proposals, owner-jev-lessons.
-export const JevRuleSchema = z.strictObject({ schema: z.literal('jev-rule-v1'), id: z.string().regex(/^R[1-9][0-9]*$/u), key: IdSchema, scope: z.enum(['global', 'project']), projectId: IdSchema.optional(),
-  when: z.strictObject({ taskType: z.string().max(40).optional(), goalId: IdSchema.optional(), label: z.string().max(200).optional(), keywords: z.array(z.string().min(1).max(60)).max(20).optional() }),
-  set: z.strictObject({ minModel: z.string().max(120).optional(), minEffort: EffortSchema.optional(), maxEffort: EffortSchema.optional(), account: z.string().max(120).optional(), runtime: z.string().max(40).optional(),
-    landingRoute: z.enum(['land', 'verify-then-land', 'ask-owner']).optional() }),
-  note: z.string().max(400), enabled: z.boolean(), createdAt: TimestampSchema });
-export type JevRule = z.infer<typeof JevRuleSchema>;
-export const JevPromptVersionSchema = z.strictObject({ schema: z.literal('jev-prompt-version-v1'), key: IdSchema, name: z.string().min(1).max(40), version: z.number().int().positive(), text: z.string().min(1).max(60000),
-  summary: z.string().max(400), createdAt: TimestampSchema, active: z.boolean(), source: z.enum(['code', 'owner']), replay: z.string().max(4000).optional() });
-export type JevPromptVersion = z.infer<typeof JevPromptVersionSchema>;
-export const JevProposalSchema = z.strictObject({ schema: z.literal('jev-prompt-proposal-v1'), key: IdSchema, id: z.string().regex(/^P[1-9][0-9]*$/u), projectId: IdSchema, name: z.string().min(1).max(40), fromVersion: z.number().int().positive(),
-  text: z.string().min(1).max(60000), summary: z.string().max(400), source: z.enum(['owner', 'code']), createdAt: TimestampSchema, state: z.enum(['proposed', 'applied', 'superseded']), replay: z.string().max(12000).optional() });
-export type JevProposal = z.infer<typeof JevProposalSchema>;
-export const JevLessonSchema = z.strictObject({ schema: z.literal('jev-lesson-v1'), key: IdSchema, id: z.string().regex(/^L[1-9][0-9]*$/u), scope: z.enum(['global', 'project']), projectId: IdSchema.optional(),
-  about: z.enum(['landing', 'placement', 'other']), text: z.string().min(1).max(1000), source: z.string().regex(/^(?:override:D[1-9][0-9]*|owner|migrated)$/u), enabled: z.boolean(), timesApplied: z.number().int().nonnegative(), createdAt: TimestampSchema });
-export type JevLesson = z.infer<typeof JevLessonSchema>;
+export { JevRuleSchema, JevPromptVersionSchema, JevProposalSchema, JevLessonSchema, type JevRule, type JevPromptVersion, type JevProposal, type JevLesson } from './jev-control-schemas.js';
 export const OwnerRemoteRequestSchema = z.strictObject({ schema: z.literal('owner-remote-request-v1'), operation: z.enum(['setup', 'revoke']), port: z.number().int().min(1).max(65535),
   clientId: z.string().min(1).max(200).optional(), clientSecret: z.string().min(1).max(400).optional() });
 /** A member device forwards an owner tool call to the state point (the tools run there). */
