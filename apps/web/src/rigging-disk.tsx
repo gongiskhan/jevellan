@@ -4,7 +4,7 @@ import { z } from 'zod';
 import {
   RiggingDiskCancelledSchema,
   RiggingDiskDetailSchema,
-  RiggingDiskListSchema,
+  riggingDiskPresentation, RiggingEditorViewSchema, riggingDiskRoute, riggingDiskEditor, riggingDiskSave, riggingDiskSaved, riggingPromotionDefaults, riggingPromotionChoices, riggingMoveInput, riggingMoveMessage, riggingDeliveryStatus, riggingCancelMessage, riggingPendingMessage, riggingPromotionMessage, type RiggingEditorView,
   RiggingDiskResultSchema,
   RiggingPromotionInputSchema,
   RiggingSaveSchema,
@@ -14,23 +14,25 @@ import { api, isCancelled } from './api.js';
 import { dateTime, Markdown, Modal, useTask, type PageProps } from './components.js';
 
 type Detail = z.infer<typeof RiggingDiskDetailSchema>;
-const route = (item: Pick<RiggingDiskItem, 'runtime' | 'accountId' | 'id'>) =>
-  `/api/rigging/homes/${item.runtime}/${item.accountId}/${item.id}`;
+const route = riggingDiskRoute;
 type PromotionInput = z.infer<typeof RiggingPromotionInputSchema>;
 function MakeManaged({
   item,
+  editor,
   props,
   promote,
   close,
 }: {
   item: RiggingDiskItem;
+  editor: RiggingEditorView;
   props: PageProps;
   promote(input: PromotionInput, signal: AbortSignal): Promise<void>;
   close(): void;
 }) {
-  const [name, setName] = useState(item.name);
-  const [runtimes, setRuntimes] = useState<Record<string, boolean>>({ [item.runtime]: true });
-  const [requestId] = useState(() => `promote_${clientId()}`);
+  const [defaults] = useState(() => riggingPromotionDefaults(item,`promote_${clientId()}`));
+  const [name, setName] = useState(defaults.name);
+  const [runtimes, setRuntimes] = useState(defaults.runtimes);
+  const requestId = defaults.requestId;
   const [submitted, setSubmitted] = useState(false);
   const task = useTask(props.onError);
   return (
@@ -71,22 +73,15 @@ function MakeManaged({
         </label>
         <fieldset>
           <legend>Install for</legend>
-          {props.data.runtimes.map((runtime) => (
+          {riggingPromotionChoices(item,editor.runtimes,runtimes,submitted).map((runtime) => (
             <label className="toggle" key={runtime.id}>
               <input
                 type="checkbox"
-                checked={runtimes[runtime.id] ?? false}
-                disabled={
-                  submitted || runtime.id === item.runtime || !runtime.riggingKinds.includes(item.kind)
-                }
+                checked={runtime.checked}
+                disabled={runtime.disabled}
                 onChange={(event) => setRuntimes({ ...runtimes, [runtime.id]: event.target.checked })}
               />
-              {runtime.displayName}
-              {!runtime.riggingKinds.includes(item.kind)
-                ? ' · Not supported'
-                : runtime.id === item.runtime
-                  ? ' · Current account'
-                  : ''}
+              {runtime.label}{runtime.suffix}
             </label>
           ))}
         </fieldset>
@@ -127,8 +122,7 @@ function DiskEditor({
   async function flush(): Promise<void> {
     if (
       !active.current ||
-      !saved.current.item.editable ||
-      (!pending.current && latest.current === saved.current.content)
+      !riggingDiskSave(saved.current,latest.current) && !pending.current
     )
       return;
     if (pending.current) {
@@ -147,18 +141,19 @@ function DiskEditor({
             route(saved.current.item),
             RiggingDiskDetailSchema,
             'PUT',
-            { schema: 'rigging-disk-write-v1', fingerprint: saved.current.item.fingerprint, content: value },
+            riggingDiskSave(saved.current,value),
             { signal: controller.signal, waitForHub: true },
           );
-          saved.current = next;
+          const accepted = riggingDiskSaved(saved.current,value,latest.current,next);
+          saved.current = accepted.detail;
           if (active.current) {
             setDetail(next);
             setStatus('Saved');
           }
           // JSON is formatted by the server. Retain newer typing, otherwise use its exact saved representation.
           if (latest.current === value) {
-            latest.current = next.content;
-            if (active.current) setDraft(next.content);
+            latest.current = accepted.draft;
+            if (active.current) setDraft(accepted.draft);
           }
         }
         if (active.current) await reload(controller.signal);
@@ -186,14 +181,13 @@ function DiskEditor({
     };
   }, []);
   useEffect(() => {
-    if (!detail.item.editable || draft === saved.current.content) return;
+    if (!riggingDiskSave(saved.current,draft)) return;
     setStatus('Unsaved changes');
     const timer = setTimeout(() => void flushRef.current().catch(() => undefined), 600);
     return () => clearTimeout(timer);
   }, [draft, detail.item.editable]);
-  const label =
-    props.data.accounts.find((view) => view.account.id === detail.item.accountId)?.account.label ??
-    detail.item.accountId;
+  const policy = riggingDiskEditor(detail);
+  const row = riggingDiskPresentation(detail.item,props.data.accounts.map(view=>({id:view.account.id,runtime:view.account.runtime,label:view.account.label})));
   return (
     <Modal
       title={detail.item.name}
@@ -208,37 +202,20 @@ function DiskEditor({
       }}
     >
       <p className="muted">
-        {label} · {detail.item.runtime === 'claude' ? 'Claude Code' : 'Codex'} ·{' '}
-        {detail.item.state === 'owned'
-          ? 'Installed copy'
-          : detail.item.state === 'parked'
-            ? 'Parked on this device'
-            : 'Loose local item'}
+        {row.accountLabel} · {row.runtimeLabel} · {row.stateLabel}
       </p>
       <p className="rigging-ref">{detail.item.address.ref}</p>
-      {detail.item.fileCount > 1 && (
-        <p className="muted small-text">
-          This bundle has {detail.item.fileCount} files. Editing changes its instructions; parking preserves
-          the whole bundle.
-        </p>
-      )}
-      {detail.item.state === 'owned' && (
-        <p className="notice">
-          Edit the local item or package that installs this copy. Its delivered content is read-only here.
-        </p>
-      )}
-      {detail.item.problem && <p className="notice">{detail.item.problem}</p>}
-      {detail.redacted && <p className="notice">Credentials are hidden. This content is read-only.</p>}
+      {policy.notices.map((notice,index)=><p className="notice" key={index}>{notice}</p>)}
       <div className="subheading">
         <span role="status" className="muted save-status">
-          {detail.item.editable ? status : 'Read-only'}
+          {policy.editable ? status : 'Read-only'}
         </span>
         <button className="text-button" onClick={() => setPreview(!preview)}>
           {preview ? 'Source' : 'Preview'}
         </button>
       </div>
-      {preview || !detail.item.editable ? (
-        detail.format === 'markdown' ? (
+      {preview || !policy.editable ? (
+        policy.markdown ? (
           <Markdown>{draft}</Markdown>
         ) : (
           <pre>{draft}</pre>
@@ -255,7 +232,7 @@ function DiskEditor({
           />
         </label>
       )}
-      {detail.item.editable && (
+      {policy.editable && (
         <p className="muted small-text">Local edits save automatically on this account.</p>
       )}
       {status === 'Not saved' && (
@@ -264,12 +241,13 @@ function DiskEditor({
           onClick={() =>
             void api(route(detail.item), RiggingDiskDetailSchema)
               .then((next) => {
-                saved.current = next;
-                latest.current = next.content;
+                const accepted = riggingDiskSaved(saved.current,saved.current.content,saved.current.content,next);
+                saved.current = accepted.detail;
+                latest.current = accepted.draft;
                 setDetail(next);
                 setDraft(next.content);
                 setStatus('Saved');
-                props.message('Current file reloaded. The unsaved draft was discarded.');
+                props.message(policy.reloadMessage);
               })
               .catch(props.onError)
           }
@@ -282,27 +260,16 @@ function DiskEditor({
 }
 
 export function useRiggingDisk(props: PageProps) {
-  const [inventory, setInventory] = useState<z.infer<typeof RiggingDiskListSchema>>();
+  const [view, setView] = useState<RiggingEditorView>();
+  const inventory = view?.inventory;
   const [editing, setEditing] = useState<Detail>();
   const [promoting, setPromoting] = useState<RiggingDiskItem>();
   const [showInstalled, setShowInstalled] = useState(false);
   const task = useTask(props.onError);
-  const reload = useCallback(async (signal?: AbortSignal) => {
-    setInventory(
-      await api('/api/rigging/homes', RiggingDiskListSchema, 'GET', undefined, { signal, waitForHub: true }),
-    );
-  }, []);
-  useEffect(() => {
-    let active = true;
-    void api('/api/rigging/homes', RiggingDiskListSchema)
-      .then((value) => {
-        if (active) setInventory(value);
-      })
-      .catch(props.onError);
-    return () => {
-      active = false;
-    };
-  }, [props.data.rigging, props.data.accounts, props.onError]);
+  const filter = new URLSearchParams(window.location.search).get('runtime') ?? '';
+  const endpoint=`/api/rigging/view?showInstalled=${showInstalled}${filter?`&runtime=${encodeURIComponent(filter)}`:''}`;
+  const reload = useCallback(async (signal?: AbortSignal) => {setView(await api(endpoint,RiggingEditorViewSchema,'GET',undefined,{signal,waitForHub:true}));},[endpoint]);
+  useEffect(() => { const abort=new AbortController();void reload(abort.signal).catch(error=>{if(!isCancelled(error))props.onError(error);});return()=>abort.abort();},[reload,props.data.rigging,props.data.accounts,props.onError]);
   const transition = async (
     item: Pick<RiggingDiskItem, 'runtime' | 'accountId' | 'id' | 'fingerprint'>,
     action: 'park' | 'restore',
@@ -315,10 +282,10 @@ export function useRiggingDisk(props: PageProps) {
         route(item),
         RiggingDiskResultSchema,
         'POST',
-        { schema: 'rigging-disk-transition-v1', requestId, action, fingerprint: item.fingerprint },
+        riggingMoveInput(item,action,requestId),
         { signal, waitForHub: true },
       );
-      props.message(action === 'park' ? 'Item parked on this device.' : 'Item restored to this account.');
+      props.message(riggingMoveMessage(action));
     } catch (error) {
       cancelled = isCancelled(error);
       throw error;
@@ -339,11 +306,7 @@ export function useRiggingDisk(props: PageProps) {
         signal,
         waitForHub: true,
       });
-      props.message(
-        result.application.accounts.some((account) => account.error)
-          ? 'Managed item saved. Delivery needs attention.'
-          : 'Managed item saved and delivered.',
-      );
+      props.message(riggingDeliveryStatus(result.application,true));
     } catch (error) {
       cancelled = isCancelled(error);
       throw error;
@@ -354,14 +317,10 @@ export function useRiggingDisk(props: PageProps) {
       }
     }
   };
-  const filter = new URLSearchParams(window.location.search).get('runtime') ?? '';
-  const items =
-    inventory?.items.filter(
-      (item) =>
-        (!filter || filter === item.runtime) && (showInstalled || item.state !== 'owned' || item.drifted),
-    ) ?? [];
+  const rows=view?.sections.flatMap(section=>section.disk)??[];
+  const items=rows.map(row=>row.item);
   return {
-    items,
+    view, items,
     controls: (
       <div className="rigging-discovery-controls">
         <label className="toggle">
@@ -380,19 +339,16 @@ export function useRiggingDisk(props: PageProps) {
     notices: (
       <>
         {inventory?.errors
-          .filter((entry) => !filter || entry.runtime === filter)
           .map((entry, index) => (
             <p role="alert" className="error" key={`${entry.accountId}/${index}`}>
               {label(entry.accountId)}: {entry.message}
             </p>
           ))}
         {inventory?.pending
-          .filter((entry) => !filter || entry.runtime === filter)
           .map((entry) => (
             <div className="notice rigging-pending" key={entry.requestId}>
               <span>
-                {entry.action === 'park' ? 'Parking' : 'Restoring'} {entry.ref} on {label(entry.accountId)}{' '}
-                needs to finish.
+                {riggingPendingMessage(entry.action,entry.ref,label(entry.accountId))}
               </span>
               <button
                 className="secondary small"
@@ -418,7 +374,7 @@ export function useRiggingDisk(props: PageProps) {
                       { signal, waitForHub: true },
                     );
                     await reload(signal);
-                    props.message('Current files kept. The pending move was cancelled.');
+                    props.message(riggingCancelMessage());
                   })
                 }
               >
@@ -429,11 +385,10 @@ export function useRiggingDisk(props: PageProps) {
       </>
     ),
     promotions: inventory?.promotions
-      .filter((entry) => !filter || entry.runtime === filter)
       .map((entry) => (
         <div className="notice rigging-pending" key={entry.request.requestId}>
           <span>
-            Making {entry.request.name} managed on {label(entry.accountId)} needs to finish.
+            {riggingPromotionMessage(entry.request.name,label(entry.accountId))}
           </span>
           <button
             className="secondary small"
@@ -458,7 +413,7 @@ export function useRiggingDisk(props: PageProps) {
                     { signal, waitForHub: true },
                   );
                   await reload(signal);
-                  props.message('Current files kept. The pending promotion was cancelled.');
+                  props.message(riggingCancelMessage(true));
                 })
               }
             >
@@ -468,9 +423,9 @@ export function useRiggingDisk(props: PageProps) {
         </div>
       )),
     rows: (kind: string) =>
-      items
-        .filter((item) => item.kind === kind)
-        .map((item) => (
+      rows
+        .filter((row) => row.item.kind === kind)
+        .map((row) => {const item=row.item;return (
           <div className="rigging-row rigging-disk-row" key={item.id} data-state={item.state}>
             <button
               className="item-name"
@@ -487,35 +442,27 @@ export function useRiggingDisk(props: PageProps) {
             >
               <strong>{item.name}</strong>
               <span className="muted">
-                {item.state === 'owned'
-                  ? 'Installed copy'
-                  : item.state === 'parked'
-                    ? item.address.bucket?.startsWith('manual_')
-                      ? 'Local · Parked'
-                      : 'Package · Parked'
-                    : 'Local · Loose'}
-                {item.drifted ? ' · Changed outside Rigging' : ''} · {label(item.accountId)} ·{' '}
-                {item.runtime === 'claude' ? 'Claude Code' : 'Codex'}
+                {row.origin}{row.driftLabel?` · ${row.driftLabel}`:''} · {row.accountLabel} · {row.runtimeLabel}
               </span>
               {item.state === 'parked' && (
                 <span className="muted small-text">{dateTime(item.updatedAt)}</span>
               )}
             </button>
-            {item.canPark && (
+            {row.actions.some(action=>action.action==='park') && (
               <button
                 className="secondary small"
                 disabled={task.busy}
                 onClick={() => void task.run((signal) => transition(item, 'park', signal))}
               >
-                {item.drifted ? 'Park changed copy' : 'Park'}
+                {row.actions.find(action=>action.action==='park')?.label}
               </button>
             )}
-            {item.state === 'loose' && item.editable && ['skill', 'rule', 'command'].includes(item.kind) && (
+            {row.actions.some(action=>action.action==='promote') && (
               <button className="secondary small" disabled={task.busy} onClick={() => setPromoting(item)}>
                 Make managed
               </button>
             )}
-            {item.state === 'parked' && (
+            {row.actions.some(action=>action.action==='restore') && (
               <button
                 className="secondary small"
                 disabled={task.busy}
@@ -525,7 +472,7 @@ export function useRiggingDisk(props: PageProps) {
               </button>
             )}
           </div>
-        )),
+        );}),
     editor: (
       <>
         {editing && (
@@ -537,9 +484,10 @@ export function useRiggingDisk(props: PageProps) {
             close={() => setEditing(undefined)}
           />
         )}{' '}
-        {promoting && (
+        {promoting && view && (
           <MakeManaged
             item={promoting}
+            editor={view}
             props={props}
             promote={(input, signal) => promote(promoting, input, signal)}
             close={() => setPromoting(undefined)}

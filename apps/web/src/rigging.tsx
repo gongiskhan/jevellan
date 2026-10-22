@@ -1,29 +1,18 @@
 import * as copy from './project-work-copy.js';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
-import { ProjectsListSchema, RiggingApplicationSchema, RiggingSaveSchema, RiggingViewSchema } from '@jevellan/core/client';
+import { RiggingApplicationSchema, RiggingSaveSchema, RiggingViewSchema, RiggingEditorReceiptSchema, RIGGING_SECTIONS, riggingScopeChange, riggingManagedPresentation, riggingManagedDirty, riggingManagedSave, riggingManagedSaved, riggingAddDefaults, riggingAddInput, riggingKindPresentation, riggingActionResult, type RiggingEditorView } from '@jevellan/core/client';
 import { api, empty, isCancelled } from './api.js';
 import { Markdown, Modal, SectionHeading, useSettingsSave, useTask, type PageProps } from './components.js';
 import { useRiggingDisk } from './rigging-disk.js';
 
-function ProjectScope({ value, change }: { value: string[]; change(value: string[]): void }) {
-  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
-  useEffect(() => { const abort = new AbortController(); void api('/hub/projects', ProjectsListSchema, 'GET', undefined, { signal: abort.signal }).then(view => setProjects(view.projects.map(row => row.project))).catch(() => undefined); return () => abort.abort(); }, []);
-  return <fieldset className="pw-rigging-projects"><legend>{copy.RIGGING_PROJECTS}</legend><label className="toggle"><input type="checkbox" checked={!value.length} onChange={event => change(event.target.checked ? [] : projects[0] ? [projects[0].id] : [])} />{copy.RIGGING_ALL_PROJECTS}</label>
-    {projects.map(project => <label className="toggle" key={project.id}><input type="checkbox" checked={value.includes(project.id)} onChange={event => change(event.target.checked ? [...value, project.id] : value.filter(id => id !== project.id))} />{project.name}</label>)}</fieldset>;
+function ProjectScope({ value, projects, change }: { value: string[]; projects: RiggingEditorView['projects']; change(value: string[]): void }) {
+  return <fieldset className="pw-rigging-projects"><legend>{copy.RIGGING_PROJECTS}</legend><label className="toggle"><input type="checkbox" checked={!value.length} onChange={event => change(riggingScopeChange(value,projects,{all:event.target.checked}))} />{copy.RIGGING_ALL_PROJECTS}</label>
+    {projects.map(project => <label className="toggle" key={project.id}><input type="checkbox" checked={value.includes(project.id)} onChange={event => change(riggingScopeChange(value,projects,{id:project.id,checked:event.target.checked}))} />{project.name}</label>)}</fieldset>;
 }
-const scopeEqual = (a: string[] | undefined, b: string[] | undefined) => JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
 type View = z.infer<typeof RiggingViewSchema>;
-const sections = {
-  skill: 'Skills',
-  mcp: 'MCP servers',
-  hook: 'Hooks',
-  rule: 'Rules',
-  command: 'Commands',
-  setting: 'Settings',
-};
-function ItemEditor({ view, props, close }: { view: View; props: PageProps; close(): void }) {
-  const [draft, setDraft] = useState({ name: view.item.name, content: view.item.content, projects: view.item.projects ?? [] });
+function ItemEditor({ view, editor, props, close }: { view: View; editor: RiggingEditorView; props: PageProps; close(): void }) {
+  const [draft, setDraft] = useState({ schema:'rigging-editor-draft-v1' as const, name: view.item.name, content: view.item.content, projects: view.item.projects ?? [] });
   const [preview, setPreview] = useState(false);
   const [status, setStatus] = useState('Saved');
   const saved = useRef(view);
@@ -32,20 +21,19 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
   const active = useRef(true);
   const save = useSettingsSave();
   const controller = useRef<AbortController | undefined>(undefined);
-  const readOnly = view.item.builtIn || Boolean(view.item.packageRef);
+  const policy = riggingManagedPresentation(view,editor.runtimes);
+  const readOnly = !policy.editable;
   latest.current = draft;
   async function flush(): Promise<void> {
     if (
       (!pending.current &&
-        latest.current.name === saved.current.item.name &&
-        latest.current.content === saved.current.item.content && scopeEqual(latest.current.projects, saved.current.item.projects))
+        !riggingManagedDirty(saved.current,latest.current))
     )
       return;
     if (pending.current) {
       await pending.current;
       if (
-        latest.current.name !== saved.current.item.name ||
-        latest.current.content !== saved.current.item.content || !scopeEqual(latest.current.projects, saved.current.item.projects)
+        riggingManagedDirty(saved.current,latest.current)
       )
         await flush();
       return;
@@ -55,35 +43,16 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
       controller.current = abort;
       try {
         while (
-          latest.current.name !== saved.current.item.name ||
-          latest.current.content !== saved.current.item.content || !scopeEqual(latest.current.projects, saved.current.item.projects)
+          riggingManagedDirty(saved.current,latest.current)
         ) {
           const current = saved.current;
           const value = { ...latest.current };
           if (active.current) setStatus('Saving…');
-          const result = await save(
-            `/hub/rigging/${current.item.id}`,
-            RiggingSaveSchema,
-            'PUT',
-            {
-              schema: 'update-rigging-v1',
-              revision: current.revision,
-              name: value.name,
-              content: value.content, projects: value.projects,
-              runtimes: current.item.runtimes,
-              state: current.item.state,
-            },
-            abort.signal,
-          );
-          if (result.item.item.name !== value.name || result.item.item.content !== value.content || !scopeEqual(result.item.item.projects, value.projects))
-            throw new Error('This item changed after your save. Reopen it before editing again.');
-          saved.current = result.item;
-          if (active.current)
-            setStatus(
-              result.application.accounts.some((account) => account.error)
-                ? 'Saved · delivery needs attention'
-                : 'Saved',
-            );
+          const input = riggingManagedSave(current,value);
+          const result = await save(`/hub/rigging/${current.item.id}`,RiggingSaveSchema,'PUT',input,abort.signal);
+          const accepted = riggingManagedSaved(current,input,result);
+          saved.current = accepted.view;
+          if (active.current) setStatus(accepted.status);
         }
         await props.reload(abort.signal);
       } catch (error) {
@@ -111,7 +80,7 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
     };
   }, []);
   useEffect(() => {
-    if (draft.name === saved.current.item.name && draft.content === saved.current.item.content && scopeEqual(draft.projects, saved.current.item.projects))
+    if (!riggingManagedDirty(saved.current,draft))
       return;
     setStatus('Unsaved changes');
     const timer = setTimeout(() => {
@@ -134,11 +103,7 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
     >
       {readOnly ? (
         <p className="muted">
-          {view.item.builtIn
-            ? view.item.id === 'builtin_safety'
-              ? 'Built in · always on'
-              : 'Built in · choose its runtimes with the toggles'
-            : `Package · ${view.item.packageRef}`}
+          {policy.lockReason}
         </p>
       ) : (
         <label>
@@ -146,7 +111,7 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
           <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
         </label>
       )}
-      {view.item.id !== 'builtin_safety' && <ProjectScope value={draft.projects} change={projects => setDraft({ ...draft, projects })} />}
+      {policy.scopable && <ProjectScope projects={editor.projects} value={draft.projects} change={projects => setDraft({ ...draft, projects })} />}
       <div className="subheading">
         <span className="muted save-status" role="status">
           {readOnly ? 'Read-only' : status}
@@ -156,7 +121,7 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
         </button>
       </div>
       {preview || readOnly ? (
-        ['skill', 'rule', 'command'].includes(view.item.kind) ? (
+        policy.format === 'markdown' ? (
           <Markdown>{draft.content}</Markdown>
         ) : (
           <pre>{draft.content}</pre>
@@ -176,22 +141,22 @@ function ItemEditor({ view, props, close }: { view: View; props: PageProps; clos
       {!readOnly && (
         <p className="muted small-text">
           Edits save automatically.
-          {view.item.bundle &&
-            ` ${view.item.bundle.fileCount} bundled ${view.item.bundle.fileCount === 1 ? 'file is' : 'files are'} retained when these instructions change.`}
+          {policy.bundleNote && ` ${policy.bundleNote}`}
         </p>
       )}
     </Modal>
   );
 }
-function AddItem({ fromPackage, props, close }: { fromPackage: boolean; props: PageProps; close(): void }) {
+function AddItem({ fromPackage, editor, props, close }: { fromPackage: boolean; editor: RiggingEditorView; props: PageProps; close(): void }) {
   const save = useSettingsSave();
-  const [name, setName] = useState('');
-  const [kind, setKind] = useState<keyof typeof sections>('skill');
+  const defaults = riggingAddDefaults(editor.runtimes);
+  const [name, setName] = useState(defaults.name);
+  const [kind, setKind] = useState<(typeof RIGGING_SECTIONS)[number]['kind']>(defaults.kind);
   const [content, setContent] = useState('');
   const [packageRef, setPackageRef] = useState('');
   const [projects, setProjects] = useState<string[]>([]);
   const [runtimes, setRuntimes] = useState<Record<string, boolean>>(
-    Object.fromEntries(props.data.runtimes.map((runtime) => [runtime.id, true])),
+    defaults.runtimes,
   );
   const task = useTask(props.onError);
   return (
@@ -200,40 +165,28 @@ function AddItem({ fromPackage, props, close }: { fromPackage: boolean; props: P
         onSubmit={(event) => {
           event.preventDefault();
           void task.run(async (signal) => {
-            await save(
-              '/hub/rigging',
-              RiggingSaveSchema,
-              'POST',
-              {
-                schema: 'add-rigging-v1',
-                name,
-                kind,
-                content,
-                runtimes, projects,
-                ...(fromPackage ? { packageRef } : {}),
-              },
-              signal,
-            );
+            const request = {schema:'rigging-editor-action-v1' as const,deviceId:editor.deviceId,operation:'add' as const,input:riggingAddInput({name,kind,content,runtimes,projects,...(fromPackage?{packageRef}:{})},editor.runtimes)};
+            riggingActionResult(request,await save('/api/rigging/actions',RiggingEditorReceiptSchema,'POST',request,signal));
             await props.reload(signal);
             close();
           });
         }}
       >
-        <ProjectScope value={projects} change={setProjects} />
+        <ProjectScope projects={editor.projects} value={projects} change={setProjects} />
         <label>
           Name
           <input
             autoFocus
             required
-            maxLength={128}
+            maxLength={riggingKindPresentation(kind).maxNameLength}
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
         </label>
         <label>
           Kind
-          <select value={kind} onChange={(event) => setKind(event.target.value as keyof typeof sections)}>
-            {Object.entries(sections).map(([value, label]) => (
+          <select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}>
+            {RIGGING_SECTIONS.map(({kind:value,title:label}) => (
               <option key={value} value={value}>
                 {label}
               </option>
@@ -261,23 +214,23 @@ function AddItem({ fromPackage, props, close }: { fromPackage: boolean; props: P
               spellCheck={false}
               onChange={(event) => setContent(event.target.value)}
               placeholder={
-                ['hook', 'setting', 'mcp'].includes(kind) ? 'JSON configuration' : 'Instructions in Markdown'
+                riggingKindPresentation(kind).placeholder
               }
             />
           </label>
         )}
         <fieldset>
           <legend>Install for</legend>
-          {props.data.runtimes.map((runtime) => (
+          {editor.runtimes.map((runtime) => (
             <label className="toggle" key={runtime.id}>
               <input
                 type="checkbox"
                 checked={runtimes[runtime.id] ?? false}
-                disabled={!runtime.riggingKinds.includes(kind)}
+                disabled={!runtime.supportedKinds.includes(kind)}
                 onChange={(event) => setRuntimes({ ...runtimes, [runtime.id]: event.target.checked })}
               />
-              {runtime.displayName}
-              {!runtime.riggingKinds.includes(kind) && ' · Not supported'}
+              {runtime.label}
+              {!runtime.supportedKinds.includes(kind) && ' · Not supported'}
             </label>
           ))}
         </fieldset>
@@ -303,20 +256,9 @@ export function RiggingPage(props: PageProps) {
     setPendingToggles((previous) => ({ ...previous, [key]: enabled }));
     void task.run(async (signal) => {
       try {
-        await save(
-          `/hub/rigging/${view.item.id}`,
-          RiggingSaveSchema,
-          'PUT',
-          {
-            schema: 'update-rigging-v1',
-            revision: view.revision,
-            name: view.item.name,
-            content: view.item.content,
-            state: enabled ? 'owned' : view.item.state,
-            runtimes: { ...view.item.runtimes, [runtime]: enabled },
-          },
-          signal,
-        );
+        if(!disk.view) return;
+        const request={schema:'rigging-editor-action-v1' as const,operation:'toggle' as const,deviceId:disk.view.deviceId,id:view.item.id,revision:view.revision,captured:view,runtime,enabled};
+        riggingActionResult(request,await save('/api/rigging/actions',RiggingEditorReceiptSchema,'POST',request,signal));
         await props.reload(signal);
       } finally {
         setPendingToggles((previous) => {
@@ -328,9 +270,8 @@ export function RiggingPage(props: PageProps) {
     });
   }
   const filter = new URLSearchParams(window.location.search).get('runtime') ?? '';
-  const items = props.data.rigging.items.filter(
-    (view) => !filter || Object.hasOwn(view.item.runtimes, filter),
-  );
+  const editor = disk.view;
+  if(!editor) return <p role="status">Loading Rigging…</p>;
   return (
     <>
       <SectionHeading title="Rigging">
@@ -354,9 +295,9 @@ export function RiggingPage(props: PageProps) {
           }
         >
           <option value="">All runtimes</option>
-          {props.data.runtimes.map((runtime) => (
+          {editor.runtimes.map((runtime) => (
             <option key={runtime.id} value={runtime.id}>
-              {runtime.displayName}
+              {runtime.label}
             </option>
           ))}
         </select>
@@ -364,15 +305,8 @@ export function RiggingPage(props: PageProps) {
       {disk.controls}
       {disk.notices}
       {disk.promotions}
-      {props.data.rigging.application?.accounts
-        .filter((account) => account.error)
-        .map((account) => (
-          <p role="alert" className="error" key={account.accountId}>
-            {props.data.accounts.find((view) => view.account.id === account.accountId)?.account.label}:{' '}
-            {account.error}
-          </p>
-        ))}
-      {props.data.rigging.application?.accounts.some((account) => account.error) && (
+      {editor.delivery.errors.map(account=><p role="alert" className="error" key={account.accountId}>{account.label}: {account.message}</p>)}
+      {editor.delivery.canRetry && (
         <button
           className="secondary"
           disabled={task.busy}
@@ -389,60 +323,51 @@ export function RiggingPage(props: PageProps) {
           Retry delivery
         </button>
       )}
-      {Object.entries(sections).map(([kind, title]) => (
+      {editor.sections.map(({kind,title,managed,empty:sectionEmpty}) => (
         <section className="card" key={kind}>
           <h2>{title}</h2>
-          {items
-            .filter((view) => view.item.kind === kind)
-            .map((view) => (
+          {managed.map(policy => {const view=policy.view;return (
               <div className="rigging-row" key={view.item.id}>
                 <button className="item-name" onClick={() => setEditing(view)}>
                   <strong>{view.item.name}</strong>
                   <span className="muted">
-                    {view.item.builtIn ? 'Built in' : view.item.packageRef ? 'Package' : 'Local'} ·{' '}
-                    {view.item.state === 'owned'
-                      ? 'Installed'
-                      : view.item.state === 'parked'
-                        ? 'Parked'
-                        : 'Loose'}
+                    {policy.origin} · {policy.stateLabel}
                   </span>
                 </button>
                 <div className="runtime-toggles">
-                  {props.data.runtimes.map((runtime) =>
-                    runtime.riggingKinds.includes(view.item.kind) ? (
+                  {policy.toggles.map((runtime) =>
+                    runtime.supported ? (
                       <label className="toggle" key={runtime.id}>
                         <input
                           type="checkbox"
-                          aria-label={`${view.item.name} for ${runtime.displayName}`}
+                          aria-label={`${view.item.name} for ${runtime.label}`}
                           checked={
                             pendingToggles[`${view.item.id}/${runtime.id}`] ??
-                            view.item.runtimes[runtime.id] ??
-                            false
+                            runtime.checked
                           }
-                          disabled={view.item.id === 'builtin_safety' || task.busy}
+                          disabled={runtime.locked || task.busy}
                           onChange={(event) => toggle(view, runtime.id, event.target.checked)}
                         />
-                        {runtime.displayName}
+                        {runtime.label}
                       </label>
                     ) : (
                       <span className="muted small-text" key={runtime.id}>
-                        Not supported by {runtime.displayName}
+                        Not supported by {runtime.label}
                       </span>
                     ),
                   )}
                 </div>
               </div>
-            ))}
+            );})}
           {disk.rows(kind)}
-          {!items.some((view) => view.item.kind === kind) &&
-            !disk.items.some((item) => item.kind === kind) && (
+          {sectionEmpty && (
               <p className="empty-inline">No {title.toLowerCase()} added.</p>
             )}
         </section>
       ))}
-      {editing && <ItemEditor view={editing} props={props} close={() => setEditing(undefined)} />}{' '}
+      {editing && <ItemEditor editor={editor} view={editing} props={props} close={() => setEditing(undefined)} />}{' '}
       {adding && (
-        <AddItem fromPackage={adding === 'package'} props={props} close={() => setAdding(undefined)} />
+        <AddItem editor={editor} fromPackage={adding === 'package'} props={props} close={() => setAdding(undefined)} />
       )}
       {disk.editor}
     </>

@@ -1,3 +1,4 @@
+import {RiggingEditorReadSchema,RiggingEditorActionSchema,RiggingEditorDetailReadSchema} from './rigging-editor.js';
 import {ContextEditorDeviceRequestSchema} from './context-editor.js';
 import {GitEditorCommandSchema} from './git-editor.js';
 import {FirstRunReadRequestSchema, FirstRunNextRequestSchema} from './first-run.js';
@@ -29,6 +30,9 @@ export type ProjectDefinitionCommand = z.infer<typeof ProjectDefinitionCommandSc
 export type ProjectDefinitionEditor = z.infer<typeof ProjectDefinitionEditorSchema>;
 export type ProjectDefinitionsView = z.infer<typeof ProjectDefinitionsViewSchema>;
 export const ProjectDefinitionPeerRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({schema:z.literal('project-definition-peer-request-v1'),operation:z.literal('rigging-view'),input:RiggingEditorReadSchema}),
+  z.strictObject({schema:z.literal('project-definition-peer-request-v1'),operation:z.literal('rigging-detail'),input:RiggingEditorDetailReadSchema}),
+  z.strictObject({schema:z.literal('project-definition-peer-request-v1'),operation:z.literal('rigging-action'),input:RiggingEditorActionSchema}),
   z.strictObject({schema:z.literal('project-definition-peer-request-v1'),operation:z.literal('git-view')}),
   z.strictObject({schema:z.literal('project-definition-peer-request-v1'),operation:z.literal('git-command'),input:GitEditorCommandSchema}),
   ...ContextEditorDeviceRequestSchema.options,

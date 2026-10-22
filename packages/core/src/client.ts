@@ -259,3 +259,5 @@ export * from './memory-editor.js';
 export * from './app-shell.js';
 
 export * from './device-management.js';
+
+export * from './rigging-editor.js';

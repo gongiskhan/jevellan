@@ -314,3 +314,5 @@ export * from './app-shell.js';
 export * from './device-management.js';
 
 export * from './owner-tool-maintenance.js';
+
+export * from './rigging-editor.js';
