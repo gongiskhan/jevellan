@@ -1,0 +1,49 @@
+import {afterEach,expect,test,vi} from 'vitest';
+import * as core from '../packages/core/dist/index.js';
+import {projectFixture,projectMember,type ProjectFixture} from './helpers/project-fixture.js';
+let f:ProjectFixture|undefined;afterEach(async()=>{vi.restoreAllMocks();await f?.close();f=undefined;});
+const device='device_fixture';
+const facts=(patch:Record<string,unknown>={})=>({schema:'first-run-facts-v1',deviceId:device,jevSaved:false,accounts:[{enabled:true,runtime:'fake',statuses:[{deviceId:device,auth:'ready'}]}],runtimes:[{id:'fake',enabled:true}],projects:[{paths:{[device]:'/simulated/project'}}],...patch});
+const view=(step:string|null=null,patch:Record<string,unknown>={})=>core.firstRunView(facts(patch),step);
+const read=(step:string|null=null)=>({schema:'first-run-read-request-v1',step});
+const next=(step:'jev'|'account'|'project'|'conversation')=>({schema:'first-run-next-request-v1',step});
+
+test('first run owns four ordered steps exact copy count and navigation paths',()=>{
+ const model=view();expect(model).toMatchObject({schema:'first-run-view-v1',deviceId:device,total:4,positionLabel:'Step 1 of 4',current:{id:'jev',number:1,label:'Jev key',title:'Connect Jev',explanation:'Add your Jev key to let it choose each next step, or skip to choose steps yourself.'}});expect(model.steps.map(row=>[row.id,row.label,row.number,row.path])).toEqual([['jev','Jev key',1,'/setup?step=jev'],['account','Account',2,'/setup?step=account'],['project','Project',3,'/setup?step=project'],['conversation','Conversation',4,'/setup?step=conversation']]);expect(model.paths).toEqual({read:'/api/setup/progress'});
+});
+test('first run preserves unknown step fallback rather than guessing a nearby step',()=>{
+ for(const step of [null,'unknown','ACCOUNT',' project '])expect(view(step).current.id).toBe('jev');expect(view('account').current).toMatchObject({number:2,title:'Add your first account'});expect(view('conversation').current).toMatchObject({number:4,title:'Start your first conversation'});
+});
+test('first run Jev actions preserve missing-key Skip and saved-key Continue',()=>{
+ expect(view().actions).toMatchObject({back:null,skip:{label:'Skip for now',path:'/setup?step=account'},next:{label:'Continue',enabled:false,request:{path:'/api/setup/next',body:next('jev')}}});expect(core.firstRunNext(view())).toMatchObject({allowed:false,path:null});expect(view('jev',{jevSaved:true}).actions).toMatchObject({skip:null,next:{enabled:true}});expect(core.firstRunNext(view('jev',{jevSaved:true}))).toMatchObject({allowed:true,path:'/setup?step=account',refusal:null});
+});
+test('first run account authentication requires enabled account runtime and ready status on this device',()=>{
+ expect(view('account')).toMatchObject({authenticatedOnDevice:true,hint:null,actions:{next:{enabled:true}}});for(const patch of [{accounts:[]},{accounts:[{enabled:false,runtime:'fake',statuses:[{deviceId:device,auth:'ready'}]}]},{runtimes:[{id:'fake',enabled:false}]},{accounts:[{enabled:true,runtime:'fake',statuses:[{deviceId:'other',auth:'ready'}]}]},{accounts:[{enabled:true,runtime:'fake',statuses:[{deviceId:device,auth:'checking'}]}]}]){const model=view('account',patch);expect(model).toMatchObject({authenticatedOnDevice:false,hint:'Continue when an account is Ready on this device.',actions:{next:{enabled:false}}});expect(core.firstRunNext(model)).toMatchObject({allowed:false,path:null});}
+});
+test('first run project Continue retains fresh membership check and exact refusal',()=>{
+ expect(view('project').actions.next?.enabled).toBe(true);expect(core.firstRunNext(view('project'))).toMatchObject({allowed:true,path:'/setup?step=conversation'});for(const projects of [[],[{paths:{other:'/simulated/project'}}],[{paths:{[device]:''}}],[{paths:{[device]:'/simulated/project'},allowedDevices:[]}],[{paths:{[device]:'/simulated/project'},allowedDevices:['other']}]]){const model=view('project',{projects});expect(model.projectOnDevice).toBe(false);expect(model.actions.next?.enabled).toBe(true);expect(core.firstRunNext(model)).toMatchObject({allowed:false,path:null,refusal:'Add a project on this device before continuing.'});}
+});
+test('first run Back and final-step actions never start a conversation themselves',()=>{
+ expect(view('project').actions.back).toEqual({label:'Back',path:'/setup?step=account'});expect(view('conversation').actions).toEqual({back:{label:'Back',path:'/setup?step=project'},skip:null,next:null});expect(core.firstRunNext(view('conversation'))).toMatchObject({allowed:false,path:null});
+});
+test('first run received documents are strict and navigation binds its fresh device view',()=>{
+ const model=view('account'),nav=core.firstRunNext(model);expect(core.FirstRunFactsSchema.safeParse(facts()).success).toBe(true);expect(core.FirstRunViewSchema.safeParse(model).success).toBe(true);expect(core.FirstRunNavigationSchema.safeParse(nav).success).toBe(true);expect(core.FirstRunFactsSchema.safeParse({...facts(),extra:true}).success).toBe(false);expect(core.FirstRunReadRequestSchema.safeParse({...read(),accounts:[]}).success).toBe(false);expect(core.FirstRunNextRequestSchema.safeParse({...next('account'),projects:[]}).success).toBe(false);expect(core.FirstRunNextRequestSchema.safeParse(next('unknown' as 'account')).success).toBe(false);expect(core.FirstRunNavigationSchema.safeParse({...nav,deviceId:'other'}).success).toBe(false);
+});
+test('first run HTTP and global owner tool reads work before a project exists without resolving one',async()=>{
+ f=await projectFixture({control:true});vi.spyOn(f.app.state.projects,'list').mockResolvedValue([]);const resolution=vi.spyOn(f.app.ownerTools,'resolveProject');const model=await f.json('/api/setup/progress?step=project',core.FirstRunViewSchema);expect(model).toMatchObject({deviceId:f.app.device.deviceId,projectOnDevice:false,current:{id:'project'}});expect(await f.app.ownerTools.call('config',{schema:'owner-tool-request-v1',caller:'cli',action:'setup_progress',args:{request:read('project')}})).toMatchObject({ok:true,data:model});expect(resolution).not.toHaveBeenCalled();expect(f.fake.runs).toHaveLength(0);
+});
+test('first run next rechecks current account facts instead of trusting a prior browser view',async()=>{
+ f=await projectFixture({control:true});const before=await f.json('/api/setup/progress?step=account',core.FirstRunViewSchema);expect(before.authenticatedOnDevice).toBe(true);vi.spyOn(f.app.accounts,'list').mockResolvedValue([]);const result=await f.json('/api/setup/next',core.FirstRunNavigationSchema,'POST',next('account'));expect(result).toMatchObject({deviceId:f.app.device.deviceId,allowed:false,path:null,view:{authenticatedOnDevice:false}});expect(f.fake.runs).toHaveLength(0);
+});
+test('first run next preserves project refusal and produces only a navigation read on success',async()=>{
+ f=await projectFixture({control:true});const result=await f.json('/api/setup/next',core.FirstRunNavigationSchema,'POST',next('project'));expect(result).toMatchObject({allowed:true,path:'/setup?step=conversation'});vi.spyOn(f.app.state.projects,'list').mockResolvedValue([]);expect(await f.json('/api/setup/next',core.FirstRunNavigationSchema,'POST',next('project'))).toMatchObject({allowed:false,refusal:'Add a project on this device before continuing.'});expect(f.fake.runs).toHaveLength(0);
+});
+test('first run normal APIs preserve authentication method and strict input bounds',async()=>{
+ f=await projectFixture({control:true});expect((await f.request('/api/setup/progress')).status).toBe(200);expect((await fetch(f.base+'/api/setup/progress')).status).toBe(401);expect((await f.request('/api/setup/progress?extra=true')).status).toBe(400);expect((await f.request('/api/setup/progress','POST',read())).status).toBe(405);expect((await f.request('/api/setup/next')).status).toBe(405);expect((await f.request('/api/setup/next','POST',{...next('project'),projects:[{paths:{}}]})).status).toBe(400);
+});
+test('first run member UI and headless reads use member account and project scope',async()=>{
+ f=await projectFixture({control:true});const member=await projectMember(f),account=f.app.hub.get('accounts','acc_member',core.AccountSchema)!;f.app.hub.put('accounts','acc_member',core.AccountSchema,{...account.document,enabled:false},account.revision);const project=(await f.app.state.projects.get('project'))!;await f.app.state.projects.put({...project.project,allowedDevices:[f.app.device.deviceId]},project.revision);const model=await member.json('/api/setup/progress?step=account',core.FirstRunViewSchema);expect(model).toMatchObject({deviceId:member.deviceId,authenticatedOnDevice:false,projectOnDevice:false});const hub=await f.json('/api/setup/progress?step=account',core.FirstRunViewSchema);expect(hub).toMatchObject({deviceId:f.app.device.deviceId,authenticatedOnDevice:true,projectOnDevice:true});expect(await f.app.ownerTools.call('config',{schema:'owner-tool-request-v1',caller:'cli',deviceId:member.deviceId,action:'setup_progress',args:{request:read('account')}})).toMatchObject({ok:true,data:model});expect(await f.app.ownerTools.call('config',{schema:'owner-tool-request-v1',caller:'cli',deviceId:member.deviceId,action:'setup_next',args:{request:next('project')}})).toMatchObject({ok:true,data:{deviceId:member.deviceId,allowed:false,path:null}});expect(f.fake.runs).toHaveLength(0);expect(member.fake.runs).toHaveLength(0);
+});
+test('first run public projection excludes account identifiers secrets and project paths',async()=>{
+ f=await projectFixture({control:true});const model=await f.json('/api/setup/progress?step=account',core.FirstRunViewSchema),encoded=JSON.stringify(model);expect(model.authenticatedOnDevice).toBe(true);expect(encoded).not.toContain('acc_fixture');expect(encoded).not.toContain(f.checkout);expect(encoded).not.toContain('statuses');expect(f.fake.runs).toHaveLength(0);
+});

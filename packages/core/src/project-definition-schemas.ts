@@ -1,3 +1,4 @@
+import {FirstRunReadRequestSchema, FirstRunNextRequestSchema} from './first-run.js';
 import { z } from 'zod';
 import { IdSchema, ProjectSchema } from './schemas.js';
 import { ProjectViewSchema, ProjectWriteSchema } from './conversation-schemas.js';
@@ -26,6 +27,8 @@ export type ProjectDefinitionCommand = z.infer<typeof ProjectDefinitionCommandSc
 export type ProjectDefinitionEditor = z.infer<typeof ProjectDefinitionEditorSchema>;
 export type ProjectDefinitionsView = z.infer<typeof ProjectDefinitionsViewSchema>;
 export const ProjectDefinitionPeerRequestSchema = z.discriminatedUnion('operation', [
+  z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('first-run-view'), input: FirstRunReadRequestSchema }),
+  z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('first-run-next'), input: FirstRunNextRequestSchema }),
   z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('setup-view'), projectId: IdSchema }),
   z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('view') }),
   z.strictObject({ schema: z.literal('project-definition-peer-request-v1'), operation: z.literal('read'), input: ProjectDefinitionReadSchema }),

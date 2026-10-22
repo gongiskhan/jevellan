@@ -1,3 +1,4 @@
+import {handleFirstRunApi} from './first-run-api.js';
 import { handleNativeViewerTitlePeer } from './native-viewer-title.js';
 import { handleConversationStartPeer } from './conversation-start-peer.js';
 import { ProjectSetupReadRequestSchema } from '@jevellan/core';
@@ -112,6 +113,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
       retryable = method === 'GET' || method === 'DELETE' || path === '/api/notifications/subscriptions';
       if (await handleNotificationsApi(app, request, response, url, token!)) return;
     }
+    if (path.startsWith('/api/setup/')) { retryable = true; if (await handleFirstRunApi(app, request, response, url)) return; }
     if (await handleTerminalApi(app, request, response, url, token!)) return;
     if (await handleDeviceCleanup(app, request, response, url, token)) return;
     if (await handleDeviceWorktrees(app, request, response, url, token)) return;

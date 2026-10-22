@@ -244,3 +244,5 @@ export * from './terminal-actions.js';
 export * from './health-editor.js';
 
 export * from './project-settings-setup.js';
+
+export * from './first-run.js';

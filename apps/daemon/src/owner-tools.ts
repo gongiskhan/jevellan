@@ -1,3 +1,4 @@
+import {firstRunDeviceOperation} from './first-run-device.js';
 import { ProjectStatusViewSchema } from '@jevellan/core';
 import { appendFileSync, mkdirSync, readFileSync, renameSync, existsSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -64,6 +65,11 @@ export class OwnerTools {
     const parsed = action.input.safeParse(rest);
     if (!parsed.success) return fail('invalid_arguments', invalidArguments(tool, tool.single ? '' : action.name, parsed.error));
     try {
+      if (tool.name === 'config' && (action.name === 'setup_progress' || action.name === 'setup_next')) {
+        const data = await firstRunDeviceOperation(this.app, request.deviceId ?? this.app.device.deviceId, action.name === 'setup_progress' ? 'view' : 'next', (parsed.data as { request?: unknown }).request);
+        log(true);
+        return OwnerToolResultSchema.parse({ schema: 'owner-tool-result-v1', ok: true, text: 'First-run setup.', data });
+      }
       await this.app.projectWork.ready;
       const project = await this.resolveProject(request, (parsed.data as { project?: unknown }).project); projectId = project.id;
       const handler = OWNER_HANDLERS[tool.name];
