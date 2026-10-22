@@ -4,14 +4,13 @@ import { DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
 import {
   CursorHookStateSchema, CursorMessageSchema, CursorSessionSchema, CursorListSchema, CursorTranscriptSchema,
-  readDocument, type CursorSession, type CursorMessage,
+  readDocument, NATIVE_SESSION_HISTORY_MS, type CursorSession, type CursorMessage,
 } from '@jevellan/core/cursor';
 import { cursorSessionId, cursorUserText, parseCursorTranscript } from './cursor-transcript.js';
 import { cursorActivity, cursorDisplayValue } from './cursor-activity.js';
 
 export type CursorReaderOptions = { home: string; userHome: string; deviceId: string; deviceName: string; projectPaths: string[] };
 type Source = { nativeId: string; file?: string; database?: string; session: CursorSession };
-const DAY = 86_400_000;
 const LIMIT = 8 * 1024 * 1024;
 function entries(path: string) {
   try { return readdirSync(path, { withFileTypes: true }); }
@@ -65,7 +64,7 @@ const MetadataRow = z.object({ id: z.string(), metadata: z.string(), toolStatus:
 function discover(options: CursorReaderOptions): { sources: Source[]; unavailable: string[]; excludedSessionIds: string[] } {
   const sources = new Map<string, Source>(); const unavailable: string[] = [];
   const subagents = new Set<string>();
-  const cutoff = Date.now() - 5 * DAY;
+  const cutoff = Date.now() - NATIVE_SESSION_HISTORY_MS;
   const base = (nativeId: string, title: string, cwd: string | null, at: number, state: CursorSession['state']): Source => ({
     nativeId,
     session: CursorSessionSchema.parse({ schema: 'cursor-session-v1', id: cursorSessionId(nativeId),

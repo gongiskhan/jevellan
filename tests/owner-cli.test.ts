@@ -35,6 +35,13 @@ test('CLI status exposes the shared cache view without starting work', async () 
   expect(result).toMatchObject({ ok: true, data: { historyView: { schema: 'session-history-view-v1', projectId: 'project', visible: false, entries: [] } } });
 });
 
+test('CLI native policy returns canonical runtime eligibility without reading native sessions', async () => {
+  f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['config', 'native_policy'], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0])));
+  expect(result).toMatchObject({ ok: true, data: { schema: 'native-conversation-policy-v1', historyDays: 5, followupHours: 7, runtimes: [{ runtime: 'cursor', canCompose: true }, { runtime: 'claude', canCompose: false }, { runtime: 'codex', canCompose: false }] } }); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('CLI thread view returns the shared presentation without steering work', async () => {
   f = await projectFixture({ control: true }); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Simulated CLI thread ready.' }), forThread());
   const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'cli_thread_presentation', title: 'CLI thread view', task: 'Inspect the simulated fixture.' });

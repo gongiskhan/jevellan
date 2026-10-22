@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { CursorListSchema, IdSchema, PeerLoginSessionInputSchema, DeviceOriginSchema, parseReply } from '@jevellan/core';
+import { CursorListSchema, IdSchema, PeerLoginSessionInputSchema, DeviceOriginSchema, parseReply, nativeConversationPolicy, NATIVE_SESSION_HISTORY_MS } from '@jevellan/core';
 import type { Application } from './application.js';
 import { json, requestBody } from './http.js';
 import { forwardOwner } from './owner-proxy.js';
@@ -28,6 +28,10 @@ export async function handleCursorApi(app: Application, request: IncomingMessage
     const body = method === 'POST' ? JSON.stringify(await requestBody(request)) : undefined;
     await forwardOwner(request, response, { url: upstream, ownerName: target.device.name, sourceDeviceId: app.device.deviceId, token: token!, stream: false, ...(body === undefined ? {} : { body }) });
     return true;
+  }
+  if (path === '/api/cursor/policy') {
+    if (method !== 'GET') throw fail('Unsupported method.', 405);
+    send(nativeConversationPolicy()); return true;
   }
   if (path === '/api/cursor/connections') {
     if (peer) throw fail('Configure the connection from its owning device.', 403);
@@ -71,7 +75,7 @@ export async function cursorListSource(app: Application, token?: string, peer = 
         const list = parseReply(CursorListSchema, await result.json()); cache.set(row.device.id, list); return list;
       } catch {
         return { schema: 'cursor-list-v1' as const, observedAt: new Date().toISOString(), unavailable: [`${row.device.name}: Cursor sessions are unavailable.`],
-          sessions: (cache.get(row.device.id)?.sessions ?? []).filter(session => Date.now() - Date.parse(session.lastActivityAt) < 5 * 86_400_000)
+          sessions: (cache.get(row.device.id)?.sessions ?? []).filter(session => Date.now() - Date.parse(session.lastActivityAt) < NATIVE_SESSION_HISTORY_MS)
             .map(session => ({ ...session, connected: false, state: 'unknown' as const, canSteer: false, canSend: false })) };
       }
     }));

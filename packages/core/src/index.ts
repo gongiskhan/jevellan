@@ -282,3 +282,4 @@ export * from './project-thread-reader.js';
 
 export * from './project-thread-read-state.js';
 export * from './project-thread-display.js';
+export * from './native-conversation-policy.js';

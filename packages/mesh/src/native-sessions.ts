@@ -3,13 +3,12 @@ import { readdirSync, statSync } from 'node:fs';
 import { basename, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
-import { CursorListSchema, CursorSessionSchema, CursorTranscriptSchema, type CursorSession } from '@jevellan/core/cursor';
+import { CursorListSchema, CursorSessionSchema, CursorTranscriptSchema, NATIVE_SESSION_HISTORY_MS, type CursorSession } from '@jevellan/core/cursor';
 import { readCursorSlice, type CursorReaderOptions } from './cursor-reader.js';
 import { nativeActivity, nativeObject, nativeRecords, parseNativeTranscript, type NativeRuntime } from './native-transcript.js';
 
 type Source = { file: string; session: CursorSession };
 type CursorTranscript = z.infer<typeof CursorTranscriptSchema>;
-const DAY = 86_400_000;
 export const nativeSessionId = (runtime: NativeRuntime, nativeId: string) => `${runtime}_${createHash('sha256').update(nativeId).digest('hex').slice(0, 32)}`;
 const displayTitle = (value: unknown) => typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, 160) : '';
 function entries(path: string) {
@@ -81,7 +80,7 @@ function codexTitles(root: string) {
 }
 function discover(options: CursorReaderOptions) {
   const sources = new Map<string, Source>(); const unavailable = new Set<string>();
-  const now = Date.now(); const cutoff = now - 5 * DAY;
+  const now = Date.now(); const cutoff = now - NATIVE_SESSION_HISTORY_MS;
   for (const runtime of ['claude', 'codex'] as const) {
     const label = runtime === 'claude' ? 'Claude Code' : 'Codex';
     const root = join(options.userHome, `.${runtime}`);

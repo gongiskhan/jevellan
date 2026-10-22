@@ -36,6 +36,12 @@ test('MCP status exposes the shared cache view without starting work', async () 
   expect(result).toMatchObject({ ok: true, data: { historyView: { schema: 'session-history-view-v1', projectId: 'project', visible: false, entries: [] } } });
 });
 
+test('MCP native policy shares canonical runtime eligibility without starting work', async () => {
+  f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'native_policy' } })).structuredContent);
+  expect(result).toMatchObject({ ok: true, data: { schema: 'native-conversation-policy-v1', historyDays: 5, followupHours: 7, runtimes: [{ runtime: 'cursor', canCompose: true }, { runtime: 'claude', canCompose: false }, { runtime: 'codex', canCompose: false }] } }); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP thread view shares header and composer presentation without steering work', async () => {
   f = await projectFixture({ control: true }); f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Simulated MCP thread ready.' }), forThread());
   const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'mcp_thread_presentation', title: 'MCP thread view', task: 'Inspect the simulated fixture.' });

@@ -2,7 +2,7 @@
 // database write: Cursor itself receives hook responses over this process's stdout.
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { CursorHookPayloadSchema, CursorMessageSchema, Homes, writeDocument } from '@jevellan/core/cursor';
+import { CursorHookPayloadSchema, CursorMessageSchema, Homes, writeDocument, CURSOR_FOLLOWUP_MS } from '@jevellan/core/cursor';
 import { cursorSessionId } from './cursor-transcript.js';
 import { cursorHookState, cursorMessages } from './cursor-reader.js';
 import { cursorLock, cursorMessagePath, saveCursorHookState } from './cursor-control.js';
@@ -23,7 +23,7 @@ async function main() {
   const now = () => new Date().toISOString();
   const stop = name === 'stop' || name === 'sessionEnd';
   const canHold = name === 'stop' && payload.status === 'completed';
-  const until = new Date(Date.now() + 7 * 60 * 60_000).toISOString();
+  const until = new Date(Date.now() + CURSOR_FOLLOWUP_MS).toISOString();
   cursorLock(home, id, () => {
     const old = cursorHookState(home, id);
     // A delayed hook from an earlier turn cannot overwrite the new turn.

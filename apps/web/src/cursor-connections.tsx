@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { CursorConnectionsSchema, CursorHookSetupSchema, type CursorConnection } from '@jevellan/core/client';
+import { CursorConnectionsSchema, CursorHookSetupSchema, NativeConversationPolicySchema, nativeConversationPolicy, type CursorConnection } from '@jevellan/core/client';
 import { api } from './api.js';
 import { clientId } from './client-id.js';
 import { useTask, type PageProps } from './components.js';
 
 export function CursorConnections({ props }: { props: PageProps }) {
+  const [policy, setPolicy] = useState(nativeConversationPolicy);
   const [connections, setConnections] = useState<CursorConnection[]>([]);
   const [editing, setEditing] = useState(false); const [configuration, setConfiguration] = useState('');
   const [name, setName] = useState('CSG'); const [user, setUser] = useState(''); const [port, setPort] = useState('');
@@ -15,6 +16,7 @@ export function CursorConnections({ props }: { props: PageProps }) {
   const task = useTask(props.onError);
   useEffect(() => {
     const controller = new AbortController();
+    void api('/api/cursor/policy', NativeConversationPolicySchema, 'GET', undefined, { signal: controller.signal }).then(setPolicy).catch(props.onError);
     void api('/api/cursor/connections', CursorConnectionsSchema, 'GET', undefined, { signal: controller.signal })
       .then(value => setConnections(value.connections)).catch(props.onError);
     return () => controller.abort();
@@ -25,7 +27,7 @@ export function CursorConnections({ props }: { props: PageProps }) {
   });
   return <section className="card cursor-connections">
     <h2>Native conversations</h2>
-    <p>Cursor, Claude Code and Codex sessions from the last five days appear alongside your conversations, with formatted history and activity indicators. Claude Code and Codex are read-only.</p>
+    <p>{policy.description}</p>
     <p className="muted small-text">CSG uses the SSH connection already carried by your VS Code dev tunnel. Jevellan does not open another tunnel or a listening port there.</p>
     {connections.map(connection => <div className="actions" key={connection.id}>
       <strong>{connection.name}</strong><span className="muted small-text">{connection.host ? `Existing SSH · ${connection.host}` : `Existing tunnel · ${connection.gateway ? connection.gateway.host + ' · ' : ''}port ${connection.port}`} </span>
@@ -55,7 +57,7 @@ export function CursorConnections({ props }: { props: PageProps }) {
       <button disabled={task.busy}>Save connection</button>
     </form>}
     {configuration && <details open><summary>Cursor hooks for message delivery</summary>
-      <p className="muted small-text">This configuration connects existing desktop conversations. Steering arrives after a tool call; queued messages become new turns when Cursor finishes. A completed session stays available for follow-up messages for up to seven hours. Existing hooks must be preserved when enabling this connection.</p>
+      <p className="muted small-text">{policy.hookDescription}</p>
       <pre><code>{configuration}</code></pre>
       <p className="muted small-text">This view does not change Cursor settings. After hooks are enabled, send a message in Cursor to connect that session.</p>
     </details>}

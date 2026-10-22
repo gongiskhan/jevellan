@@ -3,14 +3,14 @@ import { mergeTranscriptTurns } from './transcript-groups.js';
 import { useSessionList } from './session-list.js';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
-import { CursorListSchema, CursorTranscriptSchema, CursorMessageSchema } from '@jevellan/core/client';
+import { CursorListSchema, CursorTranscriptSchema, CursorMessageSchema, nativeRuntimePresentation } from '@jevellan/core/client';
 import { api } from './api.js';
 import { clientId } from './client-id.js';
 import { composerClearance, followOnScroll, repinAtEnd, useTask, type PageProps } from './components.js';
 import { MessageDelivery, MessageInput, LatestUserMessage } from './message-delivery.js';
 import './cursor-sessions.css';
 
-export const sessionRuntimeLabel = (runtime?: string) => runtime === 'claude' ? 'Claude Code' : runtime === 'codex' ? 'Codex' : 'Cursor';
+export const sessionRuntimeLabel = (runtime?: string) => nativeRuntimePresentation(runtime).label;
 
 export function useCursorSessions() {
   const [list, setList] = useState<z.infer<typeof CursorListSchema>>({ schema: 'cursor-list-v1', sessions: [], excludedSessionIds: [], unavailable: [], observedAt: new Date().toISOString() });
@@ -72,10 +72,10 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
   });
   const presentation = useSessionList();
   if (!view) return <p className="page-loading" role="status">{error || 'Opening conversation…'}</p>;
-  const runtimeLabel = sessionRuntimeLabel(session!.runtime);
+  const runtime = nativeRuntimePresentation(session!.runtime), runtimeLabel = runtime.label;
   const gateway = new URLSearchParams(query).get('gateway') ?? props.data.devices.currentDeviceId;
   const displayTitle = presentation.preferences.titles[`${gateway}:${session!.ownerDeviceId}:${id}`] ?? session!.title;
-  const isCursor = !session!.runtime || session!.runtime === 'cursor';
+  const isCursor = runtime.canCompose;
   const latest = view.activity.at(-1)?.blocks.at(-1);
   const lastUser = view.turns.findLast(turn => turn.role === 'user' && !turn.automated && turn.blocks.some(block => block.type === 'text' && block.text.trim()))?.blocks.flatMap(block => block.type === 'text' ? [block.text] : []).join('\n');
   return <div className="conversation-page cursor-conversation" ref={page}>
@@ -83,7 +83,7 @@ export function CursorConversationPage({ id, navigation, ...props }: PageProps &
       <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title">{displayTitle}</span></h1>
       <div className="conversation-meta">
         <span className="chip">{runtimeLabel}</span><span className="chip">{session!.project}</span><span className="chip">{session!.deviceName}</span>
-        {!isCursor && <span className="chip" title="Continue this session in its original application">Read only</span>}
+        {!isCursor && <span className="chip" title="Continue this session in its original application">{runtime.readOnlyLabel}</span>}
         <span className="chip" role="status">{connected && session!.state === 'working' && <span className="activity-spinner" aria-hidden="true" />}
           {!connected ? 'Reconnecting' : session!.state === 'working' ? 'Working' : session!.state === 'idle' ? 'Idle' : 'Activity unknown'}</span>
       </div>

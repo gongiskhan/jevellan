@@ -1,5 +1,5 @@
 import { ekoaEditor, prepareEkoaEditorSave } from '@jevellan/core';
-import { settingsNavigation } from '@jevellan/core';
+import { settingsNavigation, nativeConversationPolicy } from '@jevellan/core';
 import { ProjectRoutineSettingsSaveSchema, ProjectWorkSettingsSchema, ProjectWorkSettingsRequestSchema, NotificationBrowserFactsSchema } from '@jevellan/core';
 import { capLines, projectRoutineJobChoices, projectRoutineSettings, settingsEditorRigging, environmentSecretSummary, notificationEditor, projectNotificationInfo } from '@jevellan/projects';
 import { OwnerRefusal, type OwnerContext, type OwnerHandler } from '../owner-tools.js';
@@ -155,6 +155,7 @@ const accountSetter: Setter = async (context, key, value) => {
 export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
+    case 'native_policy': return { text: 'Native conversation policy.', data: nativeConversationPolicy() };
     case 'setup_view': return { text: 'Suggested setup.', data: await context.app.projectWork.setupView(context.project.id, String(args.proposal)) };
     case 'mirror_editor': return { text: 'Task mirror settings.', data: ekoaEditor(context.app.ekoa!.state()) };
     case 'mirror_preview': return { text: 'Task mirror settings.', data: ekoaEditor(context.app.ekoa!.state(), args.request) };

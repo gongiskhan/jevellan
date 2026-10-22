@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { z } from 'zod';
 import {
   CursorConnectionsSchema, CursorListSchema, CursorTranscriptSchema, CursorMessageSchema, CursorHookSetupSchema,
-  CursorMessageInputSchema, CursorHookInstallationSchema, readDocument, writeDocument, type CursorConnection, type Homes,
+  CursorMessageInputSchema, CursorHookInstallationSchema, readDocument, writeDocument, NATIVE_SESSION_HISTORY_MS, CURSOR_FOLLOWUP_MS, type CursorConnection, type Homes,
 } from '@jevellan/core/cursor';
 import type { CursorRequest } from './cursor-stdio.js';
 
@@ -90,7 +90,7 @@ export class CursorSessions {
           // An unavailable source must not make known sessions vanish.
           if (list.unavailable.length && cached) {
             const known = new Set([...list.sessions.map(row => row.id), ...list.excludedSessionIds]);
-            list.sessions.push(...cached.sessions.filter(row => !known.has(row.id) && Date.now() - Date.parse(row.lastActivityAt) < 5 * 86_400_000)
+            list.sessions.push(...cached.sessions.filter(row => !known.has(row.id) && Date.now() - Date.parse(row.lastActivityAt) < NATIVE_SESSION_HISTORY_MS)
               .map(row => ({ ...row, connected: false, state: 'unknown' as const, canSteer: false, canSend: false })));
           }
           this.#cache.set(target, list); return list;
@@ -100,7 +100,7 @@ export class CursorSessions {
       try { return await pending; }
       catch (error) {
         return { schema: 'cursor-list-v1' as const, observedAt: new Date().toISOString(), unavailable: [error instanceof Error ? error.message : 'Cursor is unavailable.'],
-          sessions: (cached?.sessions ?? []).filter(row => Date.now() - Date.parse(row.lastActivityAt) < 5 * 86_400_000)
+          sessions: (cached?.sessions ?? []).filter(row => Date.now() - Date.parse(row.lastActivityAt) < NATIVE_SESSION_HISTORY_MS)
             .map(row => ({ ...row, connected: false, state: 'unknown' as const, canSteer: false, canSend: false })) };
       }
     }));
@@ -122,7 +122,7 @@ export class CursorSessions {
     const helper = target ? join(dirname(target.helperPath), target.helperPath.endsWith('.mjs') ? 'cursor-hook.mjs' : 'cursor-hook.js') : installed?.hookPath ?? fileURLToPath(new URL('./cursor-hook.js', import.meta.url));
     const command = target?.hookCommand ?? installed?.command ?? `${quote(target?.nodePath ?? installed?.executable ?? process.execPath)} ${quote(helper)} ${quote(target?.home ?? this.homes.root)}`;
     return CursorHookSetupSchema.parse({ schema: 'cursor-hook-setup-v1', configuration: JSON.stringify({ version: 1, hooks: Object.fromEntries(
-      ['beforeSubmitPrompt', 'postToolUse', 'postToolUseFailure', 'afterAgentResponse', 'afterAgentThought', 'stop', 'sessionEnd'].map(name => [name, [{ command, timeout: name === 'stop' ? 25_260 : 10, ...(name === 'stop' ? { loop_limit: null } : {}) }]])
+      ['beforeSubmitPrompt', 'postToolUse', 'postToolUseFailure', 'afterAgentResponse', 'afterAgentThought', 'stop', 'sessionEnd'].map(name => [name, [{ command, timeout: name === 'stop' ? CURSOR_FOLLOWUP_MS / 1000 + 60 : 10, ...(name === 'stop' ? { loop_limit: null } : {}) }]])
     ) }, null, 2) });
   }
 }
