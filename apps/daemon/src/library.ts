@@ -1,3 +1,4 @@
+import {ProjectAttachmentRequestSchema,projectAttachmentMessage,projectAttachmentPolicy} from '@jevellan/core';
 import { LIBRARY_FOLDER_ALIAS, LIBRARY_INVALID_PAGE, LIBRARY_FILE_NOT_FOUND, LIBRARY_RELOAD, LIBRARY_CONTENT_TYPE, LIBRARY_THREAD_REQUIRED, LIBRARY_INVALID_FILE, LIBRARY_SHORT_NAME, LIBRARY_INCOMPLETE, LIBRARY_FILE_UNAVAILABLE, LIBRARY_HASH_FAILED } from '@jevellan/projects';
 import { createHash } from 'node:crypto';
 import { chmodSync, createReadStream, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
@@ -32,6 +33,12 @@ export class ProjectLibraryService implements ProjectLibrary {
       items.push(...page.items); cursor = page.next;
     } while (cursor);
     return items;
+  }
+  async attachmentPolicy(projectId: string) { await this.#project(projectId); return projectAttachmentPolicy(projectId); }
+  async attachmentMessage(projectId: string, raw: unknown) {
+    const input = ProjectAttachmentRequestSchema.parse(raw), rows = await this.list(projectId), byId = new Map(rows.map(item => [item.id, item]));
+    const items = input.itemIds.map(id => { const item = byId.get(id); if (!item) throw failure(LIBRARY_FILE_NOT_FOUND, 404); return item; });
+    return projectAttachmentMessage(projectId, input.text, items);
   }
   async page(projectId: string, after?: string) {
     const rows = await this.list(projectId), start = after ? rows.findIndex(item => item.id === after) + 1 : 0;

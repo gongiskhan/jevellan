@@ -356,9 +356,6 @@ export const PROPOSED_TASKS = 'Proposed tasks';
 
 export const LIBRARY = 'Library';
 export const ATTACH_FILES = 'Attach files';
-export const ATTACHMENT_LIMIT = 'Attach up to 10 files per message.';
-export const LIBRARY_TOO_LARGE = 'Files up to 50 MB.';
-export const LIBRARY_UPLOAD_FAILED = 'The file could not be uploaded.';
 export const removeAttachment = (name: string) => `Remove ${name}`;
 export const LIBRARY_UPLOAD = 'Upload';
 export const LIBRARY_FILTERS = { all: 'All', owner: 'Uploads', thread: 'From threads' };
@@ -375,7 +372,6 @@ export const LIBRARY_EMPTY = 'Nothing in the library yet. Attach files to a mess
 export const RIGGING_PROJECTS = 'Projects';
 export const RIGGING_ALL_PROJECTS = 'All projects';
 
-export const libraryFileSize = (size: number) => size >= 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)} MB` : size >= 1024 ? `${(size / 1024).toFixed(1)} KB` : `${size} B`;
 
 // Compatible endpoints
 export { ACCOUNT_ENDPOINT_COPY as ENDPOINT } from '@jevellan/core/client';
@@ -390,3 +386,5 @@ export const SETUP_FILL_VALUES = 'Fill in their values in Project settings → E
 export { SETUP_LABELS, setupGoalLabel, setupApplied } from '@jevellan/core/client';
 
 export { THREAD_STATE_LABELS as STATE_LABELS } from '@jevellan/core/client';
+
+export { PROJECT_ATTACHMENT_LIMIT_MESSAGE as ATTACHMENT_LIMIT, PROJECT_ATTACHMENT_SIZE_MESSAGE as LIBRARY_TOO_LARGE, PROJECT_ATTACHMENT_UPLOAD_FAILED as LIBRARY_UPLOAD_FAILED, projectAttachmentFileSize as libraryFileSize } from '@jevellan/core/client';

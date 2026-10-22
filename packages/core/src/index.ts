@@ -271,3 +271,5 @@ export * from './project-stream-state.js';
 export * from './project-coordinator-composer.js';
 
 export * from './project-notebook-editor.js';
+
+export * from './project-attachments.js';

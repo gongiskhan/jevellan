@@ -1,3 +1,4 @@
+import {projectAttachmentAdmission,projectAttachmentUpload,projectAttachmentPreparation,projectAttachmentMessage,ProjectAttachmentMessageSchema} from '@jevellan/core/client';
 import { useEffect, useRef, useState, type ClipboardEvent, type DragEvent } from 'react';
 import { EmptySchema, ErrorDocumentSchema, LibraryListSchema, ProjectLibraryItemSchema, type ProjectLibraryItem } from '@jevellan/core/client';
 import { api, ApiError } from './api.js';
@@ -15,8 +16,8 @@ export async function libraryItems(projectId: string, reload = false): Promise<P
 }
 export const fileSize = copy.libraryFileSize;
 export async function uploadLibrary(projectId: string, file: File, signal?: AbortSignal) {
-  if (file.size > 50 * 1024 * 1024) throw new Error(copy.LIBRARY_TOO_LARGE);
-  const response = await fetch(`${base(projectId)}/uploads/${encodeURIComponent(file.name)}`, { method: 'PUT', credentials: 'same-origin', redirect: 'error', body: file, headers: { 'Content-Type': file.type || 'application/octet-stream' }, ...(signal ? { signal } : {}) });
+  const upload = projectAttachmentUpload({ schema: 'project-attachment-upload-request-v1', projectId, name: file.name, mime: file.type, size: file.size });
+  const response = await fetch(upload.path, { method: 'PUT', credentials: 'same-origin', redirect: 'error', body: file, headers: { 'Content-Type': upload.mime }, ...(signal ? { signal } : {}) });
   const value: unknown = await response.json(); if (!response.ok) { const error = ErrorDocumentSchema.safeParse(value); throw new ApiError(error.success ? error.data.message : copy.LIBRARY_UPLOAD_FAILED, response.status); }
   const item = ProjectLibraryItemSchema.parse(value); lists.delete(projectId); return item;
 }
@@ -24,7 +25,8 @@ type Attached = { key: number; file: File; item?: ProjectLibraryItem };
 /** Uploaded entries survive a failed send; a retry never uploads those bytes twice. */
 export function useProjectAttachments(projectId: string, onError: (error: unknown) => void) {
   const [entries, setEntries] = useState<Attached[]>([]), sequence = useRef(0);
-  const add = (files: File[]) => setEntries(previous => { if (previous.length + files.length > 10) { queueMicrotask(() => onError(new Error(copy.ATTACHMENT_LIMIT))); return previous; } if (files.some(file => file.size > 50 * 1024 * 1024)) { queueMicrotask(() => onError(new Error(copy.LIBRARY_TOO_LARGE))); return previous; } return [...previous, ...files.map(file => ({ key: ++sequence.current, file }))]; });
+  const preparation = useRef<ReturnType<typeof projectAttachmentPreparation> | undefined>(undefined); preparation.current ??= projectAttachmentPreparation();
+  const add = (files: File[]) => setEntries(previous => { const admission = projectAttachmentAdmission({ schema: 'project-attachment-admission-request-v1', existingCount: previous.length, files: files.map(file => ({ size: file.size })) }); if (!admission.allowed) { queueMicrotask(() => onError(new Error(admission.refusal!))); return previous; } return [...previous, ...files.map(file => ({ key: ++sequence.current, file }))]; });
   return { entries, add, remove: (key: number) => setEntries(previous => previous.filter(entry => entry.key !== key)),
     paste: (event: ClipboardEvent) => { const files = [...event.clipboardData.items].filter(item => item.kind === 'file' && item.type.startsWith('image/')).flatMap(item => { const file = item.getAsFile(); return file ? [file] : []; }); if (files.length) { event.preventDefault(); add(files); } },
     dragOver: (event: DragEvent) => { if (event.dataTransfer.types.includes('Files')) event.preventDefault(); },
@@ -32,8 +34,11 @@ export function useProjectAttachments(projectId: string, onError: (error: unknow
     prepare: async (text: string, signal: AbortSignal) => {
       const selected = [...entries]; const items: ProjectLibraryItem[] = [];
       for (const entry of selected) { const item = entry.item ?? await uploadLibrary(projectId, entry.file, signal); entry.item = item; setEntries(previous => previous.map(row => row.key === entry.key ? { ...row, item } : row)); items.push(item); }
-      return { text: `${text.trim()}${items.length ? `\n\n${items.map(item => `Attached file: library/${item.path} (${item.mime}, ${fileSize(item.size)})`).join('\n')}` : ''}`.trim(),
-        clear: () => setEntries(previous => previous.filter(row => !selected.some(entry => entry.key === row.key))) };
+      const snapshot = { schema: 'project-attachment-context-v1', projectId, text, entries: selected.map((entry, i) => ({ key: entry.key, itemId: items[i]!.id })) };
+      const message = items.length ? await preparation.current!.prepare(snapshot, request => api(`${base(projectId)}/attachments`, ProjectAttachmentMessageSchema, 'POST', request, { signal, waitForHub: true })) : projectAttachmentMessage(projectId, text, []);
+      return { text: message.text,
+        clear: () => { preparation.current!.clear(snapshot); setEntries(previous => previous.filter(row => !selected.some(entry => entry.key === row.key))); } };
+
     } };
 }
 export function AttachmentControls({ attachments, disabled }: { attachments: ReturnType<typeof useProjectAttachments>; disabled: boolean }) {

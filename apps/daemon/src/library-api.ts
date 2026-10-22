@@ -4,7 +4,7 @@ import { open } from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
 import { IdSchema } from '@jevellan/core';
 import type { Application } from './application.js';
-import { json } from './http.js';
+import { json, requestBody } from './http.js';
 const failure = (message: string, status = 400) => Object.assign(new Error(message), { status });
 /** Owner and authenticated device routes share the streaming implementation. */
 export async function handleLibrary(app: Application, request: IncomingMessage, response: ServerResponse, url: URL, ownerSession?: string, deviceId?: string): Promise<boolean> {
@@ -12,6 +12,8 @@ export async function handleLibrary(app: Application, request: IncomingMessage, 
   if (!match || !(url.pathname.startsWith('/hub/mesh/library/') || /\/library(?:\/|$)/u.test(url.pathname))) return false;
   const projectId = IdSchema.parse(match[1]), tail = match[2] ?? '', method = request.method ?? 'GET';
   const owner = () => { if (!ownerSession) throw failure('Sign in to Jevellan.', 401); };
+  if (tail === 'attachment-policy' && method === 'GET') { json(response, await app.library.attachmentPolicy(projectId)); return true; }
+  if (tail === 'attachments' && method === 'POST') { owner(); json(response, await app.library.attachmentMessage(projectId, await requestBody(request))); return true; }
   if (!tail && method === 'GET') { json(response, await app.library.page(projectId, url.searchParams.get('after') ?? undefined)); return true; }
   const upload = tail.match(/^(uploads|outputs\/([A-Za-z0-9_-]+)|jobs\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+))\/(.+)$/u);
   if (upload && method === 'PUT') {

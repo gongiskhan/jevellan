@@ -19,7 +19,7 @@ test('the tool route answers status with text and logs every call, refusing unkn
   expect(String(first.body.text)).toMatch(/^\S+ · coordinator \w+/u);
   expect(String(first.body.text)).toContain('Nothing waiting on you.');
   expect((await call('nothing', { args: {} })).body).toMatchObject({ ok: false, error: { code: 'unknown_tool', text: `There is no tool nothing. Tools: ${OWNER_TOOLS.map(tool => tool.name).join(', ')}.` } });
-  expect((await call('work', { action: 'juggle', args: {} })).body).toMatchObject({ ok: false, error: { code: 'unknown_action', text: 'work takes list, add, reorder, cancel, inspect, editor, preview, save, queue_view, task_edit_view, task_draft, task_command, task_page_view, chat_view, chat_card_view, coordinator_composer, coordinator_command, notebook_view, notebook_command.' } });
+  expect((await call('work', { action: 'juggle', args: {} })).body).toMatchObject({ ok: false, error: { code: 'unknown_action', text: 'work takes list, add, reorder, cancel, inspect, editor, preview, save, queue_view, task_edit_view, task_draft, task_command, task_page_view, chat_view, chat_card_view, coordinator_composer, coordinator_command, notebook_view, notebook_command, attachment_policy, attachment_message.' } });
   expect((await call('status', { args: { section: 'everything' } })).body).toMatchObject({ ok: false, error: { code: 'invalid_arguments' } });
   expect((await call('status', { args: { project: 'missing' } })).body).toMatchObject({ ok: false, error: { code: 'project_unknown', text: `Which project? Known projects: ${f.project.name}.` } });
   expect((await call('status', { args: {} }, { Origin: 'http://example.test' })).status).toBe(401);
