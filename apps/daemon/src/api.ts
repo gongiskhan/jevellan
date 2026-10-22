@@ -10,6 +10,7 @@ import { ownerConversationSidebar } from './conversation-sidebar-view.js';
 import { ekoaEditor, prepareEkoaEditorSave, prepareEkoaEditorConnect, EkoaEditorPreviewSchema, EkoaEditorSaveSchema, EkoaEditorConnectSchema } from '@jevellan/core';
 import { CleanupSettingsSaveSchema } from '@jevellan/core';
 import { handleProjectDefinitionsPeer } from './project-definition-device.js';
+import { handleNativeConnectionsPeer } from './native-connection-device.js';
 import { GlobalThreadLimitSaveSchema, ProjectDefinitionReadSchema, ProjectDefinitionPreviewSchema, ProjectDefinitionSaveSchema } from '@jevellan/core';
 import { AccountEditorReadSchema, AccountEditorSaveSchema } from '@jevellan/core';
 import { RuntimeSettingsSaveSchema } from '@jevellan/core';
@@ -79,6 +80,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path) && !DEVICE_WORKTREES_ROUTE.test(path) && !DEVICE_CLEANUP_ROUTE.test(path) && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
     if (path === '/api/mesh/conversation-start') { await handleConversationStartPeer(app, request, response); return; }
     if (path === '/api/mesh/project-definitions') { await handleProjectDefinitionsPeer(app, request, response); return; }
+    if (path === '/api/mesh/native-connections') { await handleNativeConnectionsPeer(app, request, response); return; }
     if (path.startsWith('/api/mesh/devices/') && await handleDeviceCleanup(app, request, response, url)) return;
     if (path.startsWith('/api/mesh/devices/') && await handleDeviceWorktrees(app, request, response, url)) return;
     if (path === '/api/agent-peer') { await handleAgentPeer(app, request, response); return; }

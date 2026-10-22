@@ -3,6 +3,7 @@ import { CursorListSchema, IdSchema, PeerLoginSessionInputSchema, DeviceOriginSc
 import type { Application } from './application.js';
 import { json, requestBody } from './http.js';
 import { forwardOwner } from './owner-proxy.js';
+import { nativeConnectionsDeviceOperation } from './native-connection-device.js';
 
 const peerPrefix = '/api/mesh/cursor';
 const snapshots = new WeakMap<Application, Map<string, ReturnType<typeof CursorListSchema.parse>>>();
@@ -32,6 +33,13 @@ export async function handleCursorApi(app: Application, request: IncomingMessage
   if (path === '/api/cursor/policy') {
     if (method !== 'GET') throw fail('Unsupported method.', 405);
     send(nativeConversationPolicy()); return true;
+  }
+  if (path === '/api/cursor/connections/editor' || path === '/api/cursor/connections/command') {
+    if (peer) throw fail('Configure the connection from its owning device.', 403);
+    const reading = path.endsWith('/editor');
+    if (method !== (reading ? 'GET' : 'POST')) throw fail('Unsupported method.', 405);
+    send(await nativeConnectionsDeviceOperation(app, app.device.deviceId, { schema: 'native-connections-operation-v1', deviceId: app.device.deviceId,
+      ...(reading ? { operation: 'read' } : { operation: 'command', request: await requestBody(request) }) })); return true;
   }
   if (path === '/api/cursor/connections') {
     if (peer) throw fail('Configure the connection from its owning device.', 403);

@@ -35,6 +35,14 @@ test('CLI status exposes the shared cache view without starting work', async () 
   expect(result).toMatchObject({ ok: true, data: { historyView: { schema: 'session-history-view-v1', projectId: 'project', visible: false, entries: [] } } });
 });
 
+test('CLI native connection editor and captured command share normalized canonical settings', async () => {
+  f = await projectFixture({ control: true }); const core = await import('../packages/core/dist/index.js'); f.app.cursor.list = async () => core.CursorListSchema.parse({ schema: 'cursor-list-v1', sessions: [], unavailable: [], observedAt: new Date().toISOString() }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  expect(await callCommand(['config', 'native_connections_editor'], f.homes)).toBe(0);
+  const result = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); expect(result.ok).toBe(true); if (!result.ok) throw new Error('Editor refused.'); const editor = core.NativeConnectionsEditorSchema.parse(result.data);
+  const command = core.nativeConnectionAddCommand(editor.context, { ...editor.fields, name: 'CLI fixture', user: 'fixture', port: '2222', host: ' host.test ', helperPath: '/simulated/cursor-stdio.mjs', home: '/simulated/home' }); output.mockClear(); expect(await callCommand(['config', 'native_connections_command', '--request', JSON.stringify(command)], f.homes)).toBe(0);
+  const saved = OwnerToolResultSchema.parse(JSON.parse(String(output.mock.calls.find(row => String(row[0]).startsWith('{'))?.[0]))); expect(saved).toMatchObject({ ok: true, data: { schema: 'native-connections-saved-v1', editor: { rows: [{ connection: { id: editor.context.draftId, host: 'host.test', port: 2222 }, summary: { text: 'Existing SSH · host.test' } }] } } }); expect(f.app.cursor.connections().connections).toHaveLength(1); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('CLI native policy returns canonical runtime eligibility without reading native sessions', async () => {
   f = await projectFixture({ control: true }); const output = vi.spyOn(console, 'log').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined);
   expect(await callCommand(['config', 'native_policy'], f.homes)).toBe(0);

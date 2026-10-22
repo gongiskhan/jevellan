@@ -1,4 +1,5 @@
 import {ProjectThreadReadRequestSchema} from './project-thread-read-state.js';
+import {NativeConnectionCommandSchema} from './native-connection-editor.js';
 import {ProjectLibraryMessageRequestSchema} from './project-library-message.js';
 import {ProjectLibraryViewRequestSchema,ProjectLibraryDeleteSchema} from './project-library-view.js';
 import {ProjectAttachmentRequestSchema} from './project-attachments.js';
@@ -138,7 +139,7 @@ export const OWNER_TOOLS: readonly OwnerToolDefinition[] = [
       write('set', { section: z.string().min(1).max(40), key: z.string().min(1).max(120), value: z.union([z.string().max(4000), z.number(), z.boolean()]) }),
       write('add_health_check', { check: z.record(z.string(), z.unknown()) }), write('edit_health_check', { check: z.record(z.string(), z.unknown()) }),
       write('add_account', { label: z.string().min(1).max(80), runtime: z.enum(['claude', 'codex']), budgetPercent: z.number().int().min(1).max(100).optional() }), write('remove_account', { label: z.string().min(1).max(80) }),
-      write('set_secret', { name: z.string().regex(/^[A-Z][A-Z0-9_]{0,127}$/u), value: z.string().min(1).max(20000) }), read('native_policy', {}, true)] },
+      write('set_secret', { name: z.string().regex(/^[A-Z][A-Z0-9_]{0,127}$/u), value: z.string().min(1).max(20000) }), read('native_policy', {}, true), read('native_connections_editor', {}, true), write('native_connections_command', { request: NativeConnectionCommandSchema }, true)] },
   { name: 'login', description: 'Log an account in, or check logins. Returns a link, and a code when the provider uses one, for the owner to open. When a Claude login shows a code after approval, call complete with that code.',
     actions: [write('start', { account: z.string().min(1).max(80), interactive: z.boolean().optional().describe('An interactive Claude login, which remote control needs.') }), write('complete', { account: z.string().min(1).max(80), code: z.string().min(1).max(4000) }), read('status', { account: z.string().min(1).max(80).optional() })] },
 ];

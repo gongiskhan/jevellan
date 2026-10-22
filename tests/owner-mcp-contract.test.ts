@@ -36,6 +36,12 @@ test('MCP status exposes the shared cache view without starting work', async () 
   expect(result).toMatchObject({ ok: true, data: { historyView: { schema: 'session-history-view-v1', projectId: 'project', visible: false, entries: [] } } });
 });
 
+test('MCP native connection editor and captured command share normalized canonical settings', async () => {
+  f = await projectFixture({ control: true }); const core = await import('../packages/core/dist/index.js'); f.app.cursor.list = async () => core.CursorListSchema.parse({ schema: 'cursor-list-v1', sessions: [], unavailable: [], observedAt: new Date().toISOString() }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
+  const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'native_connections_editor' } })).structuredContent); expect(result.ok).toBe(true); if (!result.ok) throw new Error('Editor refused.'); const editor = core.NativeConnectionsEditorSchema.parse(result.data), command = core.nativeConnectionAddCommand(editor.context, { ...editor.fields, name: 'MCP fixture', user: 'fixture', port: '2222', host: ' host.test ', helperPath: '/simulated/cursor-stdio.mjs', home: '/simulated/home' });
+  const saved = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'native_connections_command', request: command } })).structuredContent); expect(saved).toMatchObject({ ok: true, data: { schema: 'native-connections-saved-v1', editor: { rows: [{ connection: { id: editor.context.draftId, host: 'host.test', port: 2222 }, summary: { text: 'Existing SSH · host.test' } }] } } }); expect(f.app.cursor.connections().connections).toHaveLength(1); expect(f.fake.runs).toHaveLength(0);
+});
+
 test('MCP native policy shares canonical runtime eligibility without starting work', async () => {
   f = await projectFixture({ control: true }); const mcp = await connect({ JEVELLAN_HOME: f.homes.root });
   const result = OwnerToolResultSchema.parse((await mcp.callTool({ name: 'config', arguments: { action: 'native_policy' } })).structuredContent);

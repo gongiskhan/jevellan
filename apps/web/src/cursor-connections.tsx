@@ -1,59 +1,57 @@
 import { useEffect, useState } from 'react';
-import { CursorConnectionsSchema, CursorHookSetupSchema, NativeConversationPolicySchema, nativeConversationPolicy, type CursorConnection } from '@jevellan/core/client';
+import { CursorHookSetupSchema, NativeConversationPolicySchema, NativeConnectionsEditorSchema, NativeConnectionsSavedSchema,
+  nativeConversationPolicy, nativeConnectionAddCommand, nativeConnectionFieldsView, type NativeConnectionFields, type NativeConnectionsEditor } from '@jevellan/core/client';
 import { api } from './api.js';
-import { clientId } from './client-id.js';
 import { useTask, type PageProps } from './components.js';
 
+type Draft = { context: NativeConnectionsEditor['context']; fields: NativeConnectionFields };
 export function CursorConnections({ props }: { props: PageProps }) {
   const [policy, setPolicy] = useState(nativeConversationPolicy);
-  const [connections, setConnections] = useState<CursorConnection[]>([]);
+  const [editor, setEditor] = useState<NativeConnectionsEditor>();
+  const [draft, setDraft] = useState<Draft>();
   const [editing, setEditing] = useState(false); const [configuration, setConfiguration] = useState('');
-  const [name, setName] = useState('CSG'); const [user, setUser] = useState(''); const [port, setPort] = useState('');
-  const [host, setHost] = useState('');
-  const [identity, setIdentity] = useState(''); const [helper, setHelper] = useState('');
-  const [node, setNode] = useState('/usr/bin/node'); const [home, setHome] = useState('');
-  const [gateway, setGateway] = useState(''); const [gatewayUser, setGatewayUser] = useState('');
   const task = useTask(props.onError);
   useEffect(() => {
     const controller = new AbortController();
     void api('/api/cursor/policy', NativeConversationPolicySchema, 'GET', undefined, { signal: controller.signal }).then(setPolicy).catch(props.onError);
-    void api('/api/cursor/connections', CursorConnectionsSchema, 'GET', undefined, { signal: controller.signal })
-      .then(value => setConnections(value.connections)).catch(props.onError);
+    void api('/api/cursor/connections/editor', NativeConnectionsEditorSchema, 'GET', undefined, { signal: controller.signal })
+      .then(value => { setEditor(value); setDraft(current => current ?? { context: value.context, fields: value.fields }); }).catch(props.onError);
     return () => controller.abort();
   }, [props.onError]);
   const hooks = (deviceId: string) => task.run(async () => {
     const value = await api(`/api/cursor/hooks?deviceId=${encodeURIComponent(deviceId)}`, CursorHookSetupSchema);
     setConfiguration(value.configuration);
   });
+  const change = (key: keyof NativeConnectionFields, value: string) => setDraft(current => current ? { ...current, fields: { ...current.fields, [key]: value } } : current);
+  const fields = draft?.fields, fieldView = fields ? nativeConnectionFieldsView(fields) : undefined;
   return <section className="card cursor-connections">
     <h2>Native conversations</h2>
     <p>{policy.description}</p>
     <p className="muted small-text">CSG uses the SSH connection already carried by your VS Code dev tunnel. Jevellan does not open another tunnel or a listening port there.</p>
-    {connections.map(connection => <div className="actions" key={connection.id}>
-      <strong>{connection.name}</strong><span className="muted small-text">{connection.host ? `Existing SSH · ${connection.host}` : `Existing tunnel · ${connection.gateway ? connection.gateway.host + ' · ' : ''}port ${connection.port}`} </span>
-      <button className="secondary" disabled={task.busy} onClick={() => void hooks(connection.id)}>Review Cursor hooks</button>
+    {editor?.rows.map(row => <div className="actions" key={row.connection.id}>
+      <strong>{row.connection.name}</strong><span className="muted small-text">{row.summary.text} </span>
+      <button className="secondary" disabled={task.busy} onClick={() => void hooks(row.connection.id)}>Review Cursor hooks</button>
       <button className="text-button" disabled={task.busy} onClick={() => void task.run(async () => {
-        const value = await api('/api/cursor/connections', CursorConnectionsSchema, 'POST', { schema: 'cursor-connections-v1', connections: connections.filter(row => row.id !== connection.id) });
-        setConnections(value.connections);
+        const value = await api('/api/cursor/connections/command', NativeConnectionsSavedSchema, 'POST', row.remove);
+        setEditor(value.editor);
       })}>Disconnect</button>
     </div>)}
-    <div className="actions"><button className="secondary" onClick={() => setEditing(!editing)}>{editing ? 'Close' : 'Add existing SSH connection'}</button>
+    <div className="actions"><button className="secondary" disabled={!draft} onClick={() => setEditing(!editing)}>{editing ? 'Close' : 'Add existing SSH connection'}</button>
       <button className="secondary" disabled={task.busy} onClick={() => void hooks(props.data.devices.currentDeviceId)}>Review hooks for this device</button></div>
-    {editing && <form className="cursor-connection-form" onSubmit={event => { event.preventDefault(); void task.run(async () => {
-      const connection = { id: `cursor_remote_${clientId()}`, name, user, port: Number(port), ...(host.trim() ? { host: host.trim() } : {}), nodePath: node, home, helperPath: helper, ...(identity.trim() ? { identityFile: identity.trim() } : {}), ...(gateway.trim() ? { gateway: { host: gateway.trim(), user: gatewayUser.trim() } } : {}) };
-      const value = await api('/api/cursor/connections', CursorConnectionsSchema, 'POST', { schema: 'cursor-connections-v1', connections: [...connections, connection] });
-      setConnections(value.connections); setEditing(false);
+    {editing && draft && fields && editor && fieldView && <form className="cursor-connection-form" onSubmit={event => { event.preventDefault(); void task.run(async () => {
+      const value = await api('/api/cursor/connections/command', NativeConnectionsSavedSchema, 'POST', nativeConnectionAddCommand(draft.context, fields));
+      setEditor(value.editor); setDraft({ context: value.editor.context, fields }); setEditing(false);
     }); }}>
-      <label>Device name<input required value={name} onChange={event => setName(event.target.value)} /></label>
-      <label>Remote user<input required value={user} onChange={event => setUser(event.target.value)} autoComplete="off" /></label>
-      <label>SSH host (optional)<input placeholder="127.0.0.1 for an existing dev tunnel" value={host} onChange={event => setHost(event.target.value)} /></label>
-      <label>Existing SSH port<input type="number" required min={1} max={65535} value={port} onChange={event => setPort(event.target.value)} /></label>
-      <label>Gateway hosting the tunnel (optional)<input placeholder="Leave empty when the tunnel connects here" value={gateway} onChange={event => setGateway(event.target.value)} /></label>
-      {gateway.trim() && <label>Gateway user<input required value={gatewayUser} onChange={event => setGatewayUser(event.target.value)} /></label>}
-      <label>SSH identity file (optional)<input placeholder={gateway.trim() ? 'Absolute path on the gateway' : 'Absolute path on this device'} value={identity} onChange={event => setIdentity(event.target.value)} /></label>
-      <label>Installed session reader on the remote device<input required placeholder="/…/cursor/bridge/…/cursor-stdio.mjs" value={helper} onChange={event => setHelper(event.target.value)} /></label>
-      <label>Node executable on the remote device<input required value={node} onChange={event => setNode(event.target.value)} /></label>
-      <label>Jevellan data folder on the remote device<input required placeholder="/home/…/.jevellan" value={home} onChange={event => setHome(event.target.value)} /></label>
+      <label>Device name<input required value={fields.name} onChange={event => change('name', event.target.value)} /></label>
+      <label>Remote user<input required value={fields.user} onChange={event => change('user', event.target.value)} autoComplete="off" /></label>
+      <label>SSH host (optional)<input placeholder="127.0.0.1 for an existing dev tunnel" value={fields.host} onChange={event => change('host', event.target.value)} /></label>
+      <label>Existing SSH port<input type="number" required min={editor.port.min} max={editor.port.max} value={fields.port} onChange={event => change('port', event.target.value)} /></label>
+      <label>Gateway hosting the tunnel (optional)<input placeholder="Leave empty when the tunnel connects here" value={fields.gatewayHost} onChange={event => change('gatewayHost', event.target.value)} /></label>
+      {fieldView.gatewayVisible && <label>Gateway user<input required value={fields.gatewayUser} onChange={event => change('gatewayUser', event.target.value)} /></label>}
+      <label>SSH identity file (optional)<input placeholder={fieldView.identityPlaceholder} value={fields.identityFile} onChange={event => change('identityFile', event.target.value)} /></label>
+      <label>Installed session reader on the remote device<input required placeholder="/…/cursor/bridge/…/cursor-stdio.mjs" value={fields.helperPath} onChange={event => change('helperPath', event.target.value)} /></label>
+      <label>Node executable on the remote device<input required value={fields.nodePath} onChange={event => change('nodePath', event.target.value)} /></label>
+      <label>Jevellan data folder on the remote device<input required placeholder="/home/…/.jevellan" value={fields.home} onChange={event => change('home', event.target.value)} /></label>
       <button disabled={task.busy}>Save connection</button>
     </form>}
     {configuration && <details open><summary>Cursor hooks for message delivery</summary>

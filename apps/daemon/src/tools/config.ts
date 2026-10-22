@@ -7,6 +7,7 @@ import { ownerCoordinatorEditorSave } from '../project-work-api.js';
 import { ProjectSettingsUndoRequestSchema } from '@jevellan/core';
 import { ProjectSettingsEditorSchema } from '@jevellan/core';
 import { deviceAboutView } from '@jevellan/mesh';
+import { nativeConnectionsDeviceOperation } from '../native-connection-device.js';
 
 const yesNo = (value: boolean) => value ? 'yes' : 'no';
 async function routineView({ app, tools, project }: OwnerContext) {
@@ -156,6 +157,12 @@ export const config: OwnerHandler = async (context) => {
   const { args } = context;
   switch (context.action) {
     case 'native_policy': return { text: 'Native conversation policy.', data: nativeConversationPolicy() };
+    case 'native_connections_editor': case 'native_connections_command': {
+      const deviceId = context.request.deviceId ?? context.app.device.deviceId;
+      return { text: context.action === 'native_connections_editor' ? 'Native session connections.' : 'Connection settings saved.',
+        data: await nativeConnectionsDeviceOperation(context.app, deviceId, { schema: 'native-connections-operation-v1', deviceId,
+          ...(context.action === 'native_connections_editor' ? { operation: 'read' } : { operation: 'command', request: args.request }) }) };
+    }
     case 'setup_view': return { text: 'Suggested setup.', data: await context.app.projectWork.setupView(context.project.id, String(args.proposal)) };
     case 'mirror_editor': return { text: 'Task mirror settings.', data: ekoaEditor(context.app.ekoa!.state()) };
     case 'mirror_preview': return { text: 'Task mirror settings.', data: ekoaEditor(context.app.ekoa!.state(), args.request) };
