@@ -45,6 +45,24 @@ const publish = (thread: Thread, over: Partial<WorktreePublication> = {}) => pub
 const verifications = (threadId: string) => ledgers.thread('proj_a', threadId).events().filter((event) => event.type === 'thread-verification').map((event) => event.data);
 const pullPosts = () => github.requests.filter((request) => request.method === 'POST' && request.path === '/repos/fixture/repo/pulls');
 
+test('one project PR poll validates its repository once while refreshing every open pull', async () => {
+  const thread = await prepared('thread_poll_batch', 'Poll batch'); commit(thread.cwd, { 'greeting.txt': 'hello\n' });
+  const published = await publish(thread); if (published.outcome.kind !== 'pr') throw new Error('Fixture PR not opened');
+  threads.update(thread.id, current => ({ ...current, state: 'idle', pr: published.outcome.kind === 'pr' ? published.outcome.pr : undefined }));
+  for (const id of ['thread_poll_two', 'thread_poll_three']) threads.create({ ...threads.get(thread.id)!, id }, { modelLabel: 'Swift', accountLabel: 'Work' });
+  let validations = 0; const repository = worktrees.repository.bind(worktrees);
+  worktrees.repository = value => { validations++; return repository(value); };
+  const tracker = new PullRequestTracker({ threads, github: access, git, worktrees, project: async () => project, toCoordinator: async () => undefined, redactor, now: () => now });
+  const gets = () => github.requests.filter(request => request.method === 'GET' && /^\/repos\/fixture\/repo\/pulls\/\d+$/u.test(request.path)).length;
+  try {
+    const before = gets(); await tracker.poll(); expect(gets() - before).toBe(3);
+    expect(validations, 'Repeated repository discovery must not fork Git for each PR in the same project poll.').toBe(1);
+    await tracker.poll(); expect(validations).toBe(2); expect(gets() - before).toBe(6);
+    await tracker.refresh(thread.id); expect(validations).toBe(3); expect(gets() - before).toBe(7);
+    run(checkout, 'remote', 'remove', 'origin'); await tracker.poll(); expect(validations).toBe(4); expect(gets() - before).toBe(7);
+  } finally { await tracker.close(); }
+});
+
 test('PR polling keeps the last state during a hub credential outage and resumes without duplicate notices', async () => {
   const thread = await prepared('thread_outage', 'Outage recovery'); commit(thread.cwd, { 'greeting.txt': 'hello\n' });
   const published = await publish(thread); if (published.outcome.kind !== 'pr') throw new Error('Fixture PR not opened');

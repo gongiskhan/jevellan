@@ -36,7 +36,8 @@ export function coordinatorReplyFromRecords(projectId: string, clientMessageId: 
 const PublishStateSchema = z.strictObject({ schema: z.literal('project-journal-publish-state-v1'), cursors: z.record(z.string(), z.number().int().nonnegative()) });
 const digest = (bytes: string | Buffer): string => createHash('sha256').update(bytes).digest('hex');
 const refuse = (text: string, status = 409): Error => Object.assign(new Error(text), { status });
-type JournalLedgerIndex = { head: number; bytes: number; latest: Map<string, import('@jevellan/core').ProjectLedgerEvent>;
+type JournalLedgerIndex = { head: number; revision: number; bytes: number; latest: Map<string, import('@jevellan/core').ProjectLedgerEvent>;
+  blobs: Map<string, { event: import('@jevellan/core').ProjectLedgerEvent; generation: string }>;
   records: ProjectJournalRecord[]; documents: Map<string, JournalDocument>; handoffs: CoordinatorHandoff[] };
 export type JournalOptions = { homes: Homes; deviceId: string; isHub: boolean; ledgers: ProjectLedgers; hub: ProjectHub;
   projects(): Promise<Project[]>; threads(projectId: string): Thread[]; now(): number;
@@ -55,17 +56,32 @@ export class ProjectJournals {
   constructor(readonly o: JournalOptions) {}
   #index(ledger: ProjectLedger): JournalLedgerIndex {
     // lastId validates every segment generation, including corruption outside the requested tail.
-    const head = ledger.lastId(), prior = this.#indexes.get(ledger);
-    const index: JournalLedgerIndex = prior ?? { head: 0, bytes: 0, latest: new Map(), records: [], documents: new Map(), handoffs: [] };
+    const head = ledger.lastId(), revision = ledger.validationRevision(); let prior = this.#indexes.get(ledger);
+    if (prior && head < prior.head) throw refuse('The project journal ledger moved backwards.');
+    if (prior && revision !== prior.revision) {
+      this.#indexBytes -= prior.bytes; this.#indexes.delete(ledger); this.#rendered.delete(ledger.projectId); prior = undefined;
+    }
+    const index: JournalLedgerIndex = prior ?? { head: 0, revision, bytes: 0, latest: new Map(), blobs: new Map(), records: [], documents: new Map(), handoffs: [] };
     const before = index.bytes;
     try {
-      if (head < index.head) throw refuse('The project journal ledger moved backwards.');
+      for (const entry of index.blobs.values()) {
+        const generation = ledger.dataGeneration(entry.event)!;
+        if (generation !== entry.generation) {
+          ledger.data(entry.event);
+          if (generation !== ledger.dataGeneration(entry.event)) throw refuse('The project journal blob changed during validation.');
+          entry.generation = generation;
+        }
+      }
       if (head !== index.head) for (const event of ledger.events(index.head)) {
         if (['journal-config', 'journal-thread', 'journal-source', 'journal-document', 'coordinator-handoff'].includes(event.type)) {
           index.latest.set(event.type, event); index.bytes += Buffer.byteLength(JSON.stringify(event));
-          if (event.type === 'journal-source') index.records.push(ledger.payload(event as typeof event & { type: 'journal-source' }));
-          if (event.type === 'journal-document') { const data = ledger.payload(event as typeof event & { type: 'journal-document' }); index.documents.set(`${data.collection}:${data.key}`, data); }
-          if (event.type === 'coordinator-handoff') index.handoffs.push(ledger.payload(event as typeof event & { type: 'coordinator-handoff' }));
+          const generation = ledger.dataGeneration(event);
+          const data = ledger.payload(event);
+          if (generation !== ledger.dataGeneration(event)) throw refuse('The project journal blob changed during validation.');
+          if (generation !== undefined) { index.blobs.set(JSON.stringify(event.data), { event, generation }); index.bytes += Buffer.byteLength(JSON.stringify(data)); }
+          if (event.type === 'journal-source') index.records.push(data as ProjectJournalRecord);
+          if (event.type === 'journal-document') { const document = data as JournalDocument; index.documents.set(`${document.collection}:${document.key}`, document); }
+          if (event.type === 'coordinator-handoff') index.handoffs.push(data as CoordinatorHandoff);
         }
         index.head = event.id;
       }

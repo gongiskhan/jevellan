@@ -83,6 +83,8 @@ export class PullRequestTracker {
    */
   poll(): Promise<void> {
     this.#polling ??= (async () => {
+      // One repository snapshot per project in this poll; on-demand reads and the next poll discover it afresh.
+      const repositories = new Map<string, Promise<GitHubRepository>>();
       for (const thread of this.#o.threads.all()) {
         if (this.#closed) break;
         if (thread.pr?.state === 'open') {
@@ -90,7 +92,7 @@ export class PullRequestTracker {
             const budget = await (await this.#o.github.open(thread.projectId)).rateLimit(), slow = budget && budget.remaining / budget.limit < 0.2 && budget.resetAt > this.#o.now();
             if (slow && !this.#budgetNotices.has(thread.projectId)) { this.#budgetNotices.add(thread.projectId); this.#notice(thread, 'GitHub has less than 20% of its request budget remaining. Pull requests refresh every five minutes until it resets.'); }
             if (!slow) this.#budgetNotices.delete(thread.projectId);
-            if (!slow || this.#o.now() - (this.#lastPoll.get(thread.id) ?? 0) >= 300_000) { this.#lastPoll.set(thread.id, this.#o.now()); await this.#read(thread.id, false).catch(() => undefined); }
+            if (!slow || this.#o.now() - (this.#lastPoll.get(thread.id) ?? 0) >= 300_000) { this.#lastPoll.set(thread.id, this.#o.now()); await this.#read(thread.id, false, repositories).catch(() => undefined); }
           } catch (error) { this.#readFailure(thread, error); }
         }
       }
@@ -108,8 +110,14 @@ export class PullRequestTracker {
     return repository;
   }
   /** `fromUrl`: a thread on another device is read from its pull request's own address, without this device's checkout (3.5.1 step 8). */
-  async #fetch(projectId: string, pr: PullRequestState, fromUrl = false): Promise<PullRequestState> {
-    const repository = (fromUrl ? parseGitHubPullUrl(pr.url) : null) ?? await this.#repository(projectId); const client = await this.#o.github.open(projectId);
+  async #fetch(projectId: string, pr: PullRequestState, fromUrl = false, repositories?: Map<string, Promise<GitHubRepository>>): Promise<PullRequestState> {
+    let repository = fromUrl ? parseGitHubPullUrl(pr.url) : null;
+    if (!repository) {
+      let pending = repositories?.get(projectId);
+      if (!pending) { pending = this.#repository(projectId); repositories?.set(projectId, pending); }
+      repository = await pending;
+    }
+    const client = await this.#o.github.open(projectId);
     const pull = await client.getPull(repository, pr.number);
     const open = !pull.merged && pull.state === 'open';
     const checked = open ? await client.checkState(repository, pull.headSha) : { checks: pr.checks, passedChecks: pr.passedChecks };
@@ -125,7 +133,7 @@ export class PullRequestTracker {
     if (this.#errors.get(thread.id) !== kind) { this.#errors.set(thread.id, kind); this.#notice(thread, prStatusUnavailable(message)); }
     return message;
   }
-  #read(threadId: string, wait: boolean): Promise<Read> {
+  #read(threadId: string, wait: boolean, repositories?: Map<string, Promise<GitHubRepository>>): Promise<Read> {
     return this.#serial(threadId, async () => {
       const thread = this.#o.threads.get(threadId); if (!thread) throw refuse(THREAD_NOT_FOUND, 404);
       if (!thread.pr) return { pr: null, reason: NO_PULL_REQUEST };
@@ -133,7 +141,7 @@ export class PullRequestTracker {
       const pending = this.#transitions.get(threadId);
       if (pending) { if (wait) await pending; return { pr: this.#o.threads.get(threadId)?.pr ?? thread.pr }; }
       let next: PullRequestState;
-      try { next = await this.#fetch(thread.projectId, thread.pr); }
+      try { next = await this.#fetch(thread.projectId, thread.pr, false, repositories); }
       catch (error) {
         const message = this.#readFailure(thread, error);
         return { pr: thread.pr, reason: message };

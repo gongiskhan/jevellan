@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { EnvNameSchema, ProjectEnvNameSchema } from './project-parity-schemas.js';
 
 export function projectEnvironment(values: Record<string, string> = {}, scope: 'runtime' | 'command' = 'runtime'): Record<string, string> {
@@ -51,15 +52,37 @@ function inPlaceFolder(folder: string, root = join(homedir(), '.jevellan')): boo
 
 export class SecretRedactor {
   #secrets = new Set<string>();
-  add(secret: string): void { if (secret) this.#secrets.add(secret); }
+  #ordered: string[] | undefined;
+  // Keep only digests and redacted outputs, never a second copy of raw credentials or transcripts.
+  #texts = new Map<string, string>();
+  #textBytes = 0;
+  add(secret: string): void {
+    if (!secret || this.#secrets.has(secret)) return;
+    this.#secrets.add(secret); this.#ordered = undefined; this.#texts.clear(); this.#textBytes = 0;
+  }
   text(value: string): string {
+    // UTF-16 preserves distinct unpaired surrogates (UTF-8 would replace both with U+FFFD).
+    const key = value.length <= 65536 ? createHash('sha256').update(value, 'utf16le').digest('hex') : undefined;
+    if (key !== undefined) {
+      const cached = this.#texts.get(key);
+      if (cached !== undefined) { this.#texts.delete(key); this.#texts.set(key, cached); return cached; }
+    }
     let result = value;
-    for (const secret of [...this.#secrets].sort((a, b) => b.length - a.length)) result = result.split(secret).join('[redacted]');
-    return result
+    this.#ordered ??= [...this.#secrets].sort((a, b) => b.length - a.length);
+    for (const secret of this.#ordered) result = result.split(secret).join('[redacted]');
+    result = result
       .replace(/\b(?:sk-(?:ant-)?[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/g, '[redacted]')
       .replace(/\bjva_[A-Za-z0-9_-]{1,128}\.[A-Za-z0-9_-]{43}\b/g, '[redacted]')
       .replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+\b/g, '[redacted]')
       .replace(/(Bearer\s+)\S+/gi, '$1[redacted]');
+    if (key !== undefined && result.length <= 65536) {
+      this.#texts.set(key, result); this.#textBytes += 128 + result.length * 2;
+      while (this.#texts.size > 4096 || this.#textBytes > 4 * 1024 * 1024) {
+        const first = this.#texts.keys().next().value!;
+        this.#textBytes -= 128 + this.#texts.get(first)!.length * 2; this.#texts.delete(first);
+      }
+    }
+    return result;
   }
   /**
    * A cumulative output snapshot's safe prefix. An unfinished credential (or UTF-16 pair) stays in the

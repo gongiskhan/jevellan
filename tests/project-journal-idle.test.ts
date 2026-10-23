@@ -48,3 +48,28 @@ test('an idle large journal stays cheap to synchronize and still repairs missing
     expect(readFileSync(day, 'utf8')).toContain(`Recorded update ${count}.`);
   } finally { await journal.close(); database.close(); rmSync(root, { recursive: true, force: true }); }
 }, 60_000);
+
+test.each(['blob', 'source'])('warm journal projections retain %s validation on rebuild', async kind => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan-journal-validation-'))); mkdirSync(join(root, 'user'));
+  const homes = new Homes(join(root, 'hub'), join(root, 'user')); homes.ensure(); const database = new HubDatabase(homes, 'hub');
+  const project = ProjectSchema.parse({ schema: 'project-v1', id: 'project', name: 'Shop', paths: {}, branchPolicy: 'main', memory: { mode: 'repo', dir: '.memory' }, context: { state: 'none' } });
+  database.put('projects', project.id, ProjectSchema, project, 0);
+  const ledgers = new ProjectLedgers(new ProjectPaths(homes)), ledger = ledgers.coordinator(project.id);
+  const journal = new ProjectJournals({ homes, deviceId: 'hub', isHub: true, ledgers, hub: new HubProjectAccess(database, 'hub'), projects: async () => [project], threads: () => [], now: () => Date.parse('2026-10-14T10:00:00.000Z') });
+  try {
+    const event = ledger.append({ type: 'journal-source', data: { schema: 'project-journal-record-v1', deviceId: 'peer', ledgerId: 'coordinator', event: {
+      schema: 'project-ledger-event-v1', id: 1, t: '2026-10-14T10:00:00.000Z', type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: kind === 'blob' ? 'Before '.repeat(10000) : 'Before' },
+    } } });
+    await journal.sync(project.id);
+    if (kind === 'blob') {
+      expect(event.data).toMatchObject({ schema: 'blob-ref-v1' });
+      const blob = join(ledger.dir, (event.data as { ref: string }).ref);
+      writeFileSync(blob, readFileSync(blob, 'utf8').replace('Before', 'After_'));
+      await expect(journal.sync(project.id, true)).rejects.toThrow('integrity');
+    } else {
+      const file = ledger.segments()[0]!; writeFileSync(file, readFileSync(file, 'utf8').replace('Before', 'After_'));
+      await journal.sync(project.id, true);
+      expect(readFileSync(join(journal.path(project.id), 'days/2026-10-14.md'), 'utf8')).toContain('After_');
+    }
+  } finally { await journal.close(); database.close(); rmSync(root, { recursive: true, force: true }); }
+});

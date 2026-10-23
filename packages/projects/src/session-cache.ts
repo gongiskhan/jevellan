@@ -13,7 +13,7 @@ export function cacheWindowMinutes(configured: number, homes: Homes, environment
   return Number(override);
 }
 export function cacheRecords(ledger: ProjectLedger): SessionTurnCache[] {
-  return ledger.events().flatMap(event => event.type === 'session-turn-cache' ? [ledger.payload(event as typeof event & { type: 'session-turn-cache' })] : []);
+  return ledger.events(0, Number.MAX_SAFE_INTEGER, 'session-turn-cache').map(event => ledger.payload(event as typeof event & { type: 'session-turn-cache' }));
 }
 const privateSessionKey = (sessionId: string): string => createHash('sha256').update(sessionId).digest('hex');
 export function sameCacheSession(record: SessionTurnCache, owner: TurnInput['owner'], sessionId: string, runtime: string, accountId: string): boolean {

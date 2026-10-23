@@ -44,6 +44,7 @@ export class JsonlLedger<E extends LedgerEnvelope> {
   readonly #now: () => string;
   readonly #listeners = new Set<(event: E) => void>();
   readonly #validated = new Map<string, ValidatedSegment<E>>();
+  #revision = 0;
   constructor(readonly dir: string, spec: LedgerSpec<E>, options: LedgerOptions = {}) {
     if (!isAbsolute(dir) || resolvedPath(dir) !== dir) throw new Error(`${spec.label} directories cannot alias another location.`);
     this.#spec = spec;
@@ -77,7 +78,7 @@ export class JsonlLedger<E extends LedgerEnvelope> {
   /** Validate every segment, including records outside a requested range. Changed files are read in full. */
   #readSegments(): E[][] {
     const paths = this.segments(), present = new Set(paths), result: E[][] = []; let expected = 1;
-    for (const [path, entry] of this.#validated) if (!present.has(path)) forgetSegment(entry);
+    for (const [path, entry] of this.#validated) if (!present.has(path)) { forgetSegment(entry); this.#revision++; }
     for (const path of paths) {
       const signature = segmentSignature(path), previous = this.#validated.get(path);
       if (previous?.signature === signature && previous.firstId === expected) {
@@ -97,6 +98,7 @@ export class JsonlLedger<E extends LedgerEnvelope> {
         if (event.id !== expected++) throw new Error(`${this.#spec.label} ledger event sequence is broken.`);
         records.push(event);
       }
+      if (!extendsPrevious) this.#revision++;
       // Never associate a snapshot with a generation that changed while it was being read.
       if (signature === segmentSignature(path)) {
         if (previous) forgetSegment(previous);
@@ -107,14 +109,22 @@ export class JsonlLedger<E extends LedgerEnvelope> {
     }
     return result;
   }
-  events(afterId = 0, limit = Number.MAX_SAFE_INTEGER): E[] {
+  events(afterId = 0, limit = Number.MAX_SAFE_INTEGER, type?: E['type']): E[] {
     if (!Number.isSafeInteger(afterId) || afterId < 0 || !Number.isSafeInteger(limit) || limit < 1) throw new Error('Invalid ledger range.');
     const result: E[] = [];
-    for (const records of this.#readSegments()) for (const event of records) if (event.id > afterId && result.length < limit) result.push(structuredClone(event));
+    for (const records of this.#readSegments()) for (const event of records) if (event.id > afterId && result.length < limit && (type === undefined || event.type === type)) result.push(structuredClone(event));
     return result;
   }
   /** Corruption anywhere still stops the caller; an unchanged validated generation needs no repeated JSON parsing. */
   lastId(): number { return this.#readSegments().findLast(records => records.length > 0)?.at(-1)?.id ?? 0; }
+  /** An append preserves the validated prefix; replacement, rewrite or an evicted prefix requires projections to rebuild. */
+  validationRevision(): number { this.#readSegments(); return this.#revision; }
+  /** A blob's checked path and file generation; consumers still verify its content hash whenever this changes. */
+  dataGeneration(event: E): string | undefined {
+    const value = event.data;
+    return value && typeof value === 'object' && 'schema' in value && value.schema === 'blob-ref-v1'
+      ? segmentSignature(this.path(BlobReferenceSchema.parse(value).ref)) : undefined;
+  }
   putBlob(content: unknown): BlobReference {
     this.#ensure();
     const document = BlobDocumentSchema.parse({ schema: 'conversation-blob-v1', content: this.#redactor.document(content) });
