@@ -498,3 +498,6 @@ Projects parity closing starts2026-10-18T01:25:00Z after P9 push b5b2dd43. P0–
 Closing regressions: dropped Git2.56 mappings now require an exact zero-change tree proof; named member install/update/rollback paths preserve the independent hub; refresh sweeps coalesce and drain before shutdown. Their failed-before evidence is retained. The full backend run and clean four-layout Nightly reproduction are running; full browser, closing review, release activation and LP journeys remain gates.
 
 Closing regression: Decision906 makes completed-job cleanup durable; backend and the reached four-layout LJ5 failure are being rerun. Build and live deadlines are unchanged.
+
+
+23October decision328: release0.7.6 from51ddef4a plus version/notes with the owner-approved focused urgent gate; strict guarded cold-backup hub update first,member when resources permit. Run full backend after installation and retain findings for the next release. Live CPU target is under about20percent with one or two UI tabs; no live recovery claimed before measurement.

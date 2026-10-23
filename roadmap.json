@@ -1184,7 +1184,7 @@
   {
     "id": "hub-stream-head-responsiveness",
     "title": "Keep browser event replay responsive on large history",
-    "why": "Source follow-up replaces four full-history SSEhead copies with validated lastId. Initial10.1s replay fails/repeats; candidatewholecase410ms. Three-client daemon case fails on verified075at36.44s but passes candidatewholecase1.73s. Static/31distinct backendcases/two desktopchatjourneys6exactimages pass. Installed075CPUgoal stillfailed; nextpatch needs explicit releaseauthorization. Fullfollowupbackend/visionnotrun.",
+    "why": "51ddef4a focused gate passes31distinct affected/daemon cases,two desktop chat journeys/six images and static checks. Exact075daemon comparison fails36.44s while candidate wholecase passes1.73s. Owner explicitly authorizes076 plus version/notes,strict hub-first coldbackup/install,member when load permits. Full backend required after install; live idleCPUunderabout20percent with1-2UI tabs remains pending.",
     "status": "in-progress"
   },
   {
@@ -1192,5 +1192,11 @@
     "title": "Handle project instructions above the runtime default limit",
     "why": "Next authorized scope: preserve large project instructions and runtime eligibility through supported managed-session limits,including attach and first-turn transcript/report behavior. Do not truncate owner instructions,change native homes or retry/reorder real project work just to pass. Failing-first implementation and verification planned after the hub CPU repair.",
     "status": "planned"
+  },
+  {
+    "id": "release-076",
+    "title": "Release focused stream responsiveness repair as 0.7.6",
+    "why": "Explicit owner authorization: exact51ddef4a implementation plus version/notes,focused urgent gate,strict guarded cold-backup hub-first normal installation; member when load permits. Full backend afterwards,findings nextrelease. Publication,installation and underabout20percent idleCPU with1-2UI tabs remain pending. No extra review or production action.",
+    "status": "in-progress"
   }
 ]
