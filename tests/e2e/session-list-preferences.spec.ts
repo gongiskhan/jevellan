@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures.js';
-import { CursorListSchema } from '../../packages/core/dist/client.js';
+import { CursorListSchema, nativeListReady } from '../../packages/core/dist/client.js';
 
 test('SESSIONS1 canonical preferences preserve rename, order, stale responses and reconnects', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
@@ -10,7 +10,7 @@ test('SESSIONS1 canonical preferences preserve rename, order, stale responses an
     { schema: 'cursor-session-v1', id: second, runtime: 'claude', ownerDeviceId: device, deviceName: 'Fixture device', title: 'Native Beta', cwd: '/fixture/project', project: 'Fixture project', state: 'idle', lastActivityAt: new Date().toISOString(), connected: true, canSteer: false, canSend: false },
   ], excludedSessionIds: [], unavailable: [] });
   // Only native provider input is simulated; preference reads/writes use the normal fixture daemon.
-  await page.context().route('**/api/cursor', route => route.fulfill({ json: list }));
+  await page.context().route('**/api/cursor/list-view', route => route.fulfill({ json: nativeListReady(list) }));
   await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible(); await page.goto('/new');
   const alpha = page.locator(`[data-session-id="${key(first)}"]`), beta = page.locator(`[data-session-id="${key(second)}"]`);

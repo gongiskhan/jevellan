@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect } from './fixtures.js';
 import { closeConversationSettings, openConversationSettings } from './navigation.js';
-import { ConversationPublicSchema, DeviceRosterSchema, conversationPagePresentation } from '../../packages/core/dist/client.js';
+import { ConversationPublicSchema, DeviceRosterSchema, conversationControlsView, conversationPagePresentation } from '../../packages/core/dist/client.js';
 
 test('conversation renders its first snapshot while a replay refresh is pending', async ({ page }) => {
   const login = await page.request.post('/api/auth/login', { data: { schema: 'passphrase-input-v1', passphrase: 'jevellan-browser-fixture' } });
@@ -42,7 +42,7 @@ test('pending work shows a live stage while controls stay compact', async ({ pag
   const view = ConversationPublicSchema.parse(await created.json());
   await page.context().route(`**/api/conversations/${id}`, route => {
     const snapshot = ConversationPublicSchema.parse({ ...view, busy: true, progress: { schema: 'conversation-progress-v1', phase: 'deciding', since: new Date().toISOString() } });
-    return route.fulfill({ json: { ...snapshot, presentation: conversationPagePresentation(snapshot) } });
+    return route.fulfill({ json: { ...snapshot, controls: conversationControlsView(snapshot), presentation: conversationPagePresentation(snapshot) } });
   });
   await page.goto(`/conversations/${id}`);
   const activity = page.getByRole('region', { name: 'Current activity' });

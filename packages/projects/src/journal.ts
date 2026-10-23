@@ -44,6 +44,7 @@ export type JournalOptions = { homes: Homes; deviceId: string; isHub: boolean; l
 /** The existing ledgers remain authoritative. Only this hub projection writes Markdown; members install verified mirrors. */
 export class ProjectJournals {
   readonly #running = new Map<string, Promise<void>>();
+  readonly #publications = new Map<string, Promise<number>>();
   #timer: ReturnType<typeof setInterval> | undefined;
   #closed = false;
   constructor(readonly o: JournalOptions) {}
@@ -125,7 +126,7 @@ export class ProjectJournals {
       const flush = async () => {
         if (!records.length) return;
         const request: ProjectJournalRequest = { schema: 'project-journal-request-v1', projectId, operation: 'publish', records };
-        if (this.o.isHub) this.#accept(request, this.o.deviceId); else {
+        if (this.o.isHub) await this.#accept(request, this.o.deviceId); else {
           const result = await this.o.request?.(request); if (!result || result.operation !== 'publish') throw refuse('The project journal hub is unavailable.');
         }
         published.cursors[id] = cursor; writeDocument(statePath, PublishStateSchema, published); records = []; bytes = 0;
@@ -190,7 +191,17 @@ export class ProjectJournals {
       if (stableJson(recorded.get(`${data.collection}:${data.key}`)) !== stableJson(data)) ledger.append({ type: 'journal-document', data });
     }
   }
-  #accept(request: Extract<ProjectJournalRequest, { operation: 'publish' }>, deviceId: string): number {
+  #accept(request: Extract<ProjectJournalRequest, { operation: 'publish' }>, deviceId: string): Promise<number> {
+    const prior = this.#publications.get(request.projectId) ?? Promise.resolve(0);
+    const work = prior.catch(() => 0).then(() => this.#acceptRecords(request, deviceId));
+    this.#publications.set(request.projectId, work);
+    const finished = () => { if (this.#publications.get(request.projectId) === work) this.#publications.delete(request.projectId); };
+    void work.then(finished, finished);
+    return work;
+  }
+  async #acceptRecords(request: Extract<ProjectJournalRequest, { operation: 'publish' }>, deviceId: string): Promise<number> {
+    // Large histories make each durable append expensive. Serve HTTP between records while keeping publication serialized.
+    await yieldRequests();
     const ledger = this.o.ledgers.coordinator(request.projectId), previous = new Map(this.#records(request.projectId).map(record => [journalRecordKey(record), record])); let accepted = 0;
     for (const record of request.records) {
       if (record.deviceId !== deviceId || record.event.type === 'journal-source') throw refuse('Journal records must come from their own device.', 403);
@@ -199,6 +210,7 @@ export class ProjectJournals {
       const key = journalRecordKey(record), prior = previous.get(key);
       if (prior) { if (stableJson(prior) !== stableJson(record)) throw refuse('A journal ledger identity cannot change.'); continue; }
       ledger.append({ type: 'journal-source', data: record }); previous.set(key, record); accepted++;
+      await yieldRequests();
     }
     return accepted;
   }
@@ -209,7 +221,7 @@ export class ProjectJournals {
   async request(raw: unknown, deviceId: string): Promise<ProjectJournalResult> {
     if (!this.o.isHub) throw refuse('The journal authority is the hub.', 404);
     const input = ProjectJournalRequestSchema.parse(raw), project = (await this.o.projects()).find(row => row.id === input.projectId); if (!project) throw refuse('Project not found.', 404);
-    if (input.operation === 'publish') return ProjectJournalResultSchema.parse({ schema: 'project-journal-result-v1', operation: 'publish', accepted: this.#accept(input, deviceId) });
+    if (input.operation === 'publish') return ProjectJournalResultSchema.parse({ schema: 'project-journal-result-v1', operation: 'publish', accepted: await this.#accept(input, deviceId) });
     if (input.operation === 'handoff-write') {
       if ((await this.o.hub.coordinator(input.projectId))?.document.deviceId !== deviceId) throw refuse('Only the assigned coordinator can write its handoff.', 403);
       await this.sync(input.projectId);
@@ -319,5 +331,5 @@ export class ProjectJournals {
     }
     if (stableJson(next) !== stableJson(before)) writeDocument(this.#statePath(projectId), ProjectJournalStateSchema, next);
   }
-  async close(): Promise<void> { this.#closed = true; if (this.#timer) clearInterval(this.#timer); await Promise.allSettled(this.#running.values()); }
+  async close(): Promise<void> { this.#closed = true; if (this.#timer) clearInterval(this.#timer); await Promise.allSettled([...this.#running.values(), ...this.#publications.values()]); }
 }

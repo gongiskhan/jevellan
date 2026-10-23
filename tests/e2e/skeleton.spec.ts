@@ -6,7 +6,8 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
-import { AccountListSchema, AccountViewSchema, ContextPanelSchema, ConversationPublicSchema, DeviceRosterSchema, MemorySearchSchema, ProjectsListSchema, RiggingDiskListSchema, AccountEditorSavedSchema, RiggingEditorReceiptSchema, RiggingSaveSchema } from '../../packages/core/dist/client.js';
+import { accountsSettingsView } from '../../packages/accounts/dist/index.js';
+import { AccountListSchema, AccountViewSchema, AccountsSettingsViewSchema, ConfigRevisionSchema, ContextPanelSchema, ConversationPublicSchema, ConversationStartResultSchema, DeviceRosterSchema, MemorySearchSchema, ProjectsListSchema, RiggingDiskListSchema, AccountEditorSavedSchema, RiggingEditorReceiptSchema, RiggingSaveSchema } from '../../packages/core/dist/client.js';
 
 const J8EvidenceSchema = z.strictObject({ schema: z.literal('j8-simulated-v1'), layout: z.string(), transport: z.literal('live-local-http'), devices: z.literal('simulated'), providers: z.literal('simulated'), selection: z.literal('manual'), separateCheckouts: z.literal(true), remoteLoginReadyOnlyOnB: z.literal(true), switchedWithoutSignIn: z.literal(true), ownerStayedOnB: z.literal(true), proxyStreamGrew: z.literal(true), correctionInterruptedB: z.literal(true), automaticChoiceDisabled: z.literal(true), externalSessionVisible: z.literal(true), writingBlockedUntilQuiet: z.literal(true), writingResumedAfterQuiet: z.literal(true) });
 const J11EvidenceSchema = z.strictObject({ schema: z.literal('j11-mesh-simulated-v1'), layout: z.string(), devices: z.literal('simulated'), providers: z.literal('simulated'), memory: z.literal('live-basic-memory'), selection: z.literal('manual-search-rank'), compatibilityLinkExcluded: z.literal(true), explicitMemoryPublished: z.literal(true), readOnlyProposalPreservedCheckout: z.literal(true), proposalAppliedByOwner: z.literal(true), alreadyOpenIndexRefreshedAfterPull: z.literal(true), claudeAndCodexReceivedNote: z.literal(true), whyShowsChosenMemory: z.literal(true), contextDraftPreservedFiles: z.literal(true), contextMergePublished: z.literal(true), chosenNote: z.string() });
@@ -83,12 +84,15 @@ test('Codex usage shows a reported weekly window and keeps an absent five-hour w
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const view = AccountViewSchema.parse(await (await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'codex', kind: 'subscription', label: 'Codex usage fixture' } })).json());
+  const configuration = ConfigRevisionSchema.parse(await (await page.request.get('/hub/config')).json()).configuration;
+  const roster = DeviceRosterSchema.parse(await (await page.request.get('/hub/devices/roster')).json());
   let weeklyPct = 0;
-  await page.context().route('**/hub/accounts', async route => {
-    if (route.request().method() !== 'GET') return route.continue();
-    const response = await route.fetch(); const body = await response.json();
-    for (const entry of body.accounts) if (entry.account.id === view.account.id) {
-      for (const status of entry.statuses) status.usage = { source: 'probe', observedAt: new Date().toISOString(), weeklyPct, weeklyResetsAt: '2027-05-11T01:46:40.000Z' };
+  await page.context().route('**/api/accounts/view', async route => {
+    const response = await route.fetch(); const body = AccountsSettingsViewSchema.parse(await response.json());
+    for (const runtime of body.runtimes) for (const row of runtime.accounts) if (row.view.account.id === view.account.id) {
+      for (const status of row.view.statuses) status.usage = { source: 'probe', observedAt: new Date().toISOString(), weeklyPct, weeklyResetsAt: '2027-05-11T01:46:40.000Z' };
+      const projected = accountsSettingsView({ accounts: [row.view], offered: [], runtimeIds: [runtime.id], configuration, roster, deviceId: body.currentDeviceId }).runtimes[0]!.accounts[0]!;
+      row.usage = projected.usage; row.usageCheckedAt = projected.usageCheckedAt;
     }
     await route.fulfill({ response, json: body });
   });
@@ -116,7 +120,9 @@ test('Settings account, login, Rigging and configuration flows work without hori
   await expect(form.getByLabel('When may Jevellan use this key?')).toHaveValue('');
   const accountCreated = () => page.waitForResponse((response) => response.request().method() === 'POST' && new URL(response.url()).pathname === '/api/accounts/editor/save', { timeout: 60_000 });
   const secret = `fixture-${randomUUID()}`; await form.getByLabel('API key', { exact: true }).fill(secret); await form.getByLabel('When may Jevellan use this key?').selectOption('never'); const firstAccount = accountCreated(); await form.getByRole('button', { name: 'Add account', exact: true }).click(); const firstCreated=await firstAccount;expect(firstCreated.status()).toBe(201);expect(AccountEditorSavedSchema.parse(await firstCreated.json()).account.account).toMatchObject({label:'Browser fixture',kind:'api-key',paidUse:'never'});
-  await expect(form).not.toBeVisible(); const account = claude.locator('.account').filter({ hasText: 'Browser fixture' }); await expect(account.getByText('Ready', { exact: true })).toBeVisible(); await expect(account).toContainText('Saved'); expect(await page.locator('body').innerText()).not.toContain(secret);
+  await expect(form).not.toBeVisible(); const account = claude.locator('.account').filter({ hasText: 'Browser fixture' });
+  await expect.poll(async () => AccountListSchema.parse(await (await page.request.get('/hub/accounts')).json()).accounts.find(row => row.account.label === 'Browser fixture')?.statuses.map(status => status.auth)).toContain('ready');
+  await expect(account.getByText('Paid use not allowed', { exact: true })).toBeVisible(); await expect(account).toContainText('Saved'); expect(await page.locator('body').innerText()).not.toContain(secret);
   await claude.getByRole('button', { name: 'Add account', exact: true }).click(); await form.getByLabel('Label', { exact: true }).fill('Login fixture'); await expect(form).toContainText("Anthropic's terms restrict third-party tools"); const secondAccount = accountCreated(); await form.getByRole('button', { name: 'Add account', exact: true }).click(); const secondCreated=await secondAccount;expect(secondCreated.status()).toBe(201);expect(AccountEditorSavedSchema.parse(await secondCreated.json())).toMatchObject({account:{account:{label:'Login fixture',kind:'subscription'}},startLogin:true});
   await expect(page.getByRole('heading', { name: 'Log in · Login fixture' })).toBeVisible(); await form.getByLabel('Authorization code').fill('fixture-approval'); await form.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(form).toContainText('Signed in as fixture@example.test'); await form.getByRole('button', { name: 'Close panel' }).click(); await expect(form).not.toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -474,8 +480,8 @@ test('Why lists recalled project memory and its selection source after reload', 
   await page.goto('/new'); await page.getByRole('combobox', { name: 'Project', exact: true }).selectOption('memory_fixture');
   await page.getByPlaceholder('What should we build or fix?').fill('Explain the memorybrowserfixture project knowledge.'); await page.getByRole('button', { name: 'Start', exact: true }).click();
   const picker = page.locator('.manual-picker'); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption('reply');
-  const started = page.waitForResponse((response) => response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/manual'));
-  await picker.getByRole('button', { name: 'Continue', exact: true }).click(); expect((await started).status()).toBe(202);
+  const started = page.waitForResponse((response) => response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/manual-command'));
+  await picker.getByRole('button', { name: 'Continue', exact: true }).click(); expect((await started).status()).toBe(200);
   await expect(page.getByRole('heading', { name: 'Step 1 · Reply', exact: true })).toBeVisible({ timeout: 30_000 }); await expect(picker).toBeVisible({ timeout: 30_000 });
   const id = new URL(page.url()).pathname.split('/')[2]!; const view = ConversationPublicSchema.parse(await (await page.request.get(`/api/conversations/${id}`)).json());
   const memory = view.decisions[0]!.memory!; expect(memory.source).toBe('search-rank'); expect(memory.chosen).toContain('Guide.md');
@@ -714,7 +720,7 @@ test('provider login recovers lost start and accepted-code replies inside its pa
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const account = AccountViewSchema.parse(await (await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Recoverable login', kind: 'subscription' } })).json());
   await page.reload(); const starts: string[] = []; const codes: string[] = []; let loginId = ''; let captured: ReturnType<typeof AccountViewSchema.parse> | undefined;
-  await page.context().route(`**/api/accounts/${account.account.id}/login`, async route => {
+  await page.context().route(`**/api/accounts/${account.account.id}/login?*`, async route => {
     starts.push(route.request().postData()!);
     if (starts.length === 1) { const response = await route.fetch(); expect(response.status()).toBe(201); loginId = (await response.json()).id; await route.fulfill(unavailable); }
     else await route.continue();
@@ -857,11 +863,11 @@ test('hub recovery starts one conversation after admission loss and a lost creat
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   expect((await page.request.post('/hub/accounts', { data: { schema: 'add-account-v1', runtime: 'claude', label: 'Recovery fixture', kind: 'subscription', secret: `fixture-${randomUUID()}` } })).ok()).toBe(true);
   await page.goto('/new'); const bodies: string[] = []; let conversationId: string | undefined;
-  await page.context().route('**/api/conversations', async route => {
+  await page.context().route('**/api/conversation-new/start', async route => {
     if (route.request().method() !== 'POST') { await route.continue(); return; }
     bodies.push(route.request().postData()!);
     if (bodies.length === 1) await route.fulfill(unavailable);
-    else if (bodies.length === 2) { const created = await route.fetch(); expect(created.ok()).toBe(true); conversationId = (await created.json()).conversation.id; await route.fulfill(unavailable); }
+    else if (bodies.length === 2) { const created = await route.fetch(); expect(created.ok()).toBe(true); const result = ConversationStartResultSchema.parse(await created.json()); expect(result.status).toBe('created'); conversationId = result.view!.conversation.id; await route.fulfill(unavailable); }
     else await route.continue();
   });
   const title = `Recovery ${randomUUID()}`;
@@ -962,8 +968,8 @@ test('J11 simulated mesh journey publishes memory, recalls after pull and review
     const before = await read(base, id); await expect(picker).toBeVisible(); await picker.getByRole('combobox', { name: 'Action', exact: true }).selectOption(action);
     if (action !== 'done') await picker.getByRole('combobox', { name: 'Model', exact: true }).selectOption(model);
     if (action === 'reply') await picker.getByRole('checkbox', { name: 'This request explicitly asks to remember something.', exact: true }).setChecked(remember);
-    const response = page.waitForResponse(response => response.request().method() === 'POST' && new URL(response.url()).pathname === `/api/conversations/${id}/manual`);
-    await picker.getByRole('button', { name: 'Continue', exact: true }).click(); expect((await response).status()).toBe(202);
+    const response = page.waitForResponse(response => response.request().method() === 'POST' && new URL(response.url()).pathname === `/api/conversations/${id}/manual-command`);
+    await picker.getByRole('button', { name: 'Continue', exact: true }).click(); expect((await response).status()).toBe(200);
     const title = `${action}${remember ? ' with memory' : ''}${base === sourceUrl ? '' : ' on the member'}`; const within = budget(J11_STEPS_ALONE[title]!, 45_000);
     await serverWork(title, async () => {
       if (action === 'done') await expect(page.locator('.conversation-meta')).toContainText('Done', within);

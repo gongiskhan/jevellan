@@ -1,38 +1,47 @@
 import { expect, test } from './fixtures.js';
+import { ProjectDefinitionEditorSchema, ProjectDefinitionsViewSchema, VaultViewSchema } from '../../packages/core/dist/client.js';
+import { projectDefinitionEditor, projectDefinitionsView, projectVaultPresentation } from '../../packages/core/dist/index.js';
 
 // Phase 5: Settings → Projects shows the vault, and adding a project whose origin has a vault folder offers to restore it.
 test('Projects shows the vault and offers Restore from the vault for an origin it holds', async ({ page }, info) => {
   await page.goto('/settings/runtimes');
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
-  await page.context().route('**/api/vault', route => route.fulfill({ json: { schema: 'vault-view-v1', remote: 'https://github.com/gongiskhan/jevellan-vault.git', lastSyncAt: new Date(Date.now() - 120_000).toISOString(),
-    lastError: null, pending: false, folders: ['gongiskhan__ekoa-code'] } }));
+  const vault = VaultViewSchema.parse({ schema: 'vault-view-v1', remote: 'https://github.com/example/test-vault.git', lastSyncAt: new Date(Date.now() - 120_000).toISOString(), lastError: null, pending: false, folders: ['example__shop'] });
+  await page.context().route('**/api/projects/view', async route => {
+    const response = await route.fetch(); const view = ProjectDefinitionsViewSchema.parse(await response.json());
+    await route.fulfill({ response, json: { ...view, vault: projectVaultPresentation(vault) } });
+  });
+  for (const path of ['**/api/projects/editor', '**/api/projects/editor/preview']) await page.context().route(path, async route => {
+    const response = await route.fetch(); const view = ProjectDefinitionEditorSchema.parse(await response.json());
+    await route.fulfill({ response, json: projectDefinitionEditor({ schema: 'project-definition-preview-v1', context: view.context, fields: view.fields }, { deviceId: view.currentDeviceId, devices: view.devices, current: null, vault }) });
+  });
   await page.goto('/settings/projects');
   const card = page.getByRole('region', { name: 'Vault' });
-  await expect(card).toContainText('https://github.com/gongiskhan/jevellan-vault.git'); await expect(card).toContainText('Synced');
+  await expect(card).toContainText('https://github.com/example/test-vault.git'); await expect(card).toContainText('Synced');
   await page.getByRole('button', { name: 'Add project', exact: true }).click();
   const restore = page.getByRole('checkbox', { name: 'Restore from the vault' });
   await expect(restore).toHaveCount(0);
-  await page.getByLabel('Remote URL').fill('https://github.com/gongiskhan/ekoa-code.git');
+  await page.getByLabel('Remote URL').fill('https://github.com/example/shop.git');
   await expect(restore).toBeChecked();
-  await expect(page.getByText('come back from gongiskhan__ekoa-code')).toBeVisible();
-  await page.getByLabel('Remote URL').fill('https://github.com/gongiskhan/other.git');
+  await expect(page.getByText('come back from example__shop')).toBeVisible();
+  await page.getByLabel('Remote URL').fill('https://github.com/example/other.git');
   await expect(restore).toHaveCount(0);
-  await page.getByLabel('Remote URL').fill('https://github.com/gongiskhan/ekoa-code.git');
+  await page.getByLabel('Remote URL').fill('https://github.com/example/shop.git');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath(`vault-restore-${info.project.name}.png`) });
 });
 
 test('a project card keeps a long test command inside the card and its Edit button in view', async ({ page }, info) => {
-  // Seen on the live hub: ekoa-code's fast checks ran past the card's border and pushed Edit out of the card.
+  // A long configured check must stay inside the card and leave Edit visible.
   await page.goto('/settings/runtimes');
   await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const long = 'npm run build --workspace shared && npm run typecheck && npm run lint && npm run test:unit --workspace server';
-  await page.context().route('**/hub/projects', async route => {
-    if (route.request().method() !== 'GET') return route.continue();
-    const response = await route.fetch(); const body = await response.json();
-    body.projects[0].project.testCommand = long;
+  await page.context().route('**/api/projects/view', async route => {
+    const response = await route.fetch(); const body = ProjectDefinitionsViewSchema.parse(await response.json());
+    const first = body.projects[0]!; first.view.project.testCommand = long;
+    body.projects[0] = projectDefinitionsView([{ view: first.view, public: first.publicMemoryNotice }], body.currentDeviceId, null).projects[0]!;
     await route.fulfill({ response, json: body });
   });
   await page.goto('/settings/projects');

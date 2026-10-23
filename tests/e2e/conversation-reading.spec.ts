@@ -1,7 +1,7 @@
 import { conversationStepPresentation } from '../../packages/conversations/dist/index.js';
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
-import { ConversationEventSchema, ConversationPublicSchema, HandoffSchema, StretchSchema } from '../../packages/core/dist/client.js';
+import { ConversationEventSchema, ConversationPublicSchema, ConversationReadingRequestSchema, ConversationResultReadingSchema, HandoffSchema, StretchSchema, conversationResultPresentation } from '../../packages/core/dist/client.js';
 
 test('conversation replies read as chat while tools and recorded details remain available', async ({ page, baseURL }) => {
   const errors: string[] = [];
@@ -49,7 +49,7 @@ test('conversation replies read as chat while tools and recorded details remain 
     schema: 'ledger-event-v1', ...event, stretch: event.type === 'user-message' ? undefined : 1, t: step.startedAt,
   } }));
   await page.context().route(`**/api/conversations/${id}`, route => route.fulfill({ json: { ...snapshot, stretches: snapshot.stretches.map(row => ({ ...row, presentation: conversationStepPresentation(row, [], snapshot.decisions.find(decision => decision.id === row.decisionId)) })) } }));
-  await page.context().route(`**/api/conversations/${id}/events`, route => route.fulfill({
+  await page.context().route(`**/api/conversations/${id}/events?*`, route => route.fulfill({
     contentType: 'text/event-stream', body: payloads.map(payload => `id: ${payload.event.id}\nevent: conversation\ndata: ${JSON.stringify(payload)}\n\n`).join(''),
   }));
   await page.goto(`/conversations/${id}`);
@@ -89,9 +89,18 @@ test('conversation replies read as chat while tools and recorded details remain 
   payloads.push(finalReply);
   const durableAnswer = 'Nothing is running. The simulated fixture can be retired.';
   snapshot = ConversationPublicSchema.parse({ ...snapshot, handoffs: [{ ...handoff, result: { type: 'answer', ref: 'blob:simulated-answer' } }] });
-  await page.context().route(`**/api/conversations/${id}/read?*`, route => route.fulfill({ json: {
-    schema: 'conversation-read-v1', pointer: 'blob:simulated-answer', content: `## Short answer\n\n${durableAnswer}`,
-  } }));
+  await page.context().route(`**/api/conversations/${id}/reading-view`, route => {
+    const input = ConversationReadingRequestSchema.parse(route.request().postDataJSON());
+    expect(input.kind).toBe('result');
+    if (input.kind !== 'result') throw new Error('Expected a simulated result read.');
+    expect(input.pointer).toBe('blob:simulated-answer'); expect(input.displayKind).toBe('answer');
+    return route.fulfill({ json: ConversationResultReadingSchema.parse({
+      schema: 'conversation-reading-view-v1', projectId: snapshot.conversation.projectId, conversationId: id,
+      kind: 'result', pointer: input.pointer, presentation: conversationResultPresentation({
+        schema: 'conversation-result-input-v1', kind: input.displayKind, fallback: input.fallback, content: `## Short answer\n\n${durableAnswer}`,
+      }),
+    }) });
+  });
   await page.reload();
   await expect(reply.getByRole('heading', { name: 'Short answer', exact: true })).toBeVisible();
   await expect(reply.getByText(durableAnswer, { exact: true }).filter({ visible: true })).toHaveCount(1);

@@ -22,11 +22,26 @@ export const threadJournalFile = (thread: Pick<JournalThread, 'id' | 'title'>): 
   const slug = thread.title.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/gu, '-').replace(/^-|-$/gu, '').slice(0, 60) || 'thread';
   return `threads/${slug}-${createHash('sha256').update(thread.id).digest('hex').slice(0, 12)}.md`;
 };
+const formatters = new Map<string, { date: Intl.DateTimeFormat; time: Intl.DateTimeFormat }>();
+function journalFormatters(timezone: string) {
+  let cached = formatters.get(timezone);
+  if (!cached) {
+    cached = {
+      date: new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }),
+      time: new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false }),
+    };
+    // Historical settings retain their timezone, without constructing ICU formatters for every recorded line.
+    if (formatters.size === 32) formatters.delete(formatters.keys().next().value!);
+    formatters.set(timezone, cached);
+  }
+  return cached;
+}
 export function journalDate(at: string, timezone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(at));
+  return journalFormatters(timezone).date.format(new Date(at));
 }
 function clock(at: string, timezone: string): string {
-  return `${journalDate(at, timezone)} ${new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(at))}`;
+  const { date, time } = journalFormatters(timezone), instant = new Date(at);
+  return `${date.format(instant)} ${time.format(instant)}`;
 }
 export type JournalEntry = { record: ProjectJournalRecord; kind: string; body: string; threadId?: string; night?: string; owner?: boolean; question?: boolean; merged?: boolean };
 export function journalEntry(record: ProjectJournalRecord): JournalEntry | null {

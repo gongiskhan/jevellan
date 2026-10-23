@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
-import { ConversationPublicSchema } from '../../packages/core/dist/client.js';
+import { ConversationMessageCommandSchema, ConversationPublicSchema } from '../../packages/core/dist/client.js';
 
 test('user messages stay readable and support retry, cancel editing and resend', async ({ page, baseURL }) => {
   await page.goto('/settings/runtimes');
@@ -26,9 +26,11 @@ test('user messages stay readable and support retry, cancel editing and resend',
   expect(contrast).toBeGreaterThanOrEqual(4.5);
   const read = async () => ConversationPublicSchema.parse(await (await page.request.get(`/api/conversations/${id}`)).json());
   await expect.poll(async () => (await read()).decisionWait).toBeTruthy();
-  const resumed = page.waitForResponse(response => response.url().endsWith(`/conversations/${id}/resume`) && response.request().method() === 'POST');
+  const resumed = page.waitForResponse(response => new URL(response.url()).pathname === `/api/conversations/${id}/message-command` && response.request().method() === 'POST');
   await first.getByRole('button', { name: 'Retry message', exact: true }).click();
-  expect((await resumed).ok()).toBe(true);
+  const response = await resumed;
+  expect(response.ok()).toBe(true);
+  expect(ConversationMessageCommandSchema.parse(response.request().postDataJSON())).toMatchObject({ operation: 'resume' });
   expect((await read()).messages).toHaveLength(1);
   await first.getByRole('button', { name: 'Edit message', exact: true }).click();
   await expect(first.getByLabel('Edit message')).toHaveValue(original);
