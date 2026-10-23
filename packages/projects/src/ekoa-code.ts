@@ -158,6 +158,9 @@ async function ekoaCommand(work: ProjectWork, projectId: string, name: string, g
 }
 /** Owner-only, repeatable setup. Stable create IDs preserve later owner edits and avoid duplicate goals/jobs. */
 export async function applyEkoaCodeSetup(work: ProjectWork, projectId: string, raw: unknown, path: string, current: ProjectWorkSettings) {
+  // Derived Jev policy is read-time input, not durable owner configuration.
+  const { jevPolicy: _derived, ...configuration } = current; void _derived;
+  current = ProjectWorkSettingsSchema.parse(configuration);
   const input = EkoaCodeSetupRequestSchema.parse(raw);
   let receipt = existsSync(path) ? readDocument(path, EkoaCodeSetupReceiptSchema) : null;
   if (receipt && (receipt.projectId !== projectId || receipt.modelId !== input.modelId || receipt.workflowPull !== input.workflowPull)) throw Object.assign(new Error('Ekoa Code setup already has a different receipt.'), { status: 409 });

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { ActionSchema } from '@jevellan/core';
-import { safetyDenial, fileReadDenial, fileWriteDenial, ownerCommandDenial, safetyReason, SAFETY_REASON, type SafetyContext } from '@jevellan/runtime-contract';
+import { ActionSchema } from '@jevellan/core/schemas';
+import { safetyDenial, fileReadDenial, fileWriteDenial, ownerCommandDenial, safetyReason, SAFETY_REASON, type SafetyContext } from '@jevellan/runtime-contract/safety';
 
 // Stretches send their action; turns send their profile and no action.
 const Context = z.strictObject({ cwd: z.string(), daemonPid: z.number().int().positive(), action: ActionSchema.optional(), profile: z.enum(['stretch', 'coordinator', 'thread', 'verification', 'review', 'memory']).optional(), privatePaths: z.array(z.string()).optional(), protectedPaths: z.array(z.string()).optional(), readOnlyDirectories: z.array(z.string()).optional() });

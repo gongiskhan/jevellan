@@ -1,3 +1,4 @@
+export * from './jev-control-workspace.js';
 export * from './git-editor.js';
 export * from './github-token-editor.js';
 export * from './agent-access-editor.js';

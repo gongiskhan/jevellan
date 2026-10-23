@@ -106,12 +106,12 @@ export class OwnerJev {
 
   // Rules.
   rules(projectId: string): JevRule[] { return this.app.hub.list(RULES, JevRuleSchema).map(row => row.document).filter(rule => rule.scope === 'global' || rule.projectId === projectId).sort((a, b) => Number(a.id.slice(1)) - Number(b.id.slice(1))); }
-  async saveRule(projectId: string, input: { rule?: string; scope?: 'global' | 'project'; when?: JevRule['when']; set?: Partial<JevRule['set']>; note?: string; enabled?: boolean }): Promise<JevRule> {
+  async saveRule(projectId: string, input: { rule?: string; replace?: boolean; scope?: 'global' | 'project'; when?: JevRule['when']; set?: Partial<JevRule['set']>; note?: string; enabled?: boolean }): Promise<JevRule> {
     const configuration = (await this.app.configuration()).configuration['x-jevellan'];
     const existing = input.rule ? this.rules(projectId).find(rule => rule.id === input.rule!.toUpperCase()) : undefined;
     if (input.rule && !existing) throw new OwnerRefusal(`${input.rule} is not a rule. Rules: ${this.rules(projectId).map(rule => rule.id).join(', ') || 'none'}.`, 'rule_not_found', 404);
-    const set = { ...existing?.set, ...input.set } as JevRule['set'];
-    if (!existing && !Object.keys(set).length) throw new OwnerRefusal('rule_set needs something to set: minModel, minEffort, maxEffort, account, runtime or landingRoute.', 'invalid_rule');
+    const set = { ...(input.replace ? {} : existing?.set), ...input.set } as JevRule['set'];
+    if ((!existing || input.replace) && !Object.keys(set).length) throw new OwnerRefusal('rule_set needs something to set: minModel, minEffort, maxEffort, account, runtime or landingRoute.', 'invalid_rule');
     if (set.minEffort && set.maxEffort && EFFORTS.indexOf(set.minEffort) > EFFORTS.indexOf(set.maxEffort)) throw new OwnerRefusal('minEffort must not exceed maxEffort.', 'invalid_rule');
     const accounts = this.app.hub.list('accounts', AccountSchema).map(row => row.document);
     if (set.account) {
@@ -127,7 +127,7 @@ export class OwnerJev {
     }
     const key = existing?.key ?? `rule_${this.app.hub.list(RULES, JevRuleSchema).length + 1}_${Date.now().toString(36)}`;
     return this.#put(RULES, key, JevRuleSchema, JevRuleSchema.parse({ schema: 'jev-rule-v1', key, id: existing?.id ?? this.#id('R', key), scope: input.scope ?? existing?.scope ?? 'project', ...((input.scope ?? existing?.scope ?? 'project') === 'project' ? { projectId } : {}),
-      when: { ...existing?.when, ...input.when }, set, note: input.note ?? existing?.note ?? '', enabled: input.enabled ?? existing?.enabled ?? true, createdAt: existing?.createdAt ?? this.now().toISOString() }));
+      when: { ...(input.replace ? {} : existing?.when), ...input.when }, set, note: input.note ?? existing?.note ?? '', enabled: input.enabled ?? existing?.enabled ?? true, createdAt: existing?.createdAt ?? this.now().toISOString() }));
   }
   removeRule(projectId: string, id: string): JevRule {
     const rule = this.rules(projectId).find(row => row.id === id.toUpperCase()); if (!rule) throw new OwnerRefusal(`${id} is not a rule.`, 'rule_not_found', 404);
@@ -228,14 +228,14 @@ export class OwnerJev {
     if (proposal?.name === 'p-v1') {
       const summary = await replayPlacement(this.app, projectId, this.active('p-v1'), proposal, this.rules(projectId), n);
       const latest = this.proposals().find(row => row.key === proposal.key)!;
-      this.#put(PROPOSALS, latest.key, JevProposalSchema, { ...latest, replayReportId: summary.id });
+      this.#put(PROPOSALS, latest.key, JevProposalSchema, { ...latest, replay: summary.text, replayReportId: summary.id });
       return summary.text;
     }
 
     if (proposal?.name === 'l-v1' || proposal?.name === 'm-v1') {
       const summary = await replayRoutes(this.app, projectId, proposal.name, this.active(proposal.name), proposal, this.rules(projectId), n);
       const latest = this.proposals().find(row => row.key === proposal.key)!;
-      this.#put(PROPOSALS, latest.key, JevProposalSchema, { ...latest, replayReportId: summary.id });
+      this.#put(PROPOSALS, latest.key, JevProposalSchema, { ...latest, replay: summary.text, replayReportId: summary.id });
       return summary.text;
     }
     if(proposal)return `Stored-input replay for ${proposal.name} is not available yet; the engine uses its active version.`;

@@ -1022,13 +1022,13 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "All 310 baseline component rows have dispositions: 305 moved and verified, five retained in the client. Intake, placement rules, active project prompts, lesson delivery and stored-input replay are implemented. The Jev control page and final integrated gates remain. Source is unreleased; installed copies remain last verified 0.7.2.",
+    "why": "All310 baseline rows retain their dispositions:305migrated/verified and5client-only. The additional Jev page, intake and ordered placement/p-v1/m-v1 work are implemented. Corrected complete backend:3785pass,0fail,16not run; static checks/build and the page main action pass. Whole desktop-light verification remains pending. Source is unreleased.",
     "status": "in-progress"
   },
   {
     "id": "br-tools",
-    "title": "Owner tool parity",
-    "why": "The existing frozen working baseline is included in the published0.7.x releases; this row tracks its uncompleted expanded scope. Remaining component/tool parity, intake, prompt/placement wiring, member streams and remote/live coverage remain planned after essential daily-use repairs. No complete parity or active optional feature phase is claimed.",
+    "title": "Remaining owner tool and live coverage",
+    "why": "Typed owner APIs and component parity are implemented in source. This remaining scope covers the native coordinator fork, member event forwarding and remote/live evidence retained under their own planned items; it does not describe intake or project prompt wiring as unbuilt.",
     "status": "planned"
   },
   {
@@ -1045,26 +1045,26 @@
   },
   {
     "id": "br-jobs",
-    "title": "Jobs, missed nights and external intake",
-    "why": "The existing frozen working baseline is included in the published0.7.x releases; this row tracks its uncompleted expanded scope. Remaining component/tool parity, intake, prompt/placement wiring, member streams and remote/live coverage remain planned after essential daily-use repairs. No complete parity or active optional feature phase is claimed.",
+    "title": "Remaining live jobs and night journeys",
+    "why": "Source jobs, missed-night controls and intake are implemented with simulated engine/UI evidence. The remaining full live job/night journey is not run under the reduced owner live scope; no optional feature phase or live acceptance is claimed.",
     "status": "planned"
   },
   {
     "id": "br-goals",
-    "title": "Goals and labels",
-    "why": "The existing frozen working baseline is included in the published0.7.x releases; this row tracks its uncompleted expanded scope. Remaining component/tool parity, intake, prompt/placement wiring, member streams and remote/live coverage remain planned after essential daily-use repairs. No complete parity or active optional feature phase is claimed.",
+    "title": "Remaining live goal and night evidence",
+    "why": "Goals and labels have engine/UI controls and recorded source verification. Historical live evidence was partial and did not establish the night item. Remaining live evidence is planned; source fixtures are not owner acceptance.",
     "status": "planned"
   },
   {
     "id": "br-takeover",
-    "title": "Thread takeover and hold continuity",
-    "why": "The existing frozen working baseline is included in the published0.7.x releases; this row tracks its uncompleted expanded scope. Remaining component/tool parity, intake, prompt/placement wiring, member streams and remote/live coverage remain planned after essential daily-use repairs. No complete parity or active optional feature phase is claimed.",
+    "title": "Remaining live takeover variants",
+    "why": "Takeover/hold continuity is implemented and retains its historical terminal evidence. Additional live Codex/remote variants are not run. Existing owner thread/worktree state is preserved.",
     "status": "planned"
   },
   {
     "id": "br-jev",
-    "title": "Complete Jev rules, prompts and replay",
-    "why": "Rules, active p-v1/l-v1/m-v1, scoped lessons, durable use counts and stored-input replay are implemented. Static checks and 389 cases in 30 complete affected backend files pass with six workers and zero skips. The desktop MCP/browser replay journey passes with two retained images. The Jev control page and final integrated gates remain; no live acceptance or release is claimed.",
+    "title": "Complete project Jev rules, prompts and replay",
+    "why": "Project p-v1/l-v1/m-v1, rules, scoped lessons/use receipts, stored-input replay and the shared HTTP/MCP/member Jev page are implemented. Complete backend3785pass/0fail/16not run; affected277cases and page desktop action pass. Whole desktop-light gate remains pending. Other question-set versions remain planned separately; no live acceptance or release.",
     "status": "in-progress"
   },
   {
@@ -1075,8 +1075,8 @@
   },
   {
     "id": "br-remote",
-    "title": "Remote MCP",
-    "why": "The existing frozen working baseline is included in the published0.7.x releases; this row tracks its uncompleted expanded scope. Remaining component/tool parity, intake, prompt/placement wiring, member streams and remote/live coverage remain planned after essential daily-use repairs. No complete parity or active optional feature phase is claimed.",
+    "title": "Remaining live remote MCP acceptance",
+    "why": "The OAuth/PKCE and guarded remote API baseline is implemented with simulated evidence. Live account/remote-control acceptance remains unverified; member event forwarding is tracked in br-engine-071. No native credentials or extra authentication attempt is authorized.",
     "status": "planned"
   },
   {
@@ -1094,13 +1094,13 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "Baseline UI migration and component parity have dispositions for all 310 rows. The new Jev control page remains, followed by final desktop-light and backend gates. Four-layout testing is not required under the owner amendment. Legacy CACHE2, NativePAR6 and the account-ready journey remain unpassed until rerun. Current continuation source is unreleased.",
+    "why": "All310 baseline rows have dispositions, plus the new engine-owned Jev page. Corrected complete backend3785pass/0fail/16not run. Per-area desktop evidence is retained; the whole desktop-light suite remains pending. Legacy gaps are not passes. No four-layout matrix is required and source remains unreleased.",
     "status": "in-progress"
   },
   {
     "id": "br-intake-071",
-    "title": "External pull request intake",
-    "why": "Implemented and verified in simulated product fixtures: explicit normal job/editor, pinned checks/stats/journal, owner merge/redo/close/Later, leased no-ff publication/recovery/cancel/hold, typed unanswered deploy message, actual simulated review patch and member/MCP routing. Typecheck/lint/build pass.151complete backend files execute1568cases:1522pass/46fixture failures;exact repeat confirms46;two corrected fixtures pass68/68 with unchanged product and original assertions,for1568distinct passes across runs,not one all-pass run. Two desktop-light actions pass;four exact images retained. Live external PR intake not run;source unreleased,installs last verified0.7.2.",
+    "title": "External pull-request intake",
+    "why": "Source intake and its engine/UI/MCP parity are implemented, with simulated backend and two desktop main-action receipts retained. The corrected complete backend has3785passes,0failures and16not run. No live external contributor PR was accessed; no live acceptance or release is claimed.",
     "status": "done"
   },
   {
@@ -1117,8 +1117,8 @@
   },
   {
     "id": "br-browser-071",
-    "title": "Remaining browser and visual coverage",
-    "why": "Remaining noncore coverage is planned after the working bridge release. Desktop-light J8/J11 stale routes and LJ2 retired-field assertion each failed twice;37 full-run skips are not passes. Required core gaps were run separately and pass after the Overview fixture correction.",
+    "title": "Recorded desktop gaps and optional visuals",
+    "why": "Whole desktop-light verification remains pending. Historical legacy browser gaps and missing selections remain unpassed until actual selectable current runs; no four-layout matrix is required. The new Jev screen has one nonblocking vision pass on a simulated product; its cosmetic observations are optional planned work.",
     "status": "planned"
   },
   {

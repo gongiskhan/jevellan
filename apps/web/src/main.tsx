@@ -1,3 +1,4 @@
+import {JevControlPage} from './jev-control.js';
 import { CleanupPage } from './cleanup.js';
 import { NotificationsPage } from './notifications.js';
 import { EkoaPage } from './ekoa.js';
@@ -380,6 +381,8 @@ function App() {
       <RiggingPage {...props} />
     ) : currentPage === 'decisions' ? (
       <DecisionsPage {...props} />
+    ) : currentPage === 'jev' ? (
+      <JevControlPage {...props} />
     ) : currentPage === 'improver' ? (
       <ImproverPage {...props} monitor={improver} />
     ) : currentPage === 'cleanup' ? (

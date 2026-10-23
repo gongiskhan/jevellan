@@ -17,7 +17,7 @@ let trace: string | undefined; if (process.platform === 'linux') try { trace = e
 const guard = process.platform === 'darwin' ? 'macos-sandbox' : trace ? 'linux-strace' : undefined;
 const quote = (value: string) => `'${value.replace(/'/gu, `'"'"'`)}'`;
 const EvidenceSchema = z.strictObject({ schema: z.literal('endpoint-cli-contract-v1'), label: z.enum(['simulated', 'not run']), passed: z.boolean(), reason: z.string().optional(), requests: z.array(z.string()), connections: z.number(), nativeFixturesUnchanged: z.boolean(), networkGuard: z.string().optional() });
-const output = 'docs/acceptance/projects-parity-2026-10/phase-8/cli-contract.json';
+const output = join(process.env.JEVELLAN_TEST_EVIDENCE_DIR ?? mkdtempSync(join(tmpdir(), 'jevellan-endpoint-evidence-')), 'cli-contract.json');
 function evidence(input: z.input<typeof EvidenceSchema>) { mkdirSync(join(output, '..'), { recursive: true }); writeFileSync(output, JSON.stringify(EvidenceSchema.parse(input), null, 2) + '\n'); }
 if (!cli || !guard) evidence({ schema: 'endpoint-cli-contract-v1', label: 'not run', passed: false, reason: !cli ? 'The SDK Claude CLI is not installed.' : 'The network guard for the real CLI contract is unavailable.', requests: [], connections: 0, nativeFixturesUnchanged: false });
 test.skipIf(!cli || !guard)('real Claude Agent SDK uses only the fake endpoint and leaves fixture native homes byte-identical', async () => {

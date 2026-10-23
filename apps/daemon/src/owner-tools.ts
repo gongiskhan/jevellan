@@ -1,3 +1,4 @@
+import {emptyJevControl} from '@jevellan/core';
 import {improverEditorDeviceOperation} from './improver-editor.js';
 import {riggingDeviceOperation} from './rigging-editor.js';
 import {readDeviceManagement,readDevicePurpose,performDeviceAction} from './device-management.js';
@@ -73,6 +74,7 @@ export class OwnerTools {
     const parsed = action.input.safeParse(rest);
     if (!parsed.success) return fail('invalid_arguments', invalidArguments(tool, tool.single ? '' : action.name, parsed.error));
     try {
+      if(tool.name==='jev'&&action.name==='control_workspace'&&!rest.project&&!request.project&&!(await this.projects()).length){log(true);return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text:'Jev control.',data:emptyJevControl()});}
       if(tool.name==='config'&&['improver_view','improver_read','improver_command','improver_settings_save'].includes(action.name)){const data=await improverEditorDeviceOperation(this.app,request.deviceId??this.app.device.deviceId,(parsed.data as {request?:unknown}).request);log(true);return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text:'Improver.',data});}
       if(tool.name==='config'&&['rigging_view','rigging_detail','rigging_action'].includes(action.name)){const data=await riggingDeviceOperation(this.app,request.deviceId??this.app.device.deviceId,action.name==='rigging_view'?'view':action.name==='rigging_detail'?'detail':'action',(parsed.data as {request?:unknown}).request);log(true);return OwnerToolResultSchema.parse({schema:'owner-tool-result-v1',ok:true,text:'Rigging.',data});}
       if(tool.name==='config'&&['git_view','git_save','git_check','github_token_view','github_token_write'].includes(action.name)){

@@ -1,3 +1,4 @@
+import {ownerJevControl} from './jev-control-api.js';
 import {readImproverEditor,saveImproverSettings} from './improver-editor.js';
 import {readRiggingEditor,localRiggingAction,localRiggingDetail} from './rigging-editor.js';
 import {RiggingEditorActionSchema} from '@jevellan/core';
@@ -154,6 +155,8 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     if (path === '/hub/ekoa/callback' && method === 'POST') { send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'oauth-complete', input: EkoaOAuthCallbackSchema.parse(await body(request)) }, token!)); return; }
     if (path === '/hub/ekoa/test' && method === 'POST') { EkoaEmptySchema.parse(await body(request)); send(await app.ekoaRequest({ schema: 'ekoa-request-v1', operation: 'test' }, token!)); return; }
     if (await handleGitApi(app, request, response, url)) return;
+    if(path==='/api/jev/control'&&method==='GET'){send(await ownerJevControl(app,url.searchParams.get('project')??undefined));return;}
+    if(path==='/api/jev/control'&&method==='POST'){send(await ownerJevControl(app,undefined,await body(request)));return;}
     if (path === '/api/config/workspace' && method === 'GET') { send(await app.settingsWorkspace()); return; }
     if (path === '/api/config/cleanup' && method === 'GET') { send(await app.cleanupSettingsEditor()); return; }
     if (path === '/api/config/cleanup' && method === 'PUT') { const input = CleanupSettingsSaveSchema.parse(await body(request)); retryable = true; send(await app.saveCleanupSettings(input)); return; }

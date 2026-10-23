@@ -4,7 +4,7 @@ import { ConfigRevisionSchema, DeviceSchema, IdSchema } from './schemas.js';
 import { AccountListSchema, ConfigWriteSchema, RiggingListSchema, RuntimeListSchema, SecretStateSchema } from './client-schemas.js';
 import { DeviceRosterSchema } from './mesh-schemas.js';
 
-export const SettingsPageIdSchema = z.enum(['runtimes', 'notifications', 'rigging', 'decisions', 'improver', 'devices', 'projects', 'git', 'ekoa', 'agents', 'cleanup', 'configuration', 'about']);
+export const SettingsPageIdSchema = z.enum(['runtimes', 'notifications', 'rigging', 'decisions', 'jev', 'improver', 'devices', 'projects', 'git', 'ekoa', 'agents', 'cleanup', 'configuration', 'about']);
 export const SettingsPageSchema = z.strictObject({ id: SettingsPageIdSchema, label: z.string(), icon: z.enum(['runtimes', 'message', 'rigging', 'decisions', 'improver', 'devices', 'projects', 'git', 'agents', 'configuration', 'about']) });
 export const SettingsNavigationSchema = z.strictObject({ schema: z.literal('settings-navigation-v1'), pages: z.array(SettingsPageSchema), defaultPage: SettingsPageIdSchema });
 export const SettingsWorkspaceSchema = z.strictObject({

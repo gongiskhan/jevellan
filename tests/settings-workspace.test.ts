@@ -9,7 +9,7 @@ test('settings workspace assembles the existing readers and navigation without s
   vi.spyOn(f.app, 'roster').mockResolvedValue({ ...roster, devices: [...roster.devices, retired] });
   const response = await f.request('/api/config/workspace'); expect(response.status).toBe(200); const view = await response.json();
   expect(view).toMatchObject({ schema: 'settings-workspace-v1', config: before, navigation: { schema: 'settings-navigation-v1', defaultPage: 'runtimes' }, configurationWrite: { path: '/hub/config', method: 'PUT', body: { schema: 'config-write-v1', revision: before.revision }, savedNotice: 'Settings saved.' } });
-  expect(view.navigation.pages.map((row: { id: string }) => row.id)).toEqual(['runtimes', 'notifications', 'rigging', 'decisions', 'improver', 'devices', 'projects', 'git', 'ekoa', 'agents', 'cleanup', 'configuration', 'about']);
+  expect(view.navigation.pages.map((row: { id: string }) => row.id)).toEqual(['runtimes', 'notifications', 'rigging', 'decisions', 'jev', 'improver', 'devices', 'projects', 'git', 'ekoa', 'agents', 'cleanup', 'configuration', 'about']);
   expect(view.devices).toEqual({ currentDeviceId: roster.currentDeviceId, devices: [...roster.devices.map(row => row.device), retired.device] });
   expect(view.accounts).toEqual((await (await f.request('/hub/accounts')).json()).accounts);
   expect(view.runtimes).toEqual((await (await f.request('/api/runtimes')).json()).runtimes);
