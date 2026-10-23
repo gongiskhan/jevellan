@@ -1,5 +1,7 @@
 # Projects loop implementation plan
 
+Current priority,23October: repair the hub CPU/UI reconnect regression and release proven0.7.5first, then continue the remaining waiting/permission,budget-window and verification-environment findings and deferred repeated-failure/fresh-header work. PhasesA/B are pushed;55affected responsiveness/integrity cases pass; the complete backend gate closes with3806distinct current passes and16notrun after one unchanged repeat. Two desktop core journeys pass; three and the native/install gates await resources. Both installations remain0.7.4; current live responsiveness is failed. This order supersedes the earlier075paragraph below.
+
 Current authorized continuation, 23 October after 0.7.4: repair remaining waiting/landing continuity, check-port isolation, repeated failure stops, pending fresh starts and project-environment behavior, then release 0.7.5 through the established gate and guarded Madrid-before-Pro procedure. Phases A/B are verified: unanswered-question guards, closure reasons, durable resource waits/rechecks and explicit check-port bindings. Repeated-failure stops, pending fresh starts and the complete release gate remain in progress. Owner-only items 13/15 stay excluded. Reclaim only proven own completed copies older than 0.7.4 and own cold backups older than the latest two before release. No new hard clock, review or production action. Earlier no-further-release statements below are superseded only for the explicitly authorized 0.7.5.
 
 

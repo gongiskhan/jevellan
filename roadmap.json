@@ -1178,7 +1178,7 @@
   {
     "id": "release-075",
     "title": "Preserve blocked work and release 0.7.5",
-    "why": "Phases A/B verified: unanswered linked questions refuse premature withdrawal; status retains closure reasons, legacy audits and blocked work. Durable typed port waits recover across restart, recheck and auto-retry; explicit managed port bindings reach normal editor/vault/all check paths.241complete affected cases/static/build and desktop landing main action pass. The project-environment case already passes before changes. Project scripts with committed fixed ports require separately authorized project work. Repeated-failure stops, pending fresh starts, full backend/five cores/native artifacts/cleanup/cold backups/strict hub-before-member release gates remain in progress. Both devices remain0.7.4; owner13/15 excluded,production untouched.",
+    "why": "P0 hub CPU repair source: typecheck/lint/build and55complete affected cases pass. Full6worker3822-case run:3805pass/1simulatedPTYstartupfail/16notrun; exact1repeat passes unchanged, covering3806distinct cases. Source2749filesunchanged. Desktop settings+Overview pass/9exact images; three cores/native archives/publication/strict installs/liveCPUproof pending. Proload and separateMadridpeer tests refuse unchanged resourceguards. Both installations074; liveCPU/UIrecovery not claimed. Remaining permission-check reporting, weekly budget/source attribution, verification credential isolation and repeated-failure/fresh-header work remain ordered after P0release.",
     "status": "in-progress"
   }
 ]

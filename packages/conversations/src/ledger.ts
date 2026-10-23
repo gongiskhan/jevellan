@@ -15,6 +15,24 @@ export type LedgerSpec<E extends LedgerEnvelope> = { schema: DocumentSchema<E>; 
 export type LedgerAppend<E extends LedgerEnvelope> = { type: E['type']; data: unknown; t?: string } & Partial<Omit<E, 'schema' | 't' | 'id' | 'type' | 'data'>>;
 export type LedgerOptions = { redactor?: SecretRedactor; rollBytes?: number; now?: () => string };
 
+// Shared across ledger instances: bound retained source bytes and evict idle segments without holding file descriptors.
+const VALIDATED_SOURCE_LIMIT = 64 * 1024 * 1024;
+const validatedSegments = new Map<object, { bytes: number; evict(): void }>();
+let validatedTextBytes = 0;
+function forgetSegment(key: object): void {
+  const entry = validatedSegments.get(key); if (!entry) return;
+  validatedTextBytes -= entry.bytes; validatedSegments.delete(key); entry.evict();
+}
+function retainSegment(key: object, bytes: number, evict: () => void): void {
+  validatedSegments.set(key, { bytes, evict }); validatedTextBytes += bytes;
+  while (validatedTextBytes > VALIDATED_SOURCE_LIMIT || validatedSegments.size > 256) forgetSegment(validatedSegments.keys().next().value!);
+}
+type ValidatedSegment<E> = { signature: string; bytes: Buffer; firstId: number; records: E[] };
+const segmentSignature = (path: string): string => {
+  const value = lstatSync(path, { bigint: true });
+  return [value.dev, value.ino, value.size, value.mtimeNs, value.ctimeNs].join(':');
+};
+
 /**
  * Append-only JSONL segments with content-addressed blobs. The owner daemon is the only writer.
  * Blobs keep the internal conversation-blob-v1 document for every ledger kind.
@@ -25,6 +43,7 @@ export class JsonlLedger<E extends LedgerEnvelope> {
   readonly #rollBytes: number;
   readonly #now: () => string;
   readonly #listeners = new Set<(event: E) => void>();
+  readonly #validated = new Map<string, ValidatedSegment<E>>();
   constructor(readonly dir: string, spec: LedgerSpec<E>, options: LedgerOptions = {}) {
     if (!isAbsolute(dir) || resolvedPath(dir) !== dir) throw new Error(`${spec.label} directories cannot alias another location.`);
     this.#spec = spec;
@@ -55,26 +74,47 @@ export class JsonlLedger<E extends LedgerEnvelope> {
     }
     return names.map((name) => this.path('ledger', name));
   }
-  events(afterId = 0, limit = Number.MAX_SAFE_INTEGER): E[] {
-    if (!Number.isSafeInteger(afterId) || afterId < 0 || !Number.isSafeInteger(limit) || limit < 1) throw new Error('Invalid ledger range.');
-    const result: E[] = []; let expected = 1;
-    for (const path of this.segments()) {
-      const text = readFileSync(path, 'utf8');
-      // An interrupted append has no newline. Preserve that fragment on disk;
-      // the next append starts a new segment without reusing an accepted id.
-      const lines = text.slice(0, text.lastIndexOf('\n') + 1).split('\n').slice(0, -1);
-      for (const line of lines) {
+  /** Validate every segment, including records outside a requested range. Changed files are read in full. */
+  #readSegments(): E[][] {
+    const paths = this.segments(), present = new Set(paths), result: E[][] = []; let expected = 1;
+    for (const [path, entry] of this.#validated) if (!present.has(path)) forgetSegment(entry);
+    for (const path of paths) {
+      const signature = segmentSignature(path), previous = this.#validated.get(path);
+      if (previous?.signature === signature && previous.firstId === expected) {
+        const retained = validatedSegments.get(previous);
+        if (retained) { validatedSegments.delete(previous); validatedSegments.set(previous, retained); }
+        result.push(previous.records); expected += previous.records.length; continue;
+      }
+      const raw = readFileSync(path), bytes = raw.subarray(0, raw.lastIndexOf(10) + 1), firstId = expected;
+      // An append can reuse only a byte-for-byte unchanged, already validated prefix. Rewrites revalidate all its records.
+      const extendsPrevious = previous?.firstId === expected && bytes.subarray(0, previous.bytes.length).equals(previous.bytes);
+      const records = extendsPrevious ? previous.records.slice() : [];
+      expected += records.length;
+      for (const line of bytes.subarray(extendsPrevious ? previous.bytes.length : 0).toString('utf8').split('\n').slice(0, -1)) {
         let event: E;
         try { event = this.#spec.schema.parse(JSON.parse(line)); }
         catch { throw new Error(`${this.#spec.label} ledger contains an invalid record.`); }
         if (event.id !== expected++) throw new Error(`${this.#spec.label} ledger event sequence is broken.`);
-        if (event.id > afterId && result.length < limit) result.push(event);
+        records.push(event);
       }
+      // Never associate a snapshot with a generation that changed while it was being read.
+      if (signature === segmentSignature(path)) {
+        if (previous) forgetSegment(previous);
+        const entry = { signature, bytes, firstId, records }; this.#validated.set(path, entry);
+        retainSegment(entry, raw.byteLength, () => { if (this.#validated.get(path) === entry) this.#validated.delete(path); });
+      }
+      result.push(records);
     }
     return result;
   }
-  /** A full replay, so a corrupt record anywhere stops the caller (D117). */
-  lastId(): number { return this.events().at(-1)?.id ?? 0; }
+  events(afterId = 0, limit = Number.MAX_SAFE_INTEGER): E[] {
+    if (!Number.isSafeInteger(afterId) || afterId < 0 || !Number.isSafeInteger(limit) || limit < 1) throw new Error('Invalid ledger range.');
+    const result: E[] = [];
+    for (const records of this.#readSegments()) for (const event of records) if (event.id > afterId && result.length < limit) result.push(structuredClone(event));
+    return result;
+  }
+  /** Corruption anywhere still stops the caller; an unchanged validated generation needs no repeated JSON parsing. */
+  lastId(): number { return this.#readSegments().findLast(records => records.length > 0)?.at(-1)?.id ?? 0; }
   putBlob(content: unknown): BlobReference {
     this.#ensure();
     const document = BlobDocumentSchema.parse({ schema: 'conversation-blob-v1', content: this.#redactor.document(content) });
