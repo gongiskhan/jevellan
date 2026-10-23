@@ -688,3 +688,8 @@ Status continuation: recent cancelled/failed tasks with no thread or job run ret
 
 
 0.7.5 P0 preparation: bounded validated ledger generations remove repeated idle decoding/parsing and reuse only a verified unchanged byte prefix on append. All55complete affected ledger/journal cases and typecheck pass after failing-first responsiveness probes; corruption outside selected ranges, preserved-mtime rewrites, independent writers, replacement files, returned-object isolation and interrupted/empty tails remain checked. This changes infrastructure behind shared UI/tools, not baseline area dispositions. Full release/installed responsiveness remains pending. Repeated-failure/fresh-header work and new permission/budget/verification-environment findings remain planned after this owner-prioritized release.
+
+
+23October profiled responsiveness continuation: published076is installed on both devices with doctor10/10 at21:44UTC,but the live CPU/history goal fails. Actual V8 idle/one-tab profiles and top15functions/call paths are retained privately before new product edits. Bounded incremental journal projections and validated processed-capture metadata now pass failing-first regressions and44complete affected cases; no310-row disposition changes or new screen are introduced. Static/build/live validation/full backend are not inferred from focused passes. Latest owner blocks further publication until the actual live idleCPU/history criterion passes.
+
+Profile-guided source checks now also pass typecheck/lint/build and both desktop-light coordinator-chat/thread-page journeys once,zero skips/retries,six retained images and4431unchanged tracked files. Full backend and live criterion remain pending; no row disposition or release changes.

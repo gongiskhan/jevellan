@@ -13,6 +13,7 @@ type Source = Omit<MemoryCapture, 'schema' | 'id' | 'fromByte' | 'toByte' | 'at'
 /** Incremental native journal capture; only redacted slices enter the hub queue. */
 export class ProjectCaptureQueue {
   readonly #pending = new Map<string, Promise<unknown>>();
+  readonly #processed = new Map<string, string>();
   constructor(readonly homes: Homes, readonly redactor: SecretRedactor, readonly now: () => number = Date.now) {}
   directory(projectId: string) { return this.homes.ensure('project-memory', projectId, 'captures'); }
   accept(raw: MemoryCapture, text: string): void {
@@ -79,8 +80,20 @@ export class ProjectCaptureQueue {
     await flush(); return captured;
   }
   slices(projectId: string, unprocessed = true): CapturedSlice[] {
-    return readdirSync(this.directory(projectId)).filter(file => file.endsWith('.json')).map(file => readDocument(join(this.directory(projectId), file), SliceSchema))
-      .filter(slice => !unprocessed || !slice.capture.processedAt).sort((a, b) => b.capture.at.localeCompare(a.capture.at) || b.capture.toByte - a.capture.toByte || (b.capture.fragment?.index ?? 0) - (a.capture.fragment?.index ?? 0));
+    const directory = this.directory(projectId);
+    return readdirSync(directory).filter(file => file.endsWith('.json')).flatMap(file => {
+      const path = join(directory, file), stat = statSync(path, { bigint: true });
+      const signature = [stat.dev, stat.ino, stat.size, stat.mtimeNs, stat.ctimeNs].join(':');
+      // Processed transcript text is immutable between file generations. Keep only its validated metadata,
+      // never the text; a peer's atomic replacement or in-place change must be read and validated again.
+      if (unprocessed && this.#processed.get(path) === signature) return [];
+      const slice = readDocument(path, SliceSchema);
+      if (slice.capture.processedAt) {
+        this.#processed.delete(path); this.#processed.set(path, signature);
+        if (this.#processed.size > 8192) this.#processed.delete(this.#processed.keys().next().value!);
+      } else this.#processed.delete(path);
+      return unprocessed && slice.capture.processedAt ? [] : [slice];
+    }).sort((a, b) => b.capture.at.localeCompare(a.capture.at) || b.capture.toByte - a.capture.toByte || (b.capture.fragment?.index ?? 0) - (a.capture.fragment?.index ?? 0));
   }
   extractionInput(projectId: string): { text: string; captures: MemoryCapture[]; bytes: number } {
     const slices = this.slices(projectId), bytes = slices.reduce((sum, slice) => sum + Buffer.byteLength(slice.text), 0);
@@ -106,5 +119,5 @@ export class ProjectCaptureQueue {
       if (!slice.capture.processedAt) writeDocument(file, SliceSchema, { ...slice, capture: { ...slice.capture, processedAt: new Date(this.now()).toISOString(), extractionId } });
     }
   }
-  async close(): Promise<void> { await Promise.allSettled([...this.#pending.values()]); }
+  async close(): Promise<void> { await Promise.allSettled([...this.#pending.values()]); this.#processed.clear(); }
 }

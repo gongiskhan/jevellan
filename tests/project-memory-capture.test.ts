@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'vitest';
-import { appendFileSync, mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdtempSync, mkdirSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -49,4 +49,26 @@ test('extraction input is newest first and bounds non-ASCII text to 300 KB with 
     at: new Date(Date.parse('2026-10-12T00:00:00Z') + n*1000).toISOString(), processedAt: null, extractionId: null }, `new_${n} ${'ção '.repeat(40000)}`);
   const input = f.queue.extractionInput('fixture'); expect(Buffer.byteLength(input.text)).toBeLessThanOrEqual(300000); expect(input.text.indexOf('new_3')).toBeLessThan(input.text.indexOf('new_2'));
   expect(input.text).toContain('trimmed'); expect(input.captures).toHaveLength(4);
+});
+
+test('repeated extraction checks stay cheap with a large processed history and still see captures from another queue', () => {
+  const f = fixture(), at = '2026-10-12T00:00:00.000Z';
+  for (let n = 0; n < 256; n++) f.queue.accept({ ...f.source, schema: 'memory-capture-v1', id: `processed_${n}`, fromByte: n * 100_000, toByte: (n + 1) * 100_000,
+    at, processedAt: at, extractionId: 'extraction_completed' }, 'A previously extracted convention. '.repeat(3_000));
+  const next = { ...f.source, schema: 'memory-capture-v1' as const, id: 'capture_pending', fromByte: 0, toByte: 5000, at, processedAt: null, extractionId: null };
+  f.queue.accept(next, 'One new durable convention. '.repeat(200));
+  const expected = f.queue.extractionInput('fixture'); expect(expected.captures.map(row => row.id)).toEqual([next.id]);
+  const started = process.cpuUsage();
+  for (let n = 0; n < 8; n++) expect(f.queue.extractionInput('fixture')).toEqual(expected);
+  const cpu = process.cpuUsage(started);
+  expect((cpu.user + cpu.system) / 1000).toBeLessThan(150);
+  const peer = new ProjectCaptureQueue(f.homes, new SecretRedactor());
+  peer.processed('fixture', [next], 'extraction_peer');
+  expect(f.queue.extractionInput('fixture').captures).toHaveLength(0);
+  peer.accept({ ...next, id: 'capture_later', at: '2026-10-12T00:01:00.000Z' }, 'A later convention.');
+  expect(f.queue.extractionInput('fixture').captures.map(row => row.id)).toEqual(['capture_later']);
+  expect(f.queue.slices('fixture', false)).toHaveLength(258);
+  const processed = join(f.queue.directory('fixture'), 'processed_0.json'), before = statSync(processed);
+  writeFileSync(processed, ' '.repeat(before.size)); utimesSync(processed, before.atime, before.mtime);
+  expect(() => f.queue.extractionInput('fixture')).toThrow();
 });

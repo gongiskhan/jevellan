@@ -6,7 +6,7 @@ import { setImmediate as yieldRequests } from 'node:timers/promises';
 import { CoordinatorEventSchema, CoordinatorHandoffSchema, defaultProjectWorkSettings, IdSchema, JournalConfigSchema, JournalDocumentSchema, JournalRelativePathSchema, JournalThreadSchema, ProjectJournalRecordSchema, ProjectJournalRequestSchema, ProjectJournalResultSchema,
   ProjectJournalStateSchema, ProjectLedgerEventSchema, atomicWrite, parseProjectLedgerData, readDocument, stableJson, writeDocument, type Homes, type Project,
   type CoordinatorHandoff, type ProjectHub, type JournalDocument, type ProjectJournalRecord, type ProjectJournalRequest, type ProjectJournalResult, type ProjectJournalState, type Thread } from '@jevellan/core';
-import type { ProjectLedgers } from './ledger.js';
+import type { ProjectLedger, ProjectLedgers } from './ledger.js';
 import { JOURNAL_RENDERER, journalRecordKey, renderProjectJournal, threadJournalFile, validateJournalDocument } from './journal-render.js';
 import { taskOrder } from './tasks.js';
 import { CoordinatorReplySchema, CoordinatorTurnStartSchema, CoordinatorTurnEndSchema, CoordinatorTextSchema } from '@jevellan/core';
@@ -36,6 +36,8 @@ export function coordinatorReplyFromRecords(projectId: string, clientMessageId: 
 const PublishStateSchema = z.strictObject({ schema: z.literal('project-journal-publish-state-v1'), cursors: z.record(z.string(), z.number().int().nonnegative()) });
 const digest = (bytes: string | Buffer): string => createHash('sha256').update(bytes).digest('hex');
 const refuse = (text: string, status = 409): Error => Object.assign(new Error(text), { status });
+type JournalLedgerIndex = { head: number; bytes: number; latest: Map<string, import('@jevellan/core').ProjectLedgerEvent>;
+  records: ProjectJournalRecord[]; documents: Map<string, JournalDocument>; handoffs: CoordinatorHandoff[] };
 export type JournalOptions = { homes: Homes; deviceId: string; isHub: boolean; ledgers: ProjectLedgers; hub: ProjectHub;
   projects(): Promise<Project[]>; threads(projectId: string): Thread[]; now(): number;
   dream?(projectId: string): { id: string; report: Record<string, unknown>; windowId?: string } | undefined;
@@ -45,9 +47,40 @@ export type JournalOptions = { homes: Homes; deviceId: string; isHub: boolean; l
 export class ProjectJournals {
   readonly #running = new Map<string, Promise<void>>();
   readonly #publications = new Map<string, Promise<number>>();
+  readonly #indexes = new Map<ProjectLedger, JournalLedgerIndex>();
+  #indexBytes = 0;
+  readonly #rendered = new Map<string, { head: number; inputs: string; state: string }>();
   #timer: ReturnType<typeof setInterval> | undefined;
   #closed = false;
   constructor(readonly o: JournalOptions) {}
+  #index(ledger: ProjectLedger): JournalLedgerIndex {
+    // lastId validates every segment generation, including corruption outside the requested tail.
+    const head = ledger.lastId(), prior = this.#indexes.get(ledger);
+    const index: JournalLedgerIndex = prior ?? { head: 0, bytes: 0, latest: new Map(), records: [], documents: new Map(), handoffs: [] };
+    const before = index.bytes;
+    try {
+      if (head < index.head) throw refuse('The project journal ledger moved backwards.');
+      if (head !== index.head) for (const event of ledger.events(index.head)) {
+        if (['journal-config', 'journal-thread', 'journal-source', 'journal-document', 'coordinator-handoff'].includes(event.type)) {
+          index.latest.set(event.type, event); index.bytes += Buffer.byteLength(JSON.stringify(event));
+          if (event.type === 'journal-source') index.records.push(ledger.payload(event as typeof event & { type: 'journal-source' }));
+          if (event.type === 'journal-document') { const data = ledger.payload(event as typeof event & { type: 'journal-document' }); index.documents.set(`${data.collection}:${data.key}`, data); }
+          if (event.type === 'coordinator-handoff') index.handoffs.push(ledger.payload(event as typeof event & { type: 'coordinator-handoff' }));
+        }
+        index.head = event.id;
+      }
+    } catch (error) {
+      if (prior) { this.#indexBytes -= before; this.#indexes.delete(ledger); }
+      throw error;
+    }
+    this.#indexBytes += index.bytes - (prior ? before : 0);
+    this.#indexes.delete(ledger); this.#indexes.set(ledger, index);
+    // Bound retained projections by their serialized source size; an evicted projection rebuilds from authoritative ledgers.
+    while (this.#indexBytes > 64 * 1024 * 1024 || this.#indexes.size > 128) {
+      const oldest = this.#indexes.keys().next().value!; this.#indexBytes -= this.#indexes.get(oldest)!.bytes; this.#indexes.delete(oldest);
+    }
+    return index;
+  }
   path(projectId: string): string {
     const path = this.o.homes.at('project-journal', IdSchema.parse(projectId));
     if (path !== join(this.o.homes.root, 'project-journal', projectId)) throw refuse('The project journal cannot alias another folder.');
@@ -112,7 +145,7 @@ export class ProjectJournals {
   async #sync(projectId: string, rebuild: boolean): Promise<void> {
     const project = (await this.o.projects()).find(row => row.id === projectId); if (!project) throw refuse('Project not found.', 404);
     if (this.o.isHub) {
-      const ledger = this.o.ledgers.coordinator(projectId), previous = ledger.events().findLast(event => event.type === 'journal-config');
+      const ledger = this.o.ledgers.coordinator(projectId), previous = this.#index(ledger).latest.get('journal-config');
       const settings = (await this.o.hub.settings(projectId))?.document ?? defaultProjectWorkSettings(projectId);
       const config = JournalConfigSchema.parse({ schema: 'journal-config-v1', name: project.name, timezone: settings.nightlyWindow.timezone });
       if (!previous || stableJson(ledger.payload(previous as typeof previous & { type: 'journal-config' })) !== stableJson(config)) ledger.append({ type: 'journal-config', data: config });
@@ -131,8 +164,7 @@ export class ProjectJournals {
         }
         published.cursors[id] = cursor; writeDocument(statePath, PublishStateSchema, published); records = []; bytes = 0;
       };
-      for (const event of ledger.events()) {
-        if (event.id <= (published.cursors[id] ?? 0)) continue;
+      for (const event of ledger.events(published.cursors[id] ?? 0)) {
         if (event.type === 'journal-source') { cursor = event.id; continue; }
         const record = ProjectJournalRecordSchema.parse({ schema: 'project-journal-record-v1', deviceId: this.o.deviceId, ledgerId: id, event: { ...event, data: ledger.payload(event) } });
         const size = Buffer.byteLength(JSON.stringify(record));
@@ -148,7 +180,7 @@ export class ProjectJournals {
     const tasks = await this.#all(projectId, (after) => this.o.hub.tasks(projectId, after));
     for (const thread of this.o.threads(projectId)) {
       const ledger = this.o.ledgers.thread(projectId, thread.id);
-      const previous = ledger.events().findLast(event => event.type === 'journal-thread');
+      const previous = this.#index(ledger).latest.get('journal-thread');
       const task = tasks.find(row => row.threadId === thread.id);
       const data = JournalThreadSchema.parse({ schema: 'journal-thread-v1', id: thread.id, projectId, title: thread.title,
         task: thread.brief ?? thread.task, taskId: task?.id ?? null, goal: thread.taskContext?.goal?.name ?? null, type: thread.taskContext?.type ?? null,
@@ -163,8 +195,7 @@ export class ProjectJournals {
     return rows;
   }
   async #captureDocuments(projectId: string, hubMemory: boolean): Promise<void> {
-    const ledger = this.o.ledgers.coordinator(projectId), recorded = new Map<string, JournalDocument>();
-    for (const event of ledger.events()) if (event.type === 'journal-document') { const data = ledger.payload(event as typeof event & { type: 'journal-document' }); recorded.set(`${data.collection}:${data.key}`, data); }
+    const ledger = this.o.ledgers.coordinator(projectId), recorded = this.#index(ledger).documents;
     const collections: Array<Array<Omit<JournalDocument, 'schema'>>> = await Promise.all([
       this.#all(projectId, after => this.o.hub.windows(projectId, after)).then(rows => rows.map(document => ({ collection: 'window' as const, key: document.id, document }))),
       this.#all(projectId, after => this.o.hub.tasks(projectId, after)).then(rows => rows.map(document => ({ collection: 'task' as const, key: document.id, document }))),
@@ -215,8 +246,7 @@ export class ProjectJournals {
     return accepted;
   }
   #records(projectId: string): ProjectJournalRecord[] {
-    const ledger = this.o.ledgers.coordinator(projectId);
-    return ledger.events().flatMap(event => event.type === 'journal-source' ? [ledger.payload(event as typeof event & { type: 'journal-source' })] : []);
+    return this.#index(this.o.ledgers.coordinator(projectId)).records;
   }
   async request(raw: unknown, deviceId: string): Promise<ProjectJournalResult> {
     if (!this.o.isHub) throw refuse('The journal authority is the hub.', 404);
@@ -275,27 +305,32 @@ export class ProjectJournals {
     atomicWrite(target, text, 0o400);
   }
   async #render(project: Project, requested: boolean): Promise<void> {
-    const records = this.#records(project.id), prior = this.state(project.id), rebuild = requested || prior.renderer !== JOURNAL_RENDERER, settings = (await this.o.hub.settings(project.id))?.document ?? defaultProjectWorkSettings(project.id);
+    const prior = this.state(project.id), rebuild = requested || prior.renderer !== JOURNAL_RENDERER, ledger = this.o.ledgers.coordinator(project.id), head = ledger.lastId();
+    const settings = (await this.o.hub.settings(project.id))?.document ?? defaultProjectWorkSettings(project.id);
     const threads = await this.#all(project.id, after => this.o.hub.threads(project.id, after));
+    const questions = (await this.o.hub.decisions(project.id)).filter(question => !question.answer && !question.withdrawnAt).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+    const tasks = await this.#all(project.id, after => this.o.hub.tasks(project.id, after));
+    const inputs = digest(stableJson({ name: project.name, nightlyWindow: settings.nightlyWindow, threads, questions, tasks })), previous = this.#rendered.get(project.id);
+    if (!rebuild && previous?.head === head && previous.inputs === inputs && previous.state === digest(stableJson(prior)) && Object.keys(prior.files).every(path => existsSync(this.#file(project.id, path)))) return;
+    const records = this.#records(project.id);
     const headers = new Map<string, ReturnType<typeof JournalThreadSchema.parse>>();
     for (const record of records) if (record.event.type === 'journal-thread') { const data = JournalThreadSchema.parse(record.event.data); if (!headers.has(data.id)) headers.set(data.id, data); }
     const open = threads.filter(thread => !['done', 'stopped', 'failed'].includes(thread.state)).map(thread => `- Thread "${thread.title.replace(/[\r\n]/gu, ' ')}" (${thread.runtime} ${thread.modelLabel}, ${thread.state}${thread.pr ? `, PR #${thread.pr.number} ${thread.pr.checks}` : ''})${headers.has(thread.id) ? ` → ${threadJournalFile(headers.get(thread.id)!)}` : ' (no journal yet)'}`);
-    const questions = (await this.o.hub.decisions(project.id)).filter(question => !question.answer && !question.withdrawnAt).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
     for (const [index, question] of questions.entries()) {
       const source = records.findLast(record => record.event.type === 'journal-document' && JournalDocumentSchema.parse(record.event.data).collection === 'question' && JournalDocumentSchema.parse(record.event.data).key === question.id);
       const path = question.threadId && headers.has(question.threadId) ? threadJournalFile(headers.get(question.threadId)!)
         : source ? `days/${new Intl.DateTimeFormat('en-CA', { timeZone: settings.nightlyWindow.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(source.event.t))}.md` : 'INDEX.md';
       open.push(`- Question ${index + 1}: [${threads.find(thread => thread.id === question.threadId)?.title ?? 'Coordinator'}] ${question.question.replace(/[\r\n]/gu, ' ')} → ${path}${source ? `#e-${journalRecordKey(source)}` : ''}`);
     }
-    const tasks = await this.#all(project.id, after => this.o.hub.tasks(project.id, after)); open.push(`- Queue: ${tasks.filter(task => task.state === 'queued').sort(taskOrder).slice(0, 10).map(task => task.title.replace(/[\r\n]/gu, ' ')).join('; ') || '(none)'}`);
+    open.push(`- Queue: ${tasks.filter(task => task.state === 'queued').sort(taskOrder).slice(0, 10).map(task => task.title.replace(/[\r\n]/gu, ' ')).join('; ') || '(none)'}`);
     const windows = new Map<string, Record<string, unknown>>();
     for (const record of records) if (record.event.type === 'journal-document') { const data = JournalDocumentSchema.parse(record.event.data); if (data.collection === 'window') windows.set(data.key, data.document); }
     const activeWindow = [...windows.values()].find(window => window.state === 'open');
     open.push(`- Nightly: ${activeWindow ? `window in progress (${String(activeWindow.date)})` : settings?.nightlyWindow.enabled ? `${settings.nightlyWindow.time} ${settings.nightlyWindow.timezone}` : '(disabled)'}`);
-    const latest = this.o.ledgers.coordinator(project.id).events().findLast(event => event.type === 'journal-source');
+    const index = this.#index(ledger), latest = index.latest.get('journal-source');
     const updatedAt = latest?.t ?? '1970-01-01T00:00:00.000Z';
     const rendered = renderProjectJournal({ name: project.name, timezone: settings.nightlyWindow.timezone, records, open, updatedAt });
-    const handoffs = this.o.ledgers.coordinator(project.id).events().flatMap(event => event.type === 'coordinator-handoff' ? [this.o.ledgers.coordinator(project.id).payload(event as typeof event & { type: 'coordinator-handoff' })] : []);
+    const handoffs = index.handoffs;
     for (const handoff of handoffs) {
       const path = `handoffs/${handoff.date}-${handoff.sequence}`;
       rendered.files[`${path}.json`] = `${JSON.stringify(handoff, null, 2)}\n`;
@@ -303,8 +338,9 @@ export class ProjectJournals {
     }
     if (handoffs.length) rendered.files['INDEX.md'] += `\n## Coordinator handoffs\n${handoffs.map(row => `- ${row.date}-${row.sequence} → handoffs/${row.date}-${row.sequence}.md`).join('\n')}\n`;
     const state: ProjectJournalState = { schema: 'project-journal-state-v2', renderer: JOURNAL_RENDERER, lastLedgerEventId: records.at(-1) ? journalRecordKey(records.at(-1)!) : null, files: {}, indexUpdatedAt: new Date(this.o.now()).toISOString() };
+    let indexDeferred = false;
     for (const [path, text] of Object.entries(rendered.files)) {
-      if (path === 'INDEX.md' && !rebuild && this.o.now() - Date.parse(prior.indexUpdatedAt) < 10000) { if (prior.files[path]) state.files[path] = prior.files[path]; state.indexUpdatedAt = prior.indexUpdatedAt; continue; }
+      if (path === 'INDEX.md' && !rebuild && this.o.now() - Date.parse(prior.indexUpdatedAt) < 10000) { if (prior.files[path]) state.files[path] = prior.files[path]; state.indexUpdatedAt = prior.indexUpdatedAt; indexDeferred = prior.files[path] !== digest(text) || !existsSync(this.#file(project.id, path)); continue; }
       const hash = digest(text); state.files[path] = hash;
       if (path === 'INDEX.md' && prior.files[path] === hash && existsSync(this.#file(project.id, path))) state.indexUpdatedAt = prior.indexUpdatedAt;
       if (prior.files[path] !== hash || !existsSync(this.#file(project.id, path))) {
@@ -313,6 +349,7 @@ export class ProjectJournals {
       }
     }
     if (stableJson(state) !== stableJson(prior)) writeDocument(this.#statePath(project.id), ProjectJournalStateSchema, state);
+    if (!indexDeferred) this.#rendered.set(project.id, { head, inputs, state: digest(stableJson(state)) }); else this.#rendered.delete(project.id);
   }
   async #mirror(projectId: string): Promise<void> {
     const response = await this.o.request?.({ schema: 'project-journal-request-v1', projectId, operation: 'state' });
@@ -331,5 +368,5 @@ export class ProjectJournals {
     }
     if (stableJson(next) !== stableJson(before)) writeDocument(this.#statePath(projectId), ProjectJournalStateSchema, next);
   }
-  async close(): Promise<void> { this.#closed = true; if (this.#timer) clearInterval(this.#timer); await Promise.allSettled([...this.#running.values(), ...this.#publications.values()]); }
+  async close(): Promise<void> { this.#closed = true; if (this.#timer) clearInterval(this.#timer); await Promise.allSettled([...this.#running.values(), ...this.#publications.values()]); this.#indexes.clear(); this.#indexBytes = 0; this.#rendered.clear(); }
 }
