@@ -1,0 +1,37 @@
+# Desktop closure — 23 October 2026
+
+Evidence: simulated product. Live provider vision on the new Jev screen is separate from product/live acceptance.
+
+The corrected complete backend gate has 3,785 passes, zero failures and 16 not run of 3,801 collected cases, with six workers; typecheck, lint, build and source integrity pass. The single whole desktop-light run has 97 passes, 19 failures and 67 skips of 183 selected. All 19 failures received one exact isolated repeat: 0 passed and 19 failed again. Five repeated core failures were corrected at their browser fixture boundaries, then passed; the five explicit core smokes also pass. 14 repeated noncore failures and the original skipped coverage remain recorded. This satisfies the owner's reduced core gate with gaps; it is not a full browser pass or live acceptance.
+
+The whole run used four workers across four fixture groups with the same desktop-light layout. Backend verification used six workers after a fresh resource guard. Exact browser repeats ran sequentially with one worker and fresh guards. One resource refusal executed no test; no guard was relaxed or peer process stopped.
+
+The original run retains 213 images and 211 vision-not-run receipts. All 58 generated checkout captures were archived privately before their verified committed bytes were restored. Each repeat and core run has its own retained evidence path and digest inventory. The new Jev screen retains its earlier one-image/live-vision receipt; later screenshots do not replace it.
+
+| Original failed journey | Exact repeat | Disposition |
+| --- | --- | --- |
+| conversation replies read as chat while tools and recorded details remain available | Failed again | Recorded; optional repair planned |
+| pending work shows a live stage while controls stay compact | Failed again | Recorded; optional repair planned |
+| user messages stay readable and support retry, cancel editing and resend | Failed again | Recorded; optional repair planned |
+| plans are readable, wait for acceptance, and offer revision with stale-plan context | Failed again | Recorded; optional repair planned |
+| SESSIONS1 canonical preferences preserve rename, order, stale responses and reconnects | Failed again | Recorded; optional repair planned |
+| Codex usage shows a reported weekly window and keeps an absent five-hour window unknown | Failed again | Recorded; optional repair planned |
+| Settings account, login, Rigging and configuration flows work without horizontal overflow | Failed again | Recorded; optional repair planned |
+| Why lists recalled project memory and its selection source after reload | Failed again | Recorded; optional repair planned |
+| provider login recovers lost start and accepted-code replies inside its panel | Failed again | Recorded; optional repair planned |
+| hub recovery resumes sign-in and reconciles a settings save whose reply was lost | Failed again | Core fixture corrected; targeted journey passed |
+| hub recovery stops abandoned settings requests before another write | Failed again | Core fixture corrected; targeted journey passed |
+| hub recovery starts one conversation after admission loss and a lost creation reply | Failed again | Recorded; optional repair planned |
+| J11 simulated mesh journey publishes memory, recalls after pull and reviews a context merge | Failed again | Recorded; optional repair planned |
+| Settings saves wait through hub loss, reconcile lost replies and abandon a closed editor | Failed again | Core fixture corrected; targeted journey passed |
+| project, Jev, local Rigging and device Settings recover their hub boundaries | Failed again | Core fixture corrected; targeted journey passed |
+| Projects shows the vault and offers Restore from the vault for an origin it holds | Failed again | Recorded; optional repair planned |
+| a project card keeps a long test command inside the card and its Edit button in view | Failed again | Recorded; optional repair planned |
+| a member on another version than its hub shows the update banner, and a hub shows none | Failed again | Recorded; optional repair planned |
+| Home opens the first sidebar project while New conversation stays available | Failed again | Core fixture corrected; targeted journey passed |
+
+The first corrected fixture run passed three journeys and failed two. Each remaining failure received one exact unchanged selected-case repeat. The final two corrected journeys passed without retry or skip. The cancellation journey now requires an enabled Retry save and a disabled new-save action, identical retry bodies, exactly two attempted writes and unchanged configuration after leaving. The Rigging fault is injected at the current action API; saved content and abandoned-write assertions remain. No timeout or behavior check was weakened.
+
+The five explicitly executed core smokes cover settings save, Overview, thread list, thread page and the simulated pinned deploy message/rollback. They do not establish a real deployment or remote bridge acceptance. The original 67 skips remain visible; later selected checks do not turn the original full run into a pass.
+
+Only the core browser fixtures were corrected after the complete backend gate. Application implementation remains byte-identical to its passing backend proof; final static/build checks and the affected browser checks cover the fixture updates. No additional full-suite classification, four-layout matrix, release or closing review was performed.

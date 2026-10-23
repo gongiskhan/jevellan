@@ -6,7 +6,7 @@ import { ekoaEditor } from '../../packages/core/dist/index.js';
 import { basename } from 'node:path';
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { ContextPanelSchema, ProjectsListSchema, ProjectThreadActionsViewSchema, CleanupStateSchema, DeviceRosterSchema, MergeDocumentsViewSchema, ProjectJobRunListViewSchema, ProjectDeployViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectWorkListViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
+import { ContextPanelSchema, ProjectsListSchema, ProjectThreadActionsViewSchema, CleanupStateSchema, DeviceRosterSchema, MergeDocumentsViewSchema, ProjectJobRunListViewSchema, ProjectDeployViewSchema, ProjectDailyListViewSchema, ProjectEventFrameSchema, ProjectSidebarViewSchema, ProjectWorkViewSchema, RuntimeListSchema, TaskListViewSchema, TaskReceiptSchema, TerminalSnapshotSchema, ThreadViewSchema, WorktreeDiskSchema, type ThreadView, type CursorTurn } from '../../packages/core/dist/client.js';
 import { threadDeviceOffline } from '../../packages/projects/dist/copy.js';
 import { expect, test } from './fixtures.js';
 import { expectClearOfComposer, expectNoStaleJump, openSidebar } from './navigation.js';
@@ -303,8 +303,8 @@ test('Home opens the first sidebar project while New conversation stays availabl
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: name!, exact: true })).toBeVisible();
   // A successful empty project list still leaves a usable starting page.
-  const emptyProjects = ProjectWorkListViewSchema.parse({ schema: 'project-work-list-view-v1', projects: [] });
-  await page.route('**/api/project-work', route => route.fulfill({ json: emptyProjects }));
+  const emptyProjects = ProjectSidebarViewSchema.parse({ schema: 'project-sidebar-view-v1', projects: [], activeIds: [], archivedIds: [], waitingTotal: 0, defaultProject: null });
+  await page.route('**/api/project-work/sidebar', route => route.fulfill({ json: emptyProjects }));
   await page.goto('/');
   await expect(page).toHaveURL(/\/new$/);
   await expect(page.getByRole('heading', { name: 'New conversation', exact: true })).toBeVisible();

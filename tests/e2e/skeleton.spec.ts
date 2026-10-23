@@ -771,7 +771,7 @@ test('hub recovery resumes sign-in and reconciles a settings save whose reply wa
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible(); expect(logins).toBe(2);
   await page.getByRole('navigation', { name: 'Settings', exact: true }).getByRole('button', { name: 'Decisions', exact: true }).click();
   const before = await (await page.request.get('/hub/config')).json(); const bodies: string[] = []; let savedRevision: number | undefined;
-  await page.context().route('**/hub/config', async route => {
+  await page.context().route('**/api/config/decisions', async route => {
     if (route.request().method() !== 'PUT') { await route.continue(); return; }
     bodies.push(route.request().postData()!);
     if (bodies.length === 1) {
@@ -784,7 +784,7 @@ test('hub recovery resumes sign-in and reconciles a settings save whose reply wa
   await expect(page.getByText(message, { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `docs/acceptance/screenshots/phase4-settings-wait-${info.project.name}.png`, fullPage: false });
-  await expect(page.getByRole('status').filter({ hasText: 'Settings saved.' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Decisions settings saved.' })).toBeVisible();
   const after = await (await page.request.get('/hub/config')).json(); expect(after.revision).toBe(before.revision + 1); expect(after.revision).toBe(savedRevision); expect(bodies).toHaveLength(2); expect(bodies[1]).toBe(bodies[0]);
 });
 
@@ -843,13 +843,13 @@ test('hub recovery stops abandoned settings requests before another write', asyn
   await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const tabs = page.getByRole('navigation', { name: 'Settings', exact: true }); await tabs.getByRole('button', { name: 'Decisions', exact: true }).click();
-  const before = await (await page.request.get('/hub/config')).json(); let writes = 0;
-  await page.context().route('**/hub/config', route => { if (route.request().method() !== 'PUT') return route.continue(); writes++; return route.fulfill(unavailable); });
+  const before = await (await page.request.get('/hub/config')).json(); let writes = 0; const bodies: string[] = [];
+  await page.context().route('**/api/config/decisions', route => { if (route.request().method() !== 'PUT') return route.continue(); writes++; bodies.push(route.request().postData()!); return route.fulfill(unavailable); });
   await page.getByRole('button', { name: 'Save decisions settings' }).click(); await expect(page.getByText(message, { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Stop waiting', exact: true }).click(); await expect(page.getByText(message, { exact: true })).not.toBeVisible(); await expect(page.getByRole('button', { name: 'Save decisions settings' })).toBeEnabled();
-  await page.getByRole('button', { name: 'Save decisions settings' }).click(); await expect(page.getByText(message, { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Stop waiting', exact: true }).click(); await expect(page.getByText(message, { exact: true })).not.toBeVisible(); await expect(page.getByRole('button', { name: 'Retry save', exact: true })).toBeEnabled(); await expect(page.getByRole('button', { name: 'Save decisions settings' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Retry save', exact: true }).click(); await expect(page.getByText(message, { exact: true })).toBeVisible();
   await tabs.getByRole('button', { name: 'Configuration', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Configuration', exact: true })).toBeVisible(); await expect(page.getByText(message, { exact: true })).not.toBeVisible();
-  await page.waitForTimeout(2300); expect(writes).toBe(2); expect((await (await page.request.get('/hub/config')).json()).revision).toBe(before.revision);
+  await page.waitForTimeout(2300); expect(writes).toBe(2); expect(new Set(bodies).size).toBe(1); expect((await (await page.request.get('/hub/config')).json()).revision).toBe(before.revision);
 });
 
 test('hub recovery starts one conversation after admission loss and a lost creation reply', async ({ page }) => {
@@ -1000,7 +1000,7 @@ test('Settings saves wait through hub loss, reconcile lost replies and abandon a
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/settings/runtimes'); await page.getByLabel('Passphrase').fill('jevellan-browser-fixture'); await page.getByRole('button', { name: 'Sign in', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Runtimes', exact: true })).toBeVisible();
   const dialog = page.getByRole('dialog'); const createdBodies: string[] = [];
-  await page.context().route('**/hub/accounts', async route => {
+  await page.context().route('**/api/accounts/editor/save', async route => {
     if (route.request().method() !== 'POST') return route.continue();
     createdBodies.push(route.request().postData()!);
     if (createdBodies.length === 1) await route.fulfill(unavailable);
@@ -1018,9 +1018,9 @@ test('Settings saves wait through hub loss, reconcile lost replies and abandon a
     await page.context().route(`${info.project.use.baseURL}${path}`, async route => { if (route.request().method() !== method) return route.continue(); bodies.push(route.request().postData()!); if (bodies.length === 1) { const saved = await route.fetch({ timeout }); expect(saved.ok()).toBe(true); await route.fulfill(unavailable); } else await route.continue(); });
     return { lost, check: () => { expect(bodies).toHaveLength(2); expect(new Set(bodies).size).toBe(1); expect(JSON.parse(bodies[0]!).clientRequestId).toBeTruthy(); } };
   };
-  const edited = await loseSavedReply(`/hub/accounts/${account.account.id}`, 'PATCH'); await card.getByRole('button', { name: 'Edit', exact: true }).click(); await dialog.getByLabel('Label', { exact: true }).fill('Recovered account edit'); await dialog.getByRole('button', { name: 'Save account', exact: true }).click(); await edited.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); edited.check(); await expect(card).toContainText('Recovered account edit');
-  const replaced = await loseSavedReply(`/hub/accounts/${account.account.id}/credential`, 'PUT'); await card.getByRole('button', { name: 'Replace key', exact: true }).click(); await dialog.getByLabel('New API key', { exact: true }).fill(`fixture-${randomUUID()}`); await dialog.getByRole('button', { name: 'Replace key', exact: true }).click(); await replaced.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); replaced.check();
-  await page.goto('/settings/rigging'); const added = await loseSavedReply('/hub/rigging', 'POST', 180_000); await page.getByRole('button', { name: 'Add local item', exact: true }).click(); await dialog.getByLabel('Name', { exact: true }).fill('Recoverable Settings skill'); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('Preserve the requested scope.'); await dialog.getByRole('button', { name: 'Add item', exact: true }).click(); await added.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); added.check();
+  const edited = await loseSavedReply('/api/accounts/editor/save', 'POST'); await card.getByRole('button', { name: 'Edit', exact: true }).click(); await dialog.getByLabel('Label', { exact: true }).fill('Recovered account edit'); await dialog.getByRole('button', { name: 'Save account', exact: true }).click(); await edited.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); edited.check(); await expect(card).toContainText('Recovered account edit');
+  const replaced = await loseSavedReply('/api/accounts/editor/save', 'POST'); await card.getByRole('button', { name: 'Replace key', exact: true }).click(); await dialog.getByLabel('New API key', { exact: true }).fill(`fixture-${randomUUID()}`); await dialog.getByRole('button', { name: 'Replace key', exact: true }).click(); await replaced.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); replaced.check();
+  await page.goto('/settings/rigging'); const added = await loseSavedReply('/api/rigging/actions', 'POST', 180_000); await page.getByRole('button', { name: 'Add local item', exact: true }).click(); await dialog.getByLabel('Name', { exact: true }).fill('Recoverable Settings skill'); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('Preserve the requested scope.'); await dialog.getByRole('button', { name: 'Add item', exact: true }).click(); await added.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); added.check();
   const items = (await (await page.request.get('/hub/rigging')).json()).items.filter((row: { item: { name: string } }) => row.item.name === 'Recoverable Settings skill'); expect(items).toHaveLength(1); const item = RiggingSaveSchema.shape.item.parse(items[0]);
   const itemPath = `/hub/rigging/${item.item.id}`; const saved = await loseSavedReply(itemPath, 'PUT', 180_000); await page.getByRole('button', { name: /Recoverable Settings skill/ }).click(); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('Preserve the scope and verify it.'); await saved.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog.getByRole('status', { name: '', exact: true }).filter({ hasText: /^Saved/ })).toHaveText('Saved', { timeout: 60_000 }); saved.check();
   let abandoned = 0; await page.context().route(`${info.project.use.baseURL}${itemPath}`, route => { if (route.request().method() !== 'PUT') return route.continue(); abandoned++; return route.fulfill(unavailable); }); await dialog.getByRole('textbox', { name: 'Content', exact: true }).fill('This abandoned edit must not be sent later.'); await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click(); await expect(dialog).not.toBeVisible(); await page.waitForTimeout(2300); expect(abandoned).toBe(1);
@@ -1069,6 +1069,6 @@ test('project, Jev, local Rigging and device Settings recover their hub boundari
   await page.context().unroute(`${info.project.use.baseURL}${path}/promote`); await page.context().unroute(`${info.project.use.baseURL}/api/rigging/homes`);
   const promotion = await interrupt(`${path}/promote`, 'POST', true, 180_000); await dialog.getByRole('button', { name: 'Retry', exact: true }).click(); await promotion.lost; await expect(dialog.getByText(message, { exact: true })).toBeVisible(); await expect(dialog).not.toBeVisible({ timeout: 60_000 }); promotion.verify();
   expect((await (await page.request.get('/hub/rigging')).json()).items.filter((row: { item: { name: string } }) => row.item.name === 'Recovered managed bundle')).toHaveLength(1); expect(readFileSync(join(bundle, 'assets/example.txt'), 'utf8')).toBe('Keep this bundled file.\n');
-  await page.goto('/settings/devices'); const invitation = await interrupt('/hub/devices/invitations', 'POST', false); await page.getByRole('button', { name: 'Add a device', exact: true }).click(); await invitation.lost; await expect(page.getByText(message, { exact: true })).toBeVisible(); await expect(dialog.locator('.verification-code strong')).toHaveText(/^[0-9A-HJKMNP-TV-Z]{8}$/); invitation.verify(); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click();
+  await page.goto('/settings/devices'); const invitation = await interrupt('/api/devices/invitations/view', 'POST', false); await page.getByRole('button', { name: 'Add a device', exact: true }).click(); await invitation.lost; await expect(page.getByText(message, { exact: true })).toBeVisible(); await expect(dialog.locator('.verification-code strong')).toHaveText(/^[0-9A-HJKMNP-TV-Z]{8}$/); invitation.verify(); await dialog.getByRole('button', { name: 'Close panel', exact: true }).click();
   const switching = await interrupt('/api/devices/switch', 'POST', false); await openDeviceSwitcher(page); await page.locator('.device-switcher button').filter({ hasText: 'Browser member' }).click(); await switching.lost; await expect(page.getByText(message, { exact: true })).toBeVisible(); await expect(page.locator('.device-switcher summary')).toContainText('Browser member'); switching.verify(); await expect(page.getByLabel('Passphrase')).not.toBeVisible(); expect(errors).toEqual([]);
 });

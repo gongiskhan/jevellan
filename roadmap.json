@@ -1022,8 +1022,8 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "All310 baseline rows retain their dispositions:305migrated/verified and5client-only. The additional Jev page, intake and ordered placement/p-v1/m-v1 work are implemented. Corrected complete backend:3785pass,0fail,16not run; static checks/build and the page main action pass. Whole desktop-light verification remains pending. Source is unreleased.",
-    "status": "in-progress"
+    "why": "All 310 baseline UI rows have dispositions: 305 migrated/verified and five client-only. Intake, the Jev page, placement and active project prompt work are implemented. Backend: 3785 pass, zero fail, 16 not run; five explicit core smokes and five corrected core fixture journeys pass. Fourteen noncore failures and original skipped coverage remain recorded. Source is unreleased.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-tools",
@@ -1064,8 +1064,8 @@
   {
     "id": "br-jev",
     "title": "Complete project Jev rules, prompts and replay",
-    "why": "Project p-v1/l-v1/m-v1, rules, scoped lessons/use receipts, stored-input replay and the shared HTTP/MCP/member Jev page are implemented. Complete backend3785pass/0fail/16not run; affected277cases and page desktop action pass. Whole desktop-light gate remains pending. Other question-set versions remain planned separately; no live acceptance or release.",
-    "status": "in-progress"
+    "why": "Project placement/rules, p-v1/l-v1/m-v1, scoped lessons/use receipts, immutable prompt history/replay and shared HTTP/MCP/member Jev controls are implemented. Complete backend and page main-action checks pass with explicit not-run coverage; the reduced core browser gate is satisfied with recorded noncore gaps. Other question-set versions and a release remain separately planned/unauthorized.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-accounts",
@@ -1094,8 +1094,8 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "All310 baseline rows have dispositions, plus the new engine-owned Jev page. Corrected complete backend3785pass/0fail/16not run. Per-area desktop evidence is retained; the whole desktop-light suite remains pending. Legacy gaps are not passes. No four-layout matrix is required and source remains unreleased.",
-    "status": "in-progress"
+    "why": "The 310 baseline rows and additional engine-owned Jev page are dispositioned with per-area evidence. The current backend passes with 16 not run; all five explicit desktop core smokes pass. Fourteen repeated noncore failures and the original 67 full-run skips remain gaps, not passes. No four-layout matrix or release.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "br-intake-071",
@@ -1118,7 +1118,7 @@
   {
     "id": "br-browser-071",
     "title": "Recorded desktop gaps and optional visuals",
-    "why": "Whole desktop-light verification remains pending. Historical legacy browser gaps and missing selections remain unpassed until actual selectable current runs; no four-layout matrix is required. The new Jev screen has one nonblocking vision pass on a simulated product; its cosmetic observations are optional planned work.",
+    "why": "The once-run desktop-light suite records97pass/19fail/67skips. All19failures have one exact repeat; five core fixture corrections and five explicit core smokes pass. 14 repeated noncore failures remain planned, alongside skipped coverage and optional cosmetics. No full browser/visual or owner acceptance is claimed. The new Jev screen retains one exact image/live nonblocking vision judgment on simulated UI. No four-layout matrix.",
     "status": "planned"
   },
   {
