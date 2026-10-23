@@ -1,11 +1,12 @@
+import {replayLesson} from './owner-jev-lesson-replay.js';
 import {projectJevLessons} from '@jevellan/decisions';
 import {applyJevRouteRules,landingPromptText as formatLandingPrompt,parseLandingPrompt as parseEngineLandingPrompt} from '@jevellan/decisions';
 import {applyHistoricalRules,choiceLabel,choiceOf,currentThreadFacts,newest,placementHistory,sameChoice} from './owner-jev-history.js';
 import {replayPlacement,replayRoutes,replaySummary} from './owner-jev-replay.js';
 import { placementPromptText, mergePromptText, parsePlacementPrompt, parseMergePrompt } from '@jevellan/decisions';
 import { AccountSchema, EffortSchema, JevLessonSchema, JevPromptVersionSchema, JevProposalSchema, JevRuleSchema, LandingRouteSchema, unifiedDiff,
-  type JevLesson, type JevPromptVersion, type JevProposal, type JevRule, type LandingRoute, type Thread, type MergeDocument } from '@jevellan/core';
-import { LANDING_CRITERIA, LANDING_INSTRUCTIONS, applyJevEffortRules, decideLandingRoute, type LandingPrompt } from '@jevellan/decisions';
+  type JevLesson, type JevPromptVersion, type JevProposal, type JevRule, type Thread, type MergeDocument } from '@jevellan/core';
+import { LANDING_CRITERIA, LANDING_INSTRUCTIONS, applyJevEffortRules, type LandingPrompt } from '@jevellan/decisions';
 import type { LandingJev } from '@jevellan/projects';
 import type { Application } from './application.js';
 import { OwnerRefusal } from './owner-tools.js';
@@ -177,10 +178,6 @@ export class OwnerJev {
       ...(current.unavailableThreads.length ? [`Unavailable thread owners: ${current.unavailableThreads.length}.`] : [])].join('\n');
   }
 
-  async #routes(projectId: string): Promise<LandingRoute[]> {
-    const rows = await this.app.projectWork.landings.records(projectId);
-    return rows.filter((row): row is LandingRoute => row.schema === 'landing-route-v1').sort((a, b) => b.at.localeCompare(a.at));
-  }
 
   // Lessons.
   lessons(projectId: string): JevLesson[] {
@@ -227,6 +224,7 @@ export class OwnerJev {
 
   /** Re-asks Jev with each stored packet and the proposed prompt or lessons, applies the current rules and compares with what happened. */
   async replayText(projectId: string, proposal: JevProposal | null, n: number, lessonId?: string): Promise<string> {
+    await this.prepare(projectId);
     if (proposal?.name === 'p-v1') {
       const summary = await replayPlacement(this.app, projectId, this.active('p-v1'), proposal, this.rules(projectId), n);
       const latest = this.proposals().find(row => row.key === proposal.key)!;
@@ -240,19 +238,10 @@ export class OwnerJev {
       this.#put(PROPOSALS, latest.key, JevProposalSchema, { ...latest, replayReportId: summary.id });
       return summary.text;
     }
-    const routes = (await this.#routes(projectId)).filter(row => row.source === 'jev' || row.rawChoice).slice(0, n);
-    const skipped = (await this.#routes(projectId)).length - routes.length;
-    if (proposal && proposal.name !== 'l-v1') return `Stored-input replay for ${proposal.name} is not available yet; the engine uses its active version.`;
-    const prompt = proposal ? parseLandingPrompt(proposal.text) : parseLandingPrompt(this.active('l-v1').text);
-    const lessons = this.lessons(projectId).filter(row => row.enabled && row.about === 'landing' && (!lessonId || true)).slice(0, 8).map(row => row.text);
-    const changed: string[] = []; const model = (await this.app.configuration()).configuration['x-jevellan'].decisions.model;
-    for (const route of routes) {
-      const result = await decideLandingRoute(this.app.decisionClient, { ...route.packet, corrections: lessons }, model, this.app.redactor, new AbortController().signal, prompt);
-      const final = result.source === 'jev' ? this.ruleRoute(projectId, result.route, { taskType: route.packet.task.type, text: `${route.packet.title} ${route.packet.summary}` }).route : result.route;
-      if (final !== route.route) changed.push(`${this.app.ownerTools.ids.one(projectId, 'D', route.id)} ${this.app.ownerTools.ids.shortOf(projectId, route.threadId) ?? ''} ${route.route} to ${final}`.replace(/  +/gu, ' '));
-    }
-    return [`Replay on the last ${routes.length} decisions that used l-v1: ${changed.length} would change.`, ...changed,
-      'Estimated cost of the changed runs: model changes only, from recorded usage and current prices; none in this replay.', ...(skipped ? [`Skipped ${skipped} older decisions without stored inputs.`] : [])].join('\n');
+    if(proposal)return `Stored-input replay for ${proposal.name} is not available yet; the engine uses its active version.`;
+    const lesson=this.lessons(projectId).find(row=>row.id===lessonId?.toUpperCase());
+    if(!lesson)throw new OwnerRefusal(`${lessonId??'That id'} is not a lesson.`,'lesson_not_found',404);
+    return(await replayLesson(this.app,projectId,lesson,n)).text;
   }
 }
 export { LandingRouteSchema };

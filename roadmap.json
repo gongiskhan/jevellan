@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "All310baseline component rows have dispositions(305migrated/verified,5client-only);intake,placement rules,activep-v1/m-v1 and route/history replay are pushed. Area10e adds scoped lesson inputs,actual-use receipts,pending restart/lost-reply recovery,legacy-safe correction migration,new atomic correction lessons and member active l-v1;unavailable answers neither fabricate raw choices nor count uses. Static checks and381/381cases in29complete affected backend files pass(6workers,0skip);one desktop-light correction-to-next-decision journey passes with3exact final images,7retained acrossallruns,aftersetup-onlyplacementfix. Originalequal-timeassertionretained. Lesson-specific saved replay,newthinJevpage andglobalfinalgates remaininprogress. LegacyCACHE2/NativePAR6/account-readyjourney remainunpassed. Otherengine/remotefeaturesstayseparatelyplanned. No furtherreleasewithoutexplicitownerrequest;installedcopieslastverified0.7.2.",
+    "why": "All 310 baseline component rows have dispositions: 305 moved and verified, five retained in the client. Intake, placement rules, active project prompts, lesson delivery and stored-input replay are implemented. The Jev control page and final integrated gates remain. Source is unreleased; installed copies remain last verified 0.7.2.",
     "status": "in-progress"
   },
   {
@@ -1064,7 +1064,7 @@
   {
     "id": "br-jev",
     "title": "Complete Jev rules, prompts and replay",
-    "why": "All310baseline component rows have dispositions(305migrated/verified,5client-only);intake,placement rules,activep-v1/m-v1 and route/history replay are pushed. Area10e adds scoped lesson inputs,actual-use receipts,pending restart/lost-reply recovery,legacy-safe correction migration,new atomic correction lessons and member active l-v1;unavailable answers neither fabricate raw choices nor count uses. Static checks and381/381cases in29complete affected backend files pass(6workers,0skip);one desktop-light correction-to-next-decision journey passes with3exact final images,7retained acrossallruns,aftersetup-onlyplacementfix. Originalequal-timeassertionretained. Lesson-specific saved replay,newthinJevpage andglobalfinalgates remaininprogress. LegacyCACHE2/NativePAR6/account-readyjourney remainunpassed. Otherengine/remotefeaturesstayseparatelyplanned. No furtherreleasewithoutexplicitownerrequest;installedcopieslastverified0.7.2.",
+    "why": "Rules, active p-v1/l-v1/m-v1, scoped lessons, durable use counts and stored-input replay are implemented. Static checks and 389 cases in 30 complete affected backend files pass with six workers and zero skips. The desktop MCP/browser replay journey passes with two retained images. The Jev control page and final integrated gates remain; no live acceptance or release is claimed.",
     "status": "in-progress"
   },
   {
@@ -1094,7 +1094,7 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "All310baseline component rows have dispositions(305migrated/verified,5client-only);intake,placement rules,activep-v1/m-v1 and route/history replay are pushed. Area10e adds scoped lesson inputs,actual-use receipts,pending restart/lost-reply recovery,legacy-safe correction migration,new atomic correction lessons and member active l-v1;unavailable answers neither fabricate raw choices nor count uses. Static checks and381/381cases in29complete affected backend files pass(6workers,0skip);one desktop-light correction-to-next-decision journey passes with3exact final images,7retained acrossallruns,aftersetup-onlyplacementfix. Originalequal-timeassertionretained. Lesson-specific saved replay,newthinJevpage andglobalfinalgates remaininprogress. LegacyCACHE2/NativePAR6/account-readyjourney remainunpassed. Otherengine/remotefeaturesstayseparatelyplanned. No furtherreleasewithoutexplicitownerrequest;installedcopieslastverified0.7.2.",
+    "why": "Baseline UI migration and component parity have dispositions for all 310 rows. The new Jev control page remains, followed by final desktop-light and backend gates. Four-layout testing is not required under the owner amendment. Legacy CACHE2, NativePAR6 and the account-ready journey remain unpassed until rerun. Current continuation source is unreleased.",
     "status": "in-progress"
   },
   {
@@ -1106,8 +1106,8 @@
   {
     "id": "br-engine-071",
     "title": "Remaining engine and remote features",
-    "why": "All310baseline component rows have dispositions(305migrated/verified,5client-only);intake,placement rules,activep-v1/m-v1 and route/history replay are pushed. Area10e adds scoped lesson inputs,actual-use receipts,pending restart/lost-reply recovery,legacy-safe correction migration,new atomic correction lessons and member active l-v1;unavailable answers neither fabricate raw choices nor count uses. Static checks and381/381cases in29complete affected backend files pass(6workers,0skip);one desktop-light correction-to-next-decision journey passes with3exact final images,7retained acrossallruns,aftersetup-onlyplacementfix. Originalequal-timeassertionretained. Lesson-specific saved replay,newthinJevpage andglobalfinalgates remaininprogress. LegacyCACHE2/NativePAR6/account-readyjourney remainunpassed. Otherengine/remotefeaturesstayseparatelyplanned. No furtherreleasewithoutexplicitownerrequest;installedcopieslastverified0.7.2.",
-    "status": "in-progress"
+    "why": "The native coordinator fork, member event forwarding and other remaining question-set versions remain planned beyond the ordered continuation. Existing remote features retain their documented evidence status. A further release requires an explicit owner request.",
+    "status": "planned"
   },
   {
     "id": "br-live-071",

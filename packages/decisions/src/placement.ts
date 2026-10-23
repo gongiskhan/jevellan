@@ -358,6 +358,13 @@ export function buildPlacementState(input: PlacementStateInput): { state: string
   return { state, approximateTokens: approximateTokens(state) };
 }
 
+/** Replays retain the stored packet; adding lessons may refuse the same ordinary budget, never silently drop old context. */
+export function placementReplayState(input:unknown,redactor:Pick<SecretRedactor,'document'>):string{
+ const state=JSON.stringify(PlacementStateSchema.parse(redactor.document(input)));
+ if(approximateTokens(state)>STATE_TOKENS)throw new JevError('state-too-large');
+ return state;
+}
+
 /** Call A (brief 10): isolation only when both are allowed, the model among the eligible ones, the effort; each omitted when fixed or single. */
 export function preparePlacementA(input: PlacementInput, candidates: PlacementCandidates): JevQuestions {
   const questions: JevQuestions = {};
