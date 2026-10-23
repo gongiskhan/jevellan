@@ -501,3 +501,9 @@ Closing regression: Decision906 makes completed-job cleanup durable; backend and
 
 
 23October decision328: release0.7.6 from51ddef4a plus version/notes with the owner-approved focused urgent gate; strict guarded cold-backup hub update first,member when resources permit. Run full backend after installation and retain findings for the next release. Live CPU target is under about20percent with one or two UI tabs; no live recovery claimed before measurement.
+
+
+0.7.6 first archive is rejected before publication: actual CLI remains0.7.5. The existing exact release-version case fails and repeats. Synchronize runtime VERSION with the prepared0.7.6 manifests,then rebuild and verify from a new source freeze; rejected artifacts remain private. Stream implementation unchanged.
+
+
+Decision329 correction checks: actual-CLI regression now passes after the complete rebuild; rebuilding core alone retained the old CLI bundle and that intermediate failed attempt is preserved. Complete typecheck,lint and build pass. The approved31-case/two-chat stream evidence remains unchanged; fresh archive checks are still required.

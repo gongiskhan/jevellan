@@ -1196,7 +1196,7 @@
   {
     "id": "release-076",
     "title": "Release focused stream responsiveness repair as 0.7.6",
-    "why": "Explicit owner authorization: exact51ddef4a implementation plus version/notes,focused urgent gate,strict guarded cold-backup hub-first normal installation; member when load permits. Full backend afterwards,findings nextrelease. Publication,installation and underabout20percent idleCPU with1-2UI tabs remain pending. No extra review or production action.",
+    "why": "Explicit owner authorization: exact51ddef4a implementation plus version/notes,focused urgent gate,strict guarded cold-backup hub-first normal installation; member when load permits. Full backend afterwards,findings nextrelease. Publication,installation and underabout20percent idleCPU with1-2UI tabs remain pending. No extra review or production action. First archive rejected before any publication/install because actualCLI075 disagrees with076manifests. Existingrelease-version regression fails/repeats; runtimeversion synchronization and fresh exact-source artifacts required.",
     "status": "in-progress"
   }
 ]

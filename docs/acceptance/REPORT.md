@@ -2802,3 +2802,9 @@ The desktop-light settings and Overview main actions each pass once on an exact 
 
 
 328. **Explicit urgent0.7.6 authorization:** the owner authorizes release of51ddef4a plus version/notes preparation using the completed focused gate:31 distinct affected/daemon cases,two desktop-light chat journeys,typecheck,lint,build and the exact published075daemon comparison. Workspace manifests advance to0.7.6; all444external lock entries and dependency edges remain unchanged. Full backend runs after installation; findings belong to the next release. Fresh strict no-running-turn/no-held-thread/exclusive guards,cold backups and normal hub-first update remain required; member installation may wait for its resource guard. The installed performance criterion is under about20percent idle CPU with one or two UI tabs. Publication,installation and that live criterion are pending,never inferred from simulated timing. Remaining findings stay next; no new review or production action.
+
+
+329. **0.7.6 archive refusal before publication:** the first prepared archive correctly refuses installation because actual CLI output remains0.7.5 despite0.7.6 manifests. Its archive/controller evidence is retained as rejected. The existing actual-CLI release-version regression selects exactly one case and fails twice unchanged. Synchronize only the runtime VERSION constant to0.7.6; the approved stream implementation stays identical. Corrected regression/static/native archive checks must pass before a new source freeze or publication. No tag was published or device changed by the rejected candidate.
+
+
+Decision329 correction checks: actual-CLI regression now passes after the complete rebuild; rebuilding core alone retained the old CLI bundle and that intermediate failed attempt is preserved. Complete typecheck,lint and build pass. The approved31-case/two-chat stream evidence remains unchanged; fresh archive checks are still required.

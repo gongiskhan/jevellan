@@ -753,3 +753,9 @@ The remaining SSE path copies complete ledger history just to obtain its head be
 
 
 The owner explicitly authorizes0.7.6 from51ddef4a plus version/notes,using the completed31-case/two-chat/static/comparative-daemon urgent gate. Full backend is required afterwards; fixes belong to the next release. Normal guarded cold-backup hub-first installation is authorized while member load may defer its update. Live success requires under about20percent idle hub CPU with one or two UI tabs; publication/install/live measurements remain pending. All444external lock entries/edges stay unchanged. No extra review or production action.
+
+
+0.7.6 first archive is rejected before publication: actual CLI remains0.7.5. The existing exact release-version case fails and repeats. Synchronize runtime VERSION with the prepared0.7.6 manifests,then rebuild and verify from a new source freeze; rejected artifacts remain private. Stream implementation unchanged.
+
+
+Decision329 correction checks: actual-CLI regression now passes after the complete rebuild; rebuilding core alone retained the old CLI bundle and that intermediate failed attempt is preserved. Complete typecheck,lint and build pass. The approved31-case/two-chat stream evidence remains unchanged; fresh archive checks are still required.
