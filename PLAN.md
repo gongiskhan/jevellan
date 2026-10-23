@@ -1,5 +1,9 @@
 # Projects loop implementation plan
 
+Current plan, 23 October 2026: the ordered 310-row UI-to-engine migration, intake, placement and active project prompt work are implemented and released through 0.7.3/0.7.4. Both devices now run 0.7.4 with doctor 10/10, strict cold backups and verified continuity. The 14 recorded noncore repairs are complete; remaining skipped/live coverage and follow-up findings stay planned in roadmap.json. See [the current run log](docs/acceptance/bridge-codex-2026-10/README.md). Earlier clocks, STOPs and pending releases below are historical; no additional release or review is authorized by this plan.
+
+Historical plans follow.
+
 ## Coordinator hang, fixes on moved heads and 0.5.1, October 2026
 
 Authority: root untracked BRIEF.md, 19 October 2026. Six hours for phases 0 to 2 from the first commit (2026-10-19T02:01:43Z, deadline 08:01:43Z). Phases: 0 diagnose the hang live (done: root cause not established, restart cleared it, ekoa-code was not stuck), 1 Fix A decision deadline and Fix B fix turns from the pull request head (done, Decisions 925 to 927), 2 release 0.5.1 (gate accepted at 07:57:58Z; the clock ended before the Linux archive, publication, backups and updates, so both machines stay on 0.5.0), 3 live journeys (not run), 4 closing (one review with no serious issue, docs, handoff). Run log and handoff: docs/acceptance/fix-051-2026-10/.

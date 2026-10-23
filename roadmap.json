@@ -1022,7 +1022,7 @@
   {
     "id": "br-engine",
     "title": "Move UI logic into engine services",
-    "why": "All 310 baseline UI rows have dispositions: 305 migrated/verified and five client-only. Intake, the Jev page, placement and active project prompt work are implemented. Backend: 3785 pass, zero fail, 16 not run; five explicit core smokes and five corrected core fixture journeys pass. Fourteen noncore failures and original skipped coverage remain recorded. Source is unreleased.",
+    "why": "All 310 baseline UI rows have dispositions: 305 migrated/verified and five client-only. Intake, the Jev page, placement and active project prompts are implemented and released through 0.7.4, installed both with doctor 10/10. Fourteen noncore repairs and five fresh core smokes pass. The current backend exact-rerun gate covers 3,790 cases with 16 credential/opt-in not run; the original red full run and whole-browser 97/19/67 remain explicit. Remaining skipped/live acceptance is separate.",
     "status": "complete-with-blockers"
   },
   {
@@ -1064,7 +1064,7 @@
   {
     "id": "br-jev",
     "title": "Complete project Jev rules, prompts and replay",
-    "why": "Project placement/rules, p-v1/l-v1/m-v1, scoped lessons/use receipts, immutable prompt history/replay and shared HTTP/MCP/member Jev controls are implemented. Complete backend and page main-action checks pass with explicit not-run coverage; the reduced core browser gate is satisfied with recorded noncore gaps. Other question-set versions and a release remain separately planned/unauthorized.",
+    "why": "Project placement/rules, p-v1/l-v1/m-v1, scoped lessons/use receipts, immutable prompt history/replay and shared HTTP/MCP/member Jev controls are implemented and included in installed 0.7.4. Backend/page main-action and reduced core gates pass with explicit not-run coverage. Other question-set versions and live acceptance remain separately planned.",
     "status": "complete-with-blockers"
   },
   {
@@ -1094,13 +1094,13 @@
   {
     "id": "br-ui-071",
     "title": "Engine UI migration and component parity",
-    "why": "The 310 baseline rows and additional engine-owned Jev page are dispositioned with per-area evidence. The current backend passes with 16 not run; all five explicit desktop core smokes pass. Fourteen repeated noncore failures and the original 67 full-run skips remain gaps, not passes. No four-layout matrix or release.",
+    "why": "All 310 baseline rows and the additional engine-owned Jev page are dispositioned and included in installed 0.7.4. Fourteen noncore repairs and five fresh desktop core smokes pass; the current backend closes under the explicit rerun rule with 16 not run. Original 67 full-browser skips and remote/live acceptance remain gaps. No four-layout matrix.",
     "status": "complete-with-blockers"
   },
   {
     "id": "br-intake-071",
     "title": "External pull-request intake",
-    "why": "Source intake and its engine/UI/MCP parity are implemented, with simulated backend and two desktop main-action receipts retained. The corrected complete backend has3785passes,0failures and16not run. No live external contributor PR was accessed; no live acceptance or release is claimed.",
+    "why": "Intake and engine/UI/MCP parity are implemented and included in installed 0.7.4, with simulated affected backend and two desktop main-action receipts. The current integrated gate follows the explicit rerun rule with 16 credential/opt-in not run. No live external contributor PR was accessed and no live acceptance is claimed.",
     "status": "done"
   },
   {
@@ -1118,7 +1118,7 @@
   {
     "id": "br-browser-071",
     "title": "Recorded desktop gaps and optional visuals",
-    "why": "The once-run desktop-light suite records97pass/19fail/67skips. All19failures have one exact repeat; five core fixture corrections and five explicit core smokes pass. 14 repeated noncore failures remain planned, alongside skipped coverage and optional cosmetics. No full browser/visual or owner acceptance is claimed. The new Jev screen retains one exact image/live nonblocking vision judgment on simulated UI. No four-layout matrix.",
+    "why": "All 14 previously repeated noncore journeys now pass individually and five fresh core smokes pass in 0.7.4. The original once-run desktop-light 97 pass/19 fail/67 skip result remains unchanged. Remaining skipped coverage and optional cosmetics stay planned. Existing-screen vision is not run; the new Jev screen retains its separate exact image/live judgment on simulated UI. No four-layout/full-browser/owner acceptance claim.",
     "status": "planned"
   },
   {
@@ -1166,7 +1166,13 @@
   {
     "id": "release-073-074",
     "title": "Release ordered engine work and repair recorded browser journeys",
-    "why": "0.7.3 published/installed both with partial doctors. 0.7.4 responsiveness and terminal-task reason fixes pass affected checks. All14recorded noncore desktop journeys and five fresh core smokes pass;13+20exact images retained. Complete6worker backend3806=3766pass/21fail/19not-run;20unchanged exact repeats pass,one fixture-only launch barrier correction passes isolated+18complete cases;Linux-only3pass leaves16credential/opt-in not run. Owner rerun-rule gate satisfied without relabelling original red full run. Typecheck/lint/build/source integrity pass. Normal native archives,publication,strict cold-backed hub-then-member update and doctor10both remain pending. Later live blocked-landing/unknown-budget findings,model fresh-status guidance and conditional wakeup remain follow-up;project evidence stays private. No real task/goal/deploy changes or extra review.",
-    "status": "in-progress"
+    "why": "0.7.3 and 0.7.4 are published; both devices now run 0.7.4 with doctor 10/10, health/Online/vault and 125 protected continuity records verified. Exact normal platform archives/source/digests/extracted CLI/PTY/ABI 127 pass. Strict fresh no-running/no-held/exclusive guards, cold backups and hub-before-member normal updates complete. All 14 noncore journeys and five fresh cores pass. Backend 3806=3766 pass/21 fail/19 not run; 20 unchanged exact repeats pass, one fixture launch barrier correction passes isolated+18 file cases, and 3 Linux-only passes leave 16 not run. The owner rerun rule is satisfied; the original red full run and 97/19/67 browser result remain. The urgent disk alert is resolved above 8 GiB by removing only verified unused completed extracts; backups/archives/owner data are preserved. Project-specific live evidence stays private; remote-control acceptance is not tested. No extra review or production action.",
+    "status": "complete-with-blockers"
+  },
+  {
+    "id": "manager-followups-074",
+    "title": "Follow-up findings and remaining live evidence",
+    "why": "Recent unstarted cancelled/failed task visibility and recorded reasons are fixed in 0.7.4. Model fresh-status guidance, blocked-landing item/thread visibility, unknown budget explanation and conditional idle dependency wakeup remain planned/unverified; customer observations stay private. Preserve configured checks and production guards. These items authorize no additional release, review or real task/goal/deploy change.",
+    "status": "planned"
   }
 ]
