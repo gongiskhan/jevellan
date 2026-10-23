@@ -99,10 +99,10 @@ export class DecisionItems {
     return covered;
   }
   /** Withdraws an open question; false when it was already answered. */
-  async withdraw(projectId: string, decisionId: string): Promise<boolean> {
+  async withdraw(projectId: string, decisionId: string, reason = 'Resolved by the owning service.', source: 'system' | 'coordinator' = 'system'): Promise<boolean> {
     const decision = await this.#decision(projectId, decisionId);
     if (decision.answer) return false;
-    const stored = (await this.#o.hub.withdrawDecision(decisionId, this.#at())).document;
+    const stored = (await this.#o.hub.withdrawDecision(decisionId, this.#at(), { schema: 'project-decision-withdrawal-v1', source, reason })).document;
     return !!stored.withdrawnAt && !stored.answer;
   }
   async withdrawThread(projectId: string, threadId: string): Promise<void> {

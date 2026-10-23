@@ -1,5 +1,8 @@
 # Projects loop implementation plan
 
+Current authorized continuation, 23 October after 0.7.4: repair remaining waiting/landing continuity, check-port isolation, repeated failure stops, pending fresh starts and project-environment behavior, then release 0.7.5 through the established gate and guarded Madrid-before-Pro procedure. Phase A's unanswered-question guard and closure history are verified; later phases and the complete release gate remain in progress. Owner-only items 13/15 stay excluded. Reclaim only proven own completed copies older than 0.7.4 and own cold backups older than the latest two before release. No new hard clock, review or production action. Earlier no-further-release statements below are superseded only for the explicitly authorized 0.7.5.
+
+
 Current plan, 23 October 2026: the ordered 310-row UI-to-engine migration, intake, placement and active project prompt work are implemented and released through 0.7.3/0.7.4. Both devices now run 0.7.4 with doctor 10/10, strict cold backups and verified continuity. The 14 recorded noncore repairs are complete; remaining skipped/live coverage and follow-up findings stay planned in roadmap.json. See [the current run log](docs/acceptance/bridge-codex-2026-10/README.md). Earlier clocks, STOPs and pending releases below are historical; no additional release or review is authorized by this plan.
 
 Historical plans follow.

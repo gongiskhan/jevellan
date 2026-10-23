@@ -679,3 +679,6 @@ Status continuation: recent cancelled/failed tasks with no thread or job run ret
 
 
 23 October 0.7.4 installed closure: all 310 baseline dispositions and the additional Jev page are included in published source 1f3558cf and installed on both devices, doctor 10/10. All 14 recorded noncore repairs and five fresh desktop-light core actions pass. Exact-rerun backend coverage remains 3,790 current cases with 16 credential/opt-in cases not run; the original red full run remains explicit. Normal native source/archive/PTY checks and 125 protected continuity records pass. Skipped browser and remote/live acceptance remain gaps. The native coordinator fork and member event forwarding remain separately planned.
+
+
+0.7.5 phase A: owner status retains recent closure explanations through an opt-in authoritative read; coordinator withdrawal refuses while the linked thread is unresolved. Versioned optional receipts keep old documents valid. Three failing-first lifecycle contracts, 39 affected cases, static/build and one desktop-light Overview main-action smoke pass. Four exact images remain with vision not run. This changes the shared engine semantics, not baseline row dispositions; full release verification is pending.

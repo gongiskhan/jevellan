@@ -14,7 +14,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
   CheckoutClaimSchema, ConversationIndexSchema, DecisionAnswerSchema, ENVELOPE_PAGE_BYTES, FileReservationSchema, IdSchema, MAIL_PAGE_BYTES, PROJECT_HUB_PAGE, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema,
-  ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectHubRequestSchema, ProjectHubResultSchema, ProjectMailSchema, ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema, StoredProjectWorkSettingsSchema,
+  ProjectDecisionSchema, ProjectDecisionWithdrawalSchema, ProjectEnvelopeSchema, ProjectHubRequestSchema, ProjectHubResultSchema, ProjectMailSchema, ProjectNotebookSchema, ProjectSchema, ProjectWorkSettingsSchema, StoredProjectWorkSettingsSchema,
   ProjectWorkSummarySchema, ReservationRequestSchema, ThreadIndexCursorSchema, ThreadIndexSchema, TimestampSchema, checkHubRevision, collectionOf, compareEnvelopes, coordinatorMovable,
   ProjectWorkTaskSchema, TaskHistoryEventSchema, type ProjectWorkTask,
   coordinatorWorking, isTerminal, liveWork, mailReaches, pathsOverlap, reservationActive, stableJson, withHubRevision, workCounts,
@@ -517,10 +517,10 @@ export class HubProjectStore {
       return stored;
     });
   }
-  /** Open questions plus those answered in the last 14 days by the hub clock; withdrawn ones leave the list. */
-  decisions(projectId: string, after?: string): Page<ProjectDecision> {
+  /** Open questions plus those answered in the last 14 days by the hub clock; withdrawn questions also retain their closure for 14 days. */
+  decisions(projectId: string, after?: string, includeClosed = false): Page<ProjectDecision> {
     const since = this.now() - DECISION_LIST_WINDOW_MS;
-    return this.#page(DECISIONS, ProjectDecisionSchema, projectId, after, (decision) => decision.answeredAt ? Date.parse(decision.answeredAt) >= since : !decision.withdrawnAt);
+    return this.#page(DECISIONS, ProjectDecisionSchema, projectId, after, (decision) => decision.answeredAt ? Date.parse(decision.answeredAt) >= since : decision.withdrawnAt ? includeClosed && Date.parse(decision.withdrawnAt) >= since : true);
   }
   decision(id: string): Stored<ProjectDecision> | null { return this.#get(DECISIONS, id, ProjectDecisionSchema); }
   /** Revision 0 creates; an identical retry returns the stored question. Answers and withdrawals have their own operations. */
@@ -535,12 +535,17 @@ export class HubProjectStore {
     });
   }
   /** No change once the question is answered or already withdrawn. */
-  withdrawDecision(id: string, at: string): Stored<ProjectDecision> {
+  withdrawDecision(id: string, at: string, withdrawal?: NonNullable<ProjectDecision['withdrawal']>): Stored<ProjectDecision> {
     TimestampSchema.parse(at);
     return this.hub.transaction(() => {
       const current = this.decision(id) ?? refuse('This question was not found.', 404);
       if (current.document.answeredAt || current.document.withdrawnAt) return current;
-      return this.#put(DECISIONS, id, ProjectDecisionSchema, { ...current.document, withdrawnAt: at }, current.revision);
+      const closure = ProjectDecisionWithdrawalSchema.parse(withdrawal ?? { schema: 'project-decision-withdrawal-v1', source: 'system', reason: 'Resolved by the owning service.' });
+      if (closure.source === 'coordinator' && current.document.threadId) {
+        const thread = this.thread(current.document.threadId)?.document;
+        if (!thread || thread.projectId !== current.document.projectId || !thread.resolution && !thread.landing && !['done', 'stopped'].includes(thread.state)) refuse('The linked thread is still unresolved. Keep this question open until the owner answers or the work is genuinely resolved.');
+      }
+      return this.#put(DECISIONS, id, ProjectDecisionSchema, { ...current.document, withdrawnAt: at, withdrawal: closure }, current.revision);
     });
   }
   /** The first answer wins. The same answer again, or a repeated clientRequestId, reports `repeated`; another answer is refused. */
@@ -870,10 +875,10 @@ export class HubProjectStore {
       case 'merge-documents': result = { ...base, ...this.mergeDocuments(request.projectId, request.after, request.threadId) }; break;
       case 'merge-document-get': result = { ...base, record: this.mergeDocument(request.id) }; break;
       case 'merge-document-put': result = { ...base, record: this.putMergeDocument(request.document, request.expectedRevision) }; break;
-      case 'decisions-list': result = { ...base, ...this.decisions(request.projectId, request.after) }; break;
+      case 'decisions-list': result = { ...base, ...this.decisions(request.projectId, request.after, request.includeClosed) }; break;
       case 'decision-get': result = { ...base, record: this.decision(request.id) }; break;
       case 'decision-create': result = { ...base, record: this.createDecision(request.decision) }; break;
-      case 'decision-withdraw': result = { ...base, record: this.withdrawDecision(request.id, request.at) }; break;
+      case 'decision-withdraw': result = { ...base, record: this.withdrawDecision(request.id, request.at, request.withdrawal) }; break;
       case 'decision-answer': { const answered = this.answerDecision(request.id, request.answer, request.at, request.clientRequestId); result = { ...base, record: answered.decision, repeated: answered.repeated }; break; }
       case 'notebook-get': result = { ...base, record: this.notebook(request.projectId) }; break;
       case 'notebook-put': result = { ...base, record: this.putNotebook(request.notebook, request.expectedRevision) }; break;
@@ -955,13 +960,13 @@ export class HubProjectAccess implements ProjectHub {
   async mergeDocuments(projectId: string, after?: string, threadId?: string) { return this.#store.mergeDocuments(projectId, after, threadId); }
   async mergeDocument(id: string) { return this.#store.mergeDocument(id); }
   async putMergeDocument(document: MergeDocument, expectedRevision: number) { return this.#store.putMergeDocument(document, expectedRevision); }
-  async decisions(projectId: string) {
+  async decisions(projectId: string, options?: { includeClosed?: boolean }) {
     const records: ProjectDecision[] = []; let after: string | undefined;
-    for (;;) { const page = this.#store.decisions(projectId, after); records.push(...page.records); if (page.next === null) return records; after = page.next; }
+    for (;;) { const page = this.#store.decisions(projectId, after, options?.includeClosed); records.push(...page.records); if (page.next === null) return records; after = page.next; }
   }
   async decision(id: string) { return this.#store.decision(id); }
   async createDecision(decision: ProjectDecision) { return this.#store.createDecision(decision); }
-  async withdrawDecision(id: string, at: string) { return this.#store.withdrawDecision(id, at); }
+  async withdrawDecision(id: string, at: string, withdrawal?: NonNullable<ProjectDecision['withdrawal']>) { return this.#store.withdrawDecision(id, at, withdrawal); }
   async answerDecision(id: string, answer: DecisionAnswer, at: string, clientRequestId: string) { return this.#store.answerDecision(id, answer, at, clientRequestId); }
   async notebook(projectId: string) { return this.#store.notebook(projectId); }
   async putNotebook(notebook: ProjectNotebook, expectedRevision: number) { return this.#store.putNotebook(notebook, expectedRevision); }
@@ -1074,16 +1079,16 @@ export class MemberProjectStore implements ProjectHub {
     const result = this.#check(await this.#call('thread-publish', { index, eventId }), (value) => value.threadId === index.id && value.eventId >= eventId);
     return { eventId: result.eventId };
   }
-  async decisions(projectId: string) {
+  async decisions(projectId: string, options?: { includeClosed?: boolean }) {
     const records: ProjectDecision[] = []; let after: string | undefined;
     for (;;) {
-      const page = this.#page(await this.#call('decisions-list', { projectId, ...(after === undefined ? {} : { after }) }), projectId, after);
+      const page = this.#page(await this.#call('decisions-list', { projectId, ...(after === undefined ? {} : { after }), ...(options?.includeClosed ? { includeClosed: true } : {}) }), projectId, after);
       records.push(...page.records); if (page.next === null) return records; after = page.next;
     }
   }
   async decision(id: string) { return this.#check((await this.#call('decision-get', { id })).record, (row) => !row || row.document.id === id); }
   async createDecision(decision: ProjectDecision) { return this.#check((await this.#call('decision-create', { decision })).record, (row) => row.document.id === decision.id && row.document.projectId === decision.projectId); }
-  async withdrawDecision(id: string, at: string) { return this.#check((await this.#call('decision-withdraw', { id, at })).record, (row) => row.document.id === id); }
+  async withdrawDecision(id: string, at: string, withdrawal?: NonNullable<ProjectDecision['withdrawal']>) { return this.#check((await this.#call('decision-withdraw', { id, at, ...(withdrawal ? { withdrawal } : {}) })).record, (row) => row.document.id === id); }
   async answerDecision(id: string, answer: DecisionAnswer, at: string, clientRequestId: string) {
     const result = this.#check(await this.#call('decision-answer', { id, answer, at, clientRequestId }), (value) => value.record.document.id === id && value.record.document.answer !== undefined);
     return { decision: result.record, repeated: result.repeated };

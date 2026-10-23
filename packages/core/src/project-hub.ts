@@ -87,10 +87,10 @@ export interface ProjectHub {
   thread(threadId: string): Promise<Stored<ThreadIndex> | null>;
   publishThread(index: ThreadIndex, eventId: number): Promise<{ eventId: number }>;
   // decisions: open plus answered in the last 14 days, ordered by id
-  decisions(projectId: string): Promise<ProjectDecision[]>;
+  decisions(projectId: string, options?: { includeClosed?: boolean }): Promise<ProjectDecision[]>;
   decision(id: string): Promise<Stored<ProjectDecision> | null>;
   createDecision(decision: ProjectDecision): Promise<Stored<ProjectDecision>>;
-  withdrawDecision(id: string, at: string): Promise<Stored<ProjectDecision>>;
+  withdrawDecision(id: string, at: string, withdrawal?: NonNullable<ProjectDecision['withdrawal']>): Promise<Stored<ProjectDecision>>;
   answerDecision(id: string, answer: DecisionAnswer, at: string, clientRequestId: string): Promise<{ decision: Stored<ProjectDecision>; repeated: boolean }>;
   // notebooks
   notebook(projectId: string): Promise<Stored<ProjectNotebook> | null>;

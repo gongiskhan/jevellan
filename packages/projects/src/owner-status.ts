@@ -132,6 +132,16 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
     ...(input.extraWaiting ?? []),
   ];
 
+  const closed = input.decisions.filter(decision => decision.answeredAt || decision.withdrawnAt)
+    .filter(decision => now.getTime() - Date.parse(decision.answeredAt ?? decision.withdrawnAt!) <= 14 * 86400_000)
+    .sort((a, b) => (b.answeredAt ?? b.withdrawnAt!).localeCompare(a.answeredAt ?? a.withdrawnAt!));
+  const closedIds = ids.assign(projectId, 'W', byCreated(closed).map(decision => decision.id));
+  const closedWaiting: WaitingItemView[] = closed.map(decision => ({ schema: 'waiting-item-view-v1', id: closedIds.get(decision.id)!, internalId: decision.id,
+    kind: waitingKind(decision), from: decision.threadId ? threadRuns.find(run => run.internalId === decision.threadId)?.id ?? 'C' : 'C',
+    text: decision.question, options: decision.options.map(option => option.label), freeText: false, urgent: decision.urgent === true,
+    createdAt: decision.createdAt, updatedAt: decision.answeredAt ?? decision.withdrawnAt!, state: decision.answer ? 'answered' : decision.withdrawal ? 'resolved' : 'withdrawn',
+    closureReason: decision.withdrawal?.reason ?? (decision.answer ? `Answered: ${decision.answer.optionLabel ?? decision.answer.text ?? 'in owner chat'}`.slice(0, 2000) : 'Withdrawn before closure reasons were recorded.') }));
+
   const recent = (run: RunView) => run.endedAt !== undefined && now.getTime() - new Date(run.endedAt).getTime() <= TWELVE_HOURS;
   const order: Record<RunView['state'], number> = { waiting: 0, held: 1, running: 2, landing: 3, queued: 4, landed: 5, deployed: 6, failed: 7, stopped: 8, cancelled: 9, idle: 10 };
   const all = [...threadRuns, ...jobRuns, ...endedTasks];
@@ -170,7 +180,7 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
     night: nightly.enabled ? [`next at ${nightly.time}`, ...(input.windows.length ? [(() => { const last = [...input.windows].sort((a, b) => b.openedAt.localeCompare(a.openedAt))[0]!; return last.state === 'finished' ? (last.failed ? 'last night had failures' : 'last night complete') : 'night running'; })()] : []),
       ...(input.missedThisWeek !== undefined ? [`${input.missedThisWeek} missed this week`] : [])].join(' · ') : null,
     quietHours: quiet.enabled ? { enabled: true, start: quiet.start, end: quiet.end } : null,
-    goals, waiting, running, queued: [...threadQueued, ...queued], landed, finished };
+    goals, waiting, ...(closedWaiting.length ? { closedWaiting } : {}), running, queued: [...threadQueued, ...queued], landed, finished };
   if (input.goalFilter) {
     const wanted = input.goalFilter.trim().toLowerCase();
     const goal = goals.find(line => line.id.toLowerCase() === wanted || line.internalId === input.goalFilter || line.title.toLowerCase() === wanted)
@@ -180,6 +190,7 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
     const mine = (run: RunView) => run.label.goalId === goal.internalId;
     const goalThreads = new Set(threadRuns.filter(mine).map(run => run.internalId));
     return { ...view, goalFilter: filtered, goals: [goal], deploy: null, night: null, quietHours: null,
+      ...(view.closedWaiting ? { closedWaiting: view.closedWaiting.filter(item => closed.some(decision => decision.id === item.internalId && decision.threadId && goalThreads.has(decision.threadId))) } : {}),
       waiting: view.waiting.filter(item => open.some(decision => decision.id === item.internalId && decision.threadId && goalThreads.has(decision.threadId))),
       running: view.running.filter(mine), queued: view.queued.filter(mine), landed: view.landed.filter(mine), finished: view.finished.filter(mine) };
   }

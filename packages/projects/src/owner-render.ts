@@ -89,6 +89,12 @@ export function renderStatus(view: ProjectStatusView, options: { section?: 'wait
     if (!view.waiting.length) lines.push('Nothing waiting on you.');
     for (const item of view.waiting) lines.push(waitingLine(item));
   }
+  if (section('waiting') && view.closedWaiting?.length) {
+    const shown = options.section === 'waiting' || options.detail ? view.closedWaiting : view.closedWaiting.slice(0, 3);
+    lines.push('', 'Recently closed waiting items');
+    for (const item of shown) lines.push(`${item.id} ${item.state}: ${oneLine(item.closureReason ?? 'No closure reason recorded.', 300)}`);
+    if (shown.length < view.closedWaiting.length) lines.push(`${view.closedWaiting.length - shown.length} more closed waiting items.`);
+  }
   if (section('running') && view.running.length) { lines.push('', 'Running'); for (const run of view.running) lines.push(runningLine(run, view)); }
   if (section('queued') && view.queued.length) {
     lines.push('', 'Queued');

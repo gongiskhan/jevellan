@@ -294,7 +294,7 @@ export function coordinatorToolHandlers(o: CoordinatorToolsOptions): Required<Om
       }
       case 'jevellan_withdraw_question': {
         const input = raw as Input<typeof name>;
-        return { schema: 'withdraw-question-result-v1', decisionId: input.decisionId, withdrawn: await o.decisions.withdraw(projectId, input.decisionId) };
+        return { schema: 'withdraw-question-result-v1', decisionId: input.decisionId, withdrawn: await o.decisions.withdraw(projectId, input.decisionId, input.reason, 'coordinator') };
       }
       case 'jevellan_answer_question': {
         const input = raw as Input<typeof name>, ledger = o.ledgers.coordinator(projectId), events = ledger.events();

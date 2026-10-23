@@ -9,7 +9,7 @@ import { ProjectJobSchema, ProjectDailySchema, ProjectJobRunSchema, ProjectWindo
 import { z } from 'zod';
 import { ProjectNotificationSchema } from './notification-schemas.js';
 import {
-  DecisionAnswerSchema, FileReservationSchema, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectEnvelopeSchema, ProjectMailSchema,
+  DecisionAnswerSchema, FileReservationSchema, PlacementOverrideSchema, ProjectCoordinatorSchema, ProjectCoordinatorStatusSchema, ProjectDecisionSchema, ProjectDecisionWithdrawalSchema, ProjectEnvelopeSchema, ProjectMailSchema,
   ProjectNotebookSchema, ProjectWorkSettingsSchema, ThreadIndexSchema,
 } from './project-schemas.js';
 import { DevicePresenceSchema } from './mesh-schemas.js';
@@ -115,10 +115,10 @@ export const ProjectHubRequestSchema = z.discriminatedUnion('operation', [
   z.strictObject({ ...request, operation: z.literal('thread-admit'), ...project, threadId: IdSchema, deviceId: IdSchema, reserve: z.boolean().optional() }),
   z.strictObject({ ...request, operation: z.literal('thread-get'), threadId: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('thread-publish'), index: ThreadIndexSchema, eventId: z.number().int().positive() }),
-  z.strictObject({ ...request, operation: z.literal('decisions-list'), ...page }),
+  z.strictObject({ ...request, operation: z.literal('decisions-list'), ...page, includeClosed: z.boolean().optional() }),
   z.strictObject({ ...request, operation: z.literal('decision-get'), id: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('decision-create'), decision: ProjectDecisionSchema }),
-  z.strictObject({ ...request, operation: z.literal('decision-withdraw'), id: IdSchema, at: TimestampSchema }),
+  z.strictObject({ ...request, operation: z.literal('decision-withdraw'), id: IdSchema, at: TimestampSchema, withdrawal: ProjectDecisionWithdrawalSchema.optional() }),
   z.strictObject({ ...request, operation: z.literal('decision-answer'), id: IdSchema, answer: DecisionAnswerSchema, at: TimestampSchema, clientRequestId: IdSchema }),
   z.strictObject({ ...request, operation: z.literal('notebook-get'), ...project }),
   z.strictObject({ ...request, operation: z.literal('notebook-put'), notebook: ProjectNotebookSchema, expectedRevision }),

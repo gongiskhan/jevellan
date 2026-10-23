@@ -1174,5 +1174,11 @@
     "title": "Follow-up findings and remaining live evidence",
     "why": "Recent unstarted cancelled/failed task visibility and recorded reasons are fixed in 0.7.4. Model fresh-status guidance, blocked-landing item/thread visibility, unknown budget explanation and conditional idle dependency wakeup remain planned/unverified; customer observations stay private. Preserve configured checks and production guards. These items authorize no additional release, review or real task/goal/deploy change.",
     "status": "planned"
+  },
+  {
+    "id": "release-075",
+    "title": "Preserve blocked work and release 0.7.5",
+    "why": "Phase A is verified: unresolved linked questions refuse coordinator withdrawal; versioned optional closure receipts and opt-in status history preserve reasons without changing ordinary list pagination. Three regressions fail/repeat then pass; typecheck/lint/build, 39 affected cases and one desktop-light Overview smoke pass. Remaining landing blocker recovery/port isolation, repeated failures, pending fresh-start indication, environment verification and other manager findings remain in progress. Full backend/five core/native archive/cold-backup/strict hub-before-member release gates are pending. Both devices remain 0.7.4. Owner-only items 13/15 excluded; no real task/goal/deploy or owner process/data changes.",
+    "status": "in-progress"
   }
 ]

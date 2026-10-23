@@ -38,7 +38,7 @@ export const WaitingKindSchema = z.enum(['question', 'decision', 'deploy', 'depl
 export type WaitingKind = z.infer<typeof WaitingKindSchema>;
 export const WaitingItemViewSchema = z.strictObject({ schema: z.literal('waiting-item-view-v1'), id: ShortIdSchema, internalId: IdSchema, kind: WaitingKindSchema,
   from: z.string().min(1).max(40), text: z.string().min(1).max(200000), options: z.array(z.string().min(1).max(120)).max(4), freeText: z.boolean(), urgent: z.boolean(),
-  createdAt: TimestampSchema, updatedAt: TimestampSchema, state: z.enum(['open', 'answered', 'expired']) });
+  createdAt: TimestampSchema, updatedAt: TimestampSchema, state: z.enum(['open', 'answered', 'expired', 'resolved', 'withdrawn']), closureReason: z.string().min(1).max(2000).optional() });
 export type WaitingItemView = z.infer<typeof WaitingItemViewSchema>;
 
 export const GoalDueSchema = z.strictObject({ type: z.enum(['daily_item', 'idle_goal']), ref: z.string().max(200), text: z.string().max(400) });
@@ -54,7 +54,7 @@ export const ProjectStatusViewSchema = z.strictObject({ schema: z.literal('proje
   budgets: z.array(z.strictObject({ label: z.string().max(120), usedPercent: z.number().nonnegative().nullable(), budgetPercent: z.number().int().min(1).max(100) })).max(40),
   deploy: z.strictObject({ mode: z.string().max(40), paused: z.boolean(), undeployed: z.number().int().nonnegative(), message: ShortIdSchema.optional(), health: z.string().max(400).optional() }).nullable(),
   night: z.string().max(400).nullable(), quietHours: z.strictObject({ enabled: z.boolean(), start: z.string().max(5), end: z.string().max(5) }).nullable(),
-  goals: z.array(GoalLineSchema).max(100), waiting: z.array(WaitingItemViewSchema), running: z.array(RunViewSchema), queued: z.array(RunViewSchema),
+  goals: z.array(GoalLineSchema).max(100), waiting: z.array(WaitingItemViewSchema), closedWaiting: z.array(WaitingItemViewSchema).optional(), running: z.array(RunViewSchema), queued: z.array(RunViewSchema),
   landed: z.array(RunViewSchema), finished: z.array(RunViewSchema), goalFilter: z.strictObject({ id: ShortIdSchema, title: z.string().max(200), state: z.string().max(40), priority: z.string().max(40).optional() }).optional() });
 export type ProjectStatusView = z.infer<typeof ProjectStatusViewSchema>;
 

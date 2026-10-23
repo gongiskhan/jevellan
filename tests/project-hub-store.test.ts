@@ -267,6 +267,8 @@ test('question answers are first-answer-wins, idempotent by request id and refus
   await expect(left.hub.answerDecision('pdec_lost', { optionLabel: 'Postgres', text: 'Use JSONB.' }, at, 'ans_lost')).rejects.toBeInstanceOf(HubUnavailable);
   expect(await left.hub.answerDecision('pdec_lost', { optionLabel: 'Postgres', text: 'Use JSONB.' }, at, 'ans_lost')).toMatchObject({ repeated: true, decision: { revision: 2, document: { answer: { optionLabel: 'Postgres', text: 'Use JSONB.' } } } });
   expect((await right.hub.decisions('project')).map(row => row.id)).toEqual(['pdec_db', 'pdec_lost']);
+  expect((await right.hub.decisions('project', { includeClosed: true })).map(row => row.id)).toEqual(['pdec_db', 'pdec_lost', 'pdec_old']);
+  expect((await right.hub.decisions('project', { includeClosed: true })).find(row => row.id === 'pdec_old')?.withdrawal).toMatchObject({ source: 'system', reason: 'Resolved by the owning service.' });
   expect(await right.hub.decision('pdec_old')).toEqual(withdrawn);
 });
 

@@ -270,6 +270,7 @@ export const ThreadIndexSchema = z.strictObject({ schema: z.literal('project-thr
   lastSummary: z.string().max(400).optional(), changedPaths: z.array(z.string().max(1024)).max(8).optional(), turns: count, restartedAs: IdSchema.optional(),
   createdAt: TimestampSchema, updatedAt: TimestampSchema, endedAt: TimestampSchema.optional() });
 export type ThreadIndex = z.infer<typeof ThreadIndexSchema>;
+export const ProjectDecisionWithdrawalSchema = z.strictObject({ schema: z.literal('project-decision-withdrawal-v1'), source: z.enum(['coordinator', 'system']), reason: z.string().min(1).max(2000) });
 // 5.9 hub namespace project-decisions, key id
 export const ProjectDecisionSchema = z.strictObject({ schema: z.literal('project-decision-v1'), revision,
   id: IdSchema, projectId: IdSchema, threadId: IdSchema.optional(), from: z.enum(['coordinator', 'thread']),
@@ -283,7 +284,7 @@ export const ProjectDecisionSchema = z.strictObject({ schema: z.literal('project
   urgent: z.boolean().optional(), deploy: z.strictObject({ deployId: IdSchema, action: z.enum(['approve', 'retry', 'rollback']).default('approve') }).optional(),
   landing: z.strictObject({ commit: z.string().regex(/^[a-f0-9]{40,64}$/u), routeId: IdSchema }).optional(),
   merge: z.strictObject({ commit: z.string().regex(/^[a-f0-9]{40,64}$/u), prNumber: positive, reason: z.string().max(1200).optional(), failures: z.array(z.strictObject({ what: z.string().max(500), output: z.string().max(2000) })).max(50).optional() }).optional(),
-  withdrawnAt: TimestampSchema.optional() }).refine(value => !!value.deploy || value.question.length <= 2000, { path: ['question'], message: 'Ordinary questions have at most 2000 characters.' })
+  withdrawnAt: TimestampSchema.optional(), withdrawal: ProjectDecisionWithdrawalSchema.optional() }).refine(value => !!value.deploy || value.question.length <= 2000, { path: ['question'], message: 'Ordinary questions have at most 2000 characters.' })
   .refine(value=>!value.intake||value.from==='coordinator'&&!value.threadId&&!value.deploy&&!value.merge&&!value.landing&&!value.automaticFix&&!value.accountId,{path:['intake'],message:'Intake is a separate coordinator owner item.'});
 export type ProjectDecision = z.infer<typeof ProjectDecisionSchema>;
 // 5.10 hub namespace project-notebooks, key projectId
