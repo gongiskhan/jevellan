@@ -55,17 +55,25 @@ export class SecretRedactor {
   #ordered: string[] | undefined;
   // Keep only digests and redacted outputs, never a second copy of raw credentials or transcripts.
   #texts = new Map<string, string>();
+  #safeTexts = new Set<string>();
   #textBytes = 0;
   add(secret: string): void {
     if (!secret || this.#secrets.has(secret)) return;
-    this.#secrets.add(secret); this.#ordered = undefined; this.#texts.clear(); this.#textBytes = 0;
+    this.#secrets.add(secret); this.#ordered = undefined; this.#texts.clear(); this.#safeTexts.clear(); this.#textBytes = 0;
+  }
+  #rememberSafe(value: string): void {
+    if (value.length > 64) return;
+    this.#safeTexts.delete(value); this.#safeTexts.add(value);
+    if (this.#safeTexts.size > 4096) this.#safeTexts.delete(this.#safeTexts.values().next().value!);
   }
   text(value: string): string {
+    // These keys are themselves previously redacted outputs. Credential-bearing inputs only use digest keys below.
+    if (value.length <= 64 && this.#safeTexts.has(value)) { this.#rememberSafe(value); return value; }
     // UTF-16 preserves distinct unpaired surrogates (UTF-8 would replace both with U+FFFD).
     const key = value.length <= 65536 ? createHash('sha256').update(value, 'utf16le').digest('hex') : undefined;
     if (key !== undefined) {
       const cached = this.#texts.get(key);
-      if (cached !== undefined) { this.#texts.delete(key); this.#texts.set(key, cached); return cached; }
+      if (cached !== undefined) { this.#texts.delete(key); this.#texts.set(key, cached); if (cached === value) this.#rememberSafe(cached); return cached; }
     }
     let result = value;
     this.#ordered ??= [...this.#secrets].sort((a, b) => b.length - a.length);
@@ -75,6 +83,7 @@ export class SecretRedactor {
       .replace(/\bjva_[A-Za-z0-9_-]{1,128}\.[A-Za-z0-9_-]{43}\b/g, '[redacted]')
       .replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+\b/g, '[redacted]')
       .replace(/(Bearer\s+)\S+/gi, '$1[redacted]');
+    if (result === value) this.#rememberSafe(result);
     if (key !== undefined && result.length <= 65536) {
       this.#texts.set(key, result); this.#textBytes += 128 + result.length * 2;
       while (this.#texts.size > 4096 || this.#textBytes > 4 * 1024 * 1024) {

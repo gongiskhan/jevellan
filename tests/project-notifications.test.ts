@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { createECDH, randomBytes } from 'node:crypto';
 import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -23,6 +23,34 @@ function subscribe(service: HubNotifications, endpoint = 'https://push.example/o
 function notification(id: string, at: number, kind: ProjectNotification['kind'] = 'test'): ProjectNotification {
   return { schema: 'project-notification-v1', revision: 0, id, projectId: kind === 'test' ? null : 'project', kind, title: 'Fixture', body: id, url: '/projects/project', tag: 'fixture', createdAt: new Date(at).toISOString() };
 }
+test('an unchanged pending notification batch reads each project setting once and observes changes on the next sweep', async () => {
+  const { ProjectWorkSettingsSchema, defaultProjectWorkSettings } = await import('../packages/core/dist/index.js');
+  const now = Date.parse('2026-10-24T00:00:00Z'), { hub, service } = setup(undefined, () => now), settings = defaultProjectWorkSettings('project');
+  hub.put('project-work-settings', 'project', ProjectWorkSettingsSchema, settings, 0);
+  for (let n = 0; n < 80; n++) service.enqueue(notification(`pending_${n}`, now, 'needs-you'));
+  const reads = vi.spyOn(hub, 'get');
+  try {
+    await service.sweep();
+    expect(hub.list('project-notifications', ProjectNotificationSchema)).toHaveLength(80);
+    expect(reads.mock.calls.filter(([namespace]) => namespace === 'project-work-settings'), 'An unchanged synchronous batch must not repeatedly parse the same settings.').toHaveLength(1);
+  } finally { reads.mockRestore(); }
+  hub.put('project-work-settings', 'project', ProjectWorkSettingsSchema, { ...settings, notifications: { ...settings.notifications, level: 'off' } }, 1);
+  await service.sweep();
+  expect(hub.list('project-notifications', ProjectNotificationSchema).every(row => row.document.dropped === 'Not enabled by the project notification setting.')).toBe(true);
+});
+
+test('a setting changed while a push is in flight applies before the next notification', async () => {
+  const { ProjectWorkSettingsSchema, defaultProjectWorkSettings } = await import('../packages/core/dist/index.js');
+  const now = Date.parse('2026-10-24T00:00:00Z'), settings = defaultProjectWorkSettings('project'); let sent = 0;
+  const { hub, service } = setup(async () => {
+    sent++; if (sent === 1) hub.put('project-work-settings', 'project', ProjectWorkSettingsSchema, { ...settings, notifications: { ...settings.notifications, level: 'off' } }, 1);
+    return { statusCode: 201, body: '', headers: {} };
+  }, () => now);
+  subscribe(service); hub.put('project-work-settings', 'project', ProjectWorkSettingsSchema, settings, 0);
+  service.enqueue(notification('first_setting', now, 'needs-you')); service.enqueue(notification('second_setting', now, 'needs-you'));
+  await service.sweep(); expect(sent).toBe(1);
+  expect(hub.get('project-notifications', 'second_setting', ProjectNotificationSchema)?.document.dropped).toBe('Not enabled by the project notification setting.');
+});
 test('notification levels filter every kind without affecting the test notification', () => {
   for (const level of ['everything', 'standard', 'needs-you', 'off']) for (const kind of ProjectNotificationSchema.shape.kind.options) {
     const expected = kind === 'test' || level === 'everything' || level === 'standard' && kind !== 'thread-finished' || level === 'needs-you' && ['needs-you', 'thread-failed', 'coordinator-unavailable', 'deploy', 'quiet-summary'].includes(kind);

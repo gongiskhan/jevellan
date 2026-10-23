@@ -16,6 +16,10 @@ const descendants = new WeakMap<NativeProcess, Map<number, ProcessIdentity>>();
  */
 async function ownedProcesses(native: NativeProcess, strictIdentity = true): Promise<ProcessIdentity[]> {
   const known = descendants.get(native) ?? new Map<number, ProcessIdentity>(); descendants.set(native, known);
+  // A completed command needs no whole-machine helper when the kernel confirms BOTH its root and group absent,
+  // and there is no remembered escaped descendant. Live/reused roots and every known tree retain the full fresh scan.
+  if (process.platform === 'linux' && known.size === 0 && native.pid >= 2 && native.pid === native.pgid && native.pid !== process.pid
+    && currentProcess(native.pid) === undefined && !groupAlive(native.pgid)) return [];
   const rows = await processTableAsync(); const root = rows.find((row) => row.pid === native.pid);
   const reused = root && native.startIdentity && root.start !== native.startIdentity;
   if (strictIdentity && reused) throw new Error('Refusing to terminate a reused process identity.');

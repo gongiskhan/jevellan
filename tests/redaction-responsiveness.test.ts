@@ -26,3 +26,14 @@ test('repeated redaction retains longest-first behavior and invalidates on every
   const large = `Large ${'safe '.repeat(30000)}`; expect(redactor.text(large)).toBe(large);
   redactor.add('Large'); expect(redactor.text(large)).toBe(large.replace('Large', '[redacted]'));
 });
+
+test('repeated small public metadata snapshots avoid expensive per-field work', () => {
+  const redactor = new SecretRedactor(), snapshot = { schema: 'project-work-view-v1', state: 'idle', device: 'device_fixture', model: 'model_fixture', label: 'Recorded work' };
+  expect(redactor.document(snapshot)).toEqual(snapshot);
+  let result = snapshot; const started = process.cpuUsage();
+  for (let n = 0; n < 20000; n++) result = redactor.document(snapshot);
+  const elapsed = process.cpuUsage(started);
+  expect(result).toEqual(snapshot);
+  expect((elapsed.user + elapsed.system) / 1000, 'Repeated metadata must stay cheap after its initial redaction.').toBeLessThan(200);
+  redactor.add('idle'); expect(redactor.document(snapshot).state).toBe('[redacted]');
+});

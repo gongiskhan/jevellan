@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import webpush from 'web-push';
 import { NotificationsViewSchema, PushSubscriptionSchema, ProjectNotificationSchema, PushDeliverySchema, PushKeysSchema, NotificationOwnerRequestSchema, IdSchema, notificationSubscriptionId,
-  ProjectDecisionSchema, ProjectSchema, StoredProjectWorkSettingsSchema, clipRedacted, type ProjectNotification, type DocumentSchema } from '@jevellan/core';
+  ProjectDecisionSchema, ProjectSchema, StoredProjectWorkSettingsSchema, clipRedacted, type ProjectNotification, type ProjectWorkSettings, type DocumentSchema } from '@jevellan/core';
 import { defaultProjectNotifications, type QuietHoursSchema } from '@jevellan/core';
 import type { z } from 'zod';
 import { notificationQuestionTitle, NOTIFICATION_TEST_BODY, NOTIFICATION_TEST_TITLE } from '@jevellan/projects';
@@ -73,6 +73,12 @@ export class HubNotifications {
   }
   async #sweep(): Promise<void> {
     const now = this.now(), at = time(now), cutoff = now - 7 * 86400000;
+    const settings = new Map<string, ProjectWorkSettings['notifications']>();
+    const preferencesFor = (projectId: string) => {
+      let preferences = settings.get(projectId);
+      if (!preferences) { preferences = this.hub.get('project-work-settings', projectId, StoredProjectWorkSettingsSchema)?.document.notifications ?? defaultProjectNotifications; settings.set(projectId, preferences); }
+      return preferences;
+    };
     for (const { document } of this.hub.list('project-decisions', ProjectDecisionSchema)) {
       if (document.answer || document.withdrawnAt || Date.parse(document.createdAt) < cutoff) continue;
       const project = this.hub.get('projects', document.projectId, ProjectSchema)?.document; if (!project) continue;
@@ -88,7 +94,7 @@ export class HubNotifications {
       let row = original;
       const n = row.document;
       if (n.sentAt || n.dropped || n.urgent || n.kind === 'test' || !n.projectId) continue;
-      const preferences = this.hub.get('project-work-settings', n.projectId, StoredProjectWorkSettingsSchema)?.document.notifications ?? defaultProjectNotifications;
+      const preferences = preferencesFor(n.projectId);
       if (!notificationAllowed(n.kind, preferences.level)) continue;
       const quiet = insideQuietHours(now, preferences.quietHours);
       if (!n.heldAt && (quiet || insideQuietHours(Date.parse(n.createdAt), preferences.quietHours))) row = this.#put('project-notifications', n.id, ProjectNotificationSchema, { ...n, heldAt: at }, row.revision);
@@ -115,7 +121,7 @@ export class HubNotifications {
       if (row.document.dropped) continue;
       const notification = row.document;
       if (notification.heldAt) continue;
-      const level = notification.projectId ? this.hub.get('project-work-settings', notification.projectId, StoredProjectWorkSettingsSchema)?.document.notifications.level ?? 'standard' : 'everything';
+      const level = notification.projectId ? preferencesFor(notification.projectId).level : 'everything';
       if (!notification.urgent && !notificationAllowed(notification.kind, level)) { this.#put('project-notifications', notification.id, ProjectNotificationSchema, { ...notification, dropped: 'Not enabled by the project notification setting.' }, row.revision); continue; }
       if (notification.kind === 'coordinator-reply' && !notification.sentAt && notifications.some(other => other.document.projectId === notification.projectId && other.document.kind === 'coordinator-reply' && other.document.sentAt && Date.parse(other.document.sentAt) > now - 30_000)) continue;
       const prior = this.hub.listByField('push-deliveries', 'notificationId', notification.id, PushDeliverySchema);
@@ -149,6 +155,9 @@ export class HubNotifications {
           const dropped = removed ? 'The push subscription is no longer available.' : delay === undefined ? 'Push delivery failed after three retries.' : undefined;
           this.#put('push-deliveries', id, PushDeliverySchema, { ...delivery.document, attempts, ...(dropped ? { dropped } : { nextAt: time(now + delay!) }) }, delivery.revision);
           if (!dropped) complete = false;
+        } finally {
+          // A push yields to owner requests. The next notification must see settings changed during that send.
+          settings.clear();
         }
       }
       row = this.hub.get('project-notifications', notification.id, ProjectNotificationSchema)!;
