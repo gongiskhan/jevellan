@@ -113,6 +113,12 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
   const queuedTasks = input.tasks.filter(task => task.state === 'queued' && !task.threadId).sort((a, b) => Number(b.now) - Number(a.now) || a.rank.localeCompare(b.rank));
   const queued: RunView[] = queuedTasks.map((task, index) => ({ schema: 'run-view-v1', id: taskIds.get(task.id)!, internalId: task.id, kind: 'thread', label: labelOfTask(task), title: task.title, state: 'queued',
     ...(task.held ? { detail: 'held until you start it' } : {}), runtime: null, model: null, effort: null, account: null, device: null, startedAt: null, position: index + 1, priority: task.now ? 'urgent' : 'normal' }));
+  // Tasks can end before any thread or job starts. Their recorded disposition still belongs in recent finished work.
+  const endedTasks: RunView[] = input.tasks.filter(task => !task.threadId && !task.jobRunId && ['cancelled', 'failed'].includes(task.state)).map(task => ({
+    schema: 'run-view-v1', id: taskIds.get(task.id)!, internalId: task.id, kind: 'thread', label: labelOfTask(task), title: task.title,
+    state: task.state === 'cancelled' ? 'cancelled' : 'failed', ...(task.endNote ? { detail: task.endNote } : {}),
+    runtime: null, model: null, effort: null, account: null, device: null, startedAt: null, endedAt: task.endedAt ?? task.updatedAt,
+  }));
 
   const proposed = input.tasks.filter(task => task.state === 'draft');
   const proposedIds = ids.assign(projectId, 'W', byCreated(proposed).map(task => `draft-${task.id}`.slice(0, 128)));
@@ -128,7 +134,7 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
 
   const recent = (run: RunView) => run.endedAt !== undefined && now.getTime() - new Date(run.endedAt).getTime() <= TWELVE_HOURS;
   const order: Record<RunView['state'], number> = { waiting: 0, held: 1, running: 2, landing: 3, queued: 4, landed: 5, deployed: 6, failed: 7, stopped: 8, cancelled: 9, idle: 10 };
-  const all = [...threadRuns, ...jobRuns];
+  const all = [...threadRuns, ...jobRuns, ...endedTasks];
   const running = all.filter(run => ['held', 'running', 'landing'].includes(run.state)).sort((a, b) => order[a.state] - order[b.state] || (a.startedAt ?? '').localeCompare(b.startedAt ?? ''));
   const threadQueued = threadRuns.filter(run => run.state === 'queued');
   const landedAt = (run: RunView) => run.landing?.at ?? run.endedAt ?? '';

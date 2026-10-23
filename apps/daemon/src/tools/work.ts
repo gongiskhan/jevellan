@@ -70,8 +70,8 @@ export const work: OwnerHandler = async (context) => {
         return { text: `Stopping ${target.id} at the next safe point and cancelling it. Its worktree is kept until cleanup removes it.` };
       }
       if (!target.task || !['queued', 'draft'].includes(target.task.state)) throw new OwnerRefusal(`${target.id} has already ended.`, 'ended', 409);
-      await engine.taskAction(projectId, target.task.id, { schema: 'task-action-request-v1', expectedRevision: target.task.revision, action: target.task.state === 'draft' ? 'reject' : 'cancel', ...(reason ? { reason } : {}) });
-      return { text: `Cancelled ${target.id} (it was queued).` };
+      const cancelled = await engine.taskAction(projectId, target.task.id, { schema: 'task-action-request-v1', expectedRevision: target.task.revision, action: target.task.state === 'draft' ? 'reject' : 'cancel', ...(reason ? { reason } : {}) });
+      return { text: `Cancelled ${target.id} (it was queued).${reason && cancelled.task.endNote ? ` Reason: ${cancelled.task.endNote}` : ''}` };
     }
     case 'inspect': {
       const target = await resolveTask(context, String(args.task)); const view = await tools.status(project);
@@ -84,7 +84,10 @@ export const work: OwnerHandler = async (context) => {
         const since = ownerDuration(now.getTime() - new Date(thread.createdAt).getTime());
         lines.push(`State: ${run?.state ?? thread.state}${run?.state === 'running' ? ` for ${since}` : ''} · ${thread.modelLabel} ${thread.effort} · ${thread.accountLabel} · ${run?.device ?? thread.ownerDeviceId}${thread.branch ? ` · worktree on ${thread.branch}` : ''}`);
         if (thread.stateReason) lines.push(`Reason: ${thread.stateReason}`);
-      } else lines.push(`State: ${task!.state}${task!.held ? ' (held until you start it)' : ''}`);
+      } else {
+        lines.push(`State: ${task!.state}${task!.held ? ' (held until you start it)' : ''}`);
+        if (task!.endNote) lines.push(`Reason: ${task!.endNote}`);
+      }
       lines.push(`Description: ${(task?.brief ?? '').slice(0, 500)}`);
       if (thread?.usage) lines.push(`Usage so far: ${Math.round(thread.usage.inputTokens / 1000)}k input (${Math.round(thread.usage.cacheReadTokens / 1000)}k cached), ${Math.round(thread.usage.outputTokens / 1000)}k output${thread.usage.costUnknownTurns ? '' : `, about $${thread.usage.costUsd.toFixed(2)}`}`);
       if (thread?.landing) lines.push(`Landed as ${thread.landing.commit.slice(0, 7)} at ${ownerClock(thread.landing.at, now, view.timeZone)} (${thread.landing.method})`);

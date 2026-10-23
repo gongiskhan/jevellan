@@ -672,3 +672,5 @@ Final global verification: The corrected complete backend gate has 3,785 passes,
 
 
 23October0.7.4 continuation: journal rendering reuses bounded timezone formatters; serialized durable publication yields between records to keep owner requests responsive. Failing-first large-history cases and all50cases in five affected files pass,with static/build checks. All14previous noncore desktop-light journeys pass at current typed boundaries,with their behavior assertions retained. Full release gates and installed latency verification remain pending; this does not change the310-row source dispositions or establish live acceptance.
+
+Status continuation: recent cancelled/failed tasks with no thread or job run retain stable ids,goal labels and recorded end reasons through the canonical status service. The existing twelve-hour window and thread/job deduplication remain. Normal owner tools surface the stored reason;14affected cases and static/build checks pass after failing-first regressions. No new UI state inference or heuristic meaning routing is added.

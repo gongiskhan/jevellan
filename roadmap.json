@@ -1166,7 +1166,7 @@
   {
     "id": "release-073-074",
     "title": "Release ordered engine work and repair recorded browser journeys",
-    "why": "0.7.3 source7ece0c1a published and cold-backed strict-idle hub-then-member installs complete; doctors remain partial pending latency repair. Normal coordinator restart completed two turns with session preserved; later healthy Idle observed. Failing-first responsiveness fix passes static/build and50affected journal/ledger cases. All14noncore desktop-light journeys pass individually with13exact images; original whole-run failures/skips remain visible. Manager findings, final6worker backend/five core release gates,0.7.4 publication/install and live verification remain in progress. No task/goal/deploy changes or new review.",
+    "why": "0.7.3 source7ece0c1a published and cold-backed strict-idle hub-then-member installs complete; doctors remain partial pending latency repair. Project-specific coordinator/queue observations are private. Responsiveness fix passes static/build and50affected journal/ledger cases. All14noncore desktop-light journeys pass individually with13exact images; original whole-run failures/skips remain visible. Generic unstarted-task terminal status/reason repair passes14affected cases plus static/build after failing-first tests. Model fresh-status guidance and conditional wakeup verification remain next. Final6worker backend/five core release gates,0.7.4 publication/install and live verification remain in progress;no real task/goal/deploy changes or new review.",
     "status": "in-progress"
   }
 ]
