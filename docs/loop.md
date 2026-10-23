@@ -27,3 +27,6 @@ Paused and archived projects start nothing new; running turns finish and owner o
 The [current run log](acceptance/without-github-2026-10/README.md) records verification and installed state. [Loop history](acceptance/loop-history.md) preserves the previous file byte for byte, with all checkpoints and decisions in their original order. Historical delivery and owner-acceptance claims are not inferred from this current-state reference.
 
 Completed jobs record successful cleanup after their owned processes, worktrees and private refs are settled. Later sweeps retain the receipts without repeating historical Git cleanup; interrupted cleanup is retried.
+
+
+Browser event streams read the validated ledger head independently of bounded event pages. A64-record replay batch does not clone complete history for its cursor check,response header,status head or next flush. Every flush retains authentication,drain backpressure,ordered cursor frames and status catch-up; ledger validation still includes records outside the selected range.

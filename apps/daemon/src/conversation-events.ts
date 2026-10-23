@@ -6,7 +6,7 @@ import { publicConversationData } from '@jevellan/core';
 export { publicConversationData } from '@jevellan/core';
 
 /** A ledger an event stream follows: replay after a cursor, then a wake-up after every durable append. */
-export type StreamedLedger<E extends { id: number }> = { events(afterId?: number, limit?: number): E[]; subscribe(listener: () => void): () => void };
+export type StreamedLedger<E extends { id: number }> = { lastId(): number; events(afterId?: number, limit?: number): E[]; subscribe(listener: () => void): () => void };
 /** The SSE event name, the browser document for one event, and the two cursor refusals (answered 400 before any header). */
 /** `skip`: events the stream's reader never shows; the cursor passes them without a frame. */
 export type LedgerStreamFrame<E> = { name: string; payload(event: E): unknown; invalidCursor: string; aheadCursor: string; skip?(event: E): boolean };
@@ -21,9 +21,9 @@ export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>
   const supplied = request.headers['last-event-id'] ?? url.searchParams.get('after') ?? '0';
   if (typeof supplied !== 'string' || !/^\d+$/.test(supplied) || !Number.isSafeInteger(Number(supplied))) throw new Error(frame.invalidCursor);
   let cursor = Number(supplied);
-  if (cursor > (ledger.events().at(-1)?.id ?? 0)) throw new Error(frame.aheadCursor);
+  if (cursor > ledger.lastId()) throw new Error(frame.aheadCursor);
   let stopped = false; let pending = false; let paused = false; let flushing = false; let queued = false; let keepalive = false; let skipped = false;
-  let statusHead = ledger.events().at(-1)?.id ?? 0;
+  let statusHead = ledger.lastId();
   let statusTimer: ReturnType<typeof setTimeout> | undefined;
   const statusFrames: unknown[] = [];
   let unsubscribe = () => {};
@@ -53,7 +53,7 @@ export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>
       for (const event of batch) { if (!write(event)) { paused = true; return; } }
       // Skipped events at the end of a batch: a cursor frame says how far the stream reached, so a reader waiting for the ledger's head stops waiting.
       if (skipped) { skipped = false; if (!response.write(`id: ${cursor}\nevent: cursor\ndata: ${JSON.stringify({ id: cursor })}\n\n`)) { paused = true; return; } }
-      const head = ledger.events().at(-1)?.id ?? 0;
+      const head = ledger.lastId();
       if (status && cursor >= head && head > statusHead) {
         statusHead = head;
         if (!statusTimer) statusTimer = setTimeout(() => { statusTimer = undefined; void status.request(); }, STATUS_REFRESH_WINDOW_MS);
@@ -71,7 +71,7 @@ export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>
   // Subscribe before replay. Each wake reads the journal from the accepted cursor.
   unsubscribe = ledger.subscribe(schedule);
   response.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no', 'X-Content-Type-Options': 'nosniff',
-    'X-Jevellan-Ledger-Head': String(ledger.events().at(-1)?.id ?? 0) });
+    'X-Jevellan-Ledger-Head': String(ledger.lastId()) });
   response.flushHeaders();
   const heartbeat = setInterval(() => {
     keepalive = true; schedule();

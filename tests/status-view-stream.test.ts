@@ -18,7 +18,7 @@ test('the shared refresh policy retains completed reads and serializes every cat
 
 test('status views are coalesced after raw ledger events without overlapping reads or sending after close',async()=>{
  const events=[{id:1}]; let wake=()=>{};let unsubscribed=false;
- const ledger={events:(after=0,limit=Number.MAX_SAFE_INTEGER)=>events.filter(e=>e.id>after).slice(0,limit),subscribe:(next:()=>void)=>{wake=next;return()=>{unsubscribed=true;};}};
+ const ledger={lastId:()=>events.at(-1)?.id??0,events:(after=0,limit=Number.MAX_SAFE_INTEGER)=>events.filter(e=>e.id>after).slice(0,limit),subscribe:(next:()=>void)=>{wake=next;return()=>{unsubscribed=true;};}};
  const writes:string[]=[];const response=Object.assign(new EventEmitter(),{write:(s:string)=>{writes.push(s);return true;},writeHead:()=>{},flushHeaders:()=>{},end:()=>{},destroy:()=>{}}) as unknown as ServerResponse;
  const first=deferred<unknown>(),second=deferred<unknown>();const read=vi.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
  Reflect.apply(streamLedger,undefined,[ledger,{headers:{}} as IncomingMessage,response,new URL('http://fixture.invalid/'),()=>true,{name:'project',payload:(e:{id:number})=>e,invalidCursor:'Invalid',aheadCursor:'Ahead'},{read}]);
@@ -35,7 +35,7 @@ test('status views are coalesced after raw ledger events without overlapping rea
 
 test('a status read failure preserves the ledger stream and late authentication revocation suppresses the snapshot',async()=>{
  const events=[{id:1}];let wake=()=>{};let allowed=true;let ended=false;let destroyed=false;
- const ledger={events:(after=0,limit=Number.MAX_SAFE_INTEGER)=>events.filter(e=>e.id>after).slice(0,limit),subscribe:(next:()=>void)=>{wake=next;return()=>{};}};
+ const ledger={lastId:()=>events.at(-1)?.id??0,events:(after=0,limit=Number.MAX_SAFE_INTEGER)=>events.filter(e=>e.id>after).slice(0,limit),subscribe:(next:()=>void)=>{wake=next;return()=>{};}};
  const writes:string[]=[];const response=Object.assign(new EventEmitter(),{write:(s:string)=>{writes.push(s);return true;},writeHead:()=>{},flushHeaders:()=>{},end:()=>{ended=true;},destroy:()=>{destroyed=true;}}) as unknown as ServerResponse;
  const pending=deferred<unknown>();const read=vi.fn().mockRejectedValueOnce(new Error('Temporary view failure')).mockReturnValueOnce(pending.promise);
  Reflect.apply(streamLedger,undefined,[ledger,{headers:{}} as IncomingMessage,response,new URL('http://fixture.invalid/'),()=>allowed,{name:'conversation',payload:(e:{id:number})=>e,invalidCursor:'Invalid',aheadCursor:'Ahead'},{read}]);
@@ -67,7 +67,7 @@ test('a pushed snapshot supersedes an older in-flight fallback without suppressi
 test('a burst of ledger notifications shares one forty-millisecond status window while raw events keep flowing',async()=>{
  vi.useFakeTimers({toFake:['setTimeout','clearTimeout']});
  const events=[{id:1}];let wake=()=>{};const writes:string[]=[];
- const ledger={events:(after=0,limit=Number.MAX_SAFE_INTEGER)=>events.filter(e=>e.id>after).slice(0,limit),subscribe:(next:()=>void)=>{wake=next;return()=>{};}};
+ const ledger={lastId:()=>events.at(-1)?.id??0,events:(after=0,limit=Number.MAX_SAFE_INTEGER)=>events.filter(e=>e.id>after).slice(0,limit),subscribe:(next:()=>void)=>{wake=next;return()=>{};}};
  const response=Object.assign(new EventEmitter(),{write:(s:string)=>{writes.push(s);return true;},writeHead:()=>{},flushHeaders:()=>{},end:()=>{},destroy:()=>{}}) as unknown as ServerResponse;
  const read=vi.fn().mockResolvedValue({schema:'fixture-status-v1',value:'latest'});const flush=async()=>{await new Promise<void>(done=>setImmediate(done));await new Promise<void>(done=>setImmediate(done));};
  Reflect.apply(streamLedger,undefined,[ledger,{headers:{}} as IncomingMessage,response,new URL('http://fixture.invalid/'),()=>true,{name:'project',payload:(e:{id:number})=>e,invalidCursor:'Invalid',aheadCursor:'Ahead'},{read}]);

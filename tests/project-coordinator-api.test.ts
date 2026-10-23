@@ -134,7 +134,7 @@ test('streamLedger: refusals before headers, exact frames in 64-event batches, d
   try {
     const events = Array.from({ length: 150 }, (_, n) => ({ id: n + 1 }));
     let wake = () => {};
-    const ledger = { events: (after = 0, limit = Number.MAX_SAFE_INTEGER) => events.filter((event) => event.id > after).slice(0, limit),
+    const ledger = { lastId: () => events.at(-1)?.id ?? 0, events: (after = 0, limit = Number.MAX_SAFE_INTEGER) => events.filter((event) => event.id > after).slice(0, limit),
       subscribe: (listener: () => void) => { wake = listener; return () => { wake = () => {}; }; } };
     const writes: string[] = []; let accept = true; let ended = false; let allowed = true; const heads: unknown[] = [];
     const response = Object.assign(new EventEmitter(), { write: (chunk: string) => { writes.push(chunk); return accept; }, writeHead: (status: number, headers: object) => { heads.push({ status, headers }); },

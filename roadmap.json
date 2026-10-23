@@ -1178,7 +1178,19 @@
   {
     "id": "release-075",
     "title": "Preserve blocked work and release 0.7.5",
-    "why": "P0 hub CPU repair source: typecheck/lint/build and55complete affected cases pass. Full6worker3822-case run:3805pass/1simulatedPTYstartupfail/16notrun; exact1repeat passes unchanged, covering3806distinct cases. Source2749filesunchanged. Desktop settings+Overview pass/9exact images; three cores/native archives/publication/strict installs/liveCPUproof pending. Proload and separateMadridpeer tests refuse unchanged resourceguards. Both installations074; liveCPU/UIrecovery not claimed. Remaining permission-check reporting, weekly budget/source attribution, verification credential isolation and repeated-failure/fresh-header work remain ordered after P0release.",
+    "why": "075source/tag50fa760a published with exact verified/staged Linux normal-build and Darwin official-dependency-cache/current-JS archives; actual extracted CLI/nativePTY and all source/digest/scans pass. Priorstatic/fullbackend3805/1/16 plus sole repeatPASS/five desktop cores20images remain separate. Hub installed075 through strict guards/coldbackup; member074 explicitly deferred for load. InstalledCPUgoal FAIL/doctorpartial. RemainingSSEfull-historyclone reproduced twice; four validated-head reads now pass30affectedcontracts and3-client full-daemonfixture. Follow-up static,31distinct affected/daemon cases and two desktop chat journeys/six images pass; exact075comparison fails36.44s. Follow-up unreleased; full backend not rerun on it. Instruction-document/runtime compatibility and otherfindings remain next.",
     "status": "in-progress"
+  },
+  {
+    "id": "hub-stream-head-responsiveness",
+    "title": "Keep browser event replay responsive on large history",
+    "why": "Source follow-up replaces four full-history SSEhead copies with validated lastId. Initial10.1s replay fails/repeats; candidatewholecase410ms. Three-client daemon case fails on verified075at36.44s but passes candidatewholecase1.73s. Static/31distinct backendcases/two desktopchatjourneys6exactimages pass. Installed075CPUgoal stillfailed; nextpatch needs explicit releaseauthorization. Fullfollowupbackend/visionnotrun.",
+    "status": "in-progress"
+  },
+  {
+    "id": "runtime-project-instruction-size",
+    "title": "Handle project instructions above the runtime default limit",
+    "why": "Next authorized scope: preserve large project instructions and runtime eligibility through supported managed-session limits,including attach and first-turn transcript/report behavior. Do not truncate owner instructions,change native homes or retry/reorder real project work just to pass. Failing-first implementation and verification planned after the hub CPU repair.",
+    "status": "planned"
   }
 ]
