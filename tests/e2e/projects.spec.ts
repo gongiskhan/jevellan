@@ -2678,11 +2678,13 @@ test('WG4 landing settings, owner route, landed groups and branch continuation',
   await check.getByLabel('Name', { exact: true }).fill('Selected check');
   await check.getByLabel('Paths', { exact: true }).fill('wg-landing.txt');
   await check.getByLabel('Command', { exact: true }).fill('test -f wg-landing.txt');
+  await landing.getByLabel('Managed localhost ports', { exact: true }).fill('CHECK_PORT CHECK_URL');
   await landing.getByLabel('Smoke check', { exact: true }).fill('true');
   await landing.getByLabel('Keep commits for these paths', { exact: true }).fill('docs/legal/');
   await landing.scrollIntoViewIfNeeded(); await page.screenshot({ path: info.outputPath(`landing-settings-${layout(info)}.png`), fullPage: true });
   await page.getByRole('button', { name: 'Save', exact: true }).click(); await expect(page).toHaveURL('/projects/projects_fixture');
   expect((await work(page)).settings.delivery).toBe('land');
+  expect((await work(page)).settings.landingPorts).toEqual([{ schema: 'landing-check-port-v1', variable: 'CHECK_PORT', urlVariable: 'CHECK_URL' }]);
   const created = await page.request.post(`${PROJECT}/threads`, { data: { schema: 'thread-create-request-v1', clientRequestId: `landing_${info.project.name}`, title: 'A checked landing', task: 'WG4 landing: make a checked change.', modelId: 'codex-gpt', effort: 'high' } }); expect(created.ok()).toBe(true);
   const { threadId } = await created.json() as { threadId: string };
   await expect.poll(async () => (await read(page, `${PROJECT}/threads/${threadId}`) as ThreadView).thread.state, { timeout: 90_000 }).toBe('in-review');

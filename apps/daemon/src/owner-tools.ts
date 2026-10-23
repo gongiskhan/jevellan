@@ -15,7 +15,7 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
 import { CallerLogEntrySchema, HubUnavailable, currentUsage, ownerClock, OwnerInstallationSettingsSchema, OwnerProjectSettingsSchema, RoutineAutomationPatchSchema, SteeringRecordSchema, defaultOwnerInstallationSettings, defaultOwnerProjectSettings, newId,
   type OwnerInstallationSettings, type OwnerProjectSettings, type SteeringRecord, OWNER_TOOLS, OwnerToolResultSchema, ownerTool, ownerToolAction, type CallerLogEntry, type OwnerToolDefinition, type OwnerToolRequest, type OwnerToolResult,
-  type Project, type ProjectStatusView } from '@jevellan/core';
+  type Project, type ProjectDecision, type ProjectLedgerEvent, type ProjectStatusView } from '@jevellan/core';
 import { OwnerShortIds, projectStatus, renderStatus, renderStatusLine } from '@jevellan/projects';
 import type { Application } from './application.js';
 import { OWNER_HANDLERS } from './tools/index.js';
@@ -39,6 +39,7 @@ const CALLER_LOG_DAYS = 30;
 export class OwnerTools {
   readonly ids: OwnerShortIds;
   #logDay = '';
+  readonly #withdrawalReasons = new Map<string, { cursor: number; reasons: Map<string, string> }>();
   constructor(readonly app: Application, readonly now: () => Date = () => new Date(), tmux: TmuxRunner = realTmux) { this.ids = new OwnerShortIds(app.hub); this.takeover = new OwnerTakeover(app, tmux); }
   get logPath(): string { return join(this.app.homes.root, 'owner-tools', 'caller-log.jsonl'); }
 
@@ -220,6 +221,25 @@ export class OwnerTools {
     return readFileSync(this.logPath, 'utf8').split('\n').filter(Boolean).flatMap(line => { const parsed = CallerLogEntrySchema.safeParse(JSON.parse(line)); return parsed.success ? [parsed.data] : []; });
   }
 
+  /** Old withdrawals keep their audited reason without rewriting the historical owner item. */
+  async #legacyClosureReasons(projectId: string, decisions: readonly ProjectDecision[]): Promise<ReadonlyMap<string, string>> {
+    if (!decisions.some(decision => decision.withdrawnAt && !decision.withdrawal)) return new Map();
+    const ledger = this.app.projectWork.coordinatorLedger(projectId), events = ledger.events();
+    let cached = this.#withdrawalReasons.get(projectId);
+    if (!cached || cached.cursor > (events.at(-1)?.id ?? 0)) { cached = { cursor: 0, reasons: new Map() }; this.#withdrawalReasons.set(projectId, cached); }
+    let processed = 0;
+    for (const event of events) {
+      if (event.id <= cached.cursor) continue;
+      if (event.type === 'coordinator-tool') {
+        const tool = ledger.payload(event as ProjectLedgerEvent & { type: 'coordinator-tool' });
+        if (tool.tool === 'jevellan_withdraw_question' && tool.ok && tool.decisionId && tool.reason) cached.reasons.set(tool.decisionId, this.app.redactor.text(tool.reason));
+      }
+      cached.cursor = event.id;
+      if (++processed % 128 === 0) await new Promise<void>(resolve => setImmediate(resolve));
+    }
+    return cached.reasons;
+  }
+
   /** The engine's status of a project, shared by the status tool, the status line and the UI. */
   async status(project: Project, goal?: string): Promise<ProjectStatusView> {
     const work = this.app.projectWork; const projectId = project.id;
@@ -231,7 +251,8 @@ export class OwnerTools {
       const usage = currentUsage([...row.statuses].sort((a, b) => (b.usage?.observedAt ?? '').localeCompare(a.usage?.observedAt ?? ''))[0]?.usage, this.now().getTime());
       return { label: row.account.label, usedPercent: usage.weeklyPct !== undefined || usage.fiveHourPct !== undefined ? Math.max(usage.weeklyPct ?? 0, usage.fiveHourPct ?? 0) : null, budgetPercent: row.account.ceilingPct ?? 90 };
     });
-    const view_ = projectStatus({ project: { id: projectId, name: project.name }, now: this.now(), settings: view.settings, coordinator: view.coordinator, coordinatorStalled: false, coordinatorStop,
+    const legacyWithdrawalReasons = await this.#legacyClosureReasons(projectId, decisions);
+    const view_ = projectStatus({ legacyWithdrawalReasons, project: { id: projectId, name: project.name }, now: this.now(), settings: view.settings, coordinator: view.coordinator, coordinatorStalled: false, coordinatorStop,
       threads: view.threads, tasks: tasks.tasks, goals: goals.goals.map(row => row.goal), decisions, jobs: daily.jobs, dailies: daily.dailies, runs: daily.runs,
       windows: daily.window ? [daily.window] : [], deploys: deploys.records,
       budgets, deviceName: id => names.get(id) ?? id, deployPaused: this.projectSettings(projectId).deploy.paused, missedThisWeek: this.app.ownerSchedules.missed(projectId, 7).length, ...(goal ? { goalFilter: goal } : {}),

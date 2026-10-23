@@ -48,3 +48,21 @@ test('an old open waiting item remains open independently of age and retries do 
     expect((await f.app.projectHub.decision(old.id))?.document).toMatchObject({ withdrawal: { reason: 'Explicitly resolved.' } });
   } finally { await f.close(); }
 });
+
+test('LEGACY075 withdrawal history uses the recorded coordinator reason without rewriting the question', async () => {
+  const f = await projectFixture();
+  try {
+    const created = await f.app.projectHub.createDecision(ProjectDecisionSchema.parse({ schema: 'project-decision-v1', revision: 0, id: 'legacy_withdrawn', projectId: 'project',
+      from: 'coordinator', question: 'A historical unanswered question.', options: [], createdAt: new Date().toISOString() }));
+    const at = new Date().toISOString(), reason = 'The coordinator treated the prerequisite as resolved.';
+    f.app.hub.put('project-decisions', created.document.id, ProjectDecisionSchema, { ...created.document, revision: created.revision + 1, withdrawnAt: at }, created.revision);
+    f.app.projectWork.coordinatorLedger('project').append({ type: 'coordinator-tool', data: { schema: 'coordinator-tool-v1', tool: 'jevellan_withdraw_question', ok: true,
+      summary: 'Withdrew a question.', decisionId: created.document.id, reason } });
+    const response = await f.app.ownerTools.call('status', { schema: 'owner-tool-request-v1', caller: 'bridge:project', args: { section: 'waiting', detail: true } });
+    expect(response.ok).toBe(true); if (!response.ok) throw new Error('Expected status.');
+    expect(response.data).toMatchObject({ closedWaiting: [expect.objectContaining({ state: 'withdrawn', closureReason: reason })] });
+    expect(response.text).toContain(reason);
+    const after = (await f.app.projectHub.decision(created.document.id))!.document;
+    expect(after).toMatchObject({ withdrawnAt: at }); expect(after.answer).toBeUndefined(); expect(after.withdrawal).toBeUndefined();
+  } finally { await f.close(); }
+});

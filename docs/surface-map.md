@@ -682,3 +682,6 @@ Status continuation: recent cancelled/failed tasks with no thread or job run ret
 
 
 0.7.5 phase A: owner status retains recent closure explanations through an opt-in authoritative read; coordinator withdrawal refuses while the linked thread is unresolved. Versioned optional receipts keep old documents valid. Three failing-first lifecycle contracts, 39 affected cases, static/build and one desktop-light Overview main-action smoke pass. Four exact images remain with vision not run. This changes the shared engine semantics, not baseline row dispositions; full release verification is pending.
+
+
+0.7.5 phase B: durable typed landing-resource questions/rechecks, bounded legacy recovery, audited old closure reasons and precise new closure reasons share canonical UI/tool state. Explicit managed localhost bindings are edited/saved through the landing engine and carried by vault configuration; all check commands remain unchanged.241complete affected cases, static/build and the desktop-light landing-settings/owner-route main action pass, with five retained exact images and vision not run. Project scripts with committed fixed ports remain a separate project-code prerequisite; release verification is pending.

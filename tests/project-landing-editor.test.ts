@@ -55,3 +55,18 @@ test('member landing previews match the hub and reject foreign snapshots without
   expect((await f.app.projectWork.settingsView('project')).settings.smokeCheck).toBe('true');
   expect((await member.request(path, 'POST', { schema: 'project-landing-editor-request-v1', settings: { ...settings, projectId: 'another' } })).status).toBe(400);
 });
+
+test('PORTEDIT075 managed bindings survive preview, save and the portable definition without changing commands', async () => {
+  const f = fixture = await projectFixture(), before = (await f.app.projectWork.settingsView('project')).settings;
+  const view = await preview(f, await editor(f, before), { ports: 'APP_PORT APP_BASE_URL\nAPI_PORT', smokeCheck: 'npm test' });
+  const bindings = [{ schema: 'landing-check-port-v1', variable: 'APP_PORT', urlVariable: 'APP_BASE_URL' }, { schema: 'landing-check-port-v1', variable: 'API_PORT' }];
+  expect(view.patch).toMatchObject({ landingPorts: bindings, smokeCheck: 'npm test' });
+  const response = await f.request(view.request.savePath, 'POST', view.saveRequest); expect(response.status).toBe(200);
+  const saved = (await f.app.projectWork.settingsView('project')).settings;
+  expect(saved).toEqual({ ...before, revision: before.revision + 1, landingPorts: bindings, smokeCheck: 'npm test' });
+  const reopened = await editor(f, saved); expect(reopened.fields.ports).toBe('APP_PORT APP_BASE_URL\nAPI_PORT');
+  const invalid = await preview(f, reopened, { ports: 'APP_PORT\nAPP_PORT' }); expect(invalid.apply.enabled).toBe(false);
+  expect(invalid.apply.errors).toEqual(expect.arrayContaining([expect.objectContaining({ label: 'Managed localhost ports' })]));
+  const { vaultDefinition } = await import('../packages/projects/dist/vault-definition.js');
+  expect(vaultDefinition({ ...f.project, remoteUrl: 'https://github.com/fixture/repo.git' }, saved, [], [], []).work).toMatchObject({ landingPorts: bindings });
+});

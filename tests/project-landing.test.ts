@@ -3,9 +3,10 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createServer, type AddressInfo } from 'node:net';
 import { GitHubClient, SecretRedactor, StoredProjectWorkSettingsSchema, LandingRouteSchema, ProjectWorkSettingsSchema, ThreadIndexSchema, defaultProjectWorkSettings, type LandingRoute, type ProjectWorkSettings } from '../packages/core/dist/index.js';
-import { selectedLandingChecks } from '../packages/projects/dist/landing.js';
+import { heldPort, selectedLandingChecks } from '../packages/projects/dist/landing.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
 import { commitStep, git, projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
+const shellQuote = (value: string) => "'" + value.replaceAll("'", "'\\''") + "'";
 let fixture: ProjectFixture | undefined;
 afterEach(async () => { await fixture?.close(); fixture = undefined; });
 const transport: typeof fetch = async (_url, init) => {
@@ -276,3 +277,122 @@ test('LESSONMETA1 normal route updates cannot replace original prompt, raw answe
  for(const change of [{rawChoice:'ask-owner' as const},{promptVersion:99},{promptText:'Replacement prompt.'},{inputsRef:'replacement_input'},{ruleContext:{schema:'placement-rule-context-v1' as const,text:'Replacement task.',complete:true}}])await expect(f.app.projectHub.putMergeDocument({...row,...change},row.revision)).rejects.toThrow(/immutable/u);
  expect(f.thread(thread.id).landing).toBeUndefined();
 },120_000);
+
+
+test('LP075 occupied-port diagnostics are recognized as resource blockers', () => {
+  expect(heldPort('Error: port 54321 is already occupied; this run needs its own stack')).toBe(54321);
+  expect(heldPort('Error: listen EADDRINUSE: address already in use 127.0.0.1:54321')).toBe(54321);
+  expect(heldPort('An unrelated operation took 3000ms while busy.')).toBeNull();
+  expect(heldPort('port 99999 is already occupied')).toBeNull();
+});
+
+test('LP075 a blocked landing retains its waiting item across restart and resolves it when the blocker clears', async () => {
+  const holder = createServer(); await new Promise<void>(resolve => holder.listen(0, '127.0.0.1', resolve));
+  const port = (holder.address() as AddressInfo).port;
+  try {
+    const f = await setup(); const count = join(f.root, 'landing-check-count');
+    const code = `require('fs').appendFileSync(${JSON.stringify(count)}, 'check\\n');require('net').createServer().listen(${port},'127.0.0.1',()=>process.exit(0))`;
+    const command = 'node -e ' + shellQuote(code);
+    await settings(f, { landingChecks: [{ name: 'Fixture server', paths: [], command }] });
+    f.fake.enqueueTurn(commitStep({ 'README.md': 'A resource-bound change\n' }, { status: 'done', summary: 'Done.' }), forThread());
+    const result = await start(f, 'persistent-port'); const blocked = await done(f, result.threadId);
+    expect(blocked).toMatchObject({ state: 'in-review', turns: 1, verificationAttempts: 0 });
+    const question = (await f.app.projectHub.decisions('project')).find(row => row.blocker?.kind === 'port' && row.threadId === blocked.id);
+    expect(question).toBeDefined(); expect(question?.withdrawnAt).toBeUndefined();
+    const before = readFileSync(count, 'utf8');
+    await f.restart(); await f.app.projectWork.pulse(); await f.app.projectWork.idle();
+    expect(readFileSync(count, 'utf8')).toBe(before);
+    expect((await f.app.projectHub.decision(question!.id))?.document.withdrawnAt).toBeUndefined();
+    await new Promise<void>(resolve => holder.close(() => resolve()));
+    await f.app.projectWork.pulse(); const landed = await f.waitFor(() => f.thread(blocked.id), row => !!row.landing);
+    expect(landed).toMatchObject({ state: 'done', turns: 1 });
+    const closed = (await f.app.projectHub.decision(question!.id))!.document;
+    expect(closed.answer).toBeUndefined(); expect(closed.withdrawnAt).toBeDefined();
+    expect(closed.withdrawal).toMatchObject({ source: 'system', reason: expect.stringMatching(/port.*free/i) });
+    const checked = readFileSync(count, 'utf8'); await f.app.projectWork.pulse(); await f.app.projectWork.idle();
+    expect(readFileSync(count, 'utf8')).toBe(checked);
+  } finally { if (holder.listening) await new Promise<void>(resolve => holder.close(() => resolve())); }
+}, 120_000);
+
+test('LP075 landing checks receive the project environment including command-only names', async () => {
+  const command = `node -e 'const a=require("assert");a.strictEqual(process.env.FIXTURE_REGION,"sandbox");a.strictEqual(process.env.OPENAI_CHECK_CONTEXT,"fixture-only")'`;
+  const f = await setup({ environment: { variables: [{ name: 'FIXTURE_REGION', value: 'sandbox' }, { name: 'OPENAI_CHECK_CONTEXT', value: 'fixture-only' }], secrets: [], copyFiles: [] },
+    landingChecks: [{ name: 'Environment contract', paths: [], command }] });
+  f.fake.enqueueTurn(commitStep({ 'README.md': 'Environment check\n' }, { status: 'done', summary: 'Done.' }), forThread());
+  const result = await start(f, 'command-environment'), landed = await done(f, result.threadId);
+  expect(landed.landing).toMatchObject({ checks: [{ name: 'Environment contract', passed: true }] });
+  expect(landed.turns).toBe(1);
+}, 120_000);
+
+test('LP075 every selected and smoke check gets managed localhost ports without changing its command', async () => {
+  const holder = createServer(); await new Promise<void>(resolve => holder.listen(0, '127.0.0.1', resolve)); const occupied = (holder.address() as AddressInfo).port;
+  try {
+    const code = `const a=require('assert');const port=Number(process.env.APP_PORT);a.ok(port>0&&port<65536);a.notStrictEqual(port,${occupied});a.strictEqual(process.env.APP_BASE_URL,'http://127.0.0.1:'+port);require('net').createServer().listen(port,'127.0.0.1',()=>process.exit(0))`;
+    const command = 'node -e ' + shellQuote(code);
+    const f = await setup({ landingPorts: [{ schema: 'landing-check-port-v1', variable: 'APP_PORT', urlVariable: 'APP_BASE_URL' }],
+      environment: { variables: [{ name: 'APP_PORT', value: String(occupied) }], secrets: [], copyFiles: [] },
+      landingChecks: [{ name: 'Isolated check', paths: [], command }], smokeCheck: command });
+    f.fake.enqueueTurn(commitStep({ 'README.md': 'Isolated server check\n' }, { status: 'done', summary: 'Done.' }), forThread());
+    const result = await start(f, 'managed-port'), landed = await done(f, result.threadId);
+    expect(landed.landing).toMatchObject({ checks: [{ name: 'Isolated check', passed: true }, { name: 'Smoke check', passed: true }] });
+    expect((await f.app.projectHub.settings('project'))?.document).toMatchObject({ landingChecks: [{ command }], smokeCheck: command,
+      environment: { variables: [{ name: 'APP_PORT', value: String(occupied) }] } });
+    expect(holder.listening).toBe(true); expect(landed.turns).toBe(1);
+  } finally { if (holder.listening) await new Promise<void>(resolve => holder.close(() => resolve())); }
+}, 120_000);
+
+async function legacyPortWait(current: boolean) {
+  const holder = createServer(); await new Promise<void>(resolve => holder.listen(0, '127.0.0.1', resolve)); const port = (holder.address() as AddressInfo).port;
+  const f = await setup({ landingChecks: [{ name: 'Legacy fixture', paths: [], command: `node -e "require('net').createServer().listen(${port},'127.0.0.1',()=>process.exit(0))"` }] });
+  f.fake.enqueueTurn(commitStep({ 'README.md': 'Legacy resource wait\n' }, { status: 'done', summary: 'Done.' }), forThread());
+  const result = await start(f, 'legacy-resource'), blocked = await done(f, result.threadId), wait = f.app.projectWork.store.local(blocked.id).landingWait!;
+  await f.app.projectWork.decisions.withdraw('project', wait.decisionId, 'Historical fixture withdrawal.');
+  f.app.projectWork.store.updateLocal(blocked.id, value => { const next = { ...value }; delete next.landingWait; return next; });
+  f.app.projectWork.store.update(blocked.id, value => ({ ...value, state: 'idle', stateReason: current ? 'Landing checks failed three times.' : 'Landing left by the owner.' }));
+  f.app.projectWork.coordinatorLedger('project').append({ type: 'coordinator-event', data: { schema: 'coordinator-event-v1', kind: 'thread-verification-failed',
+    id: 'legacy_resource_failure', at: new Date(Date.now() - (current ? 0 : 60_000)).toISOString(), threadId: blocked.id, attempts: 3,
+    tail: `port ${port} is already occupied; this run needs its own stack` } });
+  return { f, holder, blocked, previousQuestion: wait.decisionId };
+}
+
+test('LEGACY075 current typed failure restores resource waiting without an author turn', async () => {
+  const { f, holder, blocked, previousQuestion } = await legacyPortWait(true);
+  try {
+    await f.restart(); await f.app.projectWork.pulse(); await f.app.projectWork.idle();
+    expect(f.thread(blocked.id)).toMatchObject({ state: 'in-review', turns: 1 });
+    const wait = f.app.projectWork.store.local(blocked.id).landingWait;
+    expect(wait).toBeDefined(); expect(wait!.decisionId).not.toBe(previousQuestion);
+    expect((await f.app.projectHub.decision(previousQuestion))?.document.withdrawnAt).toBeDefined();
+    expect((await f.app.projectHub.decision(wait!.decisionId))?.document.withdrawnAt).toBeUndefined();
+    await new Promise<void>(resolve => holder.close(() => resolve()));
+    await f.app.projectWork.pulse(); const landed = await f.waitFor(() => f.thread(blocked.id), row => !!row.landing);
+    expect(landed).toMatchObject({ state: 'done', turns: 1 });
+  } finally { if (holder.listening) await new Promise<void>(resolve => holder.close(() => resolve())); }
+}, 120_000);
+
+test('LEGACY075 a newer owner action prevents legacy resource retry', async () => {
+  const { f, holder, blocked } = await legacyPortWait(false);
+  try {
+    await f.restart(); await f.app.projectWork.pulse(); await f.app.projectWork.idle();
+    expect(f.thread(blocked.id)).toMatchObject({ state: 'idle', stateReason: 'Landing left by the owner.', turns: 1 });
+    expect(f.app.projectWork.store.local(blocked.id).landingWait).toBeUndefined();
+  } finally { await new Promise<void>(resolve => holder.close(() => resolve())); }
+}, 120_000);
+
+test('REPLAY075 a lost blocker-answer reply acknowledges its retry after landing without another turn or push', async () => {
+  const holder = createServer(); await new Promise<void>(resolve => holder.listen(0, '127.0.0.1', resolve)); const port = (holder.address() as AddressInfo).port;
+  try {
+    const f = await setup({ landingChecks: [{ name: 'Retry fixture', paths: [], command: `node -e "require('net').createServer().listen(${port},'127.0.0.1',()=>process.exit(0))"` }] });
+    f.fake.enqueueTurn(commitStep({ 'README.md': 'Retry-safe resource answer\n' }, { status: 'done', summary: 'Done.' }), forThread());
+    const result = await start(f, 'blocker-answer'), blocked = await done(f, result.threadId), wait = f.app.projectWork.store.local(blocked.id).landingWait!;
+    await new Promise<void>(resolve => holder.close(() => resolve()));
+    const body = { schema: 'decision-answer-request-v1', clientRequestId: 'same_blocker_answer', optionLabel: 'Retry checks' };
+    expect((await f.request(`/api/projects/project/decisions/${wait.decisionId}/answer`, 'POST', body)).status).toBe(202);
+    const landed = await f.waitFor(() => f.thread(blocked.id), row => !!row.landing); await f.app.projectWork.idle();
+    const commit = git(f.origin, 'rev-parse', 'main'), answered = (await f.app.projectHub.decision(wait.decisionId))!.document;
+    const repeated = await f.request(`/api/projects/project/decisions/${wait.decisionId}/answer`, 'POST', body);
+    expect(repeated.status).toBe(202); expect(await repeated.json()).toMatchObject({ repeated: true });
+    expect((await f.app.projectHub.decision(wait.decisionId))!.document.answeredAt).toBe(answered.answeredAt);
+    expect(f.thread(landed.id).turns).toBe(1); expect(git(f.origin, 'rev-parse', 'main')).toBe(commit);
+  } finally { if (holder.listening) await new Promise<void>(resolve => holder.close(() => resolve())); }
+}, 120_000);

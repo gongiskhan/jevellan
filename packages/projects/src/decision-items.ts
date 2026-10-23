@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import {
-  DecisionAnswerSchema, ProjectDecisionSchema, newId, type CoordinatorEvent, type DecisionAnswer, type Option, type OwnerCommand, type ProjectDecision, type ProjectHub, type Thread, type ThreadReport,
+  DecisionAnswerSchema, ProjectDecisionSchema, newId, type CoordinatorEvent, type DecisionAnswer, type Option, type OwnerCommand, type ProjectDecision, type ProjectHub, type SecretRedactor, type Thread, type ThreadReport,
 } from '@jevellan/core';
 import { ALLOW_MORE_TURNS, QUESTION_NOT_FOUND, STOPPED_AT_TURN_LIMIT, STOP_THE_THREAD, UNKNOWN_OPTION, turnLimitQuestion, LEAVE_AUTOMATIC_FIXES, allowAutomaticFixes, automaticFixQuestion } from './copy.js';
 
@@ -9,6 +9,7 @@ const refuse = (message: string, status: number) => Object.assign(new Error(mess
 export function derivedId(prefix: string, ...parts: string[]): string {
   return `${prefix}_${createHash('sha256').update(parts.join('\0')).digest('hex').slice(0, 40)}`;
 }
+export const systemWithdrawal = (reason: string): NonNullable<ProjectDecision['withdrawal']> => ({ schema: 'project-decision-withdrawal-v1', source: 'system', reason });
 const open = (decision: ProjectDecision) => !decision.answer && !decision.withdrawnAt;
 /** The turn-limit item: from the thread, with exactly its two option labels (D31). */
 export function isTurnLimitItem(decision: Pick<ProjectDecision, 'from' | 'options'>): boolean {
@@ -28,6 +29,7 @@ export type DecisionThreadActions = {
   message(projectId: string, threadId: string, text: string, messageId: string): Promise<unknown>;
 };
 export type DecisionItemsOptions = {
+  redactor?: SecretRedactor;
   hub: Pick<ProjectHub, 'decisions' | 'decision' | 'createDecision' | 'withdrawDecision' | 'answerDecision'>;
   toCoordinator(projectId: string, event: CoordinatorEvent): Promise<void>;
   /** Bound after construction: the thread service is built later. */
@@ -102,11 +104,11 @@ export class DecisionItems {
   async withdraw(projectId: string, decisionId: string, reason = 'Resolved by the owning service.', source: 'system' | 'coordinator' = 'system'): Promise<boolean> {
     const decision = await this.#decision(projectId, decisionId);
     if (decision.answer) return false;
-    const stored = (await this.#o.hub.withdrawDecision(decisionId, this.#at(), { schema: 'project-decision-withdrawal-v1', source, reason })).document;
+    const stored = (await this.#o.hub.withdrawDecision(decisionId, this.#at(), { schema: 'project-decision-withdrawal-v1', source, reason: this.#o.redactor?.text(reason) ?? reason })).document;
     return !!stored.withdrawnAt && !stored.answer;
   }
-  async withdrawThread(projectId: string, threadId: string): Promise<void> {
-    for (const decision of await this.#o.hub.decisions(projectId)) if (decision.threadId === threadId && open(decision)) await this.#o.hub.withdrawDecision(decision.id, this.#at());
+  async withdrawThread(projectId: string, threadId: string, reason = 'The thread was resolved.'): Promise<void> {
+    for (const decision of await this.#o.hub.decisions(projectId)) if (decision.threadId === threadId && open(decision)) await this.#o.hub.withdrawDecision(decision.id, this.#at(), systemWithdrawal(reason));
   }
   /** Creates the turn-limit item once per thread: an open one is kept (brief 8.2, D31, D142). */
   async turnLimit(projectId: string, thread: Pick<Thread, 'id' | 'title' | 'turnAllowance'>): Promise<void> {
@@ -120,9 +122,9 @@ export class DecisionItems {
       automaticFix: { prNumber: thread.pr!.number, kind, maxRounds } }, 'thread', id);
   }
   /** A thread that Jevellan itself unblocked or stopped withdraws its open turn-limit item silently (D85). */
-  async withdrawTurnLimit(projectId: string, threadId: string): Promise<void> {
+  async withdrawTurnLimit(projectId: string, threadId: string, reason = 'The thread no longer waits at its turn limit.'): Promise<void> {
     for (const decision of await this.#o.hub.decisions(projectId)) {
-      if (decision.threadId === threadId && open(decision) && isTurnLimitItem(decision)) await this.#o.hub.withdrawDecision(decision.id, this.#at());
+      if (decision.threadId === threadId && open(decision) && isTurnLimitItem(decision)) await this.#o.hub.withdrawDecision(decision.id, this.#at(), systemWithdrawal(reason));
     }
   }
   /**
@@ -152,7 +154,7 @@ export class DecisionItems {
     }
     if (answer.optionLabel !== undefined && !asked.options.some((option) => option.label === answer.optionLabel)) throw refuse(UNKNOWN_OPTION, 400);
     if (asked.automaticFix && !answer.optionLabel) throw refuse('Choose an automatic fix option.', 400);
-    if (asked.merge || asked.landing) await this.#o.mergeAnswer?.(asked, answer, true);
+    if (asked.merge || asked.landing || asked.blocker) await this.#o.mergeAnswer?.(asked, answer, true);
     // The hub keeps the first answer, so a Stop the thread cannot take now is refused before it is recorded: the question stays open (phase 8).
     if (asked.threadId !== undefined && isTurnLimitItem(asked) && answer.optionLabel === STOP_THE_THREAD) {
       const refused = await this.#o.threads().stopRefusal?.(projectId, asked.threadId);
@@ -165,7 +167,7 @@ export class DecisionItems {
         given.optionLabel === allowAutomaticFixes(decision.automaticFix.maxRounds), derivedId('tcmd', 'answer', decisionId));
       return { repeated };
     }
-    if ((decision.merge || decision.landing) && await this.#o.mergeAnswer?.(decision, given, false)) return { repeated };
+    if ((decision.merge || decision.landing || decision.blocker) && await this.#o.mergeAnswer?.(decision, given, false)) return { repeated };
     if (decision.from === 'coordinator' && given.source !== 'owner-chat') {
       const at = this.#o.now();
       await this.#o.toCoordinator(projectId, { schema: 'coordinator-event-v1', kind: 'decision-answer', id: derivedId('cev', 'answer', decisionId), at: new Date(at).toISOString(),

@@ -567,7 +567,7 @@ export class ThreadService {
     this.#o.store.update(thread.id, current => ({ ...current, resolution: current.resolution ?? { by, at },
       ...(by === 'inactivity' ? { stateReason: RESOLVED_BY_INACTIVITY } : {}),
       ...(current.state === 'waiting-for-you' ? { state: 'idle' as const, stateReason: by === 'owner' ? RESOLVED_BY_OWNER : RESOLVED_BY_INACTIVITY } : {}) }));
-    await this.#o.decisions.withdrawThread(thread.projectId, thread.id);
+    await this.#o.decisions.withdrawThread(thread.projectId, thread.id, by === 'owner' ? 'The owner resolved the thread.' : 'The thread was resolved after seven days without activity.');
     await this.#o.delivery.toCoordinator(thread.projectId, { schema: 'coordinator-event-v1', kind: 'thread-resolved', id: derivedId('cev', 'resolved', id), at, threadId: thread.id, by });
   }
   /** Owner HTTP actions are routed to this device and serialized with other actions for the project. */
@@ -610,7 +610,7 @@ export class ThreadService {
         if (input.action === 'land-instead') await this.#o.landInstead!(thread, input.clientRequestId);
         if (input.action === 'land-now') this.#o.store.updateLocal(threadId, local => ({ ...local, ownerLandingRequested: true }));
         const questionId = this.#o.store.local(threadId).prAutoFix?.questionId;
-        if (questionId) await this.#o.decisions.withdraw?.(projectId, questionId);
+        if (questionId) await this.#o.decisions.withdraw?.(projectId, questionId, 'The owner started a new repair or publication action.');
         const reason = ['publish', 'land-now', 'land-instead'].includes(input.action) ? 'publish' : input.action === 'fix-checks' ? 'checks' : input.action === 'resolve-conflicts' ? 'conflict' : 'comments';
         const comments = reason === 'comments' ? this.#o.store.local(thread.id).prComments?.items.slice(0, 15) ?? [] : [];
         const jobs = reason === 'checks' ? await this.#failedJobs(thread) : [];

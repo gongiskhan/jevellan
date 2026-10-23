@@ -52,6 +52,7 @@ export function LandingSettings({ value, change, ready, onError }: { value: Proj
         <button type="button" className="secondary small" onClick={() => edit({ checks: fields.checks.filter((_, at) => at !== index) })}>Remove check</button>
       </fieldset>)}<button type="button" className="secondary small" disabled={pending || !model.canAddCheck} onClick={() => edit({ checks: [...fields.checks, model.newCheck] })}>Add landing check</button></fieldset>
       <label>Smoke check<textarea aria-label="Smoke check" maxLength={model.limits.smokeCheck} value={fields.smokeCheck} onChange={event => edit({ smokeCheck: event.target.value })} /></label><p className="pw-field-note">{model.smokeHelp}</p>
+      <label>Managed localhost ports<textarea aria-label="Managed localhost ports" maxLength={model.limits.ports} value={fields.ports ?? ''} onChange={event => edit({ ports: event.target.value })} /></label><p className="pw-field-note">{model.portsHelp}</p>
       <label>Keep commits for these paths<textarea aria-label="Keep commits for these paths" value={fields.mergeCommitPaths} onChange={event => edit({ mergeCommitPaths: event.target.value })} /></label><p className="pw-field-note">{model.mergeHelp}</p>
       {model.apply.errors.map((issue, index) => <p className="error" role="status" key={index}>{issue.label}: {issue.message}</p>)}
     </>}

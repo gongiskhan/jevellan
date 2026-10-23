@@ -16,7 +16,7 @@ export type PullRequestTrackerOptions = {
   settings?(projectId: string): Promise<ProjectWorkSettings>;
   automaticFix?(threadId: string, kind: PrAutoFixKind): Promise<boolean>;
   automaticFixLimit?(threadId: string, kind: PrAutoFixKind): Promise<void>;
-  withdrawDecision?(projectId: string, decisionId: string): Promise<unknown>;
+  withdrawDecision?(projectId: string, decisionId: string, reason: string): Promise<unknown>;
   comments?(thread: Thread, since: string): Promise<import('@jevellan/core').PullComment[]>;
   assertMerge?(projectId: string, threadId?: string): Promise<void>;
   threads: Pick<ThreadStore, 'all' | 'get' | 'update' | 'local' | 'updateLocal' | 'ledgers'>;
@@ -219,7 +219,7 @@ export class PullRequestTracker {
     if (settings.prAutoFix.comments && comments.length) problems.push('comments');
     if (state.questionId && this.#o.withdrawDecision && (!problems.length || state.questionKind && !problems.includes(state.questionKind) || state.rounds < settings.prAutoFix.maxRounds)) {
       const id = state.questionId;
-      await this.#o.withdrawDecision(thread.projectId, id);
+      await this.#o.withdrawDecision(thread.projectId, id, !problems.length ? 'The pull request no longer has an automatic-fix problem.' : state.questionKind && !problems.includes(state.questionKind) ? 'The problem this automatic-fix item covered has cleared.' : 'The automatic-fix allowance increased.');
       this.#o.threads.updateLocal(threadId, current => {
         if (current.prAutoFix?.questionId !== id) return current;
         const updated = { ...current.prAutoFix, questionSequence: (current.prAutoFix.questionSequence ?? 0) + 1,
@@ -265,7 +265,7 @@ export class PullRequestTracker {
         if (merged) { next.state = 'done'; delete next.stateReason; } else if (!ended) { next.state = 'stopped'; next.stateReason = PR_CLOSED; }
         return next;
       }, { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'pr-state', prNumber: pr.number, pr } });
-      try { await this.#tell(updated, pr.number, merged ? 'merged' : 'closed'); const questionId = this.#o.threads.local(threadId).prAutoFix?.questionId; if (questionId) await this.#o.withdrawDecision?.(updated.projectId, questionId); }
+      try { await this.#tell(updated, pr.number, merged ? 'merged' : 'closed'); const questionId = this.#o.threads.local(threadId).prAutoFix?.questionId; if (questionId) await this.#o.withdrawDecision?.(updated.projectId, questionId, merged ? 'The pull request merged.' : 'The pull request closed.'); }
       finally {
         // The thread has concluded either way: its worktree goes even when the coordinator could not be told.
         try {

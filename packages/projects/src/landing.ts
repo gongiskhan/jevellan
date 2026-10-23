@@ -1,3 +1,4 @@
+import { landingCheckEnvironment } from './landing-resources.js';
 import {applyJevRouteRules,projectJevLessons,parseLandingPrompt,landingPromptText} from '@jevellan/decisions';
 import { routeWhyView } from './route-why.js';
 import { deliveryDirectory, JobGateResultSchema, PrivateJobDeliverySchema } from './job-deliveries.js';
@@ -10,9 +11,9 @@ import { connect } from 'node:net';
 import { promisify } from 'node:util';
 import { decideLandingRoute, type DecisionSource, type LandingPrompt } from '@jevellan/decisions';
 import { LandingRouteSchema, LandingCorrectionInputSchema, LandingCorrectionSchema, MergeDocumentsViewSchema, ProjectDecisionSchema, PUBLICATION_BUSY, stableJson, withPublicationLease,
-  type Configuration, type DecisionAnswer, type Homes, type LandingRoute, type Project, type ProjectDecision, type ProjectHub,
+  type Configuration, type DecisionAnswer, type Homes, type ProjectLedgerEvent, type LandingRoute, type Project, type ProjectDecision, type ProjectHub,
   type ProjectWorkSettings, type MergeDocument, type PublicationLeaseService, type SecretRedactor, type Thread, type ThreadLanding } from '@jevellan/core';
-import { derivedId } from './decision-items.js';
+import { derivedId, systemWithdrawal } from './decision-items.js';
 import { GIT_NETWORK_TIMEOUT_MS, type ThreadGit } from './git.js';
 import type { ThreadStore } from './stores.js';
 import type { GitHubAccess, ThreadPublication } from './publication.js';
@@ -28,7 +29,7 @@ export type LandingOutcome = { kind: 'landed'; landing: ThreadLanding; routeId: 
   | { kind: 'fix'; reason: 'conflict' | 'verification'; body: string; tail?: string } | { kind: 'waiting'; reason: string };
 /** The port a failed check could not bind because another process held it, from the check's output. */
 export function heldPort(output: string): number | null {
-  const match = /EADDRINUSE[^\n]*?:(\d{2,5})\b/u.exec(output) ?? /\bport\s+(\d{2,5})\b[^\n]{0,80}?\b(?:already in use|in use|is held|held by|busy)/iu.exec(output);
+  const match = /EADDRINUSE[^\n]*?:(\d{2,5})\b/u.exec(output) ?? /\bport\s+(\d{2,5})\b[^\n]{0,80}?\b(?:already in use|in use|is held|held by|busy|occupied)/iu.exec(output);
   const port = match ? Number(match[1]) : NaN; return port > 0 && port < 65536 ? port : null;
 }
 /**
@@ -55,8 +56,7 @@ const failure = (error: unknown, redactor: SecretRedactor) => redactor.text(erro
 export type LandingJev = { version: number; prompt: LandingPrompt; lessons: { ids: string[]; texts: string[]; keys?: string[]; input?: import('@jevellan/core').JevLessonInput };
   apply(route: 'land' | 'verify-then-land' | 'ask-owner', thread: Thread): { route: 'land' | 'verify-then-land' | 'ask-owner'; rulesApplied: string[]; reason: string } };
 export class ThreadLandingService {
-  /** Threads whose landing waits for a port another process holds: the sweep retries them once it is free. */
-  readonly #ports = new Map<string, number>();
+  readonly #legacyChecked = new Map<string, string>();
   constructor(readonly o: { homes: Homes; git: ThreadGit; github: GitHubAccess; publication: ThreadPublication; hub: ProjectHub; store: ThreadStore;
     verification: PullRequestVerification; leases?: PublicationLeaseService; deviceId: string; redactor: SecretRedactor; now(): number;
     settings(projectId: string): Promise<ProjectWorkSettings>; configuration(): Promise<Configuration['x-jevellan']>; decisionClient?: DecisionSource;
@@ -64,6 +64,63 @@ export class ThreadLandingService {
     retry(projectId: string, threadId: string): Promise<void>;
     /** Jev control (bridge): the active l-v1 prompt, the lessons Jev reads, and the owner's rules applied after its answer. */
     jev?(projectId: string): Promise<LandingJev | undefined> }) {}
+  /** Recover only a still-current typed resource failure. New owner work and decisions always win. */
+  async #recoverLegacyWait(thread: Thread) {
+    if (thread.state !== 'idle' || thread.landing || thread.resolution || thread.endedAt || thread.lastReport?.status !== 'done' || thread.queuedMessages.length || this.o.store.local(thread.id).landingWait) return;
+    const token = this.o.store.current(thread.id)?.index.updatedAt ?? thread.createdAt;
+    if (this.#legacyChecked.get(thread.id) === token) return; this.#legacyChecked.set(thread.id, token);
+    const settings = await this.o.settings(thread.projectId); if (settings.status !== 'active' || !settings.autoLand) return;
+    const ledger = this.o.store.ledgers.thread(thread.projectId, thread.id);
+    let changedAt = thread.createdAt;
+    const changes = ledger.events();
+    for (let index = changes.length - 1; index >= 0; index--) {
+      if (index % 128 === 0) await new Promise<void>(resolve => setImmediate(resolve));
+      const event = changes[index]!; if (event.type !== 'thread-state') continue;
+      const state = ledger.payload(event as ProjectLedgerEvent & { type: 'thread-state' });
+      if (state.from !== state.to || (state.changed ?? []).some(field => field !== 'fixable' && field !== 'usage')) { changedAt = event.t; break; }
+    }
+    const coordinator = this.o.store.ledgers.coordinator(thread.projectId), events = coordinator.events();
+    let failed: { at: string; tail: string } | undefined;
+    for (let index = events.length - 1; index >= 0; index--) {
+      if (index % 128 === 0) await new Promise<void>(resolve => setImmediate(resolve));
+      const event = events[index]!; if (event.type !== 'coordinator-event') continue;
+      const value = coordinator.payload(event as ProjectLedgerEvent & { type: 'coordinator-event' });
+      if (value.kind === 'thread-verification-failed' && value.threadId === thread.id && value.attempts >= 3) { failed = value; break; }
+    }
+    if (!failed || Date.parse(failed.at) < Date.parse(changedAt)) return;
+    const port = heldPort(failed.tail); if (port === null) return;
+    const routes = (await this.records(thread.projectId, thread.id)).filter((row): row is LandingRoute => row.schema === 'landing-route-v1').sort((a, b) => b.at.localeCompare(a.at));
+    if (routes[0]?.state === 'asked') return;
+    const commit = await this.o.git.resolve(thread.cwd, 'HEAD');
+    if (!commit || (await this.o.git.run(thread.cwd, ['status', '--porcelain=v1', '--untracked-files=all'])).stdout) return;
+    const holder = await portHolder(port);
+    const reason = this.o.redactor.text(`Landing checks wait on port ${port}${holder ? ` held by ${holderText(holder)}` : ', now free'}. The checked landing retries when this resource is available.`);
+    await this.#waitForPort(thread, 'Landing checks', commit, port, reason, false);
+    this.o.store.update(thread.id, current => ({ ...current, state: 'in-review', stateReason: reason.slice(0, 400) }));
+  }
+  async #clearWait(thread: Thread, reason: string) {
+    const wait = this.o.store.local(thread.id).landingWait; if (!wait) return;
+    const decision = (await this.o.hub.decision(wait.decisionId))?.document;
+    if (decision && !decision.answer && !decision.withdrawnAt) await this.o.hub.withdrawDecision(decision.id, new Date(this.o.now()).toISOString(), {
+      schema: 'project-decision-withdrawal-v1', source: 'system', reason });
+    this.o.store.updateLocal(thread.id, current => { const next = { ...current }; delete next.landingWait; return next; });
+  }
+  async #ensureWaitQuestion(thread: Thread, wait: NonNullable<ReturnType<ThreadStore['local']>['landingWait']>) {
+    if (!(await this.o.hub.decision(wait.decisionId))) await this.o.hub.createDecision(ProjectDecisionSchema.parse({ schema: 'project-decision-v1', id: wait.decisionId, projectId: thread.projectId,
+      revision: 0, threadId: thread.id, from: 'thread', blocker: wait.blocker, question: wait.reason, options: [{ label: 'Retry checks' }, { label: 'Keep waiting' }], createdAt: wait.createdAt }));
+  }
+  async #waitForPort(thread: Thread, check: string, commit: string, port: number, reason: string, managed: boolean) {
+    const old = this.o.store.local(thread.id).landingWait;
+    const same = old?.blocker.commit === commit && old.blocker.check === check && old.blocker.port === port;
+    if (old && !same) await this.#clearWait(thread, 'A newer checked candidate replaced this landing resource wait.');
+    const sequence = (this.o.store.local(thread.id).landingWaitSequence ?? 0) + (same ? 0 : 1);
+    const decisionId = same ? old.decisionId : derivedId('pdec', 'landing-blocker', thread.id, commit, check, String(port), String(sequence));
+    const blocker = { schema: 'landing-blocker-v1' as const, kind: 'port' as const, port, commit, check, ...(managed ? { managed: true } : {}) };
+    const wait = { schema: 'thread-landing-wait-v1' as const, blocker, decisionId, reason, createdAt: same ? old.createdAt : new Date(this.o.now()).toISOString() };
+    this.o.store.updateLocal(thread.id, current => ({ ...current, landingWaitSequence: sequence, landingWait: wait }));
+    await this.#ensureWaitQuestion(thread, wait);
+    return { kind: 'waiting' as const, reason };
+  }
   async records(projectId: string, threadId?: string) {
     const rows: MergeDocument[] = []; let after: string | undefined;
     do { const page = await this.o.hub.mergeDocuments(projectId, after, threadId); rows.push(...page.records); after = page.next ?? undefined; } while (after);
@@ -87,6 +144,20 @@ export class ThreadLandingService {
     return this.#save({ ...route, decisionId: id, state: 'asked' });
   }
   async answer(decision: ProjectDecision, answer: DecisionAnswer, validateOnly: boolean): Promise<boolean> {
+    if (decision.blocker && decision.threadId) {
+      if (!this.o.store.get(decision.threadId)) throw new Error('This landing item belongs on the thread’s device.');
+      const wait = this.o.store.local(decision.threadId).landingWait;
+      if (answer.optionLabel !== 'Retry checks' && answer.optionLabel !== 'Keep waiting') throw new Error('Choose a landing blocker option.');
+      if (!wait || wait.decisionId !== decision.id || wait.blocker.commit !== decision.blocker.commit || wait.blocker.port !== decision.blocker.port) {
+        if (decision.answer) return true;
+        throw new Error('This landing blocker changed. Reload it.');
+      }
+      if (validateOnly || answer.optionLabel === 'Keep waiting') return true;
+      if (!wait.blocker.managed && await portHolder(wait.blocker.port)) return true;
+      await this.#clearWait(this.o.store.get(decision.threadId)!, wait.blocker.managed ? 'Fresh managed localhost ports will be allocated for the retry.' : `The blocking port ${wait.blocker.port} is now free; landing checks resume.`);
+      await this.o.retry(decision.projectId, decision.threadId);
+      return true;
+    }
     if (!decision.landing || !decision.threadId) return false;
     if (!this.o.store.get(decision.threadId)) throw new Error('This landing item belongs on the thread’s device.');
     const route = (await this.o.hub.mergeDocument(decision.landing.routeId))?.document;
@@ -101,7 +172,7 @@ export class ThreadLandingService {
   async ownerRoute(projectId: string, threadId: string, choice: 'land' | 'verify-then-land' | 'ask-owner'): Promise<boolean> {
     const rows = (await this.records(projectId, threadId)).filter((row): row is LandingRoute => row.schema === 'landing-route-v1').sort((a, b) => b.at.localeCompare(a.at));
     const route = rows[0]; if (!route || route.state === 'landed') return false;
-    if (route.decisionId) { const item = (await this.o.hub.decision(route.decisionId))?.document; if (item && !item.answer && !item.withdrawnAt) await this.o.hub.withdrawDecision(item.id, new Date(this.o.now()).toISOString()); }
+    if (route.decisionId) { const item = (await this.o.hub.decision(route.decisionId))?.document; if (item && !item.answer && !item.withdrawnAt) await this.o.hub.withdrawDecision(item.id, new Date(this.o.now()).toISOString(), systemWithdrawal('The owner selected a replacement landing route.')); }
     await this.#save({ ...route, source: 'owner', route: choice, state: 'waiting', reason: `The owner chose ${choice}.` });
     if (this.o.store.get(threadId)) await this.o.retry(projectId, threadId);
     return true;
@@ -109,7 +180,7 @@ export class ThreadLandingService {
   async override(thread: Thread) {
     const rows = (await this.records(thread.projectId, thread.id)).filter((row): row is LandingRoute => row.schema === 'landing-route-v1').sort((a, b) => b.at.localeCompare(a.at));
     const route = rows[0]; if (route) {
-      if (route.decisionId) { const item = (await this.o.hub.decision(route.decisionId))?.document; if (item && !item.answer) await this.o.hub.withdrawDecision(item.id, new Date(this.o.now()).toISOString()); }
+      if (route.decisionId) { const item = (await this.o.hub.decision(route.decisionId))?.document; if (item && !item.answer) await this.o.hub.withdrawDecision(item.id, new Date(this.o.now()).toISOString(), systemWithdrawal('The owner selected a replacement landing route.')); }
       await this.#save({ ...route, source: 'owner', route: 'land', state: 'waiting', reason: 'The owner chose Land now.' });
     }
   }
@@ -135,7 +206,7 @@ export class ThreadLandingService {
     do { const page = await this.o.hub.tasks(thread.projectId, after); const task = page.records.find(row => row.threadId === thread.id && row.jobDelivery); if (task) return bound(task); after = page.next ?? undefined; } while (after);
     return null;
   }
-  async #gate(thread: Thread, base: string, head: string, files: string[], signal?: AbortSignal) {
+  async #gate(thread: Thread, settings: ProjectWorkSettings, base: string, head: string, files: string[], signal?: AbortSignal) {
     const bound = await this.#delivery(thread); if (!bound?.delivery.gate) return null;
     const { run, delivery } = bound, gate = delivery.gate!;
     if (run.deviceId !== this.o.deviceId) throw new Error('This landing needs the device holding its private job input.');
@@ -147,7 +218,8 @@ export class ThreadLandingService {
     if (await this.o.git.resolve(trusted, 'HEAD') !== run.commit || (await this.o.git.run(trusted, ['status', '--porcelain=v1', '--untracked-files=all'])).stdout.trim()) throw new Error('The trusted gate checkout changed.');
     const resultFile = join(workspace, 'project-job-gate-result.json'), gateInput = join(workspace, 'private-input.json');
     writeDocument(gateInput, PrivateJobDeliverySchema, input);
-    const result = await runThreadCommand(trusted, gate.command, { homes: this.o.homes, workId: thread.id, redactor: this.o.redactor, environmentScope: 'command', timeoutMs: gate.timeoutMinutes * 60000, ...(signal ? { signal } : {}), projectEnv: await this.o.projectEnvironment?.(thread.projectId) ?? {}, gitEnv: { JEVELLAN_GATE_INPUT: gateInput, JEVELLAN_GATE_CANDIDATE: thread.cwd, JEVELLAN_GATE_CANDIDATE_COMMIT: head, JEVELLAN_GATE_BASE_COMMIT: base, JEVELLAN_GATE_RESULT: resultFile }, jobContext: { schema: 'project-job-context-v1', projectId: run.projectId, runId: run.id, jobId: run.jobId, workspace, commandCheckout: trusted, commit: run.commit } });
+    const resources = await landingCheckEnvironment(await this.o.projectEnvironment?.(thread.projectId) ?? {}, settings.landingPorts);
+    const result = await runThreadCommand(trusted, gate.command, { homes: this.o.homes, workId: thread.id, redactor: this.o.redactor, environmentScope: 'command', timeoutMs: gate.timeoutMinutes * 60000, ...(signal ? { signal } : {}), projectEnv: resources.environment, gitEnv: { JEVELLAN_GATE_INPUT: gateInput, JEVELLAN_GATE_CANDIDATE: thread.cwd, JEVELLAN_GATE_CANDIDATE_COMMIT: head, JEVELLAN_GATE_BASE_COMMIT: base, JEVELLAN_GATE_RESULT: resultFile }, jobContext: { schema: 'project-job-context-v1', projectId: run.projectId, runId: run.id, jobId: run.jobId, workspace, commandCheckout: trusted, commit: run.commit } });
     if (result.code !== 0 || result.timedOut || !existsSync(resultFile)) throw new Error(`The trusted job gate did not pass: ${outputTail(result, 2000)}`);
     const receipt = readDocument(resultFile, JobGateResultSchema);
     if (!receipt.passed || receipt.checks.some(row => !row.passed) || receipt.trustedCommit !== run.commit || receipt.candidateCommit !== head || await this.o.git.resolve(thread.cwd, 'HEAD') !== head) throw new Error('The trusted job gate refused this candidate.');
@@ -170,19 +242,21 @@ export class ThreadLandingService {
     const files = await this.#files(thread, base), checks: ThreadLanding['checks'] = [];
     for (const check of selectedLandingChecks(settings, files.map(file => file.path))) {
       const head = await this.o.git.resolve(thread.cwd, 'HEAD');
+      const resources = await landingCheckEnvironment(await this.o.projectEnvironment?.(thread.projectId) ?? {}, settings.landingPorts);
       const result = await runThreadCommand(thread.cwd, check.command, { homes: this.o.homes, workId: thread.id, environmentScope: 'command', timeoutMs: TEST_TIMEOUT_MS, redactor: this.o.redactor,
-        projectEnv: await this.o.projectEnvironment?.(thread.projectId) ?? {}, ...(signal ? { signal } : {}) });
+        projectEnv: resources.environment, ...(signal ? { signal } : {}) });
       const passed = result.code === 0 && !result.timedOut && await this.o.git.resolve(thread.cwd, 'HEAD') === head
         && !(await this.o.git.run(thread.cwd, ['status', '--porcelain=v1', '--untracked-files=all'])).stdout;
       checks.push({ name: check.name, passed, at: new Date(this.o.now()).toISOString() });
       // A port another process holds is the device's state, not the thread's change: landing waits for it instead of asking for a fix.
       const port = passed || result.timedOut ? null : heldPort(outputTail(result, 8000)); const holder = port === null ? null : await portHolder(port);
-      if (port !== null && holder) { this.#ports.set(thread.id, port); return { kind: 'waiting' as const, reason: this.o.redactor.text(`${check.name} could not start: port ${port} is in use by ${holderText(holder)}. It lands by itself once the port is free.`) }; }
+      if (port !== null && holder) return this.#waitForPort(thread, check.name, head!, port, this.o.redactor.text(`${check.name} could not start: port ${port} is in use by ${holderText(holder)}. It lands by itself once the port is free.`), resources.ports.includes(port));
       if (!passed) { const tail = this.o.redactor.text(outputTail(result, 4000) || 'The check changed the worktree or its commit.'); return { kind: 'fix' as const, reason: 'verification' as const, tail,
         body: `Landing checks failed (attempt ${thread.verificationAttempts + 1} of 3). ${check.name}: ${tail}. Fix the cause, run the relevant tests and report done.` }; }
     }
+    await this.#clearWait(thread, 'The landing checks passed; the port no longer blocks this candidate.');
     const head = (await this.o.git.resolve(thread.cwd, 'HEAD'))!;
-    const gate = await this.#gate(thread, base, head, files.map(file => file.path), signal); if (gate) checks.push(gate.check);
+    const gate = await this.#gate(thread, settings, base, head, files.map(file => file.path), signal); if (gate) checks.push(gate.check);
     return { kind: 'checked' as const, files, checks, head, gateValidUntil: gate?.validUntil };
   }
   async publish(project: Project, thread: Thread, signal?: AbortSignal, priorState = thread.state): Promise<LandingOutcome> {
@@ -204,7 +278,7 @@ export class ThreadLandingService {
       // A pushed candidate is durable before its transport acknowledgement. Recover it even if another landing followed.
       for (const old of records) if (old.schema === 'landing-route-v1' && old.checkedCommit === currentHead && old.candidate && (await this.o.git.run(thread.cwd, ['merge-base', '--is-ancestor', old.candidate.commit, base], { permitted: [1] })).code === 0) return { kind: 'landed', landing: old.candidate, routeId: old.id };
       if (!(await this.o.git.run(thread.cwd, ['diff', '--name-only', `${base}...HEAD`])).stdout) return { kind: 'no-changes' };
-      const settings = await this.o.settings(project.id), digest = (value: ProjectWorkSettings) => createHash('sha256').update(stableJson({ checks: value.landingChecks, smoke: value.smokeCheck, merge: value.mergeCommitPaths, environment: value.environment })).digest('hex');
+      const settings = await this.o.settings(project.id), digest = (value: ProjectWorkSettings) => createHash('sha256').update(stableJson({ checks: value.landingChecks, ports: value.landingPorts, smoke: value.smokeCheck, merge: value.mergeCommitPaths, environment: value.environment })).digest('hex');
       const settingsDigest = digest(settings), head = await this.o.git.resolve(thread.cwd, 'HEAD');
       const gated = !!(await this.#delivery(thread))?.delivery.gate;
       const cached = records.find((row): row is LandingRoute => row.schema === 'landing-route-v1' && row.checkedCommit === head && row.baseCommit === base && row.settingsDigest === settingsDigest && row.packet.checks.every(check => check.passed) && (!gated || !!row.gateValidUntil && Date.parse(row.gateValidUntil) > this.o.now()));
@@ -212,7 +286,7 @@ export class ThreadLandingService {
       const id = derivedId('lroute', thread.id, ready.head); let route = (await this.o.hub.mergeDocument(id))?.document;
       if (route && route.schema !== 'landing-route-v1') throw new Error('This landing receipt has another schema.');
       if (!route) {
-        for (const old of records) if (old.schema === 'landing-route-v1' && old.commit !== ready.head && old.decisionId) { const item = (await this.o.hub.decision(old.decisionId))?.document; if (item && !item.answer && !item.withdrawnAt) await this.o.hub.withdrawDecision(item.id, new Date(this.o.now()).toISOString()); }
+        for (const old of records) if (old.schema === 'landing-route-v1' && old.commit !== ready.head && old.decisionId) { const item = (await this.o.hub.decision(old.decisionId))?.document; if (item && !item.answer && !item.withdrawnAt) await this.o.hub.withdrawDecision(item.id, new Date(this.o.now()).toISOString(), systemWithdrawal('A newer commit replaced this landing candidate.')); }
         const corrections = (await this.records(project.id)).filter(row => row.schema === 'merge-correction-v1' || row.schema === 'landing-correction-v1')
           .sort((a, b) => b.at.localeCompare(a.at) || (('receivedOrder' in b ? b.receivedOrder : 0) ?? 0) - (('receivedOrder' in a ? a.receivedOrder : 0) ?? 0)).slice(0, 8)
           .map(row => 'correction' in row ? `For “${row.title}”, the owner said: ${row.correction === 'should-have-asked' ? 'Should have asked me' : "Didn't need asking"}.` : '');
@@ -289,9 +363,10 @@ export class ThreadLandingService {
     } catch (error) { if (signal?.aborted) throw error; return { kind: 'waiting', reason: (error as Error).message === PUBLICATION_BUSY ? PUBLICATION_BUSY : failure(error, this.o.redactor) }; }
   }
   async concluded(thread: Thread, routeId: string) {
+    await this.#clearWait(thread, 'The checked change landed; its resource wait is resolved.');
     let route = (await this.o.hub.mergeDocument(routeId))?.document; if (route?.schema !== 'landing-route-v1') return;
     if (route.state !== 'landed') route = await this.#save({ ...route, state: 'landed' });
-    if (route.decisionId) { const question = (await this.o.hub.decision(route.decisionId))?.document; if (question && !question.answer && !question.withdrawnAt) await this.o.hub.withdrawDecision(question.id, new Date(this.o.now()).toISOString()); }
+    if (route.decisionId) { const question = (await this.o.hub.decision(route.decisionId))?.document; if (question && !question.answer && !question.withdrawnAt) await this.o.hub.withdrawDecision(question.id, new Date(this.o.now()).toISOString(), systemWithdrawal('The checked change landed on main.')); }
     if (!thread.branch || route.backupDeletedAt) return;
     const local = this.o.store.local(thread.id), expected = local.pushedCommit;
     if (expected) {
@@ -301,13 +376,20 @@ export class ThreadLandingService {
     await this.#save({ ...route, backupDeletedAt: new Date(this.o.now()).toISOString() });
   }
   async sweep() {
-    for (const thread of this.o.store.all().filter(thread => thread.delivery === 'land')) {
+    for (let thread of this.o.store.all().filter(thread => thread.delivery === 'land')) {
+      await this.#recoverLegacyWait(thread); thread = this.o.store.get(thread.id)!;
+      const wait = this.o.store.local(thread.id).landingWait;
+      if (wait && !thread.landing && thread.state === 'in-review') {
+        await this.#ensureWaitQuestion(thread, wait);
+        if (!wait.blocker.managed && await portHolder(wait.blocker.port)) continue;
+        await this.#clearWait(thread, wait.blocker.managed ? 'Fresh managed localhost ports will be allocated for the retry.' : `The blocking port ${wait.blocker.port} is now free; landing checks resume.`);
+        await this.o.retry(thread.projectId, thread.id).catch(() => undefined); continue;
+      }
       const routes = (await this.records(thread.projectId, thread.id)).filter((row): row is LandingRoute => row.schema === 'landing-route-v1').sort((a, b) => b.at.localeCompare(a.at));
       const route = thread.landing ? routes.find(row => row.candidate?.commit === thread.landing!.commit) : routes[0];
       if (!route) {
         if (thread.state !== 'in-review') continue;
-        const port = this.#ports.get(thread.id); if (port !== undefined && await portHolder(port)) continue;
-        this.#ports.delete(thread.id); await this.o.retry(thread.projectId, thread.id).catch(() => undefined); continue;
+        await this.o.retry(thread.projectId, thread.id).catch(() => undefined); continue;
       }
       if (!thread.landing && ['asked', 'failed', 'landed'].includes(route.state)) continue;
       if (thread.landing) await this.concluded(thread, route.id).catch(() => undefined);

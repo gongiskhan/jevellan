@@ -51,6 +51,7 @@ export type StatusInput = {
   /** Waiting items the state point keeps itself (a held thread gone idle). */
   extraWaiting?: readonly WaitingItemView[];
   goalFilter?: string;
+  legacyWithdrawalReasons?: ReadonlyMap<string, string>;
   /** Missed nights in the last seven days (state point records). */
   missedThisWeek?: number;
 };
@@ -140,7 +141,7 @@ export function projectStatus(input: StatusInput, ids: OwnerShortIds): ProjectSt
     kind: waitingKind(decision), from: decision.threadId ? threadRuns.find(run => run.internalId === decision.threadId)?.id ?? 'C' : 'C',
     text: decision.question, options: decision.options.map(option => option.label), freeText: false, urgent: decision.urgent === true,
     createdAt: decision.createdAt, updatedAt: decision.answeredAt ?? decision.withdrawnAt!, state: decision.answer ? 'answered' : decision.withdrawal ? 'resolved' : 'withdrawn',
-    closureReason: decision.withdrawal?.reason ?? (decision.answer ? `Answered: ${decision.answer.optionLabel ?? decision.answer.text ?? 'in owner chat'}`.slice(0, 2000) : 'Withdrawn before closure reasons were recorded.') }));
+    closureReason: decision.withdrawal?.reason ?? input.legacyWithdrawalReasons?.get(decision.id) ?? (decision.answer ? `Answered: ${decision.answer.optionLabel ?? decision.answer.text ?? 'in owner chat'}`.slice(0, 2000) : 'Withdrawn before closure reasons were recorded.') }));
 
   const recent = (run: RunView) => run.endedAt !== undefined && now.getTime() - new Date(run.endedAt).getTime() <= TWELVE_HOURS;
   const order: Record<RunView['state'], number> = { waiting: 0, held: 1, running: 2, landing: 3, queued: 4, landed: 5, deployed: 6, failed: 7, stopped: 8, cancelled: 9, idle: 10 };

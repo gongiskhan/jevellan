@@ -14,7 +14,7 @@ import { ProjectViewNoticeSchema } from './project-view-notice-schemas.js';
 import { ProjectDeploySettingsSchema } from './project-deploy-schemas.js';
 import { ProjectConfigurationInfoSchema } from './project-configuration-schemas.js';
 import { ProjectSettingsEventPresentationSchema } from './project-settings-change-view-schemas.js';
-import { DeliverySchema, LandingCheckSchema, ThreadLandingSchema } from './project-landing-schemas.js';
+import { DeliverySchema, LandingCheckSchema, LandingCheckPortsSchema, LandingBlockerSchema, ThreadLandingWaitSchema, ThreadLandingSchema } from './project-landing-schemas.js';
 import { ProjectRelativePathSchema } from './project-parity-schemas.js';
 import { ProjectHealthChecksSchema } from './project-health-schemas.js';
 import { ThreadUsageTotalSchema } from './project-usage-schemas.js';
@@ -77,7 +77,7 @@ export const ProjectWorkSettingsSchemaV4 = ProjectWorkSettingsSchemaV3.omit({ th
   environment: ProjectEnvironmentSchema.default({ variables: [], secrets: [], copyFiles: [] }),
   notifications: z.enum(['everything', 'standard', 'needs-you', 'off']).default('standard'),
 });
-export const ProjectWorkSettingsSchemaV5 = ProjectWorkSettingsSchemaV4.omit({ defaultIsolation: true, allowMainIsolation: true, autoMerge: true, requiredChecks: true }).extend({ schema: z.literal('project-work-settings-v5'), notifications: ProjectNotificationPreferencesSchema.default(() => structuredClone(defaultProjectNotifications)), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).default(70), healthChecks: ProjectHealthChecksSchema, deploy: ProjectDeploySettingsSchema.default({ mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }), delivery: DeliverySchema.default('land'), autoLand: z.boolean().default(false), pullRequestAutoMerge: z.boolean().default(false), landingChecks: z.array(LandingCheckSchema).max(30).default([]), smokeCheck: z.string().max(2000).nullable().default(null), mergeCommitPaths: z.array(ProjectRelativePathSchema).max(20).default([]) });
+export const ProjectWorkSettingsSchemaV5 = ProjectWorkSettingsSchemaV4.omit({ defaultIsolation: true, allowMainIsolation: true, autoMerge: true, requiredChecks: true }).extend({ schema: z.literal('project-work-settings-v5'), notifications: ProjectNotificationPreferencesSchema.default(() => structuredClone(defaultProjectNotifications)), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).default(70), healthChecks: ProjectHealthChecksSchema, deploy: ProjectDeploySettingsSchema.default({ mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }), delivery: DeliverySchema.default('land'), autoLand: z.boolean().default(false), pullRequestAutoMerge: z.boolean().default(false), landingChecks: z.array(LandingCheckSchema).max(30).default([]), landingPorts: LandingCheckPortsSchema.optional(), smokeCheck: z.string().max(2000).nullable().default(null), mergeCommitPaths: z.array(ProjectRelativePathSchema).max(20).default([]) });
 export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV5.extend({ jevPolicy: ProjectJevPolicySchema.optional() });
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
 export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4, ProjectWorkSettingsSchemaV5.extend({ notifications: z.union([NotificationLevelSchema, ProjectNotificationPreferencesSchema]).default(() => structuredClone(defaultProjectNotifications)), pullRequestAutoMerge: z.boolean().optional(), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).optional() })])
@@ -278,14 +278,15 @@ export const ProjectDecisionSchema = z.strictObject({ schema: z.literal('project
   ownerCommands: OwnerCommandsSchema.optional(),
   // B3: a question that asks the owner to sign in to this account; withdrawn once the account is Ready.
   accountId: IdSchema.optional(),
-  intake: IntakeDecisionSchema.optional(),
+  intake: IntakeDecisionSchema.optional(), blocker: LandingBlockerSchema.optional(),
   automaticFix: z.strictObject({ prNumber: positive, kind: PrAutoFixKindSchema, maxRounds: positive }).optional(),
   createdAt: TimestampSchema, answeredAt: TimestampSchema.optional(), answer: DecisionAnswerSchema.optional(),
   urgent: z.boolean().optional(), deploy: z.strictObject({ deployId: IdSchema, action: z.enum(['approve', 'retry', 'rollback']).default('approve') }).optional(),
   landing: z.strictObject({ commit: z.string().regex(/^[a-f0-9]{40,64}$/u), routeId: IdSchema }).optional(),
   merge: z.strictObject({ commit: z.string().regex(/^[a-f0-9]{40,64}$/u), prNumber: positive, reason: z.string().max(1200).optional(), failures: z.array(z.strictObject({ what: z.string().max(500), output: z.string().max(2000) })).max(50).optional() }).optional(),
   withdrawnAt: TimestampSchema.optional(), withdrawal: ProjectDecisionWithdrawalSchema.optional() }).refine(value => !!value.deploy || value.question.length <= 2000, { path: ['question'], message: 'Ordinary questions have at most 2000 characters.' })
-  .refine(value=>!value.intake||value.from==='coordinator'&&!value.threadId&&!value.deploy&&!value.merge&&!value.landing&&!value.automaticFix&&!value.accountId,{path:['intake'],message:'Intake is a separate coordinator owner item.'});
+  .refine(value => !value.blocker || value.from === 'thread' && !!value.threadId && !value.intake && !value.deploy && !value.landing && !value.merge && !value.automaticFix && !value.accountId, { path: ['blocker'], message: 'A landing blocker is a separate thread owner item.' })
+  .refine(value=>!value.intake||value.from==='coordinator'&&!value.threadId&&!value.deploy&&!value.merge&&!value.landing&&!value.automaticFix&&!value.accountId&&!value.blocker,{path:['intake'],message:'Intake is a separate coordinator owner item.'});
 export type ProjectDecision = z.infer<typeof ProjectDecisionSchema>;
 // 5.10 hub namespace project-notebooks, key projectId
 export const ProjectNotebookSchema = z.strictObject({ schema: z.literal('project-notebook-v1'), projectId: IdSchema,
@@ -318,6 +319,7 @@ export const PullCommentSchema = z.strictObject({ id: z.string().min(1).max(64),
 export type PullComment = z.infer<typeof PullCommentSchema>;
 export const PullCommentsSchema = z.strictObject({ schema: z.literal('pr-comment-batch-v1'), prNumber: positive, since: TimestampSchema, remoteUpdatedAt: TimestampSchema.optional(), fetchedAt: TimestampSchema, items: z.array(PullCommentSchema).max(3000), deliveredIds: z.array(z.string().max(64)).max(500) });
 export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-local-v1'),
+  landingWait: ThreadLandingWaitSchema.optional(), landingWaitSequence: count.optional(),
   landInstead: z.strictObject({ commandId: IdSchema, prNumber: positive, head: z.string(), at: TimestampSchema }).optional(),
   ownerLandingRequested: z.boolean().optional(),
   copiedFiles: z.array(z.string().min(1).max(300)).max(20).optional(),

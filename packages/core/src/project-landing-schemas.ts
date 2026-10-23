@@ -2,10 +2,20 @@ import {JevLessonInputSchema,PlacementRuleContextSchema} from './jev-control-sch
 import { z } from 'zod';
 import { IdSchema, JevCallSchema, TimestampSchema } from './schemas.js';
 import { TaskPlacementContextSchema } from './task-types.js';
-import { ProjectRelativePathSchema } from './project-parity-schemas.js';
+import { EnvNameSchema, ProjectRelativePathSchema } from './project-parity-schemas.js';
 
 export const DeliverySchema = z.enum(['land', 'pull-request']);
 export const LandingRouteNameSchema = z.enum(['land', 'verify-then-land', 'ask-owner']);
+export const LandingCheckPortSchema = z.strictObject({ schema: z.literal('landing-check-port-v1'), variable: EnvNameSchema, urlVariable: EnvNameSchema.optional() });
+export const LandingCheckPortsSchema = z.array(LandingCheckPortSchema).max(12).refine(rows => {
+  const names = rows.flatMap(row => [row.variable, ...(row.urlVariable ? [row.urlVariable] : [])]);
+  return new Set(names).size === names.length;
+}, 'Managed port environment names must be unique.');
+export type LandingCheckPort = z.infer<typeof LandingCheckPortSchema>;
+export const LandingBlockerSchema = z.strictObject({ schema: z.literal('landing-blocker-v1'), kind: z.literal('port'), port: z.number().int().min(1).max(65535),
+  commit: z.string().regex(/^[a-f0-9]{40,64}$/u), check: z.string().min(1).max(80), managed: z.boolean().optional() });
+export const ThreadLandingWaitSchema = z.strictObject({ schema: z.literal('thread-landing-wait-v1'), blocker: LandingBlockerSchema,
+  decisionId: IdSchema, reason: z.string().min(1).max(1200), createdAt: TimestampSchema });
 export const LandingCheckSchema = z.strictObject({ name: z.string().min(1).max(80), paths: z.array(ProjectRelativePathSchema).max(30), command: z.string().min(1).max(2000) });
 export const LandingCheckResultSchema = z.strictObject({ name: z.string().min(1).max(80), passed: z.boolean(), at: TimestampSchema });
 export const ThreadLandingSchema = z.strictObject({ commit: z.string().regex(/^[a-f0-9]{40,64}$/u), at: TimestampSchema,

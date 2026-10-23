@@ -284,7 +284,7 @@ export class ProjectWork {
       deviceName: o.deviceName, hub: o.hub, redactor: o.redactor, now, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}),
       local: (projectId) => this.store.list(projectId).map((thread) => threadIndex(thread, this.store.labels(thread.id), thread.createdAt)),
       pendingMain: (projectId) => this.threads.pendingMain(projectId) });
-    this.decisions = new DecisionItems({ intakeAnswer:(decision,answer,request)=>this.intakeActions.answer(decision,answer,request), deployAnswer: (decision, answer, request) => this.deploys.answer(decision, answer, request), hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), mergeAnswer: (decision, answer, validateOnly) => decision.landing ? this.landings.answer(decision, answer, validateOnly) : this.mergeGate.answer(decision, answer, validateOnly), threads: () => ({
+    this.decisions = new DecisionItems({ redactor: o.redactor, intakeAnswer:(decision,answer,request)=>this.intakeActions.answer(decision,answer,request), deployAnswer: (decision, answer, request) => this.deploys.answer(decision, answer, request), hub: o.hub, now, toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event), mergeAnswer: (decision, answer, validateOnly) => (decision.landing || decision.blocker) ? this.landings.answer(decision, answer, validateOnly) : this.mergeGate.answer(decision, answer, validateOnly), threads: () => ({
       automaticFixAnswer: (projectId, threadId, prNumber, allow, commandId) => this.threads.automaticFixAnswer(projectId, threadId, prNumber, allow, commandId),
       allowTurns: (projectId, threadId, commandId) => this.threads.allowTurns(projectId, threadId, commandId),
       stop: (projectId, threadId, reason, commandId) => this.threads.stop(projectId, threadId, reason, true, commandId),
@@ -474,7 +474,7 @@ export class ProjectWork {
       onMain: async (id, commit) => { const main = await this.jobs.mainHead(id), repo = worktrees.repository(await this.#project(id)); if ((await git.run(repo, ['merge-base', '--is-ancestor', commit, main], { permitted: [1, 128] })).code !== 0) throw refuse(`Commit ${commit} is not on origin/main. Deploys build only from main.`, 409); },
       resolution: async (id, thread, deployId, clear) => { const index = (await o.hub.thread(thread.threadId))?.document; if (!index) return; await delivery.toThreadOwner(id, index.id, index.ownerDeviceId, { type: 'deploy-resolution', deployId, landingCommit: thread.landingCommit, clear }, derivedId('tcmd', deployId, thread.threadId, String(clear))); },
       event: (id, event) => delivery.toCoordinator(id, event), changed: () => { void this.#sweepTasks(true).catch(() => undefined); } });
-    this.tracker = new PullRequestTracker({ withdrawDecision: (id, questionId) => this.decisions.withdraw(id, questionId), settings: id => this.admission.settings(id), automaticFix: (id, kind) => this.threads.automaticFix(id, kind), automaticFixLimit: (id, kind) => this.threads.automaticFixLimit(id, kind), comments: (thread, since) => this.#github.reviewComments(thread, since), threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
+    this.tracker = new PullRequestTracker({ withdrawDecision: (id, questionId, reason) => this.decisions.withdraw(id, questionId, reason), settings: id => this.admission.settings(id), automaticFix: (id, kind) => this.threads.automaticFix(id, kind), automaticFixLimit: (id, kind) => this.threads.automaticFixLimit(id, kind), comments: (thread, since) => this.#github.reviewComments(thread, since), threads: this.store, github, git, worktrees, project: (projectId) => this.#project(projectId),
       toCoordinator: (projectId, event) => delivery.toCoordinator(projectId, event),
       transition: async (threadId, apply) => { const runner = this.threads.runner(threadId); if (runner) await runner.transition(apply); else await apply(); },
       hub: o.hub, deviceId: o.deviceId, assertMerge: (id, tid) => this.daily.assertMerge(id, tid),
@@ -711,7 +711,7 @@ export class ProjectWork {
     const waiting = (await this.#o.hub.decisions(projectId)).filter(decision => decision.accountId && !decision.answer && !decision.withdrawnAt);
     if (!waiting.length) return;
     const ready = new Set((await this.#o.accounts.list()).filter(view => view.statuses.some(status => status.auth === 'ready')).map(view => view.account.id));
-    for (const decision of waiting) if (ready.has(decision.accountId!)) await this.decisions.withdraw(projectId, decision.id);
+    for (const decision of waiting) if (ready.has(decision.accountId!)) await this.decisions.withdraw(projectId, decision.id, 'The account now reports Ready.');
   }
   /** Resolves when no start, sweep, thread step or coordinator turn is in flight or scheduled (test seam; checks every 20 ms, twice in a row). */
   async idle(projectId?: string): Promise<void> {

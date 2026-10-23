@@ -8,7 +8,7 @@ import type { ThreadStore } from './stores.js';
 import type { PullRequestTracker } from './pull-requests.js';
 import type { GitHubAccess } from './publication.js';
 import type { PullRequestVerification } from './pr-verification.js';
-import { derivedId } from './decision-items.js';
+import { derivedId, systemWithdrawal } from './decision-items.js';
 const refuse = (message: string, status = 409) => Object.assign(new Error(message), { status });
 const turnBusy = (thread: Thread) => ['running', 'preparing', 'publishing', 'attached'].includes(thread.state);
 const green = (thread: Thread) => !turnBusy(thread) && thread.pr?.state === 'open' && ['passing', 'none'].includes(thread.pr.checks) && thread.pr.mergeable === 'clean';
@@ -87,7 +87,7 @@ export class ProjectMergeGate {
     if (thread.pr.state !== 'open') {
       for (const row of records) if (row.schema === 'merge-route-v1' && row.decisionId) {
         const item = (await this.o.hub.decision(row.decisionId))?.document;
-        if (item && !item.answer && !item.withdrawnAt) await this.o.hub.withdrawDecision(item.id, new Date(this.o.now()).toISOString());
+        if (item && !item.answer && !item.withdrawnAt) await this.o.hub.withdrawDecision(item.id, new Date(this.o.now()).toISOString(), systemWithdrawal(thread.pr.state === 'merged' ? 'The pull request merged.' : 'The pull request closed.'));
         if (row.commit === thread.pr.headSha && row.state !== 'merged') await this.#save({ ...row, state: thread.pr.state === 'merged' ? 'merged' : 'failed' });
       }
       const current = records.find(row => row.schema === 'merge-route-v1' && row.commit === thread!.pr!.headSha);
@@ -98,7 +98,7 @@ export class ProjectMergeGate {
     if (settings.status !== 'active' || !this.#ready(thread)) return;
     const commit = thread.pr.headSha, id = derivedId('mroute', threadId, commit);
     for (const row of records) if (row.schema === 'merge-route-v1' && row.commit !== commit && row.decisionId) {
-      const old = (await this.o.hub.decision(row.decisionId))?.document; if (old && !old.answer && !old.withdrawnAt) await this.o.hub.withdrawDecision(old.id, new Date(this.o.now()).toISOString());
+      const old = (await this.o.hub.decision(row.decisionId))?.document; if (old && !old.answer && !old.withdrawnAt) await this.o.hub.withdrawDecision(old.id, new Date(this.o.now()).toISOString(), systemWithdrawal('A newer pull-request head replaced this merge candidate.'));
     }
     let route = (await this.o.hub.mergeDocument(id))?.document;
     if (route && route.schema !== 'merge-route-v1') throw refuse('Invalid merge route receipt.');

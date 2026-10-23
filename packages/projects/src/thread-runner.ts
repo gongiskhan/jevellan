@@ -1050,7 +1050,7 @@ export class ThreadRunner {
       const ended = this.#stopping ?? reason;
       const stopped = this.#set((latest) => ({ ...withState(latest, 'stopped', ended), endedAt: latest.endedAt ?? this.#at() }));
       // An open turn-limit question no longer applies (D161), and other main threads may take the paths now.
-      await this.#c.decisions.withdrawTurnLimit(stopped.projectId, stopped.id).catch(() => undefined);
+      await this.#c.decisions.withdrawTurnLimit(stopped.projectId, stopped.id, 'The thread stopped; it no longer needs a larger turn allowance.').catch(() => undefined);
       if (notify) await this.#tell(stopped.projectId, { kind: 'thread-interrupted', threadId: stopped.id, reason: 'stopped', message: OWNER_STOPPED_THREAD });
     });
   }
@@ -1099,7 +1099,7 @@ export class ThreadRunner {
       if (this.#closed || isTerminal(thread.state) || !atTurnLimit(thread)) return null;
       const limited = thread.state === 'waiting-for-you' && thread.stateReason === TURN_LIMIT_REACHED;
       const allowed = this.#set((current) => ({ ...(limited ? withState(current, 'idle') : current), turnAllowance: current.turnAllowance + MORE_TURNS }));
-      try { await this.#c.decisions.withdrawTurnLimit(allowed.projectId, allowed.id); }
+      try { await this.#c.decisions.withdrawTurnLimit(allowed.projectId, allowed.id, 'The owner increased the thread’s turn allowance.'); }
       catch (error) { this.#notice(allowed, threadStepFailed(this.#message(error)), 'error'); }
       if (allowed.queuedMessages.length || this.#pendingTurn()) return 'messages';
       return limited && allowed.lastReport?.status === 'done' && !allowed.pr && !allowed.publishedCommit ? 'publish' : null;

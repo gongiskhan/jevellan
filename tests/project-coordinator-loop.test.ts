@@ -557,6 +557,7 @@ test('every turn states account readiness as it is now, and a sign-in question i
   ineligible.delete('acc_codex');
   await work.pulse(); await work.idle('proj_a');
   expect(await open()).toEqual([other]);
+  expect((await new HubProjectAccess(hub, 'dev_a').decision(asked))?.document.withdrawal).toMatchObject({ source: 'system', reason: expect.stringMatching(/account.*ready/iu) });
   await message(work, 'Is anything blocking work right now?'); await work.idle('proj_a');
   // The resumed turn carries no fresh context, yet it states the current readiness.
   expect(turns()[1]!.resume).toBeDefined();

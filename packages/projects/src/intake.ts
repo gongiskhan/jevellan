@@ -2,7 +2,7 @@ import {existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {IntakeCheckSchema,IntakeJobResultSchema,IntakePullSchema,ProjectDecisionSchema,boundedRedaction,intakeBuild,intakeQuestion,parseGitHubRemote,resolveProjectPath,
  type Homes,type IntakeCheck,type IntakeJobResult,type NativeProcess,type Project,type ProjectHub,type ProjectJobRun,type ProjectWorkSettings,type SecretRedactor} from '@jevellan/core';
-import {derivedId} from './decision-items.js';
+import {derivedId,systemWithdrawal} from './decision-items.js';
 import {threadBaseRef,type ThreadGit} from './git.js';
 import {selectedLandingChecks} from './landing.js';
 import type {GitHubAccess} from './publication.js';
@@ -22,7 +22,7 @@ export class ProjectIntake{
    try{await this.o.hub.createDecision(document);}catch(error){if((error as {status?:number}).status!==409||!(await this.o.hub.decision(document.id)))throw error;}
   }
   // A newly checked head replaces the old open owner item; an answer is never erased.
-  for(const old of await this.o.hub.decisions(check.projectId))if(old.id!==check.decisionId&&old.intake?.number===check.pull.number&&old.intake.head!==check.pull.headSha&&!old.answer&&!old.withdrawnAt)await this.o.hub.withdrawDecision(old.id,this.#at());
+  for(const old of await this.o.hub.decisions(check.projectId))if(old.id!==check.decisionId&&old.intake?.number===check.pull.number&&old.intake.head!==check.pull.headSha&&!old.answer&&!old.withdrawnAt)await this.o.hub.withdrawDecision(old.id,this.#at(),systemWithdrawal('A newer checked pull-request head replaced this owner item.'));
  }
  async check(run:ProjectJobRun,signal:AbortSignal,onProcess:(process:NativeProcess)=>void):Promise<IntakeExecution>{
   if(run.deviceId!==this.o.deviceId||run.spec.kind!=='command'||!run.spec.intake)throw fail('This is not the executing intake job.',403);
