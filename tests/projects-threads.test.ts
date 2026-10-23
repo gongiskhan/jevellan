@@ -436,6 +436,8 @@ test('limits: a full device queues the start; an in-review fix turn waits for a 
   f.fake.enqueueTurn(holdStep(held), titled('Busy'));
   const busy = (await start(f, 'Busy', 'Hold the slot.')).threadId;
   await f.waitFor(() => f.thread(busy).state, (state) => state === 'running');
+  // Running reserves the slot before asynchronous launch preparation reaches the adapter.
+  await f.waitFor(() => f.fake.turnStarts.some(titled('Busy')), started => started);
   // The device is at its limit: a new start queues with the device sentence.
   f.fake.enqueueTurn(reportStep({ status: 'progress', summary: 'Queued work ran.' }), titled('Queued'));
   const queued = await start(f, 'Queued', 'Wait for a slot.');
