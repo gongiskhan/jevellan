@@ -67,7 +67,7 @@ export class Admission {
       const settings = (await this.#hub.settings(projectId))?.document ?? defaults();
       if (!this.#hub.jevPolicy) return settings;
       const policy = await this.#hub.jevPolicy(projectId), { jevPolicy: _derived, ...base } = settings; void _derived;
-      return policy.rules.length || policy.prompts?.length ? { ...base, jevPolicy: policy } : base;
+      return policy.rules.length || policy.prompts?.length || policy.lessons ? { ...base, jevPolicy: policy } : base;
     }, defaults);
   }
   #remoteLive(projectId: string): Promise<Live[]> {

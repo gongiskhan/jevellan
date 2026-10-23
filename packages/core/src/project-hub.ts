@@ -1,4 +1,4 @@
-import type { ProjectJevPolicy } from './jev-control-schemas.js';
+import type { JevLessonUse, ProjectJevPolicy } from './jev-control-schemas.js';
 import type {IntakeDocument} from './project-intake-schemas.js';
 import type { ProjectDeploy, ProjectDeployBaseline } from './project-deploy-schemas.js';
 import type { ProjectSetupProposal, SetupActionRequest } from './project-setup-schemas.js';
@@ -31,6 +31,7 @@ export type ReserveOutcome = { granted: true; reservation: Stored<FileReservatio
  */
 export interface ProjectHub {
   jevPolicy?(projectId: string): Promise<ProjectJevPolicy>;
+  recordJevLessonUse?(use: JevLessonUse): Promise<JevLessonUse>;
   intakeDocuments(projectId:string,after?:string):Promise<{records:IntakeDocument[];next:string|null}>;
   intakeDocument(id:string):Promise<Stored<IntakeDocument>|null>;
   putIntakeDocument(document:IntakeDocument,expectedRevision:number):Promise<Stored<IntakeDocument>>;

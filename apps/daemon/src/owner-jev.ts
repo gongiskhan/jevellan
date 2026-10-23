@@ -1,9 +1,10 @@
+import {projectJevLessons} from '@jevellan/decisions';
 import {applyJevRouteRules,landingPromptText as formatLandingPrompt,parseLandingPrompt as parseEngineLandingPrompt} from '@jevellan/decisions';
 import {applyHistoricalRules,choiceLabel,choiceOf,currentThreadFacts,newest,placementHistory,sameChoice} from './owner-jev-history.js';
 import {replayPlacement,replayRoutes,replaySummary} from './owner-jev-replay.js';
 import { placementPromptText, mergePromptText, parsePlacementPrompt, parseMergePrompt } from '@jevellan/decisions';
-import { AccountSchema, EffortSchema, JevLessonSchema, JevPromptVersionSchema, JevProposalSchema, JevRuleSchema, LandingCorrectionSchema, LandingRouteSchema, MergeCorrectionSchema, unifiedDiff,
-  type JevLesson, type JevPromptVersion, type JevProposal, type JevRule, type LandingRoute, type Thread } from '@jevellan/core';
+import { AccountSchema, EffortSchema, JevLessonSchema, JevPromptVersionSchema, JevProposalSchema, JevRuleSchema, LandingRouteSchema, unifiedDiff,
+  type JevLesson, type JevPromptVersion, type JevProposal, type JevRule, type LandingRoute, type Thread, type MergeDocument } from '@jevellan/core';
 import { LANDING_CRITERIA, LANDING_INSTRUCTIONS, applyJevEffortRules, decideLandingRoute, type LandingPrompt } from '@jevellan/decisions';
 import type { LandingJev } from '@jevellan/projects';
 import type { Application } from './application.js';
@@ -35,6 +36,7 @@ const keyOf = (name: string, version: number) => `${name.replace(/[^A-Za-z0-9]/g
  * with proposals replayed against real past decisions, and lessons from the owner's overrides that reach Jev as a section of its input.
  */
 export class OwnerJev {
+  readonly #migrations=new Map<string,Promise<void>>();
   constructor(private readonly app: Application, readonly now: () => Date = () => new Date()) {}
   #id(prefix: 'R' | 'L' | 'P', key: string): string { return this.app.ownerTools.ids.one(ID_SPACE, prefix, key); }
   #put<T>(namespace: string, key: string, schema: { parse(value: unknown): T }, document: T): T {
@@ -182,8 +184,7 @@ export class OwnerJev {
 
   // Lessons.
   lessons(projectId: string): JevLesson[] {
-    this.#migrate(projectId);
-    return this.app.hub.list(LESSONS, JevLessonSchema).map(row => row.document).filter(row => row.scope === 'global' || row.projectId === projectId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return this.app.hub.list(LESSONS, JevLessonSchema).map(row => row.document).filter(row => row.scope === 'global' || row.projectId === projectId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)||Number(b.id.slice(1))-Number(a.id.slice(1)));
   }
   addLesson(projectId: string, input: { text: string; about: JevLesson['about']; source: string }): JevLesson {
     const key = `lesson_${this.app.hub.list(LESSONS, JevLessonSchema).length + 1}_${Date.now().toString(36)}`;
@@ -195,25 +196,31 @@ export class OwnerJev {
     return this.#put(LESSONS, lesson.key, JevLessonSchema, { ...lesson, ...(change.text ? { text: change.text } : {}), ...(change.enabled !== undefined ? { enabled: change.enabled } : {}) });
   }
   /** The owner's landing and merge corrections become lessons once, so there is one place for what Jev learned. */
-  #migrate(projectId: string): void {
-    if (this.app.hub.get(MIGRATED, projectId, JevLessonSchema as never)) return;
-    void this.app.projectWork.landings.records(projectId).then(rows => {
-      if (this.app.hub.get(MIGRATED, projectId, JevLessonSchema as never)) return;
-      for (const row of rows) {
-        const parsed = row.schema === 'landing-correction-v1' ? LandingCorrectionSchema.safeParse(row) : row.schema === 'merge-correction-v1' ? MergeCorrectionSchema.safeParse(row) : null;
-        if (!parsed?.success) continue; const correction = parsed.data as { title: string; correction: string };
-        this.addLesson(projectId, { about: 'landing', source: 'migrated', text: `For "${correction.title}", the owner said: ${correction.correction === 'should-have-asked' ? 'Should have asked me' : "Didn't need asking"}.` });
-      }
-      this.app.hub.put(MIGRATED, projectId, JevLessonSchema as never, JevLessonSchema.parse({ schema: 'jev-lesson-v1', key: 'migrated', id: 'L1', scope: 'project', projectId, about: 'other', text: 'Landing corrections migrated.', source: 'migrated', enabled: false, timesApplied: 0, createdAt: this.now().toISOString() }), 0);
-    }).catch(() => undefined);
+  async prepare(projectId:string):Promise<void>{
+    if(this.app.hub.get(MIGRATED,projectId,JevLessonSchema))return;
+    const prior=this.#migrations.get(projectId);if(prior)return prior;
+    const operation=this.#migrate(projectId);this.#migrations.set(projectId,operation);try{await operation;}finally{this.#migrations.delete(projectId);}
+  }
+  /** New correction receipts enter lessons in the writer's transaction, independently of the legacy migration marker. */
+  recordCorrection(row:MergeDocument):void{
+    if(row.schema!=='landing-correction-v1'&&row.schema!=='merge-correction-v1')return;
+    const key=`migrated_${row.id}`;if(this.app.hub.get(LESSONS,key,JevLessonSchema))return;
+    this.#put(LESSONS,key,JevLessonSchema,JevLessonSchema.parse({schema:'jev-lesson-v1',key,id:this.#id('L',key),scope:'project',projectId:row.projectId,about:'landing',text:`For “${row.title}”, the owner said: ${row.correction==='should-have-asked'?'Should have asked me':"Didn't need asking"}.`,source:'migrated',enabled:true,timesApplied:0,createdAt:row.at}));
+  }
+  async #migrate(projectId:string):Promise<void>{
+    const rows=await this.app.projectWork.landings.records(projectId);
+    this.app.hub.transaction(()=>{
+      if(this.app.hub.get(MIGRATED,projectId,JevLessonSchema))return;
+      for(const row of [...rows].sort((a,b)=>a.at.localeCompare(b.at)||(('receivedOrder' in a?a.receivedOrder:0)??0)-(('receivedOrder' in b?b.receivedOrder:0)??0)||a.id.localeCompare(b.id)))this.recordCorrection(row);
+      this.app.hub.put(MIGRATED,projectId,JevLessonSchema,JevLessonSchema.parse({schema:'jev-lesson-v1',key:'migrated',id:'L1',scope:'project',projectId,about:'other',text:'Landing corrections migrated.',source:'migrated',enabled:false,timesApplied:0,createdAt:this.now().toISOString()}),0);
+    });
   }
 
   /** The hook the landing service calls before asking Jev l-v1. */
   async landingHook(projectId: string): Promise<LandingJev> {
-    const version = this.active('l-v1'); const prompt = parseLandingPrompt(version.text);
-    const lessons = this.lessons(projectId).filter(row => row.enabled && row.about === 'landing').slice(0, 30);
-    return { version: version.version, prompt, lessons: { ids: lessons.slice(0, 8).map(row => row.id), texts: lessons.slice(0, 8).map(row => row.text) },
-      apply: (route, thread: Thread) => this.ruleRoute(projectId, route, { ...(thread.taskContext?.type ? { taskType: thread.taskContext.type } : {}), text: `${thread.title} ${thread.task}` }) };
+    await this.prepare(projectId);const version=this.active('l-v1'),prompt=parseLandingPrompt(version.text),lessons=projectJevLessons(projectId,this.lessons(projectId));
+    return{version:version.version,prompt,lessons:{ids:lessons.ids,keys:lessons.keys,texts:lessons.corrections.map(row=>row.text),...(lessons.input?{input:lessons.input}:{})},
+      apply:(route,thread:Thread)=>this.ruleRoute(projectId,route,{taskType:thread.taskContext?.type??'feature',...(thread.taskContext?.goal?.id?{goalId:thread.taskContext.goal.id}:{}),label:thread.taskContext?.goal?.name??'manual',text:`${thread.title} ${thread.task}`})};
   }
 
   replayReport(projectId: string, id: string) { return replaySummary(this.app, projectId, id); }

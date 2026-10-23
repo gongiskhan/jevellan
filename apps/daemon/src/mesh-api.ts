@@ -128,7 +128,9 @@ export async function handleMeshDeviceApi(app: Application, request: IncomingMes
     const release = isProjectHubRead(input.operation) ? undefined : app.lifecycle.enter({ kind: 'request' });
     try {
       app.devices.authenticate(authorization!.slice(7));
-      const result = new HubProjectStore(app.hub, device.id, undefined, () => app.devices.list()).request(input);
+      const store=new HubProjectStore(app.hub,device.id,undefined,()=>app.devices.list(),row=>app.ownerJev.recordCorrection(row));
+      if(input.operation==='jev-policy-get'){store.jevPolicy(input.projectId);await app.ownerJev.prepare(input.projectId);app.devices.authenticate(authorization!.slice(7));}
+      const result=store.request(input);
       // Redaction never lengthens a text past the maximum its schema checked, so members read every reply (P8 review S-1).
       app.devices.authenticate(authorization!.slice(7)); json(response, boundedRedaction(app.hub.redactor, result));
       // An envelope for the hub itself is processed now instead of at the next inbox poll (D40); a retry notifies again.

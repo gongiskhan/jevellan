@@ -264,3 +264,15 @@ test('ROUTECTL l-v1 stores replay input and output evidence without changing lan
 test('ROUTECTL reading landing policy does not count a lesson as applied',async()=>{
  const f=fixture=await projectFixture();const lesson=f.app.ownerJev.addLesson('project',{about:'landing',source:'owner',text:'Owned lesson.'});await f.app.ownerJev.landingHook('project');await f.app.ownerJev.landingHook('project');expect(f.app.ownerJev.lessons('project').find(row=>row.id===lesson.id)?.timesApplied).toBe(0);expect(f.fake.runs).toHaveLength(0);
 });
+
+test('LESSONPOL6 an unavailable landing policy cannot silently use the code defaults to land',async()=>{
+ const f=await setup();f.app.projectWork.landings.o.jev=async()=>{throw Error('Owned canonical policy outage.');};const head=git(f.origin,'rev-parse','main');
+ f.fake.enqueueTurn(commitStep({'README.md':'Owned policy outage\n'},{status:'done',summary:'A small policy fixture.'}),forThread());const started=await start(f),thread=await done(f,started.threadId);
+ expect(thread.state).toBe('in-review');expect(thread.landing).toBeUndefined();expect(git(f.origin,'rev-parse','main')).toBe(head);expect((await routes(f,thread.id))[0]).toMatchObject({route:'ask-owner',source:'unavailable'});expect(f.fake.runs).toHaveLength(1);
+},120_000);
+
+test('LESSONMETA1 normal route updates cannot replace original prompt, raw answer or condition evidence',async()=>{
+ const f=await setup({autoLand:false});f.fake.enqueueTurn(commitStep({'README.md':'Owned immutable route metadata\n'},{status:'done',summary:'A small metadata fixture.'}),forThread());const started=await start(f),thread=await done(f,started.threadId),row=(await routes(f,thread.id))[0]!;
+ for(const change of [{rawChoice:'ask-owner' as const},{promptVersion:99},{promptText:'Replacement prompt.'},{inputsRef:'replacement_input'},{ruleContext:{schema:'placement-rule-context-v1' as const,text:'Replacement task.',complete:true}}])await expect(f.app.projectHub.putMergeDocument({...row,...change},row.revision)).rejects.toThrow(/immutable/u);
+ expect(f.thread(thread.id).landing).toBeUndefined();
+},120_000);

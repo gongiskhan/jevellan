@@ -48,6 +48,7 @@ export const jev: OwnerHandler = async (context) => {
   if (context.action === 'native_message_send' || context.action === 'native_message_cancel') return { text: 'Native message receipt.', data: await executeNativeMessage(app, args.request) };
   if (context.action === 'native_list_view') return { text: 'Native session reading view.', data: await readNativeListView(app) };
   if (context.action === 'native_transcript_view') return { text: 'Native transcript reading view.', data: await readNativeTranscriptView(app, args.request) };
+  await app.ownerJev.prepare(projectId);
   await tools.status(project); // display ids for every current thread and goal
   const goals = new Map((await app.projectWork.goalList(projectId)).goals.map(row => [row.goal.id, tools.ids.one(projectId, 'G', row.goal.id)]));
   switch (context.action) {

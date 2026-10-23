@@ -1,3 +1,4 @@
+import {projectJevLessons} from '@jevellan/decisions';
 import { ProjectMergeWhyRequestSchema } from '@jevellan/core';
 import { routeWhyView } from './route-why.js';
 import { applyJevRouteRules, decideMergeRoute, parseMergePrompt, type DecisionSource } from '@jevellan/decisions';
@@ -116,13 +117,14 @@ export class ProjectMergeGate {
       const failures = Math.min(3, records.filter(row => row.schema === 'verification-run-v1' && row.state === 'failed' && row.report?.result === 'failed' && !row.note).length);
       // One decision under the shared deadline: the client, the configuration read for the model, the key and every attempt (fix-051).
       const version = settings.jevPolicy?.prompts?.find(row => row.name === 'm-v1' && row.active);
-      const result = await decideMergeRoute(this.o.decisionClient, packet, async () => (await this.o.configuration()).decisions.model, this.o.redactor, this.#abort.signal, version ? () => parseMergePrompt(version.text) : undefined);
+      const lessons=projectJevLessons(thread.projectId,settings.jevPolicy?.lessons),asked={...packet,...(settings.jevPolicy?.lessons?{corrections:lessons.corrections.map(row=>this.o.redactor.text(row.text).slice(0,500))}:{}),...(lessons.input?{lessons:lessons.input}:{})};
+      const result = await decideMergeRoute(this.o.decisionClient, asked, async () => (await this.o.configuration()).decisions.model, this.o.redactor, this.#abort.signal, version ? () => parseMergePrompt(version.text) : undefined);
       if (this.#closed) return;
       const condition = { taskType: thread.taskContext?.type ?? 'feature', ...(thread.taskContext?.goal?.id ? { goalId: thread.taskContext.goal.id } : {}), label: thread.taskContext?.goal?.name ?? 'manual', text: `${thread.title} ${thread.task}` }, redactedCondition = this.o.redactor.document(condition);
       const rawRoute = result.route, ruled = result.source === 'jev' ? applyJevRouteRules(thread.projectId, rawRoute === 'merge' ? 'land' : rawRoute === 'test-then-merge' ? 'verify-then-land' : rawRoute, settings.jevPolicy?.rules ?? [], condition) : undefined;
       const chosenRoute = ruled ? ruled.route === 'land' ? 'merge' : ruled.route === 'verify-then-land' ? 'test-then-merge' : ruled.route : rawRoute;
       route = await this.#save(MergeRouteSchema.parse({ ...result, route: chosenRoute, inputPacket: result.packet, ruleContext: { ...redactedCondition, schema: 'placement-rule-context-v1', complete: JSON.stringify(condition) === JSON.stringify(redactedCondition) }, rulesApplied: ruled?.rulesApplied ?? [], ...(ruled?.rulesApplied.length ? { reason: ruled.reason } : {}), schema: 'merge-route-v1', id, projectId: thread.projectId, threadId, deviceId: this.o.deviceId, revision: 0, commit, at: new Date(this.o.now()).toISOString(), prNumber: thread.pr.number,
-        questionSet: 'm-v1', rawChoice: result.route, inputsRef: id, ...(version ? { promptVersion: version.version, promptText: version.text } : {}), state: 'waiting', failures, verificationRetries: moved.length ? 1 : 0, decisionId: null, verificationId: null,
+        questionSet: 'm-v1',lessons:lessons.ids,lessonKeys:lessons.keys, ...(result.source==='jev'?{rawChoice:result.route}:{}), inputsRef: id, ...(version ? { promptVersion: version.version, promptText: version.text } : {}), state: 'waiting', failures, verificationRetries: moved.length ? 1 : 0, decisionId: null, verificationId: null,
         ...(moved.some(row => row.verificationRetries >= 1) ? { route: 'ask-owner', source: 'guard', reason: 'The pull request head moved during verification again after one retry.' } : {}),
         ...(failures >= 3 ? { route: 'ask-owner', source: 'guard', reason: 'Three verification reports failed on this pull request.' } : {}) }));
     }

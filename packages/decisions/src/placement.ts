@@ -1,3 +1,4 @@
+import {JevLessonInputSchema,type JevLessonInput} from '@jevellan/core';
 import type { PlacementPrompt } from '@jevellan/core';
 import { MAIN_NOT_AVAILABLE, REMOTE_NOT_AVAILABLE } from '@jevellan/core';
 export { MAIN_NOT_AVAILABLE, REMOTE_NOT_AVAILABLE } from '@jevellan/core';
@@ -300,7 +301,7 @@ const TASK_CHARS = 6000;
 const text = z.string();
 /** The redacted packet both placement calls send (brief 10). Rules hold configuration; thread and project text stays outside them. */
 export const PlacementStateSchema = z.strictObject({
-  schema: z.literal('placement-state-v3'), task: TaskPlacementContextSchema,
+  schema: z.literal('placement-state-v3'), task: TaskPlacementContextSchema, lessons: JevLessonInputSchema.optional(),
   // The newest eight same-type corrections, then four from other types; one sentence per changed field.
   rules: z.strictObject({ projectGuidance: z.string().max(2000), routingProfile: text, effortGuide: z.record(EffortSchema, text), recentOverrides: z.array(text).max(72) }),
   project: z.strictObject({ name: text, defaultIsolation: IsolationSchema, gitPolicy: z.enum(['main', 'external']).optional() }),
@@ -313,7 +314,7 @@ export type PlacementState = z.infer<typeof PlacementStateSchema>;
 export type PlacementActiveThread = PlacementState['activeThreads'][number];
 export type PlacementOverrideEntry = Pick<PlacementOverride, 'mode' | 'changes' | 'at' | 'taskType'> & { title: string };
 /** Active threads are oldest first. Corrections prefer the newest eight of this type, then four of other types. */
-export type PlacementPacketInput = { title: string; task: string; taskContext?: TaskPlacementContext | undefined; note?: string | undefined; trouble?: string | undefined; activeThreads: PlacementActiveThread[]; overrides: PlacementOverrideEntry[] };
+export type PlacementPacketInput = { lessons?: JevLessonInput | undefined; title: string; task: string; taskContext?: TaskPlacementContext | undefined; note?: string | undefined; trouble?: string | undefined; activeThreads: PlacementActiveThread[]; overrides: PlacementOverrideEntry[] };
 type PlacementStateInput = PlacementInput & { storedState?: string; packet: PlacementPacketInput; redactor: Pick<SecretRedactor, 'document'> };
 
 /** `{field} changed from {from} to {to} for '{title}' ({mode})` (brief 10), with the stored values (model ids, D249). */
@@ -335,7 +336,7 @@ export function buildPlacementState(input: PlacementStateInput): { state: string
   const mainAllowed = input.gates.mainIsolation;
   const note = packet.note?.trim();
   const redacted = input.redactor.document({
-    schema: 'placement-state-v3', task: taskContext,
+    schema: 'placement-state-v3', task: taskContext, ...(packet.lessons ? {lessons:packet.lessons} : {}),
     rules: { projectGuidance: input.projectGuidance ?? '', routingProfile: input.settings.routingProfile, effortGuide: { ...input.settings.effortGuide },
       recentOverrides: overrides.flatMap((entry) => entry.changes.map((change) => overrideSentence(change, entry.title, entry.mode, entry.taskType))).slice(0, 72) },
     project: { name: input.project.name, defaultIsolation: input.defaultIsolation === 'main' && !mainAllowed ? 'worktree' : input.defaultIsolation, gitPolicy: input.project.branchPolicy },

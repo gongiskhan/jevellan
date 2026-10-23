@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from 'vitest';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ProjectJobSchema, AccountSchema, GitHubClient, MergeDocumentsViewSchema, ProjectWorkSettingsSchema, SecretRedactor, VerificationReportSchema, defaultProjectWorkSettings, type MergeRoute, type ModelOption } from '../packages/core/dist/index.js';
+import { JevLessonSchema,ProjectJobSchema, AccountSchema, GitHubClient, MergeDocumentsViewSchema, ProjectWorkSettingsSchema, SecretRedactor, VerificationReportSchema, defaultProjectWorkSettings, type MergeRoute, type ModelOption } from '../packages/core/dist/index.js';
 import { decideMergeRoute, type DecisionClient, type JevQuestions } from '../packages/decisions/dist/index.js';
 import { FakeRuntime, forThread } from '../packages/runtime-contract/dist/index.js';
 import { VERIFICATION_APPEND, VerificationTools, derivedId } from '../packages/projects/dist/index.js';
@@ -366,4 +366,27 @@ test('ROUTECTL actual merge routing applies owner route clamps before its existi
 },90_000);
 test('ROUTECTL m-v1 replays its stored packet and saves a report without merging the pull request',async()=>{
  const {f,jev}=await setup('ask-owner'),thread=await published(f);await settings(f,{autoLand:false});await gate(f);const before=structuredClone(f.thread(thread.id)),calls=jev.state.calls.length,head=git(f.origin,'rev-parse','main');jev.state.route='merge';const proposed=await f.app.ownerJev.propose('project','m-v1',{edits:[{find:'Small or low-risk change',replace:'Small and covered change'}],summary:'Owned route replay.'});expect(jev.state.calls.length-calls).toBe(1);expect(proposed).toContain('Replay on the last 1 decisions that used m-v1: 1 would change.');const proposal=f.app.ownerJev.proposals().find(row=>row.id===proposed.match(/^P[1-9][0-9]*/u)![0])!;expect(proposal.replayReportId).toBeDefined();expect(f.app.ownerJev.replayReport('project',proposal.replayReportId!)).toMatchObject({questionSet:'m-v1',selected:1,compared:1,changed:1,evidence:'simulated'});expect(f.app.ownerJev.active('m-v1').version).toBe(1);expect(f.thread(thread.id)).toEqual(before);expect(git(f.origin,'rev-parse','main')).toBe(head);expect(f.github.requests.some(row=>row.method==='PUT'&&row.path.endsWith('/merge'))).toBe(false);
+},90_000);
+
+test('LESSONPOL5 actual merge input receives scoped lessons and each decision counts once',async()=>{
+ const {f,jev}=await setup('ask-owner'),lesson=f.app.ownerJev.addLesson('project',{about:'landing',source:'owner',text:'Owned merge lesson.'}),thread=await published(f);await settings(f,{autoLand:false});await gate(f);
+ expect(JSON.parse(jev.state.calls[0]!.state)).toMatchObject({corrections:[lesson.text],lessons:{schema:'jev-lesson-input-v1',heading:"Lessons from the owner's overrides",items:[{id:lesson.id,key:lesson.key,text:lesson.text}]}});
+ expect((await routes(f,thread.id))[0]).toMatchObject({lessons:[lesson.id]});expect(f.app.ownerJev.lessons('project').find(row=>row.key===lesson.key)?.timesApplied).toBe(1);
+ await gate(f);expect(jev.state.calls).toHaveLength(1);expect(f.app.ownerJev.lessons('project').find(row=>row.key===lesson.key)?.timesApplied).toBe(1);expect(f.thread(thread.id).pr?.state).toBe('open');
+},90_000);
+
+
+test('LESSONUSE4 newest thirty lessons and the separate last eight landing corrections retain every input use',async()=>{
+ const {f,jev}=await setup('ask-owner'),rows=Array.from({length:38},(_,n)=>JevLessonSchema.parse({schema:'jev-lesson-v1',key:'separate_lesson_'+n,id:'L'+(100+n),scope:'project',projectId:'project',about:n<8?'landing':'placement',text:'Separate input lesson '+n,source:'owner',enabled:true,timesApplied:0,createdAt:new Date(Date.UTC(2026,0,1,0,0,n)).toISOString()}));for(const row of rows)f.app.hub.put('owner-jev-lessons',row.key,JevLessonSchema,row,0);
+ const thread=await published(f);await settings(f,{autoLand:false});await gate(f);const packet=JSON.parse(jev.state.calls[0]!.state) as {corrections:string[];lessons:{items:Array<{key:string}>}};expect(packet.lessons.items.map(row=>row.key)).toEqual(rows.slice(8).reverse().map(row=>row.key));expect(packet.corrections).toEqual(rows.slice(0,8).reverse().map(row=>row.text));expect((await routes(f,thread.id))[0]!.lessons).toHaveLength(38);for(const row of rows)expect(f.app.hub.get('owner-jev-lessons',row.key,JevLessonSchema)?.document.timesApplied).toBe(1);
+},90_000);
+
+test('LESSONUSE5 an unusable merge answer is not a raw Jev choice or a counted lesson use',async()=>{
+ const {f}=await setup('ask-owner'),lesson=f.app.ownerJev.addLesson('project',{about:'landing',source:'owner',text:'Owned unusable-answer contract.'});let calls=0;
+ f.app.projectWork.mergeGate.o.decisionClient=()=>({decide:async()=>{calls++;return{schema:'jev-response-v1',model:'fixture',usage:{input_tokens:1,output_tokens:1},answers:{}};}});
+ const thread=await published(f);await settings(f,{autoLand:false});await gate(f);const row=(await routes(f,thread.id))[0]!;
+ expect(row.source).toBe('unavailable');expect(row.calls.length).toBeGreaterThan(0);expect(row.rawChoice).toBeUndefined();expect(f.app.ownerJev.lessons('project').find(row=>row.key===lesson.key)?.timesApplied).toBe(0);
+ await expect(f.app.projectHub.putMergeDocument({...row,rawChoice:'merge'},row.revision)).rejects.toThrow(/immutable/u);
+ const before=calls,proposed=await f.app.ownerJev.propose('project','m-v1',{edits:[{find:'Small or low-risk change',replace:'Small owned usable change'}],summary:'Owned unusable source control.'}),proposal=f.app.ownerJev.proposals().find(row=>row.id===proposed.match(/^P[1-9][0-9]*/u)![0])!,summary=f.app.ownerJev.replayReport('project',proposal.replayReportId!);
+ expect(calls).toBe(before);expect(summary).toMatchObject({selected:0,compared:0,changed:0});expect(summary.text).toContain('Skipped source records without a usable original Jev answer: 1.');expect(f.thread(thread.id).pr?.state).toBe('open');
 },90_000);

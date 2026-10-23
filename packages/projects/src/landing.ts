@@ -1,4 +1,4 @@
-import {landingPromptText} from '@jevellan/decisions';
+import {applyJevRouteRules,projectJevLessons,parseLandingPrompt,landingPromptText} from '@jevellan/decisions';
 import { routeWhyView } from './route-why.js';
 import { deliveryDirectory, JobGateResultSchema, PrivateJobDeliverySchema } from './job-deliveries.js';
 import { readDocument, writeDocument } from '@jevellan/core';
@@ -52,7 +52,7 @@ const holderText = (holder: { pid?: number; command?: string }) => holder.pid ? 
 const failure = (error: unknown, redactor: SecretRedactor) => redactor.text(error instanceof Error ? error.message : 'Landing failed.').slice(0, 1200);
 
 /** Checked code reaches main under the hub's renewable publication lease. No agent performs this operation. */
-export type LandingJev = { version: number; prompt: LandingPrompt; lessons: { ids: string[]; texts: string[] };
+export type LandingJev = { version: number; prompt: LandingPrompt; lessons: { ids: string[]; texts: string[]; keys?: string[]; input?: import('@jevellan/core').JevLessonInput };
   apply(route: 'land' | 'verify-then-land' | 'ask-owner', thread: Thread): { route: 'land' | 'verify-then-land' | 'ask-owner'; rulesApplied: string[]; reason: string } };
 export class ThreadLandingService {
   /** Threads whose landing waits for a port another process holds: the sweep retries them once it is free. */
@@ -217,13 +217,19 @@ export class ThreadLandingService {
           .sort((a, b) => b.at.localeCompare(a.at) || (('receivedOrder' in b ? b.receivedOrder : 0) ?? 0) - (('receivedOrder' in a ? a.receivedOrder : 0) ?? 0)).slice(0, 8)
           .map(row => 'correction' in row ? `For “${row.title}”, the owner said: ${row.correction === 'should-have-asked' ? 'Should have asked me' : "Didn't need asking"}.` : '');
         const packet = { schema: 'landing-route-state-v1' as const, title: thread.title, task: thread.taskContext ?? { type: 'feature' as const, needs: [], goal: null }, summary: (thread.lastReport?.summary ?? '').slice(0, 4000), files: ready.files, checks: ready.checks, riskyAreas: settings.riskyAreas, corrections };
-        const jev = await this.o.jev?.(project.id).catch(() => undefined);
-        const asked = jev?.lessons ? { ...packet, corrections: jev.lessons.texts.slice(0, 8) } : packet;
-        const answered = await decideLandingRoute(this.o.decisionClient, asked, async () => (await this.o.configuration()).decisions.model, this.o.redactor, signal ?? new AbortController().signal, jev?.prompt);
+        let jev:LandingJev|undefined,policyFailed=false;
+        try{
+          jev=await this.o.jev?.(project.id);
+          if(!jev&&settings.jevPolicy){const policy=settings.jevPolicy,version=policy.prompts?.find(row=>row.name==='l-v1'&&row.active);
+            if(version){const lessons=projectJevLessons(project.id,policy.lessons);jev={version:version.version,prompt:parseLandingPrompt(version.text),lessons:{ids:lessons.ids,keys:lessons.keys,texts:lessons.corrections.map(row=>row.text),...(lessons.input?{input:lessons.input}:{})},apply:(route,thread)=>applyJevRouteRules(project.id,route,policy.rules,{taskType:thread.taskContext?.type??'feature',...(thread.taskContext?.goal?.id?{goalId:thread.taskContext.goal.id}:{}),label:thread.taskContext?.goal?.name??'manual',text:`${thread.title} ${thread.task}`})};}
+          }
+        }catch{policyFailed=true;}
+        const asked=jev?{...packet,corrections:jev.lessons.texts.slice(0,8).map(text=>this.o.redactor.text(text).slice(0,500)),...(jev.lessons.input?{lessons:jev.lessons.input}:{})}:packet;
+        const answered = await decideLandingRoute(this.o.decisionClient, asked, async () => (await this.o.configuration()).decisions.model, this.o.redactor, signal ?? new AbortController().signal, policyFailed?()=>{throw Error('The canonical landing policy is unavailable.');}:jev?.prompt);
         const ruled = answered.source === 'jev' && jev ? jev.apply(answered.route, thread) : undefined;
         const condition = { taskType: thread.taskContext?.type ?? 'feature', ...(thread.taskContext?.goal?.id ? { goalId: thread.taskContext.goal.id } : {}), label: thread.taskContext?.goal?.name ?? 'manual', text: `${thread.title} ${thread.task}` }, redactedCondition = this.o.redactor.document(condition);
         const result = { ...answered, ruleContext: { ...redactedCondition, schema: 'placement-rule-context-v1', complete: JSON.stringify(condition) === JSON.stringify(redactedCondition) }, inputPacket: answered.packet, inputsRef: id, ...(jev ? { promptText: landingPromptText(jev.prompt) } : {}), ...(answered.source === 'jev' ? { rawChoice: answered.route } : {}), ...(ruled && ruled.rulesApplied.length ? { route: ruled.route, reason: ruled.reason, rulesApplied: ruled.rulesApplied } : {}),
-          ...(jev ? { promptVersion: jev.version, lessons: jev.lessons.ids.slice(0, 8) } : {}) };
+          ...(jev ? { promptVersion: jev.version, lessons: jev.lessons.ids, ...(jev.lessons.keys?{lessonKeys:jev.lessons.keys}:{}) } : {}) };
         route = await this.#save(LandingRouteSchema.parse({ ...result, schema: 'landing-route-v1', id, projectId: project.id, threadId: thread.id, deviceId: this.o.deviceId,
           revision: 0, settingsDigest, gateValidUntil: ready.gateValidUntil, commit: ready.head, checkedCommit: ready.head, baseCommit: base, at: new Date(this.o.now()).toISOString(), questionSet: 'l-v1', state: 'waiting' }));
       }

@@ -278,7 +278,7 @@ export class ProjectWork {
         return deviceId !== o.deviceId ? deviceResourceRefusal(view?.device.name ?? deviceId, view?.heartbeat?.facts) : undefined;
       },
       nameOf: async (deviceId) => (await o.roster()).devices.find((view) => view.device.id === deviceId)?.device.name, now });
-    this.jevDecisions = new ProjectJevDecisions({ homes: o.homes, deviceId: o.deviceId, redactor: o.redactor });
+    this.jevDecisions = new ProjectJevDecisions({ homes: o.homes, deviceId: o.deviceId, redactor: o.redactor,hub:o.hub });
     const placement = new Placement({ recordDecision: decision => this.jevDecisions.recordNew(decision), settings: o.settings, accounts: o.accounts, runtimes: o.runtimes, roster: o.roster, admission: this.admission, deviceId: o.deviceId,
       facts,
       deviceName: o.deviceName, hub: o.hub, redactor: o.redactor, now, ...(o.decisionClient ? { decisionClient: o.decisionClient } : {}),
@@ -654,6 +654,7 @@ export class ProjectWork {
     try {
       for (const { project } of await this.#o.projects.list()) {
         if (this.#closing) break;
+        await this.jevDecisions.flushUses(project.id);
         const ledger = this.ledgers.coordinator(project.id);
         if (this.#o.hub.putSessionCache && this.#cachePublished.get(project.id) !== ledger.lastId()) {
           const version = ledger.lastId();

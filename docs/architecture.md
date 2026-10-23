@@ -278,3 +278,6 @@ The area10c simulated gate passes typecheck/lint/build and239cases in20complete 
 
 
 Route input snapshots and replay: `landing-route-v1` and `merge-route-v1` keep an optional immutable `inputPacket`; their current `packet` may retain later checks. The Hub writer enforces snapshot identity. Decisions owns the shared route clamp and prompt parsers. The daemon replays stored snapshots into the strict managed Jev report store without invoking publication; reports disclose legacy skips, incomplete condition context and retained recorded guard refusals. Lesson reads are read-only; expanded delivery and accounting remain in progress.
+
+
+Lesson policy: the canonical optional `project-jev-policy-v1.lessons` snapshot feeds a strict lesson input section in p-v1/l-v1/m-v1. The state point awaits initial correction migration; subsequent normal correction writes create lessons atomically, while the old completed marker protects legacy edits. Members bind landing prompts/rules from the same policy. Strict lesson-use receipts count actual decisions once; route receipts count in their Hub transaction and managed placement pending receipts retry after outage/restart. Counts never come from policy reads or replay. Original route metadata stays immutable. Lesson-specific replay and the new control page remain in progress.

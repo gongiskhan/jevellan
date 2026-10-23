@@ -1,3 +1,4 @@
+import {projectJevLessons} from '@jevellan/decisions';
 import { parsePlacementPrompt } from '@jevellan/decisions';
 import type { TaskPlacementContext } from '@jevellan/core';
 import type { z } from 'zod';
@@ -48,7 +49,7 @@ export type PlacementOptions = {
   redactor: Pick<SecretRedactor, 'document'>;
   now?(): number; gates?: PlacementGates;
   facts?(): DeviceFacts;
-  recordDecision?(decision: Omit<JevPlacementDecision, 'id'>): string;
+  recordDecision?(decision: Omit<JevPlacementDecision, 'id'>): string | Promise<string>;
 };
 /** Packet reads are best effort: during a hub outage Jev still places the thread with what this device knows. */
 const bestEffort = <T>(read: Promise<T>, fallback: T): Promise<T> => read.catch((error: unknown) => { if (error instanceof HubUnavailable) return fallback; throw error; });
@@ -170,7 +171,9 @@ export class Placement {
     if ('refused' in candidates) return { kind: 'refused', message: candidates.refused, retryable: candidates.retryable ?? false };
     // All four fields fixed asks nothing, so the packet is not gathered.
     const fields = fixedPlacementFields(input.fixed);
-    const packet = ['isolation', 'model', 'effort', 'device'].every((field) => fields.includes(field as typeof fields[number])) ? { title: input.title, task: input.task, taskContext: input.taskContext, trouble: input.trouble, activeThreads: [], overrides: [] } : await this.#packet(input, decision.devices);
+    const basePacket = ['isolation', 'model', 'effort', 'device'].every((field) => fields.includes(field as typeof fields[number])) ? { title: input.title, task: input.task, taskContext: input.taskContext, trouble: input.trouble, activeThreads: [], overrides: [] } : await this.#packet(input, decision.devices);
+    const lessons = projectJevLessons(input.project.id, policy?.lessons).input;
+    const packet = {...basePacket, ...(lessons ? {lessons} : {})};
     const client = deadlineClient(this.#o.decisionClient);
     const placed = await decidePlacement(client, { ...decision, prompt, jevModel: decision.settings.decisions.model, packet, redactor: this.#o.redactor },
       input.signal ?? new AbortController().signal);
@@ -186,7 +189,7 @@ export class Placement {
       const environment = { ...decision, schema: 'placement-replay-environment-v1', runtimes: [...decision.runtimes].map(([id, runtime]) => [id, { mcp: runtime.mcp, readOnlyEnforced: runtime.readOnlyEnforced, edit: runtime.edit, shell: runtime.shell, turns: runtime.turns, displayName: runtime.displayName }]) };
       const inputs = PlacementDecisionInputsSchema.parse(this.#o.redactor.document({ schema: 'placement-decision-inputs-v1', state, environment, ruleContext: { ...redactedContext, schema: 'placement-rule-context-v1', complete: JSON.stringify(ruleContext) === JSON.stringify(redactedContext) }, policy: policy ?? { schema: 'project-jev-policy-v1', projectId: input.project.id, rules: [] }, ...(version ? { prompt: version } : {}) }));
       const final = clamped.kind === 'placed' ? clamped.record : null;
-      inputsRef = this.#o.recordDecision({ schema: 'jev-placement-decision-v1', projectId: input.project.id, deviceId: this.#o.deviceId, ...(input.threadId ? { threadId: input.threadId } : {}), at: raw.decidedAt, questionSet: 'p-v1', promptSource: version ? 'versioned' : 'code', promptVersion: version?.version ?? null, title: input.title.slice(0,1200), source: raw.source, rawChoice,
+      inputsRef = await this.#o.recordDecision({ schema: 'jev-placement-decision-v1', projectId: input.project.id, deviceId: this.#o.deviceId, ...(input.threadId ? { threadId: input.threadId } : {}), at: raw.decidedAt, questionSet: 'p-v1', promptSource: version ? 'versioned' : 'code', promptVersion: version?.version ?? null, title: input.title.slice(0,1200), source: raw.source, rawChoice,
         finalChoice: final ? PlacementRawChoiceSchema.parse({ ...rawChoice, isolation: final.isolation, runtime: final.runtime, modelId: final.modelId, model: final.model, effortRequested: final.effortRequested, effortEffective: final.effortEffective, deviceId: final.deviceId, accountId: final.accountId }) : null,
         refusal: clamped.kind === 'refused' ? clamped.message.slice(0,4000) : null, rulesApplied: clamped.rulesApplied, reason: clamped.reason.slice(0,4000), inputs, calls: raw.jevCalls });
     }

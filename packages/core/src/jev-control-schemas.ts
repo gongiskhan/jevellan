@@ -19,7 +19,7 @@ export const JevLessonSchema = z.strictObject({ schema: z.literal('jev-lesson-v1
 export type JevLesson = z.infer<typeof JevLessonSchema>;
 
 export const JEV_RULES_NAMESPACE = 'owner-jev-rules';
-export const ProjectJevPolicySchema = z.strictObject({ schema: z.literal('project-jev-policy-v1'), projectId: IdSchema, rules: z.array(JevRuleSchema).max(1000), prompts: z.array(JevPromptVersionSchema).max(100).optional() });
+export const ProjectJevPolicySchema = z.strictObject({ schema: z.literal('project-jev-policy-v1'), projectId: IdSchema, rules: z.array(JevRuleSchema).max(1000), prompts: z.array(JevPromptVersionSchema).max(100).optional(), lessons: z.array(JevLessonSchema).max(1000).optional() });
 export type ProjectJevPolicy = z.infer<typeof ProjectJevPolicySchema>;
 const promptText = z.string().trim().min(1).max(12000);
 export const PlacementPromptSchema = z.strictObject({ schema: z.literal('placement-prompt-v1'),
@@ -40,3 +40,9 @@ export type PlacementRuleContext = z.infer<typeof PlacementRuleContextSchema>;
 export const LandingPromptSchema=z.strictObject({schema:z.literal('landing-prompt-v1'),instructions:promptText,
   criteria:z.strictObject({land:promptText,'verify-then-land':promptText,'ask-owner':promptText})});
 export type LandingPromptText=z.infer<typeof LandingPromptSchema>;
+
+
+export const JevLessonInputSchema=z.strictObject({schema:z.literal('jev-lesson-input-v1'),heading:z.literal("Lessons from the owner's overrides"),items:z.array(z.strictObject({id:JevLessonSchema.shape.id,key:IdSchema,text:JevLessonSchema.shape.text})).max(30)});
+export type JevLessonInput=z.infer<typeof JevLessonInputSchema>;
+export const JevLessonUseSchema=z.strictObject({schema:z.literal('jev-lesson-use-v1'),id:IdSchema,projectId:IdSchema,deviceId:IdSchema,questionSet:z.enum(['p-v1','l-v1','m-v1']),at:TimestampSchema,lessonKeys:z.array(IdSchema).min(1).max(38)}).refine(row=>new Set(row.lessonKeys).size===row.lessonKeys.length,'A lesson is counted once per decision.');
+export type JevLessonUse=z.infer<typeof JevLessonUseSchema>;

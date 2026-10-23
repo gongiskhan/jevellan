@@ -16,7 +16,7 @@ export const JevReplayEntrySchema=z.strictObject({schema:z.literal('jev-replay-e
 export type JevReplayEntry=z.infer<typeof JevReplayEntrySchema>;
 const summary={schema:z.literal('jev-replay-summary-v1'),id:IdSchema,projectId:IdSchema,deviceId:IdSchema,at:TimestampSchema,questionSet:z.enum(['p-v1','m-v1','l-v1','lessons']),proposalId:z.string().regex(/^P[1-9][0-9]*$/u).optional(),lessonId:z.string().regex(/^L[1-9][0-9]*$/u).optional(),
   evidence:z.enum(['live','simulated']),engineVersion:z.string().min(1).max(100),requested:z.number().int().min(1).max(50),selected:z.number().int().min(0).max(50),compared:z.number().int().min(0).max(50),changed:z.number().int().min(0).max(50),unavailable:z.number().int().min(0).max(50),priceTableVersion:IdSchema.nullable(),
-  unavailableDevices:z.array(IdSchema).max(200),historyLimitedDevices:z.array(IdSchema).max(200).optional(),legacySkipped:z.number().int().nonnegative().optional(),text:z.string().max(12000)};
+  unavailableDevices:z.array(IdSchema).max(200),historyLimitedDevices:z.array(IdSchema).max(200).optional(),legacySkipped:z.number().int().nonnegative().optional(),unusableSkipped:z.number().int().nonnegative().optional(),text:z.string().max(12000)};
 export const JevReplaySummarySchema=z.strictObject(summary);
 export type JevReplaySummary=z.infer<typeof JevReplaySummarySchema>;
 export const JevReplayReportSchema=z.strictObject({...summary,schema:z.literal('jev-replay-report-v1'),priceTable:ModelPriceTableSchema.nullable().optional(),proposedPromptText:z.string().max(60000),rules:z.array(JevRuleSchema).max(1000),entries:z.array(JevReplayEntrySchema).max(50)});

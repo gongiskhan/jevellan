@@ -25,5 +25,12 @@ test('ROUTEPAR1 a stored owner route clamp is shown and a correction saves witho
   await page.screenshot({path:info.outputPath('route-correction-saved.png'),fullPage:true});
   const records=await f.app.projectWork.landings.records('project',created.threadId);expect(records.some(row=>row.schema==='landing-correction-v1'&&row.correction==='did-not-need-asking')).toBe(true);
   expect(f.thread(created.threadId)).toEqual(before);expect(git(f.origin,'rev-parse','main')).toBe(head);expect(f.fake.runs).toHaveLength(1);
+  const lesson=f.app.ownerJev.lessons('project').find(row=>row.source==='migrated')!;expect(lesson).toBeDefined();expect(lesson.timesApplied).toBe(0);
+  f.fake.enqueueTurn(commitStep({'README.md':'Owned later lesson work\n'},{status:'done',summary:'A later fictional change.'}),forThread());
+  const later=await f.app.projectWork.createThread('project',{schema:'thread-create-request-v1',clientRequestId:'route_browser_lesson',title:'Owned later lesson work',task:'Make the next fictional change.',isolation:'worktree',modelId:'fixture',effort:'medium',deviceId:f.app.device.deviceId});
+  await f.waitFor(()=>f.thread(later.threadId),row=>row.state==='in-review');await f.app.projectWork.idle();
+  const laterRoute=(await f.app.projectWork.landings.records('project',later.threadId)).find(row=>row.schema==='landing-route-v1');expect(laterRoute).toMatchObject({lessons:[lesson.id],inputPacket:{corrections:[lesson.text],lessons:{items:[{key:lesson.key,text:lesson.text}]}}});expect(f.app.ownerJev.lessons('project').find(row=>row.key===lesson.key)?.timesApplied).toBe(1);
+  await page.goto(f.base+'/projects/project/threads/'+later.threadId);await page.getByRole('button',{name:'Why this landing',exact:true}).click();const laterPanel=page.getByRole('dialog',{name:'Why this landing',exact:true});await laterPanel.getByText('Changed files and corrections',{exact:true}).click();await expect(laterPanel).toContainText(lesson.text);await page.screenshot({path:info.outputPath('later-decision-lesson-input.png'),fullPage:true});
+  expect(f.thread(created.threadId)).toEqual(before);expect(git(f.origin,'rev-parse','main')).toBe(head);expect(f.fake.runs).toHaveLength(2);
  }finally{await f.close();}
 });

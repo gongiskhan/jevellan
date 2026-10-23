@@ -1,5 +1,5 @@
 import {INTAKE_PAGE_BYTES,IntakeDocumentSchema,type IntakeDocument} from '@jevellan/core';
-import { JEV_RULES_NAMESPACE, JevRuleSchema, JevPromptVersionSchema, ProjectJevPolicySchema } from '@jevellan/core';
+import { JevLessonSchema,JevLessonUseSchema,type JevLessonUse, JEV_RULES_NAMESPACE, JevRuleSchema, JevPromptVersionSchema, ProjectJevPolicySchema } from '@jevellan/core';
 import { ProjectDeploySchema, ProjectDeployBaselineSchema, type ProjectDeploy, type ProjectDeployBaseline } from '@jevellan/core';
 import { ProjectSetupProposalSchema, SetupActionRequestSchema, projectSetupPlan, defaultProjectWorkSettings, type ProjectSetupProposal, type SetupActionRequest } from '@jevellan/core';
 import { HubState } from './state.js';
@@ -147,7 +147,7 @@ export class HubProjectStore {
     this.#put('project-session-cache', id, ProjectSessionCacheSchema, document, previous?.revision ?? 0);
   }
   /** `devices`: the roster's device views, for the presence in work summaries (without it every coordinator device reads as unknown). */
-  constructor(readonly hub: HubDatabase, readonly deviceId: string, readonly now: () => number = Date.now, readonly devices?: () => readonly DeviceView[]) { IdSchema.parse(deviceId); }
+  constructor(readonly hub: HubDatabase, readonly deviceId: string, readonly now: () => number = Date.now, readonly devices?: () => readonly DeviceView[],private readonly onJevCorrection?: (document:MergeDocument)=>void) { IdSchema.parse(deviceId); }
   #get<T extends { revision: number }>(namespace: string, id: string, schema: DocumentSchema<T>): Stored<T> | null {
     const row = this.hub.get(namespace, IdSchema.parse(id), schema); return row ? checkHubRevision(row) : null;
   }
@@ -259,7 +259,20 @@ export class HubProjectStore {
     return this.#put('project-refill-state', refill.projectId, ProjectRefillStateSchema, refill, expectedRevision);
   }
   settings(projectId: string): Stored<ProjectWorkSettings> | null { return this.#get(SETTINGS, projectId, StoredProjectWorkSettingsSchema); }
-  jevPolicy(projectId: string) { this.#project(projectId); return ProjectJevPolicySchema.parse({ schema: 'project-jev-policy-v1', projectId, rules: this.hub.list(JEV_RULES_NAMESPACE, JevRuleSchema).map(row => row.document).filter(rule => rule.scope === 'global' || rule.projectId === projectId), prompts: this.hub.list('owner-jev-prompts', JevPromptVersionSchema).map(row => row.document).filter(row => row.active) }); }
+  jevPolicy(projectId: string) { this.#project(projectId); return ProjectJevPolicySchema.parse({ schema: 'project-jev-policy-v1', projectId, rules: this.hub.list(JEV_RULES_NAMESPACE, JevRuleSchema).map(row => row.document).filter(rule => rule.scope === 'global' || rule.projectId === projectId), prompts: this.hub.list('owner-jev-prompts', JevPromptVersionSchema).map(row => row.document).filter(row => row.active),lessons:this.hub.list('owner-jev-lessons',JevLessonSchema).map(row=>row.document).filter(row=>row.scope==='global'||row.projectId===projectId) }); }
+  recordJevLessonUse(raw:JevLessonUse):JevLessonUse {
+    const use=JevLessonUseSchema.parse(raw);
+    return this.hub.transaction(()=>{
+      this.#project(use.projectId);if(use.deviceId!==this.deviceId)refuse('This Jev use belongs to another decision device.',403);
+      const prior=this.hub.get('owner-jev-lesson-uses',use.id,JevLessonUseSchema);
+      if(prior){if(stableJson(prior.document)!==stableJson(use))refuse('A Jev decision already counted different lesson inputs.');return prior.document;}
+      for(const key of use.lessonKeys){const lesson=this.hub.get('owner-jev-lessons',key,JevLessonSchema);if(!lesson)continue;
+        if(lesson.document.scope!=='global'&&lesson.document.projectId!==use.projectId)refuse('This lesson belongs to another project.',403);
+        this.hub.put('owner-jev-lessons',key,JevLessonSchema,{...lesson.document,timesApplied:lesson.document.timesApplied+1},lesson.revision);
+      }
+      return this.hub.put('owner-jev-lesson-uses',use.id,JevLessonUseSchema,use,0).document;
+    });
+  }
   tasks(projectId: string, after?: string): Page<ProjectWorkTask> { return this.#page('project-work-tasks', ProjectWorkTaskSchema, projectId, after, () => true); }
   task(taskId: string): Stored<ProjectWorkTask> | null { return this.#get('project-work-tasks', taskId, ProjectWorkTaskSchema); }
   taskHistory(taskId: string) { return this.hub.listByField('project-work-task-history', 'taskId', IdSchema.parse(taskId), TaskHistoryEventSchema).map(row => row.document).sort((a, b) => a.sequence - b.sequence); }
@@ -489,14 +502,19 @@ export class HubProjectStore {
       if (!['merge-correction-v1', 'landing-correction-v1'].includes(document.schema) && thread.ownerDeviceId !== this.deviceId) refuse('Only the thread owner can advance its merge gate.', 403);
       const old = this.mergeDocument(document.id);
       if (old && (old.document.schema !== document.schema || old.document.projectId !== document.projectId || old.document.threadId !== document.threadId || old.document.commit !== document.commit || old.document.deviceId !== document.deviceId)) refuse('A merge receipt cannot change identity.');
-      if (old && 'inputPacket' in old.document && old.document.inputPacket && (!('inputPacket' in document) || stableJson(document.inputPacket) !== stableJson(old.document.inputPacket))) refuse('The original Jev input packet is immutable.');
+      if(old){const before=old.document as unknown as Record<string,unknown>,after=document as unknown as Record<string,unknown>;
+        for(const field of ['inputPacket','ruleContext','inputsRef','promptText','promptVersion','rawChoice','lessonKeys','lessons'])if((before.inputPacket!==undefined||before[field]!==undefined)&&((before[field]===undefined)!==(after[field]===undefined)||before[field]!==undefined&&stableJson(before[field])!==stableJson(after[field])))refuse(`The original Jev ${field} is immutable.`);
+      }
       if (old && (document.schema === 'merge-correction-v1' || document.schema === 'landing-correction-v1')) {
         if (stableJson({ ...old.document, revision: 0, at: '', receivedOrder: 0 }) !== stableJson({ ...document, revision: 0, at: '', receivedOrder: 0 })) refuse('This correction ID already stores a different correction.');
         return old;
       }
       const receivedOrder = (document.schema === 'merge-correction-v1' || document.schema === 'landing-correction-v1') ? this.hub.listByField('project-merge-documents', 'projectId', document.projectId, MergeDocumentSchema)
         .reduce((last, row) => (row.document.schema === 'merge-correction-v1' || row.document.schema === 'landing-correction-v1') ? Math.max(last, row.document.receivedOrder ?? 0) : last, 0) + 1 : undefined;
-      return this.#put('project-merge-documents', document.id, MergeDocumentSchema, receivedOrder === undefined ? document : { ...document, receivedOrder }, expectedRevision);
+      const stored=this.#put('project-merge-documents', document.id, MergeDocumentSchema, receivedOrder === undefined ? document : { ...document, receivedOrder }, expectedRevision);
+      if(document.schema==='landing-correction-v1'||document.schema==='merge-correction-v1')this.onJevCorrection?.(stored.document);
+      if((document.schema==='landing-route-v1'||document.schema==='merge-route-v1')&&document.lessonKeys?.length&&document.source!=='unavailable'&&(document.source==='jev'||document.rawChoice&&document.calls.length))this.recordJevLessonUse({schema:'jev-lesson-use-v1',id:document.id,projectId:document.projectId,deviceId:document.deviceId,questionSet:document.questionSet,at:document.at,lessonKeys:document.lessonKeys});
+      return stored;
     });
   }
   /** Open questions plus those answered in the last 14 days by the hub clock; withdrawn ones leave the list. */
@@ -829,6 +847,7 @@ export class HubProjectStore {
       case 'task-get': result = { ...base, record: this.task(request.taskId) }; break;
       case 'task-put': result = { ...base, record: this.putTask(request.task, request.expectedRevision) }; break;
       case 'task-history': result = { ...base, records: this.taskHistory(request.taskId) }; break;
+      case 'jev-lesson-use': result={...base,use:this.recordJevLessonUse(request.use)};break;
       case 'jev-policy-get': result = { ...base, policy: this.jevPolicy(request.projectId) }; break;
       case 'settings-get': result = { ...base, record: this.settings(request.projectId) }; break;
       case 'settings-put': result = { ...base, record: this.putSettings(request.settings, request.expectedRevision, request.clientRequestId) }; break;
@@ -908,9 +927,10 @@ export class HubProjectAccess implements ProjectHub {
   async window(windowId: string) { return this.#store.window(windowId); }
   async putWindow(window: ProjectWindow, expectedRevision: number) { return this.#store.putWindow(window, expectedRevision); }
   readonly #store: HubProjectStore;
-  constructor(hub: HubDatabase, deviceId: string, now?: () => number, devices?: () => readonly DeviceView[]) { this.#store = new HubProjectStore(hub, deviceId, now, devices); }
+  constructor(hub: HubDatabase, deviceId: string, now?: () => number, devices?: () => readonly DeviceView[], private readonly prepareJev?: (projectId:string)=>Promise<void>,onJevCorrection?: (document:MergeDocument)=>void) { this.#store = new HubProjectStore(hub, deviceId, now, devices,onJevCorrection); }
   async settings(projectId: string) { return this.#store.settings(projectId); }
-  async jevPolicy(projectId: string) { return this.#store.jevPolicy(projectId); }
+  async jevPolicy(projectId: string) { this.#store.jevPolicy(projectId);await this.prepareJev?.(projectId);return this.#store.jevPolicy(projectId); }
+  async recordJevLessonUse(use:JevLessonUse){return this.#store.recordJevLessonUse(use);}
   async goals(projectId: string, after?: string) { return this.#store.goals(projectId, after); }
   async goal(goalId: string) { return this.#store.goal(goalId); }
   async putGoal(goal: ProjectGoal, expectedRevision: number) { return this.#store.putGoal(goal, expectedRevision); }
@@ -1000,6 +1020,7 @@ export class MemberProjectStore implements ProjectHub {
 
   async settings(projectId: string) { return this.#check((await this.#call('settings-get', { projectId })).record, (row) => !row || row.document.projectId === projectId); }
   async jevPolicy(projectId: string) { return this.#check((await this.#call('jev-policy-get', { projectId })).policy, row => row.projectId === projectId); }
+  async recordJevLessonUse(use:JevLessonUse){return this.#check((await this.#call('jev-lesson-use',{use})).use,row=>row.id===use.id&&row.projectId===use.projectId&&row.deviceId===use.deviceId);}
   async deploys(projectId: string, after?: string) { return this.#page(await this.#call('deploys-list', { projectId, ...(after ? { after } : {}) }), projectId, after); }
   async deploy(id: string) { return this.#check((await this.#call('deploy-get', { id })).record, row => !row || row.document.id === id); }
   async putDeploy(document: ProjectDeploy, expectedRevision: number) { return this.#check((await this.#call('deploy-put', { document, expectedRevision })).record, row => row.document.id === document.id && row.document.projectId === document.projectId && row.revision === expectedRevision + 1); }
