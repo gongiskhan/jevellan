@@ -6,6 +6,7 @@ import { migrateSharedIndexes } from './indexes.js';
 export class HubDatabase {
   #transactionDepth = 0;
   #savepoint = 0;
+  readonly #readStatements = new Map<string, ReturnType<DatabaseSync['prepare']>>();
   readonly db: DatabaseSync;
   readonly configuration: ConfigurationStore;
   readonly vault: SecretVault;
@@ -30,12 +31,18 @@ export class HubDatabase {
       migrateSharedIndexes(this);
     } catch (error) { this.db.close(); throw error; }
   }
+  #readStatement(sql: string): ReturnType<DatabaseSync['prepare']> {
+    const existing = this.#readStatements.get(sql); if (existing) return existing;
+    const statement = this.db.prepare(sql);
+    if (this.#readStatements.size >= 64) { const first = this.#readStatements.keys().next().value; if (first !== undefined) this.#readStatements.delete(first); }
+    this.#readStatements.set(sql, statement); return statement;
+  }
   get<T>(namespace: string, id: string, schema: DocumentSchema<T>): { revision: number; document: T } | null {
-    const row = this.db.prepare('SELECT revision,document FROM documents WHERE namespace=? AND id=?').get(IdSchema.parse(namespace), IdSchema.parse(id));
+    const row = this.#readStatement('SELECT revision,document FROM documents WHERE namespace=? AND id=?').get(IdSchema.parse(namespace), IdSchema.parse(id));
     return row ? { revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) } : null;
   }
   list<T>(namespace: string, schema: DocumentSchema<T>): Array<{ revision: number; document: T }> {
-    return this.db.prepare('SELECT revision,document FROM documents WHERE namespace=? ORDER BY id').all(IdSchema.parse(namespace)).map((row) => ({ revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) }));
+    return this.#readStatement('SELECT revision,document FROM documents WHERE namespace=? ORDER BY id').all(IdSchema.parse(namespace)).map((row) => ({ revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) }));
   }
   /** Matching documents, normally ordered by id; append-only readers may request newest insertion first without a cursor. */
   listByField<T>(namespace: string, field: string, value: string, schema: DocumentSchema<T>, options: { limit?: number; after?: string; order?: 'insertion-desc' } = {}): Array<{ revision: number; document: T }> {
@@ -44,7 +51,7 @@ export class HubDatabase {
     if (options.order && options.after !== undefined) throw new Error('Insertion order cannot use an id cursor.');
     const after = options.after === undefined ? null : IdSchema.parse(options.after);
     const order = options.order === 'insertion-desc' ? 'rowid DESC' : 'id';
-    return this.db.prepare(`SELECT revision,document FROM documents WHERE namespace=? AND json_extract(document, '$.${field}')=? AND (? IS NULL OR id>?) ORDER BY ${order} LIMIT ?`)
+    return this.#readStatement(`SELECT revision,document FROM documents WHERE namespace=? AND json_extract(document, '$.${field}')=? AND (? IS NULL OR id>?) ORDER BY ${order} LIMIT ?`)
       .all(IdSchema.parse(namespace), value, after, after, options.limit ?? -1)
       .map((row) => ({ revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) }));
   }
@@ -76,5 +83,5 @@ export class HubDatabase {
       throw error;
     } finally { this.#transactionDepth--; }
   }
-  close(): void { this.db.close(); }
+  close(): void { this.#readStatements.clear(); this.db.close(); }
 }

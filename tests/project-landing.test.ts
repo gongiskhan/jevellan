@@ -1,4 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest';
+import { channel } from 'node:diagnostics_channel';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createServer, type AddressInfo } from 'node:net';
@@ -79,6 +80,28 @@ test('a landing check that cannot bind its port waits without a repair turn, nam
   await new Promise<void>(resolve => holder.close(() => resolve()));
   await f.app.projectWork.pulse(); thread = await f.waitFor(() => f.thread(result.threadId), t => t.state === 'done');
   expect(thread.landing).toMatchObject({ checks: [{ name: 'API tests', passed: true }] }); expect(thread.turns).toBe(1);
+}, 120_000);
+test('a blocked landing rechecks its port without launching process discovery helpers', async () => {
+  const holder = createServer(); await new Promise<void>(resolve => holder.listen(0, '127.0.0.1', resolve)); const port = (holder.address() as AddressInfo).port;
+  try {
+    const listen = `node -e "require('net').createServer().listen(${port}, '127.0.0.1', () => process.exit(0))"`;
+    const f = await setup({ landingChecks: [{ name: 'API tests', paths: [], command: listen }] });
+    f.fake.enqueueTurn(commitStep({ 'README.md': 'A checked change\n' }, { status: 'done', summary: 'Done.' }), forThread());
+    const started = await start(f), thread = await done(f, started.threadId);
+    const wait = f.local(thread.id).landingWait!; expect(wait.blocker.port).toBe(port);
+    let launches = 0;
+    const spawned = () => { launches++; }, children = channel('child_process'); children.subscribe(spawned);
+    try { for (let n = 0; n < 3; n++) await f.app.projectWork.landings.sweep(); }
+    finally { children.unsubscribe(spawned); }
+    expect((await f.app.projectHub.decision(wait.decisionId))?.document).toMatchObject({ id: wait.decisionId, blocker: { port } });
+    expect((await f.app.projectHub.decision(wait.decisionId))?.document.answer).toBeUndefined();
+    expect(f.thread(thread.id)).toMatchObject({ state: 'in-review', turns: 1 });
+    await new Promise<void>(resolve => holder.close(() => resolve()));
+    await f.app.projectWork.landings.sweep(); await f.waitFor(() => f.thread(thread.id), row => row.state === 'done');
+    expect(f.thread(thread.id).turns).toBe(1);
+    expect((await f.app.projectHub.decision(wait.decisionId))?.document.withdrawal?.reason).toContain('now free');
+    expect(launches, 'Waiting only needs a fresh TCP result, not a subprocess or a process identity.').toBe(0);
+  } finally { if (holder.listening) await new Promise<void>(resolve => holder.close(() => resolve())); }
 }, 120_000);
 test('autoLand off asks with the checked route, and owner Land now resumes without another author turn', async () => {
   const f = await setup({ autoLand: false }); f.fake.enqueueTurn(commitStep({ 'README.md': 'Ask\n' }, { status: 'done', summary: 'A checked change.' }), forThread());

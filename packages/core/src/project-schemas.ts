@@ -35,6 +35,16 @@ const text = z.string().min(1);
 const count = z.number().int().nonnegative();
 const positive = z.number().int().positive();
 const revision = count;
+// Successful validation is stable within one Intl implementation; keep only a bounded catalogue of supported names.
+const supportedTimeZones = new Set<string>();
+let timeZoneImplementation = Intl.DateTimeFormat;
+function supportedTimeZone(value: string): boolean {
+  if (timeZoneImplementation !== Intl.DateTimeFormat) { supportedTimeZones.clear(); timeZoneImplementation = Intl.DateTimeFormat; }
+  if (supportedTimeZones.has(value)) return true;
+  try { new Intl.DateTimeFormat('en', { timeZone: value }); } catch { return false; }
+  if (supportedTimeZones.size >= 256) { const first = supportedTimeZones.values().next().value; if (first !== undefined) supportedTimeZones.delete(first); }
+  supportedTimeZones.add(value); return true;
+}
 
 export const IsolationSchema = z.enum(['worktree', 'main']);
 export type Isolation = z.infer<typeof IsolationSchema>;
@@ -59,7 +69,7 @@ export const ProjectWorkSettingsSchemaV1 = z.strictObject({
 export const ProjectWorkSettingsSchemaV2 = ProjectWorkSettingsSchemaV1.extend({
   schema: z.literal('project-work-settings-v2'), allowMainIsolation: z.boolean().default(true),
   threadRules: z.string().max(4000).default(''), coordinatorReview: z.boolean().default(true),
-  nightlyWindow: z.strictObject({ enabled: z.boolean(), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u), timezone: text.max(64).refine(value => { try { new Intl.DateTimeFormat('en', { timeZone: value }); return true; } catch { return false; } }, 'Use a supported time zone.') })
+  nightlyWindow: z.strictObject({ enabled: z.boolean(), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u), timezone: text.max(64).refine(supportedTimeZone, 'Use a supported time zone.') })
     .default({ enabled: false, time: '02:00', timezone: 'Europe/Lisbon' }),
   refill: z.strictObject({ enabled: z.boolean(), minIntervalMinutes: z.number().int().min(10).max(1440) }).default({ enabled: true, minIntervalMinutes: 30 }),
 });

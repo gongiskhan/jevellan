@@ -32,16 +32,15 @@ export function heldPort(output: string): number | null {
   const match = /EADDRINUSE[^\n]*?:(\d{2,5})\b/u.exec(output) ?? /\bport\s+(\d{2,5})\b[^\n]{0,80}?\b(?:already in use|in use|is held|held by|busy|occupied)/iu.exec(output);
   const port = match ? Number(match[1]) : NaN; return port > 0 && port < 65536 ? port : null;
 }
-/**
- * Who listens on a TCP port of this device: null when nothing accepts a connection there; else the process lsof or ss names, when either
- * is installed and can see it.
- */
-export async function portHolder(port: number): Promise<{ pid?: number; command?: string } | null> {
-  const open = await new Promise<boolean>(resolve => {
+async function portAcceptsConnections(port: number): Promise<boolean> {
+  return new Promise<boolean>(resolve => {
     const socket = connect({ port, host: '127.0.0.1', timeout: 2000 });
     socket.once('connect', () => { socket.destroy(); resolve(true); }); socket.once('timeout', () => { socket.destroy(); resolve(false); }); socket.once('error', () => resolve(false));
   });
-  if (!open) return null;
+}
+/** Who listens on a TCP port, when the device's process discovery tools can name it. */
+export async function portHolder(port: number): Promise<{ pid?: number; command?: string } | null> {
+  if (!await portAcceptsConnections(port)) return null;
   const run = (file: string, args: string[]) => promisify(execFile)(file, args, { timeout: 3000, encoding: 'utf8' }).then(result => result.stdout, () => '');
   const lsof = await run('lsof', ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-Fpc']);
   const pid = /^p(\d+)$/mu.exec(lsof)?.[1], command = /^c(.+)$/mu.exec(lsof)?.[1];
@@ -153,7 +152,7 @@ export class ThreadLandingService {
         throw new Error('This landing blocker changed. Reload it.');
       }
       if (validateOnly || answer.optionLabel === 'Keep waiting') return true;
-      if (!wait.blocker.managed && await portHolder(wait.blocker.port)) return true;
+      if (!wait.blocker.managed && await portAcceptsConnections(wait.blocker.port)) return true;
       await this.#clearWait(this.o.store.get(decision.threadId)!, wait.blocker.managed ? 'Fresh managed localhost ports will be allocated for the retry.' : `The blocking port ${wait.blocker.port} is now free; landing checks resume.`);
       await this.o.retry(decision.projectId, decision.threadId);
       return true;
@@ -381,7 +380,7 @@ export class ThreadLandingService {
       const wait = this.o.store.local(thread.id).landingWait;
       if (wait && !thread.landing && thread.state === 'in-review') {
         await this.#ensureWaitQuestion(thread, wait);
-        if (!wait.blocker.managed && await portHolder(wait.blocker.port)) continue;
+        if (!wait.blocker.managed && await portAcceptsConnections(wait.blocker.port)) continue;
         await this.#clearWait(thread, wait.blocker.managed ? 'Fresh managed localhost ports will be allocated for the retry.' : `The blocking port ${wait.blocker.port} is now free; landing checks resume.`);
         await this.o.retry(thread.projectId, thread.id).catch(() => undefined); continue;
       }

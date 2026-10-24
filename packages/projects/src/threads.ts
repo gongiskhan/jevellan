@@ -547,10 +547,20 @@ export class ThreadService {
   }
   /** Refresh only computed facts that changed. Pure PR facts also update on every state write in the store. */
   async refreshIndexes(): Promise<void> {
-    for (const thread of this.#o.store.all()) {
+    const threads = this.#o.store.all(), committed = new Map<string, boolean>();
+    const candidates = threads.filter(thread => thread.isolation === 'worktree' && thread.state === 'idle' && thread.pr?.state !== 'open');
+    if (this.#o.runner.worktrees.indexCommits) {
+      for (const projectId of new Set(candidates.map(thread => thread.projectId))) {
+        if (this.#closed) return;
+        const facts = await this.#o.runner.worktrees.indexCommits(candidates.filter(thread => thread.projectId === projectId)).catch(() => undefined);
+        for (const [id, value] of facts ?? []) committed.set(id, value);
+      }
+    }
+    for (const thread of threads) {
       if (this.#closed) return;
       const open = thread.pr?.state === 'open';
-      const publish = thread.isolation === 'worktree' && thread.state === 'idle' && !open && !!await this.#o.runner.worktrees.hasCommits?.(thread).catch(() => false);
+      const publish = thread.isolation === 'worktree' && thread.state === 'idle' && !open
+        && (committed.get(thread.id) ?? !!await this.#o.runner.worktrees.hasCommits?.(thread).catch(() => false));
       const before = this.#o.store.local(thread.id).fixable;
       this.#o.store.setIndexFields(thread.id, { fixable: { checks: !!open && thread.pr?.checks === 'failing', conflicts: !!open && thread.pr?.mergeable === 'conflict', comments: this.#o.store.local(thread.id).prComments?.items.length ?? before?.comments ?? 0, publish } });
     }

@@ -134,7 +134,7 @@ export type ThreadRunnerContext = {
   project(projectId: string): Promise<Project>;
   /** Work settings (the hub copy, or the last good one during an outage). */
   workSettings(projectId: string): Promise<ProjectWorkSettings>;
-  worktrees: Pick<ThreadWorktree, 'create' | 'setup' | 'exists' | 'remove' | 'repository'> & Partial<Pick<ThreadWorktree, 'hasCommits' | 'copyFiles' | 'syncPullHead'>>;
+  worktrees: Pick<ThreadWorktree, 'create' | 'setup' | 'exists' | 'remove' | 'repository'> & Partial<Pick<ThreadWorktree, 'hasCommits' | 'indexCommits' | 'copyFiles' | 'syncPullHead'>>;
   /** Main isolation (brief 8.2 step 4 main, D29): the claimed project checkout. */
   /** Ends a turn process recorded earlier whose end was not confirmed; rejects while it still cannot be (recovery's rule). */
   endProcess(process: TurnProcess): Promise<void>;

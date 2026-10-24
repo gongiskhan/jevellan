@@ -70,8 +70,12 @@ export function measureSession(run: StretchRun, o: {
 
 export function sessionCacheSummaries(records: SessionTurnCache[], timezone?: string): SessionCacheSummary[] {
   const rows = new Map<string, SessionCacheSummary>();
+  const formatters = new Map<string, Intl.DateTimeFormat>();
   for (const record of records) {
-    const day = new Intl.DateTimeFormat('en-CA', { timeZone: timezone ?? record.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(record.at));
+    const timeZone = timezone ?? record.timezone;
+    let formatter = formatters.get(timeZone);
+    if (!formatter) { formatter = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }); formatters.set(timeZone, formatter); }
+    const day = formatter.format(new Date(record.at));
     const key = storedCacheKey(record.owner, record.runtime, record.accountId, record.sessionId);
     const id = `${day}:${key}`;
     const row = rows.get(id) ?? SessionCacheSummarySchema.parse({ schema: 'session-cache-summary-v1', key, owner: record.owner, runtime: record.runtime,

@@ -177,6 +177,22 @@ export class ThreadWorktree {
     if (!thread.cwd || !thread.baseCommit || !existsSync(thread.cwd)) return false;
     return Number((await this.#git.run(thread.cwd, ['rev-list', '--count', `${thread.baseCommit}..HEAD`])).stdout.trim()) > 0;
   }
+  /** Fresh index facts for one project's worktrees; the publish action still checks its current HEAD with `hasCommits`. */
+  async indexCommits(threads: readonly Thread[]): Promise<Map<string, boolean>> {
+    const first = threads.find(thread => thread.cwd && thread.baseCommit && existsSync(thread.cwd));
+    let entries: WorktreeEntry[] = [];
+    if (first) {
+      try { entries = parseWorktrees((await this.#git.run(first.cwd, ['worktree', 'list', '--porcelain', '-z'])).stdout); }
+      catch { /* The caller retains each thread's normal query when no snapshot fact is available. */ }
+    }
+    const heads = new Map(entries.filter(entry => entry.head).map(entry => [resolvedPath(entry.path), entry.head]));
+    const result = new Map<string, boolean>();
+    for (const thread of threads) {
+      // Equal immutable commit ids have an empty range, including after a reset. No fact survives this poll.
+      if (thread.cwd && thread.baseCommit && heads.get(resolvedPath(thread.cwd)) === thread.baseCommit) result.set(thread.id, false);
+    }
+    return result;
+  }
   async exists(project: Project, thread: Thread): Promise<boolean> {
     const path = this.#paths.worktree(thread.projectId, thread.id); const entry = await this.#entry(this.repository(project), path);
     return !!entry && !entry.prunable && existsSync(path) && entry.branch === `refs/heads/${thread.branch ?? threadBranch(thread.title, thread.id)}`;

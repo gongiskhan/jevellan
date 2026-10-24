@@ -507,3 +507,6 @@ Closing regression: Decision906 makes completed-job cleanup durable; backend and
 
 
 Decision329 correction checks: actual-CLI regression now passes after the complete rebuild; rebuilding core alone retained the old CLI bundle and that intermediate failed attempt is preserved. Complete typecheck,lint and build pass. The approved31-case/two-chat stream evidence remains unchanged; fresh archive checks are still required.
+
+
+Decision334 continuation: source polling/metadata repairs pass their five failing-first resource regressions,221complete affected assertions,typecheck/lint/build and two desktop-light chats. Preserve the explicit startup flake and16not-run opt-ins in the preceding e36full run. Next: complete current-source backend,then strict cold-backed live verification; publication remains gated by actual idle CPU/history. Broader queued work stays planned. No new review or production action.
