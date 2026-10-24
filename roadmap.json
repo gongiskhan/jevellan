@@ -1214,8 +1214,8 @@
   {
     "id": "hub-worker-churn-followup",
     "title": "Reduce profiled shell-session reader churn",
-    "why": "Twenty partial live worker CPU profiles identify repeated schema initialization and unchanged native-journal parsing. Failing-first experiment and126cases/12complete files/two desktop chats are preserved privately, not landed or tested live. Excluded from077; follow up after prioritized instruction compatibility. Native homes remain read-only and no transcript values enter evidence.",
-    "status": "planned"
+    "why": "Decision785: partial real worker profiles motivate bounded persistent local reader and fresh-stat derived metadata,64pending/512metadata/30sidle and awaited shutdown. Four current-source failing-first/single-repeat regressions;128 assertions/12 complete affected files, build/typecheck/lint, two first desktop chat journeys/six matching images pass. Synthetic24refresh16journal comparison24workers->1/CPU6725.69ms->520.421ms. Source-only unreleased; no live improvement or additional release claim.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "manager-repeat-fresh-state",

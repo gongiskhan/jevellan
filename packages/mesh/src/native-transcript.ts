@@ -73,8 +73,8 @@ export function parseNativeTranscript(raw: string, runtime: NativeRuntime, offse
   return turns.map(turn => CursorTurnSchema.parse(turn));
 }
 
-/** Garrison's bounded journal event baseline, including quiet unfinished turns. */
-export function nativeActivity(raw: string, runtime: NativeRuntime, modified: number, now = Date.now()): 'working' | 'idle' | 'unknown' {
+/** Bounded activity evidence; the clock is applied afresh even when journal bytes are unchanged. */
+export function nativeActivityFacts(raw: string, runtime: NativeRuntime, modified: number) {
   let state: 'working' | 'idle' | 'text' | undefined;
   let at = modified;
   for (const { value: row } of nativeRecords(raw)) {
@@ -96,7 +96,15 @@ export function nativeActivity(raw: string, runtime: NativeRuntime, modified: nu
     }
     if (next) { state = next; const time = typeof row.timestamp === 'string' ? Date.parse(row.timestamp) : NaN; if (Number.isFinite(time)) at = time; }
   }
-  if (state === 'text') state = now - at > 5000 ? 'idle' : 'working';
+  return { state, at };
+}
+export function nativeActivityFromFacts(facts: ReturnType<typeof nativeActivityFacts>, modified: number, now = Date.now()): 'working' | 'idle' | 'unknown' {
+  let { state } = facts;
+  if (state === 'text') state = now - facts.at > 5000 ? 'idle' : 'working';
   if (state === 'working' && now - modified > 6 * 60 * 60_000) return 'unknown';
   return state ?? (now - modified <= 20_000 ? 'working' : 'unknown');
+}
+/** Garrison's bounded journal event baseline, including quiet unfinished turns. */
+export function nativeActivity(raw: string, runtime: NativeRuntime, modified: number, now = Date.now()): 'working' | 'idle' | 'unknown' {
+  return nativeActivityFromFacts(nativeActivityFacts(raw, runtime, modified), modified, now);
 }

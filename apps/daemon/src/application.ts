@@ -619,6 +619,7 @@ export class Application {
     try { await this.settingsSync.close(); await this.#riggingQueue.catch(() => undefined); } catch (error) { failures.push(error); }
     try { this.#ownerPushes?.close(); this.#ownerBridges?.close(); this.#ownerSchedules?.close(); this.#ownerTools?.takeover.close(); } catch (error) { failures.push(error); }
     try { await this.notifications?.close(); } catch (error) { failures.push(error); }
+    try { await this.cursor.close(); } catch (error) { failures.push(error); }
     try { await this.ekoa?.close(); } catch (error) { failures.push(error); }
     try { await this.presence.close(); } catch (error) { failures.push(error); }
     try { await this.projectImprover.close(); } catch (error) { failures.push(error); }

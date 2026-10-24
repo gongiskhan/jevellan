@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, utimesSync, rmSync, statSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, basename } from 'node:path';
@@ -11,7 +11,7 @@ import { nativeFormat, writeFakeNativeSession } from '../packages/runtime-contra
 // Adapted from the read-only reference's shells-listers and talk-transcript-formats
 // cases. Synthetic homes only; execution deferred at the user's request.
 const roots: string[] = [];
-afterEach(() => roots.splice(0).forEach(root => rmSync(root, { recursive: true, force: true })));
+afterEach(() => { vi.restoreAllMocks(); roots.splice(0).forEach(root => rmSync(root, { recursive: true, force: true })); });
 const jsonl = (...rows: unknown[]) => rows.map(row => JSON.stringify(row)).join('\n') + '\n';
 const claude = (type: string, content: unknown, extra: Record<string, unknown> = {}) => ({ type, sessionId: 'parent-fixture', cwd: '/project', message: { content }, ...extra });
 const codex = (type: string, payload: Record<string, unknown>) => ({ type, payload });
@@ -67,6 +67,29 @@ test('Codex titles prefer saved native names, then the session index', () => {
   const db = new DatabaseSync(join(options.userHome, '.codex/state_1.sqlite'));
   db.exec('CREATE TABLE threads(id TEXT, title TEXT, name TEXT)'); db.prepare('INSERT INTO threads VALUES (?, ?, ?)').run('codex-parent', 'Generated title', 'Renamed work'); db.close();
   expect(nativeList(options).sessions[0]).toMatchObject({ id: nativeSessionId('codex', 'codex-parent'), title: 'Renamed work' });
+});
+test('unchanged native discovery reuses parsed metadata while file and clock changes stay fresh', () => {
+  const { options, file } = fixture();
+  const now = Date.now();
+  const path = file('.claude/projects/project/cached.jsonl', jsonl(claude('user', 'Cached request'),
+    claude('assistant', [{ type: 'text', text: 'Result' }], { timestamp: new Date(now).toISOString() })), 100);
+  expect(nativeList(options).sessions[0]).toMatchObject({ title: 'Cached request', state: 'working' });
+  const parse = JSON.parse; let journalParses = 0;
+  const parsing = vi.spyOn(JSON, 'parse').mockImplementation((...args: Parameters<typeof JSON.parse>) => {
+    if (args[0].includes('"sessionId":"parent-fixture"')) journalParses++;
+    return parse(...args);
+  });
+  try { nativeList(options); nativeList(options); }
+  finally { parsing.mockRestore(); }
+  expect(journalParses, 'Unchanged native journal bytes must not be parsed again on each shell-list poll.').toBe(0);
+  vi.spyOn(Date, 'now').mockReturnValue(now + 6000);
+  expect(nativeList(options).sessions[0]!.state).toBe('idle');
+  const before = statSync(path);
+  writeFileSync(path, jsonl(claude('user', 'Edited request'), { type: 'ai-title', aiTitle: 'Changed title' }));
+  utimesSync(path, before.atime, before.mtime);
+  expect(nativeList(options).sessions[0]).toMatchObject({ title: 'Changed title', state: 'working' });
+  rmSync(path);
+  expect(nativeList(options).sessions).toEqual([]);
 });
 test('quiet native turns keep working until completion, and stale unfinished turns become unknown', () => {
   const now = Date.now(); const quiet = now - 45_000;

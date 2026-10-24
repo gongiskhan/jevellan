@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import type { Worker } from 'node:worker_threads';
 import { parseCursorTranscript, cursorSessionId } from '../packages/mesh/dist/cursor-transcript.js';
 import { cursorList, cursorTranscript } from '../packages/mesh/dist/cursor-reader.js';
 import { queueCursorMessage, saveCursorHookState } from '../packages/mesh/dist/cursor-control.js';
@@ -239,6 +240,65 @@ test('unavailable exports do not restore a cached session once it is identified 
   rmSync(path);
   vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 3000);
   expect((await service.list()).sessions).toEqual([]);
+});
+
+test('shell refreshes reuse one bounded reader while observing changed files and independent requests', async () => {
+  const { Homes } = await import('../packages/core/dist/index.js');
+  const { CursorSessions } = await import('../packages/mesh/dist/cursor-service.js');
+  const { options, file } = fixture();
+  const path = file('reader-fixture', jsonl(message('user', 'Initial request')));
+  const service = new CursorSessions(new Homes(options.home, options.userHome), options.deviceId, options.deviceName);
+  const workers: Worker[] = [], started = (worker: Worker) => { workers.push(worker); };
+  process.on('worker', started);
+  try {
+    expect((await service.list()).sessions[0]!.title).toBe('Initial request');
+    writeFileSync(path, jsonl(message('user', 'Updated request')));
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 3000);
+    const lists = await Promise.all(Array.from({ length: 8 }, () => service.list()));
+    expect(lists.every(list => list.sessions[0]!.title === 'Updated request')).toBe(true);
+    const id = lists[0]!.sessions[0]!.id;
+    const [one, two] = await Promise.all([service.read(options.deviceId, id), service.read(options.deviceId, id)]);
+    expect(one.turns[0]!.blocks[0]).toMatchObject({ type: 'text', text: 'Updated request' });
+    expect(two.turns).toEqual(one.turns);
+    expect(workers, 'Repeated shell polls and concurrent reads must not repeatedly initialize isolated readers.').toHaveLength(1);
+  } finally {
+    process.off('worker', started);
+    const close = (service as typeof service & { close?: () => Promise<void> }).close;
+    if (close) await close.call(service);
+  }
+});
+
+test('closing a shell reader twice waits for its exit and refuses subsequent reads', async () => {
+  const { Homes } = await import('../packages/core/dist/index.js');
+  const { CursorSessions } = await import('../packages/mesh/dist/cursor-service.js');
+  const { options, file } = fixture();
+  file('reader-close', jsonl(message('user', 'Read before shutdown')));
+  const service = new CursorSessions(new Homes(options.home, options.userHome), options.deviceId, options.deviceName);
+  const workers: Worker[] = [], started = (worker: Worker) => { workers.push(worker); };
+  process.on('worker', started);
+  let closing: Promise<void> | undefined;
+  try {
+    const list = await service.list();
+    closing = service.close();
+    await service.close();
+    expect(workers[0]!.threadId, 'Every shutdown caller must await the owned reader exit.').toBe(-1);
+    await expect(service.read(options.deviceId, list.sessions[0]!.id)).rejects.toThrow('Cursor reader stopped.');
+  } finally { process.off('worker', started); await closing; await service.close(); }
+});
+
+test('excess shell reads fail visibly while admitted requests retain their results', async () => {
+  const { Homes } = await import('../packages/core/dist/index.js');
+  const { CursorSessions } = await import('../packages/mesh/dist/cursor-service.js');
+  const { options, file } = fixture();
+  file('reader-capacity', jsonl(message('user', 'Bounded pending work')));
+  const service = new CursorSessions(new Homes(options.home, options.userHome), options.deviceId, options.deviceName);
+  try {
+    const reads = await Promise.allSettled(Array.from({ length: 65 }, () => service.read(options.deviceId, cursorSessionId('reader-capacity'))));
+    expect(reads.filter(row => row.status === 'fulfilled')).toHaveLength(64);
+    const rejected = reads.filter(row => row.status === 'rejected');
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason).toMatchObject({ message: 'Cursor has too many pending reads. Try again after the current reads finish.' });
+  } finally { await service.close(); }
 });
 
 test('the tunnel reader replies to a complete JSON line without waiting for stdin closure', async () => {

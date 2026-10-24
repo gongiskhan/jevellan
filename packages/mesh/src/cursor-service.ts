@@ -12,6 +12,9 @@ import type { CursorRequest } from './cursor-stdio.js';
 
 const quote = (value: string) => `'${value.replace(/'/g, `'"'"'`)}'`;
 const ErrorSchema = z.object({ schema: z.literal('cursor-error-v1'), message: z.string() });
+export const CursorWorkerRequestSchema = z.strictObject({ schema: z.literal('cursor-worker-request-v1'), id: z.number().int().positive(), request: z.unknown() });
+export const CursorWorkerResponseSchema = z.strictObject({ schema: z.literal('cursor-worker-response-v1'), id: z.number().int().positive(), result: z.unknown() });
+type Reader = { worker: Worker; pending: Map<number, { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }>; idle?: NodeJS.Timeout; closed: boolean };
 export function cursorSshArguments(connection: CursorConnection): string[] {
   const options = ['-F', '/dev/null', '-T', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=8'];
   const command = `${connection.workingDirectory ? `cd ${quote(connection.workingDirectory)} && ` : ''}${quote(connection.nodePath)} ${quote(connection.helperPath)}`;
@@ -26,6 +29,10 @@ export function cursorSshArguments(connection: CursorConnection): string[] {
 export class CursorSessions {
   #cache = new Map<string, z.infer<typeof CursorListSchema>>();
   #pending = new Map<string, Promise<z.infer<typeof CursorListSchema>>>();
+  #reader: Reader | undefined;
+  readonly #stopping = new Set<Promise<number>>();
+  #sequence = 0;
+  #closed = false;
   constructor(readonly homes: Homes, readonly deviceId: string, readonly deviceName: string) {}
   connections() {
     const path = this.homes.at('cursor', 'connections.json');
@@ -37,14 +44,60 @@ export class CursorSessions {
     this.#cache.clear();
     return writeDocument(this.homes.at('cursor', 'connections.json'), CursorConnectionsSchema, parsed);
   }
+  async #stopReader(reader: Reader, message: string) {
+    if (reader.closed) return;
+    reader.closed = true;
+    if (this.#reader === reader) this.#reader = undefined;
+    clearTimeout(reader.idle);
+    for (const pending of reader.pending.values()) { clearTimeout(pending.timer); pending.reject(new Error(message)); }
+    reader.pending.clear();
+    const stopped = reader.worker.terminate();
+    this.#stopping.add(stopped);
+    try { await stopped; } finally { this.#stopping.delete(stopped); }
+  }
+  #idleReader(reader: Reader) {
+    if (reader.pending.size || reader.closed) return;
+    reader.worker.unref();
+    clearTimeout(reader.idle);
+    // Keep schema initialization and bounded derived metadata warm for polls;
+    // an unused reader neither keeps the daemon alive nor lives indefinitely.
+    reader.idle = setTimeout(() => { void this.#stopReader(reader, 'Cursor reader stopped.'); }, 30_000);
+    reader.idle.unref();
+  }
+  #localRequest(request: CursorRequest): Promise<unknown> {
+    if (this.#closed) return Promise.reject(new Error('Cursor reader stopped.'));
+    let reader = this.#reader;
+    if (!reader) {
+      const worker = new Worker(new URL('./cursor-stdio.js', import.meta.url), { workerData: { schema: 'cursor-worker-v1' }, stderr: true });
+      worker.stderr.resume();
+      const created: Reader = { worker, pending: new Map(), closed: false }; reader = this.#reader = created;
+      worker.on('message', (value: unknown) => {
+        const parsed = CursorWorkerResponseSchema.safeParse(value);
+        if (!parsed.success) { void this.#stopReader(created, 'Cursor could not be read on this device.'); return; }
+        const pending = created.pending.get(parsed.data.id); if (!pending) return;
+        created.pending.delete(parsed.data.id); clearTimeout(pending.timer); pending.resolve(parsed.data.result); this.#idleReader(created);
+      });
+      worker.once('error', () => { void this.#stopReader(created, 'Cursor could not be read on this device.'); });
+      worker.once('exit', () => { void this.#stopReader(created, 'Cursor reader stopped.'); });
+    }
+    if (reader.pending.size >= 64) return Promise.reject(new Error('Cursor has too many pending reads. Try again after the current reads finish.'));
+    const current = reader, id = ++this.#sequence;
+    clearTimeout(current.idle); current.worker.ref();
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { void this.#stopReader(current, 'Cursor did not respond in time.'); }, 12_000);
+      current.pending.set(id, { resolve, reject, timer });
+      current.worker.postMessage(CursorWorkerRequestSchema.parse({ schema: 'cursor-worker-request-v1', id, request }));
+    });
+  }
+  async close(): Promise<void> {
+    this.#closed = true;
+    if (this.#reader) await this.#stopReader(this.#reader, 'Cursor reader stopped.');
+    await Promise.all(this.#stopping);
+  }
   async #request(request: CursorRequest, connection?: CursorConnection): Promise<unknown> {
     const value: unknown = await new Promise((resolve, reject) => {
       if (!connection) {
-        const worker = new Worker(new URL('./cursor-stdio.js', import.meta.url), { workerData: request });
-        const timer = setTimeout(() => { void worker.terminate(); reject(new Error('Cursor did not respond in time.')); }, 12_000);
-        worker.once('message', value => { clearTimeout(timer); resolve(value); });
-        worker.once('error', () => { clearTimeout(timer); reject(new Error('Cursor could not be read on this device.')); });
-        worker.once('exit', () => { clearTimeout(timer); reject(new Error('Cursor reader stopped.')); });
+        void this.#localRequest(request).then(resolve, reject);
       } else {
         const child = spawn('ssh', cursorSshArguments(connection), { stdio: ['pipe', 'pipe', 'ignore'] });
         const chunks: Buffer[] = []; let size = 0;

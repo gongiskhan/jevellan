@@ -5,7 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
 import { CursorListSchema, CursorSessionSchema, CursorTranscriptSchema, NATIVE_SESSION_HISTORY_MS, type CursorSession } from '@jevellan/core/cursor';
 import { readCursorSlice, type CursorReaderOptions } from './cursor-reader.js';
-import { nativeActivity, nativeObject, nativeRecords, parseNativeTranscript, type NativeRuntime } from './native-transcript.js';
+import { nativeActivity, nativeActivityFacts, nativeActivityFromFacts, nativeObject, nativeRecords, parseNativeTranscript, type NativeRuntime } from './native-transcript.js';
 
 type Source = { file: string; session: CursorSession };
 type CursorTranscript = z.infer<typeof CursorTranscriptSchema>;
@@ -78,8 +78,13 @@ function codexTitles(root: string) {
   }
   return titles;
 }
+type JournalMetadata = { nativeId: string; cwd: string | null; metaTitle: string; customTitle: string; fallbackTitle: string; activity: ReturnType<typeof nativeActivityFacts> };
+// Derived metadata only, never journal bytes or turns. Every reuse follows a fresh
+// stat; replacements, permissions, in-place rewrites and deletions invalidate it.
+const journalMetadata = new Map<string, { stamp: string; value: JournalMetadata }>();
 function discover(options: CursorReaderOptions) {
   const sources = new Map<string, Source>(); const unavailable = new Set<string>();
+  const seen = new Set<string>();
   const now = Date.now(); const cutoff = now - NATIVE_SESSION_HISTORY_MS;
   for (const runtime of ['claude', 'codex'] as const) {
     const label = runtime === 'claude' ? 'Claude Code' : 'Codex';
@@ -90,22 +95,32 @@ function discover(options: CursorReaderOptions) {
       const journal = (file: string) => {
         try {
           const info = statSync(file); if (!info.isFile() || info.mtimeMs < cutoff || info.mtimeMs > now) return;
-          const head = readCursorSlice(file, HEAD); const tail = readCursorSlice(file, 512 * 1024, true);
-          const records = nativeRecords(head.raw).map(row => row.value);
-          const recent = nativeRecords(tail.raw, tail.offset).map(row => row.value);
-          const identity = journalIdentity(records, runtime); if (!identity) return;
-          const { nativeId, cwd } = identity; let title = '';
-          if (runtime === 'codex') title = titles.get(nativeId) || displayTitle(identity.meta.title ?? identity.meta.thread_name);
-          else for (const row of [...records, ...recent]) if (row.type === 'custom-title' || row.type === 'ai-title') title = displayTitle(row.customTitle ?? row.aiTitle) || title;
-          if (!title) {
+          const key = `${runtime}:${file}`, stamp = `${info.dev}:${info.ino}:${info.mode}:${info.size}:${info.mtimeMs}:${info.ctimeMs}`;
+          seen.add(key);
+          let metadata = journalMetadata.get(key)?.stamp === stamp ? journalMetadata.get(key)!.value : undefined;
+          if (!metadata) {
+            journalMetadata.delete(key);
+            const head = readCursorSlice(file, HEAD), tail = readCursorSlice(file, 512 * 1024, true);
+            const records = nativeRecords(head.raw).map(row => row.value), recent = nativeRecords(tail.raw, tail.offset).map(row => row.value);
+            const identity = journalIdentity(records, runtime); if (!identity) return;
+            let customTitle = '';
+            if (runtime === 'claude') for (const row of [...records, ...recent]) if (row.type === 'custom-title' || row.type === 'ai-title') customTitle = displayTitle(row.customTitle ?? row.aiTitle) || customTitle;
             const first = parseNativeTranscript(head.raw, runtime).find(turn => turn.role === 'user' && !turn.automated)?.blocks.find(block => block.type === 'text');
-            if (first?.type === 'text') title = displayTitle(first.text);
+            metadata = { nativeId: identity.nativeId, cwd: identity.cwd, metaTitle: displayTitle(identity.meta.title ?? identity.meta.thread_name), customTitle,
+              fallbackTitle: first?.type === 'text' ? displayTitle(first.text) : '', activity: nativeActivityFacts(tail.raw, runtime, info.mtimeMs) };
+            const after = statSync(file);
+            if (`${after.dev}:${after.ino}:${after.mode}:${after.size}:${after.mtimeMs}:${after.ctimeMs}` === stamp && metadata.nativeId.length + (metadata.cwd?.length ?? 0) <= 8192) {
+              journalMetadata.set(key, { stamp, value: metadata });
+              while (journalMetadata.size > 512) journalMetadata.delete(journalMetadata.keys().next().value!);
+            }
           }
+          const { nativeId, cwd } = metadata;
+          const title = (runtime === 'codex' ? titles.get(nativeId) || metadata.metaTitle : metadata.customTitle) || metadata.fallbackTitle;
           const id = nativeSessionId(runtime, nativeId);
           const session = CursorSessionSchema.parse({ schema: 'cursor-session-v1', id, runtime, ownerDeviceId: options.deviceId,
             deviceName: options.deviceName, title: title || `${label} conversation`, cwd,
             project: cwd !== null ? cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? label : label,
-            lastActivityAt: new Date(info.mtimeMs).toISOString(), state: nativeActivity(tail.raw, runtime, info.mtimeMs, now),
+            lastActivityAt: new Date(info.mtimeMs).toISOString(), state: nativeActivityFromFacts(metadata.activity, info.mtimeMs, now),
             connected: true, canSend: false, canSteer: false });
           const old = sources.get(id);
           if (!old || old.session.lastActivityAt < session.lastActivityAt) sources.set(id, { file, session });
@@ -114,6 +129,7 @@ function discover(options: CursorReaderOptions) {
       walkJournals(root, runtime, list, journal);
     } catch { unavailable.add(`${options.deviceName}: ${label} sessions are unavailable.`); }
   }
+  for (const key of journalMetadata.keys()) if (!seen.has(key)) journalMetadata.delete(key);
   return { sources: [...sources.values()].sort((a, b) => b.session.lastActivityAt.localeCompare(a.session.lastActivityAt)), unavailable: [...unavailable] };
 }
 export function nativeList(options: CursorReaderOptions) {

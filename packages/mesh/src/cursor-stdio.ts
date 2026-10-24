@@ -5,6 +5,7 @@ import { CursorMessageInputSchema, CursorSessionIdSchema, CursorHostPathSchema, 
 import { cursorList, cursorTranscript } from './cursor-reader.js';
 import { queueCursorMessage, cancelCursorMessage } from './cursor-control.js';
 import { nativeList, nativeTranscript } from './native-sessions.js';
+import { CursorWorkerRequestSchema, CursorWorkerResponseSchema } from './cursor-service.js';
 
 const RequestSchema = z.strictObject({
   schema: z.literal('cursor-request-v1'), operation: z.enum(['list', 'read', 'send', 'cancel']),
@@ -30,6 +31,10 @@ function run(value: unknown) {
   if (request.operation === 'send') return queueCursorMessage(options, id, request.message);
   return cancelCursorMessage(options, id, IdSchema.parse(request.messageId));
 }
+function reply(value: unknown) {
+  try { return run(value); }
+  catch (error) { return { schema: 'cursor-error-v1', message: error instanceof z.ZodError ? 'Invalid Cursor request.' : error instanceof Error ? error.message : 'Cursor is unavailable.' }; }
+}
 try {
   if (isMainThread) {
     const chunks: Buffer[] = []; let bytes = 0;
@@ -39,8 +44,13 @@ try {
       bytes += chunk.length; if (bytes > 1024 * 1024) throw new Error('Request too large.');
       chunks.push(Buffer.from(chunk)); if (Buffer.from(chunk).includes(10)) break;
     }
-    process.stdout.write(JSON.stringify(run(JSON.parse(Buffer.concat(chunks).toString('utf8')))) + '\n');
-  } else parentPort?.postMessage(run(workerData));
+    process.stdout.write(JSON.stringify(reply(JSON.parse(Buffer.concat(chunks).toString('utf8')))) + '\n');
+  } else if (z.strictObject({ schema: z.literal('cursor-worker-v1') }).safeParse(workerData).success) {
+    parentPort?.on('message', (value: unknown) => {
+      const request = CursorWorkerRequestSchema.parse(value);
+      parentPort?.postMessage(CursorWorkerResponseSchema.parse({ schema: 'cursor-worker-response-v1', id: request.id, result: reply(request.request) }));
+    });
+  } else parentPort?.postMessage(reply(workerData));
 } catch (error) {
   const result = { schema: 'cursor-error-v1', message: error instanceof z.ZodError ? 'Invalid Cursor request.' : error instanceof Error ? error.message : 'Cursor is unavailable.' };
   if (isMainThread) process.stdout.write(JSON.stringify(result) + '\n'); else parentPort?.postMessage(result);
