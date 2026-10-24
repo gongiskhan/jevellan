@@ -19,6 +19,58 @@ export function safetyReason(context: Pick<SafetyContext, 'profile'>): string {
 // Ordinary shell forms only. Arbitrary programs can evade this command guard;
 // post-stretch git checks remain required.
 export function shellWords(command: string): string[][] {
+  return commandWords(literalCatInput(command));
+}
+
+/** A simple cat receives quoted here-documents as data, not executable shell words. */
+function literalCatInput(command: string): string {
+  const lines = command.match(/[^\n]*\n|[^\n]+$/gu) ?? [];
+  let result = '', quote = '', escaped = false, continued = false, compound = false;
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const line = lines[lineIndex]!;
+    const inQuote = !!quote, wasContinued = continued;
+    const documents: Array<{ delimiter: string; tabs: boolean }> = [];
+    let unsupported = false;
+    continued = false;
+    for (let index = 0; index < line.length; index++) {
+      const char = line[index]!;
+      if (escaped) { continued = char === '\n'; escaped = false; continue; }
+      if (char === '\\' && quote !== "'") { escaped = true; continue; }
+      if (quote) { if (char === quote) quote = ''; continue; }
+      if (char === '"' || char === "'") { quote = char; continue; }
+      if (char === '#' && (index === 0 || /[\s;&|<>]/u.test(line[index - 1]!))) break;
+      if (char === '<' && line[index + 1] === '<') {
+        const match = /^<<(-?)[ \t]*(?:'([A-Za-z_][A-Za-z0-9_]*)'|"([A-Za-z_][A-Za-z0-9_]*)"|\\([A-Za-z_][A-Za-z0-9_]*))(?=[ \t;\n&|<>]|$)/u.exec(line.slice(index));
+        if (!match) { unsupported = true; continue; }
+        documents.push({delimiter: match[2] ?? match[3] ?? match[4]!, tabs: match[1] === '-'});
+        index += match[0].length - 1;
+      }
+    }
+    result += line;
+    // Only simple top-level command sequences qualify. An enclosing group,
+    // substitution or interpreter pipeline can execute a cat's output later.
+    compound ||= unsupported || /[$`(){};&|]/u.test(line) || /(?:^|\s)(?:if|then|else|elif|for|while|until|do|case|function|select|coproc)(?=\s|$)/u.test(line);
+    if (compound || inQuote || quote || wasContinued || continued || !documents.length) continue;
+    let header: string[][];
+    try { header = commandWords(line); } catch { continue; }
+    // Complex pipelines, interpreters and command substitutions retain the
+    // existing conservative inspection, including their input bodies.
+    if (header.length !== 1 || !['cat', '/bin/cat', '/usr/bin/cat'].includes(header[0]![0] ?? '')) continue;
+    for (const document of documents) {
+      let ended = false;
+      while (++lineIndex < lines.length) {
+        const bodyLine = lines[lineIndex]!;
+        const body = bodyLine.endsWith('\n') ? bodyLine.slice(0, -1) : bodyLine;
+        result += bodyLine.endsWith('\n') ? '\n' : '';
+        if ((document.tabs ? body.replace(/^\t+/u, '') : body) === document.delimiter) { ended = true; break; }
+      }
+      if (!ended) throw new Error('Unterminated literal document input.');
+    }
+  }
+  return result;
+}
+
+function commandWords(command: string): string[][] {
   const groups: string[][] = [[]];
   let token = ''; let quote = ''; let escaped = false; let started = false;
   const finish = () => { if (started) groups.at(-1)!.push(token); token = ''; started = false; };

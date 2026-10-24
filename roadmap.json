@@ -1172,14 +1172,14 @@
   {
     "id": "manager-followups-074",
     "title": "Follow-up findings and remaining live evidence",
-    "why": "Decisions779–781: durable waiting/landing visibility, repeated identical verification stops, pending fresh starts and weekly/five-hour budget provenance are verified source. Check-environment isolation now passes522 assertions/28 complete files, static/build and settings/thread/new-form desktop journeys with10 matching images. 078 is authorized and in preparation; existing devices stay077 until actual guarded installation. Tool failure explanations and conditional dependency wakeup remain unverified/planned. No real task/config/auth/deploy change or extra review. Decision784 ships check-input isolation, weekly provenance, repeat stops, pending fresh state and instruction budget in078 on both devices. Tool-refusal cause and conditional dependency wakeup remain unverified.",
-    "status": "in-progress"
+    "why": "Decisions779–786: waiting/landing visibility and closure, automatic blockers, repeated-verification stops, pending fresh start, weekly provenance, bounded instructions and separate check inputs are verified and shipped through078. Reader reuse4501eb99 and literal document input repair are tested unreleased source. Remaining real conditional dependency-wakeup/tool-flow acceptance is unverified; no companion landing or task retry was forced. Both installed078 doctors9 account freshness remain separate; no further release/review/task/auth/deploy action.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "release-075",
     "title": "Preserve blocked work and release 0.7.5",
-    "why": "075source/tag50fa760a published with exact verified/staged Linux normal-build and Darwin official-dependency-cache/current-JS archives; actual extracted CLI/nativePTY and all source/digest/scans pass. Priorstatic/fullbackend3805/1/16 plus sole repeatPASS/five desktop cores20images remain separate. Hub installed075 through strict guards/coldbackup; member074 explicitly deferred for load. InstalledCPUgoal FAIL/doctorpartial. RemainingSSEfull-historyclone reproduced twice; four validated-head reads now pass30affectedcontracts and3-client full-daemonfixture. Follow-up static,31distinct affected/daemon cases and two desktop chat journeys/six images pass; exact075comparison fails36.44s. Follow-up unreleased; full backend not rerun on it. Instruction-document/runtime compatibility and otherfindings remain next. Later both devices move directly to076;075 live performance remains failed,with no retrospective pass.",
-    "status": "in-progress"
+    "why": "075source/tag50fa760a published with exact verified/staged Linux normal-build and Darwin official-dependency-cache/current-JS archives; actual extracted CLI/nativePTY and all source/digest/scans pass. Priorstatic/fullbackend3805/1/16 plus sole repeatPASS/five desktop cores20images remain separate. Hub installed075 through strict guards/coldbackup; member074 explicitly deferred for load. InstalledCPUgoal FAIL/doctorpartial. RemainingSSEfull-historyclone reproduced twice; four validated-head reads now pass30affectedcontracts and3-client full-daemonfixture. Follow-up static,31distinct affected/daemon cases and two desktop chat journeys/six images pass; exact075comparison fails36.44s. Follow-up unreleased; full backend not rerun on it. Instruction-document/runtime compatibility and otherfindings remain next. Later both devices move directly to076;075 live performance remains failed,with no retrospective pass. Historical075 hub-only milestone is superseded by verified normal078 installations on both devices; original missing075 paired/full-gate claims remain unpassed. No075 member installation is invented.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "hub-stream-head-responsiveness",
@@ -1239,6 +1239,12 @@
     "id": "release-078",
     "title": "Release isolated check inputs and weekly budget provenance as0.7.8",
     "why": "Decision784:078 published7211eb9d and normally cold-backed installed Madrid then Pro; bothCLI/health/Online/81product-file proofs, vault and144protected records/28PRdelivery references pass. Both doctors9/10 account freshness; strict10/10 remains failed. Original resource-refusals preserved, eventual unchanged Pro guard passed.866/64complete affected/static/build/five desktop cores20images PASS; full unfiltered078backend NOTRUN. Exact source/digests/nativePTY pass; Linux fresh build, Darwin verified unchanged official051 cache plus current exact JS/dist. No new release/review/real task/auth/deploy action.",
+    "status": "complete-with-blockers"
+  },
+  {
+    "id": "runtime-literal-document-input",
+    "title": "Keep quoted document data separate from executable shell checks",
+    "why": "Decision786: literal-write and enclosing-compound regressions fail+single-repeat before fixes;136 assertions/9complete affected files, build/typecheck/lint and first desktop thread action/3matching images pass. Both runtime guards preserve protected/private/header/after commands and conservative unsupported input. Private normal read-only replay olddenied/newallowed executesnothing. Source-only unreleased; no task retry/live acceptance, provider/account/bridge/native-home or production action.",
     "status": "complete-with-blockers"
   }
 ]
