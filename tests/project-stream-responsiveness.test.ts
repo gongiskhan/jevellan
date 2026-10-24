@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -7,7 +7,7 @@ import { projectFixture, type ProjectFixture } from './helpers/project-fixture.j
 
 let fixture: ProjectFixture | undefined;
 const controllers: AbortController[] = [];
-afterEach(async () => { for (const controller of controllers.splice(0)) controller.abort(); await fixture?.close(); fixture = undefined; });
+afterEach(async () => { for (const controller of controllers.splice(0)) controller.abort(); await fixture?.close(); fixture = undefined; vi.restoreAllMocks(); });
 
 test('CPU075 concurrent authenticated browser streams catch up through hidden journal history and deliver the next reply', async () => {
   const f = fixture = await projectFixture({ coordinator: true }), ledger = f.app.projectWork.coordinatorLedger(f.project.id);
@@ -21,6 +21,11 @@ test('CPU075 concurrent authenticated browser streams catch up through hidden jo
     writeFileSync(join(ledger.dir, 'ledger', `${String(segment + offset / 6000).padStart(6, '0')}.jsonl`), rows.join('\n') + '\n');
   }
   const head = first + count; expect(ledger.lastId()).toBe(head);
+  const clone = structuredClone; let hiddenCopies = 0;
+  vi.spyOn(globalThis, 'structuredClone').mockImplementation((value, options) => {
+    if (value && typeof value === 'object' && 'schema' in value && value.schema === 'project-ledger-event-v1' && 'type' in value && value.type === 'journal-document') hiddenCopies++;
+    return clone(value, options);
+  });
   const started = performance.now();
   const readers = await Promise.all(Array.from({ length: 3 }, async () => {
     const abort = new AbortController(); controllers.push(abort);
@@ -50,4 +55,5 @@ test('CPU075 concurrent authenticated browser streams catch up through hidden jo
   for (const reader of readers) {
     const frame = await reader.through(next.id); expect(frame?.event).toMatchObject({ id: next.id, type: 'coordinator-text', data: { text: 'Fresh reply.' } });
   }
+  expect(hiddenCopies, 'Chat replay must validate hidden history without copying its payloads for each browser.').toBe(0);
 }, 60000);

@@ -20,6 +20,7 @@ import { ProjectRoutineSettingsSaveSchema, ProjectRoutineSettingsViewSchema } fr
 import { goalEditorRequest } from '@jevellan/projects';
 import { projectEventNotices } from '@jevellan/projects';
 import { CoordinatorActivityProjector } from '@jevellan/projects';
+import { ProjectLedgerEventTypeSchema } from '@jevellan/core';
 import { DeployBaselineRequestSchema, DeployRollbackRequestSchema, ProjectDeploySchema, ProjectPageQuerySchema } from '@jevellan/core';
 import { ProjectHealthRequestSchema } from '@jevellan/core';
 import { SetupActionRequestSchema } from '@jevellan/core';
@@ -205,10 +206,14 @@ export function projectWorkRoute(path: string, method: string): ProjectWorkRoute
 }
 
 /** The coordinator chat frame (brief 5.13, 11): `event: project`, blob payloads resolved, redacted again, native identities left out. */
+const chatEventTypes = ProjectLedgerEventTypeSchema.options.filter(type => type !== 'journal-source' && type !== 'journal-document');
 function projectFrame(ledger: ProjectLedger, coordinator = false): LedgerStreamFrame<ProjectLedgerEvent> {
-  const activity = coordinator ? new CoordinatorActivityProjector(ledger.events(), event => ledger.data(event)) : undefined;
+  const activity = coordinator ? new CoordinatorActivityProjector(ledger.events(0, Number.MAX_SAFE_INTEGER, ['coordinator-turn-start', 'coordinator-turn-end']), event => ledger.data(event)) : undefined;
   // The coordinator chat never shows the journal's copies of ledger records, most of a long project's ledger (#19).
-  return { name: 'project', invalidCursor: EVENT_CURSOR_INVALID, aheadCursor: EVENT_CURSOR_AHEAD, ...(coordinator ? { skip: (event: ProjectLedgerEvent) => event.type === 'journal-source' || event.type === 'journal-document' } : {}),
+  return { name: 'project', invalidCursor: EVENT_CURSOR_INVALID, aheadCursor: EVENT_CURSOR_AHEAD, ...(coordinator ? { read: (afterId: number, limit: number) => {
+    const head = ledger.lastId(), events = ledger.events(afterId, limit, chatEventTypes);
+    return { events, through: events.length === limit ? events.at(-1)!.id : head };
+  } } : {}),
     payload: (event) => ProjectEventFrameSchema.parse(ledger.redact({ schema: 'project-event-v1', event: { ...event, data: publicProjectData(ledger.data(event)) }, ...(activity ? { coordinatorActivity: activity.observe(event), notices: projectEventNotices({ ...event, data: publicProjectData(ledger.data(event)) }) } : {}) })) };
 }
 

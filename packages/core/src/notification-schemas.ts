@@ -3,8 +3,18 @@ import { IdSchema, TimestampSchema } from './schemas.js';
 const revision = z.number().int().nonnegative();
 export const NotificationLevelSchema = z.enum(['everything', 'standard', 'needs-you', 'off']);
 const clock = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u);
+// Supported names are stable within one Intl implementation, including aliases. Never cache a refusal.
+const supportedTimeZones = new Set<string>();
+let timeZoneImplementation = Intl.DateTimeFormat;
+export function supportedTimeZone(value: string): boolean {
+  if (timeZoneImplementation !== Intl.DateTimeFormat) { supportedTimeZones.clear(); timeZoneImplementation = Intl.DateTimeFormat; }
+  if (supportedTimeZones.has(value)) return true;
+  try { new Intl.DateTimeFormat('en', { timeZone: value }); } catch { return false; }
+  if (supportedTimeZones.size >= 256) { const first = supportedTimeZones.values().next().value; if (first !== undefined) supportedTimeZones.delete(first); }
+  supportedTimeZones.add(value); return true;
+}
 export const QuietHoursSchema = z.strictObject({ enabled: z.boolean(), start: clock, end: clock,
-  timezone: z.string().min(1).max(120).refine(value => { try { new Intl.DateTimeFormat('en', { timeZone: value }); return true; } catch { return false; } }, 'Use a supported time zone.') });
+  timezone: z.string().min(1).max(120).refine(supportedTimeZone, 'Use a supported time zone.') });
 export const defaultQuietHours = { enabled: false, start: '23:00', end: '08:00', timezone: 'Europe/Lisbon' };
 export const ProjectNotificationPreferencesSchema = z.strictObject({ level: NotificationLevelSchema, quietHours: QuietHoursSchema.default(() => ({ ...defaultQuietHours })) });
 export const defaultProjectNotifications = { level: 'standard' as const, quietHours: defaultQuietHours };

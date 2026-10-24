@@ -9,7 +9,9 @@ export { publicConversationData } from '@jevellan/core';
 export type StreamedLedger<E extends { id: number }> = { lastId(): number; events(afterId?: number, limit?: number): E[]; subscribe(listener: () => void): () => void };
 /** The SSE event name, the browser document for one event, and the two cursor refusals (answered 400 before any header). */
 /** `skip`: events the stream's reader never shows; the cursor passes them without a frame. */
-export type LedgerStreamFrame<E> = { name: string; payload(event: E): unknown; invalidCursor: string; aheadCursor: string; skip?(event: E): boolean };
+export type LedgerStreamFrame<E> = { name: string; payload(event: E): unknown; invalidCursor: string; aheadCursor: string; skip?(event: E): boolean;
+  /** Read only visible payloads; through includes a validated hidden tail, acknowledged after every returned frame is accepted. */
+  read?(afterId: number, limit: number): { events: E[]; through: number } };
 export type LedgerStatusView = { read(signal: AbortSignal): Promise<unknown> };
 
 /**
@@ -49,8 +51,10 @@ export function streamLedger<E extends { id: number }>(ledger: StreamedLedger<E>
     try {
       const allowed = await authenticated(); if (stopped) return;
       if (!allowed) { close(); response.end(); return; }
-      const batch = ledger.events(cursor, 64);
+      const selected = frame.read?.(cursor, 64);
+      const batch = selected?.events ?? ledger.events(cursor, 64);
       for (const event of batch) { if (!write(event)) { paused = true; return; } }
+      if (selected && selected.through > cursor) { cursor = selected.through; skipped = true; }
       // Skipped events at the end of a batch: a cursor frame says how far the stream reached, so a reader waiting for the ledger's head stops waiting.
       if (skipped) { skipped = false; if (!response.write(`id: ${cursor}\nevent: cursor\ndata: ${JSON.stringify({ id: cursor })}\n\n`)) { paused = true; return; } }
       const head = ledger.lastId();

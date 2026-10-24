@@ -167,6 +167,29 @@ test('streamLedger: refusals before headers, exact frames in 64-event batches, d
   } finally { vi.useRealTimers(); }
 });
 
+test('filtered stream cursors never jump over visible frames on backpressure or concurrent appends', async () => {
+  const events = Array.from({ length: 70 }, (_, n) => ({ id: (n + 1) * 2 })); let head = 141;
+  let wake = () => {}; let accept = false; let allowed = true; let ended = false;
+  const writes: string[] = [];
+  const ledger = { lastId: () => head, events: (after = 0, limit = 64) => events.filter(event => event.id > after).slice(0, limit), subscribe: (listener: () => void) => { wake = listener; return () => { wake = () => {}; }; } };
+  const response = Object.assign(new EventEmitter(), { write: (value: string) => { writes.push(value); return accept; }, writeHead: () => {}, flushHeaders: () => {}, end: () => { ended = true; }, destroy: () => {} }) as unknown as ServerResponse;
+  streamLedger(ledger, { headers: {} } as IncomingMessage, response, new URL('http://daemon.invalid/'), () => allowed,
+    { name: 'project', invalidCursor: 'Bad cursor.', aheadCursor: 'Ahead.', payload: event => event, read: (after, limit) => {
+      const through = head, batch = ledger.events(after, limit); return { events: batch, through: batch.length === limit ? batch.at(-1)!.id : through };
+    } });
+  try {
+    await vi.waitFor(() => expect(writes).toHaveLength(1));
+    events.push({ id: 144 }); head = 145; wake();
+    await new Promise(resolve => setImmediate(resolve)); expect(writes).toHaveLength(1);
+    accept = true; response.emit('drain');
+    await vi.waitFor(() => expect(writes.at(-1)).toBe('id: 145\nevent: cursor\ndata: {"id":145}\n\n'));
+    expect(writes.filter(value => value.includes('event: project')).map(value => Number(/^id: (\d+)/u.exec(value)![1]))).toEqual(events.map(event => event.id));
+    allowed = false; events.push({ id: 146 }); head = 146; wake();
+    await vi.waitFor(() => expect(ended).toBe(true));
+    expect(writes.join('')).not.toContain('id: 146');
+  } finally { response.emit('close'); }
+});
+
 test('coordinator routes: session required, assignment by the first message, idempotent messages, a resumable chat stream, Stop, Fresh and no native session id', { timeout: 120_000 }, async () => {
   const f = fixture = await projectFixture({ coordinator: true });
   const pid = f.project.id; const work = f.app.projectWork; const ledger = work.coordinatorLedger(pid);

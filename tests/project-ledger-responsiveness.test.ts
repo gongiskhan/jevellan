@@ -61,3 +61,19 @@ test('CPU075 warm readers reject invalid records, notice replacement files and r
   writeFileSync(join(ledger.dir, 'ledger', '000003.jsonl'), '');
   expect(ledger.lastId()).toBe(3); expect(ledger.events(2, 1).map(row => row.id)).toEqual([3]);
 });
+
+test('selected ledger types retain ordered isolated payloads and validate omitted records', () => {
+  const { ledger } = history(3);
+  const start = ledger.append({ type: 'coordinator-turn-start', data: { schema: 'coordinator-turn-v1', turn: 1, fresh: false, runtime: 'fake', modelLabel: 'Fake', effort: 'medium', accountLabel: 'Test', eventIds: [] } });
+  const end = ledger.append({ type: 'coordinator-turn-end', data: { schema: 'coordinator-turn-end-v1', turn: 1, status: 'completed' } });
+  const types = ['coordinator-turn-start', 'coordinator-turn-end'] as const;
+  expect(ledger.events(0, 1, types).map(event => event.id)).toEqual([start.id]);
+  expect(ledger.events(start.id, 2, types).map(event => event.id)).toEqual([end.id]);
+  const selected = ledger.events(0, 2, types); (selected[0]!.data as { turn: number }).turn = 99;
+  expect(ledger.events(0, 2, types)[0]!.data).toMatchObject({ turn: 1 });
+  expect(ledger.events(0, 1, [])).toEqual([]);
+  const file = ledger.segments()[0]!, bytes = readFileSync(file, 'utf8');
+  writeFileSync(file, bytes.replace('"id":1,', '"id":2,'));
+  expect(() => ledger.events(end.id, 1, types)).toThrow('sequence');
+  expect(() => ledger.events(0, 1, [])).toThrow('sequence');
+});

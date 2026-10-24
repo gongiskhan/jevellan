@@ -6,7 +6,7 @@ import { ProjectThreadDisplayTextSchema } from './project-thread-display.js';
 import { SessionCacheViewSchema } from './session-cache-view.js';
 import { ThreadImageReferencesSchema, ThreadImagesViewSchema } from './thread-image-view-schemas.js';
 import { ThreadPresentationSchema, ThreadReadHintSchema } from './project-thread-presentation-schemas.js';
-import { NotificationLevelSchema, ProjectNotificationPreferencesSchema, defaultQuietHours, defaultProjectNotifications } from './notification-schemas.js';
+import { NotificationLevelSchema, ProjectNotificationPreferencesSchema, defaultQuietHours, defaultProjectNotifications, supportedTimeZone } from './notification-schemas.js';
 import { OwnerViaSchema } from './project-send-schemas.js';
 import { z } from 'zod';
 import { ProjectWorkCardSchema, ThreadMutationActionSchema } from './project-card-schemas.js';
@@ -35,16 +35,6 @@ const text = z.string().min(1);
 const count = z.number().int().nonnegative();
 const positive = z.number().int().positive();
 const revision = count;
-// Successful validation is stable within one Intl implementation; keep only a bounded catalogue of supported names.
-const supportedTimeZones = new Set<string>();
-let timeZoneImplementation = Intl.DateTimeFormat;
-function supportedTimeZone(value: string): boolean {
-  if (timeZoneImplementation !== Intl.DateTimeFormat) { supportedTimeZones.clear(); timeZoneImplementation = Intl.DateTimeFormat; }
-  if (supportedTimeZones.has(value)) return true;
-  try { new Intl.DateTimeFormat('en', { timeZone: value }); } catch { return false; }
-  if (supportedTimeZones.size >= 256) { const first = supportedTimeZones.values().next().value; if (first !== undefined) supportedTimeZones.delete(first); }
-  supportedTimeZones.add(value); return true;
-}
 
 export const IsolationSchema = z.enum(['worktree', 'main']);
 export type Isolation = z.infer<typeof IsolationSchema>;

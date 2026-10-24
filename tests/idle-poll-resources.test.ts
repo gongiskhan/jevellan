@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { Homes, ProjectWorkSettingsSchema, defaultProjectWorkSettings } from '../packages/core/dist/index.js';
+import { Homes, ProjectWorkSettingsSchema, StoredProjectWorkSettingsSchema, defaultProjectWorkSettings } from '../packages/core/dist/index.js';
 import { HubDatabase } from '../packages/mesh/dist/index.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
 import { git, projectFixture, reportStep, type ProjectFixture } from './helpers/project-fixture.js';
@@ -78,4 +78,16 @@ test('unchanged hub reads reuse bounded query plans while validating fresh rows'
   expect(database.listByField('resource-rows', 'group', 'three', schema).map(row => row.document.value)).toEqual([3]);
   expect(() => database.get('resource-rows', 'first', schema.extend({ value: z.literal(1) }))).toThrow();
   expect(preparations!, 'Read polling must not compile the same three SQL statements for every document read.').toBeLessThanOrEqual(3);
+});
+
+test('stored project and notification settings share supported time zone validation', () => {
+  const settings = defaultProjectWorkSettings('project'); settings.nightlyWindow.timezone = 'Asia/Tokyo'; settings.notifications.quietHours.timezone = 'Asia/Tokyo';
+  const formatter = vi.spyOn(Intl, 'DateTimeFormat'); let constructions: number;
+  try {
+    for (let n = 0; n < 250; n++) expect(StoredProjectWorkSettingsSchema.parse(settings).notifications.quietHours.timezone).toBe('Asia/Tokyo');
+    constructions = formatter.mock.calls.filter(([, options]) => options?.timeZone === 'Asia/Tokyo').length;
+  } finally { formatter.mockRestore(); }
+  expect(StoredProjectWorkSettingsSchema.safeParse({ ...settings, notifications: { ...settings.notifications, quietHours: { ...settings.notifications.quietHours, timezone: 'Invalid/Zone' } } }).success).toBe(false);
+  expect(StoredProjectWorkSettingsSchema.safeParse({ ...settings, notifications: { ...settings.notifications, quietHours: { ...settings.notifications.quietHours, unexpected: true } } }).success).toBe(false);
+  expect(constructions!, 'Reading stored settings must not rebuild notification time zone formatters on every read.').toBeLessThanOrEqual(1);
 });

@@ -109,10 +109,11 @@ export class JsonlLedger<E extends LedgerEnvelope> {
     }
     return result;
   }
-  events(afterId = 0, limit = Number.MAX_SAFE_INTEGER, type?: E['type']): E[] {
+  events(afterId = 0, limit = Number.MAX_SAFE_INTEGER, type?: E['type'] | readonly E['type'][]): E[] {
     if (!Number.isSafeInteger(afterId) || afterId < 0 || !Number.isSafeInteger(limit) || limit < 1) throw new Error('Invalid ledger range.');
     const result: E[] = [];
-    for (const records of this.#readSegments()) for (const event of records) if (event.id > afterId && result.length < limit && (type === undefined || event.type === type)) result.push(structuredClone(event));
+    const selected = typeof type === 'string' || type === undefined ? undefined : new Set(type);
+    for (const records of this.#readSegments()) for (const event of records) if (event.id > afterId && result.length < limit && (type === undefined || event.type === type || selected?.has(event.type))) result.push(structuredClone(event));
     return result;
   }
   /** Corruption anywhere still stops the caller; an unchanged validated generation needs no repeated JSON parsing. */
