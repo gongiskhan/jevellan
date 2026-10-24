@@ -1172,8 +1172,8 @@
   {
     "id": "manager-followups-074",
     "title": "Follow-up findings and remaining live evidence",
-    "why": "Decisions787\u2013788:079 authorized for instruction placement/reason, remaining notification/refusal/transcript findings and already tested worker/literal fixes.166/11complete plus final33/3 and fixture9/2 pass; static/release desktop/full backend pending. Native per-turn background delivery replaced by foreground collection; existing real work unchanged and live completion unverified. Both installed078/doctors9 remain separate.",
-    "status": "in-progress"
+    "why": "Decision791 ships tested instruction eligibility/blocked reasons/transcript status, managed foreground results and visible hook failures with prior worker/literal repairs in079 on BOTH devices. Complete backend3907PASS/0FAIL/16NOTRUN, static/build/five desktop cores pass. Existing real work is preserved; its completion and deferred authentication/check inputs remain unverified. Both doctors9 freshness warnings are explicit.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "release-075",
@@ -1190,7 +1190,7 @@
   {
     "id": "runtime-project-instruction-size",
     "title": "Handle project instructions above the runtime default limit",
-    "why": "Source-only Decision777: bounded 256 KiB UTF-8 root reader and supported managed Codex project_doc_max_bytes cover new and resumed turns, stretch continuations and takeover. Three regressions fail and repeat before their corrections;73 assertions in seven complete files/static checks, build and desktop thread-page main action pass. Confinement/invalid-file/upper-bound refusals remain. Unreleased; no real task retry or native-home change. Decision784: included in published078 and normally installed on both devices; no real-task retry or project input/account change. Doctors9/10 account freshness are separate. Decision787 adds fresh local and owning-device heartbeat metadata guards before every placement path, with missing remote budget explicitly excluded; blocked reports/read status are visible. Final079 gate/publication/install pending.",
+    "why": "Decisions777/787/791: managed256KiB reader plus fresh local/owning-device instruction metadata enforces every placement path; unknown old remote metadata excludes Codex with a clear reason. Blocked reports and transcript availability are visible. Normally installed079 on BOTH; actual installed isolated >32KiB reader proof passes. No real model turn/task retry or native-home change; live completion unverified.",
     "status": "complete-with-blockers"
   },
   {
@@ -1214,7 +1214,7 @@
   {
     "id": "hub-worker-churn-followup",
     "title": "Reduce profiled shell-session reader churn",
-    "why": "Decision785: partial real worker profiles motivate bounded persistent local reader and fresh-stat derived metadata,64pending/512metadata/30sidle and awaited shutdown. Four current-source failing-first/single-repeat regressions;128 assertions/12 complete affected files, build/typecheck/lint, two first desktop chat journeys/six matching images pass. Synthetic24refresh16journal comparison24workers->1/CPU6725.69ms->520.421ms. Source-only unreleased; no live improvement or additional release claim.",
+    "why": "Decisions785/791: bounded persistent reader64pending/512metadata/30sidle and awaited shutdown ships in079 on BOTH. Four failing-first/single-repeat regressions;128/12complete affected cases/static/build/two desktop chats pass. Synthetic24refresh comparison24workers->1/CPU6725.69ms->520.421ms is a fixture, not live attribution. Qualified installed runtime measurements retained privately; no per-change live causation claim.",
     "status": "complete-with-blockers"
   },
   {
@@ -1244,13 +1244,13 @@
   {
     "id": "runtime-literal-document-input",
     "title": "Keep quoted document data separate from executable shell checks",
-    "why": "Decision786: literal-write and enclosing-compound regressions fail+single-repeat before fixes;136 assertions/9complete affected files, build/typecheck/lint and first desktop thread action/3matching images pass. Both runtime guards preserve protected/private/header/after commands and conservative unsupported input. Private normal read-only replay olddenied/newallowed executesnothing. Source-only unreleased; no task retry/live acceptance, provider/account/bridge/native-home or production action.",
+    "why": "Decisions786/791: literal-write and enclosing-compound regressions fail+single-repeat before correction;136/9complete affected/static/build/thread desktop pass. Both runtime guards preserve protected/private/header/following commands and conservative unsupported input. Shipped079 on BOTH. Read-only replay executes nothing; existing real task not retried and live acceptance unverified.",
     "status": "complete-with-blockers"
   },
   {
     "id": "release-079",
     "title": "Release instruction eligibility and managed turn lifecycle fixes as0.7.9",
-    "why": "790. **Correct the release gate findings before packaging.** The first unfiltered six-worker backend run executes402files:3,902 pass,5 fail and16 documented opt-ins are not run. Source hashes stay unchanged and all254 observed owned test-process identities exit. Each failure repeats once with exactly one selected case. Four admission unit fixtures used nonexistent paths and omitted remote instruction metadata; they now supply a real disposable root and the normal budget metadata, retaining their original assertions. The actual CLI test catches the separate exported version constant still declaring078 after workspace metadata changed; it is synchronized to079. The two retention checks again require exact equality with the complete managed settings object. No instruction guard or permission assertion is relaxed. All43 cases in four complete affected files, build/typecheck/lint and the corrected five desktop-light cores pass with20matching retained images and unchanged source hashes. A fresh complete backend run on this corrected source is required before artifacts or publication. Original failures and unrun opt-ins remain recorded.",
-    "status": "in-progress"
+    "why": "Decision791: published v0.7.9/source c2f19ead and normally installed on BOTH Madrid then Pro; fresh strict guards/full cold backups, exact archive/source/nativePTY proofs, 2904 installed product hashes each, Online/vault and144 protected continuity records pass. Corrected complete six-worker backend3907PASS/0FAIL/16 documented opt-ins NOTRUN/402files; static/build and5desktop cores/20matching images pass. Both doctors9/10 observation freshness, strict10false; real task completion/bridge verification unclaimed. Original5fails and sole repeats retained.",
+    "status": "complete-with-blockers"
   }
 ]
