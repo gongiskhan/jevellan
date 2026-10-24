@@ -7,7 +7,7 @@ export function jobRunRefusal(settings: ProjectWorkSettings, job: ProjectJob): s
   if (job.id === settings.deploy.jobId || job.id === settings.deploy.desktopJobId) return 'Deploy jobs run only from the owner’s deploy message.';
   if (settings.status !== 'active') return PROJECT_PAUSED;
   if (!job.enabled) return 'This job is unavailable or disabled.';
-  if (job.paused) return JOB_PAUSED;
+  if (job.paused) return job.pauseReason ? `This job is paused: ${job.pauseReason} Resume it before running it.` : JOB_PAUSED;
   if (job.run.kind === 'github-workflow') return 'GitHub workflow jobs retired on 19 October. Use a command job.';
   return null;
 }
@@ -25,10 +25,10 @@ export function projectJobsView(raw: z.infer<typeof ProjectDailyListViewSchema>,
     const completed = tasks.find(task => task.state === 'done'), pending = tasks.find(task => ['queued', 'active'].includes(task.state)), failed = tasks.find(task => task.state === 'failed');
     const receipt = raw.runs.find(run => tasks.some(task => task.id === run.taskId)), end = (completed ?? failed)?.endedAt, time = end ? ` at ${clock(end)}` : '';
     const state = !item.enabled ? 'disabled' : completed ? 'done' : pending?.state === 'active' ? 'running' : pending ? 'queued' : failed ? 'failed' : 'not-run';
-    const stateLabel = state === 'disabled' ? 'Disabled' : state === 'done' ? `Done today${time}` : state === 'running' ? 'Running' : state === 'queued' ? 'Queued' : state === 'failed' ? `Failed${time}` : 'Not run today';
+    const stateLabel = state === 'disabled' ? item.pauseReason ? `Paused: ${item.pauseReason}` : 'Disabled' : state === 'done' ? `Done today${time}` : state === 'running' ? 'Running' : state === 'queued' ? 'Queued' : state === 'failed' ? `Failed${time}` : 'Not run today';
     const target = item.target, job = target.kind === 'job' ? jobs.get(target.jobId) : undefined;
     const pendingAnywhere = raw.tasks.some(task => task.dailyId === item.id && ['queued', 'active'].includes(task.state));
-    const refusal = !item.enabled ? 'This daily item is unavailable or disabled.' : settings.status !== 'active' ? PROJECT_PAUSED
+    const refusal = !item.enabled ? item.pauseReason ? `This nightly item is paused: ${item.pauseReason}` : 'This daily item is unavailable or disabled.' : settings.status !== 'active' ? PROJECT_PAUSED
       : pendingAnywhere ? 'This nightly item is already queued or running.' : target.kind === 'job' ? job ? jobRunRefusal(settings, job) : 'This job is unavailable or disabled.' : null;
     return { definition: item, state, stateLabel, kindLabel: target.kind === 'memory-dream' ? 'Memory dream · before command jobs' : target.kind === 'review-since-last' ? 'Review since last' : target.kind === 'session' ? 'Thread' : jobKind(job),
       daysLabel: item.days ? item.days.map(day => day[0]!.toUpperCase() + day.slice(1)).join(', ') : null,
@@ -43,7 +43,7 @@ export function projectJobsView(raw: z.infer<typeof ProjectDailyListViewSchema>,
     counts: { nightly: raw.dailies.filter(item => item.enabled).length, goals: goals.filter(entry => entry.goal.state !== 'done').length },
     displayDay: { date: displayDay, label: window?.state === 'open' ? 'Closing project day' : 'Project day' },
     mergeHold: { held: raw.mergesHeld, allowedThreadIds: raw.mergeAllowedThreads, banner: raw.mergesHeld ? 'Nightly window · merges held until the nightly tasks finish' : null, notice: raw.mergesHeld ? 'Merges are held while the nightly window runs.' : null },
-    banner: last, dailies, jobs: raw.jobs.map(job => ({ definition: job, kindLabel: jobKind(job), stateLabel: job.paused ? 'Paused' : job.enabled ? 'Enabled' : 'Disabled',
+    banner: last, dailies, jobs: raw.jobs.map(job => ({ definition: job, kindLabel: jobKind(job), stateLabel: job.paused ? job.pauseReason ? `Paused: ${job.pauseReason}` : 'Paused' : job.enabled ? 'Enabled' : 'Disabled',
       gateLabel: job.gate ? `Gate: ${jobs.get(job.gate.jobId)?.name ?? 'Job'}` : null,
       scheduleLine: job.interval ? `Every ${job.interval.everyMinutes} minutes, ${job.interval.start} to ${job.interval.end}` : null,
       runNow: runAction(`/api/projects/${projectId}/jobs/${job.id}/run`, jobRunRefusal(settings, job) ?? (running(job.id) ? 'This job is already queued or running.' : null)),

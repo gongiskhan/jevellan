@@ -17,8 +17,10 @@ export function vaultDefinition(project: Project, settings: ProjectWorkSettings,
       nightlyWindow: settings.nightlyWindow, refill: settings.refill, memory: settings.memory, sessionCheckpoints: settings.sessionCheckpoints, coordinatorHandoffAtPercent: settings.coordinatorHandoffAtPercent, compactAtPercent: settings.compactAtPercent, startMode: settings.startMode, maxNewThreadsPerDay: settings.maxNewThreadsPerDay, placement: settings.placement, prAutoFix: settings.prAutoFix, environment: settings.environment, notifications: settings.notifications,
       coordinator: { runtimeId: settings.coordinator.runtimeId ?? null, modelId: settings.coordinator.modelId, effort: settings.coordinator.effort } },
     goals: byName(goals.map(goal => ({ name: goal.name, state: goal.state, motivation: goal.motivation, health: goal.health, autonomy: goal.autonomy, dailyRefillCap: goal.dailyRefillCap, openPrCap: goal.openPrCap }))),
-    jobs: byName(jobs.map(job => ({ name: job.name, goal: goalName(job.goalId), run: job.run, gate: jobName(job.gate?.jobId), enabled: job.enabled }))),
+    jobs: byName(jobs.map(job => ({ name: job.name, goal: goalName(job.goalId), run: job.run, gate: jobName(job.gate?.jobId), enabled: job.enabled,
+      ...(job.paused === undefined ? {} : { paused: job.paused }), ...(job.pauseReason === undefined ? {} : { pauseReason: job.pauseReason }), ...(job.interval ? { interval: job.interval } : {}) }))),
     dailies: byName(dailies.map(daily => ({ name: daily.name, goal: goalName(daily.goalId), order: daily.order, ...(daily.days ? { days: daily.days } : {}), enabled: daily.enabled,
+      ...(daily.pauseReason === undefined ? {} : { pauseReason: daily.pauseReason }),
       target: daily.target.kind === 'job' ? { kind: 'job', job: jobName(daily.target.jobId) ?? daily.name } : daily.target.kind === 'review-since-last' ? { kind: 'review-since-last' } : daily.target }))),
   });
 }
@@ -58,7 +60,8 @@ export async function restoreFromVault(work: ProjectWork, projectId: string, fol
   for (const goal of definition.goals) goals.set(goal.name, (await goalNamed(work, projectId, { schema: 'goal-create-request-v1', ...goal }, id('goal', goal.name))).id);
   const goalId = (name: string | null) => name ? goals.get(name) ?? null : null;
   const jobs = new Map<string, ProjectJob>();
-  for (const job of definition.jobs) jobs.set(job.name, await jobNamed(work, projectId, { schema: 'job-create-request-v1', name: job.name, goalId: goalId(job.goal), run: job.run, gate: null, enabled: job.enabled }, id('job', job.name)));
+  for (const job of definition.jobs) jobs.set(job.name, await jobNamed(work, projectId, { schema: 'job-create-request-v1', name: job.name, goalId: goalId(job.goal), run: job.run, gate: null, enabled: job.enabled,
+    paused: job.paused, pauseReason: job.pauseReason, interval: job.interval }, id('job', job.name)));
   for (const job of definition.jobs) {
     const saved = jobs.get(job.name)!, gate = job.gate ? jobs.get(job.gate) : undefined;
     if (gate && saved.gate?.jobId !== gate.id) jobs.set(job.name, await work.daily.updateJob(projectId, saved.id, { schema: 'job-update-request-v1', expectedRevision: saved.revision,
@@ -70,7 +73,7 @@ export async function restoreFromVault(work: ProjectWork, projectId: string, fol
   for (const daily of definition.dailies) {
     const target = daily.target.kind === 'job' ? jobs.get(daily.target.job) : undefined;
     if (daily.target.kind === 'job' && !target) continue;
-    await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', name: daily.name, goalId: goalId(daily.goal), order: daily.order, ...(daily.days ? { days: daily.days } : {}), enabled: daily.enabled && target?.run.kind !== 'github-workflow',
+    await dailyNamed(work, projectId, { schema: 'daily-create-request-v1', name: daily.name, goalId: goalId(daily.goal), order: daily.order, ...(daily.days ? { days: daily.days } : {}), enabled: daily.enabled && target?.run.kind !== 'github-workflow', pauseReason: daily.pauseReason,
       target: daily.target.kind === 'job' ? { kind: 'job', jobId: target!.id } : daily.target }, id('daily', daily.name));
   }
   const stored = await work.notebookView(projectId);

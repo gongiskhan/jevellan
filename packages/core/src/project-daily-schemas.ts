@@ -17,7 +17,7 @@ export const JobRunSpecSchema = z.discriminatedUnion('kind', [
 export const ProjectJobSchema = z.strictObject({ schema: z.literal('project-job-v1'), id: IdSchema, projectId: IdSchema, revision,
   name: text.max(80), goalId: IdSchema.nullable(), run: JobRunSpecSchema, gate: z.strictObject({ jobId: IdSchema }).nullable(), enabled: z.boolean(),
   // bridge: a paused command job runs nowhere until resumed; an interval schedule runs it every N minutes between two local times (no misses).
-  paused: z.boolean().optional(), interval: z.strictObject({ everyMinutes: z.number().int().min(5).max(1440), start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u), end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u) }).optional(),
+  paused: z.boolean().optional(), pauseReason: text.max(400).nullable().optional(), interval: z.strictObject({ everyMinutes: z.number().int().min(5).max(1440), start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u), end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u) }).optional(),
   requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema });
 export type ProjectJob = z.infer<typeof ProjectJobSchema>;
 export const ProjectJobFindingsSchema = z.strictObject({ schema: z.literal('project-job-findings-v1'), findings: z.array(z.strictObject({ title: text.max(120), brief: text.max(20000) })).max(20) });
@@ -36,7 +36,7 @@ export const ProjectDailySchema = z.strictObject({ schema: z.literal('project-da
   name: text.max(80), goalId: IdSchema.nullable(), days: z.array(z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])).min(1).max(7).optional(), order: z.number().int().min(0).max(100),
   target: z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('memory-dream') }), z.strictObject({ kind: z.literal('job'), jobId: IdSchema }), z.strictObject({ kind: z.literal('review-since-last'), reviewFromCommit: z.string().regex(/^[0-9a-f]{40}$/u).optional() }), z.strictObject({ kind: z.literal('session'), title: text.max(120), brief: text.max(20000), type: TaskTypeSchema })]),
   reviewFromVersion: revision.default(0), reviewFromOwner: z.boolean().default(false), enabledSince: TimestampSchema.optional(),
-  enabled: z.boolean(), requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema });
+  enabled: z.boolean(), pauseReason: text.max(400).nullable().optional(), requestDigest: z.string().regex(/^[0-9a-f]{64}$/u).optional(), createdAt: TimestampSchema, updatedAt: TimestampSchema });
 export type ProjectDaily = z.infer<typeof ProjectDailySchema>;
 export const ProjectWindowSchema = z.strictObject({ schema: z.literal('project-window-v1'), id: IdSchema, projectId: IdSchema, revision, date, closingProjectDay: date,
   state: z.enum(['open', 'finished']), memoryDreamPending: z.boolean().default(false), mergesHeld: z.boolean(), openedAt: TimestampSchema, jobPhaseStartedAt: TimestampSchema.optional(), scheduledAt: TimestampSchema.optional(), openedLateReason: z.string().max(400).optional(), finishedAt: TimestampSchema.optional(), taskIds: z.array(IdSchema).max(50),

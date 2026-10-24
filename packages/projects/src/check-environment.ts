@@ -15,7 +15,6 @@ export class CheckEnvironmentBlocked extends Error {
 const emptyProfile: ProjectCheckEnvironment = { schema: 'project-check-environment-v1', variables: [], secrets: [], copyFiles: [] };
 const normalized = (path: string) => path.split('/').filter(part => part && part !== '.').join('/');
 export function checkEnvironmentProfile(settings: Pick<ProjectWorkSettings, 'environment' | 'checkEnvironment'>): ProjectCheckEnvironment {
-  if (!settings.checkEnvironment && (settings.environment.variables.length || settings.environment.secrets.length || settings.environment.copyFiles.length)) throw new CheckEnvironmentBlocked();
   const profile = ProjectCheckEnvironmentSchema.parse(settings.checkEnvironment ?? emptyProfile);
   const workFiles = new Set(settings.environment.copyFiles.map(normalized));
   if (profile.copyFiles.some(file => workFiles.has(normalized(file.source)))) throw new CheckEnvironmentBlocked('The check environment needs source files separate from work inputs.');

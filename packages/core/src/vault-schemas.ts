@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { GoalAutonomySchema, GoalStateSchema } from './project-goal-schemas.js';
-import { JobRunSpecSchema } from './project-daily-schemas.js';
+import { JobRunSpecSchema, ProjectJobSchema, ProjectDailySchema } from './project-daily-schemas.js';
 import { TaskTypeSchema } from './project-loop-schemas.js';
 import { ProjectWorkSettingsSchema, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4 } from './project-schemas.js';
 import { defaultQuietHours } from './notification-schemas.js';
@@ -43,7 +43,10 @@ export const VaultProjectSchemaV3 = VaultProjectSchemaV2.extend({ schema: z.lite
     coordinatorHandoffAtPercent: landingSettings.coordinatorHandoffAtPercent.removeDefault().optional(),
     delivery: landingSettings.delivery, autoLand: landingSettings.autoLand, landingChecks: landingSettings.landingChecks, landingPorts: landingSettings.landingPorts, smokeCheck: landingSettings.smokeCheck, mergeCommitPaths: landingSettings.mergeCommitPaths, healthChecks: landingSettings.healthChecks }),
 });
-export const VaultProjectSchemaV4 = VaultProjectSchemaV3.extend({ schema: z.literal('vault-project-v4'), work: VaultProjectSchemaV3.shape.work.extend({ notifications: landingSettings.notifications, pullRequestAutoMerge: landingSettings.pullRequestAutoMerge }) });
+export const VaultProjectSchemaV4 = VaultProjectSchemaV3.extend({ schema: z.literal('vault-project-v4'),
+  work: VaultProjectSchemaV3.shape.work.extend({ notifications: landingSettings.notifications, pullRequestAutoMerge: landingSettings.pullRequestAutoMerge }),
+  jobs: z.array(VaultProjectSchemaV3.shape.jobs.element.extend({ paused: ProjectJobSchema.shape.paused, pauseReason: ProjectJobSchema.shape.pauseReason, interval: ProjectJobSchema.shape.interval })).max(100),
+  dailies: z.array(VaultProjectSchemaV3.shape.dailies.element.extend({ pauseReason: ProjectDailySchema.shape.pauseReason })).max(100) });
 export const VaultProjectSchema = z.union([VaultProjectSchemaV1, VaultProjectSchemaV2, VaultProjectSchemaV3, VaultProjectSchemaV4]).transform(value => {
   if (value.schema === 'vault-project-v4') return { ...value, work: { ...value.work, coordinatorHandoffAtPercent: value.work.coordinatorHandoffAtPercent ?? value.work.compactAtPercent } };
   if (value.schema === 'vault-project-v3') return VaultProjectSchemaV4.parse({ ...value, schema: 'vault-project-v4', work: { ...value.work, pullRequestAutoMerge: value.work.autoLand, notifications: { level: value.work.notifications, quietHours: defaultQuietHours }, coordinatorHandoffAtPercent: value.work.coordinatorHandoffAtPercent ?? value.work.compactAtPercent } });

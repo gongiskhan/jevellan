@@ -232,7 +232,7 @@ test('a landing held before routing retries after the night releases it', async 
   await f.waitFor(() => f.thread(thread.id), t => !!t.landing); expect(f.thread(thread.id).turns).toBe(1);
 }, 120_000);
 
-test('landing refuses to run a check with undeclared work credentials or copied files', async () => {
+test('landing runs an absent check profile empty without work credentials or copied files', async () => {
   const f = await setup({ environment: { variables: [{ name: 'WORK_INPUT', value: 'synthetic-work-only' }], secrets: [], copyFiles: ['.env.local'] } });
   const probe = join(f.root, 'check-input-probe.json');
   const command = `node -e ${shellQuote(`require('fs').writeFileSync(${JSON.stringify(probe)},JSON.stringify({workInput:Boolean(process.env.WORK_INPUT),privateFile:require('fs').existsSync('.env.local')}))`)}`;
@@ -247,14 +247,16 @@ test('landing refuses to run a check with undeclared work credentials or copied 
   const result = await start(f), thread = await done(f, result.threadId);
   expect(existsSync(join(thread.cwd, '.env.local'))).toBe(true);
   const outcome = await f.app.projectWork.landings.publish(f.project, thread);
-  expect(existsSync(probe)).toBe(false);
-  expect(outcome).toMatchObject({ kind: 'waiting', reason: expect.stringContaining('check environment') });
+  expect(JSON.parse(readFileSync(probe, 'utf8'))).toEqual({ workInput: false, privateFile: false });
+  expect(outcome).toMatchObject({ kind: 'landed' });
+  expect((await f.app.projectHub.decisions('project')).filter(row => row.blocker?.kind === 'environment')).toEqual([]);
+  expect(readFileSync(join(thread.cwd, '.env.local'), 'utf8')).toBe('WORK_FILE=synthetic-work-only\n');
   expect(f.thread(thread.id).turns).toBe(1);
   expect(f.thread(thread.id).landing).toBeUndefined();
   expect(git(thread.cwd, 'show', 'HEAD:README.md')).toBe('Check environment boundary');
 }, 120_000);
 
-test('publication verification blocks undeclared work inputs before invoking its configured command', async () => {
+test('publication verification uses an empty absent check profile without inheriting work inputs', async () => {
   const f = fixture = await projectFixture();
   const probe = join(f.root, 'publication-input-probe.json');
   const command = `node -e ${shellQuote(`require('fs').writeFileSync(${JSON.stringify(probe)},JSON.stringify({workInput:Boolean(process.env.WORK_INPUT)}))`)}`;
@@ -262,8 +264,9 @@ test('publication verification blocks undeclared work inputs before invoking its
   f.fake.enqueueTurn(commitStep({ 'README.md': 'Publication environment boundary\n' }, { status: 'progress', summary: 'Ready for checks.' }), forThread());
   const result = await start(f), thread = await done(f, result.threadId);
   const checked = await f.app.projectWork.landings.o.publication.verify({ ...f.project, testCommand: command }, thread, f.app.projectWork.ledgers.thread('project', thread.id));
-  expect(existsSync(probe)).toBe(false);
-  expect(checked).toMatchObject({ status: 'blocked', command, tail: expect.stringContaining('check environment') });
+  expect(JSON.parse(readFileSync(probe, 'utf8'))).toEqual({ workInput: false });
+  expect(checked).toMatchObject({ status: 'passed', command });
+  expect((await f.app.projectHub.decisions('project')).filter(row => row.blocker?.kind === 'environment')).toEqual([]);
   expect(f.thread(thread.id).turns).toBe(1);
   expect(f.thread(thread.id).landing).toBeUndefined();
 }, 120_000);
@@ -273,7 +276,8 @@ test('a check-environment wait survives restart and clears automatically after s
   const probe = join(f.root, 'separate-check-result.json');
   writeFileSync(join(f.checkout, '.env.local'), 'work-only'); writeFileSync(join(f.checkout, 'check-input.fixture'), 'check-only');
   const command = 'node -e ' + shellQuote(`const fs=require('fs');require('assert').strictEqual(process.env.WORK_INPUT,undefined);require('assert').strictEqual(process.env.CHECK_INPUT,'ready');require('assert').strictEqual(fs.readFileSync('.env.local','utf8'),'check-only');fs.writeFileSync(${JSON.stringify(probe)},'passed')`);
-  await settings(f, { landingChecks: [{ name: 'Separate inputs', paths: [], command }] });
+  await settings(f, { landingChecks: [{ name: 'Separate inputs', paths: [], command }],
+    checkEnvironment: { schema: 'project-check-environment-v1', variables: [{ name: 'CHECK_INPUT', value: 'ready' }], secrets: [], copyFiles: [{ source: 'unavailable-check-input.fixture', target: '.env.local' }] } });
   f.fake.enqueueTurn(async turn => {
     writeFileSync(join(turn.input.cwd, 'README.md'), 'Separate check workspace\n'); git(turn.input.cwd, 'add', 'README.md'); git(turn.input.cwd, 'commit', '-m', 'Separate check workspace');
     await turn.bridge('jevellan_thread_report', { status: 'done', summary: 'Ready for the configured check.' }); return { status: 'completed' };

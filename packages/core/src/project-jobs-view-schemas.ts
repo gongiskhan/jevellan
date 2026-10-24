@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { IdSchema, TimestampSchema } from './schemas.js';
 import { ProjectDailySchema, ProjectJobSchema } from './project-daily-schemas.js';
 
-export const DailyEnabledRequestSchema = z.strictObject({ schema: z.literal('daily-enabled-request-v1'), expectedRevision: z.number().int().positive(), enabled: z.boolean() });
-export const JobPausedRequestSchema = z.strictObject({ schema: z.literal('job-paused-request-v1'), expectedRevision: z.number().int().positive(), paused: z.boolean() });
+export const DailyEnabledRequestSchema = z.strictObject({ schema: z.literal('daily-enabled-request-v1'), expectedRevision: z.number().int().positive(), enabled: z.boolean(), pauseReason: ProjectDailySchema.shape.pauseReason });
+export const JobPausedRequestSchema = z.strictObject({ schema: z.literal('job-paused-request-v1'), expectedRevision: z.number().int().positive(), paused: z.boolean(), pauseReason: ProjectJobSchema.shape.pauseReason });
 const action = z.strictObject({ path: z.string().startsWith('/api/projects/'), enabled: z.boolean(), refusal: z.string().nullable() });
 const lastRun = z.strictObject({ summary: z.string(), commitLabel: z.string(), logTail: z.string(), href: z.url().nullable() });
 export const ProjectDailyRowSchema = z.strictObject({ definition: ProjectDailySchema, state: z.enum(['disabled', 'done', 'running', 'queued', 'failed', 'not-run']),

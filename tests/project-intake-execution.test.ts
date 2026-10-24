@@ -1,5 +1,5 @@
 import {afterEach,expect,test} from 'vitest';
-import {existsSync,readFileSync,writeFileSync} from 'node:fs';
+import {readFileSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {GitHubClient} from '../packages/core/dist/index.js';
 import {projectFixture,type ProjectFixture} from './helpers/project-fixture.js';
@@ -25,11 +25,11 @@ test('an unchanged-head intake concludes its task while retaining a skipped run'
  f=await projectFixture();await pull();const job=await setup();await run(job.id,'idle_initial_check');await f.app.projectWork.idle();const cached=await run(job.id,'idle_cached_check');await f.app.projectWork.idle();expect(cached.conclusion).toBe('skipped');expect(cached.intake?.skipped).toBe(1);expect(cached.intake?.pulls).toEqual([]);expect((await f.app.projectHub.task(cached.taskId))!.document.state).toBe('done');expect(f.fake.runs).toHaveLength(0);
 });
 
-test('intake blocks undeclared work inputs before any configured check command runs',async()=>{
+test('intake uses an absent check profile empty without inheriting work inputs',async()=>{
  f=await projectFixture();await pull();const probe=join(f.root,'intake-input-probe.json'),script=`require('fs').writeFileSync(${JSON.stringify(probe)},JSON.stringify({workInput:Boolean(process.env.WORK_INPUT)}))`,command="node -e '"+script.replaceAll("'","'\\''")+"'",job=await setup(command),base=(await f.app.projectWork.settingsView('project')).settings;
  await f.app.projectHub.putSettings({...base,environment:{variables:[{name:'WORK_INPUT',value:'synthetic-work-only-value'}],secrets:[],copyFiles:[]}},base.revision);
  const checked=await run(job.id,'intake_environment_boundary');
- expect(existsSync(probe)).toBe(false);expect(checked.conclusion).toBe('failed');expect(checked.intake?.errors).toEqual([expect.objectContaining({reason:expect.stringContaining('check environment')})]);expect(f.fake.runs).toHaveLength(0);
+ expect(JSON.parse(readFileSync(probe,'utf8'))).toEqual({workInput:false});expect(checked.conclusion).toBe('passed');expect(checked.intake?.errors).toEqual([]);expect(f.fake.runs).toHaveLength(0);
 });
 
 test.each(['profile','file','secret'] as const)('intake reruns an unchanged head when check inputs change (%s)',async kind=>{

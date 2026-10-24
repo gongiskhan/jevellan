@@ -132,7 +132,8 @@ export class ProjectDailyWork {
     const input = JobPausedRequestSchema.parse(raw), current = (await this.o.hub.job(id))?.document;
     if (!current || current.projectId !== projectId) return refuse('Job not found.', 404);
     return this.updateJob(projectId, id, { schema: 'job-update-request-v1', expectedRevision: input.expectedRevision,
-      name: current.name, goalId: current.goalId, run: current.run, gate: current.gate, enabled: current.enabled, interval: current.interval, paused: input.paused });
+      name: current.name, goalId: current.goalId, run: current.run, gate: current.gate, enabled: current.enabled, interval: current.interval, paused: input.paused,
+      pauseReason: input.paused ? input.pauseReason ?? current.pauseReason ?? null : null });
   }
   async #gate(projectId: string, id: string, parent?: string): Promise<void> {
     const visited = new Set([id]);
@@ -162,7 +163,8 @@ export class ProjectDailyWork {
     const input = DailyEnabledRequestSchema.parse(raw), current = (await this.o.hub.daily(id))?.document;
     if (!current || current.projectId !== projectId) return refuse('Daily item not found.', 404);
     return this.updateDaily(projectId, id, { schema: 'daily-update-request-v1', expectedRevision: input.expectedRevision,
-      name: current.name, goalId: current.goalId, target: current.target, order: current.order, days: current.days, enabled: input.enabled });
+      name: current.name, goalId: current.goalId, target: current.target, order: current.order, days: current.days, enabled: input.enabled,
+      pauseReason: input.enabled ? null : input.pauseReason ?? current.pauseReason ?? null });
   }
   async #reviewBaseline(projectId: string, input: Pick<ProjectDaily, 'target' | 'enabled'>, current?: ProjectDaily) {
     if (input.target.kind !== 'review-since-last') return {};
