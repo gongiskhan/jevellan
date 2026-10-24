@@ -1172,7 +1172,7 @@
   {
     "id": "manager-followups-074",
     "title": "Follow-up findings and remaining live evidence",
-    "why": "Decisions779–781: durable waiting/landing visibility, repeated identical verification stops, pending fresh starts and weekly/five-hour budget provenance are verified source. Check-environment isolation now passes522 assertions/28 complete files, static/build and settings/thread/new-form desktop journeys with10 matching images. 078 is authorized and in preparation; existing devices stay077 until actual guarded installation. Tool failure explanations and conditional dependency wakeup remain unverified/planned. No real task/config/auth/deploy change or extra review.",
+    "why": "Decisions779–781: durable waiting/landing visibility, repeated identical verification stops, pending fresh starts and weekly/five-hour budget provenance are verified source. Check-environment isolation now passes522 assertions/28 complete files, static/build and settings/thread/new-form desktop journeys with10 matching images. 078 is authorized and in preparation; existing devices stay077 until actual guarded installation. Tool failure explanations and conditional dependency wakeup remain unverified/planned. No real task/config/auth/deploy change or extra review. Decision784 ships check-input isolation, weekly provenance, repeat stops, pending fresh state and instruction budget in078 on both devices. Tool-refusal cause and conditional dependency wakeup remain unverified.",
     "status": "in-progress"
   },
   {
@@ -1190,7 +1190,7 @@
   {
     "id": "runtime-project-instruction-size",
     "title": "Handle project instructions above the runtime default limit",
-    "why": "Source-only Decision777: bounded 256 KiB UTF-8 root reader and supported managed Codex project_doc_max_bytes cover new and resumed turns, stretch continuations and takeover. Three regressions fail and repeat before their corrections;73 assertions in seven complete files/static checks, build and desktop thread-page main action pass. Confinement/invalid-file/upper-bound refusals remain. Unreleased; no real task retry or native-home change.",
+    "why": "Source-only Decision777: bounded 256 KiB UTF-8 root reader and supported managed Codex project_doc_max_bytes cover new and resumed turns, stretch continuations and takeover. Three regressions fail and repeat before their corrections;73 assertions in seven complete files/static checks, build and desktop thread-page main action pass. Confinement/invalid-file/upper-bound refusals remain. Unreleased; no real task retry or native-home change. Decision784: included in published078 and normally installed on both devices; no real-task retry or project input/account change. Doctors9/10 account freshness are separate.",
     "status": "complete-with-blockers"
   },
   {
@@ -1220,25 +1220,25 @@
   {
     "id": "manager-repeat-fresh-state",
     "title": "Keep fresh-start intent visible and stop repeated verification failures",
-    "why": "Decision779: canonical failing-first proofs,184 assertions/20 complete files,static/build and two desktop-light chat journeys pass; durable optional versioned state covers restart. Source-only, unreleased. Existing installed0.7.7 immutable; no additional release authorized.",
+    "why": "Decision779: canonical failing-first proofs,184 assertions/20 complete files,static/build and two desktop-light chat journeys pass; durable optional versioned state covers restart. Source-only, unreleased. Existing installed0.7.7 immutable; no additional release authorized. Decision784: included in published078 and normally installed on both devices; no real-task retry or project input/account change. Doctors9/10 account freshness are separate.",
     "status": "complete-with-blockers"
   },
   {
     "id": "manager-budget-window-provenance",
     "title": "Show weekly budgets with independent window and source evidence",
-    "why": "Decision780: three failing-first cases and their sole repeats precede correction;336 complete assertions/16files,static/build/desktop overview pass. One observation per account; reset/missing values stay unknown, legacy window unreported. Source-only, actual account readings not probed;0.7.7 installed unchanged.",
+    "why": "Decision780: three failing-first cases and their sole repeats precede correction;336 complete assertions/16files,static/build/desktop overview pass. One observation per account; reset/missing values stay unknown, legacy window unreported. Source-only, actual account readings not probed;0.7.7 installed unchanged. Decision784: included in published078 and normally installed on both devices; no real-task retry or project input/account change. Doctors9/10 account freshness are separate.",
     "status": "complete-with-blockers"
   },
   {
     "id": "project-check-environment",
     "title": "Separate verification and landing inputs from work inputs",
-    "why": "Decision781: versioned optional check profile and isolated vault/API/member/CLI/editor scope, detached candidates, mapped check files, input-bound receipts/caches and durable automatic environment waits. Canonical failing-first/single-repeat evidence;522/28complete assertions, static/build and three desktop journeys pass with10matching images and one nonblocking controls vision judgement. Source verified; publication/install in078 still pending. No production credential reuse or real project-setting change.",
+    "why": "Decision781: versioned optional check profile and isolated vault/API/member/CLI/editor scope, detached candidates, mapped check files, input-bound receipts/caches and durable automatic environment waits. Canonical failing-first/single-repeat evidence;522/28complete assertions, static/build and three desktop journeys pass with10matching images and one nonblocking controls vision judgement. Source verified; publication/install in078 still pending. No production credential reuse or real project-setting change. Decision784: included in published078 and normally installed on both devices; no real-task retry or project input/account change. Doctors9/10 account freshness are separate.",
     "status": "complete-with-blockers"
   },
   {
     "id": "release-078",
     "title": "Release isolated check inputs and weekly budget provenance as0.7.8",
-    "why": "Decision783:078 published from7211eb9d, exact source/assets/archive digests/extracted CLI+nativePTY verified; Linux fresh native build, Darwin unchanged official051 dependency/native cache with current exact JS/dist. Madrid normal cold-backed update/health/content verified, doctor9 account freshness; Pro077 preserved after resource-guard refusal before stop. Paired install/doctor10 milestone incomplete.866/64complete affected gate, static/build/five first-attempt desktop cores20matching images PASS; full unfiltered078backend not run. Fresh strict maintenance/cold backup remain mandatory for Pro.",
-    "status": "in-progress"
+    "why": "Decision784:078 published7211eb9d and normally cold-backed installed Madrid then Pro; bothCLI/health/Online/81product-file proofs, vault and144protected records/28PRdelivery references pass. Both doctors9/10 account freshness; strict10/10 remains failed. Original resource-refusals preserved, eventual unchanged Pro guard passed.866/64complete affected/static/build/five desktop cores20images PASS; full unfiltered078backend NOTRUN. Exact source/digests/nativePTY pass; Linux fresh build, Darwin verified unchanged official051 cache plus current exact JS/dist. No new release/review/real task/auth/deploy action.",
+    "status": "complete-with-blockers"
   }
 ]
