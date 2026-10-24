@@ -2,7 +2,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { existsSync } from 'node:fs';
 import { ThreadCreatedViewSchema, ThreadViewSchema } from '../packages/core/dist/index.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
-import { commitsSavedReason, restartedReason } from '../packages/projects/dist/index.js';
+import { commitsSavedReason, restartedReason, threadPresentation } from '../packages/projects/dist/index.js';
 import { projectFixture, projectMember, reportStep, type ProjectFixture } from './helpers/project-fixture.js';
 
 let fixture: ProjectFixture | undefined;
@@ -15,6 +15,27 @@ async function setup() {
   await f.waitFor(() => f.thread(made.threadId), row => row.state === 'idle');
   return { f, id: made.threadId, path: `/api/projects/project/threads/${made.threadId}` };
 }
+
+test('a turn blocked before a native session shows its recorded reason without claiming a read failure', async () => {
+  const f = fixture = await projectFixture();
+  f.fake.enqueueTurn(reportStep({ status: 'blocked', summary: 'Project AGENTS.md exceeds this device instruction budget.' }), forThread());
+  const made = await f.json('/api/projects/project/threads', ThreadCreatedViewSchema, 'POST', {
+    schema: 'thread-create-request-v1', clientRequestId: 'blocked_presentation', title: 'Blocked launch', task: 'Inspect the fixture.' });
+  await f.waitFor(() => f.thread(made.threadId), row => row.state === 'idle');
+  f.app.projectWork.store.update(made.threadId, row => { const { nativeSessionId: unused, ...rest } = row; void unused; return rest; });
+  vi.spyOn(f.app.projectWork.transcripts, 'read').mockResolvedValue(null);
+  const view = await f.json(`/api/projects/project/threads/${made.threadId}`, ThreadViewSchema);
+  expect(view.presentation?.reason?.text).toBe('Project AGENTS.md exceeds this device instruction budget.');
+  expect(view.presentation?.transcriptNotice).toContain('No transcript was created');
+  expect(view.presentation?.transcriptNotice).not.toContain('cannot be read');
+  expect(threadPresentation({ ...view, thread: { ...view.thread, state: 'running' } }).reason).toBeNull();
+  expect(threadPresentation({ ...view, thread: { ...view.thread, stateReason: 'Stopped by you.' } }).reason?.text).toBe('Stopped by you.');
+  vi.mocked(f.app.projectWork.transcripts.read).mockRejectedValue(Object.assign(new Error('private fixture path and identity'), { status: 404 }));
+  const missing = await f.json(`/api/projects/project/threads/${made.threadId}`, ThreadViewSchema);
+  expect(missing.transcriptRead).toEqual({ schema: 'thread-transcript-read-v1', state: 'missing' });
+  expect(missing.presentation?.transcriptNotice).toContain('missing on the owning device');
+  expect(JSON.stringify(missing)).not.toContain('private fixture path and identity');
+});
 
 test('thread reader owns header actions, canonical allowance copy and composer states without writes', async () => {
   const { f, id, path } = await setup(), before = structuredClone(f.thread(id));

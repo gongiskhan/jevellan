@@ -24,11 +24,19 @@ type Launch = Omit<Options, 'abortController'>;
 
 function workerEnvironment(input: Pick<StretchInput | TurnInput, 'account' | 'launch'>) {
   const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
+  // Each managed query closes at turn end; detached native tasks have no durable wake channel.
+  env.CLAUDE_CODE_DISABLE_BACKGROUND_TASKS = '1';
   const stablePath = join(input.account.home, 'jevellan-mcp.json');
   const stable = existsSync(stablePath) ? StableMcpSchema.parse(JSON.parse(readFileSync(stablePath, 'utf8'))).servers : {};
   // The CLI and stdio MCP children inherit the already-filtered environment.
   // Never serialize a bridge token into the SDK's --mcp-config argument.
   return { env, mcpServers: { ...stable, ...Object.fromEntries(Object.entries(input.launch.mcpServers).map(([name, server]) => [name, { command: server.command, args: server.args }])) } };
+}
+
+function managedSettings(input: StretchInput | TurnInput) {
+  const native = input.launch.nativeSetup?.settings;
+  const env = z.record(z.string(), z.unknown()).safeParse(native?.env);
+  return { ...native, ...CLAUDE_FLAG_SETTINGS, env: { ...(env.success ? env.data : {}), CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' } };
 }
 
 // The CLI's sentence for a resume of a session it no longer has; it names the session id, which never leaves the worker (P8 review R-T1).
@@ -105,11 +113,11 @@ const stretchSession = (input: StretchInput, daemonPid: number, executable?: str
       firstTurn = false;
       if (repairing && !sessionId) return { status: 'failed', error: { kind: 'other', message: 'Claude did not provide a session to continue.' } };
       const permissions = repairing ? 'read-only' : input.permissions;
-      const hook = claudePermissionHook({ cwd: input.cwd, action: input.action, daemonPid, permissions, memoryWrite: !repairing && input.memoryWrite });
+      const hook = claudePermissionHook({ cwd: input.cwd, action: input.action, daemonPid, permissions, memoryWrite: !repairing && input.memoryWrite, foregroundOnly: true });
       return execute(control, message, timeoutMs, {
         cwd: input.cwd, env, model: input.model, effort: input.effort,
         systemPrompt: { type: 'preset', preset: 'claude_code', append: [input.launch.nativeSetup?.instructions, input.systemAppend].filter(Boolean).join('\n\n') },
-        settingSources: ['user', 'project', 'local'], settings: { ...input.launch.nativeSetup?.settings, ...CLAUDE_FLAG_SETTINGS }, plugins: (input.launch.nativeSetup?.plugins ?? []).map(path => ({ type: 'local' as const, path })), includePartialMessages: true,
+        settingSources: ['user', 'project', 'local'], settings: managedSettings(input), plugins: (input.launch.nativeSetup?.plugins ?? []).map(path => ({ type: 'local' as const, path })), includePartialMessages: true,
         permissionMode: permissions === 'write' ? 'bypassPermissions' : 'dontAsk',
         allowDangerouslySkipPermissions: permissions === 'write',
         // Native Claude builds may omit Glob/Grep in favour of Bash. Read-only
@@ -137,14 +145,14 @@ const turnSession = (input: TurnInput, daemonPid: number, executable?: string): 
   const bridgeTools = input.owner.kind === 'coordinator' ? claudeBridgeToolNames(projectToolNames({ kind: 'coordinator', ...(env.JEVELLAN_PROJECT_MEMORY_MODE === 'hub' ? { memoryMode: 'hub' } : {}) }))
     : input.owner.kind === 'review' ? claudeBridgeToolNames(['jevellan_project_review_report', 'memory_search', 'memory_read'])
     : input.owner.kind === 'memory' ? claudeBridgeToolNames(['memory_search', 'memory_read', 'memory_write', 'memory_edit', 'jevellan_memory_inbox_add', 'jevellan_memory_archive', 'jevellan_memory_dream_report']) : undefined;
-  const hook = claudePermissionHook({ cwd: input.cwd, daemonPid, profile: input.safetyProfile, permissions: input.permissions, ...(input.privatePaths ? { privatePaths: input.privatePaths } : {}), ...(input.protectedPaths ? { protectedPaths: input.protectedPaths } : {}), ...(input.readOnlyDirectories ? { readOnlyDirectories: input.readOnlyDirectories } : {}), ...(bridgeTools ? { bridgeTools } : {}) });
+  const hook = claudePermissionHook({ cwd: input.cwd, daemonPid, profile: input.safetyProfile, permissions: input.permissions, foregroundOnly: true, ...(input.privatePaths ? { privatePaths: input.privatePaths } : {}), ...(input.protectedPaths ? { protectedPaths: input.protectedPaths } : {}), ...(input.readOnlyDirectories ? { readOnlyDirectories: input.readOnlyDirectories } : {}), ...(bridgeTools ? { bridgeTools } : {}) });
   return {
     async interrupt() { control.interrupted = true; await control.current?.interrupt(); },
     run: (message, timeoutMs, emit, session) => execute(control, message, timeoutMs, {
       cwd: input.cwd, env, model: input.model, effort: input.effort,
       ...(input.readOnlyDirectories ? { additionalDirectories: input.readOnlyDirectories } : {}),
       systemPrompt: { type: 'preset', preset: 'claude_code', append: [input.launch.nativeSetup?.instructions, input.systemAppend].filter(Boolean).join('\n\n') },
-      settingSources: ['user', 'project', 'local'], settings: { ...input.launch.nativeSetup?.settings, ...CLAUDE_FLAG_SETTINGS }, plugins: (input.launch.nativeSetup?.plugins ?? []).map(path => ({ type: 'local' as const, path })), includePartialMessages: true,
+      settingSources: ['user', 'project', 'local'], settings: managedSettings(input), plugins: (input.launch.nativeSetup?.plugins ?? []).map(path => ({ type: 'local' as const, path })), includePartialMessages: true,
       permissionMode: input.permissions === 'write' ? 'bypassPermissions' : 'dontAsk',
       allowDangerouslySkipPermissions: input.permissions === 'write',
       ...(input.permissions === 'read-only' ? { tools: ['Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'ToolSearch'], allowedTools: bridgeTools ?? [] } : {}),

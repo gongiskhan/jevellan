@@ -37,7 +37,9 @@ export function threadActivity(view: Pick<ThreadView, 'thread' | 'transcript'>):
   return `Waiting for tool result: ${purpose.slice(0, 180)}`;
 }
 /** The note above a thread transcript: none yet, unreadable (reports still show) or only its most recent part. */
-export function transcriptNotice(view: Pick<ThreadView, 'transcript' | 'reports' | 'thread'>): string | null {
+export function transcriptNotice(view: Pick<ThreadView, 'transcript' | 'reports' | 'thread' | 'transcriptRead'>): string | null {
+  if (!view.transcript && view.transcriptRead?.state === 'not-created' && view.reports.at(-1)?.status === 'blocked') return 'No transcript was created. The recorded blocked-turn report is shown below.';
+  if (!view.transcript && view.transcriptRead?.state === 'missing') return 'The saved native transcript is missing on the owning device. Reports are shown on their own.';
   if (!view.transcript) return view.reports.length || view.thread.turns ? copy.TRANSCRIPT_UNAVAILABLE : copy.NO_TRANSCRIPT_YET;
   if (!view.transcript.turns.length && !view.reports.length) return copy.NO_TRANSCRIPT_YET;
   return view.transcript.truncated ? copy.TRANSCRIPT_TRUNCATED : null;
@@ -62,7 +64,9 @@ export function threadReason(reason: string | undefined): { text: string; restar
 
 /** Render facts from the canonical owner-device reader; no provider or mutation is needed. */
 export function threadPresentation(view: ThreadView): ThreadPresentation {
-  const running = view.thread.state === 'running', block = composerBlock(view), reason = threadReason(view.thread.stateReason);
+  const latest = view.reports.at(-1);
+  const blocked = ['idle', 'failed', 'stopped', 'waiting-for-you'].includes(view.thread.state) && latest?.status === 'blocked' ? latest.summary : undefined;
+  const running = view.thread.state === 'running', block = composerBlock(view), reason = threadReason(view.thread.stateReason ?? blocked);
   return ThreadPresentationSchema.parse({ schema: 'project-thread-presentation-v1',
     actions: { ...threadActions(view), allowTurnsStep: copy.MORE_TURNS, allowTurnsLabel: copy.ALLOW_MORE_TURNS, allowedNotice: copy.MORE_TURNS_ALLOWED },
     composer: { running, ended: !view.canMessage && view.thread.state !== 'attached', block, steering: threadSteeringView({ running, block }),

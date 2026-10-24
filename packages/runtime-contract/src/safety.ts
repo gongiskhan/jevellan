@@ -209,7 +209,7 @@ export function claudeReadOnlyBridgeTools(memoryWrite: boolean): string[] {
 export function claudeBridgeToolNames(names: readonly string[]): string[] { return names.map((name) => `mcp__jevellan__${name}`); }
 
 // bridgeTools: the scope's exact read-only allow list, shared with the SDK's allowedTools (stretches derive it from memoryWrite).
-export function claudePermissionHook(context: SafetyContext & { permissions: 'read-only' | 'write'; memoryWrite?: boolean; bridgeTools?: string[] }) {
+export function claudePermissionHook(context: SafetyContext & { permissions: 'read-only' | 'write'; memoryWrite?: boolean; bridgeTools?: string[]; foregroundOnly?: boolean }) {
   const allowed = context.bridgeTools ?? claudeReadOnlyBridgeTools(context.memoryWrite ?? false);
   return async (input: { tool_name?: string; tool_input?: unknown }) => {
     const tool = input.tool_name ?? '';
@@ -224,6 +224,7 @@ export function claudePermissionHook(context: SafetyContext & { permissions: 're
     if (tool === 'Bash' && !reason) {
       const command = input.tool_input && typeof input.tool_input === 'object' && 'command' in input.tool_input ? input.tool_input.command : null;
       reason = typeof command === 'string' ? safetyDenial(command, context) : safetyReason(context);
+      if (!reason && context.foregroundOnly && input.tool_input && typeof input.tool_input === 'object' && 'run_in_background' in input.tool_input && input.tool_input.run_in_background === true) return { hookSpecificOutput: { hookEventName: 'PreToolUse' as const, permissionDecision: 'deny' as const, permissionDecisionReason: 'Run this command in the foreground and collect its result before reporting. Native background notifications cannot wake a managed turn after its CLI ends.' } };
     }
     return reason ? { hookSpecificOutput: { hookEventName: 'PreToolUse' as const, permissionDecision: 'deny' as const, permissionDecisionReason: ownerCommandDenial(reason) } } : {};
   };

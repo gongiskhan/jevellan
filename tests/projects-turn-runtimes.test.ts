@@ -56,6 +56,14 @@ test.each(['claude', 'codex'] as const)('PJ1e resumed turns pass the stored sess
   expect(await respond(adapter, { ...input, resume: { sessionId: 'stored-session' }, prompt: directive('safety', requests.slice(0, 2)) })).toEqual([denied(THREAD_SAFETY_REASON), {}]);
 }, 45_000);
 
+test('managed Claude turns keep check results in the foreground instead of waiting on an ended CLI', async () => {
+  const { adapter, input } = setup('claude');
+  for (const resume of [undefined, { sessionId: 'stored-session' }]) {
+    const answer = await respond(adapter, { ...input, ...(resume ? { resume } : {}), prompt: directive('background-lifecycle', []) });
+    expect(answer).toMatchObject({ disabled: '1', foreground: {}, explicit: { hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: expect.stringContaining('foreground') } } });
+  }
+});
+
 test.each(['claude', 'codex'] as const)('a first thread turn carries the system append once and Codex adds the root AGENTS.md (%s)', async (runtime) => {
   const { adapter, input } = setup(runtime);
   writeFileSync(join(root, 'AGENTS.md'), '# Fixture rules\nKeep the tests.\n');
@@ -121,10 +129,10 @@ test('every Claude launch on an account home keeps its transcripts: turns and st
   };
   const prompt = directive('settings', []);
   const turn = await settings(adapter.startTurn({ ...input, prompt }));
-  expect(JSON.parse(turn.settings ?? '{}')).toEqual({ cleanupPeriodDays: 36500 });
+  expect(JSON.parse(turn.settings ?? '{}')).toMatchObject({ cleanupPeriodDays: 36500, env: { CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' } });
   const stretch = await settings(adapter.startStretch({ schema: 'stretch-input-v1', conversationId: 'fixture', stretch: 1, action: 'reply', cwd: root, permissions: 'read-only', memoryWrite: false,
     systemAppend: '', brief: prompt, model: 'fixture-model', effort: 'low', timeoutMs: 10_000, launch: input.launch, account: input.account }));
-  expect(JSON.parse(stretch.settings ?? '{}')).toEqual({ cleanupPeriodDays: 36500 });
+  expect(JSON.parse(stretch.settings ?? '{}')).toMatchObject({ cleanupPeriodDays: 36500, env: { CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' } });
 }, 30_000);
 
 test('a Claude resume of a session that no longer exists fails with one sentence that names no session id (P8 review R-T1)', async () => {

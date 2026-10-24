@@ -1,0 +1,8 @@
+# 0.7.9
+
+Placement checks the selected project instruction file against the managed Codex budget on each device. Blocked launches show their recorded reason and distinguish an absent session from a missing transcript. Managed native checks stay in the foreground so their results return before the query closes; hook operational failures produce safe visible notices while explicit denials and guards remain enforced.
+
+This release also includes the tested persistent shell-reader/fresh-metadata improvement and literal document-input guard repair already on main. Gate, artifact, publication, installed and live results are recorded separately in the run log. Existing real work, accounts, authentication, bridge processes and production actions are unchanged. No owner acceptance is claimed.
+
+
+789. **Prepare the authorized0.7.9 release.** The release includes Decisions785–788 and synchronized workspace versions with unchanged external dependency lock entries. All166 assertions in11complete affected files pass, a final33-case/3-file gate covers hook lifecycle and transcript presentation, and9 readiness/presence cases pass. Build/typecheck/lint pass on the synchronized tree. The five desktop-light core journeys pass with20immediately retained matching screenshots and unchanged source hashes. Earlier stale-fixture browser failures remain recorded; the fixture now reports normal presence metadata and assertions remain unchanged. These are simulated provider journeys. The complete unfiltered backend, exact platform artifacts, mandatory scans/publication and fresh strict cold-backed Madrid-before-Pro installation are next; no079 installed or live acceptance claim.

@@ -4,10 +4,30 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse } from 'smol-toml';
 import { projectInstructions, projectInstructionFile, projectInstructionPrompt, projectTrustOverride } from '../runtimes/codex/dist/configuration.js';
+import { projectInstructionBudget, codexInstructionRefusal, ProjectInstructionBudgetSchema } from '../packages/core/dist/index.js';
 
 let root: string;
 beforeEach(() => { root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan.project.with.dots-'))); });
 afterEach(() => { rmSync(root, { recursive: true, force: true }); });
+test('placement metadata applies the managed launch bound without reading or leaking instruction contents', () => {
+  expect(codexInstructionRefusal(undefined)).toContain('not been reported');
+  expect(projectInstructionBudget(root)).toMatchObject({ state: 'none', filename: null, bytes: null, maxBytes: 262144 });
+  writeFileSync(join(root, 'AGENTS.md'), 'x'.repeat(41737));
+  const ready = projectInstructionBudget(root);
+  expect(ready).toMatchObject({ state: 'ready', filename: 'AGENTS.md', bytes: 41737, maxBytes: 262144 });
+  expect(codexInstructionRefusal(ready)).toBeUndefined();
+  expect(codexInstructionRefusal({ ...ready, maxBytes: 32768 })).toContain('41737 bytes; Codex accepts at most 32768');
+  writeFileSync(join(root, 'AGENTS.md'), 'x'.repeat(262145));
+  expect(codexInstructionRefusal(projectInstructionBudget(root))).toContain('262145 bytes');
+  rmSync(join(root, 'AGENTS.md')); symlinkSync(join(root, 'missing'), join(root, 'AGENTS.md'));
+  writeFileSync(join(root, 'CLAUDE.md'), 'must not become the fallback');
+  expect(projectInstructionBudget(root)).toMatchObject({ state: 'unreadable', filename: 'AGENTS.md' });
+  expect(codexInstructionRefusal(projectInstructionBudget(root))).toContain('cannot be read');
+  rmSync(join(root, 'AGENTS.md')); symlinkSync(process.cwd(), join(root, 'AGENTS.md'));
+  const outside = projectInstructionBudget(root);
+  expect(outside.state).toBe('outside-project'); expect(JSON.stringify(outside)).not.toContain(process.cwd());
+  expect(ProjectInstructionBudgetSchema.safeParse({ ...outside, text: 'must not travel' }).success).toBe(false);
+});
 test('project configuration preserves a dotted path as a single TOML key', () => {
   expect(parse(projectTrustOverride(root))).toEqual({ projects: { [root]: { trust_level: 'untrusted' } } });
 });

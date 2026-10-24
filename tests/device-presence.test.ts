@@ -29,6 +29,7 @@ test('a heartbeat includes real checkout state without fetching, running ids and
   git('init', '-b', 'main'); writeFileSync(join(path, 'value.txt'), '1\n'); git('add', '-A'); git('commit', '-m', 'Seed');
   const head = git('rev-parse', 'HEAD'); git('update-ref', 'refs/remotes/origin/main', head); git('config', 'branch.main.remote', 'origin'); git('config', 'branch.main.merge', 'refs/heads/main'); git('remote', 'add', 'origin', join(root, 'absent-remote'));
   writeFileSync(join(path, 'value.txt'), '2\n'); git('add', '-A'); git('commit', '-m', 'Local checkpoint'); writeFileSync(join(path, 'untracked.txt'), '3\n');
+  writeFileSync(join(path, 'AGENTS.md'), 'x'.repeat(41_737));
   const index = readFileSync(join(path, '.git', 'index')); const origin = git('rev-parse', 'refs/remotes/origin/main');
   const project = ProjectSchema.parse({ schema: 'project-v1', id: 'project', name: 'Project', paths: { here: path }, branchPolicy: 'main', allowedDevices: ['elsewhere'], memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } });
   const session = { runtime: 'claude', cwd: path, projectId: project.id, lastActivityAt: new Date().toISOString(), source: 'claude-journal' };
@@ -38,6 +39,10 @@ test('a heartbeat includes real checkout state without fetching, running ids and
   expect(sent[0]).toMatchObject({ deviceId: 'here', runningConversations: ['owned_work'], projects: [{ projectId: project.id, path, branch: 'main', head: git('rev-parse', 'HEAD'), ahead: 1, behind: 0, dirty: true }], externalSessions: [session] });
   expect(readFileSync(join(path, '.git', 'index'))).toEqual(index); expect(git('rev-parse', 'refs/remotes/origin/main')).toBe(origin);
   expect(sent[0]!.load.cpuPct).toBeGreaterThanOrEqual(0); expect(sent[0]!.load.cpuPct).toBeLessThanOrEqual(100);
+  expect(sent[0]?.projects[0]).toMatchObject({ instructions: { schema: 'project-instruction-budget-v1', filename: 'AGENTS.md', bytes: 41_737, maxBytes: 262_144, state: 'ready' } });
+  writeFileSync(join(path, 'AGENTS.md'), 'x'.repeat(262_145));
+  await pump.pulse();
+  expect(sent[1]?.projects[0]).toMatchObject({ instructions: { filename: 'AGENTS.md', bytes: 262_145, maxBytes: 262_144, state: 'too-large' } });
 });
 test('the pump reports immediately and every thirty seconds, then stops on close', async () => {
   vi.useFakeTimers(); const { pump, sent } = create({ timers: true }); await pump.pulse(); expect(sent).toHaveLength(1);

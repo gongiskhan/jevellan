@@ -251,7 +251,12 @@ export class ProjectViews {
     const reports = events.filter((event) => event.type === 'thread-report').map((event) => ledger.payload(event as ProjectLedgerEvent & { type: 'thread-report' }) as ThreadReport);
     const fixTurns = events.filter(event => event.type === 'thread-turn-start').flatMap(event => { const start = ledger.payload(event as ProjectLedgerEvent & { type: 'thread-turn-start' }); return start.fix ? [{ turn: start.turn, fix: start.fix }] : []; });
     // The page keeps working when the native session cannot be read; the transcript is just absent.
-    const transcript = await this.#o.transcripts.read(thread, project.name).catch(() => null);
+    let readFailure: 'missing' | 'unavailable' | undefined;
+    const transcript = await this.#o.transcripts.read(thread, project.name).catch((error: unknown) => {
+      readFailure = error && typeof error === 'object' && 'status' in error && error.status === 404 ? 'missing' : 'unavailable';
+      return null;
+    });
+    const transcriptRead = { schema: 'thread-transcript-read-v1' as const, state: transcript ? 'available' as const : readFailure ?? (thread.nativeSessionId ? 'unavailable' as const : 'not-created' as const) };
     const restartReason = restartRefusal(thread);
     // An ended main thread whose claim the sweeps are still settling says why the checkout stays held (phase 8, D291).
     const kept = isTerminal(thread.state) ? this.#o.store.local(threadId).unsettledCheckout?.message : undefined;
@@ -266,7 +271,7 @@ export class ProjectViews {
       ...(this.#o.store.local(threadId).escalations ? { escalations: this.#o.store.local(threadId).escalations } : {}),
       notices: events.filter(event => event.type === 'notice').slice(-20).map(event => { const notice = ledger.payload(event as ProjectLedgerEvent & { type: 'notice' }), text = clipRedacted(ledger.redact(notice.text), 4000); return { at: event.t, text, kind: notice.kind, display: threadDisplayText(text) }; }),
       sessionHistory: (this.#o.store.local(threadId).sessionHistory ?? []).map(({ nativeSessionId: _native, ...entry }) => { void _native; return entry; }),
-      placement: thread.placement, reports, ...(fixTurns.length ? { fixTurns } : {}), transcript, queuedMessages: thread.queuedMessages,
+      placement: thread.placement, reports, ...(fixTurns.length ? { fixTurns } : {}), transcript, transcriptRead, queuedMessages: thread.queuedMessages,
       ...(routed ? { messageRoute: ledger.payload(routed as typeof routed & { type: 'thread-message-route' }) } : {}),
       ...(mergesHeld === undefined ? {} : { mergesHeld }),
       canMessage: thread.state !== 'attached' && canContinueThread(thread), turnAllowance: thread.turnAllowance, deviceName: this.#o.deviceName,

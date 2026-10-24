@@ -4,7 +4,7 @@ import type { TaskPlacementContext } from '@jevellan/core';
 import type { z } from 'zod';
 import type { AccountService } from '@jevellan/accounts';
 import {
-  HubUnavailable, EffortSchema, PlacementRawChoiceSchema, PlacementDecisionInputsSchema, ProjectDeviceSetupSchema, isTerminal, type JevPlacementDecision, type AccountView, type Configuration, type DeviceRosterSchema, type PlacementRecord, type Project, type ProjectDeviceSetup, type ProjectHub,
+  HubUnavailable, codexInstructionRefusal, projectInstructionBudget, EffortSchema, PlacementRawChoiceSchema, PlacementDecisionInputsSchema, ProjectDeviceSetupSchema, isTerminal, type JevPlacementDecision, type AccountView, type Configuration, type DeviceRosterSchema, type PlacementRecord, type Project, type ProjectDeviceSetup, type ProjectHub,
   type DeviceFacts, type ProjectWorkSettings, type SecretRedactor, type ThreadIndex, type Thread, type Effort,
 } from '@jevellan/core';
 import {
@@ -105,8 +105,15 @@ export class Placement {
   }
   /** The roster as placement sees it, with running counts per device and the main rule's holders when given. */
   #devices(project: Project, roster: DeviceRoster, coordinatorDeviceId: string, counts?: ReadonlyMap<string, number>, held?: ReadonlyMap<string, string>): PlacementDevice[] {
+    const runtimeRefusals = (id: string): Record<string, string> => {
+      const path = project.paths[id];
+      const budget = id === this.#o.deviceId && path ? projectInstructionBudget(path)
+        : roster.devices.find(view => view.device.id === id)?.heartbeat?.projects.find(entry => entry.projectId === project.id)?.instructions;
+      const reason = codexInstructionRefusal(budget);
+      return reason ? { codex: reason } : {};
+    };
     const device = (id: string, name: string) => ({ id, name, hasPath: !!project.paths[id], allowed: roster.devices.find(view => view.device.id === id)?.device.workPolicy?.mode !== 'apps-only' && (!project.allowedDevices || project.allowedDevices.includes(id)),
-      running: counts?.get(id) ?? 0, isCoordinator: id === coordinatorDeviceId, ...(held?.has(id) ? { mainBlockedBy: held.get(id)! } : {}) });
+      running: counts?.get(id) ?? 0, isCoordinator: id === coordinatorDeviceId, runtimeRefusals: runtimeRefusals(id), ...(held?.has(id) ? { mainBlockedBy: held.get(id)! } : {}) });
     const devices: PlacementDevice[] = roster.devices.map((view) => ({ ...device(view.device.id, view.device.name), status: view.status, revoked: view.revoked,
       tags: view.device.tags, facts: view.device.id === this.#o.deviceId ? this.#o.facts?.() ?? view.heartbeat?.facts : view.heartbeat?.facts,
       checkoutBranch: view.heartbeat?.projects.find((entry) => entry.projectId === project.id)?.branch }));

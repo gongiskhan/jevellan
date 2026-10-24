@@ -5,7 +5,7 @@
 // Call B asks for the device when a second device qualifies (phase 5).
 import { afterEach, expect, test } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   AccountSchema, DeviceSchema, ProjectSchema, ProjectWorkViewSchema, SecretRedactor, ThreadCreatedViewSchema, ThreadOverrideViewSchema, ThreadViewSchema, mapEffort, type CoordinatorEvent, type ModelOption,
@@ -26,6 +26,21 @@ const SWIFT: ModelOption = { id: 'swift', runtime: 'fake', model: 'swift-model',
 const DEEP: ModelOption = { id: 'deep', runtime: 'fake2', model: 'deep-model', label: 'Deep', description: 'Careful model for large changes.', efforts: ['high', 'max'], enabled: true };
 const DEEP_LITE: ModelOption = { id: 'deep-lite', runtime: 'fake2', model: 'deep-lite-model', label: 'Deep Lite', description: 'Lighter careful model.', efforts: ['low', 'high'], enabled: true };
 const SECOND_RUNTIME = 'Second test runtime';
+
+test('Codex placement checks the current local instruction size before any runtime turn', async () => {
+  const codex = new FakeRuntime(); Object.defineProperty(codex, 'id', { value: 'codex' });
+  const f = fixture = await projectFixture({ menu: [SWIFT, { ...DEEP, runtime: 'codex' }], runtimes: { fake: new FakeRuntime(), codex } });
+  f.app.hub.put('accounts', 'acc_codex', AccountSchema, { schema: 'account-v1', id: 'acc_codex', runtime: 'codex', label: 'Codex fixture', kind: 'subscription', enabled: true, credential: 'per-device' }, 0);
+  await f.app.accounts.check('acc_codex');
+  writeFileSync(join(f.checkout, 'AGENTS.md'), 'x'.repeat(262145));
+  const response = await f.request('/api/projects/project/threads', 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'oversize_codex', title: 'Bounded instructions', task: 'Inspect fixture.', modelId: DEEP.id });
+  expect(response.status).toBe(409); expect(await response.text()).toContain('262145 bytes'); expect(codex.runs).toHaveLength(0);
+  writeFileSync(join(f.checkout, 'AGENTS.md'), 'x'.repeat(41737));
+  codex.enqueueTurn(reportStep({ status: 'progress', summary: 'Managed budget fits.' }), forThread());
+  const ready = await f.request('/api/projects/project/threads', 'POST', { schema: 'thread-create-request-v1', clientRequestId: 'fits_codex', title: 'Supported instructions', task: 'Inspect fixture.', modelId: DEEP.id });
+  expect(ready.status).toBe(201);
+  const made = ThreadCreatedViewSchema.parse(await ready.json()); await settle(f, made.threadId, 1); expect(codex.runs).toHaveLength(1);
+});
 /** Jev's distributions per question; every other option gets 0, and an unknown question puts everything on its first option. */
 const ANSWERS: Record<string, Record<string, number>> = {
   isolation: { worktree: 0.8, main: 0.2 }, pick_model: { deep: 0.7, swift: 0.3 }, effort: { max: 0.6, xhigh: 0.2, high: 0.1, medium: 0.05, low: 0.05 },

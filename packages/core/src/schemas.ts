@@ -162,9 +162,14 @@ export const ExternalSessionsSchema = z.strictObject({
 export type ExternalSessions = z.infer<typeof ExternalSessionsSchema>;
 export const CleanupSummarySchema = z.strictObject({ schema: z.literal('cleanup-summary-v1'), endedAt: TimestampSchema, freedBytes: count, removed: count, protected: count, freeBytes: count, state: z.enum(['completed', 'deferred']), reason: z.string().max(500).optional() });
 export type CleanupSummary = z.infer<typeof CleanupSummarySchema>;
+/** Metadata only: the owning device reports its actual managed launch budget. */
+export const ProjectInstructionBudgetSchema = z.strictObject({ schema: z.literal('project-instruction-budget-v1'),
+  maxBytes: z.number().int().positive(), filename: z.enum(['AGENTS.md', 'CLAUDE.md']).nullable(), bytes: count.nullable(),
+  state: z.enum(['none', 'ready', 'too-large', 'unreadable', 'outside-project', 'not-file']) });
+export type ProjectInstructionBudget = z.infer<typeof ProjectInstructionBudgetSchema>;
 export const HeartbeatSchema = z.strictObject({
   schema: z.literal('heartbeat-v1'), deviceId: IdSchema, at: TimestampSchema, version: text,
-  runningConversations: z.array(IdSchema), projects: z.array(z.strictObject({ projectId: IdSchema, path: text, branch: text, head: text, dirty: z.boolean(), ahead: count, behind: count })),
+  runningConversations: z.array(IdSchema), projects: z.array(z.strictObject({ projectId: IdSchema, path: text, branch: text, head: text, dirty: z.boolean(), ahead: count, behind: count, instructions: ProjectInstructionBudgetSchema.optional() })),
   externalSessions: z.array(ExternalSessionSchema), load: z.strictObject({ cpuPct: percentage, memFreeMb: z.number().nonnegative() }),
   lastCleanup: CleanupSummarySchema.optional(),
   workPolicy: DeviceWorkPolicySchema.optional(),

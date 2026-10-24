@@ -40,6 +40,14 @@ const NO_KEY = { kind: 'no-key', message: 'no key configured' };
 const fallback = (value: PlacementInput, fixedOnly = false) => placementFallback(value, candidates(value), NO_KEY, [], fixedOnly);
 const ids = (devices: PlacementDevice[]) => devices.map((entry) => entry.id);
 const sorted = (values: string[]) => [...values].sort();
+test('instruction refusals exclude a runtime per device, including fallback and explicit accounts', () => {
+  const reason = 'Project AGENTS.md is 300000 bytes; Codex accepts at most 262144 bytes on this device.';
+  const value = input({ devices: [{ ...mini, runtimeRefusals: { codex: reason } }, studio] });
+  expect(candidates(value).models.find(row => row.model.id === swift.id)?.devices).toEqual([studio.id]);
+  expect(fallback({ ...value, fixed: { accountId: 'codex_a' } }).deviceId).toBe(studio.id);
+  expect(refusal({ ...value, fixed: { accountId: 'codex_a', deviceId: mini.id } })).toContain(reason);
+  expect(candidates(value).models.find(row => row.model.id === deep.id)?.devices).toEqual([mini.id, studio.id]);
+});
 test('LJ10 needs, resource guards and per-device overrides are hard filters and facts enter Call B and its packet', () => {
   const facts = DeviceFactsSchema.parse({ schema: 'device-facts-v1', cores: 8, load1: 1, load5: 2.3, totalMemoryBytes: 32e9, freeMemoryBytes: 12e9, freeDiskBytes: 80e9, os: 'darwin', runningThreads: [], runningJobRuns: [] });
   const pro = { ...mini, name: 'Pro', tags: ['mac', 'residential'], facts }, madrid = { ...studio, name: 'Madrid', tags: ['linux', 'datacenter'], facts: { ...facts, os: 'linux' as const } };

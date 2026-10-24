@@ -90,6 +90,10 @@ async function turn(prompt) {
   if (test.mode === 'compaction-settings') {
     result(JSON.stringify(codex ? { limit: configuration.model_auto_compact_token_limit ?? null } : { percent: process.env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE ?? null })); return;
   }
+  if (test.mode === 'background-lifecycle' && !codex) {
+    result(JSON.stringify({ disabled: process.env.CLAUDE_CODE_DISABLE_BACKGROUND_TASKS ?? null,
+      explicit: await hook('Bash', { command: 'npm test', run_in_background: true }), foreground: await hook('Bash', { command: 'npm test' }) })); return;
+  }
   if (test.mode === 'instruction-settings' && codex) {
     result(JSON.stringify({ projectDocMaxBytes: configuration.project_doc_max_bytes ?? null, prompt })); return;
   }

@@ -697,7 +697,11 @@ member = new Application({ homes: memberHomes, terminalOptions, port: port + 100
 await member.conversations.ready;
 memberDiagnostics = new LocalDiagnostics(member, `http://127.0.0.1:${port + 100}`);
 memberServer = createDaemon({ application: member, diagnostics: memberDiagnostics }); await new Promise(resolve => memberServer.listen(port + 100, '127.0.0.1', resolve));
-const reportMember = () => member.member.heartbeat({ schema: 'heartbeat-v1', deviceId: member.device.deviceId, at: new Date().toISOString(), version: '0.1.0', runningConversations: ['fixture_remote_work'], projects: [], externalSessions: [{ runtime: 'codex', cwd: '/fixture/remote-project', lastActivityAt: new Date().toISOString(), source: 'simulated' }], load: { cpuPct: 0, memFreeMb: 1024 } });
+const reportMember = async () => {
+  const heartbeat = await member.presence.pulse();
+  if (!heartbeat) throw new Error('The simulated member could not report its checkout metadata.');
+  return member.member.heartbeat({ ...heartbeat, runningConversations: ['fixture_remote_work'], externalSessions: [{ runtime: 'codex', cwd: '/fixture/remote-project', lastActivityAt: new Date().toISOString(), source: 'simulated' }] });
+};
 await reportMember(); memberHeartbeat = globalThis.setInterval(() => { void reportMember().catch(() => {}); }, 30_000);
 application.mesh.join({ schema: 'join-device-v1', code: application.mesh.invite().code, requestId: 'offline_browser_fixture', device: { id: 'offline_browser_fixture', name: 'Offline fixture', url: 'http://127.0.0.1:1', os: 'linux', version: '0.1.0' } }, 'fixture');
 const meshOrigin = join(root, 'mesh-origin.git'); git(root, 'clone', '--bare', origin, meshOrigin);
@@ -1076,6 +1080,7 @@ improverControl = createServer((request, response) => {
   }
   response.writeHead(404).end();
 });
+await reportMember();
 await new Promise(resolve => improverControl.listen(port + 200, '127.0.0.1', resolve));
 ready = true;
 if (closing) void close();

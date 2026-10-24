@@ -36,8 +36,11 @@ test('ordinary browser fixtures signal ready only through the listener bound aft
     const cookie = login.headers.get('set-cookie')!.split(';')[0]!;
     const roster = await fetch(`http://127.0.0.1:${port}/hub/devices/roster`, { headers: { Cookie: cookie }, signal: AbortSignal.timeout(15_000) });
     expect(roster.status).toBe(200);
-    const view = await roster.json() as { devices: Array<{ device: { name: string } }> };
+    const view = await roster.json() as { devices: Array<{ device: { name: string }; heartbeat?: { projects: Array<{ instructions?: { schema: string; maxBytes: number } }> } }> };
     expect(view.devices.some(row => row.device.name === 'Browser member')).toBe(true);
+    const member = view.devices.find(row => row.device.name === 'Browser member');
+    expect(member?.heartbeat?.projects.length).toBeGreaterThan(0);
+    expect(member?.heartbeat?.projects.every(project => project.instructions?.schema === 'project-instruction-budget-v1' && project.instructions.maxBytes === 262144)).toBe(true);
     const context = await fetch(`http://127.0.0.1:${port}/api/projects/improver_sandbox/context/operations`, { headers: { Cookie: cookie }, signal: AbortSignal.timeout(15_000) });
     expect(context.status).toBe(200);
     const panel = await context.json() as { busy: boolean };

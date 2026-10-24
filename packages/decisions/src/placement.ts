@@ -54,6 +54,7 @@ export type PlacementDevice = {
   tags?: string[] | undefined; facts?: DeviceFacts | undefined;
   /** Title of the running main thread or conversation owner holding this device's checkout. */
   mainBlockedBy?: string | undefined;
+  runtimeRefusals?: Record<string, string> | undefined;
 };
 export type PlacementFixed = { isolation?: Isolation | undefined; runtimeId?: string | undefined; accountId?: string | undefined; modelId?: string | undefined; effort?: Effort | undefined; deviceId?: string | undefined };
 export type PlacementRuntime = RuntimeSupport & { turns: boolean; displayName: string };
@@ -152,6 +153,8 @@ function evaluate(input: PlacementInput, main: boolean, limits: boolean): Evalua
     const displayName = input.runtimes.get(model.runtime)!.displayName;
     const eligible: string[] = []; const unavailable: Exclusion[] = [];
     for (const device of devices) {
+      const refusal = device.runtimeRefusals?.[model.runtime];
+      if (refusal) { unavailable.push({ deviceId: device.id, reason: refusal }); continue; }
       const ranked = ranking(input, model, device.id); const best = ranked[0]?.reason;
       if (ranked.some((entry) => entry.eligible)) eligible.push(device.id);
       else unavailable.push({ deviceId: device.id, reason: `${displayName} ${ACCOUNT_REASON_TEXT[best && best !== 'eligible' ? best : 'no-account'].replace('{model}', model.label)}` });

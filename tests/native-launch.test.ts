@@ -55,6 +55,21 @@ test('HTTP native MCP discovers and calls tools with ephemeral header authentica
   } finally { await client.close(); server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); }
 });
 const protectedHooks = process.platform === 'darwin' && existsSync('/usr/bin/sandbox-exec') || process.platform === 'linux' && existsSync('/usr/bin/bwrap');
+test.skipIf(!protectedHooks)('native hook operational failures are visible without becoming permission denials or leaking output', async () => {
+  root = mkdtempSync(join(tmpdir(), 'jevellan-hook-failure-'));
+  const user = join(root, 'user'), home = join(root, 'account'), cwd = join(root, 'project');
+  for (const dir of [user, home, cwd]) mkdirSync(dir);
+  const setup = (command: string): NativeLaunchSetup => ({ schema: 'native-launch-setup-v1', instructions: '', settings: {}, plugins: [], userHome: user, hooks: [{ matcher: 'Read', commands: [command] }] });
+  const options = { home, cwd, writable: false, env: { PATH: process.env.PATH ?? '', HOME: home }, timeoutMs: 100 };
+  for (const [command, reason] of [['sleep 2', 'timed out'], ['printf private-hook-output; exit 1', 'exited with status 1']] as const) {
+    const result = await nativePreToolUse(setup(command), { tool_name: 'Read' }, options);
+    expect(result.systemMessage).toContain(reason);
+    expect(result.hookSpecificOutput?.additionalContext).toContain(reason);
+    expect(result.hookSpecificOutput?.permissionDecision).toBeUndefined();
+    expect(JSON.stringify(result)).not.toContain('private-hook-output');
+  }
+  expect(await nativePreToolUse(setup('exit 2'), { tool_name: 'Read' }, options)).toMatchObject({ hookSpecificOutput: { permissionDecision: 'deny' } });
+});
 test('SSE native MCP preserves authenticated tool discovery through the stdio proxy', async () => {
   const remote = new McpServer({ name: 'fixture-sse', version: '1' }); remote.registerTool('say-hello', { inputSchema: {} }, async () => ({ content: [{ type: 'text', text: 'Hello over SSE.' }] }));
   let transport: SSEServerTransport | undefined;
