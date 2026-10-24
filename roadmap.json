@@ -1172,7 +1172,7 @@
   {
     "id": "manager-followups-074",
     "title": "Follow-up findings and remaining live evidence",
-    "why": "Decision779: pending fresh-start header and durable stop after two identical landing/publication failures are verified source-only:184 assertions/20 complete files,static/build and two desktop-light chats. Waiting/landing visibility and durable closure work already landed; current read-only status confirms the earlier waiting item has a reason and its thread remains listed. Budget windows, explicit nonproduction verification environment, tool refusal explanations and conditional dependency wakeup remain planned/unverified. Private live observations stay private. No further release, review or real task/goal/deploy change.",
+    "why": "Decisions779-780: pending fresh starts, repeated identical verification stops and explicit weekly/five-hour budget provenance are verified source-only. Budget336 assertions/16 complete files/static/build/desktop overview PASS. Waiting/landing visibility and durable reasons already landed. Explicit nonproduction check environment, tool failure explanations and conditional dependency wakeup remain planned/unverified. Actual private account readings not rechecked. No further release or review authorized.",
     "status": "in-progress"
   },
   {
@@ -1221,6 +1221,12 @@
     "id": "manager-repeat-fresh-state",
     "title": "Keep fresh-start intent visible and stop repeated verification failures",
     "why": "Decision779: canonical failing-first proofs,184 assertions/20 complete files,static/build and two desktop-light chat journeys pass; durable optional versioned state covers restart. Source-only, unreleased. Existing installed0.7.7 immutable; no additional release authorized.",
+    "status": "complete-with-blockers"
+  },
+  {
+    "id": "manager-budget-window-provenance",
+    "title": "Show weekly budgets with independent window and source evidence",
+    "why": "Decision780: three failing-first cases and their sole repeats precede correction;336 complete assertions/16files,static/build/desktop overview pass. One observation per account; reset/missing values stay unknown, legacy window unreported. Source-only, actual account readings not probed;0.7.7 installed unchanged.",
     "status": "complete-with-blockers"
   }
 ]

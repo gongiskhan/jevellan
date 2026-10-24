@@ -1,5 +1,5 @@
 sandbox · coordinator idle (opus-5.5 high, main) · 1 running · 1 landing · 2 queued · 0 waiting on you
-Budgets: main 41% of 90% · second 12% of 90%
+Budgets: main 41% of 90% (window unreported) · second 12% of 90% (window unreported)
 Night: next at 01:00
 Quiet hours: on, 23:00 to 08:00
 

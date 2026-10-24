@@ -13,10 +13,11 @@ import { appendFileSync, mkdirSync, readFileSync, renameSync, existsSync, writeF
 import { createHash } from 'node:crypto';
 import { dirname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { CallerLogEntrySchema, HubUnavailable, currentUsage, ownerClock, OwnerInstallationSettingsSchema, OwnerProjectSettingsSchema, RoutineAutomationPatchSchema, SteeringRecordSchema, defaultOwnerInstallationSettings, defaultOwnerProjectSettings, newId,
+import { CallerLogEntrySchema, HubUnavailable, ownerClock, OwnerInstallationSettingsSchema, OwnerProjectSettingsSchema, RoutineAutomationPatchSchema, SteeringRecordSchema, defaultOwnerInstallationSettings, defaultOwnerProjectSettings, newId,
   type OwnerInstallationSettings, type OwnerProjectSettings, type SteeringRecord, OWNER_TOOLS, OwnerToolResultSchema, ownerTool, ownerToolAction, type CallerLogEntry, type OwnerToolDefinition, type OwnerToolRequest, type OwnerToolResult,
   type Project, type ProjectDecision, type ProjectLedgerEvent, type ProjectStatusView } from '@jevellan/core';
 import { OwnerShortIds, projectStatus, renderStatus, renderStatusLine } from '@jevellan/projects';
+import { accountBudgetView } from '@jevellan/accounts';
 import type { Application } from './application.js';
 import { OWNER_HANDLERS } from './tools/index.js';
 import { OwnerTakeover } from './owner-takeover.js';
@@ -246,11 +247,7 @@ export class OwnerTools {
     const [view, tasks, goals, daily, deploys, accounts, roster, coordinatorStop, decisions] = await Promise.all([
       work.view(projectId), work.taskList(projectId), work.goalList(projectId), work.daily.view(projectId), work.deploys.view(projectId), this.app.accounts.list(), this.app.roster(), work.coordinatorStop(projectId), this.app.projectHub.decisions(projectId, { includeClosed: true })]);
     const names = new Map(roster.devices.map(row => [row.device.id, row.device.name]));
-    const budgets = accounts.filter(row => row.account.enabled !== false).map(row => {
-      // A window that reset since the reading is unknown until the next probe.
-      const usage = currentUsage([...row.statuses].sort((a, b) => (b.usage?.observedAt ?? '').localeCompare(a.usage?.observedAt ?? ''))[0]?.usage, this.now().getTime());
-      return { label: row.account.label, usedPercent: usage.weeklyPct !== undefined || usage.fiveHourPct !== undefined ? Math.max(usage.weeklyPct ?? 0, usage.fiveHourPct ?? 0) : null, budgetPercent: row.account.ceilingPct ?? 90 };
-    });
+    const budgets = accounts.filter(row => row.account.enabled !== false).map(row => accountBudgetView(row, id => names.get(id) ?? id, this.now().getTime()));
     const legacyWithdrawalReasons = await this.#legacyClosureReasons(projectId, decisions);
     const view_ = projectStatus({ legacyWithdrawalReasons, project: { id: projectId, name: project.name }, now: this.now(), settings: view.settings, coordinator: view.coordinator, coordinatorStalled: false, coordinatorStop,
       threads: view.threads, tasks: tasks.tasks, goals: goals.goals.map(row => row.goal), decisions, jobs: daily.jobs, dailies: daily.dailies, runs: daily.runs,

@@ -1,7 +1,22 @@
 import { accountActions, accountLoginAction, ACCOUNT_PAID_LABELS } from '@jevellan/core';
 import type { z } from 'zod';
-import { AccountsSettingsViewSchema, AccountAvailabilitySchema, ACCOUNT_VIEW_REFRESH_MS, currentUsage, IdSchema, type AccountView, type Configuration, type DeviceRosterSchema, type OfferedModelsSchema } from '@jevellan/core';
+import { AccountBudgetUsageViewSchema, AccountsSettingsViewSchema, AccountAvailabilitySchema, ACCOUNT_VIEW_REFRESH_MS, currentUsage, IdSchema, type AccountBudgetUsageView, type AccountView, type Configuration, type DeviceRosterSchema, type OfferedModelsSchema, type ProjectStatusView } from '@jevellan/core';
 import { rankAccounts, type RankedAccount } from './eligibility.js';
+
+/** Budget means the weekly window; the shorter limit remains visible independently. */
+export function accountBudgetView(view: AccountView, deviceName: (id: string) => string, now = Date.now()): ProjectStatusView['budgets'][number] {
+  const status = view.account.kind === 'endpoint' ? undefined : view.statuses.filter(row => row.accountId === view.account.id && row.usage)
+    .sort((a, b) => Date.parse(b.usage!.observedAt) - Date.parse(a.usage!.observedAt) || a.deviceId.localeCompare(b.deviceId))[0];
+  const reading = status?.usage, knownSource = reading && reading.source !== 'unknown', current = knownSource ? currentUsage(reading, now) : {};
+  const window = (key: 'weekly' | 'fiveHour'): AccountBudgetUsageView['weekly'] => {
+    const raw = reading?.[key === 'weekly' ? 'weeklyPct' : 'fiveHourPct'], value = current[key === 'weekly' ? 'weeklyPct' : 'fiveHourPct'];
+    const resetsAt = reading?.[key === 'weekly' ? 'weeklyResetsAt' : 'fiveHourResetsAt'] ?? null;
+    return { usedPercent: value ?? null, state: value !== undefined ? 'reported' : knownSource && raw !== undefined && resetsAt && Date.parse(resetsAt) <= now ? 'reset' : 'unknown', resetsAt };
+  };
+  const usage = AccountBudgetUsageViewSchema.parse({ schema: 'account-budget-usage-v1', accountId: view.account.id, deviceId: status?.deviceId ?? null,
+    deviceName: status ? deviceName(status.deviceId) : null, source: reading?.source ?? 'unknown', observedAt: reading?.observedAt ?? null, weekly: window('weekly'), fiveHour: window('fiveHour') });
+  return { label: view.account.label, usedPercent: usage.weekly.usedPercent, budgetPercent: view.account.ceilingPct ?? 90, usage };
+}
 
 /** Eligibility comes from the same ranked cohort used for placement; copy only explains that result. */
 export function accountAvailability(ranked: RankedAccount, runtimeEnabled: boolean, now = Date.now()) {

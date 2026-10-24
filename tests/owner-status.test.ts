@@ -16,6 +16,12 @@ const busy = () => {
   return input({ goals, tasks, threads, jobs: [job('job_suite', 'Full suite')], runs: [run('run_1', 'job_suite')] });
 };
 
+test('legacy budget readings name their unknown window instead of inventing weekly usage', () => {
+  const view = projectStatus(input(), new OwnerShortIds(new MemoryStore()));
+  expect(renderStatus(view)).toContain('main 41% of 90% (window unreported)');
+  expect(renderStatusLine(view)).toContain('main window unreported 41/90%');
+});
+
 test('status text matches its golden file for the six scripted states', () => {
   golden('status/idle', renderStatus(projectStatus(input(), new OwnerShortIds(new MemoryStore()))));
   golden('status/busy', renderStatus(projectStatus(busy(), new OwnerShortIds(new MemoryStore()))));
@@ -60,7 +66,7 @@ test('times, durations, caps and the status line follow the output conventions',
   const long = capLines(Array.from({ length: 400 }, (_, index) => `line ${index} ${'x'.repeat(30)}`));
   expect(long.length).toBeLessThanOrEqual(3000); expect(long.split('\n').at(-1)).toMatch(/^\d+ more not shown\.$/u);
   expect(Number(long.split('\n').at(-1)!.split(' ')[0]) + long.split('\n').length - 1).toBe(400);
-  expect(renderStatusLine(projectStatus(busy(), new OwnerShortIds(new MemoryStore())))).toBe('Jevellan sandbox · 3 running · 2 queued · 0 waiting · main 41/90%');
+  expect(renderStatusLine(projectStatus(busy(), new OwnerShortIds(new MemoryStore())))).toBe('Jevellan sandbox · 3 running · 2 queued · 0 waiting · main window unreported 41/90%');
 });
 
 test('a thread merged through its pull request with no landing record is listed as landed by its pull request', () => {

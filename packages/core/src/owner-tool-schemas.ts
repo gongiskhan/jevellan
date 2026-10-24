@@ -47,11 +47,18 @@ export const GoalLineSchema = z.strictObject({ id: ShortIdSchema, internalId: Id
   due: z.array(GoalDueSchema).max(20) });
 export type GoalLine = z.infer<typeof GoalLineSchema>;
 
+const budgetWindow = z.strictObject({ usedPercent: z.number().min(0).max(100).nullable(), state: z.enum(['reported', 'reset', 'unknown']), resetsAt: TimestampSchema.nullable() });
+/** One complete observation. Never fill a missing window from another account, device or reading. */
+export const AccountBudgetUsageViewSchema = z.strictObject({ schema: z.literal('account-budget-usage-v1'), accountId: IdSchema,
+  deviceId: IdSchema.nullable(), deviceName: z.string().max(200).nullable(), source: z.enum(['probe', 'stream', 'unknown']), observedAt: TimestampSchema.nullable(),
+  weekly: budgetWindow, fiveHour: budgetWindow });
+export type AccountBudgetUsageView = z.infer<typeof AccountBudgetUsageViewSchema>;
+
 /** The whole status of a project at a moment, as the engine orders it; tools render it, the UI reads its parts. */
 export const ProjectStatusViewSchema = z.strictObject({ schema: z.literal('project-status-view-v1'), cacheView: SessionCacheViewSchema.optional(), historyView: SessionHistoryViewSchema.optional(), projectId: IdSchema, project: z.string().min(1).max(200), at: TimestampSchema, timeZone: z.string().min(1).max(80),
   coordinator: z.strictObject({ state: z.enum(['running', 'idle', 'starting', 'stalled', 'crashed', 'stopped']), model: z.string().max(120).nullable(), effort: EffortSchema.nullable(), account: z.string().max(120).nullable(),
     reason: z.string().min(1).max(400).optional() }),
-  budgets: z.array(z.strictObject({ label: z.string().max(120), usedPercent: z.number().nonnegative().nullable(), budgetPercent: z.number().int().min(1).max(100) })).max(40),
+  budgets: z.array(z.strictObject({ label: z.string().max(120), usedPercent: z.number().nonnegative().nullable(), budgetPercent: z.number().int().min(1).max(100), usage: AccountBudgetUsageViewSchema.optional() })).max(40),
   deploy: z.strictObject({ mode: z.string().max(40), paused: z.boolean(), undeployed: z.number().int().nonnegative(), message: ShortIdSchema.optional(), health: z.string().max(400).optional() }).nullable(),
   night: z.string().max(400).nullable(), quietHours: z.strictObject({ enabled: z.boolean(), start: z.string().max(5), end: z.string().max(5) }).nullable(),
   goals: z.array(GoalLineSchema).max(100), waiting: z.array(WaitingItemViewSchema), closedWaiting: z.array(WaitingItemViewSchema).optional(), running: z.array(RunViewSchema), queued: z.array(RunViewSchema),

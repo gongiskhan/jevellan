@@ -1,4 +1,4 @@
-import { ownerClock, ownerDuration, type ProjectStatusView, type RunView, type WaitingItemView } from '@jevellan/core';
+import { ownerClock, ownerDuration, type AccountBudgetUsageView, type ProjectStatusView, type RunView, type WaitingItemView } from '@jevellan/core';
 
 /** Output limits of the owner tools (bridge specification, "Conventions for all output"). */
 export const OWNER_TEXT_LIMIT = 3000;
@@ -21,6 +21,14 @@ export function capLines(lines: readonly string[], detail = false): string {
 const oneLine = (text: string, max = 300) => { const first = text.replace(/\s+/gu, ' ').trim(); return first.length > max ? `${first.slice(0, max - 3)}...` : first; };
 export const runLabel = (run: Pick<RunView, 'label'>) => run.label.type === 'job' ? `job: ${run.label.name}` : run.label.name;
 const modelEffort = (run: RunView) => [run.model, run.effort].filter(Boolean).join(' ');
+
+function budgetText(budget: ProjectStatusView['budgets'][number], view: ProjectStatusView, detail: boolean): string {
+  if (!budget.usage) return `${budget.label} ${budget.usedPercent === null ? 'unknown' : `${Math.round(budget.usedPercent)}%`} of ${budget.budgetPercent}% (window unreported)`;
+  const usage = budget.usage;
+  const window = (name: string, value: AccountBudgetUsageView['weekly']) => `${name} ${value.usedPercent === null ? `unknown (${value.state === 'reset' ? 'reset' : 'not reported'})` : `${Math.round(value.usedPercent)}% of ${budget.budgetPercent}%`}${detail && value.resetsAt ? `; resets ${ownerClock(value.resetsAt, new Date(view.at), view.timeZone)}` : ''}`;
+  const source = `${usage.source}${usage.deviceName ? ` on ${usage.deviceName}` : ''}${usage.observedAt ? ` at ${ownerClock(usage.observedAt, new Date(view.at), view.timeZone)}` : ''}`;
+  return `${budget.label} ${window('week', usage.weekly)}, ${window('five hours', usage.fiveHour)} (${source})`;
+}
 
 export function waitingLine(item: WaitingItemView): string {
   if (item.freeText) return `${item.id} ${item.from} asks: ${oneLine(item.text)}`;
@@ -66,7 +74,7 @@ export function renderStatus(view: ProjectStatusView, options: { section?: 'wait
     const coordinator = view.coordinator.model ? `${view.coordinator.state} (${[view.coordinator.model, view.coordinator.effort].filter(Boolean).join(' ')}${view.coordinator.account ? `, ${view.coordinator.account}` : ''})` : view.coordinator.state;
     lines.push(`${view.project} · coordinator ${coordinator} · ${runningCount} running · ${landing} landing · ${view.queued.length} queued · ${view.waiting.length} waiting on you`);
     if (view.coordinator.state === 'stopped') lines.push(`Coordinator stopped${view.coordinator.reason ? `: ${view.coordinator.reason.replace(/\.$/u, '')}.` : '.'} Fix the cause, then restart it with ask_coordinator mode restart.`);
-    if (view.budgets.length) lines.push(`Budgets: ${view.budgets.map(budget => `${budget.label} ${budget.usedPercent === null ? '?' : Math.round(budget.usedPercent)}% of ${budget.budgetPercent}%`).join(' · ')}`);
+    if (view.budgets.length) lines.push(`Budgets: ${view.budgets.map(budget => budgetText(budget, view, options.detail === true)).join(' · ')}`);
     if (view.deploy) {
       const parts = [view.deploy.mode + (view.deploy.paused ? ' (paused)' : ''), view.deploy.undeployed ? `${view.deploy.undeployed} landed thread${view.deploy.undeployed === 1 ? '' : 's'} not deployed${view.deploy.message ? ` (${view.deploy.message})` : ''}` : 'nothing waiting to deploy'];
       if (view.deploy.health) parts.push(`health: ${view.deploy.health}`);
@@ -125,5 +133,5 @@ export function renderStatus(view: ProjectStatusView, options: { section?: 'wait
 export function renderStatusLine(view: ProjectStatusView): string {
   const main = view.budgets[0];
   return [`Jevellan ${view.project}`, `${view.running.length} running`, `${view.queued.length} queued`, `${view.waiting.length} waiting`,
-    ...(main ? [`${main.label} ${main.usedPercent === null ? '?' : Math.round(main.usedPercent)}/${main.budgetPercent}%`] : [])].join(' · ');
+    ...(main ? [`${main.label} ${main.usage ? 'week' : 'window unreported'} ${main.usedPercent === null ? 'unknown' : Math.round(main.usedPercent)}/${main.budgetPercent}%`] : [])].join(' · ');
 }

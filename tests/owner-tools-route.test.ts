@@ -1,5 +1,6 @@
 import { afterEach, expect, test } from 'vitest';
-import { DoctorControlSchema, doctorControlPath, readDocument, OWNER_TOOLS } from '../packages/core/dist/index.js';
+import { AccountSchema, DoctorControlSchema, doctorControlPath, readDocument, OWNER_TOOLS } from '../packages/core/dist/index.js';
+import { HubAccounts } from '../packages/mesh/dist/index.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 
 let f: ProjectFixture | undefined;
@@ -37,6 +38,43 @@ test('the status line resolves the project from the working folder and says when
     body: JSON.stringify({ schema: 'status-line-request-v1', cwd }) })).json() as { text: string }).text;
   expect(await line(f.checkout)).toMatch(new RegExp(`^Jevellan ${f.project.name} · 0 running · 0 queued · 0 waiting`, 'u'));
   expect(await line('/')).toMatch(/^Jevellan /u); // the only project answers anywhere
+});
+
+test('status budgets use the weekly window and preserve each account reading source', async () => {
+  f = await projectFixture({ control: true });
+  const store = new HubAccounts(f.app.hub, f.app.device.deviceId);
+  const observedAt = new Date(Date.now() - 60000).toISOString();
+  const weeklyResetsAt = new Date(Date.now() + 86400000).toISOString();
+  const fiveHourResetsAt = new Date(Date.now() + 3600000).toISOString();
+  f.app.hub.put('accounts', 'second', AccountSchema, { schema: 'account-v2', id: 'second', runtime: 'fake', label: 'second', kind: 'subscription', enabled: true, credential: 'per-device', ceilingPct: 80 }, 0);
+  await f.app.accounts.recordUsage('acc_fixture', { source: 'stream', observedAt, weeklyPct: 25, fiveHourPct: 77, weeklyResetsAt, fiveHourResetsAt });
+  store.writeStatus({ ...store.status('second'), usage: { source: 'probe', observedAt, weeklyPct: 1, fiveHourPct: 59, weeklyResetsAt, fiveHourResetsAt } }, null);
+  const result = await call('status', { args: {} });
+  expect(result.status).toBe(200);
+  const data = result.body.data as { budgets: Array<{ label: string; usedPercent: number | null }> };
+  expect(data.budgets.find(row => row.label === 'Fixture')).toMatchObject({ usedPercent: 25,
+    usage: { schema: 'account-budget-usage-v1', accountId: 'acc_fixture', deviceId: f.app.device.deviceId, deviceName: f.deviceName, source: 'stream', observedAt,
+      weekly: { usedPercent: 25, state: 'reported', resetsAt: weeklyResetsAt }, fiveHour: { usedPercent: 77, state: 'reported', resetsAt: fiveHourResetsAt } } });
+  expect(data.budgets.find(row => row.label === 'second')).toMatchObject({ usedPercent: 1,
+    usage: { accountId: 'second', source: 'probe', observedAt, weekly: { usedPercent: 1 }, fiveHour: { usedPercent: 59 } } });
+  expect(String(result.body.text)).toContain('week 25%');
+  expect(String(result.body.text)).toContain('five hours 77%');
+  expect(String(result.body.text)).toContain(`stream on ${f.deviceName}`);
+  expect(f.fake.runs).toHaveLength(0);
+});
+
+test('a reset weekly budget stays unknown instead of borrowing the five-hour reading', async () => {
+  f = await projectFixture({ control: true });
+  const observedAt = new Date(Date.now() - 60000).toISOString();
+  const weeklyResetsAt = new Date(Date.now() - 1000).toISOString();
+  await f.app.accounts.recordUsage('acc_fixture', { source: 'stream', observedAt, weeklyPct: 25, fiveHourPct: 59, weeklyResetsAt });
+  const result = await call('status', { args: {} });
+  const data = result.body.data as { budgets: Array<{ label: string; usedPercent: number | null }> };
+  expect(data.budgets.find(row => row.label === 'Fixture')).toMatchObject({ usedPercent: null,
+    usage: { weekly: { usedPercent: null, state: 'reset', resetsAt: weeklyResetsAt }, fiveHour: { usedPercent: 59, state: 'reported' } } });
+  expect(String(result.body.text)).toContain('week unknown (reset)');
+  expect(String(result.body.text)).toContain('five hours 59%');
+  expect(f.fake.runs).toHaveLength(0);
 });
 
 test('the overview board comes from the engine in display order', async () => {
