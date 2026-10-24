@@ -736,3 +736,5 @@ Decision781 extends the Environment area with separate Work environment and Chec
 | Publication, landing, alternate-provider verification and intake | Explicit check snapshots, detached candidate inputs, current-input receipt/cache identity and durable environment waits | Failing-first and single repeat precede fixes; all28 affected files pass. Live production/input acceptance is not run. |
 
 One nonblocking desktop vision judgement on the retained new-controls image finds distinct groups, fitting rows and a masked password. The full-page preview is scaled; behavioral assertions establish labels and saved values. Dedicated account/remote live checks remain blocked or not run.
+
+Release status (Decision783):078 source includes the check-input engine/UI boundary, weekly-budget provenance, bounded managed instructions and durable repeated-failure/fresh-start behavior. Published exact artifacts and Madrid normal installation are verified; Pro installation remains resource-blocked on077. Doctor10/10 and paired readiness are unclaimed. No component disposition or live journey acceptance advances.
