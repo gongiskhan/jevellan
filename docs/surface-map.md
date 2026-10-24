@@ -713,3 +713,6 @@ Profiled routing and capture readiness (Decision338): irrelevant HTTP paths avoi
 
 
 Profiled journal/push work (Decision339): project filtering precedes thread copies; unchanged render sources and empty local-thread sets avoid task reads with fresh source/state/file validation and after-await invalidation. Periodic pushes select unresolved/unacked work and validate existing identities before collection; public/new preferences remain fresh and history retained. Four failing-first bounds, 325 assertions/40 complete files, static/build and two desktop chats pass; six image digests/4435 unchanged tracked files. Live CPU remains unmet; no UI row disposition or release acceptance changes.
+
+
+Release0.7.7 preparation (Decision775): exact profiled654029bc product/test source with synchronized version metadata; worker experiment excluded. Static/build, actual CLI and five desktop-light core journeys pass,20retained matching image digests/4435source hashes. No UI row disposition changes; full current backend, archives and installed evidence remain pending.

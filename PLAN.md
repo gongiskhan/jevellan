@@ -520,3 +520,6 @@ Decision338: profile-guided remote routing and metadata-only memory readiness pa
 
 
 Decision339: profile-guided project thread selection, journal render identity and repeated push collection pass four failing-first bounds, 325 assertions/40 complete affected files, static/build and two desktop chats. Default-settings fixture corrections are retained, with freshness and file repair checked. Next strict cold-backed exact-source live trial; no release before actual CPU/history and current full backend. Other manager scope remains next, without a new review or authentication/production action.
+
+
+Decision775: latest owner accepts654029bc measured live performance and authorizes0.7.7 from that source plus version/notes only. Worker follow-up is preserved privately, excluded from the release. Static/build, actual CLI and five desktop-light core journeys pass;20images/4435source hashes verified. Next complete six-worker backend, exact artifacts and actual extracted nativePTY, scans/publication, fresh strict cold backups and normal Madrid then Pro updates, doctor and new live metrics. Instruction-size compatibility and remaining private findings follow. No new review or production/authentication/real work changes.
