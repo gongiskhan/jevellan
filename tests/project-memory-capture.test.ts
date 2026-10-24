@@ -42,6 +42,8 @@ test('a large transcript record keeps every redacted character in retryable frag
   expect(fragments).toHaveLength(3); const restored = fragments.map(slice => slice.text).join('');
   expect(restored).toContain('Beginning convention'); expect(restored).toContain('End convention'); expect(restored).not.toContain('fixture-secret-never-share');
   expect(fragments.every(slice => slice.capture.fromByte === 0 && slice.capture.toByte === Buffer.byteLength(text))).toBe(true);
+  const input = f.queue.extractionInput('fixture'), metadata = f.queue.extractionInput('fixture', { includeText: false });
+  expect(metadata.captures).toEqual(input.captures); expect(metadata.bytes).toBe(input.bytes); expect(metadata.text).toBe('');
 });
 test('extraction input is newest first and bounds non-ASCII text to 300 KB with an explicit trimming note', () => {
   const f = fixture(); mkdirSync(join(f.home, 'other'), { recursive: true });
@@ -49,6 +51,8 @@ test('extraction input is newest first and bounds non-ASCII text to 300 KB with 
     at: new Date(Date.parse('2026-10-12T00:00:00Z') + n*1000).toISOString(), processedAt: null, extractionId: null }, `new_${n} ${'ção '.repeat(40000)}`);
   const input = f.queue.extractionInput('fixture'); expect(Buffer.byteLength(input.text)).toBeLessThanOrEqual(300000); expect(input.text.indexOf('new_3')).toBeLessThan(input.text.indexOf('new_2'));
   expect(input.text).toContain('trimmed'); expect(input.captures).toHaveLength(4);
+  const metadata = f.queue.extractionInput('fixture', { includeText: false });
+  expect(metadata.captures).toEqual(input.captures); expect(metadata.bytes).toBe(input.bytes); expect(metadata.text).toBe('');
 });
 
 test('repeated extraction checks stay cheap with a large processed history and still see captures from another queue', () => {
@@ -71,4 +75,28 @@ test('repeated extraction checks stay cheap with a large processed history and s
   const processed = join(f.queue.directory('fixture'), 'processed_0.json'), before = statSync(processed);
   writeFileSync(processed, ' '.repeat(before.size)); utimesSync(processed, before.atime, before.mtime);
   expect(() => f.queue.extractionInput('fixture')).toThrow();
+});
+
+test('pending extraction readiness reuses validated metadata without building transcript input', () => {
+  const f = fixture(), at = '2026-10-12T00:00:00.000Z';
+  for (let n = 0; n < 256; n++) f.queue.accept({ ...f.source, schema: 'memory-capture-v1', id: `pending_${n}`, fromByte: n * 100_000, toByte: (n + 1) * 100_000,
+    at, processedAt: null, extractionId: null }, 'An unprocessed durable convention. '.repeat(3_000));
+  const expected = f.queue.extractionInput('fixture'), options = { includeText: false };
+  let input = f.queue.extractionInput('fixture', options);
+  const started = process.cpuUsage();
+  for (let n = 0; n < 8; n++) input = f.queue.extractionInput('fixture', options);
+  const cpu = process.cpuUsage(started);
+  expect((cpu.user + cpu.system) / 1000, 'Readiness checks need current capture identities and byte counts, without repeated transcript decoding or formatting.').toBeLessThan(150);
+  expect(input.text.length).toBe(0); expect(input.bytes).toBe(expected.bytes); expect(input.captures).toEqual(expected.captures);
+  input.captures[0]!.model = 'Mutated returned metadata';
+  expect(f.queue.extractionInput('fixture', options).captures[0]!.model).toBe('fixture');
+  const peer = new ProjectCaptureQueue(f.homes, new SecretRedactor());
+  peer.processed('fixture', [expected.captures[0]!], 'extraction_peer');
+  peer.accept({ ...expected.captures[0]!, id: 'pending_later', at: '2026-10-12T00:01:00.000Z', processedAt: null, extractionId: null }, 'A later non-ASCII convention: ção 🍎.');
+  const actual = f.queue.extractionInput('fixture'), metadata = f.queue.extractionInput('fixture', options);
+  expect(metadata.bytes).toBe(actual.bytes); expect(metadata.captures).toEqual(actual.captures); expect(metadata.captures[0]!.id).toBe('pending_later');
+  expect(metadata.text).toBe(''); expect(actual.text).toContain('A later non-ASCII convention');
+  const file = join(f.queue.directory('fixture'), 'pending_0.json'), before = statSync(file);
+  writeFileSync(file, ' '.repeat(before.size)); utimesSync(file, before.atime, before.mtime);
+  expect(() => f.queue.extractionInput('fixture', options)).toThrow();
 });

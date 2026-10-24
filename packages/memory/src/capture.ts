@@ -9,11 +9,14 @@ const SliceSchema = z.strictObject({ schema: z.literal('memory-capture-slice-v1'
 export type CapturedSlice = z.infer<typeof SliceSchema>;
 const id = (value: string) => createHash('sha256').update(value).digest('hex');
 type Source = Omit<MemoryCapture, 'schema' | 'id' | 'fromByte' | 'toByte' | 'at' | 'processedAt' | 'extractionId'>;
+type CaptureMetadata = { generation: string; capture: MemoryCapture; bytes: number; retainedBytes: number };
 
 /** Incremental native journal capture; only redacted slices enter the hub queue. */
 export class ProjectCaptureQueue {
   readonly #pending = new Map<string, Promise<unknown>>();
   readonly #processed = new Map<string, string>();
+  readonly #metadata = new Map<string, CaptureMetadata>();
+  #metadataBytes = 0;
   constructor(readonly homes: Homes, readonly redactor: SecretRedactor, readonly now: () => number = Date.now) {}
   directory(projectId: string) { return this.homes.ensure('project-memory', projectId, 'captures'); }
   accept(raw: MemoryCapture, text: string): void {
@@ -95,7 +98,42 @@ export class ProjectCaptureQueue {
       return unprocessed && slice.capture.processedAt ? [] : [slice];
     }).sort((a, b) => b.capture.at.localeCompare(a.capture.at) || b.capture.toByte - a.capture.toByte || (b.capture.fragment?.index ?? 0) - (a.capture.fragment?.index ?? 0));
   }
-  extractionInput(projectId: string): { text: string; captures: MemoryCapture[]; bytes: number } {
+  #forgetMetadata(path: string): void {
+    const previous = this.#metadata.get(path); if (!previous) return;
+    this.#metadataBytes -= previous.retainedBytes; this.#metadata.delete(path);
+  }
+  /** Readiness uses validated identities and byte counts; retain no transcript text between file generations. */
+  #metadataInput(projectId: string): { text: string; captures: MemoryCapture[]; bytes: number } {
+    const directory = this.directory(projectId), captures: MemoryCapture[] = []; let bytes = 0;
+    const generation = (path: string) => { const stat = statSync(path, { bigint: true }); return [stat.dev, stat.ino, stat.size, stat.mtimeNs, stat.ctimeNs].join(':'); };
+    for (const file of readdirSync(directory).filter(file => file.endsWith('.json'))) {
+      const path = join(directory, file), signature = generation(path);
+      if (this.#processed.get(path) === signature) { this.#forgetMetadata(path); continue; }
+      let metadata = this.#metadata.get(path);
+      if (!metadata || metadata.generation !== signature) {
+        this.#forgetMetadata(path);
+        const slice = readDocument(path, SliceSchema), unchanged = generation(path) === signature;
+        if (slice.capture.processedAt) {
+          this.#processed.delete(path);
+          if (unchanged) this.#processed.set(path, signature);
+          if (this.#processed.size > 8192) this.#processed.delete(this.#processed.keys().next().value!);
+          continue;
+        }
+        this.#processed.delete(path);
+        metadata = { generation: signature, capture: slice.capture, bytes: Buffer.byteLength(slice.text),
+          retainedBytes: 128 + Buffer.byteLength(path) + Buffer.byteLength(signature) + Buffer.byteLength(JSON.stringify(slice.capture)) };
+        if (unchanged && metadata.retainedBytes <= 16 * 1024 * 1024) {
+          this.#metadata.set(path, metadata); this.#metadataBytes += metadata.retainedBytes;
+          while (this.#metadata.size > 8192 || this.#metadataBytes > 16 * 1024 * 1024) this.#forgetMetadata(this.#metadata.keys().next().value!);
+        }
+      }
+      captures.push(structuredClone(metadata.capture)); bytes += metadata.bytes;
+    }
+    captures.sort((a, b) => b.at.localeCompare(a.at) || b.toByte - a.toByte || (b.fragment?.index ?? 0) - (a.fragment?.index ?? 0));
+    return { text: '', captures, bytes };
+  }
+  extractionInput(projectId: string, options: { includeText?: boolean } = {}): { text: string; captures: MemoryCapture[]; bytes: number } {
+    if (options.includeText === false) return this.#metadataInput(projectId);
     const slices = this.slices(projectId), bytes = slices.reduce((sum, slice) => sum + Buffer.byteLength(slice.text), 0);
     const suffix = '\n[Older transcript parts were trimmed to the 300 KB extraction limit.]';
     let text = '', remaining = 300_000 - Buffer.byteLength(suffix), trimmed = false; const captures: MemoryCapture[] = [];
@@ -119,5 +157,5 @@ export class ProjectCaptureQueue {
       if (!slice.capture.processedAt) writeDocument(file, SliceSchema, { ...slice, capture: { ...slice.capture, processedAt: new Date(this.now()).toISOString(), extractionId } });
     }
   }
-  async close(): Promise<void> { await Promise.allSettled([...this.#pending.values()]); this.#processed.clear(); }
+  async close(): Promise<void> { await Promise.allSettled([...this.#pending.values()]); this.#processed.clear(); this.#metadata.clear(); this.#metadataBytes = 0; }
 }

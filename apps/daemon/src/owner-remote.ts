@@ -37,9 +37,10 @@ export class OwnerRemote {
   #base(): string { return `https://${this.settings.hostname}`; }
   /** True when this request is for the remote endpoint (its host is the configured hostname). */
   owns(request: IncomingMessage, url: URL): boolean {
+    if (!url.pathname.startsWith('/remote/') && !url.pathname.startsWith('/.well-known/oauth-')) return false;
     const host = (request.headers.host ?? '').toString().split(':')[0]!.toLowerCase();
     const hostname = this.settings.hostname?.toLowerCase();
-    return Boolean(hostname && host === hostname && (url.pathname.startsWith('/remote/') || url.pathname.startsWith('/.well-known/oauth-')));
+    return Boolean(hostname && host === hostname);
   }
   async handle(request: IncomingMessage, response: ServerResponse, url: URL): Promise<void> {
     try {

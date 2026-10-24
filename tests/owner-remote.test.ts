@@ -65,6 +65,26 @@ async function mcp(fetcher: typeof fetch, accessToken: string): Promise<Client> 
   return client;
 }
 
+test('ordinary daemon routes avoid remote settings reads while remote host changes stay immediate', async () => {
+  f = await projectFixture({ control: true, github: false });
+  f.app.ownerTools.updateInstallationSettings(settings => ({ ...settings, remote: { ...settings.remote, enabled: true, hostname: HOST } }));
+  const reads = vi.spyOn(f.app.hub, 'get'); let installationReads: number;
+  try {
+    for (let n = 0; n < 20; n++) {
+      const response = await fetch(f.base + '/api/health'); expect(response.status).toBe(200); await response.body?.cancel();
+    }
+    installationReads = reads.mock.calls.filter(([namespace, id]) => namespace === 'owner-settings' && id === 'installation').length;
+  } finally { reads.mockRestore(); }
+  expect(installationReads!, 'A local health route cannot belong to the remote endpoint and must not load its configuration.').toBe(0);
+  const fetcher = tunnelFetch(f.base), metadata = `https://${HOST}/.well-known/oauth-authorization-server`;
+  expect((await fetcher(metadata)).status).toBe(200);
+  f.app.ownerTools.updateInstallationSettings(settings => ({ ...settings, remote: { ...settings.remote, hostname: 'other-mcp.example.test' } }));
+  // Unmatched GET paths use the existing SPA fallback; the MCP POST must remain unavailable for this host.
+  expect((await fetcher(`https://${HOST}/remote/mcp`, { method: 'POST', body: '{}' })).status).toBe(404);
+  f.app.ownerTools.updateInstallationSettings(settings => ({ ...settings, remote: { ...settings.remote, hostname: HOST, enabled: false } }));
+  expect((await fetcher(metadata)).status).toBe(503);
+});
+
 test('remote editor templates preserve data and redact known private values', async () => {
   const { fetcher } = await setup(), signed = await signIn(fetcher), client = await mcp(fetcher, signed.tokens!.access_token);
   try {
