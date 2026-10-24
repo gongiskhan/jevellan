@@ -185,3 +185,26 @@ test('selective hub reads retain timestamp boundaries, fresh validation and byte
   database.db.prepare('UPDATE documents SET document=? WHERE namespace=? AND id=?').run(JSON.stringify({ ...boundary, createdAt: 'invalid' }), 'selection-rows', boundary.id);
   expect(() => database.list('selection-rows', schema, cutoff)).toThrow();
 });
+
+
+test('project thread lists avoid cloning archived projects and keep returned records isolated', async () => {
+  const f = fixture = await projectFixture({ github: false });
+  f.fake.enqueueTurn(reportStep({ status: 'blocked', summary: 'Inspection finished.' }), forThread());
+  const created = await f.app.projectWork.createThread('project', { schema: 'thread-create-request-v1', clientRequestId: 'scoped_list',
+    title: 'Current project thread', task: 'Inspect without changes.', modelId: 'fixture', deviceId: f.app.device.deviceId });
+  await f.waitFor(() => f.thread(created.threadId), thread => thread.state === 'idle'); await f.app.projectWork.idle();
+  const base = f.thread(created.threadId), store = f.app.projectWork.store;
+  for (let n = 0; n < 12; n++) store.create({ ...base, id: `archived_${n}`, projectId: 'archived_project', task: 'Archived project history. '.repeat(1000) }, { modelLabel: 'Fixture', accountLabel: 'Fixture' });
+  const clone = structuredClone; let unrelatedCopies = 0;
+  const copies = vi.spyOn(globalThis, 'structuredClone').mockImplementation((value, options) => {
+    if (value && typeof value === 'object' && 'schema' in value && value.schema === base.schema && 'projectId' in value && value.projectId === 'archived_project') unrelatedCopies++;
+    return clone(value, options);
+  });
+  let listed: ReturnType<typeof store.list>;
+  try { listed = store.list('project'); } finally { copies.mockRestore(); }
+  expect(unrelatedCopies, 'Reading one project must not copy archived projects and their task or transcript metadata.').toBe(0);
+  expect(listed!).toHaveLength(1); expect(listed![0]!.id).toBe(created.threadId);
+  listed![0]!.title = 'A returned-object mutation'; expect(store.get(created.threadId)?.title).toBe(base.title);
+  store.update(created.threadId, thread => ({ ...thread, title: 'Fresh current title' }));
+  expect(store.list('project')[0]!.title).toBe('Fresh current title');
+}, 60_000);

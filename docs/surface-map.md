@@ -710,3 +710,6 @@ Profiled allocation follow-up (Decision337): source-byte and ledger-position ide
 
 
 Profiled routing and capture readiness (Decision338): irrelevant HTTP paths avoid remote configuration reads; relevant OAuth/MCP routes still reload it. Bounded validated capture metadata avoids transcript construction during readiness, while actual extraction and fresh file generations remain enforced. Two failing-first bounds, 58 assertions/9 complete affected files, static/build and two desktop-light chats pass; six image digests/4435 unchanged tracked files. No UI row disposition or live acceptance changes; strict cold-backed CPU/history and complete current backend remain pending.
+
+
+Profiled journal/push work (Decision339): project filtering precedes thread copies; unchanged render sources and empty local-thread sets avoid task reads with fresh source/state/file validation and after-await invalidation. Periodic pushes select unresolved/unacked work and validate existing identities before collection; public/new preferences remain fresh and history retained. Four failing-first bounds, 325 assertions/40 complete files, static/build and two desktop chats pass; six image digests/4435 unchanged tracked files. Live CPU remains unmet; no UI row disposition or release acceptance changes.

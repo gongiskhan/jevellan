@@ -81,7 +81,7 @@ export class ThreadStore {
       ...(thread.stateReason === undefined ? {} : { stateReason: thread.stateReason }), turns: thread.turns, queuedMessages: thread.queuedMessages.length }))
       .sort((a, b) => a.id.localeCompare(b.id)).map(thread => structuredClone(thread));
   }
-  list(projectId: string): Thread[] { return this.all().filter((thread) => thread.projectId === projectId); }
+  list(projectId: string): Thread[] { return this.select(thread => thread.projectId === projectId); }
   /** Local threads and durable starts not yet indexed by a member, deduplicated by admission. */
   created(projectId: string): Thread[] {
     const rows = this.list(projectId), folder = join(this.paths.project(projectId), 'start-plans');

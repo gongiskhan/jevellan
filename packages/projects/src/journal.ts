@@ -45,6 +45,8 @@ export type JournalOptions = { homes: Homes; deviceId: string; isHub: boolean; l
   dream?(projectId: string): { id: string; report: Record<string, unknown>; windowId?: string } | undefined;
   /** Optional local hub fingerprint of every current source row; changes to raw bytes must change it, even at the same revision. */
   documentGeneration?(projectId: string): string;
+  /** Exact current bytes for settings, thread indexes, questions, tasks and project metadata used by the renderer. */
+  renderGeneration?(projectId: string): string;
   request?(request: ProjectJournalRequest): Promise<ProjectJournalResult> };
 
 /** The existing ledgers remain authoritative. Only this hub projection writes Markdown; members install verified mirrors. */
@@ -53,7 +55,7 @@ export class ProjectJournals {
   readonly #publications = new Map<string, Promise<number>>();
   readonly #indexes = new Map<ProjectLedger, JournalLedgerIndex>();
   #indexBytes = 0;
-  readonly #rendered = new Map<string, { head: number; inputs: string; state: string }>();
+  readonly #rendered = new Map<string, { head: number; inputs: string; state: string; source?: string }>();
   #timer: ReturnType<typeof setInterval> | undefined;
   #closed = false;
   constructor(readonly o: JournalOptions) {}
@@ -196,6 +198,7 @@ export class ProjectJournals {
     if (this.o.isHub) await this.#render(project, rebuild); else await this.#mirror(projectId);
   }
   async #captureThreads(projectId: string): Promise<void> {
+    if (!this.o.threads(projectId).length) return;
     const tasks = await this.#all(projectId, (after) => this.o.hub.tasks(projectId, after));
     for (const thread of this.o.threads(projectId)) {
       const ledger = this.o.ledgers.thread(projectId, thread.id);
@@ -333,12 +336,20 @@ export class ProjectJournals {
   }
   async #render(project: Project, requested: boolean): Promise<void> {
     const prior = this.state(project.id), rebuild = requested || prior.renderer !== JOURNAL_RENDERER, ledger = this.o.ledgers.coordinator(project.id), head = ledger.lastId();
+    const generation = this.o.renderGeneration?.(project.id), source = generation === undefined ? undefined : digest(stableJson([project.name, generation]));
+    const previous = this.#rendered.get(project.id), stateIdentity = digest(stableJson(prior));
+    const filesPresent = () => Object.keys(prior.files).every(path => existsSync(this.#file(project.id, path)));
+    if (!rebuild && source !== undefined && previous?.source === source && previous.head === head && previous.state === stateIdentity && filesPresent()) return;
     const settings = (await this.o.hub.settings(project.id))?.document ?? defaultProjectWorkSettings(project.id);
     const threads = await this.#all(project.id, after => this.o.hub.threads(project.id, after));
     const questions = (await this.o.hub.decisions(project.id)).filter(question => !question.answer && !question.withdrawnAt).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
     const tasks = await this.#all(project.id, after => this.o.hub.tasks(project.id, after));
-    const inputs = digest(stableJson({ name: project.name, nightlyWindow: settings.nightlyWindow, threads, questions, tasks })), previous = this.#rendered.get(project.id);
-    if (!rebuild && previous?.head === head && previous.inputs === inputs && previous.state === digest(stableJson(prior)) && Object.keys(prior.files).every(path => existsSync(this.#file(project.id, path)))) return;
+    const inputs = digest(stableJson({ name: project.name, nightlyWindow: settings.nightlyWindow, threads, questions, tasks }));
+    const stableSource = () => source !== undefined && generation === this.o.renderGeneration?.(project.id);
+    if (!rebuild && previous?.head === head && previous.inputs === inputs && previous.state === stateIdentity && filesPresent()) {
+      if (stableSource()) previous.source = source!; else delete previous.source;
+      return;
+    }
     const records = this.#records(project.id);
     const headers = new Map<string, ReturnType<typeof JournalThreadSchema.parse>>();
     for (const record of records) if (record.event.type === 'journal-thread') { const data = JournalThreadSchema.parse(record.event.data); if (!headers.has(data.id)) headers.set(data.id, data); }
@@ -376,7 +387,7 @@ export class ProjectJournals {
       }
     }
     if (stableJson(state) !== stableJson(prior)) writeDocument(this.#statePath(project.id), ProjectJournalStateSchema, state);
-    if (!indexDeferred) this.#rendered.set(project.id, { head, inputs, state: digest(stableJson(state)) }); else this.#rendered.delete(project.id);
+    if (!indexDeferred) this.#rendered.set(project.id, { head, inputs, state: digest(stableJson(state)), ...(stableSource() ? { source: source! } : {}) }); else this.#rendered.delete(project.id);
   }
   async #mirror(projectId: string): Promise<void> {
     const response = await this.o.request?.({ schema: 'project-journal-request-v1', projectId, operation: 'state' });

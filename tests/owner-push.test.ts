@@ -1,8 +1,9 @@
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { OwnerPushSchema, ProjectDecisionSchema } from '../packages/core/dist/index.js';
 import { OwnerPushes } from '../apps/daemon/dist/owner-pushes.js';
 import { OwnerBridges } from '../apps/daemon/dist/owner-bridge.js';
 import { projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
@@ -143,4 +144,43 @@ test('a push acked by a bridge that was shutting down is sent again when the bri
   expect(pushes.requeueUndelivered('project', since + 60_000, transcript)).toBe(0);
   expect(pushes.requeueUndelivered('project', since, transcript)).toBe(1);
   expect(pushes.messages('project').map(message => message.text)).toEqual(['[Jevellan] W2 waiting on you: lost?']);
+});
+
+
+test('periodic bridge push collection skips resolved history and preserves expiry and delivery records', async () => {
+  f = await projectFixture({ control: true }); const { app } = f; app.ownerPushes.close();
+  const now = Date.now(), pushes = new OwnerPushes(app, () => now), at = new Date(now).toISOString();
+  await app.projectWork.decisions.ask('project', { question: 'A completed fixture question.' }, 'coordinator');
+  const seed = app.hub.list('project-decisions', ProjectDecisionSchema)[0]!;
+  app.hub.put('project-decisions', seed.document.id, ProjectDecisionSchema, { ...seed.document, withdrawnAt: at }, seed.revision);
+  for (let n = 0; n < 100; n++) {
+    app.hub.put('project-decisions', `resolved_${n}`, ProjectDecisionSchema, { ...seed.document, id: `resolved_${n}`, withdrawnAt: at }, 0);
+    const push = pushes.add({ projectId: 'project', kind: 'waiting_created', key: `closed_${n}`, text: `Resolved fixture item ${n}.` })!;
+    pushes.ack('project', [push.id]);
+  }
+  await pushes.sweep(); const parse = vi.spyOn(JSON, 'parse'); let historyReads: number;
+  try {
+    await pushes.sweep();
+    historyReads = parse.mock.calls.filter(([input]) => typeof input === 'string' && /"schema":"(?:project-decision-v1|owner-push-v1)"/u.test(input)).length;
+  } finally { parse.mockRestore(); }
+  expect(historyReads!, 'A periodic sweep must not decode resolved questions or acknowledged delivery history.').toBeLessThanOrEqual(8);
+  expect(app.hub.ids('project-decisions')).toHaveLength(101); expect(app.hub.ids('owner-pushes')).toHaveLength(100);
+  const expired = pushes.add({ projectId: 'project', kind: 'waiting_created', key: 'expired', text: 'An old unacknowledged fixture item.', at: new Date(now - 86_400_001).toISOString() })!;
+  await pushes.sweep(); expect(app.hub.get('owner-pushes', expired.id, OwnerPushSchema)?.document.droppedAt).toBe(at);
+  expect(pushes.messages('project')).toEqual([]); expect(app.hub.ids('owner-pushes')).toHaveLength(101);
+});
+
+test('existing collected pushes avoid repeated preference reads while new and direct pushes use fresh settings', async () => {
+  f = await projectFixture({ control: true }); const { app } = f; app.ownerPushes.close(); const now = Date.now(), pushes = new OwnerPushes(app, () => now);
+  for (let n = 0; n < 20; n++) await app.projectWork.decisions.ask('project', { question: `Open fixture question ${n}.` }, 'coordinator', `collected_${n}`);
+  await pushes.sweep(); expect(app.hub.ids('owner-pushes')).toHaveLength(20);
+  const preferences = vi.spyOn(app.ownerTools, 'projectSettings'); let reads: number;
+  try { await pushes.sweep(); reads = preferences.mock.calls.length; } finally { preferences.mockRestore(); }
+  expect(reads!, 'Collecting identities that already exist cannot create or change a push and need not reload all preferences.').toBe(0);
+  app.ownerTools.updateProjectSettings('project', settings => ({ ...settings, push: { ...settings.push, kinds: { waiting_created: false } } }));
+  expect(pushes.add({ projectId: 'project', kind: 'waiting_created', key: 'decision:collected_0', text: 'Already collected.' })).toBeNull();
+  await app.projectWork.decisions.ask('project', { question: 'A new question after disabling pushes.' }, 'coordinator', 'later_collected');
+  await pushes.sweep(); expect(app.hub.ids('owner-pushes')).toHaveLength(20);
+  app.ownerTools.updateProjectSettings('project', settings => ({ ...settings, push: { ...settings.push, kinds: { waiting_created: true } } }));
+  await pushes.sweep(); expect(app.hub.ids('owner-pushes')).toHaveLength(21);
 });

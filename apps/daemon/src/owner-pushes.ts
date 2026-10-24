@@ -38,6 +38,12 @@ export class OwnerPushes {
     return document;
   }
 
+  /** Repeated collection cannot change an existing push; public add still checks current preferences on every call. */
+  #collect(input: Parameters<OwnerPushes['add']>[0]): void {
+    const id = `push_${hash(input.projectId, input.kind, input.key)}`;
+    if (!this.app.hub.get(NAMESPACE, id, OwnerPushSchema)) this.add(input);
+  }
+
   sweep(): Promise<void> {
     if (this.#running) return this.#running;
     const task = this.#sweep().finally(() => { this.#running = undefined; }); this.#running = task; return task;
@@ -45,7 +51,7 @@ export class OwnerPushes {
   async #sweep(): Promise<void> {
     const hub = this.app.hub; const now = this.now(); const cutoff = now - DAY;
     // Items waiting on the owner.
-    for (const { document: decision } of hub.list('project-decisions', ProjectDecisionSchema)) {
+    for (const { document: decision } of hub.list('project-decisions', ProjectDecisionSchema, { missing: ['answer', 'withdrawnAt'] })) {
       if (decision.answer || decision.withdrawnAt || Date.parse(decision.createdAt) < cutoff) continue;
       if (!hub.get('projects', decision.projectId, ProjectSchema)) continue;
       const id = this.app.ownerTools.ids.one(decision.projectId, 'W', decision.id);
@@ -53,18 +59,18 @@ export class OwnerPushes {
       const options = decision.options.map(option => option.label);
       const kind = waitingKind(decision);
       if (kind === 'deploy' || kind === 'deploy_failed' || kind === 'rollback_question') {
-        this.add({ projectId: decision.projectId, kind: 'deploy', key: `decision:${decision.id}`, ref: id, urgent: decision.urgent === true, at: decision.createdAt,
+        this.#collect({ projectId: decision.projectId, kind: 'deploy', key: `decision:${decision.id}`, ref: id, urgent: decision.urgent === true, at: decision.createdAt,
           text: `${id} waiting on you: ${line(decision.question)} Options: ${options.join(', ')}` });
         continue;
       }
-      this.add({ projectId: decision.projectId, kind: 'waiting_created', key: `decision:${decision.id}`, ref: id, urgent: decision.urgent === true, at: decision.createdAt,
+      this.#collect({ projectId: decision.projectId, kind: 'waiting_created', key: `decision:${decision.id}`, ref: id, urgent: decision.urgent === true, at: decision.createdAt,
         text: options.length ? `${id} waiting on you: ${line(decision.question)} Options: ${options.join(', ')}` : `${id} ${from} asks: ${line(decision.question)}` });
     }
     // Jevellan's system events, with the existing notification copy.
     for (const { document: notification } of hub.list('project-notifications', ProjectNotificationSchema)) {
       if (!notification.projectId || Date.parse(notification.createdAt) < cutoff) continue;
-      if (notification.kind === 'deploy') this.add({ projectId: notification.projectId, kind: 'deploy', key: `notification:${notification.id}`, urgent: notification.urgent === true, at: notification.createdAt, text: `${notification.title}: ${notification.body}` });
-      else if (notification.kind === 'coordinator-unavailable') this.add({ projectId: notification.projectId, kind: notification.body === NOTIFICATION_COORDINATOR_RECOVERED ? 'coordinator_recovered' : 'coordinator_crashed', key: `notification:${notification.id}`, at: notification.createdAt, text: `${notification.title}: ${notification.body}` });
+      if (notification.kind === 'deploy') this.#collect({ projectId: notification.projectId, kind: 'deploy', key: `notification:${notification.id}`, urgent: notification.urgent === true, at: notification.createdAt, text: `${notification.title}: ${notification.body}` });
+      else if (notification.kind === 'coordinator-unavailable') this.#collect({ projectId: notification.projectId, kind: notification.body === NOTIFICATION_COORDINATOR_RECOVERED ? 'coordinator_recovered' : 'coordinator_crashed', key: `notification:${notification.id}`, at: notification.createdAt, text: `${notification.title}: ${notification.body}` });
     }
     // Failed job and night runs, exhausted budgets and a coordinator that shows no activity while marked running: these read whole
     // project views, so they run every 30 seconds rather than on every sweep.
@@ -104,7 +110,7 @@ export class OwnerPushes {
     }
     await this.app.ownerLogins.sweep().catch(() => undefined);
     // Unacked pushes older than a day leave the queue; they stay in status and activity.
-    for (const { document, revision } of hub.list(NAMESPACE, OwnerPushSchema)) {
+    for (const { document, revision } of hub.list(NAMESPACE, OwnerPushSchema, { missing: ['ackedAt', 'droppedAt'] })) {
       if (!document.ackedAt && !document.droppedAt && Date.parse(document.createdAt) < cutoff) hub.put(NAMESPACE, document.id, OwnerPushSchema, { ...document, droppedAt: new Date(now).toISOString() }, revision);
     }
   }

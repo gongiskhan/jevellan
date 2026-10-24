@@ -517,3 +517,6 @@ Decision337: current-source CPU/native/allocation evidence precedes bounded jour
 
 
 Decision338: profile-guided remote routing and metadata-only memory readiness pass both failing-first bounds, 58 assertions/9 complete affected files, static/build and both desktop-light chat journeys. Exact source/image proofs retained. Next strict cold-backed live trial; no release before actual CPU/history and complete current backend. Other manager findings remain next; no additional review or authentication/production action.
+
+
+Decision339: profile-guided project thread selection, journal render identity and repeated push collection pass four failing-first bounds, 325 assertions/40 complete affected files, static/build and two desktop chats. Default-settings fixture corrections are retained, with freshness and file repair checked. Next strict cold-backed exact-source live trial; no release before actual CPU/history and current full backend. Other manager scope remains next, without a new review or authentication/production action.

@@ -2,7 +2,7 @@ import { expect, test, vi } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Homes, JournalDocumentSchema, ProjectDecisionSchema, ProjectSchema, type ProjectJournalRecord } from '../packages/core/dist/index.js';
+import { Homes, defaultProjectWorkSettings, JournalDocumentSchema, ProjectDecisionSchema, ProjectSchema, ProjectWorkTaskSchema, type ProjectJournalRecord } from '../packages/core/dist/index.js';
 import { LEDGER_ROLL_BYTES } from '../packages/conversations/dist/index.js';
 import { HubDatabase, HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { ProjectJournals, ProjectLedgers, ProjectPaths } from '../packages/projects/dist/index.js';
@@ -104,3 +104,39 @@ test.each(['blob', 'source'])('warm journal projections retain %s validation on 
     }
   } finally { await journal.close(); database.close(); rmSync(root, { recursive: true, force: true }); }
 });
+
+
+test('unchanged journal rendering avoids task pages and refreshes settings changed during an await', async () => {
+  const fixture = await projectFixture({ github: false }); const { app } = fixture;
+  let clock = Date.parse('2026-10-14T10:00:00.000Z');
+  const journal = new ProjectJournals({ ...app.projectWork.journal!.o, now: () => clock });
+  try {
+    expect(app.projectWork.store.list('project')).toEqual([]);
+    const at = new Date(clock).toISOString();
+    for (let n = 0; n < 30; n++) app.hub.put('project-work-tasks', `render_task_${n}`, ProjectWorkTaskSchema, {
+      schema: 'project-work-task-v1', id: `render_task_${n}`, projectId: 'project', revision: 1, title: `Historical task ${n}`, brief: 'Durable completed work. '.repeat(100),
+      kind: 'session', type: 'review', goalId: null, source: 'daily', state: 'done', rank: '8', ownerRanked: false, now: false, after: [], needs: [],
+      dailyId: 'daily_fixture', jobId: null, threadId: null, jobRunId: null, fixed: {}, createdAt: at, updatedAt: at,
+    }, 0);
+    for (let n = 0; n < 3; n++) { clock += 20_000; await journal.sync('project'); }
+    const tasks = vi.spyOn(app.projectHub, 'tasks'), threads = vi.spyOn(app.projectHub, 'threads'); let pages: number, threadPages: number;
+    try { for (let n = 0; n < 4; n++) await journal.sync('project'); pages = tasks.mock.calls.length; threadPages = threads.mock.calls.length; }
+    finally { tasks.mockRestore(); threads.mockRestore(); }
+    expect(pages!, 'An unchanged journal with no local threads must not load full task documents merely to decide nothing changed.').toBe(0);
+    expect(threadPages!).toBe(0);
+    const replaceTime = async (time: string) => {
+      const stored = await app.projectHub.settings('project'), settings = stored?.document ?? defaultProjectWorkSettings('project');
+      await app.projectHub.putSettings({ ...settings, nightlyWindow: { ...settings.nightlyWindow, enabled: true, time } }, stored?.revision ?? 0);
+    };
+    await replaceTime('21:15'); clock += 20_000; await journal.sync('project');
+    const index = () => readFileSync(join(journal.path('project'), 'INDEX.md'), 'utf8');
+    expect(index()).toContain('21:15');
+    const original = app.projectHub.threads.bind(app.projectHub);
+    const changed = vi.spyOn(app.projectHub, 'threads').mockImplementationOnce(async (...args) => { const rows = await original(...args); await replaceTime('23:45'); return rows; });
+    try { await replaceTime('22:15'); clock += 20_000; await journal.sync('project'); } finally { changed.mockRestore(); }
+    clock += 20_000; await journal.sync('project'); expect(index()).toContain('23:45');
+    const state = journal.state('project'), path = Object.keys(state.files).find(path => path.startsWith('days/'))!;
+    const before = readFileSync(join(journal.path('project'), path), 'utf8'); unlinkSync(join(journal.path('project'), path));
+    await journal.sync('project'); expect(readFileSync(join(journal.path('project'), path), 'utf8')).toBe(before);
+  } finally { await journal.close(); await fixture.close(); }
+}, 60_000);

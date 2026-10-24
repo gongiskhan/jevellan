@@ -219,6 +219,7 @@ export class Application {
         journal: { isHub: !this.member, ...(this.member ? { request: input => this.member!.projectJournal(input) } : {
           documentGeneration: () => this.hub.generation(['projects', 'project-coordinators', 'project-work-tasks', 'project-work-task-history', 'project-decisions',
             'project-windows', 'project-job-runs', 'project-merge-documents', 'project-intake', 'project-refill-state']),
+          renderGeneration: () => this.hub.generation(['projects', 'project-work-settings', 'project-threads', 'project-decisions', 'project-work-tasks']),
         }) },
         terminalRead: (scope, input) => this.terminals.read(scope.kind === 'thread' ? { kind: 'thread', projectId: scope.projectId, threadId: scope.threadId }
           : { kind: 'coordinator', projectId: scope.projectId }, input),
