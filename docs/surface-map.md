@@ -756,3 +756,5 @@ Decision791 release boundary: Decisions785–788 are published and normally inst
 Decision792: the existing Environment and Routines surfaces consume engine-owned empty-profile and durable pause-reason behavior. No new component row or optional layout is added. Backend/API/vault parity covers missing-profile isolation, reason persistence, explicit resume and retained command intervals; desktop core/release verification remains pending.
 
 Decision793: no UI engine or component change. The intake landing regression now proves empty Check inputs after Work inputs change. All captured desktop product bytes are unchanged; existing core verdicts/images retain their original flake classification. Corrected full backend/release and private live-reset acceptance remain pending.
+
+Decision794: Environment/Routines retain engine-owned empty Check inputs and durable pause reasons,with API/backend/vault parity and the existing desktop core evidence. No new component/layout row. Supporting0.7.10 is published and normally installed on both devices; operational state-reset evidence remains private. Existing planned areas are unchanged.

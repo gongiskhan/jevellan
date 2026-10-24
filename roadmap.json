@@ -1256,7 +1256,7 @@
   {
     "id": "reset-project-state-0710",
     "title": "Archive project working state and release reset prerequisites as0.7.10",
-    "why": "Decisions792\u2013793: owner-authorized archival reset preserves mechanisms/logins/registrations/settings/rules/prompts and code/main/branches. Missing Check profile is empty and isolated; explicit missing declared inputs still wait. Job/routine pauses retain visible reasons and vault-restored intervals. Four valid failing-first regressions; first full403files has3910pass/1obsolete-contract failure/16notrun. Corrected intake file5pass; 132/12complete affected cases and repeated static/build pass. Five desktop cores/20images reused after exact runtime product equality in the2760-file desktop capture, with only the backend test/planning metadata changed; first thread-page flake remains recorded. Corrected full backend/artifacts/publication/strict paired install/live archival/status/doctor/CPU remain pending; no owner question or new review.",
-    "status": "in-progress"
+    "why": "Decisions792\u2013794: empty isolated Check inputs and retained pause reasons/intervals ship as0710. Affected132/12,static/build and5desktop20images accepted. Complete403files:3909firstPASS/2firstFAIL/16NOTRUN; two sole exact reruns pass on unchanged source,3911unique passing cases/0unresolved; raw flakes retained. Both normal native builds/extractedCLI/PTY/source/digest/exclusion/environment/Pro-staging proofs pass. Strict guarded cold-backed Madrid\u2192Pro installs and actualdoctor10both verified. Owner-authorized archival reset/private acceptance complete; mechanisms/logins/settings/rules/prompts/code/main/branches retained. No production action,new review or unrelated feature phase.",
+    "status": "complete"
   }
 ]
