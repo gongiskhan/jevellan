@@ -1,7 +1,10 @@
-import { expect, test, vi } from 'vitest';
+import { afterAll, expect, test, vi } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   AccountSchema, AccountStatusSchema, DeviceRosterSchema, HubUnavailable, PlacementOverrideSchema, ProjectSchema, ProjectWorkSettingsSchema, SecretRedactor, ThreadIndexSchema,
-  FileReservationSchema, defaultProjectWorkSettings, seedConfiguration, type Account, type AccountStatus, type FileReservation, type HeldCheckout, type ModelOption, type PlacementOverride,
+  FileReservationSchema, defaultProjectWorkSettings, projectInstructionBudget, seedConfiguration, type Account, type AccountStatus, type FileReservation, type HeldCheckout, type ModelOption, type PlacementOverride,
   type ProjectWorkSettings, type ThreadIndex, type ThreadState,
 } from '../packages/core/dist/index.js';
 import { PlacementStateSchema, parseJevResponse, type DecisionClient, type JevRequest } from '../packages/decisions/dist/index.js';
@@ -161,7 +164,9 @@ test('a hub outage reuses the last good count and settings, or counts zero with 
 
 const now = Date.parse(at);
 const swift: ModelOption = { id: 'swift', runtime: 'codex', model: 'swift-version', enabled: true, label: 'Swift', description: 'Fast coding model.', efforts: ['low', 'medium', 'high'] };
-const project = ProjectSchema.parse({ schema: 'project-v1', id: 'proj_app', name: 'App', paths: { dev_mini: '/work/app', dev_studio: '/srv/app' }, branchPolicy: 'main', memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } });
+const checkout = mkdtempSync(join(tmpdir(), 'jevellan-admission-instructions-'));
+afterAll(() => rmSync(checkout, { recursive: true, force: true }));
+const project = ProjectSchema.parse({ schema: 'project-v1', id: 'proj_app', name: 'App', paths: { dev_mini: checkout, dev_studio: checkout }, branchPolicy: 'main', memory: { mode: 'repo', dir: '.jevellan/memory' }, context: { state: 'none' } });
 const account: Account = AccountSchema.parse({ schema: 'account-v1', id: 'acc_work', runtime: 'codex', label: 'Work', kind: 'subscription', enabled: true, credential: 'per-device' });
 const status = (deviceId: string): AccountStatus => AccountStatusSchema.parse({ schema: 'account-status-v2', accountId: 'acc_work', deviceId, auth: 'ready', observedAt: new Date(now - 60_000).toISOString() });
 const adapter = { id: 'codex', displayName: 'Codex', capabilities: { edit: true, shell: true, mcp: true, images: false, interrupt: true, usage: true, continueSession: true, perLaunchConfig: true, readOnlyEnforced: true, turns: true } } as unknown as RuntimeAdapter;
@@ -180,10 +185,9 @@ function placementWith(live: string[] = [], over: PlacementFixture = {}) {
   const placement = new Placement({ settings: async () => ({ ...seedConfiguration()['x-jevellan'], menu: [swift], runtimes: { ...seedConfiguration()['x-jevellan'].runtimes, codex: { enabled: true } } }),
     accounts: { list: async () => [{ schema: 'account-view-v1', revision: 1, account, statuses: [status('dev_mini'), status('dev_studio')] }] } as never,
     runtimes: new Map([['codex', adapter]]), roster: async () => DeviceRosterSchema.parse({ schema: 'device-roster-v1', currentDeviceId: 'dev_mini',
-      devices: [view('dev_mini', 'Mac mini', 'stale'), view('dev_studio', 'Studio', over.studio ?? 'online')].map((row) => over.branches?.[row.device.id]
-        ? { ...row, heartbeat: { schema: 'heartbeat-v1', deviceId: row.device.id, at, version: '1.0.0', runningConversations: [], externalSessions: [], load: { cpuPct: 1, memFreeMb: 100 },
-          projects: [{ projectId: 'proj_app', path: '/work/app', branch: over.branches[row.device.id], head: 'a'.repeat(40), dirty: false, ahead: 0, behind: 0 }] } }
-        : row) }),
+      devices: [view('dev_mini', 'Mac mini', 'stale'), view('dev_studio', 'Studio', over.studio ?? 'online')].map((row) =>
+        ({ ...row, heartbeat: { schema: 'heartbeat-v1', deviceId: row.device.id, at, version: '1.0.0', runningConversations: [], externalSessions: [], load: { cpuPct: 1, memFreeMb: 100 },
+          projects: [{ projectId: 'proj_app', path: checkout, branch: over.branches?.[row.device.id] ?? 'main', head: 'a'.repeat(40), dirty: false, ahead: 0, behind: 0, instructions: projectInstructionBudget(checkout) }] } })) }),
     admission: value, deviceId: 'dev_mini', deviceName: 'Mac mini', now: () => now,
     hub: { threads: (projectId, after) => stub.threads(projectId, after), recentOverrides,
       reservations: async (projectId) => { if (stub.state.down) throw new HubUnavailable('Fixture hub'); return (over.reservations ?? []).filter((entry) => entry.projectId === projectId); },

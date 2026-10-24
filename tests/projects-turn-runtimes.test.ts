@@ -129,10 +129,10 @@ test('every Claude launch on an account home keeps its transcripts: turns and st
   };
   const prompt = directive('settings', []);
   const turn = await settings(adapter.startTurn({ ...input, prompt }));
-  expect(JSON.parse(turn.settings ?? '{}')).toMatchObject({ cleanupPeriodDays: 36500, env: { CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' } });
+  expect(JSON.parse(turn.settings ?? '{}')).toEqual({ cleanupPeriodDays: 36500, env: { CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' } });
   const stretch = await settings(adapter.startStretch({ schema: 'stretch-input-v1', conversationId: 'fixture', stretch: 1, action: 'reply', cwd: root, permissions: 'read-only', memoryWrite: false,
     systemAppend: '', brief: prompt, model: 'fixture-model', effort: 'low', timeoutMs: 10_000, launch: input.launch, account: input.account }));
-  expect(JSON.parse(stretch.settings ?? '{}')).toMatchObject({ cleanupPeriodDays: 36500, env: { CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' } });
+  expect(JSON.parse(stretch.settings ?? '{}')).toEqual({ cleanupPeriodDays: 36500, env: { CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' } });
 }, 30_000);
 
 test('a Claude resume of a session that no longer exists fails with one sentence that names no session id (P8 review R-T1)', async () => {
