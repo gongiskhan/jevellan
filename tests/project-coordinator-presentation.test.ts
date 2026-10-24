@@ -14,6 +14,26 @@ test('the project page receives coordinator presentation and control eligibility
   for (const query of ['timeZone=not-a-time-zone', 'locale=_bad']) expect((await f.request(`/api/projects/project/status-view?${query}`)).status).toBe(400);
 });
 
+test('pending fresh-start presentation preserves the current context notice in every coordinator state', async () => {
+  const f = fixture = await projectFixture(), view = (await f.app.projectWork.pageView('project')).work;
+  view.coordinator.freshPending = true;
+  view.coordinator.session = { runtime: 'fake', modelLabel: 'Fixture', effort: 'medium', accountLabel: 'Test', turns: 1,
+    context: { schema: 'project-session-context-v1', tokens: null, contextWindow: null, thresholdPercent: 70,
+      compactions: [], lastCompactionAt: null, needsFreshContext: false, notice: 'Current context information remains available.' } };
+  for (const state of ['idle', 'running', 'unavailable', 'offline'] as const) {
+    view.coordinator.state = state;
+    const header = coordinatorPresentation(view);
+    expect(header.current.contextNotice).toContain('Fresh start pending');
+    expect(header.current.contextNotice).toContain('Current context information remains available.');
+    if (header.live) {
+      expect(header.live.working.contextNotice).toBe(header.current.contextNotice);
+      expect(header.live.idle.contextNotice).toBe(header.current.contextNotice);
+    }
+  }
+  delete view.coordinator.freshPending;
+  expect(coordinatorPresentation(view).current.contextNotice).toBe('Current context information remains available.');
+});
+
 test('coordinator presentation keeps unavailable snapshots authoritative and counts compactions in the viewer day', async () => {
   const f = fixture = await projectFixture(), page = await f.app.projectWork.pageView('project');
   const view = page.work;

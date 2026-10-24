@@ -578,13 +578,59 @@ test('context handoff precedes native compaction, accounts for owner events and 
   await message(work, 'Implement a report.', 'report_request'); await work.idle('proj_a');
   expect(previous).toBeTruthy(); expect(turns()).toHaveLength(2);
   expect(work.coordinators.get('proj_a').state().session).toBeNull();
+  expect((await work.pageView('proj_a')).header.current.contextNotice).toContain('Fresh start pending');
   expect(payloads(work, 'coordinator-handoff')).toHaveLength(1);
   expect(payloads(work, 'session-compacted')).toEqual([]);
   fake.enqueueTurn(say('Continuing the report.'), forCoordinator);
   await message(work, 'Continue.', 'continue_report'); await work.idle('proj_a');
   expect(turns().at(-1)?.resume).toBeUndefined();
+  expect((await work.pageView('proj_a')).header.current.contextNotice ?? '').not.toContain('Fresh start pending');
   expect(turns().at(-1)?.prompt).toContain('The report is queued.');
   expect(turns().at(-1)?.prompt).toContain('Earlier coordinator transcripts:');
+});
+
+test('FRESH075 the header keeps a requested fresh start pending through the old turn and unavailable admission', { timeout: 60000 }, async () => {
+  const work = await started(), first = deferred(), inside = deferred();
+  fake.enqueueTurn(async () => { inside.resolve(); await first.promise; return { status: 'completed' }; }, forCoordinator);
+  await message(work, 'First turn.', 'fresh_first'); await inside.promise;
+  try {
+    await work.freshCoordinator('proj_a');
+    expect((await work.pageView('proj_a')).header.current.contextNotice).toContain('Fresh start pending');
+  } finally { first.resolve(); }
+  await work.idle('proj_a');
+  expect((await work.pageView('proj_a')).header.current.contextNotice).toContain('Fresh start pending');
+  ineligible.add('acc_work'); await message(work, 'Next turn when ready.', 'fresh_next'); await work.idle('proj_a');
+  expect(work.coordinators.get('proj_a').state().state).toBe('unavailable');
+  expect((await work.pageView('proj_a')).header.current.contextNotice).toContain('Fresh start pending');
+  const next = deferred(), entered = deferred(); let resumed = false;
+  fake.enqueueTurn(async turn => { resumed = !!turn.input.resume; entered.resolve(); await next.promise; return { status: 'completed' }; }, forCoordinator);
+  ineligible.clear(); work.coordinators.get('proj_a').sweep();
+  try {
+    await entered.promise;
+    expect((await work.pageView('proj_a')).header.current.contextNotice ?? '').not.toContain('Fresh start pending');
+    expect(resumed).toBe(false);
+  } finally { next.resolve(); }
+  await work.idle('proj_a');
+});
+
+test('a requested fresh start survives a daemon restart until a new coordinator session launches', { timeout: 60000 }, async () => {
+  const work = await started();
+  fake.enqueueTurn(say('Saved the plan.'), forCoordinator);
+  await message(work, 'Keep the plan.', 'pending_plan'); await work.idle('proj_a');
+  await work.freshCoordinator('proj_a');
+  expect((await work.pageView('proj_a')).header.current.contextNotice).toContain('Fresh start pending');
+  await work.close();
+  const restarted = await started();
+  expect((await restarted.pageView('proj_a')).header.current.contextNotice).toContain('Fresh start pending');
+  const entered = deferred(), finish = deferred(); let resumed = true;
+  fake.enqueueTurn(async turn => { resumed = !!turn.input.resume; entered.resolve(); await finish.promise; return { status: 'completed' }; }, forCoordinator);
+  await message(restarted, 'Continue the plan.', 'pending_continue');
+  try {
+    await entered.promise;
+    expect(resumed).toBe(false);
+    expect((await restarted.pageView('proj_a')).header.current.contextNotice ?? '').not.toContain('Fresh start pending');
+  } finally { finish.resolve(); }
+  await restarted.idle('proj_a');
 });
 
 test('an owner message queued after the handoff save keeps the session until a new handoff accounts for it', { timeout: 60000 }, async () => {

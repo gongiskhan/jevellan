@@ -719,3 +719,5 @@ Release0.7.7 preparation (Decision775): exact profiled654029bc product/test sour
 
 
 Managed runtime compatibility (Decision777): complete bounded 256 KiB root instructions and native document budget cover first/resumed turns, stretches and takeover. Reader/turn/takeover failures precede correction;73 complete affected cases, static checks and build and one desktop-light thread-page main-action smoke pass. No UI row disposition or live task acceptance changes. Release 0.7.7 publication and guarded Madrid installation are recorded separately in Decision776; member load and doctor freshness remain explicit blockers.
+
+Coordinator/thread behavior (Decision779): engine context notices preserve pending fresh starts until actual new-session launch. Durable verification failure identity stops repeated identical failures and preserves work, while distinct failures retain existing repair limits. All184 assertions/20 complete affected files,static/build and two desktop-light chat main actions pass; six image digests and4435 tracked source hashes match. No component row or live acceptance disposition advances. Source-only; installed077 unchanged.

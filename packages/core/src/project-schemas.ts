@@ -319,6 +319,7 @@ export const PullCommentSchema = z.strictObject({ id: z.string().min(1).max(64),
 export type PullComment = z.infer<typeof PullCommentSchema>;
 export const PullCommentsSchema = z.strictObject({ schema: z.literal('pr-comment-batch-v1'), prNumber: positive, since: TimestampSchema, remoteUpdatedAt: TimestampSchema.optional(), fetchedAt: TimestampSchema, items: z.array(PullCommentSchema).max(3000), deliveredIds: z.array(z.string().max(64)).max(500) });
 export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-local-v1'),
+  verificationFailure: z.strictObject({ schema: z.literal('thread-verification-failure-v1'), fingerprint: z.string().regex(/^[a-f0-9]{64}$/u), count: z.number().int().min(1).max(2) }).optional(),
   landingWait: ThreadLandingWaitSchema.optional(), landingWaitSequence: count.optional(),
   landInstead: z.strictObject({ commandId: IdSchema, prNumber: positive, head: z.string(), at: TimestampSchema }).optional(),
   ownerLandingRequested: z.boolean().optional(),
@@ -365,6 +366,7 @@ export const ThreadLocalSchema = z.strictObject({ schema: z.literal('thread-loca
 export type ThreadLocal = z.infer<typeof ThreadLocalSchema>;
 // <home>/projects/<pid>/coordinator-local.json
 export const CoordinatorLocalSchema = z.strictObject({ schema: z.literal('coordinator-local-v1'),
+  freshPending: z.boolean().optional(),
   handoffSaved: z.strictObject({ id: IdSchema, turn: positive, ownerDigest: z.string().regex(/^[a-f0-9]{64}$/u) }).optional(), handoffResetId: IdSchema.optional(), needsHandoff: z.boolean().optional(),
   limitRetryBatch: z.string().max(64).optional(),
   sessionHistory: z.array(SessionHistorySchema).optional(),
@@ -375,6 +377,7 @@ export const CoordinatorLocalSchema = z.strictObject({ schema: z.literal('coordi
 export type CoordinatorLocal = z.infer<typeof CoordinatorLocalSchema>;
 // hub namespace project-coordinator-status, key projectId; written only by the coordinator device
 export const ProjectCoordinatorStatusSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), schema: z.literal('project-coordinator-status-v1'),
+  freshPending: z.boolean().optional(),
   sessionCache: z.array(SessionCacheSummarySchema).max(500).optional(),
   revision, projectId: IdSchema, deviceId: IdSchema,
   state: z.enum(['idle', 'running', 'unavailable']), unavailableReason: z.string().max(400).optional(),
@@ -510,6 +513,7 @@ export const ProjectWorkListViewSchema = z.strictObject({ schema: z.literal('pro
     attention: z.enum(['running', 'waiting-for-you', 'idle']).optional() })) });
 export type ProjectWorkListView = z.infer<typeof ProjectWorkListViewSchema>;
 export const CoordinatorViewSchema = z.strictObject({ sessionHistory: z.array(SessionHistoryLinkSchema).optional(), state: CoordinatorStateNameSchema,
+  freshPending: z.boolean().optional(),
   unavailableReason: z.string().optional(), deviceId: IdSchema.nullable(), deviceName: z.string().nullable(), online: z.boolean(),
   session: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema, accountLabel: text, turns: count, context: ProjectSessionContextSchema.optional(), cacheSessionKey: z.string().regex(/^[a-f0-9]{64}$/u).optional() }).nullable(),
   planned: z.strictObject({ runtime: IdSchema, modelLabel: text, effort: EffortSchema }).nullable(),

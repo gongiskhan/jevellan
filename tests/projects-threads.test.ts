@@ -301,16 +301,16 @@ test('PJ1b verification failure prompts are exact and the three-attempt limit ho
   expect(kinds(queue(f))).toEqual(['thread-user-message', 'thread-published']);
 });
 
-test('PJ1b a third failed verification leaves the thread idle and runs no fourth turn', { timeout: 120_000 }, async () => {
+test('PJ1b a third distinct failed verification leaves the thread idle and runs no fourth turn', { timeout: 120_000 }, async () => {
   const f = await setup({ testCommand: VERIFY });
-  for (let n = 0; n < 4; n++) f.fake.enqueueTurn(commitStep({ 'value.txt': '1\n' }, { status: 'done', summary: 'Kept the value.' }), forThread());
-  const { threadId } = await start(f, 'Stay at one', 'Keep value.txt at 1.');
+  for (const value of ['1', '2', '4', '5']) f.fake.enqueueTurn(commitStep({ 'value.txt': `${value}\n` }, { status: 'done', summary: 'Kept verification failing.' }), forThread());
+  const { threadId } = await start(f, 'Keep verification failing', 'Keep value.txt different from 3.');
   await f.waitFor(() => f.thread(threadId).state, (state) => state === 'idle');
   await f.app.projectWork.idle('project'); await f.app.projectWork.pulse(); await f.app.projectWork.idle('project');
   expect(f.thread(threadId)).toMatchObject({ state: 'idle', stateReason: 'Tests failed three times.', turns: 3 });
   expect(f.fake.turnStarts).toHaveLength(3);
   expect(f.fake.turnStarts[2]!.prompt).toContain('(attempt 2 of 3)');
-  expect(queue(f).at(-1)).toMatchObject({ kind: 'thread-verification-failed', threadId, attempts: 3, tail: '1\n' });
+  expect(queue(f).at(-1)).toMatchObject({ kind: 'thread-verification-failed', threadId, attempts: 3, tail: '4\n' });
   expect(f.github.requests).toEqual([]);
   expect(fails(() => f.git(f.root, '--git-dir', f.origin, 'rev-parse', '--verify', `refs/heads/${f.thread(threadId).branch}`))).toBe(true);
 });

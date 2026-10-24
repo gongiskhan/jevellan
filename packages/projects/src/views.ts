@@ -41,7 +41,7 @@ const refuse = (message: string, status: number) => Object.assign(new Error(mess
  * Where the coordinator lives: its local state here, the session and last event id it published elsewhere, and whether it may move
  * to this device (`canMoveHere`, 3.5.3).
  */
-type CoordinatorWhere = { deviceId: string | null; deviceName: string | null; state: CoordinatorView['state']; unavailableReason?: string; online: boolean;
+type CoordinatorWhere = { deviceId: string | null; deviceName: string | null; state: CoordinatorView['state']; unavailableReason?: string; freshPending?: boolean; online: boolean;
   movable: boolean; local?: CoordinatorState; published?: CoordinatorView['session']; lastEventId?: number; sessionCache?: SessionCacheSummary[]; sessionHistory?: import('@jevellan/core').CoordinatorView['sessionHistory'] };
 const ANSWERED_SHOWN = 10;
 const BRANCH_ONLY = [BRANCH_PUSHED_NO_TOKEN, NOT_GITHUB];
@@ -125,14 +125,20 @@ export class ProjectViews {
     const deviceName = here ? this.#o.deviceName : row?.device.name ?? null;
     if (deviceId === null) return { deviceId, deviceName, state: 'none' as const, online: false, movable: false };
     // This device is running, so it is never offline to itself (D8); a stale device keeps its state (D80).
-    if (!here && deviceAway(row)) return { deviceId, deviceName, state: 'offline' as const, online: false, movable: true };
+    if (!here && deviceAway(row)) {
+      const published = (await this.#o.hub.coordinatorStatus(projectId))?.document;
+      return { deviceId, deviceName, state: 'offline' as const, online: false, movable: true,
+        ...(published?.deviceId === deviceId && published.freshPending ? { freshPending: true } : {}) };
+    }
     if (here) {
       const local = this.#o.coordinators.get(projectId).state();
-      return { deviceId, deviceName, state: local.state, ...(local.unavailableReason ? { unavailableReason: local.unavailableReason } : {}), online: true, movable: false, local };
+      return { deviceId, deviceName, state: local.state, ...(local.unavailableReason ? { unavailableReason: local.unavailableReason } : {}),
+        ...(this.#o.coordinators.get(projectId).freshPending() ? { freshPending: true } : {}), online: true, movable: false, local };
     }
     const published = (await this.#o.hub.coordinatorStatus(projectId))?.document;
     const status = published?.deviceId === deviceId ? published : undefined;
     return { deviceId, deviceName, state: status?.state ?? 'idle', ...(status?.unavailableReason ? { unavailableReason: status.unavailableReason } : {}), online: true,
+      ...(status?.freshPending ? { freshPending: true } : {}),
       movable: coordinatorMovable(deviceId, row, status), published: status?.session ?? null, lastEventId: status?.lastEventId ?? 0, sessionCache: status?.sessionCache ?? [], sessionHistory: status?.sessionHistory ?? [] };
   }
   /**
@@ -160,6 +166,7 @@ export class ProjectViews {
     const moveRefusal = here && (here.kind === 'unavailable' ? here.reason : projectPathProblem(project, this.#o.deviceId, this.#o.deviceName));
     const session = where.local?.session;
     return { deviceId: where.deviceId, deviceName: where.deviceName, planned, canMoveHere: where.movable, ...(moveRefusal ? { moveRefusal: moveRefusal.slice(0, 400) } : {}), state: where.state,
+      ...(where.freshPending ? { freshPending: true } : {}),
       ...(where.unavailableReason ? { unavailableReason: where.unavailableReason } : {}), online: where.online,
       sessionHistory: where.local ? this.#o.coordinators.get(project.id).sessionHistory().map(({ nativeSessionId: _native, ...entry }) => { void _native; return entry; }) : where.sessionHistory ?? [],
       session: session ? { runtime: session.runtime, modelLabel: label(session.modelId), effort: session.effort,

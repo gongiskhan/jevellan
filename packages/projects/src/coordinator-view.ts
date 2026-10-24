@@ -37,7 +37,7 @@ export function coordinatorPresentation(view: ProjectWorkView, options: Coordina
   const time = new Intl.DateTimeFormat(options.locale, { timeZone, hour: '2-digit', minute: '2-digit' });
   const contextLine = context ? `${context.tokens !== null && context.contextWindow ? `Context ${Math.round(context.tokens / context.contextWindow * 100)}%` : 'Context unavailable'} · Compacted ${context.compactions.filter(at => day.format(new Date(at)) === day.format(now)).length} times today${context.lastCompactionAt ? ` · Last compaction ${time.format(new Date(context.lastCompactionAt))}` : ''}` : null;
   const make = (busy: boolean): ProjectHeader['current'] => ({ working: busy, offline, chip: chip(coordinator, busy, options.runtimeName ?? (id => id)),
-    contextLine, contextNotice: context?.notice ?? null,
+    contextLine, contextNotice: [coordinator.freshPending ? 'Fresh start pending. The next turn uses a new session.' : null, context?.notice].filter(Boolean).join(' ') || null,
     unavailableNotice: coordinator.state === 'unavailable' && coordinator.unavailableReason ? coordinatorUnavailableNotice(coordinator.unavailableReason) : null,
     offlineNotice: offline ? coordinatorOfflineNotice(coordinator.deviceName ?? coordinator.deviceId ?? '') : null,
     controls: { canFresh: !offline, canSuggestSetup: !busy && !offline, canMove: coordinator.canMoveHere,

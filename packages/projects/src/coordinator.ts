@@ -291,6 +291,7 @@ export class Coordinator {
   }
   sessionHistory() { return this.c.store.local(this.projectId).sessionHistory ?? []; }
   state(): CoordinatorState { return this.c.store.get(this.projectId); }
+  freshPending(): boolean { return this.c.store.local(this.projectId).freshPending === true; }
   /** Decision fallback (decision 7): the coordinator cannot run or failed twice in a row. */
   fallbackActive(): boolean { const state = this.state(); return state.state === 'unavailable' || state.failedTurnsInARow >= 2; }
   /** A turn is being evaluated or runs, a start or retry is scheduled, or a fallback or status write is in flight. */
@@ -367,7 +368,7 @@ export class Coordinator {
           const extra = createHash('sha256').update(JSON.stringify([...new Set(ownerIds)].sort())).digest('hex') !== local.handoffSaved.ownerDigest;
           if (!extra && !this.#running && !this.#timer && !this.state().queue.length) {
             this.c.store.update(this.projectId, state => ({ ...state, session: null }));
-            this.c.store.updateLocal(this.projectId, state => ({ ...state, handoffResetId: local.handoffSaved!.id, needsHandoff: false }));
+            this.c.store.updateLocal(this.projectId, state => ({ ...state, handoffResetId: local.handoffSaved!.id, needsHandoff: false, freshPending: true }));
             this.#publish(); return;
           }
           if (extra) this.c.store.updateLocal(this.projectId, state => ({ ...state, needsHandoff: true }));
@@ -403,6 +404,7 @@ export class Coordinator {
   fresh(): void {
     this.#generation += 1; this.#outcomeAbort.abort();
     this.c.store.update(this.projectId, (state) => ({ ...state, session: null }));
+    this.c.store.updateLocal(this.projectId, local => ({ ...local, freshPending: true }));
     if (this.#started) this.#publish();
   }
   /** A requested save follows all running and queued work before starting its own turn. */
@@ -636,6 +638,9 @@ export class Coordinator {
       const ours = (state: CoordinatorState) => generation === this.#generation && state.session?.startedAt === record.startedAt;
       this.#ownerRetry = false;
       this.c.store.update(projectId, (state) => ({ ...withoutReason(state), state: 'running', session: generation === this.#generation ? record : state.session }));
+      if (!started.resumed && generation === this.#generation && this.freshPending()) {
+        this.c.store.updateLocal(projectId, local => { const next = { ...local }; delete next.freshPending; return next; });
+      }
       if (started.accountChanged) this.#notice(coordinatorAccountMovedNotice(started.accountLabel), 'info');
       this.#ledger.append({ type: 'coordinator-turn-start', turn, data: { schema: 'coordinator-turn-v1', turn, ...(prepared.prompt.setupTriggerId ? { setupTriggerId: prepared.prompt.setupTriggerId } : {}), fresh: !started.resumed, runtime: model.runtime,
         ...(started.prompt ? { prompt: this.c.redactor.text(started.prompt).slice(0, 200000), promptTruncated: this.c.redactor.text(started.prompt).length > 200000 } : {}),
@@ -687,7 +692,10 @@ export class Coordinator {
     }
     if (outcome.status === 'failed' || outcome.status === 'timed-out') {
       // The runtime no longer has the session (the CLI's transcript retention, P8 review R-T1): the retry starts a fresh one with the fresh context.
-      if (outcome.error?.message === SESSION_NOT_FOUND) this.c.store.update(this.projectId, (state) => ours(state) ? { ...state, session: null } : state);
+      if (outcome.error?.message === SESSION_NOT_FOUND && ours(this.state())) {
+        this.c.store.update(this.projectId, state => ({ ...state, session: null }));
+        this.c.store.updateLocal(this.projectId, local => ({ ...local, freshPending: true }));
+      }
       return this.#failed(turn, outcome.error?.message || (outcome.status === 'timed-out' ? coordinatorTurnTimedOut(this.c.timers.turnTimeoutMs) : TURN_FAILED), outcome.status, true, outcome);
     }
     if (outcome.status === 'completed' && events.some(event => event.kind === 'handoff-requested') && this.c.store.local(this.projectId).handoffSaved?.turn !== turn) {
@@ -707,7 +715,7 @@ export class Coordinator {
       if (this.state().queue.some(event => event.kind === 'user-message')) this.c.store.updateLocal(this.projectId, state => ({ ...state, needsHandoff: true }));
       else {
         this.c.store.update(this.projectId, state => ours(state) ? { ...state, session: null } : state);
-        this.c.store.updateLocal(this.projectId, state => ({ ...state, handoffResetId: local.handoffSaved!.id, needsHandoff: false }));
+        this.c.store.updateLocal(this.projectId, state => ({ ...state, handoffResetId: local.handoffSaved!.id, needsHandoff: false, freshPending: true }));
       }
     }
     this.#publish();
@@ -772,8 +780,10 @@ export class Coordinator {
         labels = { modelLabel: settings.menu.find((entry) => entry.id === session.modelId)?.label ?? session.model,
           accountLabel: accounts.find((view) => view.account.id === session.accountId)?.account.label ?? session.accountId };
       }
+      const local = this.c.store.local(this.projectId);
       await this.c.hub.putCoordinatorStatus(ProjectCoordinatorStatusSchema.parse({ schema: 'project-coordinator-status-v1', revision: 0, projectId: this.projectId,
-        sessionHistory: (this.c.store.local(this.projectId).sessionHistory ?? []).map(({ nativeSessionId: _native, ...entry }) => { void _native; return entry; }),
+        ...(local.freshPending ? { freshPending: true } : {}),
+        sessionHistory: (local.sessionHistory ?? []).map(({ nativeSessionId: _native, ...entry }) => { void _native; return entry; }),
         sessionCache: sessionCacheSnapshot(cacheRecords(this.#ledger)),
         deviceId: this.c.deviceId, state: state.state, ...(state.unavailableReason ? { unavailableReason: state.unavailableReason.slice(0, 400) } : {}),
         failedTurnsInARow: state.failedTurnsInARow, session: session && labels ? { runtime: session.runtime, modelLabel: labels.modelLabel, effort: session.effort,

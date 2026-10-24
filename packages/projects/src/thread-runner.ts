@@ -749,6 +749,22 @@ export class ThreadRunner {
     this.#rest(next ?? { reason: 'task', body: taskPrompt(thread.title, thread.task), messages: [] }, WAITING_FOR_HUB_SLOT);
     return false;
   }
+  #clearVerificationFailure(): void {
+    if (!this.#c.store.local(this.threadId).verificationFailure) return;
+    this.#c.store.updateLocal(this.threadId, local => { const next = { ...local }; delete next.verificationFailure; return next; });
+  }
+  /** Two identical recorded failures stop automatic retries; the ledger and worktree remain intact. */
+  async #repeatedVerificationFailure(fingerprint: string): Promise<boolean> {
+    const previous = this.#c.store.local(this.threadId).verificationFailure;
+    const count = previous?.fingerprint === fingerprint ? Math.min(2, previous.count + 1) : 1;
+    this.#c.store.updateLocal(this.threadId, local => ({ ...local, verificationFailure: { schema: 'thread-verification-failure-v1', fingerprint, count } }));
+    if (count < 2) return false;
+    const reason = 'The same verification failure occurred twice. The thread stopped and kept its worktree. Only an owner message can start it again.';
+    const stopped = this.#set(current => ({ ...withState(current, 'stopped', reason), verificationAttempts: count, endedAt: current.endedAt ?? this.#at() }));
+    await this.#c.decisions.withdrawTurnLimit(stopped.projectId, stopped.id, 'The thread stopped after the same verification failure twice.').catch(() => undefined);
+    await this.#tell(stopped.projectId, { kind: 'thread-interrupted', threadId: stopped.id, reason: 'stopped', message: reason });
+    return true;
+  }
   /** Publication of a done report (brief 8.4, 2.6.9 #publish); returns the verification fix turn when there is one. */
   async #publish(): Promise<NextTurn | null> {
     if (this.#thread().isolation === 'main') { await this.#fail('Main isolation has been retired. Restart this thread in a worktree.'); return null; }
@@ -764,6 +780,7 @@ export class ThreadRunner {
         const outcome = await this.#c.landing.publish(project, thread, signal, priorState);
         if (outcome.kind === 'fix') {
           if (outcome.reason === 'verification') {
+            if (await this.#repeatedVerificationFailure(outcome.failureFingerprint)) return null;
             const attempts = thread.verificationAttempts + 1;
             if (attempts >= 3) {
               this.#set(current => ({ ...withState(current, 'idle', 'Landing checks failed three times.'), verificationAttempts: 0 }));
@@ -771,9 +788,10 @@ export class ThreadRunner {
               return this.#afterStep();
             }
             this.#set(current => ({ ...current, verificationAttempts: attempts }));
-          }
+          } else this.#clearVerificationFailure();
           return { reason: outcome.reason, body: outcome.body, messages: [] };
         }
+        this.#clearVerificationFailure();
         if (outcome.kind === 'waiting') {
           this.#set(current => ({ ...withState(current, 'in-review', outcome.reason.slice(0, 400)), verificationAttempts: 0 })); return this.#afterStep();
         }
@@ -792,6 +810,7 @@ export class ThreadRunner {
         labels: { runtimeName: this.#c.runtimeName(thread.placement.runtime), modelLabel: this.#c.store.labels(thread.id).modelLabel }, signal,
         onPushed: commit => { this.#c.store.updateLocal(thread.id, current => ({ ...current, pushedCommit: commit })); } });
       const outcome = result.outcome;
+      if (outcome.kind !== 'verification-failed') this.#clearVerificationFailure();
       // A passed (or skipped) verification resets the counter (brief 8.4 step 3).
       const attempts = (current: Thread) => result.verified && result.verified.status !== 'failed' ? 0 : current.verificationAttempts;
       const projectId = thread.projectId; const threadId = thread.id;
@@ -804,6 +823,9 @@ export class ThreadRunner {
         }
         case 'verification-failed': {
           const count = thread.verificationAttempts + 1; const verification = outcome.verification;
+          const fingerprint = digest(this.#c.redactor.text(stableJson({ kind: 'publication-verification', command: verification.command,
+            code: verification.exitCode ?? null, timedOut: verification.timedOut, tail: verification.tail })));
+          if (await this.#repeatedVerificationFailure(fingerprint)) return null;
           if (count < VERIFICATION_ATTEMPTS) {
             this.#set((current) => ({ ...current, verificationAttempts: count }));
             if (count === 2) await this.#escalate('verification', verification.tail);
@@ -878,7 +900,7 @@ export class ThreadRunner {
       }
       return next;
     });
-    this.#c.store.updateLocal(thread.id, current => { const next = { ...current }; delete next.pendingTurn; delete next.pushedCommit; delete next.prNotified; return next; });
+    this.#c.store.updateLocal(thread.id, current => { const next = { ...current }; delete next.pendingTurn; delete next.pushedCommit; delete next.prNotified; delete next.verificationFailure; return next; });
   }
   /**
    * Messages that arrived during publication are delivered after it (2.6.9 deliver), in a turn that continues the step,

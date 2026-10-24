@@ -1172,8 +1172,8 @@
   {
     "id": "manager-followups-074",
     "title": "Follow-up findings and remaining live evidence",
-    "why": "Recent unstarted cancelled/failed task visibility and recorded reasons are fixed in 0.7.4. Model fresh-status guidance, blocked-landing item/thread visibility, unknown budget explanation and conditional idle dependency wakeup remain planned/unverified; customer observations stay private. Preserve configured checks and production guards. These items authorize no additional release, review or real task/goal/deploy change.",
-    "status": "planned"
+    "why": "Decision779: pending fresh-start header and durable stop after two identical landing/publication failures are verified source-only:184 assertions/20 complete files,static/build and two desktop-light chats. Waiting/landing visibility and durable closure work already landed; current read-only status confirms the earlier waiting item has a reason and its thread remains listed. Budget windows, explicit nonproduction verification environment, tool refusal explanations and conditional dependency wakeup remain planned/unverified. Private live observations stay private. No further release, review or real task/goal/deploy change.",
+    "status": "in-progress"
   },
   {
     "id": "release-075",
@@ -1202,19 +1202,25 @@
   {
     "id": "hub-live-profile-responsiveness",
     "title": "Repair profiled journal, capture, view and polling CPU costs",
-    "why": "Decision776: owner-accepted `654029bc` performance source published as 0.7.7 and normally installed Madrid; new qualified installed measurements and continuity retained privately. Strict20percent diagnostic remains separate. Full backend exact-repeat flake/16notrun preserved; native artifacts verified. Pro load and account freshness doctor warning keep both-device readiness incomplete. Worker experiment remains excluded/preserved; instruction compatibility source is separately gated, unreleased.",
+    "why": "Decision778: owner-accepted654029bc source published077 and normally installed BOTH. Qualified paired installed measurements and continuity retained privately; stricter20percent diagnostic stays separate. Current-source full gate/native archives/source/digests/five desktop cores verified with explicit flake/16notrun. Both doctors9/10 from stale ready-account observations remain a diagnostics blocker; no authentication/config change. Worker churn remains planned; instruction compatibility source is separately gated and unreleased.",
     "status": "complete-with-blockers"
   },
   {
     "id": "release-077-profiled-hub",
     "title": "Release the measured hub responsiveness repairs as0.7.7",
-    "why": "Decision776: v0.7.7/7f7dfed3 published with exact distributed source, assets and digests and fresh normal Linux+Darwin native builds, actual extracted CLI and nativePTY/ABI 127 checks. Full backend: 401 files, 3,842 passed, one failure classified flaky by sole exact repeat/16 explicitnotrun; static/build/five desktop cores with 20 images pass. Strict fresh zero-turn/held/exclusive guards+coldbackup precede normal Madrid 0.7.7 update. Health/CLI pass; doctor 9/10 stale account observations. Pro 0.7.6 loadguard refuses; both READY pending. Qualified installed hub CPU/history and 144 protected records and 28 thread references verified privately. Worker excluded; no auth/bridge/production change.",
-    "status": "in-progress"
+    "why": "Decision778: v0.7.7/7f7dfed3 normally installed BOTH after fresh strict actual-turn/held/exclusive proofs and cold backups. Actual CLI/daemon/health/Online/vault and144protected records/28thread references pass. Both doctors9/10: all3enabled accounts lastready, status checks stale; no auth/config change or10/10claim. Qualified fresh paired idle/UI/history evidence retained privately. Full401files3842pass/1flaky failure cleared by sole exact repeat/16notrun; static/build/five desktop cores20images/native platform builds/extractedCLI-PTY-ABI127/source/digests/scans verified. Initial privatePATH failure/resource refusal retained,076service restored before fresh corrected normal update. Worker excluded; later source fixes unreleased.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "hub-worker-churn-followup",
     "title": "Reduce profiled shell-session reader churn",
     "why": "Twenty partial live worker CPU profiles identify repeated schema initialization and unchanged native-journal parsing. Failing-first experiment and126cases/12complete files/two desktop chats are preserved privately, not landed or tested live. Excluded from077; follow up after prioritized instruction compatibility. Native homes remain read-only and no transcript values enter evidence.",
     "status": "planned"
+  },
+  {
+    "id": "manager-repeat-fresh-state",
+    "title": "Keep fresh-start intent visible and stop repeated verification failures",
+    "why": "Decision779: canonical failing-first proofs,184 assertions/20 complete files,static/build and two desktop-light chat journeys pass; durable optional versioned state covers restart. Source-only, unreleased. Existing installed0.7.7 immutable; no additional release authorized.",
+    "status": "complete-with-blockers"
   }
 ]

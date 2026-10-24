@@ -6,6 +6,7 @@ import { createServer, type AddressInfo } from 'node:net';
 import { GitHubClient, SecretRedactor, StoredProjectWorkSettingsSchema, LandingRouteSchema, ProjectWorkSettingsSchema, ThreadIndexSchema, defaultProjectWorkSettings, type LandingRoute, type ProjectWorkSettings } from '../packages/core/dist/index.js';
 import { heldPort, selectedLandingChecks } from '../packages/projects/dist/landing.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
+import { ThreadPublication } from '../packages/projects/dist/publication.js';
 import { commitStep, git, projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 const shellQuote = (value: string) => "'" + value.replaceAll("'", "'\\''") + "'";
 let fixture: ProjectFixture | undefined;
@@ -61,10 +62,16 @@ test('mergeCommitPaths preserves individual commits under a merge commit', async
   expect(git(f.origin, 'show', '-s', '--format=%s', 'main')).toBe(`Land "Change first" (${thread.id})`); expect(git(f.origin, 'show', '-s', '--format=%P', 'main').split(' ')).toHaveLength(2);
   expect(git(f.origin, 'log', '--format=%s', '-3', 'main')).toContain('Legal change');
 }, 120_000);
-test('landing checks fail three times with the exact repair prompt then leave the thread idle', async () => {
-  const f = await setup({ landingChecks: [{ name: 'Gate', paths: [], command: 'echo deterministic-failure; exit 1' }] });
-  f.fake.enqueueTurn(commitStep({ 'README.md': 'Broken\n' }, { status: 'done', summary: 'Done.' }), forThread());
-  for (let n = 1; n <= 2; n++) f.fake.enqueueTurn(async turn => { expect(turn.input.prompt).toContain(`Landing checks failed (attempt ${n} of 3). Gate: deterministic-failure`); expect(turn.input.prompt).toContain('Fix the cause, run the relevant tests and report done.'); await turn.bridge('jevellan_thread_report', { status: 'done', summary: 'Still done.' }); return { status: 'completed' }; }, forThread());
+test('distinct landing check failures keep the exact repair prompt and three-attempt limit', async () => {
+  const f = await setup({ landingChecks: [{ name: 'Gate', paths: [], command: 'cat README.md; exit 1' }] });
+  f.fake.enqueueTurn(commitStep({ 'README.md': 'Broken1\n' }, { status: 'done', summary: 'Done.' }), forThread());
+  for (let n = 1; n <= 2; n++) f.fake.enqueueTurn(async turn => {
+    expect(turn.input.prompt).toContain(`Landing checks failed (attempt ${n} of 3). Gate: Broken${n}`);
+    expect(turn.input.prompt).toContain('Fix the cause, run the relevant tests and report done.');
+    writeFileSync(join(turn.input.cwd, 'README.md'), `Broken${n + 1}\n`);
+    git(turn.input.cwd, 'add', '-A'); git(turn.input.cwd, 'commit', '-m', `Try repair ${n}`);
+    await turn.bridge('jevellan_thread_report', { status: 'done', summary: 'Still done.' }); return { status: 'completed' };
+  }, forThread());
   const result = await start(f), thread = await done(f, result.threadId); expect(thread.state).toBe('idle'); expect(thread.stateReason).toBe('Landing checks failed three times.'); expect(thread.turns).toBe(3); expect(thread.landing).toBeUndefined();
 }, 120_000);
 test('a landing check that cannot bind its port waits without a repair turn, names the holder, and lands by itself once the port is free', async () => {
@@ -418,4 +425,66 @@ test('REPLAY075 a lost blocker-answer reply acknowledges its retry after landing
     expect((await f.app.projectHub.decision(wait.decisionId))!.document.answeredAt).toBe(answered.answeredAt);
     expect(f.thread(landed.id).turns).toBe(1); expect(git(f.origin, 'rev-parse', 'main')).toBe(commit);
   } finally { if (holder.listening) await new Promise<void>(resolve => holder.close(() => resolve())); }
+}, 120_000);
+
+test.each(['land', 'pull-request'] as const)('RR075 identical %s check failures stop with a reason instead of asking for more turns', async delivery => {
+  const f = fixture = await projectFixture({ jevKey: true, decisionFetch: transport, testCommand: 'echo repeated-check-failure; exit 1' });
+  await settings(f, { delivery, threadTurnCap: 5, landingChecks: [{ name: 'Repeated check', paths: [], command: 'echo repeated-check-failure; exit 1' }] });
+  f.fake.enqueueTurn(commitStep({ 'README.md': 'Preserve this change\n' }, { status: 'done', summary: 'Done.' }), forThread());
+  for (let n = 0; n < 2; n++) f.fake.enqueueTurn(async turn => { await turn.bridge('jevellan_thread_report', { status: 'done', summary: 'Same result.' }); return { status: 'completed' }; }, forThread());
+  const created = await start(f, `repeat_${delivery}`);
+  await f.waitFor(() => f.thread(created.threadId), row => row.turns >= 2 && ['idle', 'stopped', 'waiting-for-you'].includes(row.state));
+  await f.app.projectWork.idle(); const stopped = f.thread(created.threadId);
+  expect(stopped).toMatchObject({ state: 'stopped', turns: 2, endedAt: expect.any(String) });
+  expect(stopped.stateReason).toMatch(/same.*failure.*twice/iu);
+  expect(stopped.landing).toBeUndefined(); expect(git(stopped.cwd, 'show', 'HEAD:README.md')).toContain('Preserve this change');
+  expect((await f.app.projectHub.decisions('project')).filter(row => !row.answer && !row.withdrawnAt && row.threadId === stopped.id)).toEqual([]);
+  await f.restart();
+  expect(f.thread(stopped.id)).toMatchObject({ state: 'stopped', turns: 2, stateReason: stopped.stateReason });
+  expect(git(f.thread(stopped.id).cwd, 'show', 'HEAD:README.md')).toContain('Preserve this change');
+  await expect(f.app.projectWork.threads.message('project', stopped.id, 'coordinator', 'Continue again.', false, 'repeat_coordinator')).rejects.toThrow();
+  await f.app.projectWork.threads.allowTurns('project', stopped.id); expect(f.thread(stopped.id).turnAllowance).toBe(5);
+}, 120_000);
+
+test('a repeated verification failure still stops after a daemon restart between the two checks', async () => {
+  const f = fixture = await projectFixture({ jevKey: true, decisionFetch: transport, testCommand: 'echo repeated-check-failure; exit 1' });
+  await settings(f, { delivery: 'pull-request', threadTurnCap: 5 });
+  const publish = ThreadPublication.prototype.publishWorktree;
+  let first = true;
+  const paused = vi.spyOn(ThreadPublication.prototype, 'publishWorktree').mockImplementation(async function (this: ThreadPublication, input) {
+    const result = await publish.call(this, input);
+    if (first && result.outcome.kind === 'verification-failed') {
+      first = false;
+      await settings(f, { delivery: 'pull-request', status: 'paused' });
+    }
+    return result;
+  });
+  try {
+    f.fake.enqueueTurn(commitStep({ 'README.md': 'Preserve this change\n' }, { status: 'done', summary: 'Done.' }), forThread());
+    const created = await start(f, 'repeat_across_restart');
+    await f.waitFor(() => f.local(created.threadId).pendingTurn?.reason === 'verification' && f.thread(created.threadId).state === 'idle');
+    await f.app.projectWork.idle(); paused.mockRestore();
+    await f.restart();
+    f.fake.enqueueTurn(async turn => { await turn.bridge('jevellan_thread_report', { status: 'done', summary: 'Same result.' }); return { status: 'completed' }; }, forThread());
+    await settings(f, { delivery: 'pull-request', status: 'active' });
+    await f.app.projectWork.pulse();
+    await f.waitFor(() => f.thread(created.threadId).state === 'stopped');
+    expect(f.thread(created.threadId)).toMatchObject({ state: 'stopped', turns: 2 });
+    expect(f.thread(created.threadId).stateReason).toMatch(/same.*failure.*twice/iu);
+  } finally { paused.mockRestore(); }
+}, 120_000);
+
+test('an owner follow-up can continue stopped repeated-check work without inheriting the old failure streak', async () => {
+  const f = fixture = await projectFixture({ jevKey: true, decisionFetch: transport, testCommand: 'echo repeated-check-failure; exit 1' });
+  await settings(f, { delivery: 'pull-request', threadTurnCap: 5 });
+  f.fake.enqueueTurn(commitStep({ 'README.md': 'Preserve this change\n' }, { status: 'done', summary: 'Done.' }), forThread());
+  f.fake.enqueueTurn(async turn => { await turn.bridge('jevellan_thread_report', { status: 'done', summary: 'Same result.' }); return { status: 'completed' }; }, forThread());
+  const created = await start(f, 'owner_repeat_followup');
+  await f.waitFor(() => f.thread(created.threadId).state === 'stopped');
+  f.fake.enqueueTurn(async turn => { await turn.bridge('jevellan_thread_report', { status: 'done', summary: 'Try after the owner message.' }); return { status: 'completed' }; }, forThread());
+  f.fake.enqueueTurn(async turn => { await turn.bridge('jevellan_thread_report', { status: 'progress', summary: 'The owner follow-up is in progress.' }); return { status: 'completed' }; }, forThread());
+  await f.app.projectWork.threads.message('project', created.threadId, 'owner', 'Continue investigating this check.', false, 'explicit_owner_followup');
+  await f.waitFor(() => f.thread(created.threadId).turns === 4 && f.thread(created.threadId).state === 'idle');
+  expect(f.thread(created.threadId).endedAt).toBeUndefined();
+  expect(git(f.thread(created.threadId).cwd, 'show', 'HEAD:README.md')).toContain('Preserve this change');
 }, 120_000);

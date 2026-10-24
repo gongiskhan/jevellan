@@ -26,7 +26,12 @@ export function selectedLandingChecks(settings: Pick<ProjectWorkSettings, 'landi
     ...(settings.smokeCheck ? [{ name: 'Smoke check', paths: [], command: settings.smokeCheck }] : [])];
 }
 export type LandingOutcome = { kind: 'landed'; landing: ThreadLanding; routeId: string } | { kind: 'no-changes' }
-  | { kind: 'fix'; reason: 'conflict' | 'verification'; body: string; tail?: string } | { kind: 'waiting'; reason: string };
+  | { kind: 'fix'; reason: 'conflict'; body: string }
+  | { kind: 'fix'; reason: 'verification'; body: string; tail?: string; failureFingerprint: string } | { kind: 'waiting'; reason: string };
+/** Exact failure data only: timestamps and candidate commits do not change a failed command's identity. */
+function failureFingerprint(value: unknown, redactor: SecretRedactor): string {
+  return createHash('sha256').update(redactor.text(stableJson(value))).digest('hex');
+}
 /** The port a failed check could not bind because another process held it, from the check's output. */
 export function heldPort(output: string): number | null {
   const match = /EADDRINUSE[^\n]*?:(\d{2,5})\b/u.exec(output) ?? /\bport\s+(\d{2,5})\b[^\n]{0,80}?\b(?:already in use|in use|is held|held by|busy|occupied)/iu.exec(output);
@@ -251,6 +256,7 @@ export class ThreadLandingService {
       const port = passed || result.timedOut ? null : heldPort(outputTail(result, 8000)); const holder = port === null ? null : await portHolder(port);
       if (port !== null && holder) return this.#waitForPort(thread, check.name, head!, port, this.o.redactor.text(`${check.name} could not start: port ${port} is in use by ${holderText(holder)}. It lands by itself once the port is free.`), resources.ports.includes(port));
       if (!passed) { const tail = this.o.redactor.text(outputTail(result, 4000) || 'The check changed the worktree or its commit.'); return { kind: 'fix' as const, reason: 'verification' as const, tail,
+        failureFingerprint: failureFingerprint({ kind: 'landing-check', command: check.command, name: check.name, code: result.code, timedOut: result.timedOut, tail }, this.o.redactor),
         body: `Landing checks failed (attempt ${thread.verificationAttempts + 1} of 3). ${check.name}: ${tail}. Fix the cause, run the relevant tests and report done.` }; }
     }
     await this.#clearWait(thread, 'The landing checks passed; the port no longer blocks this candidate.');
@@ -267,7 +273,8 @@ export class ThreadLandingService {
       for (const commit of (await this.o.git.run(thread.cwd, ['rev-list', `${thread.baseCommit}..HEAD`])).stdout.trim().split('\n').filter(Boolean)) {
         if (!local.copiedFiles?.length) break;
         const copied = (await this.o.git.run(thread.cwd, ['--literal-pathspecs', 'diff-tree', '--root', '-m', '--no-commit-id', '--name-only', '--diff-filter=ACMRT', '-r', '-z', commit, '--', ...local.copiedFiles])).stdout.split('\0').filter(Boolean);
-        if (copied.length) return { kind: 'fix', reason: 'verification', body: `Landing checks failed (attempt ${thread.verificationAttempts + 1} of 3). Copied files: remove ${copied.join(', ')} from this branch's commits. Fix the cause, run the relevant tests and report done.` };
+        if (copied.length) return { kind: 'fix', reason: 'verification', failureFingerprint: failureFingerprint({ kind: 'copied-files', paths: [...copied].sort() }, this.o.redactor),
+          body: `Landing checks failed (attempt ${thread.verificationAttempts + 1} of 3). Copied files: remove ${copied.join(', ')} from this branch's commits. Fix the cause, run the relevant tests and report done.` };
       }
       await this.o.publication.backupWorktree(thread, signal);
       const remote = await this.o.git.remoteUrl(thread.cwd); if (!remote) return { kind: 'waiting', reason: 'Landing needs a git remote.' };
@@ -324,7 +331,8 @@ export class ThreadLandingService {
         if (!completed || completed.state !== 'passed') {
           route = await this.#save({ ...route, state: 'failed', failures: Math.min(3, failures + 1) });
           if (failures + 1 >= 3 || completed?.note) { await this.#ask(await this.#save({ ...route, route: 'ask-owner', source: 'guard', reason: completed?.note ?? 'Three verification reports failed on this thread.' }), thread); return { kind: 'waiting', reason: 'Waiting for the owner’s landing decision.' }; }
-          return { kind: 'fix', reason: 'verification', body: `Basic verification failed: ${completed?.report?.failures.map(item => `${item.what}\n${item.output}`).join('\n\n') ?? 'Verification did not finish.'}`.slice(0, 20000) };
+          return { kind: 'fix', reason: 'verification', failureFingerprint: failureFingerprint({ kind: 'basic-verification', failures: completed?.report?.failures ?? null }, this.o.redactor),
+            body: `Basic verification failed: ${completed?.report?.failures.map(item => `${item.what}\n${item.output}`).join('\n\n') ?? 'Verification did not finish.'}`.slice(0, 20000) };
         }
       }
       let selected = route;
