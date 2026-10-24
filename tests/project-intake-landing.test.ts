@@ -1,5 +1,5 @@
 import {afterEach,expect,test} from 'vitest';
-import {existsSync,rmSync,writeFileSync} from 'node:fs';
+import {existsSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {projectFixture,type ProjectFixture} from './helpers/project-fixture.js';
 import {intakeJob,intakePull,intakeRun,intakeWaiting} from './helpers/intake-fixture.js';
@@ -20,12 +20,12 @@ test('unchanged-head intake preserves a newer landing-failure owner item',async(
  f.git(f.checkout,'switch','outside-change');writeFileSync(join(f.checkout,'outside.txt'),'New contributor work.\n');f.git(f.checkout,'commit','-am','Contributor followup');f.git(f.checkout,'push','origin','outside-change');const head=f.git(f.checkout,'rev-parse','HEAD');f.git(f.checkout,'switch','main');await intakeRun(f,job.id,'replacement_after_landing_failure');expect((await f.app.projectHub.decision(failed.id))!.document.withdrawnAt).toBeDefined();const fresh=await intakeWaiting(f,pr.number);expect(fresh.intake?.head).toBe(head);expect(fresh.options.map(option=>option.label)).toEqual(['merge','redo','close','later']);expect(f.fake.runs).toHaveLength(0);
 });
 
-test('intake landing blocks undeclared work inputs after an earlier successful check',async()=>{
+test('intake landing reruns configured checks with empty inputs after Work inputs change',async()=>{
  f=await projectFixture();const pr=await intakePull(f),probe=join(f.root,'intake-landing-input-probe.json'),script=`require('fs').writeFileSync(${JSON.stringify(probe)},JSON.stringify({workInput:Boolean(process.env.WORK_INPUT)}))`,command="node -e '"+script.replaceAll("'","'\\''")+"'",job=await intakeJob(f,command);
- await intakeRun(f,job.id,'intake_before_environment_change');await f.app.projectWork.idle();expect(existsSync(probe)).toBe(true);rmSync(probe);
+ await intakeRun(f,job.id,'intake_before_environment_change');await f.app.projectWork.idle();expect(existsSync(probe)).toBe(true);expect(JSON.parse(readFileSync(probe,'utf8'))).toEqual({workInput:false});rmSync(probe);
  const item=await intakeWaiting(f,pr.number),base=(await f.app.projectWork.settingsView('project')).settings,main=f.git(f.origin,'rev-parse','main');
  await f.app.projectHub.putSettings({...base,environment:{variables:[{name:'WORK_INPUT',value:'synthetic-work-only-value'}],secrets:[],copyFiles:[]}},base.revision);
  await f.app.projectWork.answerDecision('project',item.id,{schema:'decision-answer-request-v1',clientRequestId:'merge_environment_boundary',expectedRevision:item.revision,optionLabel:'merge'});
  const done=await f.waitFor(()=>records(f!),rows=>rows.some(row=>row.schema==='intake-landing-v1'&&['failed','landed'].includes(row.state)));
- expect(existsSync(probe)).toBe(false);expect(done.find(row=>row.schema==='intake-landing-v1')).toMatchObject({state:'failed',failure:expect.stringContaining('check environment')});expect(f.git(f.origin,'rev-parse','main')).toBe(main);expect(f.fake.runs).toHaveLength(0);
+ expect(existsSync(probe)).toBe(true);expect(JSON.parse(readFileSync(probe,'utf8'))).toEqual({workInput:false});expect(done.find(row=>row.schema==='intake-landing-v1')).toMatchObject({state:'landed',candidate:{checks:[{name:'Contributor text',passed:true},{name:'Smoke check',passed:true}]}});expect(f.git(f.origin,'rev-parse','main')).not.toBe(main);expect(f.git(f.origin,'merge-base','--is-ancestor',pr.headSha,'main')).toBe('');expect((await f.app.projectHub.decisions('project')).filter(row=>!row.answer&&!row.withdrawnAt)).toHaveLength(0);expect(f.fake.runs).toHaveLength(0);
 });
