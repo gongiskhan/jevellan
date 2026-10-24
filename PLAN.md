@@ -510,3 +510,5 @@ Decision329 correction checks: actual-CLI regression now passes after the comple
 
 
 Decision334 continuation: source polling/metadata repairs pass their five failing-first resource regressions,221complete affected assertions,typecheck/lint/build and two desktop-light chats. Preserve the explicit startup flake and16not-run opt-ins in the preceding e36full run. Next: complete current-source backend,then strict cold-backed live verification; publication remains gated by actual idle CPU/history. Broader queued work stays planned. No new review or production action.
+
+Decision334 full execution complete: all401files,3826passed/0failed/16not run; strict non-success for the unrun opt-ins remains explicit. All4435source hashes match. Next: immutable exact-source candidate,strict idle/exclusive/cold backup,continuity and uninstrumented live CPU/history; no publication before that criterion.
