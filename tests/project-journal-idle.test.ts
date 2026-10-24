@@ -1,11 +1,42 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Homes, ProjectSchema, type ProjectJournalRecord } from '../packages/core/dist/index.js';
+import { Homes, JournalDocumentSchema, ProjectDecisionSchema, ProjectSchema, type ProjectJournalRecord } from '../packages/core/dist/index.js';
 import { LEDGER_ROLL_BYTES } from '../packages/conversations/dist/index.js';
 import { HubDatabase, HubProjectAccess } from '../packages/mesh/dist/index.js';
 import { ProjectJournals, ProjectLedgers, ProjectPaths } from '../packages/projects/dist/index.js';
+import { projectFixture } from './helpers/project-fixture.js';
+
+test('unchanged journal document sources avoid recapture and still observe changed bytes across awaits', async () => {
+  const fixture = await projectFixture({ github: false });
+  try {
+    const { app } = fixture, journal = app.projectWork.journal!;
+    for (let n = 0; n < 20; n++) await app.projectWork.decisions.ask('project', { question: `Fixture question ${n}.` }, 'coordinator', `capture_${n}`);
+    for (let n = 0; n < 3; n++) await journal.sync('project');
+    const parsing = vi.spyOn(JournalDocumentSchema, 'parse'); let recaptures: number;
+    try { for (let n = 0; n < 3; n++) { await app.presence.pulse(); await journal.sync('project'); } recaptures = parsing.mock.calls.length; }
+    finally { parsing.mockRestore(); }
+    expect(recaptures!, 'Unchanged authoritative document bytes must not be parsed and copied into the journal on every sweep.').toBe(0);
+    const saved = app.hub.get('project-decisions', 'capture_0', ProjectDecisionSchema)!;
+    const replace = (question: unknown) => app.hub.db.prepare('UPDATE documents SET document=? WHERE namespace=? AND id=?')
+      .run(JSON.stringify({ ...saved.document, question }), 'project-decisions', saved.document.id);
+    // A byte change without a revision change still invalidates the optimization and validates the full document.
+    replace(42); await expect(journal.sync('project')).rejects.toThrow();
+    replace('Changed source question.'); await journal.sync('project');
+    const original = app.projectHub.decisions.bind(app.projectHub);
+    const reading = vi.spyOn(app.projectHub, 'decisions').mockImplementationOnce(async id => {
+      const rows = await original(id); replace('Changed while capture awaited.'); return rows;
+    });
+    try { replace('Before the awaited read.'); await journal.sync('project'); }
+    finally { reading.mockRestore(); }
+    await journal.sync('project');
+    const text = Object.keys(journal.state('project').files).filter(path => path.endsWith('.md'))
+      .map(path => readFileSync(join(journal.path('project'), path), 'utf8')).join('\n');
+    expect(text).toContain('Changed source question.'); expect(text).toContain('Changed while capture awaited.');
+    expect(app.hub.get('project-decisions', 'capture_0', ProjectDecisionSchema)?.revision).toBe(saved.revision);
+  } finally { await fixture.close(); }
+}, 60_000);
 
 test('an idle large journal stays cheap to synchronize and still repairs missing files and records new work', async () => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'jevellan-journal-idle-')));
@@ -15,7 +46,7 @@ test('an idle large journal stays cheap to synchronize and still repairs missing
   const project = ProjectSchema.parse({ schema: 'project-v1', id: 'project', name: 'Shop', paths: {}, branchPolicy: 'main', memory: { mode: 'repo', dir: '.memory' }, context: { state: 'none' } });
   database.put('projects', project.id, ProjectSchema, project, 0);
   const ledgers = new ProjectLedgers(new ProjectPaths(homes));
-  const journal = new ProjectJournals({ homes, deviceId: 'hub', isHub: true, ledgers, hub: new HubProjectAccess(database, 'hub'), projects: async () => [project], threads: () => [], now: () => Date.parse('2026-10-14T10:00:00.000Z') });
+  const journal = new ProjectJournals({ homes, deviceId: 'hub', isHub: true, ledgers, hub: new HubProjectAccess(database, 'hub'), documentGeneration: () => database.generation(['projects']), projects: async () => [project], threads: () => [], now: () => Date.parse('2026-10-14T10:00:00.000Z') });
   const at = '2026-10-14T10:00:00.000Z', count = 13_000;
   try {
     const directory = join(homes.root, 'projects/project/ledger'); mkdirSync(directory, { recursive: true });
@@ -55,7 +86,7 @@ test.each(['blob', 'source'])('warm journal projections retain %s validation on 
   const project = ProjectSchema.parse({ schema: 'project-v1', id: 'project', name: 'Shop', paths: {}, branchPolicy: 'main', memory: { mode: 'repo', dir: '.memory' }, context: { state: 'none' } });
   database.put('projects', project.id, ProjectSchema, project, 0);
   const ledgers = new ProjectLedgers(new ProjectPaths(homes)), ledger = ledgers.coordinator(project.id);
-  const journal = new ProjectJournals({ homes, deviceId: 'hub', isHub: true, ledgers, hub: new HubProjectAccess(database, 'hub'), projects: async () => [project], threads: () => [], now: () => Date.parse('2026-10-14T10:00:00.000Z') });
+  const journal = new ProjectJournals({ homes, deviceId: 'hub', isHub: true, ledgers, hub: new HubProjectAccess(database, 'hub'), documentGeneration: () => database.generation(['projects']), projects: async () => [project], threads: () => [], now: () => Date.parse('2026-10-14T10:00:00.000Z') });
   try {
     const event = ledger.append({ type: 'journal-source', data: { schema: 'project-journal-record-v1', deviceId: 'peer', ledgerId: 'coordinator', event: {
       schema: 'project-ledger-event-v1', id: 1, t: '2026-10-14T10:00:00.000Z', type: 'coordinator-text', data: { schema: 'coordinator-text-v1', text: kind === 'blob' ? 'Before '.repeat(10000) : 'Before' },

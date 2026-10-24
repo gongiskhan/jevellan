@@ -187,30 +187,32 @@ export class ThreadWorktree {
     }
     const registered = new Map(entries.map(entry => [resolvedPath(entry.path), entry]));
     const result = new Map<string, boolean>();
-    const groups = new Map<string, Array<{ thread: Thread; entry: WorktreeEntry }>>();
+    const candidates: Array<{ thread: Thread; entry: WorktreeEntry }> = [];
     for (const thread of threads) {
       // Equal immutable commit ids have an empty range, including after a reset. No fact survives this poll.
       const entry = thread.cwd ? registered.get(resolvedPath(thread.cwd)) : undefined;
       if (thread.baseCommit && entry?.head === thread.baseCommit) { result.set(thread.id, false); continue; }
       if (!entry?.head || !entry.branch?.startsWith('refs/heads/') || entry.prunable || !existsSync(thread.cwd) || !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(thread.baseCommit)) continue;
-      const group = groups.get(thread.baseCommit) ?? []; group.push({ thread, entry }); groups.set(thread.baseCommit, group);
+      candidates.push({ thread, entry });
     }
-    for (const [base, group] of groups) {
-      if (group.length < 2) continue;
+    for (let offset = 0; offset < candidates.length; offset += 32) {
+      const group = candidates.slice(offset, offset + 32); if (group.length < 2) continue;
       try {
-        // Git computes all ranges sharing a base in one graph traversal. Unsupported Git retains the normal per-thread query.
-        const refs = [...new Set(group.map(row => row.entry.branch!))];
-        const output = await this.#git.run(group[0]!.thread.cwd, ['for-each-ref', `--format=%(refname)%09%(objectname)%09%(ahead-behind:${base})`, ...refs]);
-        const facts = new Map<string, { head: string; ahead: number }>();
+        // Git computes the bounded matrix of current refs and bases in one graph traversal, including distinct bases.
+        const refs = [...new Set(group.map(row => row.entry.branch!))], bases = [...new Set(group.map(row => row.thread.baseCommit))];
+        const format = ['%(refname)', '%(objectname)', ...bases.map(base => `%(ahead-behind:${base})`)].join('%09');
+        const output = await this.#git.run(group[0]!.thread.cwd, ['for-each-ref', `--format=${format}`, ...refs]);
+        const facts = new Map<string, { head: string; ahead: number[] }>();
         for (const line of output.stdout.split('\n').filter(Boolean)) {
-          const [ref, head, counts] = line.split('\t');
-          if (!ref || !head || !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(head) || !/^\d+ \d+$/u.test(counts ?? '')) continue;
-          const ahead = Number(counts!.split(' ')[0]); if (Number.isSafeInteger(ahead)) facts.set(ref, { head, ahead });
+          const [ref, head, ...counts] = line.split('\t');
+          if (!ref || !head || !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(head) || counts.length !== bases.length || counts.some(count => !/^\d+ \d+$/u.test(count))) continue;
+          const ahead = counts.map(count => Number(count.split(' ')[0])); if (ahead.every(Number.isSafeInteger)) facts.set(ref, { head, ahead });
         }
         for (const { thread, entry } of group) {
           const fact = facts.get(entry.branch!);
           // A ref moved between the worktree snapshot and this query: leave it to the caller's fresh fallback.
-          if (fact && fact.head === entry.head) result.set(thread.id, fact.ahead > 0);
+          const ahead = fact?.ahead[bases.indexOf(thread.baseCommit)];
+          if (fact && fact.head === entry.head && ahead !== undefined) result.set(thread.id, ahead > 0);
         }
       } catch { /* No optimistic fact on unavailable capability, invalid refs, a moved checkout or a repository error. */ }
     }

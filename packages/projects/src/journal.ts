@@ -38,10 +38,13 @@ const digest = (bytes: string | Buffer): string => createHash('sha256').update(b
 const refuse = (text: string, status = 409): Error => Object.assign(new Error(text), { status });
 type JournalLedgerIndex = { head: number; revision: number; bytes: number; latest: Map<string, import('@jevellan/core').ProjectLedgerEvent>;
   blobs: Map<string, { event: import('@jevellan/core').ProjectLedgerEvent; generation: string }>;
-  records: ProjectJournalRecord[]; documents: Map<string, JournalDocument>; handoffs: CoordinatorHandoff[] };
+  records: ProjectJournalRecord[]; documents: Map<string, JournalDocument>; handoffs: CoordinatorHandoff[];
+  documentCapture?: { token: string; head: number } };
 export type JournalOptions = { homes: Homes; deviceId: string; isHub: boolean; ledgers: ProjectLedgers; hub: ProjectHub;
   projects(): Promise<Project[]>; threads(projectId: string): Thread[]; now(): number;
   dream?(projectId: string): { id: string; report: Record<string, unknown>; windowId?: string } | undefined;
+  /** Optional local hub fingerprint of every current source row; changes to raw bytes must change it, even at the same revision. */
+  documentGeneration?(projectId: string): string;
   request?(request: ProjectJournalRequest): Promise<ProjectJournalResult> };
 
 /** The existing ledgers remain authoritative. Only this hub projection writes Markdown; members install verified mirrors. */
@@ -211,7 +214,13 @@ export class ProjectJournals {
     return rows;
   }
   async #captureDocuments(projectId: string, hubMemory: boolean): Promise<void> {
-    const ledger = this.o.ledgers.coordinator(projectId), recorded = this.#index(ledger).documents;
+    const ledger = this.o.ledgers.coordinator(projectId), index = this.#index(ledger), recorded = index.documents;
+    const dream = hubMemory ? this.o.dream?.(projectId) : undefined;
+    const generation = this.o.documentGeneration?.(projectId), dreamSource = stableJson(dream ?? null);
+    const token = generation === undefined ? undefined : digest(stableJson([generation, hubMemory, dreamSource]));
+    if (token !== undefined && index.documentCapture?.token === token && index.documentCapture.head === index.head) return;
+    delete index.documentCapture;
+    let expectedHead = index.head;
     const collections: Array<Array<Omit<JournalDocument, 'schema'>>> = await Promise.all([
       this.#all(projectId, after => this.o.hub.windows(projectId, after)).then(rows => rows.map(document => ({ collection: 'window' as const, key: document.id, document }))),
       this.#all(projectId, after => this.o.hub.tasks(projectId, after)).then(rows => rows.map(document => ({ collection: 'task' as const, key: document.id, document }))),
@@ -221,7 +230,6 @@ export class ProjectJournals {
       this.#all(projectId, after => this.o.hub.intakeDocuments(projectId, after)).then(rows => rows.map(document => ({ collection: 'intake' as const, key: document.id, document }))),
       this.o.hub.refill(projectId).then(row => row ? [{ collection: 'refill' as const, key: projectId, document: row.document }] : []),
     ]);
-    const dream = hubMemory ? this.o.dream?.(projectId) : undefined;
     if (dream) collections.push([{ collection: 'dream', key: dream.id, document: dream.report, ...(dream.windowId ? { nightlyWindowId: dream.windowId } : {}) }]);
     const history: Array<Omit<JournalDocument, 'schema'>> = [];
     const tasks = collections.flat().filter(row => row.collection === 'task');
@@ -235,8 +243,11 @@ export class ProjectJournals {
     }
     collections.push(history);
     for (const raw of collections.flat()) { const data = JournalDocumentSchema.parse({ schema: 'journal-document-v1', ...raw });
-      if (stableJson(recorded.get(`${data.collection}:${data.key}`)) !== stableJson(data)) ledger.append({ type: 'journal-document', data });
+      if (stableJson(recorded.get(`${data.collection}:${data.key}`)) !== stableJson(data)) { ledger.append({ type: 'journal-document', data }); expectedHead++; }
     }
+    // No snapshot survives a changed source, intervening ledger append, failed validation or changed blob generation.
+    if (token !== undefined && generation === this.o.documentGeneration?.(projectId)
+      && dreamSource === stableJson((hubMemory ? this.o.dream?.(projectId) : undefined) ?? null) && ledger.lastId() === expectedHead) index.documentCapture = { token, head: expectedHead };
   }
   #accept(request: Extract<ProjectJournalRequest, { operation: 'publish' }>, deviceId: string): Promise<number> {
     const prior = this.#publications.get(request.projectId) ?? Promise.resolve(0);

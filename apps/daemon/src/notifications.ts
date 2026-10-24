@@ -86,9 +86,8 @@ export class HubNotifications {
         title: clipRedacted(this.hub.redactor.text(notificationQuestionTitle(project.name)), 80), body: clipRedacted(this.hub.redactor.text(document.question), 180),
         url: `/projects/${project.id}?view=overview`, tag: `${project.id}:decision:${document.id}`.slice(0, 100), createdAt: document.createdAt });
     }
-    let notifications = this.hub.list('project-notifications', ProjectNotificationSchema);
-    for (const row of notifications) if (Date.parse(row.document.createdAt) < cutoff) this.hub.delete('project-notifications', row.document.id);
-    notifications = notifications.filter(row => Date.parse(row.document.createdAt) >= cutoff);
+    for (const row of this.hub.list('project-notifications', ProjectNotificationSchema, { before: { field: 'createdAt', at: time(cutoff) } })) this.hub.delete('project-notifications', row.document.id);
+    let notifications = this.hub.list('project-notifications', ProjectNotificationSchema, { missing: ['dropped'] });
     const held = new Map<string, typeof notifications>();
     for (const original of notifications) {
       let row = original;
@@ -106,21 +105,24 @@ export class HubNotifications {
       this.enqueue(ProjectNotificationSchema.parse({ schema: 'project-notification-v1', revision: 0, id, projectId, kind: 'quiet-summary', title: clipRedacted(this.hub.redactor.text(title), 80), body: `${count} updates while you were away`, updateCount: count, url: `/projects/${projectId}`, tag: `${projectId}:quiet-summary`.slice(0, 100), createdAt: at }));
       for (const row of rows) this.#put('project-notifications', row.document.id, ProjectNotificationSchema, { ...row.document, dropped: 'Included in the quiet hours summary.' }, row.revision);
     });
-    notifications = this.hub.list('project-notifications', ProjectNotificationSchema);
+    notifications = this.hub.list('project-notifications', ProjectNotificationSchema, { missing: ['dropped'] });
     // Reuse only the current synchronous snapshot. A send yields to requests, so all of it expires after every await.
     const notificationRows = new Map(notifications.map(row => [row.document.id, row]));
+    const notificationIds = this.hub.ids('project-notifications'), retained = new Set(notificationIds);
+    let snapshotCurrent = true;
     let subscriptionRows: Array<{ revision: number; document: PushSubscription }> | undefined;
-    for (const receipt of this.hub.list('push-deliveries', PushDeliverySchema)) if (!notifications.some(row => row.document.id === receipt.document.notificationId)) this.hub.delete('push-deliveries', receipt.document.id);
+    for (const receipt of this.hub.list('push-deliveries', PushDeliverySchema)) if (!retained.has(receipt.document.notificationId)) this.hub.delete('push-deliveries', receipt.document.id);
     // Keep only the newest pending reply, including replies received during the30-second send interval.
-    const replies = this.hub.listByField('project-notifications', 'kind', 'coordinator-reply', ProjectNotificationSchema, { order: 'insertion-desc' }).filter(row => !row.document.sentAt && !row.document.dropped && !row.document.heldAt);
+    const replies = this.hub.listByField('project-notifications', 'kind', 'coordinator-reply', ProjectNotificationSchema, { order: 'insertion-desc', missing: ['sentAt', 'dropped', 'heldAt'] });
     for (const row of replies) if (replies.some(other => other.document.projectId === row.document.projectId && (other.document.createdAt > row.document.createdAt || other.document.createdAt === row.document.createdAt && replies.indexOf(other) < replies.indexOf(row)))) {
       notificationRows.set(row.document.id, this.#put('project-notifications', row.document.id, ProjectNotificationSchema, { ...row.document, dropped: 'Replaced by a newer coordinator reply.' }, row.revision));
     }
     const retrying = new Set(this.hub.list('push-deliveries', PushDeliverySchema).filter(row => !row.document.sentAt && !row.document.dropped).map(row => row.document.notificationId));
-    for (const item of notifications) {
+    for (const id of notificationIds) {
       if (this.#closed) break;
-      if (item.document.sentAt && !retrying.has(item.document.id)) continue;
-      let row = notificationRows.get(item.document.id) ?? this.hub.get('project-notifications', item.document.id, ProjectNotificationSchema)!;
+      if (snapshotCurrent && !notificationRows.has(id)) continue;
+      let row = notificationRows.get(id) ?? this.hub.get('project-notifications', id, ProjectNotificationSchema);
+      if (!row || row.document.sentAt && !retrying.has(id)) continue;
       if (row.document.dropped) continue;
       const notification = row.document;
       if (notification.heldAt) continue;
@@ -163,7 +165,7 @@ export class HubNotifications {
         } finally {
           // A push yields to owner requests. The next notification must see settings changed during that send.
           settings.clear();
-          notificationRows.clear(); subscriptionRows = undefined;
+          notificationRows.clear(); subscriptionRows = undefined; snapshotCurrent = false;
         }
       }
       row = this.hub.get('project-notifications', notification.id, ProjectNotificationSchema)!;

@@ -1,7 +1,20 @@
 import { DatabaseSync } from 'node:sqlite';
 import { chmodSync, writeFileSync } from 'node:fs';
-import { ConfigurationStore, IdSchema, SecretRedactor, SecretVault, type DocumentSchema, type Homes } from '@jevellan/core';
+import { createHash } from 'node:crypto';
+import { ConfigurationStore, IdSchema, TimestampSchema, SecretRedactor, SecretVault, type DocumentSchema, type Homes } from '@jevellan/core';
 import { migrateSharedIndexes } from './indexes.js';
+
+type DocumentSelection = { missing?: readonly string[]; before?: { field: string; at: string } };
+function selectedDocuments(selection: DocumentSelection): { sql: string; parameters: string[] } {
+  const field = (name: string) => { if (!/^[A-Za-z][A-Za-z0-9]*$/.test(name)) throw new Error('Invalid document field.'); return `json_extract(document, '$.${name}')`; };
+  const clauses = (selection.missing ?? []).map(name => `${field(name)} IS NULL`), parameters: string[] = [];
+  if (selection.before) {
+    const value = field(selection.before.field); parameters.push(TimestampSchema.parse(selection.before.at));
+    // Invalid source dates stay selected so the document schema refuses them instead of hiding corrupt rows.
+    clauses.push(`(julianday(${value}) < julianday(?) OR julianday(${value}) IS NULL)`);
+  }
+  return { sql: clauses.map(clause => ` AND ${clause}`).join(''), parameters };
+}
 
 export class HubDatabase {
   #transactionDepth = 0;
@@ -41,18 +54,34 @@ export class HubDatabase {
     const row = this.#readStatement('SELECT revision,document FROM documents WHERE namespace=? AND id=?').get(IdSchema.parse(namespace), IdSchema.parse(id));
     return row ? { revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) } : null;
   }
-  list<T>(namespace: string, schema: DocumentSchema<T>): Array<{ revision: number; document: T }> {
-    return this.#readStatement('SELECT revision,document FROM documents WHERE namespace=? ORDER BY id').all(IdSchema.parse(namespace)).map((row) => ({ revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) }));
+  list<T>(namespace: string, schema: DocumentSchema<T>, selection: DocumentSelection = {}): Array<{ revision: number; document: T }> {
+    const selected = selectedDocuments(selection);
+    return this.#readStatement(`SELECT revision,document FROM documents WHERE namespace=?${selected.sql} ORDER BY id`).all(IdSchema.parse(namespace), ...selected.parameters).map((row) => ({ revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) }));
+  }
+  ids(namespace: string): string[] {
+    return this.#readStatement('SELECT id FROM documents WHERE namespace=? ORDER BY id').all(IdSchema.parse(namespace)).map(row => IdSchema.parse(row.id));
+  }
+  /** Identity of current serialized sources, including same-revision byte changes; not a document-validation cache. */
+  generation(namespaces: readonly string[]): string {
+    const hash = createHash('sha256'), part = (value: string) => { hash.update(`${value.length}:`); hash.update(value, 'utf16le'); };
+    for (const namespace of namespaces) {
+      part(IdSchema.parse(namespace));
+      for (const row of this.#readStatement('SELECT id,revision,document FROM documents WHERE namespace=? ORDER BY id').iterate(namespace)) {
+        part(String(row.id)); part(String(row.revision)); part(String(row.document));
+      }
+    }
+    return hash.digest('hex');
   }
   /** Matching documents, normally ordered by id; append-only readers may request newest insertion first without a cursor. */
-  listByField<T>(namespace: string, field: string, value: string, schema: DocumentSchema<T>, options: { limit?: number; after?: string; order?: 'insertion-desc' } = {}): Array<{ revision: number; document: T }> {
+  listByField<T>(namespace: string, field: string, value: string, schema: DocumentSchema<T>, options: { limit?: number; after?: string; order?: 'insertion-desc' } & DocumentSelection = {}): Array<{ revision: number; document: T }> {
     if (!/^[A-Za-z][A-Za-z0-9]*$/.test(field)) throw new Error('Invalid document field.');
     if (options.limit !== undefined && (!Number.isSafeInteger(options.limit) || options.limit < 1)) throw new Error('Invalid document limit.');
     if (options.order && options.after !== undefined) throw new Error('Insertion order cannot use an id cursor.');
     const after = options.after === undefined ? null : IdSchema.parse(options.after);
     const order = options.order === 'insertion-desc' ? 'rowid DESC' : 'id';
-    return this.#readStatement(`SELECT revision,document FROM documents WHERE namespace=? AND json_extract(document, '$.${field}')=? AND (? IS NULL OR id>?) ORDER BY ${order} LIMIT ?`)
-      .all(IdSchema.parse(namespace), value, after, after, options.limit ?? -1)
+    const selected = selectedDocuments(options);
+    return this.#readStatement(`SELECT revision,document FROM documents WHERE namespace=? AND json_extract(document, '$.${field}')=? AND (? IS NULL OR id>?)${selected.sql} ORDER BY ${order} LIMIT ?`)
+      .all(IdSchema.parse(namespace), value, after, after, ...selected.parameters, options.limit ?? -1)
       .map((row) => ({ revision: Number(row.revision), document: schema.parse(JSON.parse(String(row.document))) }));
   }
   put<T>(namespace: string, id: string, schema: DocumentSchema<T>, document: unknown, expectedRevision: number): { revision: number; document: T } {

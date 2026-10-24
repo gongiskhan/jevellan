@@ -216,7 +216,10 @@ export class Application {
       this.projectHub = this.member ? new MemberProjectStore(this.member) : new HubProjectAccess(this.hub, this.device.deviceId, undefined, () => this.devices.list(), projectId=>this.ownerJev.prepare(projectId),row=>this.ownerJev.recordCorrection(row));
       this.library = new ProjectLibraryService(this);
       this.projectWork = new ProjectWork({ landingJev: async (projectId) => this.#hub ? this.ownerJev.landingHook(projectId) : undefined, displayId: (projectId, prefix, internalId) => this.#hub ? this.ownerTools.ids.one(projectId, prefix, internalId) : undefined, nightGuard: (projectId, date, lateness, items) => this.#ownerSchedules ? this.#ownerSchedules.nightGuard(projectId, date, lateness, items) : Promise.resolve({ open: true as const }), deployHealth: async (id, checks, trigger, deployId) => { const runs: ProjectHealthRun[] = []; for (const definition of checks) { const view = await this.projectHealthRequest({ schema: 'project-health-request-v1', project: id, operation: 'run', trigger, deployId, definition }); runs.push(...view.runs); } return runs; }, library: this.library, homes: this.homes, deviceId: this.device.deviceId, deviceName: this.device.name, redactor: this.redactor, workRefusal: () => this.versionRefusal(),
-        journal: { isHub: !this.member, ...(this.member ? { request: input => this.member!.projectJournal(input) } : {}) },
+        journal: { isHub: !this.member, ...(this.member ? { request: input => this.member!.projectJournal(input) } : {
+          documentGeneration: () => this.hub.generation(['projects', 'project-coordinators', 'project-work-tasks', 'project-work-task-history', 'project-decisions',
+            'project-windows', 'project-job-runs', 'project-merge-documents', 'project-intake', 'project-refill-state']),
+        }) },
         terminalRead: (scope, input) => this.terminals.read(scope.kind === 'thread' ? { kind: 'thread', projectId: scope.projectId, threadId: scope.threadId }
           : { kind: 'coordinator', projectId: scope.projectId }, input),
         switchMemory: async (projectId, mode, requestId) => {

@@ -37,6 +37,24 @@ test('a notification batch without subscribers avoids rereading every retained n
   expect(hub.list('project-notifications', ProjectNotificationSchema).every(row => row.document.dropped || row.document.sentAt)).toBe(true);
 });
 
+test('an idle notification sweep excludes concluded payloads while retaining history and expiring old rows', async () => {
+  const now = Date.parse('2026-10-24T00:00:00Z'); let sent = 0;
+  const { hub, service } = setup(async () => { sent++; return { statusCode: 201, body: '', headers: {} }; }, () => now);
+  for (let n = 0; n < 270; n++) service.enqueue({ ...notification(`concluded_${n}`, now), dropped: 'Already concluded.' });
+  for (let n = 0; n < 30; n++) service.enqueue(notification(`pending_${n}`, now));
+  for (let n = 0; n < 4; n++) service.enqueue({ ...notification(`expired_${n}`, now - 8 * 86400000), dropped: 'Already concluded.' });
+  const parsing = vi.spyOn(ProjectNotificationSchema, 'parse'); let parsed: number;
+  try { await service.sweep(); parsed = parsing.mock.calls.length; }
+  finally { parsing.mockRestore(); }
+  expect(parsed!, 'A delivery sweep must validate actionable and expired rows without materializing concluded history.').toBeLessThanOrEqual(70);
+  expect(sent).toBe(0);
+  const retained = hub.list('project-notifications', ProjectNotificationSchema);
+  expect(retained).toHaveLength(300); expect(retained.filter(row => row.document.dropped)).toHaveLength(270);
+  expect(retained.some(row => row.document.id.startsWith('expired_'))).toBe(false);
+  subscribe(service); await service.sweep(); expect(sent).toBe(30);
+  expect(hub.list('project-notifications', ProjectNotificationSchema).every(row => row.document.dropped || row.document.sentAt)).toBe(true);
+});
+
 test('notification state changed during an awaited send is reread before the next delivery', async () => {
   const now = Date.parse('2026-10-24T00:00:00Z'); let sent = 0;
   const { hub, service } = setup(async () => {

@@ -139,7 +139,7 @@ export type ProjectWorkOptions = {
   /** Why this device may not start new work now (B5: it runs a newer version than its hub). */
   deployHealth?(id: string, checks: import('@jevellan/core').ProjectHealthCheck[], trigger: import('@jevellan/core').ProjectHealthRun['trigger'], deployId: string): Promise<import('@jevellan/core').ProjectHealthRun[]>;
   workRefusal?(): string | undefined;
-  journal?: Pick<JournalOptions, 'isHub' | 'request'>;
+  journal?: Pick<JournalOptions, 'isHub' | 'request' | 'documentGeneration'>;
   library?: import('@jevellan/core').ProjectLibrary;
   terminalRead?(scope: import('./bridge-tools.js').ProjectScope, input: unknown): Promise<unknown>;
   homes: Homes; deviceId: string; deviceName: string; redactor: SecretRedactor;

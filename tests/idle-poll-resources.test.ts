@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { Homes, ProjectWorkSettingsSchema, StoredProjectWorkSettingsSchema, defaultProjectWorkSettings } from '../packages/core/dist/index.js';
+import { Homes, ProjectWorkSettingsSchema, StoredProjectWorkSettingsSchema, TimestampSchema, defaultProjectWorkSettings } from '../packages/core/dist/index.js';
 import { HubDatabase } from '../packages/mesh/dist/index.js';
 import { ThreadGit } from '../packages/projects/dist/index.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
@@ -101,6 +101,28 @@ test('idle nonempty worktree indexes batch fresh commit ranges', async () => {
   finally { changing.mockRestore(); }
 }, 120_000);
 
+test('idle nonempty worktrees with distinct bases share one fresh range query', async () => {
+  const f = fixture = await projectFixture({ github: false, remote: false }), ids: string[] = [];
+  for (let n = 0; n < 8; n++) {
+    git(f.checkout, 'commit', '--allow-empty', '-m', `Fixture base ${n}`);
+    f.fake.enqueueTurn(reportStep({ status: 'blocked', summary: 'Inspection finished.' }), forThread());
+    const created = await f.app.projectWork.createThread('project', { schema: 'thread-create-request-v1', clientRequestId: `distinct_${n}`,
+      title: `Inspect ${n}`, task: 'Inspect without changes.', modelId: 'fixture', deviceId: f.app.device.deviceId });
+    await f.waitFor(() => f.thread(created.threadId), thread => thread.state === 'idle');
+    await f.app.projectWork.idle(); ids.push(created.threadId);
+    git(f.thread(created.threadId).cwd, 'commit', '--allow-empty', '-m', 'Fixture work');
+  }
+  expect(new Set(ids.map(id => f.thread(id).baseCommit)).size).toBe(8);
+  let launches = 0; const spawned = () => { launches++; }, children = channel('child_process'); children.subscribe(spawned);
+  try { for (let n = 0; n < 3; n++) await f.app.projectWork.threads.refreshIndexes(); }
+  finally { children.unsubscribe(spawned); }
+  expect(ids.every(id => f.local(id).fixable?.publish)).toBe(true);
+  expect(launches, 'Different base commits must not turn a project poll back into one subprocess per thread.').toBeLessThanOrEqual(6);
+  const behind = f.thread(ids[4]!); git(behind.cwd, 'reset', '--hard', f.thread(ids[1]!).baseCommit);
+  await f.app.projectWork.threads.refreshIndexes(); expect(f.local(behind.id).fixable?.publish).toBe(false);
+  expect(ids.filter(id => id !== behind.id).every(id => f.local(id).fixable?.publish)).toBe(true);
+}, 120_000);
+
 test('unchanged hub reads reuse bounded query plans while validating fresh rows', () => {
   root = mkdtempSync(join(tmpdir(), 'jevellan-query-resources-')); mkdirSync(join(root, 'user'));
   const database = hub = new HubDatabase(new Homes(join(root, 'data'), join(root, 'user')), 'hub');
@@ -135,4 +157,31 @@ test('stored project and notification settings share supported time zone validat
   expect(StoredProjectWorkSettingsSchema.safeParse({ ...settings, notifications: { ...settings.notifications, quietHours: { ...settings.notifications.quietHours, timezone: 'Invalid/Zone' } } }).success).toBe(false);
   expect(StoredProjectWorkSettingsSchema.safeParse({ ...settings, notifications: { ...settings.notifications, quietHours: { ...settings.notifications.quietHours, unexpected: true } } }).success).toBe(false);
   expect(constructions!, 'Reading stored settings must not rebuild notification time zone formatters on every read.').toBeLessThanOrEqual(1);
+});
+
+test('selective hub reads retain timestamp boundaries, fresh validation and byte-sensitive generation', () => {
+  root = mkdtempSync(join(tmpdir(), 'jevellan-selection-resources-')); mkdirSync(join(root, 'user'));
+  const database = hub = new HubDatabase(new Homes(join(root, 'data'), join(root, 'user')), 'hub');
+  const schema = z.strictObject({ schema: z.literal('selection-resource-v1'), id: z.string(), group: z.string(), createdAt: TimestampSchema, value: z.number().int(), dropped: z.string().optional() });
+  const early = { schema: 'selection-resource-v1' as const, id: 'early', group: 'one', createdAt: '2026-10-17T00:59:59.999+01:00', value: 1, dropped: 'Concluded.' };
+  const boundary = { ...early, id: 'boundary', createdAt: '2026-10-17T01:00:00.000+01:00', dropped: undefined };
+  const precise = { ...early, id: 'precise', createdAt: '2026-10-17T00:59:59.9999+01:00' };
+  database.put('selection-rows', early.id, schema, early, 0); database.put('selection-rows', boundary.id, schema, boundary, 0);
+  database.put('selection-rows', precise.id, schema, precise, 0);
+  const cutoff = { before: { field: 'createdAt', at: '2026-10-17T00:00:00.000Z' } };
+  expect(database.list('selection-rows', schema, cutoff).map(row => row.document.id)).toEqual(['early', 'precise']);
+  const selected = database.list('selection-rows', schema, { missing: ['dropped'] });
+  expect(selected.map(row => row.document.id)).toEqual(['boundary']);
+  expect(database.listByField('selection-rows', 'group', 'one', schema, { missing: ['dropped'] }).map(row => row.document.id)).toEqual(['boundary']);
+  expect(database.ids('selection-rows')).toEqual(['boundary', 'early', 'precise']);
+  const generation = database.generation(['selection-rows']); selected[0]!.document.value = 99;
+  expect(database.generation(['selection-rows'])).toBe(generation);
+  expect(database.list('selection-rows', schema, { missing: ['dropped'] })[0]?.document.value).toBe(1);
+  database.db.prepare('UPDATE documents SET document=? WHERE namespace=? AND id=?').run(JSON.stringify({ ...boundary, value: 2 }), 'selection-rows', boundary.id);
+  expect(database.generation(['selection-rows'])).not.toBe(generation);
+  expect(database.list('selection-rows', schema, { missing: ['dropped'] })[0]?.document.value).toBe(2);
+  database.db.prepare('UPDATE documents SET document=? WHERE namespace=? AND id=?').run(JSON.stringify({ ...boundary, value: 'invalid' }), 'selection-rows', boundary.id);
+  expect(() => database.list('selection-rows', schema, { missing: ['dropped'] })).toThrow();
+  database.db.prepare('UPDATE documents SET document=? WHERE namespace=? AND id=?').run(JSON.stringify({ ...boundary, createdAt: 'invalid' }), 'selection-rows', boundary.id);
+  expect(() => database.list('selection-rows', schema, cutoff)).toThrow();
 });
