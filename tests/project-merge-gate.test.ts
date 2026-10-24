@@ -342,10 +342,13 @@ test('verification retries one moved head and asks the owner after a second head
   expect((await routes(f, thread.id)).some(row => row.state === 'asked' && row.failures === 0)).toBe(true); expect(f.thread(thread.id).pr?.state).toBe('open');
 });
 
-test('verification setup and the alternate provider receive fresh project environment', async () => {
+test('verification setup and the alternate provider receive the explicit check environment', async () => {
   const { f, second } = await setup('test-then-merge');
   await settings(f, { autoLand: false, setupCommand: 'test "$TZ" = UTC && test -n "$PRIVATE_VALUE"', environment: { variables: [{ name: 'TZ', value: 'UTC' }], secrets: ['PRIVATE_VALUE'], copyFiles: [] } });
-  await f.app.state.environment.put(f.project.id, 'PRIVATE_VALUE', 'verification environment fixture');
+  await f.app.state.environment.put(f.project.id, 'PRIVATE_VALUE', 'work environment fixture');
+  const base = (await f.app.projectWork.settingsView(f.project.id)).settings;
+  await f.app.projectHub.putSettings({ ...base, checkEnvironment: { schema: 'project-check-environment-v1', variables: [{ name: 'TZ', value: 'UTC' }], secrets: ['PRIVATE_VALUE'], copyFiles: [] } }, base.revision);
+  await f.app.state.environment.put(f.project.id, 'PRIVATE_VALUE', 'verification environment fixture', 'check');
   const thread = await published(f);
   second.enqueueTurn(async turn => { expect(turn.input.launch.projectEnv).toEqual({ TZ: 'UTC', PRIVATE_VALUE: 'verification environment fixture' }); await turn.bridge('jevellan_verification_report', { result: 'passed', commands: ['test "$TZ" = UTC'], failures: [] }); return { status: 'completed' }; }, input => input.owner.kind === 'verification');
   await settings(f); await gate(f);

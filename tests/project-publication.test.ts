@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  Homes, HubUnavailable, PlacementRecordSchema, ProjectSchema, SecretRedactor, ThreadReportSchema, ThreadSchema, type CoordinatorEvent, type Project, type Thread,
+  defaultProjectWorkSettings, Homes, HubUnavailable, PlacementRecordSchema, ProjectSchema, SecretRedactor, ThreadReportSchema, ThreadSchema, type CoordinatorEvent, type Project, type Thread,
 } from '../packages/core/dist/index.js';
 import {
   BRANCH_PUSHED_NO_TOKEN, GitHubAccess, MERGE_CHECKS_FAILING, MERGE_CONFLICTS, NOT_GITHUB, NO_REMOTE, PR_CLOSED, REMOTE_CREDENTIALS, ProjectLedgers, ProjectPaths, PullRequestTracker,
@@ -296,10 +296,28 @@ test('publication refuses copied-file changes anywhere in history, including a l
   expect(pullPosts()).toHaveLength(0); expect(fails(origin, 'rev-parse', `refs/heads/${thread.branch}`)).toBe(true);
 });
 
-test('publication verification receives project variables and redacts fetched secrets', async () => {
+test('publication verification receives explicit check variables and redacts fetched secrets', async () => {
   const thread = await prepared('environment_test', 'Check environment'); commit(thread.cwd, { 'env-test': 'yes' });
   const secret = 'test-only private environment'; redactor.add(secret);
-  publication = new ThreadPublication({ git, homes, redactor, github: access, deviceName: 'Mac mini', projectEnvironment: async () => ({ TZ: 'UTC', PRIVATE_VALUE: secret }) });
+  publication = new ThreadPublication({ git, homes, redactor, github: access, deviceName: 'Mac mini',
+    settings: async () => ({ ...defaultProjectWorkSettings(project.id), checkEnvironment: { schema: 'project-check-environment-v1', variables: [{ name: 'TZ', value: 'UTC' }], secrets: ['PRIVATE_VALUE'], copyFiles: [] } }),
+    checkSecretSummary: async () => ({ schema: 'project-env-secret-summary-v1', purpose: 'check', name: 'PRIVATE_VALUE', saved: true, revision: 'a'.repeat(64) }),
+    checkCredentials: async () => ({ PRIVATE_VALUE: secret }), projectEnvironment: async () => { throw new Error('Work credentials must not reach a check.'); } });
   const verification = await publication.verify({ ...project, testCommand: 'test "$TZ" = UTC && printf "%s" "$PRIVATE_VALUE"' }, thread, ledgers.thread(project.id, thread.id));
   expect(verification.status).toBe('passed'); expect(verification.tail).toBe('[redacted]');
+});
+
+test.each(['profile', 'file', 'secret'] as const)('publication rejects a passing command when its check inputs change (%s)', async kind => {
+  const thread = await prepared('changed_inputs', 'Check input freshness'); commit(thread.cwd, { 'env-test': 'yes' });
+  const source = join(checkout, 'check-input.env'); writeFileSync(source, 'first'); let settingsReads = 0, summaryReads = 0;
+  publication = new ThreadPublication({ git, homes, redactor, github: access, deviceName: 'Mac mini', deviceId: 'dev_a',
+    settings: async () => ({ ...defaultProjectWorkSettings(project.id), checkEnvironment: { schema: 'project-check-environment-v1',
+      variables: kind === 'profile' ? [{ name: 'CHECK_VALUE', value: ++settingsReads === 1 ? 'first' : 'changed' }] : [],
+      secrets: kind === 'secret' ? ['CHECK_VALUE'] : [], copyFiles: kind === 'file' ? [{ source: 'check-input.env', target: '.env.check' }] : [] } }),
+    checkSecretSummary: async () => ({ schema: 'project-env-secret-summary-v1', purpose: 'check', name: 'CHECK_VALUE', saved: true, revision: (++summaryReads === 1 ? 'a' : 'b').repeat(64) }),
+    checkCredentials: async () => ({ CHECK_VALUE: 'synthetic-check-only-value' }) });
+  const command = kind === 'file' ? `node -e 'require("fs").writeFileSync(${JSON.stringify(source)},"changed")'` : 'true';
+  const result = await publication.verify({ ...project, testCommand: command }, thread, ledgers.thread(project.id, thread.id));
+  expect(result).toMatchObject({ status: 'blocked', tail: expect.stringContaining('check environment changed') });
+  expect(run(thread.cwd, 'show', 'HEAD:env-test')).toBe('yes');
 });

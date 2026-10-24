@@ -19,10 +19,19 @@ export const ProjectEnvironmentSchema = z.strictObject({
   variables: z.array(z.strictObject({ name: ProjectEnvNameSchema, value: z.string().max(4000) })).max(200),
   secrets: z.array(ProjectEnvNameSchema).max(100), copyFiles: z.array(ProjectRelativePathSchema).max(20),
 }).refine(environment => new Set([...environment.variables.map(variable => variable.name), ...environment.secrets]).size === environment.variables.length + environment.secrets.length, 'Each name can appear once.');
+export const ProjectEnvironmentPurposeSchema = z.enum(['work', 'check']);
+export type ProjectEnvironmentPurpose = z.infer<typeof ProjectEnvironmentPurposeSchema>;
+/** Check inputs are an explicit profile; they never inherit work secrets or private files. */
+export const ProjectCheckEnvironmentSchema = z.strictObject({ schema: z.literal('project-check-environment-v1'),
+  variables: ProjectEnvironmentSchema.shape.variables, secrets: ProjectEnvironmentSchema.shape.secrets,
+  copyFiles: z.array(z.strictObject({ source: ProjectRelativePathSchema, target: ProjectRelativePathSchema })).max(20),
+}).refine(environment => new Set([...environment.variables.map(variable => variable.name), ...environment.secrets]).size === environment.variables.length + environment.secrets.length, 'Each name can appear once.')
+  .refine(environment => new Set(environment.copyFiles.map(file => file.target)).size === environment.copyFiles.length, 'Each check file target can appear once.');
+export type ProjectCheckEnvironment = z.infer<typeof ProjectCheckEnvironmentSchema>;
 export const ProjectEnvSecretPresentationSchema = z.strictObject({ schema: z.literal('project-env-secret-presentation-v1'), parts: z.array(z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('text'), text: z.string().max(1000) }), z.strictObject({ kind: z.literal('time'), at: TimestampSchema }),
 ])).min(1).max(3) });
-export const ProjectEnvSecretSummarySchema = z.strictObject({ schema: z.literal('project-env-secret-summary-v1'), name: ProjectEnvNameSchema, saved: z.boolean(), updatedAt: TimestampSchema.optional(), presentation: ProjectEnvSecretPresentationSchema.optional() });
+export const ProjectEnvSecretSummarySchema = z.strictObject({ schema: z.literal('project-env-secret-summary-v1'), name: ProjectEnvNameSchema, saved: z.boolean(), purpose: ProjectEnvironmentPurposeSchema.optional(), revision: z.string().regex(/^[a-f0-9]{64}$/u).optional(), updatedAt: TimestampSchema.optional(), presentation: ProjectEnvSecretPresentationSchema.optional() });
 export type ProjectEnvSecretSummary = z.infer<typeof ProjectEnvSecretSummarySchema>;
 
 export const ProjectSettingsUpdateSchema = z.strictObject({

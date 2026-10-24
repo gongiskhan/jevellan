@@ -24,7 +24,7 @@ export const MergeRouteSchema = z.strictObject({ schema: z.literal('merge-route-
 export type MergeRoute = z.infer<typeof MergeRouteSchema>;
 export const MergeCorrectionSchema = z.strictObject({ schema: z.literal('merge-correction-v1'), ...identity, title: z.string().max(120),
   correction: z.enum(['should-have-asked', 'did-not-need-asking']), receivedOrder: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional() });
-export const VerificationRunSchema = z.strictObject({ schema: z.literal('verification-run-v1'), ...identity,
+export const VerificationRunSchema = z.strictObject({ schema: z.literal('verification-run-v1'), ...identity, checkIdentity: z.string().regex(/^[a-f0-9]{64}$/u).optional(),
   runtime: IdSchema, modelId: IdSchema, model: z.string().min(1), modelLabel: z.string().min(1), providerChoice: z.enum(['other-provider', 'different-model']),
   headMoved: z.boolean().optional(), state: z.enum(['reserved', 'running', 'passed', 'failed']), report: VerificationReportSchema.nullable(), endedAt: TimestampSchema.optional(), note: z.string().max(1200).optional() });
 export type VerificationRun = z.infer<typeof VerificationRunSchema>;

@@ -29,6 +29,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const [coordinatorReady, setCoordinatorReady] = useState(false);
   const [placementReady, setPlacementReady] = useState(false);
   const [environmentReady, setEnvironmentReady] = useState(false);
+  const [checkEnvironmentReady, setCheckEnvironmentReady] = useState(false);
   const [healthReady, setHealthReady] = useState(false);
   const [work, setWork] = useState<ProjectWorkView>();
   const [routines, setRoutines] = useState<ProjectRoutineSettingsView>();
@@ -36,11 +37,14 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
   const [pushEnabled, setPushEnabled] = useState<boolean | null>(null);
   const [secretValues, setSecretValues] = useState<Record<string, string>>({});
   const [secretStates, setSecretStates] = useState<Record<string, ProjectEnvSecretSummary>>({});
+  const [checkSecretValues, setCheckSecretValues] = useState<Record<string, string>>({});
+  const [checkSecretStates, setCheckSecretStates] = useState<Record<string, ProjectEnvSecretSummary>>({});
   const path = `/api/projects/${id}/config/editor`;
   const read = useCallback(async (signal: AbortSignal) => {
     const next = await api(path, ProjectSettingsEditorSchema, 'GET', undefined, { signal, waitForHub: true }), settings = next.settingsView;
     setEditor(next); setBase(settings.settings); setDraft(settings.settings); setConfiguration(settings.configuration); setWork(next.work); setRoutines(next.routines); setStale(false); setSecretValues({}); setLoadEpoch(value => value + 1);
-    setSecretStates(Object.fromEntries(next.secretStates.map(state => [state.name, state]))); local.setError('');
+    setSecretStates(Object.fromEntries(next.secretStates.map(state => [state.name, state])));
+    setCheckSecretValues({}); setCheckSecretStates(Object.fromEntries((next.checkSecretStates ?? []).map(state => [state.name, state]))); local.setError('');
   }, [id, path, local.setError]);
   useEffect(() => {
     const controller = new AbortController(); void read(controller.signal).catch(error => { if (!controller.signal.aborted) local.fail(error); });
@@ -63,13 +67,16 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
     setDraft(value => value && { ...value, ...saved.statusPatch });
   });
   const saveAll = () => void task.run(async signal => {
-    const saved = await write({ schema: 'project-settings-editor-save-v1', base: base!, draft: draft!, secretPresence: Object.fromEntries(Object.entries(secretValues).map(([name, value]) => [name, value.length > 0])) }, signal);
+    const saved = await write({ schema: 'project-settings-editor-save-v1', base: base!, draft: draft!, secretPresence: Object.fromEntries(Object.entries(secretValues).map(([name, value]) => [name, value.length > 0])),
+      checkSecretPresence: Object.fromEntries(Object.entries(checkSecretValues).map(([name, value]) => [name, value.length > 0])) }, signal);
     setDraft(saved.settingsView.settings);
     for (const step of saved.secretSteps) {
-      const body = step.kind === 'write' ? { ...step.body, value: secretValues[step.name] ?? '' } : step.body;
+      const values = step.purpose === 'check' ? checkSecretValues : secretValues;
+      const setStates = step.purpose === 'check' ? setCheckSecretStates : setSecretStates, setValues = step.purpose === 'check' ? setCheckSecretValues : setSecretValues;
+      const body = step.kind === 'write' ? { ...step.body, value: values[step.name] ?? '' } : step.body;
       const state = await api(step.path, ProjectEnvSecretSummarySchema, step.method, body, { signal, waitForHub: true });
-      setSecretStates(states => ({ ...states, [step.name]: state }));
-      if (step.kind === 'write') setSecretValues(values => { const next = { ...values }; delete next[step.name]; return next; });
+      setStates(states => ({ ...states, [step.name]: state }));
+      if (step.kind === 'write') setValues(values => { const next = { ...values }; delete next[step.name]; return next; });
     }
     props.message(saved.savedNotice); navigate(saved.backPath);
   });
@@ -86,7 +93,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
       <button type="button" className="text-button" onClick={() => navigate(editor?.backPath ?? `/projects/${id}`)}>{copy.BACK_TO_PROJECT}</button></header>
     {!draft || !base || !work || !routines || !editor ? <p role="status">{copy.LOADING}</p> : !configuration || !controls || !editor.rigging ? <p role="status">Project configuration metadata is unavailable. Reload after the daemon is updated.</p> : <div className="pw-settings-layout">
       <nav aria-label={copy.SETTINGS_SECTIONS}>{editor.sections.map(row => <a key={row.key} href={`#project-settings-${row.key}`}>{row.label}</a>)}</nav>
-      <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); if (landingReady && coordinatorReady && placementReady && environmentReady && healthReady && !stale) saveAll(); }}>
+      <div className="pw-settings-content"><form className="pw-settings" onSubmit={event => { event.preventDefault(); if (landingReady && coordinatorReady && placementReady && environmentReady && checkEnvironmentReady && healthReady && !stale) saveAll(); }}>
         <fieldset disabled={task.busy} className="pw-fields">
           {section('general', <>
             <fieldset><legend>{copy.PROJECT_STATUS}</legend><div className="form-actions">{editor.statusOptions.map(option => <button key={option.value} type="button" className="secondary" aria-pressed={base.status === option.value} onClick={() => setStatus(option.value)}>{option.label}</button>)}</div>
@@ -117,6 +124,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
           </>)}
           {section('environment', <>
             <ProjectEnvironmentFields key={loadEpoch} projectId={id} revision={base.revision} change={change} ready={setEnvironmentReady} conflict={() => setStale(true)} fail={local.fail} secretValues={secretValues} secretStates={secretStates} secretValue={(name, value) => setSecretValues(values => ({ ...values, [name]: value }))} />
+            <ProjectEnvironmentFields key={`checks-${loadEpoch}`} purpose="check" projectId={id} revision={base.revision} change={change} ready={setCheckEnvironmentReady} conflict={() => setStale(true)} fail={local.fail} secretValues={checkSecretValues} secretStates={checkSecretStates} secretValue={(name, value) => setCheckSecretValues(values => ({ ...values, [name]: value }))} />
             <p className="pw-field-note">{editor.rigging.message}</p><a href={editor.rigging.editPath} onClick={event => { event.preventDefault(); navigate(editor.rigging!.editPath); }}>{copy.EDIT_RIGGING}</a>
           </>)}
           {section('routines', <>
@@ -135,7 +143,7 @@ export function ProjectSettingsPage(props: PageProps & { id: string; navigation:
         {local.error && <p role="alert" className="error">{local.error}{stale && <button type="button" className="text-button" disabled={task.busy} onClick={() => void task.run(read)}>{copy.RELOAD}</button>}</p>}
         <div className="form-actions pw-settings-savebar">
           {setupAction && <button type="button" className="secondary" disabled={task.busy || !setupAction.enabled} onClick={() => void task.run(async signal => { await api(setupAction.path, EkoaCodeSetupReceiptSchema, 'POST', setupAction.body, { signal, waitForHub: true }); await read(signal); updated(); })}>{setupAction.label}</button>}
-          <button type="button" className="secondary" onClick={() => navigate(editor.backPath)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale || !landingReady || !coordinatorReady || !placementReady || !environmentReady || !healthReady}>{task.busy ? copy.SAVING : copy.SAVE}</button>
+          <button type="button" className="secondary" onClick={() => navigate(editor.backPath)}>{copy.CANCEL}</button><button type="submit" disabled={task.busy || stale || !landingReady || !coordinatorReady || !placementReady || !environmentReady || !checkEnvironmentReady || !healthReady}>{task.busy ? copy.SAVING : copy.SAVE}</button>
         </div>
       </form><RoutinePreferences model={routines} saved={setRoutines} /></div>
     </div>}

@@ -12,8 +12,10 @@ export const LandingCheckPortsSchema = z.array(LandingCheckPortSchema).max(12).r
   return new Set(names).size === names.length;
 }, 'Managed port environment names must be unique.');
 export type LandingCheckPort = z.infer<typeof LandingCheckPortSchema>;
-export const LandingBlockerSchema = z.strictObject({ schema: z.literal('landing-blocker-v1'), kind: z.literal('port'), port: z.number().int().min(1).max(65535),
+const PortLandingBlockerSchema = z.strictObject({ schema: z.literal('landing-blocker-v1'), kind: z.literal('port'), port: z.number().int().min(1).max(65535),
   commit: z.string().regex(/^[a-f0-9]{40,64}$/u), check: z.string().min(1).max(80), managed: z.boolean().optional() });
+export const LandingBlockerSchema = z.discriminatedUnion('kind', [PortLandingBlockerSchema, z.strictObject({ schema: z.literal('landing-environment-blocker-v1'), kind: z.literal('environment'),
+  commit: z.string().regex(/^[a-f0-9]{40,64}$/u), check: z.string().min(1).max(80) })]);
 export const ThreadLandingWaitSchema = z.strictObject({ schema: z.literal('thread-landing-wait-v1'), blocker: LandingBlockerSchema,
   decisionId: IdSchema, reason: z.string().min(1).max(1200), createdAt: TimestampSchema });
 export const LandingCheckSchema = z.strictObject({ name: z.string().min(1).max(80), paths: z.array(ProjectRelativePathSchema).max(30), command: z.string().min(1).max(2000) });

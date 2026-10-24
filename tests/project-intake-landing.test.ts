@@ -1,5 +1,5 @@
 import {afterEach,expect,test} from 'vitest';
-import {writeFileSync} from 'node:fs';
+import {existsSync,rmSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {projectFixture,type ProjectFixture} from './helpers/project-fixture.js';
 import {intakeJob,intakePull,intakeRun,intakeWaiting} from './helpers/intake-fixture.js';
@@ -18,4 +18,14 @@ test('unchanged-head intake preserves a newer landing-failure owner item',async(
  f=await projectFixture();const pr=await intakePull(f),job=await intakeJob(f,'test -f outside.txt && test ! -f stop.txt');await intakeRun(f,job.id,'continuity_check');const item=await intakeWaiting(f,pr.number);writeFileSync(join(f.checkout,'stop.txt'),'New main condition.\n');f.git(f.checkout,'add','stop.txt');f.git(f.checkout,'commit','-m','Main moved');f.git(f.checkout,'push','origin','main');await f.app.projectWork.answerDecision('project',item.id,{schema:'decision-answer-request-v1',clientRequestId:'continuity_merge',expectedRevision:item.revision,optionLabel:'merge'});const items=await f.waitFor(()=>f!.app.projectHub.decisions('project'),rows=>rows.some(row=>row.intake?.number===pr.number&&!row.answer&&!row.withdrawnAt&&row.options.every(option=>option.label!=='merge'))),failed=items.find(row=>row.intake?.number===pr.number&&!row.answer&&!row.withdrawnAt)!;
  await f.app.projectWork.idle();const cached=await intakeRun(f,job.id,'unchanged_after_landing_failure');await f.app.projectWork.idle();expect(cached.conclusion).toBe('skipped');expect(cached.intake?.skipped).toBe(1);expect(cached.intake?.pulls).toEqual([]);expect((await f.app.projectHub.decision(failed.id))!.document.withdrawnAt).toBeUndefined();expect((await f.app.projectHub.decision(failed.id))!.document.answer).toBeUndefined();
  f.git(f.checkout,'switch','outside-change');writeFileSync(join(f.checkout,'outside.txt'),'New contributor work.\n');f.git(f.checkout,'commit','-am','Contributor followup');f.git(f.checkout,'push','origin','outside-change');const head=f.git(f.checkout,'rev-parse','HEAD');f.git(f.checkout,'switch','main');await intakeRun(f,job.id,'replacement_after_landing_failure');expect((await f.app.projectHub.decision(failed.id))!.document.withdrawnAt).toBeDefined();const fresh=await intakeWaiting(f,pr.number);expect(fresh.intake?.head).toBe(head);expect(fresh.options.map(option=>option.label)).toEqual(['merge','redo','close','later']);expect(f.fake.runs).toHaveLength(0);
+});
+
+test('intake landing blocks undeclared work inputs after an earlier successful check',async()=>{
+ f=await projectFixture();const pr=await intakePull(f),probe=join(f.root,'intake-landing-input-probe.json'),script=`require('fs').writeFileSync(${JSON.stringify(probe)},JSON.stringify({workInput:Boolean(process.env.WORK_INPUT)}))`,command="node -e '"+script.replaceAll("'","'\\''")+"'",job=await intakeJob(f,command);
+ await intakeRun(f,job.id,'intake_before_environment_change');await f.app.projectWork.idle();expect(existsSync(probe)).toBe(true);rmSync(probe);
+ const item=await intakeWaiting(f,pr.number),base=(await f.app.projectWork.settingsView('project')).settings,main=f.git(f.origin,'rev-parse','main');
+ await f.app.projectHub.putSettings({...base,environment:{variables:[{name:'WORK_INPUT',value:'synthetic-work-only-value'}],secrets:[],copyFiles:[]}},base.revision);
+ await f.app.projectWork.answerDecision('project',item.id,{schema:'decision-answer-request-v1',clientRequestId:'merge_environment_boundary',expectedRevision:item.revision,optionLabel:'merge'});
+ const done=await f.waitFor(()=>records(f!),rows=>rows.some(row=>row.schema==='intake-landing-v1'&&['failed','landed'].includes(row.state)));
+ expect(existsSync(probe)).toBe(false);expect(done.find(row=>row.schema==='intake-landing-v1')).toMatchObject({state:'failed',failure:expect.stringContaining('check environment')});expect(f.git(f.origin,'rev-parse','main')).toBe(main);expect(f.fake.runs).toHaveLength(0);
 });

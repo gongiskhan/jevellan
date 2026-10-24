@@ -1,3 +1,4 @@
+import { ProjectEnvironmentPurposeSchema } from '@jevellan/core';
 import { JevDecisionPageRequestSchema, JevDecisionReadRequestSchema, JevDecisionPageSchema, JevPlacementDecisionSchema } from '@jevellan/core';
 import {SetupEditorPreviewSchema,SetupEditorPrepareSchema,SetupEditorCommandSchema,setupProposalEditor,setupProposalAttempt,setupProposalReceipt} from '@jevellan/core';
 import {projectHealthEditor, projectHealthHistory} from './project-health-editor.js';
@@ -672,7 +673,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'daily-run': send(await work.daily.runDaily(projectId, route.dailyId!, ProjectRunRequestSchema.parse(await requestBody(request))), 202); return true;
 
     case 'goal-views': send(await work.goalViews(projectId)); return true;
-    case 'environment-editor': send(await work.environmentEditor(projectId)); return true;
+    case 'environment-editor': send(await work.environmentEditor(projectId, undefined, ProjectEnvironmentPurposeSchema.parse(url.searchParams.get('purpose') ?? 'work'))); return true;
     case 'environment-preview': send(await work.environmentEditor(projectId, await requestBody(request))); return true;
     case 'environment-save': send(await work.saveEnvironmentEditor(projectId, await requestBody(request))); return true;
     case 'placement-editor': send(await work.placementEditor(projectId)); return true;

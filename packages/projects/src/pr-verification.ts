@@ -1,3 +1,5 @@
+import { checkInputSnapshot, stageProjectCheckFiles, projectCheckEnvironment, checkCheckoutClean, CheckEnvironmentBlocked, type CheckCopiedFile } from './check-environment.js';
+import { defaultProjectWorkSettings, type ProjectWorkSettings, type ProjectEnvSecretSummary } from '@jevellan/core';
 import type { SessionEvidence } from './ledger.js';
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -49,12 +51,18 @@ export class VerificationTools implements BridgeScopeTools {
 export class PullRequestVerification {
   readonly #active = new Map<string, { execution?: TurnExecution; controller: AbortController; promise: Promise<VerificationRun | null> }>();
   #closed = false;
-  constructor(readonly o: { projectEnvironment?(projectId: string): Promise<Record<string, string>>; sessionEnd?(evidence: SessionEvidence): void; hub: ProjectHub; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; deviceName?: string; facts?(): DeviceFacts; redactor: SecretRedactor; now(): number;
+  constructor(readonly o: { projectEnvironment?(projectId: string): Promise<Record<string, string>>; checkCredentials?(projectId: string): Promise<Record<string, string>>; checkSecretSummary?(projectId: string, name: string): Promise<ProjectEnvSecretSummary>; workSettings?(projectId: string): Promise<ProjectWorkSettings>; project?(projectId: string): Promise<Project>; sessionEnd?(evidence: SessionEvidence): void; hub: ProjectHub; homes: Homes; git: ThreadGit; launcher: TurnLauncher; deviceId: string; deviceName?: string; facts?(): DeviceFacts; redactor: SecretRedactor; now(): number;
     settings(): Promise<Configuration['x-jevellan']>; accounts: Pick<AccountService, 'list' | 'recordUsage' | 'recordError'>; runtimes: ReadonlyMap<string, RuntimeAdapter>; timeoutMs: number; memory?(project: Project): ProjectMemoryPort }) {}
   busy() { return this.#active.size > 0; }
   #path(run: VerificationRun) { return this.o.homes.at('worktrees', run.projectId, 'pr-verification', run.id); }
   #process(run: VerificationRun) { return join(this.o.homes.ensure('project-work', run.projectId, 'verification-processes'), `${run.id}.json`); }
   async #save(run: VerificationRun) { return VerificationRunSchema.parse((await this.o.hub.putMergeDocument(VerificationRunSchema.parse(this.o.redactor.document(run)), run.revision)).document); }
+  async #inputs(thread: Thread, project?: Project) {
+    const settings = await this.o.workSettings?.(thread.projectId) ?? defaultProjectWorkSettings(thread.projectId), actual = project ?? await this.o.project?.(thread.projectId);
+    const root = actual?.paths[this.o.deviceId];
+    if (settings.checkEnvironment?.copyFiles.length && !root) throw new CheckEnvironmentBlocked('The check environment needs the registered project checkout.');
+    return checkInputSnapshot({ settings, projectRoot: root ?? thread.cwd, ...(this.o.checkSecretSummary ? { summary: name => this.o.checkSecretSummary!(thread.projectId, name) } : {}) });
+  }
   async select(thread: Thread) {
     const [settings, accounts] = await Promise.all([this.o.settings(), this.o.accounts.list()]);
     const eligible = settings.menu.filter(model => model.enabled && model.efforts.includes('medium') && settings.runtimes[model.runtime]?.enabled &&
@@ -64,11 +72,12 @@ export class PullRequestVerification {
     return other ? { model: other, providerChoice: 'other-provider' as const } : alternate ? { model: alternate, providerChoice: 'different-model' as const } : null;
   }
   async reserve(thread: Thread, commit: string, attempt: number): Promise<VerificationRun | null> {
-    const id = derivedId('pver', thread.id, commit, String(attempt)), existing = (await this.o.hub.mergeDocument(id))?.document;
+    const inputs = await this.#inputs(thread);
+    const id = derivedId('pver', thread.id, commit, String(attempt), 'isolated-check-v1', inputs.identity), existing = (await this.o.hub.mergeDocument(id))?.document;
     if (existing?.schema === 'verification-run-v1') return existing;
     const choice = await this.select(thread); if (!choice) return null;
     return this.#save(VerificationRunSchema.parse({ schema: 'verification-run-v1', id, projectId: thread.projectId, threadId: thread.id, commit, revision: 0, deviceId: this.o.deviceId, at: new Date(this.o.now()).toISOString(),
-      runtime: choice.model.runtime, modelId: choice.model.id, model: choice.model.model, modelLabel: choice.model.label, providerChoice: choice.providerChoice, state: 'reserved', report: null }));
+      checkIdentity: inputs.identity, runtime: choice.model.runtime, modelId: choice.model.id, model: choice.model.model, modelLabel: choice.model.label, providerChoice: choice.providerChoice, state: 'reserved', report: null }));
   }
   execute(run: VerificationRun, thread: Thread, project: Project, repo: string, setupCommand: string): Promise<VerificationRun | null> {
     const existing = this.#active.get(run.id); if (existing) return existing.promise;
@@ -77,10 +86,13 @@ export class PullRequestVerification {
     const active: { execution?: TurnExecution; controller: AbortController; promise: Promise<VerificationRun | null> } = { controller: new AbortController(), promise: Promise.resolve(null) };
     active.promise = this.#execute(run, thread, project, repo, setupCommand, active).catch(async error => {
       const saved = (await this.o.hub.mergeDocument(run.id))?.document; if (saved?.schema !== 'verification-run-v1') throw error;
+      if (error instanceof CheckEnvironmentBlocked && saved.state !== 'running') throw error;
       const processPath = this.#process(saved); if (existsSync(processPath)) { await endTurnProcess(readDocument(processPath, ProcessSchema)); rmSync(processPath); }
       if (existsSync(this.#path(saved))) await this.o.git.run(repo, ['worktree', 'remove', '--force', this.#path(saved)]);
       await this.o.git.run(repo, ['update-ref', '-d', `refs/jevellan/verification/${saved.id}`]);
-      return this.#save({ ...saved, state: 'failed', note: this.o.redactor.text(error instanceof Error ? error.message : 'Verification setup failed.').slice(0, 1200), endedAt: new Date(this.o.now()).toISOString() });
+      const failed = await this.#save({ ...saved, state: 'failed', note: this.o.redactor.text(error instanceof Error ? error.message : 'Verification setup failed.').slice(0, 1200), endedAt: new Date(this.o.now()).toISOString() });
+      if (error instanceof CheckEnvironmentBlocked) throw error;
+      return failed;
     }).finally(() => this.#active.delete(run.id));
     this.#active.set(run.id, active); return active.promise;
   }
@@ -89,20 +101,27 @@ export class PullRequestVerification {
     if (run.state === 'passed' || run.state === 'failed') {
       if (existsSync(processPath)) { await endTurnProcess(readDocument(processPath, ProcessSchema)); rmSync(processPath); }
       if (existsSync(path)) await this.o.git.run(repo, ['worktree', 'remove', '--force', path]);
-      await this.o.git.run(repo, ['update-ref', '-d', ref]); return run;
+      await this.o.git.run(repo, ['update-ref', '-d', ref]);
+      if (run.checkIdentity !== (await this.#inputs(thread, project)).identity) throw new CheckEnvironmentBlocked('This verification needs a fresh check environment receipt.');
+      return run;
     }
     if (run.state === 'running') {
       // A lost worker is never repeated. Keep its worktree while process termination is uncertain.
       if (existsSync(processPath)) { await endTurnProcess(readDocument(processPath, ProcessSchema)); rmSync(processPath); }
       run = await this.#save({ ...run, state: 'failed', note: 'Verification was interrupted by a restart.', endedAt: new Date(this.o.now()).toISOString() });
     } else {
+      const inputs = await this.#inputs(thread, project);
+      if (run.checkIdentity !== inputs.identity) throw new CheckEnvironmentBlocked('The check environment changed before verification; checks will retry.');
+      const environment = projectCheckEnvironment(inputs.profile, await this.o.checkCredentials?.(run.projectId) ?? {}, this.o.redactor);
+      let copied: CheckCopiedFile[] = [];
       run = await this.#save({ ...run, state: 'running' });
       if (thread.delivery === 'land') { await this.o.git.run(repo, ['update-ref', ref, run.commit]); } else await this.o.git.run(repo, ['fetch', '--refmap=', '--no-write-fetch-head', '--no-tags', 'origin', `+refs/pull/${thread.pr!.number}/head:${ref}`], { timeoutMs: 120_000, signal: active.controller.signal });
       if (await this.o.git.resolve(repo, ref) !== run.commit) { run = await this.#save({ ...run, state: 'failed', headMoved: true, note: 'The pull request head changed before verification.', endedAt: new Date(this.o.now()).toISOString() }); await this.o.git.run(repo, ['update-ref', '-d', ref]); return run; }
       mkdirSync(dirname(path), { recursive: true });
       await this.o.git.run(repo, ['-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', 'worktree', 'add', '--detach', path, run.commit]);
+      copied = await stageProjectCheckFiles(inputs, path, this.o.git, run.commit);
       if (setupCommand) {
-        const result = await runThreadCommand(path, setupCommand, { homes: this.o.homes, workId: run.id, timeoutMs: SETUP_TIMEOUT_MS, redactor: this.o.redactor, projectEnv: await this.o.projectEnvironment?.(run.projectId) ?? {}, minimal: true, signal: active.controller.signal,
+        const result = await runThreadCommand(path, setupCommand, { homes: this.o.homes, workId: run.id, timeoutMs: SETUP_TIMEOUT_MS, redactor: this.o.redactor, projectEnv: environment, commandHome: this.o.homes.ensure('tmp', 'check-commands', run.id), environmentScope: 'command', minimal: true, signal: active.controller.signal,
           onProcess: native => { writeDocument(processPath, ProcessSchema, { schema: 'verification-process-v1', turn: 1, startedAt: new Date(this.o.now()).toISOString(), ...native }); } });
         rmSync(processPath, { force: true });
         if (result.code !== 0 || result.timedOut) run = await this.#save({ ...run, state: 'failed', note: `Verification setup failed. ${outputTail(result, 1000)}`.slice(0, 1200), endedAt: new Date(this.o.now()).toISOString() });
@@ -111,7 +130,7 @@ export class PullRequestVerification {
         if (this.#closed) return null;
         const tools = new VerificationTools(async report => { run = await this.#save({ ...run, report }); }, this.o.redactor, null, this.o.memory?.(project));
         const launched = await this.o.launcher.launch({ owner: { kind: 'verification', projectId: project.id, id: run.id }, turn: 1, runtime: run.runtime, modelId: run.modelId, model: run.model, modelLabel: run.modelLabel,
-          effort: 'medium', permissions: 'write', cwd: path, safetyProfile: 'verification', systemAppend: thread.delivery === 'land' ? VERIFICATION_APPEND.replaceAll('pull request', 'thread') : VERIFICATION_APPEND,
+          effort: 'medium', permissions: 'write', cwd: path, verificationEnvironment: environment, safetyProfile: 'verification', systemAppend: thread.delivery === 'land' ? VERIFICATION_APPEND.replaceAll('pull request', 'thread') : VERIFICATION_APPEND,
           prompt: () => `Verify ${thread.delivery === 'land' ? 'thread' : `pull request #${thread.pr!.number}`}: ${thread.title}\nCommit: ${run.commit}\n\n${thread.lastReport?.summary ?? thread.task}`, tools, timeoutMs: this.o.timeoutMs });
         if (launched.kind === 'unavailable') { await tools.close(); run = await this.#save({ ...run, state: 'failed', note: launched.reason, endedAt: new Date(this.o.now()).toISOString() }); }
         else {
@@ -125,8 +144,9 @@ export class PullRequestVerification {
             rmSync(processPath, { force: true });
             const report = tools.report;
             let note = outcome.status !== 'completed' ? `Verification ${outcome.status}: ${outcome.error?.message ?? 'The session did not complete.'}` : !report ? 'Verification ended without its required report.' : undefined;
-            const head = await this.o.git.resolve(path, 'HEAD'), dirty = (await this.o.git.run(path, ['status', '--porcelain=v1', '-z', '--untracked-files=all'])).stdout;
-            if (head !== run.commit || dirty) note = 'Verification changed its worktree or created a commit.';
+            if (!await checkCheckoutClean(this.o.git, path, run.commit, copied)) note = 'Verification changed its worktree or created a commit.';
+            try { if ((await this.#inputs(thread, project)).identity !== inputs.identity) note = 'The check environment changed during verification; this report is not accepted.'; }
+            catch (error) { if (!(error instanceof CheckEnvironmentBlocked)) throw error; note = error.message; }
             run = await this.#save({ ...run, state: note ? 'failed' : report!.result, report, ...(note ? { note: this.o.redactor.text(note).slice(0, 1200) } : {}), endedAt: new Date(this.o.now()).toISOString() });
           } finally { await launched.release(); }
         }

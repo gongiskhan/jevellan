@@ -1,13 +1,13 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { channel } from 'node:diagnostics_channel';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createServer, type AddressInfo } from 'node:net';
 import { GitHubClient, SecretRedactor, StoredProjectWorkSettingsSchema, LandingRouteSchema, ProjectWorkSettingsSchema, ThreadIndexSchema, defaultProjectWorkSettings, type LandingRoute, type ProjectWorkSettings } from '../packages/core/dist/index.js';
 import { heldPort, selectedLandingChecks } from '../packages/projects/dist/landing.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
 import { ThreadPublication } from '../packages/projects/dist/publication.js';
-import { commitStep, git, projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
+import { commitStep, FIXTURE_MENU, git, projectFixture, type ProjectFixture } from './helpers/project-fixture.js';
 const shellQuote = (value: string) => "'" + value.replaceAll("'", "'\\''") + "'";
 let fixture: ProjectFixture | undefined;
 afterEach(async () => { await fixture?.close(); fixture = undefined; });
@@ -95,7 +95,9 @@ test('a blocked landing rechecks its port without launching process discovery he
     const f = await setup({ landingChecks: [{ name: 'API tests', paths: [], command: listen }] });
     f.fake.enqueueTurn(commitStep({ 'README.md': 'A checked change\n' }, { status: 'done', summary: 'Done.' }), forThread());
     const started = await start(f), thread = await done(f, started.threadId);
-    const wait = f.local(thread.id).landingWait!; expect(wait.blocker.port).toBe(port);
+    const wait = f.local(thread.id).landingWait!; expect(wait.blocker.kind).toBe('port');
+    if (wait.blocker.kind !== 'port') throw new Error('Expected the held port blocker.');
+    expect(wait.blocker.port).toBe(port);
     let launches = 0;
     const spawned = () => { launches++; }, children = channel('child_process'); children.subscribe(spawned);
     try { for (let n = 0; n < 3; n++) await f.app.projectWork.landings.sweep(); }
@@ -230,9 +232,110 @@ test('a landing held before routing retries after the night releases it', async 
   await f.waitFor(() => f.thread(thread.id), t => !!t.landing); expect(f.thread(thread.id).turns).toBe(1);
 }, 120_000);
 
-test('landing commands receive project provider credentials and redact their output', async () => {
+test('landing refuses to run a check with undeclared work credentials or copied files', async () => {
+  const f = await setup({ environment: { variables: [{ name: 'WORK_INPUT', value: 'synthetic-work-only' }], secrets: [], copyFiles: ['.env.local'] } });
+  const probe = join(f.root, 'check-input-probe.json');
+  const command = `node -e ${shellQuote(`require('fs').writeFileSync(${JSON.stringify(probe)},JSON.stringify({workInput:Boolean(process.env.WORK_INPUT),privateFile:require('fs').existsSync('.env.local')}))`)}`;
+  await settings(f, { smokeCheck: command });
+  writeFileSync(join(f.checkout, '.env.local'), 'WORK_FILE=synthetic-work-only\n');
+  f.fake.enqueueTurn(async turn => {
+    writeFileSync(join(turn.input.cwd, 'README.md'), 'Check environment boundary\n');
+    git(turn.input.cwd, 'add', 'README.md'); git(turn.input.cwd, 'commit', '-m', 'Check environment boundary');
+    await turn.bridge('jevellan_thread_report', { status: 'progress', summary: 'Ready for checks.' });
+    return { status: 'completed' };
+  }, forThread());
+  const result = await start(f), thread = await done(f, result.threadId);
+  expect(existsSync(join(thread.cwd, '.env.local'))).toBe(true);
+  const outcome = await f.app.projectWork.landings.publish(f.project, thread);
+  expect(existsSync(probe)).toBe(false);
+  expect(outcome).toMatchObject({ kind: 'waiting', reason: expect.stringContaining('check environment') });
+  expect(f.thread(thread.id).turns).toBe(1);
+  expect(f.thread(thread.id).landing).toBeUndefined();
+  expect(git(thread.cwd, 'show', 'HEAD:README.md')).toBe('Check environment boundary');
+}, 120_000);
+
+test('publication verification blocks undeclared work inputs before invoking its configured command', async () => {
+  const f = fixture = await projectFixture();
+  const probe = join(f.root, 'publication-input-probe.json');
+  const command = `node -e ${shellQuote(`require('fs').writeFileSync(${JSON.stringify(probe)},JSON.stringify({workInput:Boolean(process.env.WORK_INPUT)}))`)}`;
+  await settings(f, { environment: { variables: [{ name: 'WORK_INPUT', value: 'synthetic-work-only' }], secrets: [], copyFiles: [] } });
+  f.fake.enqueueTurn(commitStep({ 'README.md': 'Publication environment boundary\n' }, { status: 'progress', summary: 'Ready for checks.' }), forThread());
+  const result = await start(f), thread = await done(f, result.threadId);
+  const checked = await f.app.projectWork.landings.o.publication.verify({ ...f.project, testCommand: command }, thread, f.app.projectWork.ledgers.thread('project', thread.id));
+  expect(existsSync(probe)).toBe(false);
+  expect(checked).toMatchObject({ status: 'blocked', command, tail: expect.stringContaining('check environment') });
+  expect(f.thread(thread.id).turns).toBe(1);
+  expect(f.thread(thread.id).landing).toBeUndefined();
+}, 120_000);
+
+test('a check-environment wait survives restart and clears automatically after separate inputs are saved', async () => {
+  const f = await setup({ environment: { variables: [{ name: 'WORK_INPUT', value: 'synthetic-work-only' }], secrets: [], copyFiles: ['.env.local'] } });
+  const probe = join(f.root, 'separate-check-result.json');
+  writeFileSync(join(f.checkout, '.env.local'), 'work-only'); writeFileSync(join(f.checkout, 'check-input.fixture'), 'check-only');
+  const command = 'node -e ' + shellQuote(`const fs=require('fs');require('assert').strictEqual(process.env.WORK_INPUT,undefined);require('assert').strictEqual(process.env.CHECK_INPUT,'ready');require('assert').strictEqual(fs.readFileSync('.env.local','utf8'),'check-only');fs.writeFileSync(${JSON.stringify(probe)},'passed')`);
+  await settings(f, { landingChecks: [{ name: 'Separate inputs', paths: [], command }] });
+  f.fake.enqueueTurn(async turn => {
+    writeFileSync(join(turn.input.cwd, 'README.md'), 'Separate check workspace\n'); git(turn.input.cwd, 'add', 'README.md'); git(turn.input.cwd, 'commit', '-m', 'Separate check workspace');
+    await turn.bridge('jevellan_thread_report', { status: 'done', summary: 'Ready for the configured check.' }); return { status: 'completed' };
+  }, forThread());
+  const created = await start(f, 'check-environment-wait'), blocked = await done(f, created.threadId);
+  const question = (await f.app.projectHub.decisions('project')).find(row => row.blocker?.kind === 'environment' && row.threadId === blocked.id);
+  expect(question).toBeDefined(); expect(existsSync(probe)).toBe(false); expect(blocked).toMatchObject({ state: 'in-review', turns: 1, verificationAttempts: 0 });
+  await f.restart(); await f.app.projectWork.pulse(); await f.app.projectWork.idle();
+  const pending = (await f.app.projectHub.decision(question!.id))!.document;
+  expect(pending.withdrawnAt).toBeUndefined(); expect(pending.answer).toBeUndefined(); expect(existsSync(probe)).toBe(false);
+  const base = (await f.app.projectWork.settingsView('project')).settings;
+  await f.app.projectHub.putSettings({ ...base, checkEnvironment: { schema: 'project-check-environment-v1', variables: [{ name: 'CHECK_INPUT', value: 'ready' }], secrets: [], copyFiles: [{ source: 'check-input.fixture', target: '.env.local' }] } }, base.revision);
+  await f.app.projectWork.pulse(); const landed = await f.waitFor(() => f.thread(blocked.id), thread => !!thread.landing);
+  expect(landed).toMatchObject({ state: 'done', turns: 1 }); expect(readFileSync(probe, 'utf8')).toBe('passed');
+  expect(readFileSync(join(f.checkout, '.env.local'), 'utf8')).toBe('work-only');
+  const closed = (await f.app.projectHub.decision(question!.id))!.document;
+  expect(closed.answer).toBeUndefined(); expect(closed.withdrawnAt).toBeDefined(); expect(closed.withdrawal).toMatchObject({ source: 'system', reason: expect.stringContaining('check environment') });
+}, 120_000);
+
+test.each(['profile', 'file', 'secret'] as const)('cached landing checks rerun when check inputs change (%s)', async kind => {
+  const f = await setup({ autoLand: false, checkEnvironment: { schema: 'project-check-environment-v1', variables: kind === 'profile' ? [{ name: 'CHECK_VALUE', value: 'first' }] : [],
+    secrets: kind === 'secret' ? ['CHECK_VALUE'] : [], copyFiles: kind === 'file' ? [{ source: 'check-fixture.env', target: '.env.check' }] : [] } });
+  const counter = join(f.root, 'check-count.json');
+  const command = `node -e ${shellQuote(`const f=require('fs'),p=${JSON.stringify(counter)};f.writeFileSync(p,JSON.stringify((f.existsSync(p)?JSON.parse(f.readFileSync(p,'utf8')):0)+1))`)}`;
+  await settings(f, { smokeCheck: command, autoLand: false });
+  if (kind === 'file') writeFileSync(join(f.checkout, 'check-fixture.env'), 'first\n');
+  if (kind === 'secret') await f.app.state.environment.put('project', 'CHECK_VALUE', 'synthetic-check-first', 'check');
+  f.fake.enqueueTurn(commitStep({ 'README.md': 'Check input identity\n' }, { status: 'progress', summary: 'Ready for checks.' }), forThread());
+  const result = await start(f), thread = await done(f, result.threadId), service = f.app.projectWork.landings;
+  expect((await service.publish(f.project, thread)).kind).toBe('waiting');
+  expect(JSON.parse(readFileSync(counter, 'utf8'))).toBe(1);
+  if (kind === 'profile') await settings(f, { autoLand: false, checkEnvironment: { schema: 'project-check-environment-v1', variables: [{ name: 'CHECK_VALUE', value: 'second' }], secrets: [], copyFiles: [] } });
+  if (kind === 'file') writeFileSync(join(f.checkout, 'check-fixture.env'), 'second\n');
+  if (kind === 'secret') await f.app.state.environment.put('project', 'CHECK_VALUE', 'synthetic-check-second', 'check');
+  expect((await service.publish(f.project, thread)).kind).toBe('waiting');
+  expect(JSON.parse(readFileSync(counter, 'utf8'))).toBe(2);
+  expect((await service.publish(f.project, thread)).kind).toBe('waiting');
+  expect(JSON.parse(readFileSync(counter, 'utf8'))).toBe(2);
+  expect(f.thread(thread.id).turns).toBe(1);
+}, 120_000);
+
+test('a blocked verification setup leaves no running receipt or owned process', async () => {
+  const f = fixture = await projectFixture({ menu: [...FIXTURE_MENU, { id: 'verification_model', runtime: 'fake', model: 'other-model', label: 'Verifier', description: 'Simulated verification model.', efforts: ['medium'], enabled: true }] });
+  await settings(f, { autoLand: false, checkEnvironment: { schema: 'project-check-environment-v1', variables: [], secrets: [], copyFiles: [{ source: 'safe-check.env', target: 'value.txt' }] } });
+  writeFileSync(join(f.checkout, 'safe-check.env'), 'synthetic-check-input\n');
+  f.fake.enqueueTurn(commitStep({ 'README.md': 'Blocked verifier\n' }, { status: 'progress', summary: 'Ready for verification.' }), forThread());
+  const result = await start(f), thread = await done(f, result.threadId), verification = f.app.projectWork.landings.o.verification;
+  const run = await verification.reserve(thread, git(thread.cwd, 'rev-parse', 'HEAD'), 1);
+  expect(run).not.toBeNull(); if (!run) throw new Error('Expected the eligible fixture verifier.');
+  await expect(verification.execute(run, thread, f.project, f.checkout, '')).rejects.toThrow('check environment');
+  expect((await f.app.projectHub.mergeDocument(run.id))?.document).toMatchObject({ state: 'failed', note: expect.stringContaining('check environment') });
+  expect(verification.busy()).toBe(false);
+  expect(f.fake.turnStarts).toHaveLength(1);
+}, 120_000);
+
+test('landing commands receive explicit check provider credentials and redact their output', async () => {
   const f = await setup({ smokeCheck: 'printf "gate-value=%s\\n" "$ANTHROPIC_API_KEY"; exit 1' }), service = f.app.projectWork.landings;
-  const value = 'fixture-gate-credential-test'; service.o.redactor.add(value); service.o.projectEnvironment = async () => ({ ANTHROPIC_API_KEY: value });
+  const value = 'fixture-gate-credential-test';
+  const base = (await f.app.projectWork.settingsView('project')).settings;
+  await f.app.projectHub.putSettings({ ...base, checkEnvironment: { schema: 'project-check-environment-v1', variables: [], secrets: ['ANTHROPIC_API_KEY'], copyFiles: [] } }, base.revision);
+  await f.app.state.environment.put('project', 'ANTHROPIC_API_KEY', value, 'check');
+  service.o.projectEnvironment = async () => { throw new Error('Work credentials must not reach a check.'); };
   f.fake.enqueueTurn(commitStep({ 'README.md': 'Environment\n' }, { status: 'progress', summary: 'Ready for a gate.' }), forThread());
   const result = await start(f), thread = await done(f, result.threadId); expect(git(f.origin, 'rev-parse', thread.branch!)).toBe(git(thread.cwd, 'rev-parse', 'HEAD'));
   const outcome = await service.publish(f.project, thread); expect(outcome.kind).toBe('fix');
@@ -344,9 +447,9 @@ test('LP075 a blocked landing retains its waiting item across restart and resolv
   } finally { if (holder.listening) await new Promise<void>(resolve => holder.close(() => resolve())); }
 }, 120_000);
 
-test('LP075 landing checks receive the project environment including command-only names', async () => {
+test('LP075 landing checks receive the explicit check environment including command-only names', async () => {
   const command = `node -e 'const a=require("assert");a.strictEqual(process.env.FIXTURE_REGION,"sandbox");a.strictEqual(process.env.OPENAI_CHECK_CONTEXT,"fixture-only")'`;
-  const f = await setup({ environment: { variables: [{ name: 'FIXTURE_REGION', value: 'sandbox' }, { name: 'OPENAI_CHECK_CONTEXT', value: 'fixture-only' }], secrets: [], copyFiles: [] },
+  const f = await setup({ checkEnvironment: { schema: 'project-check-environment-v1', variables: [{ name: 'FIXTURE_REGION', value: 'sandbox' }, { name: 'OPENAI_CHECK_CONTEXT', value: 'fixture-only' }], secrets: [], copyFiles: [] },
     landingChecks: [{ name: 'Environment contract', paths: [], command }] });
   f.fake.enqueueTurn(commitStep({ 'README.md': 'Environment check\n' }, { status: 'done', summary: 'Done.' }), forThread());
   const result = await start(f, 'command-environment'), landed = await done(f, result.threadId);
@@ -361,6 +464,7 @@ test('LP075 every selected and smoke check gets managed localhost ports without 
     const command = 'node -e ' + shellQuote(code);
     const f = await setup({ landingPorts: [{ schema: 'landing-check-port-v1', variable: 'APP_PORT', urlVariable: 'APP_BASE_URL' }],
       environment: { variables: [{ name: 'APP_PORT', value: String(occupied) }], secrets: [], copyFiles: [] },
+      checkEnvironment: { schema: 'project-check-environment-v1', variables: [], secrets: [], copyFiles: [] },
       landingChecks: [{ name: 'Isolated check', paths: [], command }], smokeCheck: command });
     f.fake.enqueueTurn(commitStep({ 'README.md': 'Isolated server check\n' }, { status: 'done', summary: 'Done.' }), forThread());
     const result = await start(f, 'managed-port'), landed = await done(f, result.threadId);

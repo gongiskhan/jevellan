@@ -20,9 +20,15 @@ const ProjectEnvironmentKeySchema = z.string().superRefine((key, context) => {
   if (!match || !IdSchema.safeParse(match[1]).success || !ProjectEnvNameSchema.safeParse(match[2]).success)
     context.addIssue({ code: 'custom', message: 'Invalid project environment secret name.' });
 });
-const SecretKeySchema = z.union([IdSchema, ProjectEnvironmentKeySchema]);
+const ProjectCheckEnvironmentKeySchema = z.string().superRefine((key, context) => {
+  const match = /^project-check-env\/([^/]+)\/([^/]+)$/u.exec(key);
+  if (!match || !IdSchema.safeParse(match[1]).success || !ProjectEnvNameSchema.safeParse(match[2]).success)
+    context.addIssue({ code: 'custom', message: 'Invalid project check secret name.' });
+});
+const SecretKeySchema = z.union([IdSchema, ProjectEnvironmentKeySchema, ProjectCheckEnvironmentKeySchema]);
 const EnvelopeSchemaV2 = EnvelopeSchemaV1.extend({ schema: z.literal('secret-envelope-v2'), id: ProjectEnvironmentKeySchema });
-const EnvelopeSchema = z.discriminatedUnion('schema', [EnvelopeSchemaV1, EnvelopeSchemaV2]);
+const EnvelopeSchemaV3 = EnvelopeSchemaV1.extend({ schema: z.literal('secret-envelope-v3'), id: ProjectCheckEnvironmentKeySchema });
+const EnvelopeSchema = z.discriminatedUnion('schema', [EnvelopeSchemaV1, EnvelopeSchemaV2, EnvelopeSchemaV3]);
 
 export class SecretVault {
   readonly #key: Buffer;
@@ -49,7 +55,7 @@ export class SecretVault {
     SecretKeySchema.parse(id);
     if (!value || value.length > 64 * 1024) throw new Error('Secret must be nonempty and at most 64 KB.');
     this.redactor?.add(value);
-    const schema = id.startsWith('project-env/') ? 'secret-envelope-v2' : 'secret-envelope-v1';
+    const schema = id.startsWith('project-check-env/') ? 'secret-envelope-v3' : id.startsWith('project-env/') ? 'secret-envelope-v2' : 'secret-envelope-v1';
     const nonce = randomBytes(12);
     const cipher = createCipheriv('aes-256-gcm', this.#key, nonce);
     cipher.setAAD(Buffer.from(`${schema}:${id}`));

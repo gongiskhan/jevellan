@@ -412,15 +412,42 @@ test.each([
   }
 });
 
-test('project environment reaches thread and verification launches, never the coordinator or memory', async () => {
+test('verification launches never inherit the work environment without explicit check inputs', async () => {
+  let workReads = 0;
+  const { launcher: value } = launcher([status('acc_work')], undefined, { projectEnvironment: async () => { workReads++; return { WORK_SECRET: 'synthetic-work-only-value' }; } });
+  fake.enqueueTurn(done);
+  const launched = await value.launch(request({ owner: { kind: 'verification', projectId: 'proj_a', id: 'verification_a' }, safetyProfile: 'verification' }));
+  if (launched.kind !== 'started') throw new Error(launched.reason);
+  try {
+    expect(fake.turnStarts.at(-1)?.launch.projectEnv?.WORK_SECRET).toBeUndefined();
+    expect(workReads).toBe(0);
+  } finally { await launched.run.done; await launched.run.terminate(); await launched.release(); }
+});
+
+test('verification launches use only their explicitly supplied check environment', async () => {
+  let workReads = 0;
+  const { launcher: value } = launcher([status('acc_work')], undefined, { projectEnvironment: async () => { workReads++; return { WORK_SECRET: 'synthetic-work-only-value' }; } });
+  fake.enqueueTurn(done);
+  const launched = await value.launch(request({ owner: { kind: 'verification', projectId: 'proj_a', id: 'verification_a' }, safetyProfile: 'verification',
+    verificationEnvironment: { CHECK_VALUE: 'synthetic-check-only-value', OPENAI_API_KEY: 'synthetic-project-provider' } }));
+  if (launched.kind !== 'started') throw new Error(launched.reason);
+  try {
+    expect(fake.turnStarts.at(-1)?.launch.projectEnv?.CHECK_VALUE).toBe('synthetic-check-only-value');
+    expect(fake.turnStarts.at(-1)?.launch.projectEnv?.WORK_SECRET).toBeUndefined();
+    expect(fake.turnStarts.at(-1)?.launch.projectEnv?.OPENAI_API_KEY).toBeUndefined();
+    expect(workReads).toBe(0);
+  } finally { await launched.run.done; await launched.run.terminate(); await launched.release(); }
+});
+
+test('work environment reaches only thread launches, while other owners keep their separate scope', async () => {
   const calls: string[] = []; fake.capabilities.readOnlyEnforced = true;
   const { launcher: value } = launcher([status('acc_work')], undefined, { projectEnvironment: async id => { calls.push(id); return { TZ: 'UTC', TEST_SECRET: 'ephemeral fixture', OPENAI_API_KEY: 'ephemeral project provider', ANTHROPIC_BASE_URL: 'https://project.fixture.invalid' }; } });
   for (const kind of ['thread', 'verification', 'coordinator', 'memory'] as const) {
     fake.enqueueTurn(done); const result = await value.launch(request({ owner: { kind, projectId: 'proj_a', id: kind === 'coordinator' ? 'proj_a' : `${kind}_a` }, permissions: ['coordinator', 'memory'].includes(kind) ? 'read-only' : 'write', safetyProfile: kind }));
     if (result.kind !== 'started') throw new Error(result.reason);
-    expect(fake.turnStarts.at(-1)?.launch?.projectEnv).toEqual(['thread', 'verification'].includes(kind) ? { TZ: 'UTC', TEST_SECRET: 'ephemeral fixture' } : undefined);
+    expect(fake.turnStarts.at(-1)?.launch?.projectEnv).toEqual(kind === 'thread' ? { TZ: 'UTC', TEST_SECRET: 'ephemeral fixture' } : kind === 'verification' ? {} : undefined);
     expect(fake.turnStarts.at(-1)?.launch?.mcpServers?.jevellan?.env?.TEST_SECRET).toBeUndefined();
     await result.run.done; await result.run.terminate(); await result.release();
   }
-  expect(calls).toEqual(['proj_a', 'proj_a']);
+  expect(calls).toEqual(['proj_a']);
 });

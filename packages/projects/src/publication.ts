@@ -1,3 +1,5 @@
+import { CheckEnvironmentBlocked, ProjectCheckWorkspace, checkInputSnapshot } from './check-environment.js';
+import { defaultProjectWorkSettings, type ProjectWorkSettings, type ProjectEnvSecretSummary } from '@jevellan/core';
 import {
   GitHubClient, GitHubError, PullRequestStateSchema, gitFailureMessage, mapMergeable, parseGitHubRemote,
   type CheckoutOwnership, type GitHubPull, type Homes, type Project, type PublicationLeaseService, type PullRequestState, type SecretRedactor, type Thread,
@@ -9,7 +11,7 @@ import {
 } from './copy.js';
 import { GIT_NETWORK_TIMEOUT_MS, tail, type ThreadGit } from './git.js';
 import type { ProjectLedger } from './ledger.js';
-import { TEST_TIMEOUT_MS, outputTail, runThreadCommand } from './verification.js';
+import { SETUP_TIMEOUT_MS, TEST_TIMEOUT_MS, outputTail } from './verification.js';
 
 /** The GitHub token is read when a publication or poll needs it, so a token saved later applies at once. */
 export class GitHubAccess {
@@ -42,10 +44,11 @@ export function pullRequestState(pull: GitHubPull, checks: PullRequestState['che
     headSha: pull.headSha, checks, mergeable: mapMergeable(pull.mergeableState), updatedAt: at });
 }
 
-export type VerificationResult = { status: 'passed' | 'failed' | 'skipped'; command: string | null; exitCode?: number; timedOut: boolean; tail: string; outputRef?: string; commit: string };
+export type VerificationResult = { status: 'passed' | 'failed' | 'skipped' | 'blocked'; command: string | null; requestedCommand?: string; phase?: 'setup' | 'check'; exitCode?: number; timedOut: boolean; tail: string; outputRef?: string; commit: string };
 export type PublicationOutcome =
   | { kind: 'no-changes' }
   | { kind: 'verification-failed'; verification: VerificationResult }
+  | { kind: 'verification-blocked'; verification: VerificationResult }
   | { kind: 'no-remote'; reason: string }
   /** Pushed, but no pull request: no token, or the remote is not on GitHub (D23, D58). */
   | { kind: 'branch-only'; reason: string; branch: string }
@@ -75,14 +78,16 @@ export class ThreadPublication {
   readonly #deviceName: string; readonly #testTimeoutMs: number; readonly #now: () => number;
   /** Main isolation (phase 6) publishes under these; the worktree path needs neither. */
   readonly leases: PublicationLeaseService | undefined; readonly ownership: CheckoutOwnership | undefined;
-  readonly #projectEnvironment: ((projectId: string) => Promise<Record<string, string>>) | undefined;
-  constructor(o: { projectEnvironment?(projectId: string): Promise<Record<string, string>>; git: ThreadGit; homes: Homes; redactor: SecretRedactor; github: GitHubAccess; deviceName: string; testTimeoutMs?: number; now?(): number;
+  readonly #checkCredentials: ((projectId: string) => Promise<Record<string, string>>) | undefined;
+  readonly #checkSecretSummary: ((projectId: string, name: string) => Promise<ProjectEnvSecretSummary>) | undefined;
+  readonly #settings: ((projectId: string) => Promise<ProjectWorkSettings>) | undefined; readonly #deviceId: string | undefined;
+  constructor(o: { projectEnvironment?(projectId: string): Promise<Record<string, string>>; checkCredentials?(projectId: string): Promise<Record<string, string>>; checkSecretSummary?(projectId: string, name: string): Promise<ProjectEnvSecretSummary>; settings?(projectId: string): Promise<ProjectWorkSettings>; git: ThreadGit; homes: Homes; redactor: SecretRedactor; github: GitHubAccess; deviceName: string; testTimeoutMs?: number; now?(): number;
     leases?: PublicationLeaseService; ownership?: CheckoutOwnership;
     /** This device's id, named in memory notes merged during a rebase (as conversations do); the name when absent. */
     deviceId?: string;
     /** The wait before a busy publication lease is tried again (D45, 20 seconds in the daemon). */
     leaseRetryMs?: number }) {
-    this.#projectEnvironment = o.projectEnvironment; this.#git = o.git; this.#homes = o.homes; this.#redactor = o.redactor; this.#github = o.github; this.#deviceName = o.deviceName;
+    this.#checkCredentials = o.checkCredentials; this.#checkSecretSummary = o.checkSecretSummary; this.#settings = o.settings; this.#deviceId = o.deviceId; this.#git = o.git; this.#homes = o.homes; this.#redactor = o.redactor; this.#github = o.github; this.#deviceName = o.deviceName;
     this.#testTimeoutMs = o.testTimeoutMs ?? TEST_TIMEOUT_MS; this.#now = o.now ?? Date.now; this.leases = o.leases; this.ownership = o.ownership;
   }
   async #head(cwd: string): Promise<string> { return (await this.#git.run(cwd, ['rev-parse', 'HEAD'])).stdout.trim(); }
@@ -92,20 +97,44 @@ export class ThreadPublication {
    * (main isolation, D290) it also fails when the run left changes in the checkout, which could neither rebase nor push.
    */
   async verify(project: Project, thread: Thread, ledger: ProjectLedger, signal?: AbortSignal, clean = false): Promise<VerificationResult> {
-    const cwd = thread.cwd; const attempt = thread.verificationAttempts + 1; const command = project.testCommand ?? null; const commit = await this.#head(cwd);
-    let verified: VerificationResult;
+    const cwd = thread.cwd, attempt = thread.verificationAttempts + 1, command = project.testCommand ?? null, commit = await this.#head(cwd);
+    let verified: VerificationResult, workspace: ProjectCheckWorkspace | undefined;
     if (!command) verified = { status: 'skipped', command: null, timedOut: false, tail: '', commit };
     else {
-      const result = await runThreadCommand(cwd, command, { homes: this.#homes, workId: thread.id, timeoutMs: this.#testTimeoutMs, redactor: this.#redactor, projectEnv: await this.#projectEnvironment?.(thread.projectId) ?? {}, signal });
-      const moved = await this.#head(cwd) !== commit;
-      const dirty = clean && !moved && !!(await this.#git.run(cwd, ['status', '--porcelain=v1', '-z'])).stdout;
-      const notes = [...(result.timedOut ? [capitalized(commandTimedOut(this.#testTimeoutMs))] : []), ...(moved ? [VERIFICATION_HEAD_MOVED] : []), ...(dirty ? [VERIFICATION_TREE_CHANGED] : [])];
-      const output = outputTail(result, Number.MAX_SAFE_INTEGER);
-      const text = notes.length ? `${output}${output && !output.endsWith('\n') ? '\n' : ''}${notes.join('\n')}` : output;
-      const outputRef = ledger.putBlob({ stdout: result.stdout, stderr: result.stderr, timedOut: result.timedOut }).ref;
-      verified = { status: result.code === 0 && !result.timedOut && !moved && !dirty ? 'passed' : 'failed', command, exitCode: result.code, timedOut: result.timedOut, tail: tail(text), outputRef, commit };
+      try {
+        const settings = await this.#settings?.(project.id) ?? defaultProjectWorkSettings(project.id);
+        const projectRoot = this.#deviceId ? project.paths[this.#deviceId] : undefined;
+        if (settings.checkEnvironment?.copyFiles.length && !projectRoot) throw new CheckEnvironmentBlocked('The check environment needs the registered project checkout.');
+        const snapshot = await checkInputSnapshot({ settings, projectRoot: projectRoot ?? cwd,
+          ...(this.#checkSecretSummary ? { summary: name => this.#checkSecretSummary!(project.id, name) } : {}) });
+        workspace = await ProjectCheckWorkspace.create({ homes: this.#homes, git: this.#git, redactor: this.#redactor, projectId: project.id, workId: thread.id,
+          cwd, commit, snapshot, secrets: await this.#checkCredentials?.(project.id) ?? {}, ...(settings.landingPorts ? { ports: settings.landingPorts } : {}), ...(signal ? { signal } : {}) });
+        let actualCommand = command, phase: 'setup' | 'check' = 'check';
+        let result = settings.setupCommand ? await workspace.run(settings.setupCommand, { timeoutMs: SETUP_TIMEOUT_MS, ...(signal ? { signal } : {}) }) : undefined;
+        if (result && (result.code !== 0 || result.timedOut || !await workspace.clean())) { actualCommand = settings.setupCommand!; phase = 'setup'; }
+        else result = await workspace.run(command, { timeoutMs: this.#testTimeoutMs, ...(signal ? { signal } : {}) });
+        const moved = await this.#head(cwd) !== commit || await this.#head(workspace.cwd) !== commit;
+        const dirty = clean && !!(await this.#git.run(cwd, ['status', '--porcelain=v1', '--untracked-files=all'])).stdout;
+        const changed = !await workspace.clean();
+        let inputProblem: string | undefined;
+        try {
+          const current = await this.#settings?.(project.id) ?? defaultProjectWorkSettings(project.id);
+          const latest = await checkInputSnapshot({ settings: current, projectRoot: projectRoot ?? cwd,
+            ...(this.#checkSecretSummary ? { summary: name => this.#checkSecretSummary!(project.id, name) } : {}) });
+          if (latest.identity !== snapshot.identity) inputProblem = 'The check environment changed during verification; checks will retry.';
+        } catch (error) { if (!(error instanceof CheckEnvironmentBlocked)) throw error; inputProblem = error.message; }
+        const notes = [...(result.timedOut ? [capitalized(commandTimedOut(phase === 'setup' ? SETUP_TIMEOUT_MS : this.#testTimeoutMs))] : []), ...(moved ? [VERIFICATION_HEAD_MOVED] : []), ...(!moved && (dirty || changed) ? [VERIFICATION_TREE_CHANGED] : []), ...(inputProblem ? [inputProblem] : [])];
+        const output = outputTail(result, Number.MAX_SAFE_INTEGER), text = notes.length ? `${output}${output && !output.endsWith('\n') ? '\n' : ''}${notes.join('\n')}` : output;
+        const outputRef = ledger.putBlob({ stdout: result.stdout, stderr: result.stderr, timedOut: result.timedOut }).ref;
+        verified = { status: inputProblem ? 'blocked' : result.code === 0 && !result.timedOut && !moved && !dirty && !changed ? 'passed' : 'failed', command: actualCommand,
+          ...(phase === 'setup' ? { phase, requestedCommand: command } : {}), exitCode: result.code, timedOut: result.timedOut, tail: tail(text), outputRef, commit };
+      } catch (error) {
+        if (!(error instanceof CheckEnvironmentBlocked)) throw error;
+        verified = { status: 'blocked', command, timedOut: false, tail: this.#redactor.text(error.message).slice(0, 4000), commit };
+      } finally { await workspace?.close(); }
     }
     ledger.append({ type: 'thread-verification', data: { schema: 'thread-verification-v1', attempt, command: verified.command, status: verified.status,
+      ...(verified.requestedCommand ? { requestedCommand: verified.requestedCommand } : {}), ...(verified.phase ? { phase: verified.phase } : {}),
       ...(verified.exitCode === undefined ? {} : { exitCode: verified.exitCode }), timedOut: verified.timedOut, commit: verified.commit,
       ...(verified.outputRef ? { outputRef: verified.outputRef } : {}), tail: verified.tail } });
     return verified;
@@ -165,6 +194,7 @@ export class ThreadPublication {
       }
       if (Number((await this.#git.run(cwd, ['rev-list', '--count', `${thread.baseCommit}..HEAD`])).stdout.trim()) === 0) return result({ kind: 'no-changes' });
       verified = await this.verify(project, thread, ledger, signal);
+      if (verified.status === 'blocked') return result({ kind: 'verification-blocked', verification: verified });
       if (verified.status === 'failed') return result({ kind: 'verification-failed', verification: verified });
       const remote = await this.#git.remoteUrl(cwd);
       if (remote === null) return result({ kind: 'no-remote', reason: NO_REMOTE });

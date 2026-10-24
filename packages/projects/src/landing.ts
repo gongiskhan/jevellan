@@ -1,4 +1,5 @@
-import { landingCheckEnvironment } from './landing-resources.js';
+import { CheckEnvironmentBlocked, ProjectCheckWorkspace, checkInputSnapshot, checkEnvironmentProfile, type CheckInputSnapshot } from './check-environment.js';
+import type { ProjectEnvSecretSummary } from '@jevellan/core';
 import {applyJevRouteRules,projectJevLessons,parseLandingPrompt,landingPromptText} from '@jevellan/decisions';
 import { routeWhyView } from './route-why.js';
 import { deliveryDirectory, JobGateResultSchema, PrivateJobDeliverySchema } from './job-deliveries.js';
@@ -18,7 +19,7 @@ import { GIT_NETWORK_TIMEOUT_MS, type ThreadGit } from './git.js';
 import type { ThreadStore } from './stores.js';
 import type { GitHubAccess, ThreadPublication } from './publication.js';
 import type { PullRequestVerification } from './pr-verification.js';
-import { outputTail, runThreadCommand, TEST_TIMEOUT_MS } from './verification.js';
+import { outputTail, SETUP_TIMEOUT_MS, TEST_TIMEOUT_MS } from './verification.js';
 
 export const pathMatches = (file: string, path: string): boolean => file === path.replace(/\/$/u, '') || file.startsWith(path.replace(/\/$/u, '') + '/');
 export function selectedLandingChecks(settings: Pick<ProjectWorkSettings, 'landingChecks' | 'smokeCheck'>, files: readonly string[]) {
@@ -64,10 +65,53 @@ export class ThreadLandingService {
   constructor(readonly o: { homes: Homes; git: ThreadGit; github: GitHubAccess; publication: ThreadPublication; hub: ProjectHub; store: ThreadStore;
     verification: PullRequestVerification; leases?: PublicationLeaseService; deviceId: string; redactor: SecretRedactor; now(): number;
     settings(projectId: string): Promise<ProjectWorkSettings>; configuration(): Promise<Configuration['x-jevellan']>; decisionClient?: DecisionSource;
-    projectEnvironment?(projectId: string): Promise<Record<string, string>>; assertLanding(projectId: string, threadId: string): Promise<void>;
+    projectEnvironment?(projectId: string): Promise<Record<string, string>>; checkCredentials?(projectId: string): Promise<Record<string, string>>; checkSecretSummary?(projectId: string, name: string): Promise<ProjectEnvSecretSummary>; project?(projectId: string): Promise<Project>; assertLanding(projectId: string, threadId: string): Promise<void>;
     retry(projectId: string, threadId: string): Promise<void>;
     /** Jev control (bridge): the active l-v1 prompt, the lessons Jev reads, and the owner's rules applied after its answer. */
     jev?(projectId: string): Promise<LandingJev | undefined> }) {}
+  async #snapshot(project: Project, thread: Thread, settings: ProjectWorkSettings) {
+    checkEnvironmentProfile(settings);
+    const root = project.paths[this.o.deviceId];
+    if (settings.checkEnvironment?.copyFiles.length && !root) throw new CheckEnvironmentBlocked('The check environment needs the registered project checkout.');
+    return checkInputSnapshot({ settings, projectRoot: root ?? thread.cwd, ...(this.o.checkSecretSummary ? { summary: name => this.o.checkSecretSummary!(project.id, name) } : {}) });
+  }
+  async #policy(project: Project, thread: Thread, settings: ProjectWorkSettings) {
+    let snapshot: CheckInputSnapshot | undefined, blocked: CheckEnvironmentBlocked | undefined;
+    try { snapshot = await this.#snapshot(project, thread, settings); }
+    catch (error) { if (!(error instanceof CheckEnvironmentBlocked)) throw error; blocked = error; }
+    const digest = createHash('sha256').update(stableJson({ schema: 'isolated-check-policy-v1', checks: settings.landingChecks, ports: settings.landingPorts,
+      smoke: settings.smokeCheck, merge: settings.mergeCommitPaths, setup: settings.setupCommand, profile: settings.checkEnvironment,
+      inputs: snapshot?.identity ?? { blocked: blocked!.message } })).digest('hex');
+    return { digest, snapshot, blocked };
+  }
+  async #environmentReady(thread: Thread): Promise<boolean> {
+    try {
+      const settings = await this.o.settings(thread.projectId), profile = checkEnvironmentProfile(settings), project = await this.o.project?.(thread.projectId);
+      const root = project?.paths[this.o.deviceId]; if (profile.copyFiles.length && !root) return false;
+      await checkInputSnapshot({ settings, projectRoot: root ?? thread.cwd, ...(this.o.checkSecretSummary ? { summary: name => this.o.checkSecretSummary!(thread.projectId, name) } : {}) });
+      return true;
+    } catch (error) { if (error instanceof CheckEnvironmentBlocked) return false; throw error; }
+  }
+  async waitForEnvironment(thread: Thread, reason: string) {
+    const commit = await this.o.git.resolve(thread.cwd, 'HEAD'); if (!commit) return { kind: 'waiting' as const, reason };
+    const old = this.o.store.local(thread.id).landingWait;
+    if (old?.blocker.kind === 'port') {
+      if (!old.blocker.managed && await portAcceptsConnections(old.blocker.port)) return { kind: 'waiting' as const, reason };
+      await this.#clearWait(thread, `The blocking port ${old.blocker.port} is free; the check environment still needs attention.`);
+    }
+    const current = this.o.store.local(thread.id).landingWait;
+    const same = current?.blocker.kind === 'environment' && current.blocker.commit === commit;
+    // A newer candidate does not silently close a still-unavailable environment question.
+    const sequence = (this.o.store.local(thread.id).landingWaitSequence ?? 0) + (same || current?.blocker.kind === 'environment' ? 0 : 1);
+    const decisionId = current?.blocker.kind === 'environment' ? current.decisionId : derivedId('pdec', 'check-environment', thread.id, String(sequence));
+    const wait = { schema: 'thread-landing-wait-v1' as const, blocker: { schema: 'landing-environment-blocker-v1' as const, kind: 'environment' as const, commit, check: 'Check environment' },
+      decisionId, reason: current?.blocker.kind === 'environment' ? current.reason : reason.slice(0, 1200), createdAt: current?.blocker.kind === 'environment' ? current.createdAt : new Date(this.o.now()).toISOString() };
+    this.o.store.updateLocal(thread.id, local => ({ ...local, landingWaitSequence: sequence, landingWait: wait }));
+    await this.#ensureWaitQuestion(thread, wait); return { kind: 'waiting' as const, reason };
+  }
+  async environmentAvailable(thread: Thread) {
+    if (this.o.store.local(thread.id).landingWait?.blocker.kind === 'environment') await this.#clearWait(thread, 'The separate check environment is available; verification resumes.');
+  }
   /** Recover only a still-current typed resource failure. New owner work and decisions always win. */
   async #recoverLegacyWait(thread: Thread) {
     if (thread.state !== 'idle' || thread.landing || thread.resolution || thread.endedAt || thread.lastReport?.status !== 'done' || thread.queuedMessages.length || this.o.store.local(thread.id).landingWait) return;
@@ -115,7 +159,7 @@ export class ThreadLandingService {
   }
   async #waitForPort(thread: Thread, check: string, commit: string, port: number, reason: string, managed: boolean) {
     const old = this.o.store.local(thread.id).landingWait;
-    const same = old?.blocker.commit === commit && old.blocker.check === check && old.blocker.port === port;
+    const same = old?.blocker.kind === 'port' && old.blocker.commit === commit && old.blocker.check === check && old.blocker.port === port;
     if (old && !same) await this.#clearWait(thread, 'A newer checked candidate replaced this landing resource wait.');
     const sequence = (this.o.store.local(thread.id).landingWaitSequence ?? 0) + (same ? 0 : 1);
     const decisionId = same ? old.decisionId : derivedId('pdec', 'landing-blocker', thread.id, commit, check, String(port), String(sequence));
@@ -152,13 +196,17 @@ export class ThreadLandingService {
       if (!this.o.store.get(decision.threadId)) throw new Error('This landing item belongs on the thread’s device.');
       const wait = this.o.store.local(decision.threadId).landingWait;
       if (answer.optionLabel !== 'Retry checks' && answer.optionLabel !== 'Keep waiting') throw new Error('Choose a landing blocker option.');
-      if (!wait || wait.decisionId !== decision.id || wait.blocker.commit !== decision.blocker.commit || wait.blocker.port !== decision.blocker.port) {
+      if (!wait || wait.decisionId !== decision.id || wait.blocker.kind !== decision.blocker.kind || wait.blocker.kind === 'port' && wait.blocker.commit !== decision.blocker.commit || wait.blocker.kind === 'port' && decision.blocker.kind === 'port' && wait.blocker.port !== decision.blocker.port) {
         if (decision.answer) return true;
         throw new Error('This landing blocker changed. Reload it.');
       }
       if (validateOnly || answer.optionLabel === 'Keep waiting') return true;
-      if (!wait.blocker.managed && await portAcceptsConnections(wait.blocker.port)) return true;
-      await this.#clearWait(this.o.store.get(decision.threadId)!, wait.blocker.managed ? 'Fresh managed localhost ports will be allocated for the retry.' : `The blocking port ${wait.blocker.port} is now free; landing checks resume.`);
+      if (wait.blocker.kind === 'environment') {
+        if (!await this.#environmentReady(this.o.store.get(decision.threadId)!)) return true;
+      } else {
+        if (!wait.blocker.managed && await portAcceptsConnections(wait.blocker.port)) return true;
+        await this.#clearWait(this.o.store.get(decision.threadId)!, wait.blocker.managed ? 'Fresh managed localhost ports will be allocated for the retry.' : `The blocking port ${wait.blocker.port} is now free; landing checks resume.`);
+      }
       await this.o.retry(decision.projectId, decision.threadId);
       return true;
     }
@@ -210,23 +258,26 @@ export class ThreadLandingService {
     do { const page = await this.o.hub.tasks(thread.projectId, after); const task = page.records.find(row => row.threadId === thread.id && row.jobDelivery); if (task) return bound(task); after = page.next ?? undefined; } while (after);
     return null;
   }
-  async #gate(thread: Thread, settings: ProjectWorkSettings, base: string, head: string, files: string[], signal?: AbortSignal) {
+  async #gate(thread: Thread, settings: ProjectWorkSettings, base: string, head: string, files: string[], candidate: ProjectCheckWorkspace, snapshot: CheckInputSnapshot, signal?: AbortSignal) {
     const bound = await this.#delivery(thread); if (!bound?.delivery.gate) return null;
     const { run, delivery } = bound, gate = delivery.gate!;
     if (run.deviceId !== this.o.deviceId) throw new Error('This landing needs the device holding its private job input.');
     if (files.some(file => gate.protectedPaths.some(path => pathMatches(file, path)))) throw new Error('The candidate changed a protected evaluation path.');
     const directory = deliveryDirectory(this.o.homes, thread.projectId, run.id), inputFile = join(directory, `${delivery.id}.json`), input = readDocument(inputFile, PrivateJobDeliverySchema);
     if (input.sha256 !== delivery.inputSha256 || input.trustedCommit !== run.commit || input.runId !== run.id || input.deliveryId !== delivery.id) throw new Error('The private gate input does not match its job receipt.');
-    const workspace = this.o.homes.ensure('project-work', thread.projectId, 'job-cache', 'gates', thread.id, head), trusted = join(workspace, 'trusted');
-    if (!existsSync(trusted)) await this.o.git.run(thread.cwd, ['worktree', 'add', '--detach', trusted, run.commit]);
-    if (await this.o.git.resolve(trusted, 'HEAD') !== run.commit || (await this.o.git.run(trusted, ['status', '--porcelain=v1', '--untracked-files=all'])).stdout.trim()) throw new Error('The trusted gate checkout changed.');
-    const resultFile = join(workspace, 'project-job-gate-result.json'), gateInput = join(workspace, 'private-input.json');
-    writeDocument(gateInput, PrivateJobDeliverySchema, input);
-    const resources = await landingCheckEnvironment(await this.o.projectEnvironment?.(thread.projectId) ?? {}, settings.landingPorts);
-    const result = await runThreadCommand(trusted, gate.command, { homes: this.o.homes, workId: thread.id, redactor: this.o.redactor, environmentScope: 'command', timeoutMs: gate.timeoutMinutes * 60000, ...(signal ? { signal } : {}), projectEnv: resources.environment, gitEnv: { JEVELLAN_GATE_INPUT: gateInput, JEVELLAN_GATE_CANDIDATE: thread.cwd, JEVELLAN_GATE_CANDIDATE_COMMIT: head, JEVELLAN_GATE_BASE_COMMIT: base, JEVELLAN_GATE_RESULT: resultFile }, jobContext: { schema: 'project-job-context-v1', projectId: run.projectId, runId: run.id, jobId: run.jobId, workspace, commandCheckout: trusted, commit: run.commit } });
-    if (result.code !== 0 || result.timedOut || !existsSync(resultFile)) throw new Error(`The trusted job gate did not pass: ${outputTail(result, 2000)}`);
-    const receipt = readDocument(resultFile, JobGateResultSchema);
-    if (!receipt.passed || receipt.checks.some(row => !row.passed) || receipt.trustedCommit !== run.commit || receipt.candidateCommit !== head || await this.o.git.resolve(thread.cwd, 'HEAD') !== head) throw new Error('The trusted job gate refused this candidate.');
+    const trusted = await ProjectCheckWorkspace.create({ homes: this.o.homes, git: this.o.git, redactor: this.o.redactor, projectId: thread.projectId, workId: thread.id,
+      cwd: thread.cwd, commit: run.commit, snapshot, secrets: await this.o.checkCredentials?.(thread.projectId) ?? {}, ...(settings.landingPorts ? { ports: settings.landingPorts } : {}), ...(signal ? { signal } : {}) });
+    let receipt: ReturnType<typeof JobGateResultSchema.parse>;
+    try {
+      const resultFile = join(trusted.root, 'project-job-gate-result.json'), gateInput = join(trusted.root, 'private-input.json');
+      writeDocument(gateInput, PrivateJobDeliverySchema, input);
+      const result = await trusted.run(gate.command, { timeoutMs: gate.timeoutMinutes * 60000, ...(signal ? { signal } : {}),
+        gitEnv: { JEVELLAN_GATE_INPUT: gateInput, JEVELLAN_GATE_CANDIDATE: candidate.cwd, JEVELLAN_GATE_CANDIDATE_COMMIT: head, JEVELLAN_GATE_BASE_COMMIT: base, JEVELLAN_GATE_RESULT: resultFile },
+        jobContext: { schema: 'project-job-context-v1', purpose: 'check', projectId: run.projectId, runId: run.id, jobId: run.jobId, workspace: trusted.root, commandCheckout: trusted.cwd, commit: run.commit } });
+      if (result.code !== 0 || result.timedOut || !existsSync(resultFile) || !await trusted.clean() || !await candidate.clean()) throw new Error(`The trusted job gate did not pass: ${outputTail(result, 2000)}`);
+      receipt = readDocument(resultFile, JobGateResultSchema);
+      if (!receipt.passed || receipt.checks.some(row => !row.passed) || receipt.trustedCommit !== run.commit || receipt.candidateCommit !== head || await this.o.git.resolve(thread.cwd, 'HEAD') !== head) throw new Error('The trusted job gate refused this candidate.');
+    } finally { await trusted.close(); }
     if (receipt.validUntil && Date.parse(receipt.validUntil) <= this.o.now()) throw new Error('The required job gate deadline expired. This work needs a fresh measured delivery.');
     return { check: { name: gate.id, passed: true, at: new Date(this.o.now()).toISOString() }, validUntil: receipt.validUntil };
   }
@@ -236,33 +287,37 @@ export class ThreadLandingService {
     await this.#save({ ...route, state: 'failed', reason });
     return { kind: 'waiting', reason };
   }
-  async #prepare(thread: Thread, settings: ProjectWorkSettings, base: string, signal?: AbortSignal) {
+  async #prepare(project: Project, thread: Thread, settings: ProjectWorkSettings, base: string, signal?: AbortSignal) {
     const rebase = await this.o.git.run(thread.cwd, ['rebase', base], { permitted: [1], ...(signal ? { signal } : {}) });
     if (rebase.code !== 0) {
       const files = (await this.o.git.run(thread.cwd, ['diff', '--name-only', '--diff-filter=U', '-z'])).stdout.split('\0').filter(Boolean);
       await this.o.git.run(thread.cwd, ['rebase', '--abort']);
       return { kind: 'fix' as const, reason: 'conflict' as const, body: `Landing stopped: main moved and these files conflict: ${files.join(', ')}. Run git fetch origin and git rebase origin/${thread.baseBranch} in your worktree, resolve the conflicts keeping the intent of both sides, run the relevant tests and report done.` };
     }
-    const files = await this.#files(thread, base), checks: ThreadLanding['checks'] = [];
-    for (const check of selectedLandingChecks(settings, files.map(file => file.path))) {
-      const head = await this.o.git.resolve(thread.cwd, 'HEAD');
-      const resources = await landingCheckEnvironment(await this.o.projectEnvironment?.(thread.projectId) ?? {}, settings.landingPorts);
-      const result = await runThreadCommand(thread.cwd, check.command, { homes: this.o.homes, workId: thread.id, environmentScope: 'command', timeoutMs: TEST_TIMEOUT_MS, redactor: this.o.redactor,
-        projectEnv: resources.environment, ...(signal ? { signal } : {}) });
-      const passed = result.code === 0 && !result.timedOut && await this.o.git.resolve(thread.cwd, 'HEAD') === head
-        && !(await this.o.git.run(thread.cwd, ['status', '--porcelain=v1', '--untracked-files=all'])).stdout;
-      checks.push({ name: check.name, passed, at: new Date(this.o.now()).toISOString() });
-      // A port another process holds is the device's state, not the thread's change: landing waits for it instead of asking for a fix.
-      const port = passed || result.timedOut ? null : heldPort(outputTail(result, 8000)); const holder = port === null ? null : await portHolder(port);
-      if (port !== null && holder) return this.#waitForPort(thread, check.name, head!, port, this.o.redactor.text(`${check.name} could not start: port ${port} is in use by ${holderText(holder)}. It lands by itself once the port is free.`), resources.ports.includes(port));
-      if (!passed) { const tail = this.o.redactor.text(outputTail(result, 4000) || 'The check changed the worktree or its commit.'); return { kind: 'fix' as const, reason: 'verification' as const, tail,
-        failureFingerprint: failureFingerprint({ kind: 'landing-check', command: check.command, name: check.name, code: result.code, timedOut: result.timedOut, tail }, this.o.redactor),
-        body: `Landing checks failed (attempt ${thread.verificationAttempts + 1} of 3). ${check.name}: ${tail}. Fix the cause, run the relevant tests and report done.` }; }
-    }
-    await this.#clearWait(thread, 'The landing checks passed; the port no longer blocks this candidate.');
-    const head = (await this.o.git.resolve(thread.cwd, 'HEAD'))!;
-    const gate = await this.#gate(thread, settings, base, head, files.map(file => file.path), signal); if (gate) checks.push(gate.check);
-    return { kind: 'checked' as const, files, checks, head, gateValidUntil: gate?.validUntil };
+    const files = await this.#files(thread, base), checks: ThreadLanding['checks'] = [], selected = selectedLandingChecks(settings, files.map(file => file.path));
+    const head = (await this.o.git.resolve(thread.cwd, 'HEAD'))!, gateNeeded = !!(await this.#delivery(thread))?.delivery.gate;
+    if (!selected.length && !gateNeeded) return { kind: 'checked' as const, files, checks, head, gateValidUntil: undefined };
+    const snapshot = await this.#snapshot(project, thread, settings);
+    const workspace = await ProjectCheckWorkspace.create({ homes: this.o.homes, git: this.o.git, redactor: this.o.redactor, projectId: thread.projectId, workId: thread.id,
+      cwd: thread.cwd, commit: head, snapshot, secrets: await this.o.checkCredentials?.(thread.projectId) ?? {}, ...(settings.landingPorts ? { ports: settings.landingPorts } : {}), ...(signal ? { signal } : {}) });
+    await this.environmentAvailable(thread);
+    try {
+      const commands = [...(settings.setupCommand ? [{ name: 'Check setup', command: settings.setupCommand, timeoutMs: SETUP_TIMEOUT_MS }] : []), ...selected.map(check => ({ ...check, timeoutMs: TEST_TIMEOUT_MS }))];
+      for (const check of commands) {
+        const result = await workspace.run(check.command, { timeoutMs: check.timeoutMs, ...(signal ? { signal } : {}) });
+        const passed = result.code === 0 && !result.timedOut && await this.o.git.resolve(thread.cwd, 'HEAD') === head && await workspace.clean();
+        checks.push({ name: check.name, passed, at: new Date(this.o.now()).toISOString() });
+        const port = passed || result.timedOut ? null : heldPort(outputTail(result, 8000)), holder = port === null ? null : await portHolder(port);
+        if (port !== null && holder) return this.#waitForPort(thread, check.name, head, port, this.o.redactor.text(`${check.name} could not start: port ${port} is in use by ${holderText(holder)}. It lands by itself once the port is free.`), workspace.ports.includes(port));
+        if (!passed) { const tail = this.o.redactor.text(outputTail(result, 4000) || 'The check changed its candidate checkout or commit.'); return { kind: 'fix' as const, reason: 'verification' as const, tail,
+          failureFingerprint: failureFingerprint({ kind: 'landing-check', command: check.command, name: check.name, code: result.code, timedOut: result.timedOut, tail }, this.o.redactor),
+          body: `Landing checks failed (attempt ${thread.verificationAttempts + 1} of 3). ${check.name}: ${tail}. Fix the cause, run the relevant tests and report done.` }; }
+      }
+      const gate = await this.#gate(thread, settings, base, head, files.map(file => file.path), workspace, snapshot, signal); if (gate) checks.push(gate.check);
+      if ((await this.#snapshot(project, thread, await this.o.settings(project.id))).identity !== snapshot.identity) throw new CheckEnvironmentBlocked('The check environment changed during verification; checks will retry.');
+      await this.#clearWait(thread, 'The landing checks passed; their resource wait is resolved.');
+      return { kind: 'checked' as const, files, checks, head, gateValidUntil: gate?.validUntil };
+    } finally { await workspace.close(); }
   }
   async publish(project: Project, thread: Thread, signal?: AbortSignal, priorState = thread.state): Promise<LandingOutcome> {
     try {
@@ -284,11 +339,11 @@ export class ThreadLandingService {
       // A pushed candidate is durable before its transport acknowledgement. Recover it even if another landing followed.
       for (const old of records) if (old.schema === 'landing-route-v1' && old.checkedCommit === currentHead && old.candidate && (await this.o.git.run(thread.cwd, ['merge-base', '--is-ancestor', old.candidate.commit, base], { permitted: [1] })).code === 0) return { kind: 'landed', landing: old.candidate, routeId: old.id };
       if (!(await this.o.git.run(thread.cwd, ['diff', '--name-only', `${base}...HEAD`])).stdout) return { kind: 'no-changes' };
-      const settings = await this.o.settings(project.id), digest = (value: ProjectWorkSettings) => createHash('sha256').update(stableJson({ checks: value.landingChecks, ports: value.landingPorts, smoke: value.smokeCheck, merge: value.mergeCommitPaths, environment: value.environment })).digest('hex');
-      const settingsDigest = digest(settings), head = await this.o.git.resolve(thread.cwd, 'HEAD');
+      const settings = await this.o.settings(project.id);
+      const settingsDigest = (await this.#policy(project, thread, settings)).digest, head = await this.o.git.resolve(thread.cwd, 'HEAD');
       const gated = !!(await this.#delivery(thread))?.delivery.gate;
       const cached = records.find((row): row is LandingRoute => row.schema === 'landing-route-v1' && row.checkedCommit === head && row.baseCommit === base && row.settingsDigest === settingsDigest && row.packet.checks.every(check => check.passed) && (!gated || !!row.gateValidUntil && Date.parse(row.gateValidUntil) > this.o.now()));
-      const ready = cached ? { kind: 'checked' as const, files: cached.packet.files, checks: cached.packet.checks, head: cached.checkedCommit!, gateValidUntil: cached.gateValidUntil } : await this.#prepare(thread, settings, base, signal); if (ready.kind !== 'checked') return ready;
+      const ready = cached ? { kind: 'checked' as const, files: cached.packet.files, checks: cached.packet.checks, head: cached.checkedCommit!, gateValidUntil: cached.gateValidUntil } : await this.#prepare(project, thread, settings, base, signal); if (ready.kind !== 'checked') return ready;
       const id = derivedId('lroute', thread.id, ready.head); let route = (await this.o.hub.mergeDocument(id))?.document;
       if (route && route.schema !== 'landing-route-v1') throw new Error('This landing receipt has another schema.');
       if (!route) {
@@ -342,9 +397,9 @@ export class ThreadLandingService {
           const expired = await this.#expired(selected, checked.gateValidUntil); if (expired) return expired;
           await this.o.assertLanding(project.id, thread.id); await assertLease();
           const current = await this.o.settings(project.id);
-          if (digest(current) !== settingsDigest || current.riskyAreas !== settings.riskyAreas || selected.source !== 'owner' && !current.autoLand) { await this.#ask(await this.#save({ ...selected, source: 'guard', route: 'ask-owner', reason: 'The project settings changed before landing.' }), thread); return { kind: 'waiting', reason: 'Waiting for the owner’s landing decision.' }; }
+          if ((await this.#policy(project, thread, current)).digest !== settingsDigest || current.riskyAreas !== settings.riskyAreas || selected.source !== 'owner' && !current.autoLand) { await this.#ask(await this.#save({ ...selected, source: 'guard', route: 'ask-owner', reason: 'The project settings changed before landing.' }), thread); return { kind: 'waiting', reason: 'Waiting for the owner’s landing decision.' }; }
           const latest = await this.o.git.fetchPrivate(thread.cwd, thread.baseBranch, ref, signal);
-          if (latest !== base) { base = latest; const next = await this.#prepare(thread, current, base, signal); if (next.kind !== 'checked') return next; checked = next; }
+          if (latest !== base) { base = latest; const next = await this.#prepare(project, thread, current, base, signal); if (next.kind !== 'checked') return next; checked = next; }
           const path = this.o.homes.at('worktrees', project.id, 'landing', thread.id); this.o.homes.ensure('worktrees', project.id, 'landing');
           if (existsSync(path)) await this.o.git.run(thread.cwd, ['worktree', 'remove', '--force', path]);
           await this.o.git.run(thread.cwd, ['worktree', 'add', '--detach', path, base]);
@@ -367,7 +422,7 @@ export class ThreadLandingService {
         }
         return { kind: 'waiting', reason: 'Main moved three times during landing.' };
       });
-    } catch (error) { if (signal?.aborted) throw error; return { kind: 'waiting', reason: (error as Error).message === PUBLICATION_BUSY ? PUBLICATION_BUSY : failure(error, this.o.redactor) }; }
+    } catch (error) { if (signal?.aborted) throw error; if (error instanceof CheckEnvironmentBlocked) return this.waitForEnvironment(thread, failure(error, this.o.redactor)); return { kind: 'waiting', reason: (error as Error).message === PUBLICATION_BUSY ? PUBLICATION_BUSY : failure(error, this.o.redactor) }; }
   }
   async concluded(thread: Thread, routeId: string) {
     await this.#clearWait(thread, 'The checked change landed; its resource wait is resolved.');
@@ -383,15 +438,20 @@ export class ThreadLandingService {
     await this.#save({ ...route, backupDeletedAt: new Date(this.o.now()).toISOString() });
   }
   async sweep() {
-    for (let thread of this.o.store.all().filter(thread => thread.delivery === 'land')) {
+    for (let thread of this.o.store.all().filter(thread => thread.delivery === 'land' || thread.state === 'in-review')) {
       await this.#recoverLegacyWait(thread); thread = this.o.store.get(thread.id)!;
       const wait = this.o.store.local(thread.id).landingWait;
       if (wait && !thread.landing && thread.state === 'in-review') {
         await this.#ensureWaitQuestion(thread, wait);
-        if (!wait.blocker.managed && await portAcceptsConnections(wait.blocker.port)) continue;
-        await this.#clearWait(thread, wait.blocker.managed ? 'Fresh managed localhost ports will be allocated for the retry.' : `The blocking port ${wait.blocker.port} is now free; landing checks resume.`);
+        if (wait.blocker.kind === 'environment') {
+          if (!await this.#environmentReady(thread)) continue;
+        } else {
+          if (!wait.blocker.managed && await portAcceptsConnections(wait.blocker.port)) continue;
+          await this.#clearWait(thread, wait.blocker.managed ? 'Fresh managed localhost ports will be allocated for the retry.' : `The blocking port ${wait.blocker.port} is now free; landing checks resume.`);
+        }
         await this.o.retry(thread.projectId, thread.id).catch(() => undefined); continue;
       }
+      if (thread.delivery !== 'land') continue;
       const routes = (await this.records(thread.projectId, thread.id)).filter((row): row is LandingRoute => row.schema === 'landing-route-v1').sort((a, b) => b.at.localeCompare(a.at));
       const route = thread.landing ? routes.find(row => row.candidate?.commit === thread.landing!.commit) : routes[0];
       if (!route) {

@@ -230,7 +230,7 @@ export class Application {
         ...(this.hubMemory ? { hubMemory: this.hubMemory } : {}),
         sendCapture: async request => { if (this.member) await this.member.projectMemory(request); else if (request.operation === 'capture') this.projectWork.captures.accept(request.capture, request.text); },
         ...(options.deviceFacts ? { facts: options.deviceFacts } : {}),
-        projects: this.state.projects, hub: this.projectHub, environment: { credentials: async projectId => this.state.environment.credentials(projectId) },
+        projects: this.state.projects, hub: this.projectHub, environment: { credentials: async (projectId, purpose) => this.state.environment.credentials(projectId, purpose), summary: async (projectId, name, purpose) => this.state.environment.summary(projectId, name, purpose) },
         github: { credential: async (projectId) => this.state.github.credential(projectId), ...(options.githubFetch ? { fetch: options.githubFetch } : {}), ...(options.githubBaseUrl ? { baseUrl: options.githubBaseUrl } : {}) },
         accounts: this.accounts, runtimes: this.runtimes, accountRuns, ownership: this.conversations.ownership, leases: this.conversations.leases,
         outside: { assertIdle: async (project, path) => this.conversations.outside.assertIdle(project, path, (await this.configuration()).configuration['x-jevellan'].guards.externalActivityWindowMin) },

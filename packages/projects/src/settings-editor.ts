@@ -45,16 +45,20 @@ export function settingsEditorRequest(projectId: string, raw: unknown) {
   if (input.base.projectId !== projectId || draft.projectId !== projectId) throw Object.assign(new Error('The settings belong to another project.'), { status: 400 });
   const { schema: _schema, projectId: _project, revision: _revision, ...settings } = draft; void _schema; void _project; void _revision;
   return { base: input.base, statusOnly, presence: input.schema === 'project-settings-editor-save-v1' ? input.secretPresence : {},
+    checkPresence: input.schema === 'project-settings-editor-save-v1' ? input.checkSecretPresence : {},
     request: ProjectWorkSettingsRequestSchema.parse({ schema: 'project-work-settings-request-v1', revision: input.base.revision, settings,
       ...(input.clientRequestId ? { clientRequestId: input.clientRequestId } : {}) }) };
 }
 /** Plans contain names and fixed existing vault routes, never password values. Canonical settings may be newer after a replay. */
-export function settingsEditorSaved(base: ProjectWorkSettings, settingsView: z.infer<typeof ProjectWorkSettingsViewSchema>, presence: Record<string, boolean>, statusOnly: boolean) {
+export function settingsEditorSaved(base: ProjectWorkSettings, settingsView: z.infer<typeof ProjectWorkSettingsViewSchema>, presence: Record<string, boolean>, statusOnly: boolean, checkPresence: Record<string, boolean> = {}) {
   const saved = settingsView.settings, secretSteps: ProjectSettingsEditorSaved['secretSteps'] = [];
   const path = (name: string) => `/api/projects/${saved.projectId}/env-secrets/${encodeURIComponent(name)}`;
   if (!statusOnly) {
     for (const name of base.environment.secrets.filter(name => !saved.environment.secrets.includes(name))) secretSteps.push({ kind: 'delete', name, path: path(name), method: 'DELETE', body: { schema: 'empty-request-v1' } });
     for (const name of saved.environment.secrets) if (presence[name]) secretSteps.push({ kind: 'write', name, path: path(name), method: 'PUT', body: { schema: 'save-secret-v1' } });
+    const checkNames = saved.checkEnvironment?.secrets ?? [];
+    for (const name of base.checkEnvironment?.secrets ?? []) if (!checkNames.includes(name)) secretSteps.push({ kind: 'delete', purpose: 'check', name, path: path(name) + '?purpose=check', method: 'DELETE', body: { schema: 'empty-request-v1' } });
+    for (const name of checkNames) if (checkPresence[name]) secretSteps.push({ kind: 'write', purpose: 'check', name, path: path(name) + '?purpose=check', method: 'PUT', body: { schema: 'save-secret-v1' } });
   }
   return ProjectSettingsEditorSavedSchema.parse({ schema: 'project-settings-editor-saved-v1', settingsView, secretSteps,
     statusPatch: statusOnly ? { status: saved.status, revision: saved.revision } : null, backPath: `/projects/${saved.projectId}`, savedNotice });

@@ -24,6 +24,23 @@ test('accounts are added, budgeted and disabled through config; secrets list nam
   expect(secrets).toBe('Environment: 2 set, 0 not set.'); expect(secrets).not.toContain('fixture-secret-value');
 });
 
+test('owner secret commands select check scope explicitly and never fall back to a work secret', async () => {
+  f = await projectFixture();
+  expect(await text('config', { action: 'set_secret', name: 'SHARED_NAME', value: 'synthetic-work-only-value' }, 'cli')).toBe('Saved SHARED_NAME.');
+  expect(await text('config', { action: 'set_secret', purpose: 'check', name: 'SHARED_NAME', value: 'synthetic-check-only-value' }, 'cli')).toContain('Configure a separate check environment');
+  expect((await f.app.state.environment.summary('project', 'SHARED_NAME', 'check')).saved).toBe(false);
+  const base = (await f.app.projectWork.settingsView('project')).settings;
+  await f.app.projectHub.putSettings({ ...base, checkEnvironment: { schema: 'project-check-environment-v1', variables: [], secrets: [], copyFiles: [] } }, base.revision);
+  expect(await text('config', { action: 'set_secret', purpose: 'check', name: 'SHARED_NAME', value: 'synthetic-check-only-value' }, 'cli')).toBe('Saved SHARED_NAME.');
+  expect(await text('config', { action: 'secrets', purpose: 'check' })).toBe('Environment: 1 set, 0 not set.');
+  const view = await f.app.ownerTools.call('config', { schema: 'owner-tool-request-v1', caller: 'cli', args: { action: 'environment_editor', purpose: 'check' } });
+  expect(view.ok && view.data).toMatchObject({ purpose: 'check', fields: { enabled: true, secrets: ['SHARED_NAME'], variables: [] } });
+  expect(await text('config', { action: 'remove_secret', purpose: 'check', name: 'SHARED_NAME' })).toBe('Removed SHARED_NAME.');
+  expect((await f.app.state.environment.summary('project', 'SHARED_NAME', 'check')).saved).toBe(false);
+  expect((await f.app.state.environment.summary('project', 'SHARED_NAME')).saved).toBe(true);
+  expect((await f.app.state.environment.credentials('project')).SHARED_NAME === 'synthetic-work-only-value').toBe(true);
+});
+
 test('an interactive login captures the link, completes with the code and pushes login_done', async () => {
   f = await projectFixture({ menu: ATTACH_MENU, runtimes: { fake: new FakeRuntime(), claude: named('claude') } });
   await text('config', { action: 'add_account', label: 'bridge', runtime: 'claude' });

@@ -222,13 +222,15 @@ export async function loginCommand(args: string[], homes = new Homes()): Promise
   }
   console.error(`Account ${account} still is not logged in.`); return 1;
 }
-/** `jevellan secret set NAME [--project p]`: a project secret typed at a hidden prompt, saved in the vault. */
+/** A project secret typed at a hidden prompt, saved only in its selected vault scope. */
 export async function secretCommand(args: string[], homes = new Homes()): Promise<number> {
-  if (args[0] !== 'set' || !args[1]) { console.error('Usage: jevellan secret set NAME [--project p]'); return 1; }
+  if (args[0] !== 'set' || !args[1]) { console.error('Usage: jevellan secret set NAME [--project p] [--purpose work|check]'); return 1; }
   const index = args.indexOf('--project'); const project = index >= 0 ? args[index + 1] : undefined;
+  const purposeIndex = args.indexOf('--purpose'), purpose = purposeIndex < 0 ? undefined : args[purposeIndex + 1];
+  if (purposeIndex >= 0 && purpose !== 'work' && purpose !== 'check') { console.error('Purpose must be work or check.'); return 1; }
   const value = process.stdin.isTTY ? await hidden(`Value for ${args[1]}: `) : (await readStdin()).replace(/\n$/u, '');
   if (!value) { console.error('No value given; nothing was saved.'); return 1; }
-  const result = await callOwnerTool('config', { action: 'set_secret', name: args[1], value, ...(project ? { project } : {}) }, { homes, caller: 'cli' });
+  const result = await callOwnerTool('config', { action: 'set_secret', name: args[1], value, ...(project ? { project } : {}), ...(purpose ? { purpose } : {}) }, { homes, caller: 'cli' });
   if (result.ok) { console.log(result.text); return 0; }
   console.error(result.error.text); return 1;
 }

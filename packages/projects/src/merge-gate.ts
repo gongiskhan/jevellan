@@ -1,3 +1,4 @@
+import { CheckEnvironmentBlocked } from './check-environment.js';
 import {projectJevLessons} from '@jevellan/decisions';
 import { ProjectMergeWhyRequestSchema } from '@jevellan/core';
 import { routeWhyView } from './route-why.js';
@@ -134,14 +135,30 @@ export class ProjectMergeGate {
     if (!settings.pullRequestAutoMerge) return;
     if (route.route === 'ask-owner') { await this.#ask(route, thread); return; }
     if (route.route === 'test-then-merge') {
-      let run = route.verificationId ? (await this.o.hub.mergeDocument(route.verificationId))?.document : null;
-      if (!run || run.schema !== 'verification-run-v1') run = await this.o.verification.reserve(thread, commit, route.failures * 2 + route.verificationRetries + 1);
+      let run: Awaited<ReturnType<PullRequestVerification['reserve']>>;
+      try {
+        const referenced = route.verificationId ? (await this.o.hub.mergeDocument(route.verificationId))?.document : null;
+        // Recover a lost worker before selecting a receipt for a newer input profile.
+        run = referenced?.schema === 'verification-run-v1' && referenced.state === 'running' && referenced.threadId === thread.id
+          && referenced.projectId === thread.projectId && referenced.commit === commit ? referenced
+          : await this.o.verification.reserve(thread, commit, route.failures * 2 + route.verificationRetries + 1);
+      }
+      catch (error) {
+        if (!(error instanceof CheckEnvironmentBlocked)) throw error;
+        route = await this.#save({ ...route, state: 'waiting', reason: this.o.redactor.text(error.message).slice(0, 1200) });
+        await this.#event(route, 'verification-failed', `Verification waits for its check environment: ${error.message}`); return;
+      }
       if (!run || run.schema !== 'verification-run-v1') { await this.#ask(await this.#save({ ...route, route: 'ask-owner', source: 'guard', reason: 'No other provider or different model is eligible for verification.' }), thread); return; }
       if (route.verificationId !== run.id || route.state === 'waiting') route = await this.#save({ ...route, state: 'verifying', verificationId: run.id });
       const project = await this.o.project(thread.projectId);
       this.#landing(threadId, 'verifying');
       let completed: Awaited<ReturnType<PullRequestVerification['execute']>>;
       try { completed = await this.o.verification.execute(run, thread, project, this.o.repository(project), settings.setupCommand ?? ''); }
+      catch (error) {
+        if (!(error instanceof CheckEnvironmentBlocked)) throw error;
+        route = await this.#save({ ...route, state: 'waiting', reason: this.o.redactor.text(error.message).slice(0, 1200) });
+        await this.#event(route, 'verification-failed', `Verification waits for its check environment: ${error.message}`); return;
+      }
       finally { this.#landing(threadId, undefined, 'verifying'); }
       if (!completed) return;
       if (completed.state === 'failed') {

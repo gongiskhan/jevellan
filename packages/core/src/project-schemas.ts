@@ -18,7 +18,7 @@ import { DeliverySchema, LandingCheckSchema, LandingCheckPortsSchema, LandingBlo
 import { ProjectRelativePathSchema } from './project-parity-schemas.js';
 import { ProjectHealthChecksSchema } from './project-health-schemas.js';
 import { ThreadUsageTotalSchema } from './project-usage-schemas.js';
-import { PlacementConstraintsSchema, ProjectEnvironmentSchema, ProjectPlacementSettingsSchema, ProjectPrAutoFixSettingsSchema, ProjectSettingsChangeSchema } from './project-parity-schemas.js';
+import { PlacementConstraintsSchema, ProjectCheckEnvironmentSchema, ProjectEnvironmentSchema, ProjectPlacementSettingsSchema, ProjectPrAutoFixSettingsSchema, ProjectSettingsChangeSchema } from './project-parity-schemas.js';
 import { SessionCheckpointSettingsSchema, SessionCheckpointedSchema, SessionHistorySchema, SessionHistoryLinkSchema } from './checkpoint-schemas.js';
 import { SessionTurnCacheSchema, SessionCacheSummarySchema } from './session-cache-schemas.js';
 import { CoordinatorHandoffSchema, JournalConfigSchema, JournalDocumentSchema, JournalThreadSchema, ProjectJournalRecordSchema } from './project-journal-schemas.js';
@@ -77,7 +77,7 @@ export const ProjectWorkSettingsSchemaV4 = ProjectWorkSettingsSchemaV3.omit({ th
   environment: ProjectEnvironmentSchema.default({ variables: [], secrets: [], copyFiles: [] }),
   notifications: z.enum(['everything', 'standard', 'needs-you', 'off']).default('standard'),
 });
-export const ProjectWorkSettingsSchemaV5 = ProjectWorkSettingsSchemaV4.omit({ defaultIsolation: true, allowMainIsolation: true, autoMerge: true, requiredChecks: true }).extend({ schema: z.literal('project-work-settings-v5'), notifications: ProjectNotificationPreferencesSchema.default(() => structuredClone(defaultProjectNotifications)), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).default(70), healthChecks: ProjectHealthChecksSchema, deploy: ProjectDeploySettingsSchema.default({ mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }), delivery: DeliverySchema.default('land'), autoLand: z.boolean().default(false), pullRequestAutoMerge: z.boolean().default(false), landingChecks: z.array(LandingCheckSchema).max(30).default([]), landingPorts: LandingCheckPortsSchema.optional(), smokeCheck: z.string().max(2000).nullable().default(null), mergeCommitPaths: z.array(ProjectRelativePathSchema).max(20).default([]) });
+export const ProjectWorkSettingsSchemaV5 = ProjectWorkSettingsSchemaV4.omit({ defaultIsolation: true, allowMainIsolation: true, autoMerge: true, requiredChecks: true }).extend({ schema: z.literal('project-work-settings-v5'), notifications: ProjectNotificationPreferencesSchema.default(() => structuredClone(defaultProjectNotifications)), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).default(70), healthChecks: ProjectHealthChecksSchema, deploy: ProjectDeploySettingsSchema.default({ mode: 'approve', jobId: null, desktopJobId: null, suiteJobId: null }), delivery: DeliverySchema.default('land'), autoLand: z.boolean().default(false), pullRequestAutoMerge: z.boolean().default(false), landingChecks: z.array(LandingCheckSchema).max(30).default([]), landingPorts: LandingCheckPortsSchema.optional(), smokeCheck: z.string().max(2000).nullable().default(null), checkEnvironment: ProjectCheckEnvironmentSchema.nullable().optional(), mergeCommitPaths: z.array(ProjectRelativePathSchema).max(20).default([]) });
 export const ProjectWorkSettingsSchema = ProjectWorkSettingsSchemaV5.extend({ jevPolicy: ProjectJevPolicySchema.optional() });
 export type ProjectWorkSettings = z.infer<typeof ProjectWorkSettingsSchema>;
 export const StoredProjectWorkSettingsSchema = z.union([ProjectWorkSettingsSchemaV1, ProjectWorkSettingsSchemaV2, ProjectWorkSettingsSchemaV3, ProjectWorkSettingsSchemaV4, ProjectWorkSettingsSchemaV5.extend({ notifications: z.union([NotificationLevelSchema, ProjectNotificationPreferencesSchema]).default(() => structuredClone(defaultProjectNotifications)), pullRequestAutoMerge: z.boolean().optional(), coordinatorHandoffAtPercent: z.number().int().min(50).max(90).optional() })])
@@ -478,7 +478,7 @@ export const ProjectSessionEndSchema = z.strictObject({ schema: z.literal('proje
 export const ThreadStateChangeSchema = z.strictObject({ schema: z.literal('thread-state-v1'), from: ThreadStateSchema.nullable(),
   to: ThreadStateSchema, reason: z.string().optional(), changed: z.array(z.string()) });
 export const ThreadVerificationSchema = z.strictObject({ schema: z.literal('thread-verification-v1'), attempt: positive,
-  command: z.string().nullable(), status: z.enum(['passed', 'failed', 'skipped']), exitCode: z.number().int().optional(),
+  command: z.string().nullable(), requestedCommand: z.string().optional(), phase: z.enum(['setup', 'check']).optional(), status: z.enum(['passed', 'failed', 'skipped', 'blocked']), exitCode: z.number().int().optional(),
   timedOut: z.boolean(), commit: z.string(), outputRef: z.string().optional(), tail: z.string().max(4000) });
 export const ThreadPublicationSchema = z.strictObject({ schema: z.literal('thread-publication-v1'),
   result: z.enum(['pr-opened', 'pr-updated', 'main-published', 'landed', 'no-changes', 'branch-pushed', 'local-only', 'conflict', 'pr-state', 'cleanup', 'checkout-completed']),

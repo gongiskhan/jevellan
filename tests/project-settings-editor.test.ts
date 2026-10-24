@@ -40,6 +40,31 @@ test('general save commits settings first and returns a value-free ordered plan 
   const repeated = await f.request(path, 'POST', request); expect(repeated.status).toBe(200); expect((await repeated.json()).secretSteps).toEqual(result.secretSteps);
 });
 
+test('general settings save scopes check secret writes and deletions independently of work names', async () => {
+  const { f, base } = await prepare(), checkEnvironment = { schema: 'project-check-environment-v1' as const, variables: [], secrets: ['KEEP_SECRET', 'CHECK_OLD'], copyFiles: [] };
+  await f.app.projectHub.putSettings({ ...base, checkEnvironment }, base.revision);
+  await f.app.state.environment.put('project', 'KEEP_SECRET', 'synthetic-check-only-value', 'check');
+  await f.app.state.environment.put('project', 'CHECK_OLD', 'synthetic-check-only-value', 'check');
+  const current = (await f.app.projectWork.settingsView('project')).settings, draft = { ...current, checkEnvironment: { ...checkEnvironment, secrets: ['KEEP_SECRET', 'CHECK_NEW'] } };
+  const editor = await (await f.request(path)).json();
+  expect(editor.checkSecretStates.map((row: { name: string; purpose: string; saved: boolean }) => ({ name: row.name, purpose: row.purpose, saved: row.saved })))
+    .toEqual([{ name: 'KEEP_SECRET', purpose: 'check', saved: true }, { name: 'CHECK_OLD', purpose: 'check', saved: true }]);
+  const response = await f.request(path, 'POST', { schema: 'project-settings-editor-save-v1', clientRequestId: 'settings_check_save', base: current, draft,
+    secretPresence: {}, checkSecretPresence: { KEEP_SECRET: true, CHECK_NEW: true } });
+  expect(response.status).toBe(200); const result = await response.json();
+  expect(result.secretSteps.map((step: { kind: string; name: string; purpose: string }) => ({ kind: step.kind, name: step.name, purpose: step.purpose })))
+    .toEqual([{ kind: 'delete', name: 'CHECK_OLD', purpose: 'check' }, { kind: 'write', name: 'KEEP_SECRET', purpose: 'check' }, { kind: 'write', name: 'CHECK_NEW', purpose: 'check' }]);
+  for (const step of result.secretSteps) {
+    expect(step.path.endsWith('?purpose=check')).toBe(true); expect(step.body).not.toHaveProperty('value');
+    expect((await f.request(step.path, step.method, step.kind === 'write' ? { ...step.body, value: 'synthetic-updated-check-value' } : step.body)).status).toBe(200);
+  }
+  expect((await f.app.state.environment.summary('project', 'KEEP_SECRET')).saved).toBe(true);
+  const work = await f.app.state.environment.credentials('project'), check = await f.app.state.environment.credentials('project', 'check');
+  expect(work.KEEP_SECRET === 'owned fixture vault value').toBe(true); expect(check.KEEP_SECRET === 'synthetic-updated-check-value').toBe(true);
+  expect((await f.app.state.environment.summary('project', 'CHECK_OLD', 'check')).saved).toBe(false);
+  expect(JSON.stringify(result).includes('synthetic-check-only-value')).toBe(false);
+});
+
 test('general save keeps canonical CAS and first validation issue without changing settings on refusal', async () => {
   const { f, base } = await prepare(), draft = { ...base, riskyAreas: 'x'.repeat(2001) };
   const invalid = ProjectWorkSettingsSchema.safeParse(draft); expect(invalid.success).toBe(false);

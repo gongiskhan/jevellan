@@ -3,7 +3,7 @@ import { CleanupSettingsSaveSchema } from './cleanup-editor-schemas.js';
 import { GlobalThreadLimitSaveSchema } from './project-definition-schemas.js';
 import { RuntimeSettingsSaveSchema } from './runtime-settings-schemas.js';
 import { z } from 'zod';
-import { ProjectEnvNameSchema, ProjectEnvImportSourceSchema, ProjectEnvSecretSummarySchema, type ProjectEnvSecretSummary } from './project-parity-schemas.js';
+import { ProjectEnvironmentPurposeSchema, type ProjectEnvironmentPurpose, ProjectEnvNameSchema, ProjectEnvImportSourceSchema, ProjectEnvSecretSummarySchema, type ProjectEnvSecretSummary } from './project-parity-schemas.js';
 import { AddRiggingSchema, ConfigWriteSchema, CredentialInputSchema, GitHubTokenStateSchema, RiggingEntrySchema, RiggingViewSchema, SecretStateSchema, SecretSummarySchema, UpdateRiggingSchema, type GitHubTokenState } from './client-schemas.js';
 import { ProjectViewSchema } from './conversation-schemas.js';
 import { ConfigRevisionSchema, IdSchema, ProjectSchema, RiggingItemSchema, type ConfigRevision, type Project, type RiggingItem } from './schemas.js';
@@ -53,19 +53,19 @@ export interface SharedGitHub {
   credential(projectId?: string): Available<string | undefined>;
 }
 export interface SharedProjectEnvironment {
-  summary(projectId: string, name: string): Available<ProjectEnvSecretSummary>;
-  put(projectId: string, name: string, value: string): Available<ProjectEnvSecretSummary>;
-  remove(projectId: string, name: string): Available<ProjectEnvSecretSummary>;
-  copy(projectId: string, name: string, source: z.infer<typeof ProjectEnvImportSourceSchema>): Available<ProjectEnvSecretSummary>;
-  credentials(projectId: string): Available<Record<string, string>>;
+  summary(projectId: string, name: string, purpose?: ProjectEnvironmentPurpose): Available<ProjectEnvSecretSummary>;
+  put(projectId: string, name: string, value: string, purpose?: ProjectEnvironmentPurpose): Available<ProjectEnvSecretSummary>;
+  remove(projectId: string, name: string, purpose?: ProjectEnvironmentPurpose): Available<ProjectEnvSecretSummary>;
+  copy(projectId: string, name: string, source: z.infer<typeof ProjectEnvImportSourceSchema>, purpose?: ProjectEnvironmentPurpose): Available<ProjectEnvSecretSummary>;
+  credentials(projectId: string, purpose?: ProjectEnvironmentPurpose): Available<Record<string, string>>;
 }
 const base = { schema: z.literal('shared-state-request-v1') };
 const runtimes = z.array(IdSchema).max(64);
 export const SharedStateRequestSchema = z.discriminatedUnion('operation', [
-  z.strictObject({ ...base, operation: z.enum(['project-env-summary', 'project-env-remove']), projectId: IdSchema, name: ProjectEnvNameSchema }),
-  z.strictObject({ ...base, operation: z.literal('project-env-put'), projectId: IdSchema, name: ProjectEnvNameSchema, value: CredentialInputSchema }),
-  z.strictObject({ ...base, operation: z.literal('project-env-copy'), projectId: IdSchema, name: ProjectEnvNameSchema, source: ProjectEnvImportSourceSchema }),
-  z.strictObject({ ...base, operation: z.literal('project-env-credentials'), projectId: IdSchema }),
+  z.strictObject({ ...base, operation: z.enum(['project-env-summary', 'project-env-remove']), projectId: IdSchema, name: ProjectEnvNameSchema, purpose: ProjectEnvironmentPurposeSchema.optional() }),
+  z.strictObject({ ...base, operation: z.literal('project-env-put'), projectId: IdSchema, name: ProjectEnvNameSchema, value: CredentialInputSchema, purpose: ProjectEnvironmentPurposeSchema.optional() }),
+  z.strictObject({ ...base, operation: z.literal('project-env-copy'), projectId: IdSchema, name: ProjectEnvNameSchema, source: ProjectEnvImportSourceSchema, purpose: ProjectEnvironmentPurposeSchema.optional() }),
+  z.strictObject({ ...base, operation: z.literal('project-env-credentials'), projectId: IdSchema, purpose: ProjectEnvironmentPurposeSchema.optional() }),
   z.strictObject({ ...base, operation: z.enum(['configuration', 'configuration-history', 'projects', 'jev-summary', 'jev-credential']) }),
   z.strictObject({ ...base, operation: z.enum(['github-summary', 'github-credential']), projectId: IdSchema.optional() }),
   z.strictObject({ ...base, operation: z.literal('configuration-put'), input: ConfigWriteSchema }),
@@ -96,7 +96,7 @@ export const SharedStateResultSchema = z.discriminatedUnion('schema', [
   z.strictObject({ schema: z.literal('shared-jev-connection-v1'), view: JevConnectionViewSchema }),
   z.strictObject({ schema: z.literal('shared-jev-check-v1'), result: JevConnectionSchema }),
   z.strictObject({ schema: z.literal('shared-project-env-summary-v1'), summary: ProjectEnvSecretSummarySchema }),
-  z.strictObject({ schema: z.literal('shared-project-env-credentials-v1'), values: z.record(ProjectEnvNameSchema, CredentialInputSchema) }),
+  z.strictObject({ schema: z.literal('shared-project-env-credentials-v1'), purpose: ProjectEnvironmentPurposeSchema.optional(), values: z.record(ProjectEnvNameSchema, CredentialInputSchema) }),
   z.strictObject({ schema: z.literal('shared-configuration-v1'), revision: ConfigRevisionSchema }),
   z.strictObject({ schema: z.literal('shared-configuration-history-v1'), revisions: z.array(ConfigRevisionSchema) }),
   z.strictObject({ schema: z.literal('shared-project-v1'), project: ProjectViewSchema.nullable() }),

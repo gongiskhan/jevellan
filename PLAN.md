@@ -1,13 +1,19 @@
 # Projects loop implementation plan
 
+Current priority,24October:0.7.7 is published and normally installed on Madrid and Pro, with both doctors9/10 from stale account-status observations. Qualified installed CPU/history evidence and continuity are retained privately. The manager authorizes0.7.8 after check-environment affected backend and desktop UI gates. Separate check inputs now pass522 assertions in28 complete files, build/typecheck/lint, settings/thread/new-form desktop journeys and a nonblocking new-controls vision judgement. Weekly budget provenance, bounded256KiB managed instructions, repeated-verification stops and the fresh-start header are already committed source repairs and will ship together. The final combined affected gate passes866 assertions/64complete files, static/build and all five desktop cores with20matching images. Exact archives, publication and guarded cold-backed Madrid-before-Pro installation remain pending. No additional release, review, production or real task/goal/deploy action is authorized.
+
+After installation, record actual versions/doctor/Online/vault/continuity and live CPU/history. Verify the instruction-size repair is installed; do not duplicate it or force a real task retry. Remaining permission-reporting findings and worker churn continue independently. No account/login/bridge/tmux or native-home changes.
+
+Historical plans follow.
+
+### Superseded priority notes
+
 Current priority,24October: installed versions remain0.7.6,Madrid runtime explicitly unpublished; real CPU acceptance remains unmet. Fresh idle/one-tab V8 profiles/all30top15callpaths precede four failing-first repairs: pure POSTview queries avoid mutation leases,synchronous notification snapshots expire after awaits,waiting sweeps clone only candidates,and fresh nativeGit batches retain fallback/current Publish checks. All261assertions30complete affected files,static andboth desktop-light chats pass;4435unchanged exact-source files/six image digests verified. Next immutable candidate/strict0turn0heldexclusive/coldbackup/continuity and actual uninstrumented CPU/history. No release until that criterion passes; the required complete current-source backend follows before release preparation. Prior401-file backend3826passed/0failed/16explicit opt-ins NOTRUN predates these repairs. Other authorized findings remain next; no extra review,real task/goal/deploy action,owner authentication or native-home writes.
 
 Current authorized continuation, 23 October after 0.7.4: repair remaining waiting/landing continuity, check-port isolation, repeated failure stops, pending fresh starts and project-environment behavior, then release 0.7.5 through the established gate and guarded Madrid-before-Pro procedure. Phases A/B are verified: unanswered-question guards, closure reasons, durable resource waits/rechecks and explicit check-port bindings. Repeated-failure stops, pending fresh starts and the complete release gate remain in progress. Owner-only items 13/15 stay excluded. Reclaim only proven own completed copies older than 0.7.4 and own cold backups older than the latest two before release. No new hard clock, review or production action. Earlier no-further-release statements below are superseded only for the explicitly authorized 0.7.5.
 
 
 Current plan, 23 October 2026: the ordered 310-row UI-to-engine migration, intake, placement and active project prompt work are implemented and released through 0.7.3/0.7.4. Both devices now run 0.7.4 with doctor 10/10, strict cold backups and verified continuity. The 14 recorded noncore repairs are complete; remaining skipped/live coverage and follow-up findings stay planned in roadmap.json. See [the current run log](docs/acceptance/bridge-codex-2026-10/README.md). Earlier clocks, STOPs and pending releases below are historical; no additional release or review is authorized by this plan.
-
-Historical plans follow.
 
 ## Coordinator hang, fixes on moved heads and 0.5.1, October 2026
 

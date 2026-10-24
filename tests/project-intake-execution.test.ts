@@ -1,5 +1,5 @@
 import {afterEach,expect,test} from 'vitest';
-import {writeFileSync} from 'node:fs';
+import {existsSync,readFileSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {GitHubClient} from '../packages/core/dist/index.js';
 import {projectFixture,type ProjectFixture} from './helpers/project-fixture.js';
@@ -23,4 +23,21 @@ test('intake reports failing checks and their names while leaving every external
 });
 test('an unchanged-head intake concludes its task while retaining a skipped run',async()=>{
  f=await projectFixture();await pull();const job=await setup();await run(job.id,'idle_initial_check');await f.app.projectWork.idle();const cached=await run(job.id,'idle_cached_check');await f.app.projectWork.idle();expect(cached.conclusion).toBe('skipped');expect(cached.intake?.skipped).toBe(1);expect(cached.intake?.pulls).toEqual([]);expect((await f.app.projectHub.task(cached.taskId))!.document.state).toBe('done');expect(f.fake.runs).toHaveLength(0);
+});
+
+test('intake blocks undeclared work inputs before any configured check command runs',async()=>{
+ f=await projectFixture();await pull();const probe=join(f.root,'intake-input-probe.json'),script=`require('fs').writeFileSync(${JSON.stringify(probe)},JSON.stringify({workInput:Boolean(process.env.WORK_INPUT)}))`,command="node -e '"+script.replaceAll("'","'\\''")+"'",job=await setup(command),base=(await f.app.projectWork.settingsView('project')).settings;
+ await f.app.projectHub.putSettings({...base,environment:{variables:[{name:'WORK_INPUT',value:'synthetic-work-only-value'}],secrets:[],copyFiles:[]}},base.revision);
+ const checked=await run(job.id,'intake_environment_boundary');
+ expect(existsSync(probe)).toBe(false);expect(checked.conclusion).toBe('failed');expect(checked.intake?.errors).toEqual([expect.objectContaining({reason:expect.stringContaining('check environment')})]);expect(f.fake.runs).toHaveLength(0);
+});
+
+test.each(['profile','file','secret'] as const)('intake reruns an unchanged head when check inputs change (%s)',async kind=>{
+ f=await projectFixture();await pull();const counter=join(f.root,'intake-check-count.json'),script=`const f=require('fs'),p=${JSON.stringify(counter)};f.writeFileSync(p,JSON.stringify((f.existsSync(p)?JSON.parse(f.readFileSync(p,'utf8')):0)+1))`,command="node -e '"+script.replaceAll("'","'\\''")+"'",job=await setup(command),base=(await f.app.projectWork.settingsView('project')).settings;
+ await f.app.projectHub.putSettings({...base,checkEnvironment:{schema:'project-check-environment-v1',variables:kind==='profile'?[{name:'CHECK_VALUE',value:'first'}]:[],secrets:kind==='secret'?['CHECK_VALUE']:[],copyFiles:kind==='file'?[{source:'check-fixture.env',target:'.env.check'}]:[]}},base.revision);
+ if(kind==='file')writeFileSync(join(f.checkout,'check-fixture.env'),'first\n');if(kind==='secret')await f.app.state.environment.put('project','CHECK_VALUE','synthetic-check-first','check');
+ expect((await run(job.id,'intake_input_first')).conclusion).toBe('passed');expect(JSON.parse(readFileSync(counter,'utf8'))).toBe(1);
+ if(kind==='profile'){const current=(await f.app.projectWork.settingsView('project')).settings;await f.app.projectHub.putSettings({...current,checkEnvironment:{schema:'project-check-environment-v1',variables:[{name:'CHECK_VALUE',value:'second'}],secrets:[],copyFiles:[]}},current.revision);}if(kind==='file')writeFileSync(join(f.checkout,'check-fixture.env'),'second\n');if(kind==='secret')await f.app.state.environment.put('project','CHECK_VALUE','synthetic-check-second','check');
+ await run(job.id,'intake_input_changed');expect(JSON.parse(readFileSync(counter,'utf8'))).toBe(2);
+ const unchanged=await run(job.id,'intake_input_unchanged');expect(unchanged.conclusion).toBe('skipped');expect(JSON.parse(readFileSync(counter,'utf8'))).toBe(2);expect(f.fake.runs).toHaveLength(0);
 });

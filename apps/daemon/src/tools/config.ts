@@ -221,8 +221,9 @@ export const config: OwnerHandler = async (context) => {
     }
     case 'settings_editor': {
       const { app, project } = context, base = await app.projectWork.settingsEditor(project.id);
-      const [routines, secretStates, rigging] = await Promise.all([routineView(context), Promise.all(base.settingsView.settings.environment.secrets.map(async name => environmentSecretSummary(await app.state.environment.summary(project.id, name)))), app.rigging.list()]);
-      return { text: 'Project settings.', data: ProjectSettingsEditorSchema.parse({ ...base, schema: 'project-settings-editor-v1', routines, secretStates, rigging: settingsEditorRigging(project.id, rigging), notificationInfo: projectNotificationInfo() }) };
+      const [routines, secretStates, checkSecretStates, rigging] = await Promise.all([routineView(context), Promise.all(base.settingsView.settings.environment.secrets.map(async name => environmentSecretSummary(await app.state.environment.summary(project.id, name)))),
+        Promise.all((base.settingsView.settings.checkEnvironment?.secrets ?? []).map(async name => environmentSecretSummary(await app.state.environment.summary(project.id, name, 'check')))), app.rigging.list()]);
+      return { text: 'Project settings.', data: ProjectSettingsEditorSchema.parse({ ...base, schema: 'project-settings-editor-v1', routines, secretStates, checkSecretStates, rigging: settingsEditorRigging(project.id, rigging), notificationInfo: projectNotificationInfo() }) };
     }
     case 'project_setup': return { text: 'Project setup applied.', data: await context.app.projectWork.setupEkoaCode(context.project.id, args.request) };
     case 'settings_save': {
@@ -230,9 +231,9 @@ export const config: OwnerHandler = async (context) => {
       return { text: data.secretSteps.length ? `Project settings saved; ${data.secretSteps.length} secret changes remain.` : data.savedNotice, data };
     }
     case 'remove_secret': {
-      const name = String(args.name); await context.app.state.environment.remove(context.project.id, name); return { text: `Removed ${name}.` };
+      const name = String(args.name); await context.app.state.environment.remove(context.project.id, name, args.purpose === 'check' ? 'check' : 'work'); return { text: `Removed ${name}.` };
     }
-    case 'environment_editor': case 'environment_preview': return { text: 'Project environment.', data: await context.app.projectWork.environmentEditor(context.project.id, context.action === 'environment_preview' ? args.request : undefined) };
+    case 'environment_editor': case 'environment_preview': return { text: 'Project environment.', data: await context.app.projectWork.environmentEditor(context.project.id, context.action === 'environment_preview' ? args.request : undefined, args.purpose === 'check' ? 'check' : 'work') };
     case 'environment_save': return { text: 'Project environment settings saved.', data: await context.app.projectWork.saveEnvironmentEditor(context.project.id, args.request) };
     case 'placement_editor': case 'placement_preview': return { text: 'Project placement choices.', data: await context.app.projectWork.placementEditor(context.project.id, context.action === 'placement_preview' ? args.request : undefined) };
     case 'placement_save': return { text: 'Project placement settings saved.', data: await context.app.projectWork.savePlacementEditor(context.project.id, args.request) };
@@ -271,20 +272,25 @@ export const config: OwnerHandler = async (context) => {
       return { text: `Changed ${section}.${key} from ${result.old} to ${result.new}.${result.consequence ? ` ${result.consequence}` : ''}` };
     }
     case 'secrets': {
-      const names = (await context.app.projectWork.view(context.project.id)).settings.environment.secrets;
-      const states = await Promise.all(names.map(async name => ({ name, saved: (await context.app.state.environment.summary(context.project.id, name)).saved })));
+      const purpose = args.purpose === 'check' ? 'check' : 'work', settings = (await context.app.projectWork.view(context.project.id)).settings;
+      const names = purpose === 'check' ? settings.checkEnvironment?.secrets ?? [] : settings.environment.secrets;
+      const states = await Promise.all(names.map(async name => ({ name, saved: (await context.app.state.environment.summary(context.project.id, name, purpose)).saved })));
       const missing = states.filter(row => !row.saved).map(row => row.name);
       return { text: `Environment: ${states.length - missing.length} set, ${missing.length} not set${missing.length ? `: ${missing.join(', ')}` : ''}.` };
     }
     case 'set_secret': {
       const name = String(args.name); const view = await context.app.projectWork.settingsView(context.project.id);
-      if (!view.settings.environment.secrets.includes(name)) {
-        if (view.settings.environment.variables.some(variable => variable.name === name)) throw new OwnerRefusal(`${name} is a plain variable in this project. Use a new name for a secret.`, 'invalid_name');
+      const purpose = args.purpose === 'check' ? 'check' : 'work';
+      const environment = purpose === 'check' ? view.settings.checkEnvironment : view.settings.environment;
+      if (purpose === 'check' && !environment) throw new OwnerRefusal('Configure a separate check environment in Project settings → Environment first.', 'invalid_value');
+      if (!environment!.secrets.includes(name)) {
+        if (environment!.variables.some(variable => variable.name === name)) throw new OwnerRefusal(`${name} is a plain variable in this environment. Use a new name for a secret.`, 'invalid_name');
         await context.app.projectWork.putSettings(context.project.id, { schema: 'project-work-settings-request-v1', revision: view.settings.revision,
-          settings: { ...withoutIdentity(view.settings), environment: { ...view.settings.environment, secrets: [...view.settings.environment.secrets, name] } } } as never);
+          settings: { ...withoutIdentity(view.settings), ...(purpose === 'check' ? { checkEnvironment: { ...view.settings.checkEnvironment!, secrets: [...environment!.secrets, name] } }
+            : { environment: { ...view.settings.environment, secrets: [...environment!.secrets, name] } }) } } as never);
       }
-      await context.app.state.environment.put(context.project.id, name, String(args.value));
-      return { text: context.request.caller === 'cli' ? `Saved ${name}.` : `Saved ${name}. Its value is now in this conversation's transcript; the terminal prompt (jevellan secret set ${name}) keeps it out.` };
+      await context.app.state.environment.put(context.project.id, name, String(args.value), purpose);
+      return { text: context.request.caller === 'cli' ? `Saved ${name}.` : `Saved ${name}. Its value is now in this conversation's transcript; the terminal prompt (jevellan secret set ${name}${purpose === 'check' ? ' --purpose check' : ''}) keeps it out.` };
     }
     case 'add_account': {
       const label = String(args.label); const runtime = String(args.runtime);

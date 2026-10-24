@@ -1,3 +1,4 @@
+import type { ProjectEnvSecretSummary } from '@jevellan/core';
 import {ProjectIntake} from './intake.js';
 import {ProjectIntakeLanding} from './intake-landing.js';
 import {ProjectWorkTaskSchema,stableJson,type IntakeAction,type IntakeCheck,type PublicationLeaseService} from '@jevellan/core';
@@ -25,7 +26,7 @@ export class ProjectJobRunner {
   readonly #running = new Map<string, { id: string; controller: AbortController; promise: Promise<void> }>();
   readonly #starting = new Set<string>();
   #closed = false;
-  constructor(readonly o: { leases?:PublicationLeaseService|undefined;assertIntakeLanding?(projectId:string):Promise<void>;library?: import('@jevellan/core').ProjectLibrary | undefined; beforeDeployment?(run: ProjectJobRun): Promise<void>; projectEnvironment?(projectId: string): Promise<Record<string, string>>; homes: Homes; hub: ProjectHub; tasks: ProjectTasks; git: ThreadGit; github: GitHubAccess; deviceId: string; deviceName: string; redactor: SecretRedactor;
+  constructor(readonly o: { leases?:PublicationLeaseService|undefined;assertIntakeLanding?(projectId:string):Promise<void>;library?: import('@jevellan/core').ProjectLibrary | undefined; beforeDeployment?(run: ProjectJobRun): Promise<void>; projectEnvironment?(projectId: string): Promise<Record<string, string>>; checkCredentials?(projectId: string): Promise<Record<string, string>>; checkSecretSummary?(projectId: string,name: string): Promise<ProjectEnvSecretSummary>; homes: Homes; hub: ProjectHub; tasks: ProjectTasks; git: ThreadGit; github: GitHubAccess; deviceId: string; deviceName: string; redactor: SecretRedactor;
     roster?(): Promise<{ devices: DeviceView[] }>; relay?(projectId: string, deviceId: string, runId: string): Promise<void>;
     now(): number; settings(projectId: string): Promise<ProjectWorkSettings>; project(projectId: string): Promise<Project>; baseBranch(repo: string): Promise<string>; event(projectId: string, event: CoordinatorEvent): Promise<void>;
     windowOpened(projectId: string): Promise<string | undefined>; day(projectId: string): Promise<string>; dayStart(projectId: string, day: string): Promise<number>; changed(): void; facts?(): DeviceFacts }) {this.intake=new ProjectIntake(o);this.intakeLanding=new ProjectIntakeLanding(o);}

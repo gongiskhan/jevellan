@@ -15,6 +15,8 @@ import { coldCheckpoint, checkpointRun, sessionHash } from './checkpoints.js';
 
 export type GitIdentity = { name: string; email: string };
 export type LaunchRequest = {
+  /** Explicit check inputs for a verification owner; the work environment is never its fallback. */
+  verificationEnvironment?: Record<string, string>;
   owner: TurnInput['owner']; turn: number; runtime: string; modelId: string; model: string;
   /** Menu label of the model, for the refusal text. */
   modelLabel: string;
@@ -232,7 +234,7 @@ export class TurnLauncher {
         schema: 'turn-input-v1', owner: request.owner, turn: request.turn, cwd: request.cwd, permissions: request.permissions, model: request.model, effort: request.effort,
         account: resolved, systemAppend: (libraryDirectory ? `${libraryInstructions(libraryDirectory, request.owner.kind === 'thread')}\n\n` : '') + (journal ? `- The project journal at ${journal} has one file per thread, per day and per night, listed in INDEX.md. Read it when you need to know what other work did.\n\n` : '') + request.systemAppend, prompt, ...(resumed ? { resume: { sessionId: request.resume } } : {}),
         ...((journal || libraryDirectory) ? { readOnlyDirectories: [...(journal ? [journal] : []), ...(libraryDirectory ? [libraryDirectory] : [])] } : {}),
-        launch: { ...(['thread', 'verification'].includes(request.owner.kind) ? { projectEnv: projectEnvironment(await this.#o.projectEnvironment?.(request.owner.projectId) ?? {}) } : {}), useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env: { ...env, ...gitEnv }, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
+        launch: { ...(request.owner.kind === 'thread' ? { projectEnv: projectEnvironment(await this.#o.projectEnvironment?.(request.owner.projectId) ?? {}) } : request.owner.kind === 'verification' ? { projectEnv: projectEnvironment(request.verificationEnvironment ?? {}) } : {}), useOwnSetup: await this.#o.useOwnSetup?.(request.runtime) ?? true, env: { ...env, ...gitEnv }, mcpServers: { jevellan: { command: process.execPath, args: [join(applicationRoot(), 'bin', 'jevellan.mjs'), 'mcp-bridge'], env } } },
         safetyProfile: request.safetyProfile, timeoutMs: request.timeoutMs, compaction: { thresholdPercent: percent, ...(contextWindow ? { contextWindow } : {}) },
         ...(['thread', 'coordinator'].includes(request.owner.kind) ? { privatePaths: [this.#o.homes.at('project-work', request.owner.projectId, 'job-cache'), this.#o.homes.at('project-work', request.owner.projectId, 'job-workspaces')] } : {}),
         ...(request.owner.kind === 'thread' && request.isolation === 'worktree' ? { protectedPaths: await this.#o.protectedPaths?.() ?? [] } : {}),

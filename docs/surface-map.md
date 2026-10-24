@@ -723,3 +723,16 @@ Managed runtime compatibility (Decision777): complete bounded 256 KiB root instr
 Coordinator/thread behavior (Decision779): engine context notices preserve pending fresh starts until actual new-session launch. Durable verification failure identity stops repeated identical failures and preserves work, while distinct failures retain existing repair limits. All184 assertions/20 complete affected files,static/build and two desktop-light chat main actions pass; six image digests and4435 tracked source hashes match. No component row or live acceptance disposition advances. Source-only; installed077 unchanged.
 
 Budget status (Decision780): the engine supplies weekly identity, independent five-hour values, provenance and reset/unknown state; CLI/MCP/status line use the shared model. Legacy documents retain an explicit unreported-window label. All336 assertions/16 complete files,static/build and first desktop-light overview main action pass; four retained image digests/4435 tracked files match. Existing-screen vision not run. No component disposition or live acceptance advances; source-only.
+
+
+### Check-environment isolation — 24 October
+
+Decision781 extends the Environment area with separate Work environment and Check environment groups. Labels, bounds, raw-field normalization, optional profile enablement, file mapping validation, purpose selection and value-free vault-save plans are engine-owned in `environment-editor` and `settings-editor`. The browser retains draft text, password fields and request cancellation. Existing environment rows545–548 refer to work inputs; checks use the versioned optional `checkEnvironment` profile and explicit check vault scope. CLI/MCP and member routes share the same writers.
+
+| Component | Engine and shared action | Evidence |
+| --- | --- | --- |
+| ProjectEnvironmentFields, work and check groups | ProjectWork.environmentEditor; config environment_editor/preview/save; scoped env-secrets routes | 522 passing assertions in28 complete affected files; desktop settings save, thread action and ENV1 form pass with10 retained image digests. Simulated. |
+| Project settings Save | settingsEditorRequest/Saved; separate value-free checkSecretPresence and check-scoped secretSteps | Same-name work/check secret, member save, disable and path validation tests pass; no real project setting is changed. |
+| Publication, landing, alternate-provider verification and intake | Explicit check snapshots, detached candidate inputs, current-input receipt/cache identity and durable environment waits | Failing-first and single repeat precede fixes; all28 affected files pass. Live production/input acceptance is not run. |
+
+One nonblocking desktop vision judgement on the retained new-controls image finds distinct groups, fitting rows and a masked password. The full-page preview is scaled; behavioral assertions establish labels and saved values. Dedicated account/remote live checks remain blocked or not run.

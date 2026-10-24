@@ -78,12 +78,16 @@ test('concurrent mirror downloads keep every file and directory read-only', asyn
   const result = await second; expect(readFileSync(result.localPath, 'utf8')).toBe('two'); expect(statSync(result.localPath).mode & 0o222).toBe(0);
 });
 
-test('new thread setup, native turn and publication receive vault environment; copied files stay private', async () => {
+test('thread setup keeps work inputs while publication uses separate check inputs and private copies', async () => {
   const f = fixture = await projectFixture({ testCommand: 'test "$TZ" = UTC && test -n "$PRIVATE_VALUE"' });
   const settings = await f.app.projectWork.admission.settings('project'), secret = 'thread environment fixture secret';
   writeFileSync(join(f.checkout, '.env.fixture'), 'local-only');
   await f.app.projectHub.putSettings({ ...settings, setupCommand: 'test "$TZ" = UTC && test -f .env.fixture && printf "%s" "$PRIVATE_VALUE"', environment: { variables: [{ name: 'TZ', value: 'UTC' }], secrets: ['PRIVATE_VALUE'], copyFiles: ['.env.fixture'] } }, settings.revision);
   await f.app.state.environment.put('project', 'PRIVATE_VALUE', secret);
+  writeFileSync(join(f.checkout, '.check-input.fixture'), 'check-only');
+  const base = (await f.app.projectWork.settingsView('project')).settings;
+  await f.app.projectHub.putSettings({ ...base, checkEnvironment: { schema: 'project-check-environment-v1', variables: [{ name: 'TZ', value: 'UTC' }], secrets: ['PRIVATE_VALUE'], copyFiles: [{ source: '.check-input.fixture', target: '.env.fixture' }] } }, base.revision);
+  await f.app.state.environment.put('project', 'PRIVATE_VALUE', 'separate verification fixture secret', 'check');
   f.fake.enqueueTurn(async turn => {
     expect(turn.input.launch.projectEnv).toEqual({ TZ: 'UTC', PRIVATE_VALUE: secret });
     expect(turn.input.systemAppend).toContain('never commit them: .env.fixture.');
@@ -97,6 +101,8 @@ test('new thread setup, native turn and publication receive vault environment; c
   expect(f.local(thread.id).copiedFiles).toEqual(['.env.fixture']); expect(thread.lastReport?.summary).not.toContain(secret);
   expect(f.git(thread.cwd, 'diff', '--name-only', `${thread.baseCommit}..HEAD`)).toBe('feature.txt');
   expect(f.ledgerText(thread.id)).not.toContain(secret);
+  expect(f.ledgerText(thread.id)).not.toContain('separate verification fixture secret');
+  expect(f.app.projectWork.ledgers.thread('project', thread.id).events().filter(event => event.type === 'thread-verification').at(-1)?.data).toMatchObject({ status: 'passed' });
 });
 
 test('a member thread receives attachment lines verbatim, reads the mirror and adds an output on the hub', async () => {

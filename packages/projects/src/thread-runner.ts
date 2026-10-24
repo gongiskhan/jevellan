@@ -146,7 +146,7 @@ export type ThreadRunnerContext = {
   unavailableAccount?(thread: Thread): Promise<AccountWait | undefined>;
   reconsider?(thread: Thread, reason: 'model-unavailable' | 'escalation', trouble: string, signal: AbortSignal, minimumEffort?: Effort): Promise<PlacementResult>;
   publication: Pick<ThreadPublication, 'publishWorktree'> & Partial<Pick<ThreadPublication, 'backupWorktree'>>;
-  landing?: Pick<ThreadLandingService, 'publish' | 'concluded'>;
+  landing?: Pick<ThreadLandingService, 'publish' | 'concluded'> & Partial<Pick<ThreadLandingService, 'waitForEnvironment' | 'environmentAvailable'>>;
   launcher: Pick<TurnLauncher, 'launch'>;
   accounts: Pick<AccountService, 'recordUsage' | 'recordError'>;
   admission: Pick<Admission, 'admit'>;
@@ -810,6 +810,7 @@ export class ThreadRunner {
         labels: { runtimeName: this.#c.runtimeName(thread.placement.runtime), modelLabel: this.#c.store.labels(thread.id).modelLabel }, signal,
         onPushed: commit => { this.#c.store.updateLocal(thread.id, current => ({ ...current, pushedCommit: commit })); } });
       const outcome = result.outcome;
+      if (result.verified && result.verified.status !== 'blocked') await this.#c.landing?.environmentAvailable?.(thread);
       if (outcome.kind !== 'verification-failed') this.#clearVerificationFailure();
       // A passed (or skipped) verification resets the counter (brief 8.4 step 3).
       const attempts = (current: Thread) => result.verified && result.verified.status !== 'failed' ? 0 : current.verificationAttempts;
@@ -820,6 +821,11 @@ export class ThreadRunner {
             { type: 'thread-publication', data: { schema: 'thread-publication-v1', result: 'no-changes' } });
           await this.#tell(projectId, { kind: 'thread-published', threadId, result: 'no-changes' });
           return this.#afterCompletion();
+        }
+        case 'verification-blocked': {
+          await this.#c.landing?.waitForEnvironment?.(thread, outcome.verification.tail);
+          this.#set(current => ({ ...withState(current, 'in-review', outcome.verification.tail.slice(0, 400)), verificationAttempts: 0 }));
+          return this.#afterStep();
         }
         case 'verification-failed': {
           const count = thread.verificationAttempts + 1; const verification = outcome.verification;

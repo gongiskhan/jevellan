@@ -1,3 +1,4 @@
+import { ProjectEnvironmentPurposeSchema } from '@jevellan/core';
 import {ownerJevControl} from './jev-control-api.js';
 import {readImproverEditor,saveImproverSettings} from './improver-editor.js';
 import {readRiggingEditor,localRiggingAction,localRiggingDetail} from './rigging-editor.js';
@@ -368,14 +369,14 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     const environmentImport = /^\/api\/projects\/([A-Za-z0-9_-]+)\/env-secrets\/([A-Z_][A-Z0-9_]{0,63})\/import$/u.exec(path);
     if (environmentImport && method === 'POST') {
       const input = ProjectEnvImportRequestSchema.parse(await body(request));
-      send(await app.state.environment.copy(IdSchema.parse(environmentImport[1]), ProjectEnvNameSchema.parse(environmentImport[2]), input.source)); return;
+      send(await app.state.environment.copy(IdSchema.parse(environmentImport[1]), ProjectEnvNameSchema.parse(environmentImport[2]), input.source, ProjectEnvironmentPurposeSchema.parse(url.searchParams.get('purpose') ?? 'work'))); return;
     }
     const environmentSecret = /^\/api\/projects\/([A-Za-z0-9_-]+)\/env-secrets\/([A-Z_][A-Z0-9_]{0,63})$/u.exec(path);
     if (environmentSecret) {
-      const projectId = IdSchema.parse(environmentSecret[1]), name = ProjectEnvNameSchema.parse(environmentSecret[2]); retryable = true;
-      if (method === 'GET') { send(environmentSecretSummary(await app.state.environment.summary(projectId, name))); return; }
-      if (method === 'PUT') { const input = SecretInputSchema.parse(await body(request)); send(environmentSecretSummary(await app.state.environment.put(projectId, name, input.value))); return; }
-      if (method === 'DELETE') { EmptySchema.parse(await body(request)); send(environmentSecretSummary(await app.state.environment.remove(projectId, name))); return; }
+      const projectId = IdSchema.parse(environmentSecret[1]), name = ProjectEnvNameSchema.parse(environmentSecret[2]), purpose = ProjectEnvironmentPurposeSchema.parse(url.searchParams.get('purpose') ?? 'work'); retryable = true;
+      if (method === 'GET') { send(environmentSecretSummary(await app.state.environment.summary(projectId, name, purpose))); return; }
+      if (method === 'PUT') { const input = SecretInputSchema.parse(await body(request)); send(environmentSecretSummary(await app.state.environment.put(projectId, name, input.value, purpose))); return; }
+      if (method === 'DELETE') { EmptySchema.parse(await body(request)); send(environmentSecretSummary(await app.state.environment.remove(projectId, name, purpose))); return; }
     }
     if (path === '/hub/secrets/github') {
       const projectId = url.searchParams.has('projectId') ? IdSchema.parse(url.searchParams.get('projectId')) : undefined;

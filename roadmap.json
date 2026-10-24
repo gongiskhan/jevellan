@@ -1172,7 +1172,7 @@
   {
     "id": "manager-followups-074",
     "title": "Follow-up findings and remaining live evidence",
-    "why": "Decisions779-780: pending fresh starts, repeated identical verification stops and explicit weekly/five-hour budget provenance are verified source-only. Budget336 assertions/16 complete files/static/build/desktop overview PASS. Waiting/landing visibility and durable reasons already landed. Explicit nonproduction check environment, tool failure explanations and conditional dependency wakeup remain planned/unverified. Actual private account readings not rechecked. No further release or review authorized.",
+    "why": "Decisions779–781: durable waiting/landing visibility, repeated identical verification stops, pending fresh starts and weekly/five-hour budget provenance are verified source. Check-environment isolation now passes522 assertions/28 complete files, static/build and settings/thread/new-form desktop journeys with10 matching images. 078 is authorized and in preparation; existing devices stay077 until actual guarded installation. Tool failure explanations and conditional dependency wakeup remain unverified/planned. No real task/config/auth/deploy change or extra review.",
     "status": "in-progress"
   },
   {
@@ -1228,5 +1228,17 @@
     "title": "Show weekly budgets with independent window and source evidence",
     "why": "Decision780: three failing-first cases and their sole repeats precede correction;336 complete assertions/16files,static/build/desktop overview pass. One observation per account; reset/missing values stay unknown, legacy window unreported. Source-only, actual account readings not probed;0.7.7 installed unchanged.",
     "status": "complete-with-blockers"
+  },
+  {
+    "id": "project-check-environment",
+    "title": "Separate verification and landing inputs from work inputs",
+    "why": "Decision781: versioned optional check profile and isolated vault/API/member/CLI/editor scope, detached candidates, mapped check files, input-bound receipts/caches and durable automatic environment waits. Canonical failing-first/single-repeat evidence;522/28complete assertions, static/build and three desktop journeys pass with10matching images and one nonblocking controls vision judgement. Source verified; publication/install in078 still pending. No production credential reuse or real project-setting change.",
+    "status": "complete-with-blockers"
+  },
+  {
+    "id": "release-078",
+    "title": "Release isolated check inputs and weekly budget provenance as0.7.8",
+    "why": "Manager24October11:45Lisbon authorizes078 after affected/UI gate. Source/version prepared;866/64complete assertions, build/typecheck/lint and five first-attempt desktop cores PASS with20matching images; ENV1 separately PASS. Full unfiltered backend not run on078 under the scoped authorization. Exact archives/nativePTY/scans/publication and fresh strict cold-backed Madrid-before-Pro installation remain pending. Both installed077/doctor9 remain separate.",
+    "status": "in-progress"
   }
 ]

@@ -7,6 +7,81 @@ let fixture: ProjectFixture | undefined;
 afterEach(async () => { await fixture?.close(); fixture = undefined; });
 const path = '/api/projects/project/config/environment-editor';
 
+test('the check environment editor starts empty instead of copying work inputs', async () => {
+  const f = fixture = await projectFixture(), base = (await f.app.projectWork.settingsView('project')).settings;
+  await f.app.projectHub.putSettings({ ...base, environment: { variables: [{ name: 'WORK_INPUT', value: 'synthetic-work-only-value' }], secrets: ['WORK_CREDENTIAL'], copyFiles: ['.env.work'] } }, base.revision);
+  const response = await f.request(path + '?purpose=check'); expect(response.status).toBe(200);
+  const view = await response.json();
+  expect(view.fields.variables).toEqual([]);
+  expect(view.fields.secrets).toEqual([]);
+  expect(view.fields.copyFiles).toBe('');
+  expect(view).toMatchObject({ purpose: 'check', fields: { enabled: false }, patch: { checkEnvironment: null } });
+  expect(f.fake.runs).toHaveLength(0);
+});
+
+test('check previews and member saves change only the explicit check profile', async () => {
+  const f = fixture = await projectFixture(), member = await projectMember(f), base = (await f.app.projectWork.settingsView('project')).settings;
+  const environment = { variables: [{ name: 'SHARED_NAME', value: 'work-only' }], secrets: [], copyFiles: ['.env.work'] };
+  await f.app.projectHub.putSettings({ ...base, setupCommand: 'same configured setup', environment }, base.revision);
+  const editor = await (await member.request(path + '?purpose=check')).json();
+  const fields = { ...editor.fields, enabled: true, setupCommand: 'must not replace setup', variables: [{ name: 'SHARED_NAME', value: 'check-only' }], secrets: ['CHECK_SECRET'], copyFiles: ' fixtures/test.env => .env.local \n fixtures/config.json \n' };
+  const preview = await member.request(path, 'POST', { ...editor.request.base, fields }); expect(preview.status).toBe(200);
+  const next = await preview.json(); expect(next.apply.enabled).toBe(true);
+  expect(next.patch).toEqual({ checkEnvironment: { schema: 'project-check-environment-v1', variables: fields.variables, secrets: fields.secrets,
+    copyFiles: [{ source: 'fixtures/test.env', target: '.env.local' }, { source: 'fixtures/config.json', target: 'fixtures/config.json' }] } });
+  const saved = await member.request(next.request.savePath, 'POST', next.saveRequest); expect(saved.status).toBe(200);
+  const settings = (await saved.json()).settings; expect(settings.environment).toEqual(environment); expect(settings.setupCommand).toBe('same configured setup');
+  expect(settings.checkEnvironment).toEqual(next.patch.checkEnvironment);
+  const fresh = await (await member.request(path + '?purpose=check')).json();
+  const off = await member.request(path, 'POST', { ...fresh.request.base, fields: { ...fresh.fields, enabled: false } });
+  expect(off.status).toBe(200); const disabled = await off.json(); expect(disabled.patch).toEqual({ checkEnvironment: null });
+  expect((await member.request(disabled.request.savePath, 'POST', disabled.saveRequest)).status).toBe(200);
+  expect((await f.app.projectWork.settingsView('project')).settings).toMatchObject({ environment, checkEnvironment: null, setupCommand: 'same configured setup' });
+  expect(f.fake.runs).toHaveLength(0);
+});
+
+test('check file previews reject escaping paths and duplicate targets without changing saved inputs', async () => {
+  const f = fixture = await projectFixture(), editor = await (await f.request(path + '?purpose=check')).json();
+  for (const copyFiles of ['../outside => .env.local', 'fixtures/check.env => ../outside', 'fixtures/a => .env.local\nfixtures/b => .env.local']) {
+    const response = await f.request(path, 'POST', { ...editor.request.base, fields: { ...editor.fields, enabled: true, copyFiles } });
+    expect(response.status).toBe(200); expect(await response.json()).toMatchObject({ apply: { enabled: false }, patch: null, saveRequest: null });
+  }
+  expect((await f.app.projectWork.settingsView('project')).settings.checkEnvironment).toBeUndefined();
+  expect((await f.request(path + '?purpose=production')).status).toBe(400);
+});
+
+test('check secret summaries never read a work secret with the same name', async () => {
+  const f = fixture = await projectFixture();
+  await f.app.state.environment.put('project', 'SHARED_NAME', 'synthetic-work-only-value');
+  const response = await f.request('/api/projects/project/env-secrets/SHARED_NAME?purpose=check');
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ name: 'SHARED_NAME', saved: false });
+  expect(await f.app.state.environment.summary('project', 'SHARED_NAME')).toMatchObject({ saved: true });
+});
+
+test('removing a check secret leaves the work secret with the same name intact', async () => {
+  const f = fixture = await projectFixture();
+  await f.app.state.environment.put('project', 'SHARED_NAME', 'synthetic-work-only-value');
+  const response = await f.request('/api/projects/project/env-secrets/SHARED_NAME?purpose=check', 'DELETE', { schema: 'empty-request-v1' });
+  expect(response.status).toBe(200);
+  expect(await f.app.state.environment.summary('project', 'SHARED_NAME')).toMatchObject({ saved: true });
+});
+
+test('check secrets are stored independently under the same environment name', async () => {
+  const f = fixture = await projectFixture(), base = (await f.app.projectWork.settingsView('project')).settings;
+  await f.app.projectHub.putSettings({ ...base, environment: { variables: [], secrets: ['SHARED_NAME'], copyFiles: [] },
+    checkEnvironment: { schema: 'project-check-environment-v1', variables: [], secrets: ['SHARED_NAME'], copyFiles: [] } }, base.revision);
+  await f.app.state.environment.put('project', 'SHARED_NAME', 'synthetic-work-only-value');
+  const response = await f.request('/api/projects/project/env-secrets/SHARED_NAME?purpose=check', 'PUT', { schema: 'save-secret-v1', value: 'synthetic-check-only-value' });
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ purpose: 'check', saved: true });
+  expect(await f.app.state.environment.credentials('project')).toEqual({ SHARED_NAME: 'synthetic-work-only-value' });
+  expect(await f.app.state.environment.credentials('project', 'check')).toEqual({ SHARED_NAME: 'synthetic-check-only-value' });
+  const member = await projectMember(f);
+  expect(await member.app.state.environment.credentials('project', 'check')).toEqual({ SHARED_NAME: 'synthetic-check-only-value' });
+  expect(await member.app.state.environment.credentials('project')).toEqual({ SHARED_NAME: 'synthetic-work-only-value' });
+});
+
 test('environment editor exposes canonical counts and text bounds without password values', async () => {
   const f = fixture = await projectFixture(), base = (await f.app.projectWork.settingsView('project')).settings;
   await f.app.projectHub.putSettings({ ...base, environment: { ...base.environment, secrets: ['FIXTURE_SECRET'] } }, base.revision);
