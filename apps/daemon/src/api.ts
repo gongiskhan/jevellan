@@ -38,7 +38,7 @@ import { ProjectEnvNameSchema } from '@jevellan/core';
 import { EkoaSettingsInputSchema, EmptySchema as EkoaEmptySchema } from '@jevellan/core';
 import { handleSessionListApi } from './session-list-api.js';
 import { handleGitApi } from './git-api.js';
-import { handleProjectWorkApi, handleProjectWorkPeer } from './project-work-api.js';
+import { handleProjectWorkApi, handleProjectWorkPeer, PROJECT_PAGE_VIEW_ROUTE } from './project-work-api.js';
 import { handleCursorApi } from './cursor-api.js';
 import { projectFolders } from './project-folders.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -90,7 +90,7 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
     const secureCookies = options.secureCookies ?? secureRequest;
     const path = url.pathname; const method = request.method ?? 'GET'; const token = sessionFromCookie(request.headers.cookie);
     // Project hub requests enter the gate in their route once the operation is known: reads are admitted like GET (D247).
-    if (!['GET', 'HEAD'].includes(method) && !PROJECT_HUB_ROUTE.test(path) && !DEVICE_WORKTREES_ROUTE.test(path) && !DEVICE_CLEANUP_ROUTE.test(path) && path !== '/api/devices/actions' && path !== '/hub/mesh/owner-tools' && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
+    if (!['GET', 'HEAD'].includes(method) && !(method === 'POST' && PROJECT_PAGE_VIEW_ROUTE.test(path)) && !PROJECT_HUB_ROUTE.test(path) && !DEVICE_WORKTREES_ROUTE.test(path) && !DEVICE_CLEANUP_ROUTE.test(path) && path !== '/api/devices/actions' && path !== '/hub/mesh/owner-tools' && path !== '/hub/mesh/agent-access' && path !== '/api/agent-peer') release = app.lifecycle.enter({ kind: 'request' });
     if (path === '/api/mesh/conversation-start') { await handleConversationStartPeer(app, request, response); return; }
     if (path === '/api/mesh/project-definitions') { await handleProjectDefinitionsPeer(app, request, response); return; }
     if (path === '/api/mesh/native-viewer-title') { await handleNativeViewerTitlePeer(app, request, response); return; }

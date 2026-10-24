@@ -23,6 +23,34 @@ function subscribe(service: HubNotifications, endpoint = 'https://push.example/o
 function notification(id: string, at: number, kind: ProjectNotification['kind'] = 'test'): ProjectNotification {
   return { schema: 'project-notification-v1', revision: 0, id, projectId: kind === 'test' ? null : 'project', kind, title: 'Fixture', body: id, url: '/projects/project', tag: 'fixture', createdAt: new Date(at).toISOString() };
 }
+test('a notification batch without subscribers avoids rereading every retained notification', async () => {
+  const now = Date.parse('2026-10-24T00:00:00Z'); let sent = 0;
+  const { hub, service } = setup(async () => { sent++; return { statusCode: 201, body: '', headers: {} }; }, () => now);
+  for (let n = 0; n < 100; n++) service.enqueue({ ...notification(`unsub_${String(n).padStart(3, '0')}`, now), ...(n < 90 ? { dropped: 'Already concluded.' } : {}) });
+  const reads = vi.spyOn(hub, 'get'); let notificationReads: number;
+  try { await service.sweep(); notificationReads = reads.mock.calls.filter(([namespace]) => namespace === 'project-notifications').length; }
+  finally { reads.mockRestore(); }
+  expect(sent).toBe(0);
+  expect(hub.list('project-notifications', ProjectNotificationSchema).filter(row => row.document.dropped)).toHaveLength(90);
+  expect(notificationReads!, 'An uninterrupted sweep already has a validated current snapshot of these retained notifications.').toBeLessThanOrEqual(2);
+  subscribe(service); await service.sweep(); expect(sent).toBe(10);
+  expect(hub.list('project-notifications', ProjectNotificationSchema).every(row => row.document.dropped || row.document.sentAt)).toBe(true);
+});
+
+test('notification state changed during an awaited send is reread before the next delivery', async () => {
+  const now = Date.parse('2026-10-24T00:00:00Z'); let sent = 0;
+  const { hub, service } = setup(async () => {
+    if (++sent === 1) {
+      const changed = hub.get('project-notifications', 'z_changed', ProjectNotificationSchema)!;
+      hub.put('project-notifications', 'z_changed', ProjectNotificationSchema, { ...changed.document, dropped: undefined, revision: changed.revision + 1 }, changed.revision);
+    }
+    return { statusCode: 201, body: '', headers: {} };
+  }, () => now);
+  subscribe(service); service.enqueue(notification('a_first', now)); service.enqueue({ ...notification('z_changed', now), dropped: 'Held by the fixture.' });
+  await service.sweep(); expect(sent).toBe(2);
+  expect(hub.get('project-notifications', 'z_changed', ProjectNotificationSchema)?.document.sentAt).toBe(new Date(now).toISOString());
+});
+
 test('an unchanged pending notification batch reads each project setting once and observes changes on the next sweep', async () => {
   const { ProjectWorkSettingsSchema, defaultProjectWorkSettings } = await import('../packages/core/dist/index.js');
   const now = Date.parse('2026-10-24T00:00:00Z'), { hub, service } = setup(undefined, () => now), settings = defaultProjectWorkSettings('project');

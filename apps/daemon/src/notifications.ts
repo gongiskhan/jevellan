@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import webpush from 'web-push';
 import { NotificationsViewSchema, PushSubscriptionSchema, ProjectNotificationSchema, PushDeliverySchema, PushKeysSchema, NotificationOwnerRequestSchema, IdSchema, notificationSubscriptionId,
-  ProjectDecisionSchema, ProjectSchema, StoredProjectWorkSettingsSchema, clipRedacted, type ProjectNotification, type ProjectWorkSettings, type DocumentSchema } from '@jevellan/core';
+  ProjectDecisionSchema, ProjectSchema, StoredProjectWorkSettingsSchema, clipRedacted, type ProjectNotification, type ProjectWorkSettings, type PushSubscription, type DocumentSchema } from '@jevellan/core';
 import { defaultProjectNotifications, type QuietHoursSchema } from '@jevellan/core';
 import type { z } from 'zod';
 import { notificationQuestionTitle, NOTIFICATION_TEST_BODY, NOTIFICATION_TEST_TITLE } from '@jevellan/projects';
@@ -107,25 +107,30 @@ export class HubNotifications {
       for (const row of rows) this.#put('project-notifications', row.document.id, ProjectNotificationSchema, { ...row.document, dropped: 'Included in the quiet hours summary.' }, row.revision);
     });
     notifications = this.hub.list('project-notifications', ProjectNotificationSchema);
+    // Reuse only the current synchronous snapshot. A send yields to requests, so all of it expires after every await.
+    const notificationRows = new Map(notifications.map(row => [row.document.id, row]));
+    let subscriptionRows: Array<{ revision: number; document: PushSubscription }> | undefined;
     for (const receipt of this.hub.list('push-deliveries', PushDeliverySchema)) if (!notifications.some(row => row.document.id === receipt.document.notificationId)) this.hub.delete('push-deliveries', receipt.document.id);
     // Keep only the newest pending reply, including replies received during the30-second send interval.
     const replies = this.hub.listByField('project-notifications', 'kind', 'coordinator-reply', ProjectNotificationSchema, { order: 'insertion-desc' }).filter(row => !row.document.sentAt && !row.document.dropped && !row.document.heldAt);
     for (const row of replies) if (replies.some(other => other.document.projectId === row.document.projectId && (other.document.createdAt > row.document.createdAt || other.document.createdAt === row.document.createdAt && replies.indexOf(other) < replies.indexOf(row)))) {
-      this.#put('project-notifications', row.document.id, ProjectNotificationSchema, { ...row.document, dropped: 'Replaced by a newer coordinator reply.' }, row.revision);
+      notificationRows.set(row.document.id, this.#put('project-notifications', row.document.id, ProjectNotificationSchema, { ...row.document, dropped: 'Replaced by a newer coordinator reply.' }, row.revision));
     }
     const retrying = new Set(this.hub.list('push-deliveries', PushDeliverySchema).filter(row => !row.document.sentAt && !row.document.dropped).map(row => row.document.notificationId));
     for (const item of notifications) {
       if (this.#closed) break;
       if (item.document.sentAt && !retrying.has(item.document.id)) continue;
-      let row = this.hub.get('project-notifications', item.document.id, ProjectNotificationSchema)!;
+      let row = notificationRows.get(item.document.id) ?? this.hub.get('project-notifications', item.document.id, ProjectNotificationSchema)!;
       if (row.document.dropped) continue;
       const notification = row.document;
       if (notification.heldAt) continue;
       const level = notification.projectId ? preferencesFor(notification.projectId).level : 'everything';
       if (!notification.urgent && !notificationAllowed(notification.kind, level)) { this.#put('project-notifications', notification.id, ProjectNotificationSchema, { ...notification, dropped: 'Not enabled by the project notification setting.' }, row.revision); continue; }
       if (notification.kind === 'coordinator-reply' && !notification.sentAt && notifications.some(other => other.document.projectId === notification.projectId && other.document.kind === 'coordinator-reply' && other.document.sentAt && Date.parse(other.document.sentAt) > now - 30_000)) continue;
+      const available = subscriptionRows ??= this.hub.list('push-subscriptions', PushSubscriptionSchema);
+      if (!available.length) continue;
       const prior = this.hub.listByField('push-deliveries', 'notificationId', notification.id, PushDeliverySchema);
-      const subscriptions = this.hub.list('push-subscriptions', PushSubscriptionSchema).filter(sub => !notification.sentAt || prior.some(receipt => receipt.document.subscriptionId === sub.document.id));
+      const subscriptions = available.filter(sub => !notification.sentAt || prior.some(receipt => receipt.document.subscriptionId === sub.document.id));
       let complete = subscriptions.length > 0, sent = Boolean(notification.sentAt);
       for (const subscription of subscriptions) {
         if (this.#closed) { complete = false; break; }
@@ -158,6 +163,7 @@ export class HubNotifications {
         } finally {
           // A push yields to owner requests. The next notification must see settings changed during that send.
           settings.clear();
+          notificationRows.clear(); subscriptionRows = undefined;
         }
       }
       row = this.hub.get('project-notifications', notification.id, ProjectNotificationSchema)!;

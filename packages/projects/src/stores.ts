@@ -75,6 +75,12 @@ export class ThreadStore {
   }
   /** Every thread on this device, oldest first. */
   all(): Thread[] { return [...this.#all().values()].sort((a, b) => a.id.localeCompare(b.id)).map((thread) => structuredClone(thread)); }
+  /** Select using a fresh primitive summary, without exposing cached records or copying unrelated task/message payloads. */
+  select(predicate: (thread: Pick<Thread, 'id' | 'projectId' | 'state' | 'stateReason' | 'turns'> & { queuedMessages: number }) => boolean): Thread[] {
+    return [...this.#all().values()].filter(thread => predicate({ id: thread.id, projectId: thread.projectId, state: thread.state,
+      ...(thread.stateReason === undefined ? {} : { stateReason: thread.stateReason }), turns: thread.turns, queuedMessages: thread.queuedMessages.length }))
+      .sort((a, b) => a.id.localeCompare(b.id)).map(thread => structuredClone(thread));
+  }
   list(projectId: string): Thread[] { return this.all().filter((thread) => thread.projectId === projectId); }
   /** Local threads and durable starts not yet indexed by a member, deduplicated by admission. */
   created(projectId: string): Thread[] {

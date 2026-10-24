@@ -11,6 +11,7 @@ import { ZodError } from 'zod';
 import {
   CoordinatorMessageReceiptSchema, DecisionAnsweredViewSchema, ProjectEventFrameSchema, ProjectNotebookViewSchema, ProjectWorkListViewSchema, ProjectWorkSettingsSchema,
   ProjectWorkSettingsViewSchema, ProjectWorkViewSchema, ThreadIndexSchema, defaultProjectWorkSettings, type ProjectEventFrame, type ProjectLedgerEvent,
+  ProjectPageViewSchema,
 } from '../packages/core/dist/index.js';
 import { HubProjectAccess, HubUnavailable } from '../packages/mesh/dist/index.js';
 import { forCoordinator, type FakeTurn } from '../packages/runtime-contract/dist/index.js';
@@ -188,6 +189,31 @@ test('filtered stream cursors never jump over visible frames on backpressure or 
     await vi.waitFor(() => expect(ended).toBe(true));
     expect(writes.join('')).not.toContain('id: 146');
   } finally { response.emit('close'); }
+});
+
+test('typed project page reads avoid mutation leases while real writes remain guarded', async () => {
+  const f = fixture = await projectFixture();
+  const path = '/api/projects/project/status-view';
+  const post = () => f.request(path, 'POST', { schema: 'project-page-request-v1', resolvedDays: 14, timeZone: 'Europe/Lisbon', locale: 'en-GB', ackKnown: [] });
+  const leases = vi.spyOn(f.app.lifecycle, 'enter'); let count: number;
+  try {
+    for (let n = 0; n < 3; n++) {
+      const response = await post(); expect(response.status).toBe(200);
+      expect(ProjectPageViewSchema.parse(await response.json()).work.project.id).toBe('project');
+    }
+    count = leases.mock.calls.length;
+  } finally { leases.mockRestore(); }
+  expect(count!, 'A typed view query must not publish durable mutation leases on every browser poll.').toBe(0);
+  const release = f.app.lifecycle.tryMaintenance(); expect(release).toBeTypeOf('function');
+  try {
+    const get = await f.request(path); expect(get.status).toBe(200); await get.body?.cancel();
+    const read = await post(); expect(read.status).toBe(200); await read.body?.cancel();
+    const write = await f.request('/api/projects/project/coordinator/messages', 'POST', message('guarded_read', 'A fixture message.'));
+    expect(write.status).toBe(503); await write.body?.cancel();
+    const wrongBody = await f.request(path, 'POST', message('invalid_view', 'Not a view query.'));
+    expect(wrongBody.status).toBe(400); await wrongBody.body?.cancel();
+    expect(f.fake.turnStarts).toHaveLength(0);
+  } finally { release?.(); }
 });
 
 test('coordinator routes: session required, assignment by the first message, idempotent messages, a resumable chat stream, Stop, Fresh and no native session id', { timeout: 120_000 }, async () => {

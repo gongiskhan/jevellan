@@ -513,14 +513,14 @@ export class ThreadService {
     if (!this.#started || this.#closed) return;
     // Also threads whose turn waits for an account a terminal holds (phase 8), or for their claimed checkout to be back on main (P8 review
     // TH-1), with its messages or the turn it kept.
-    const waiting = this.#o.store.all().filter((thread) => REST_STATES.includes(thread.state)
+    const waiting = this.#o.store.select((thread) => REST_STATES.includes(thread.state)
       && (thread.stateReason === PROJECT_PAUSED || isWaitingForSlot(thread.stateReason) || thread.stateReason === WAITING_FOR_HUB || isWaitingForAccount(thread.stateReason) || thread.stateReason === WAITING_FOR_MAIN
         || isLaunchRefused(thread.stateReason) && !!this.runner(thread.id)?.launchDue())
-      && (thread.queuedMessages.length || this.#o.store.local(thread.id).pendingTurn))
+      && !!(thread.queuedMessages || this.#o.store.local(thread.id).pendingTurn))
       .sort((a, b) => oldestMessage(a).localeCompare(oldestMessage(b)));
     for (const thread of waiting) { if (this.#closed) return; await this.runner(thread.id)?.resume(); }
     // A preparation that failed for a transient reason before the first turn is due again (B1).
-    for (const thread of this.#o.store.all().filter(thread => thread.state === 'idle' && thread.turns === 0 && this.#o.store.local(thread.id).preparationRetry)) {
+    for (const thread of this.#o.store.select(thread => thread.state === 'idle' && thread.turns === 0 && !!this.#o.store.local(thread.id).preparationRetry)) {
       if (this.#closed) return; await this.runner(thread.id)?.retryPreparation();
     }
   }

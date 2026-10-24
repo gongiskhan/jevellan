@@ -185,11 +185,34 @@ export class ThreadWorktree {
       try { entries = parseWorktrees((await this.#git.run(first.cwd, ['worktree', 'list', '--porcelain', '-z'])).stdout); }
       catch { /* The caller retains each thread's normal query when no snapshot fact is available. */ }
     }
-    const heads = new Map(entries.filter(entry => entry.head).map(entry => [resolvedPath(entry.path), entry.head]));
+    const registered = new Map(entries.map(entry => [resolvedPath(entry.path), entry]));
     const result = new Map<string, boolean>();
+    const groups = new Map<string, Array<{ thread: Thread; entry: WorktreeEntry }>>();
     for (const thread of threads) {
       // Equal immutable commit ids have an empty range, including after a reset. No fact survives this poll.
-      if (thread.cwd && thread.baseCommit && heads.get(resolvedPath(thread.cwd)) === thread.baseCommit) result.set(thread.id, false);
+      const entry = thread.cwd ? registered.get(resolvedPath(thread.cwd)) : undefined;
+      if (thread.baseCommit && entry?.head === thread.baseCommit) { result.set(thread.id, false); continue; }
+      if (!entry?.head || !entry.branch?.startsWith('refs/heads/') || entry.prunable || !existsSync(thread.cwd) || !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(thread.baseCommit)) continue;
+      const group = groups.get(thread.baseCommit) ?? []; group.push({ thread, entry }); groups.set(thread.baseCommit, group);
+    }
+    for (const [base, group] of groups) {
+      if (group.length < 2) continue;
+      try {
+        // Git computes all ranges sharing a base in one graph traversal. Unsupported Git retains the normal per-thread query.
+        const refs = [...new Set(group.map(row => row.entry.branch!))];
+        const output = await this.#git.run(group[0]!.thread.cwd, ['for-each-ref', `--format=%(refname)%09%(objectname)%09%(ahead-behind:${base})`, ...refs]);
+        const facts = new Map<string, { head: string; ahead: number }>();
+        for (const line of output.stdout.split('\n').filter(Boolean)) {
+          const [ref, head, counts] = line.split('\t');
+          if (!ref || !head || !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(head) || !/^\d+ \d+$/u.test(counts ?? '')) continue;
+          const ahead = Number(counts!.split(' ')[0]); if (Number.isSafeInteger(ahead)) facts.set(ref, { head, ahead });
+        }
+        for (const { thread, entry } of group) {
+          const fact = facts.get(entry.branch!);
+          // A ref moved between the worktree snapshot and this query: leave it to the caller's fresh fallback.
+          if (fact && fact.head === entry.head) result.set(thread.id, fact.ahead > 0);
+        }
+      } catch { /* No optimistic fact on unavailable capability, invalid refs, a moved checkout or a repository error. */ }
     }
     return result;
   }

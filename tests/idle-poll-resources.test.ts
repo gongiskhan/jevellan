@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { Homes, ProjectWorkSettingsSchema, StoredProjectWorkSettingsSchema, defaultProjectWorkSettings } from '../packages/core/dist/index.js';
 import { HubDatabase } from '../packages/mesh/dist/index.js';
+import { ThreadGit } from '../packages/projects/dist/index.js';
 import { forThread } from '../packages/runtime-contract/dist/index.js';
 import { git, projectFixture, reportStep, type ProjectFixture } from './helpers/project-fixture.js';
 
@@ -29,6 +30,14 @@ test('idle worktree indexes bound subprocesses while observing every new head', 
     await f.waitFor(() => f.thread(created.threadId), thread => thread.state === 'idle');
     await f.app.projectWork.idle(); ids.push(created.threadId);
   }
+  const clone = structuredClone, schema = f.thread(ids[0]!).schema; let idleCopies = 0;
+  const copies = vi.spyOn(globalThis, 'structuredClone').mockImplementation((value, options) => {
+    if (value && typeof value === 'object' && 'schema' in value && value.schema === schema && 'id' in value && typeof value.id === 'string' && ids.includes(value.id)) idleCopies++;
+    return clone(value, options);
+  });
+  try { for (let n = 0; n < 3; n++) await f.app.projectWork.threads.sweepWaiting(); }
+  finally { copies.mockRestore(); }
+  expect(idleCopies, 'Waiting sweeps must select candidates before copying full idle thread payloads.').toBe(0);
   let launches = 0;
   const spawned = () => { launches++; }, children = channel('child_process');
   children.subscribe(spawned);
@@ -55,6 +64,42 @@ test('repeated project settings validate a supported time zone without reconstru
   expect(ProjectWorkSettingsSchema.parse({ ...settings, nightlyWindow: { ...settings.nightlyWindow, timezone: 'Etc/UTC' } }).nightlyWindow.timezone).toBe('Etc/UTC');
   expect(constructions!, 'A supported time zone is stable for the lifetime of this Intl implementation.').toBeLessThanOrEqual(1);
 });
+
+test('idle nonempty worktree indexes batch fresh commit ranges', async () => {
+  const f = fixture = await projectFixture({ github: false }), ids: string[] = [];
+  for (let n = 0; n < 8; n++) {
+    f.fake.enqueueTurn(reportStep({ status: 'blocked', summary: 'Inspection finished.' }), forThread());
+    const created = await f.app.projectWork.createThread('project', { schema: 'thread-create-request-v1', clientRequestId: `nonempty_${n}`,
+      title: `Inspect ${n}`, task: 'Inspect without changes.', modelId: 'fixture', deviceId: f.app.device.deviceId });
+    await f.waitFor(() => f.thread(created.threadId), thread => thread.state === 'idle');
+    await f.app.projectWork.idle(); ids.push(created.threadId);
+    git(f.thread(created.threadId).cwd, 'commit', '--allow-empty', '-m', 'Fixture work');
+  }
+  let launches = 0; const spawned = () => { launches++; }, children = channel('child_process'); children.subscribe(spawned);
+  try { for (let n = 0; n < 3; n++) await f.app.projectWork.threads.refreshIndexes(); }
+  finally { children.unsubscribe(spawned); }
+  expect(ids.every(id => f.local(id).fixable?.publish)).toBe(true);
+  expect(launches, 'Nonempty ranges sharing a base must not spawn a separate Git process for every idle thread.').toBeLessThanOrEqual(6);
+  const reset = f.thread(ids[0]!); git(reset.cwd, 'reset', '--hard', reset.baseCommit);
+  const detached = f.thread(ids[1]!); git(detached.cwd, 'checkout', '--detach');
+  await f.app.projectWork.threads.refreshIndexes(); expect(f.local(reset.id).fixable?.publish).toBe(false); expect(f.local(detached.id).fixable?.publish).toBe(true);
+  const run = ThreadGit.prototype.run; let refused = 0;
+  const unavailable = vi.spyOn(ThreadGit.prototype, 'run').mockImplementation(function(this: ThreadGit, ...args: Parameters<ThreadGit['run']>) {
+    if (args[1][0] === 'for-each-ref' && args[1].some(arg => arg.includes('ahead-behind:'))) { refused++; return Promise.reject(new Error('Simulated unsupported Git format.')); }
+    return run.apply(this, args);
+  });
+  try {
+    await f.app.projectWork.threads.refreshIndexes(); expect(refused).toBeGreaterThan(0);
+    expect(f.local(reset.id).fixable?.publish).toBe(false); expect(ids.slice(1).every(id => f.local(id).fixable?.publish)).toBe(true);
+  } finally { unavailable.mockRestore(); }
+  const changed = f.thread(ids[2]!); let moved = false;
+  const changing = vi.spyOn(ThreadGit.prototype, 'run').mockImplementation(function(this: ThreadGit, ...args: Parameters<ThreadGit['run']>) {
+    if (!moved && args[1][0] === 'for-each-ref' && args[1].some(arg => arg.includes('ahead-behind:'))) { moved = true; git(changed.cwd, 'reset', '--hard', changed.baseCommit); }
+    return run.apply(this, args);
+  });
+  try { await f.app.projectWork.threads.refreshIndexes(); expect(moved).toBe(true); expect(f.local(changed.id).fixable?.publish).toBe(false); }
+  finally { changing.mockRestore(); }
+}, 120_000);
 
 test('unchanged hub reads reuse bounded query plans while validating fresh rows', () => {
   root = mkdtempSync(join(tmpdir(), 'jevellan-query-resources-')); mkdirSync(join(root, 'user'));
