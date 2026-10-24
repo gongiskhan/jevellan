@@ -11,6 +11,13 @@ afterEach(() => { rmSync(root, { recursive: true, force: true }); });
 test('project configuration preserves a dotted path as a single TOML key', () => {
   expect(parse(projectTrustOverride(root))).toEqual({ projects: { [root]: { trust_level: 'untrusted' } } });
 });
+test('project instructions preserve a complete UTF-8 file above the native default document budget', () => {
+  const instructions = 'Keep every instruction.\n' + 'ç'.repeat(21_000) + '\nFINAL_PROJECT_RULE';
+  writeFileSync(join(root, 'AGENTS.md'), instructions);
+  expect(Buffer.byteLength(instructions)).toBeGreaterThan(32_768);
+  expect(projectInstructions(root) === instructions).toBe(true);
+  expect(projectInstructionPrompt(root).includes('\nFINAL_PROJECT_RULE\n\n')).toBe(true);
+});
 test('project instructions use the authoritative file through a local context link', () => {
   expect(projectInstructions(root)).toBe('');
   writeFileSync(join(root, 'CLAUDE.md'), 'Use the project test command.'); symlinkSync('CLAUDE.md', join(root, 'AGENTS.md'));
@@ -19,7 +26,7 @@ test('project instructions use the authoritative file through a local context li
 });
 test('unsupported context paths and oversized instructions fail explicitly', () => {
   symlinkSync(process.cwd(), join(root, 'AGENTS.md')); expect(() => projectInstructions(root)).toThrow('inside the project');
-  rmSync(join(root, 'AGENTS.md')); writeFileSync(join(root, 'AGENTS.md'), 'x'.repeat(32_769)); expect(() => projectInstructions(root)).toThrow('32768');
+  rmSync(join(root, 'AGENTS.md')); writeFileSync(join(root, 'AGENTS.md'), 'x'.repeat(262_145)); expect(() => projectInstructions(root)).toThrow('262144');
 });
 
 test('CLAUDE-only projects use the fallback filename, while AGENTS takes precedence', () => {
@@ -43,8 +50,8 @@ test('each turn rereads instructions and catches changes and invalid fallback pa
   writeFileSync(join(root, 'CLAUDE.md'), 'Resumed turn rules');
   expect(projectInstructionPrompt(root)).toContain('Resumed turn rules');
   expect(projectInstructionPrompt(root)).not.toContain('First turn rules');
-  writeFileSync(join(root, 'CLAUDE.md'), 'x'.repeat(32_769));
-  expect(() => projectInstructionPrompt(root)).toThrow('32768');
+  writeFileSync(join(root, 'CLAUDE.md'), 'x'.repeat(262_145));
+  expect(() => projectInstructionPrompt(root)).toThrow('262144');
   rmSync(join(root, 'CLAUDE.md')); symlinkSync(process.cwd(), join(root, 'CLAUDE.md'));
   expect(() => projectInstructionPrompt(root)).toThrow('inside the project');
 });

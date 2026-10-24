@@ -523,3 +523,6 @@ Decision339: profile-guided project thread selection, journal render identity an
 
 
 Decision775: latest owner accepts654029bc measured live performance and authorizes0.7.7 from that source plus version/notes only. Worker follow-up is preserved privately, excluded from the release. Static/build, actual CLI and five desktop-light core journeys pass;20images/4435source hashes verified. Next complete six-worker backend, exact artifacts and actual extracted nativePTY, scans/publication, fresh strict cold backups and normal Madrid then Pro updates, doctor and new live metrics. Instruction-size compatibility and remaining private findings follow. No new review or production/authentication/real work changes.
+
+
+Decision776: 0.7.7 published from7f7dfed3 with full backend: 3,842 passed, one failure classified flaky, 16 not run, verified fresh native platform archives and guarded normal Madrid installation. Pro resource guard and stale account-status doctor warning keep installation readiness incomplete; exact live results remain private. Decision777: bounded 256 KiB managed Codex instructions pass failing-first reader/turn/takeover regressions,73 complete affected assertions/static/build and one desktop thread-page smoke. Source-only; no further release is authorized. Remaining manager findings follow; worker experiment stays preserved and deferred.

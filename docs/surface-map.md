@@ -716,3 +716,6 @@ Profiled journal/push work (Decision339): project filtering precedes thread copi
 
 
 Release0.7.7 preparation (Decision775): exact profiled654029bc product/test source with synchronized version metadata; worker experiment excluded. Static/build, actual CLI and five desktop-light core journeys pass,20retained matching image digests/4435source hashes. No UI row disposition changes; full current backend, archives and installed evidence remain pending.
+
+
+Managed runtime compatibility (Decision777): complete bounded 256 KiB root instructions and native document budget cover first/resumed turns, stretches and takeover. Reader/turn/takeover failures precede correction;73 complete affected cases, static checks and build and one desktop-light thread-page main-action smoke pass. No UI row disposition or live task acceptance changes. Release 0.7.7 publication and guarded Madrid installation are recorded separately in Decision776; member load and doctor freshness remain explicit blockers.

@@ -152,6 +152,37 @@ test('Codex uses CLAUDE-only root instructions and refreshes them on resumed tur
   expect(precedence.prompt).not.toContain('Changed project rules');
 }, 45_000);
 
+test('Codex keeps large project instructions and a sufficient document budget on first and resumed turns', async () => {
+  const { adapter, input } = setup('codex');
+  const prompt = directive('instruction-settings', []);
+  for (const resume of [undefined, { sessionId: 'stored-session' }]) {
+    const instructions = 'Keep every instruction.\n' + 'ç'.repeat(21_000) + `\nFINAL_RULE_${resume ? 'RESUMED' : 'FIRST'}`;
+    writeFileSync(join(root, 'AGENTS.md'), instructions);
+    const response = await respond(adapter, { ...input, ...(resume ? { resume } : { turn: 1 }), prompt }) as { projectDocMaxBytes: number; prompt: string };
+    expect(response.projectDocMaxBytes).toBeGreaterThanOrEqual(Buffer.byteLength(instructions));
+    expect(response.prompt.startsWith(`# Project instructions: AGENTS.md\n${instructions}\n\n`)).toBe(true);
+    expect(response.prompt.endsWith(`FIXTURE_APPEND\n\n${prompt}`)).toBe(true);
+  }
+}, 45_000);
+
+test('Codex stretches refresh large root instructions without reducing their native document budget', async () => {
+  const { adapter, input } = setup('codex'), prompt = directive('instruction-settings', []);
+  const instructions = 'Keep every instruction.\n' + 'ç'.repeat(21_000) + '\nFINAL_STRETCH_RULE';
+  writeFileSync(join(root, 'AGENTS.md'), instructions);
+  const run = adapter.startStretch({ schema: 'stretch-input-v1', conversationId: 'fixture', stretch: 1, action: 'reply', cwd: root,
+    permissions: 'read-only', memoryWrite: false, systemAppend: '', brief: prompt, model: input.model, effort: input.effort,
+    timeoutMs: 10_000, account: input.account, launch: input.launch });
+  try {
+    for (const content of [instructions, instructions + '\nNEW_CONTINUATION_RULE']) {
+      if (content !== instructions) { writeFileSync(join(root, 'AGENTS.md'), content); await run.continue(prompt, 10_000); }
+      const events = await collectEvents(run); expect((await run.done).status).toBe('completed');
+      const response = JSON.parse(events.flatMap(event => event.type === 'text' ? [event.delta] : []).join('')) as { projectDocMaxBytes: number; prompt: string };
+      expect(response.projectDocMaxBytes).toBeGreaterThanOrEqual(Buffer.byteLength(content));
+      expect(response.prompt.startsWith(`# Project instructions: AGENTS.md\n${content}\n\n`)).toBe(true);
+    }
+  } finally { await run.terminate(); expect(groupAlive(run.native.pgid)).toBe(false); }
+}, 30_000);
+
 test.each(['claude', 'codex'] as const)('compaction settings apply to first and resumed Projects turns without changing native homes (%s)', async runtime => {
   const { adapter, input } = setup(runtime); const native = join(homes.userHome, runtime === 'claude' ? '.claude' : '.codex'); mkdirSync(native);
   const file = join(native, runtime === 'claude' ? 'settings.json' : 'config.toml'); const original = runtime === 'claude' ? '{"env":{}}\n' : 'model = "owner-model"\n'; writeFileSync(file, original);

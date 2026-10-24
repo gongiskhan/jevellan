@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { CodexContextMonitor } from './context.js';
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
-import { codexMcpServers, projectTrustOverride, projectInstructionPrompt, worktreeGitDirs } from './configuration.js';
+import { PROJECT_INSTRUCTION_MAX_BYTES, codexMcpServers, projectTrustOverride, projectInstructionPrompt, worktreeGitDirs } from './configuration.js';
 
 const ItemSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('reasoning'), id: z.string(), text: z.string() }),
@@ -25,7 +25,8 @@ function codexRuntime(input: Pick<StretchInput | TurnInput, 'launch'> & { compac
   // Keep the path inside a TOML value so the native CLI receives one exact key.
   return new Codex({ codexPathOverride: fileURLToPath(new URL('../bin/launch.mjs', import.meta.url)), env,
     configOverrides: [projectTrustOverride(cwd)],
-    config: { ...input.launch.nativeSetup?.settings, ...(input.compaction?.contextWindow ? { model_auto_compact_token_limit: Math.floor(input.compaction.contextWindow * input.compaction.thresholdPercent / 100) } : {}), jevellan_executable: executable ?? 'codex', features: { multi_agent: false, hooks: true }, mcp_servers: mcp, hooks: { PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: safety, timeout: 10 }] }] } },
+    config: { ...input.launch.nativeSetup?.settings, project_doc_max_bytes: PROJECT_INSTRUCTION_MAX_BYTES,
+      ...(input.compaction?.contextWindow ? { model_auto_compact_token_limit: Math.floor(input.compaction.contextWindow * input.compaction.thresholdPercent / 100) } : {}), jevellan_executable: executable ?? 'codex', features: { multi_agent: false, hooks: true }, mcp_servers: mcp, hooks: { PreToolUse: [{ matcher: '.*', hooks: [{ type: 'command', command: safety, timeout: 10 }] }] } },
   });
 }
 

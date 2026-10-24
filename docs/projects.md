@@ -24,7 +24,7 @@ First use of an empty project, or Suggest setup in the project menu, asks the co
 
 ## Threads
 
-A thread carries one task through turns, reports, verification and publication. A new thread snapshots the project's instructions; later edits reach the coordinator as an event and apply to future threads. Codex reads root AGENTS.md, falling back to CLAUDE.md only when AGENTS.md is absent. Invalid existing instruction files fail explicitly. Supported native setup is read without modifying the owner's native homes.
+A thread carries one task through turns, reports, verification and publication. A new thread snapshots the project's instructions; later edits reach the coordinator as an event and apply to future threads. Codex reads the complete UTF-8 root AGENTS.md, falling back to CLAUDE.md only when AGENTS.md is absent. Managed sessions and takeover use a bounded 256 KiB document budget, reread on new and resumed launches. Invalid existing instruction files and files above that bound fail explicitly. Supported native setup is read without modifying the owner's native homes.
 
 Every thread uses a separate branch and worktree. The registered checkout stays outside thread work. The Mini is apps-only and cannot be selected for project work, including fixed overrides.
 

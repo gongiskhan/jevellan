@@ -90,6 +90,9 @@ async function turn(prompt) {
   if (test.mode === 'compaction-settings') {
     result(JSON.stringify(codex ? { limit: configuration.model_auto_compact_token_limit ?? null } : { percent: process.env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE ?? null })); return;
   }
+  if (test.mode === 'instruction-settings' && codex) {
+    result(JSON.stringify({ projectDocMaxBytes: configuration.project_doc_max_bytes ?? null, prompt })); return;
+  }
   if (test.mode === 'compaction-events' && !codex) {
     send({ type: 'context_usage', session_id: session, context_usage: { total_tokens: 7500, raw_max_tokens: 10000 } });
     send({ type: 'system', subtype: 'compact_boundary', session_id: session, compact_metadata: { trigger: 'auto', pre_tokens: 7500, post_tokens: 1500 } });

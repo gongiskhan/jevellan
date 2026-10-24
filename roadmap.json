@@ -1190,8 +1190,8 @@
   {
     "id": "runtime-project-instruction-size",
     "title": "Handle project instructions above the runtime default limit",
-    "why": "Next authorized scope: preserve large project instructions and runtime eligibility through supported managed-session limits,including attach and first-turn transcript/report behavior. Do not truncate owner instructions,change native homes or retry/reorder real project work just to pass. Failing-first implementation and verification planned after the hub CPU repair.",
-    "status": "planned"
+    "why": "Source-only Decision777: bounded 256 KiB UTF-8 root reader and supported managed Codex project_doc_max_bytes cover new and resumed turns, stretch continuations and takeover. Three regressions fail and repeat before their corrections;73 assertions in seven complete files/static checks, build and desktop thread-page main action pass. Confinement/invalid-file/upper-bound refusals remain. Unreleased; no real task retry or native-home change.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "release-076",
@@ -1202,13 +1202,13 @@
   {
     "id": "hub-live-profile-responsiveness",
     "title": "Repair profiled journal, capture, view and polling CPU costs",
-    "why": "Latest owner explicitly accepts654029bc measured live performance against about20percent and authorizes077. Stricter original failed-threshold receipts remain unchanged. Version-only preparation preserves all other product/test bytes and external lock. Static/build/actual CLI/five first-attempt desktop cores pass,20image digests/4435matching source hashes. Complete backend, artifacts and guarded normal installation remain pending. Worker experiment is preserved privately and excluded; instruction-size compatibility and other findings next.",
-    "status": "in-progress"
+    "why": "Decision776: owner-accepted `654029bc` performance source published as 0.7.7 and normally installed Madrid; new qualified installed measurements and continuity retained privately. Strict20percent diagnostic remains separate. Full backend exact-repeat flake/16notrun preserved; native artifacts verified. Pro load and account freshness doctor warning keep both-device readiness incomplete. Worker experiment remains excluded/preserved; instruction compatibility source is separately gated, unreleased.",
+    "status": "complete-with-blockers"
   },
   {
     "id": "release-077-profiled-hub",
     "title": "Release the measured hub responsiveness repairs as0.7.7",
-    "why": "Exact654029bc plus version/notes, latest owner-authorized. Static/build/CLI/five desktop cores pass. Complete six-worker backend, exact archives/runtime/nativePTY, scans, strict cold-backed Madrid-before-Pro update, doctor and fresh live metrics pending. No authentication/bridge/production/real task or goal changes.",
+    "why": "Decision776: v0.7.7/7f7dfed3 published with exact distributed source, assets and digests and fresh normal Linux+Darwin native builds, actual extracted CLI and nativePTY/ABI 127 checks. Full backend: 401 files, 3,842 passed, one failure classified flaky by sole exact repeat/16 explicitnotrun; static/build/five desktop cores with 20 images pass. Strict fresh zero-turn/held/exclusive guards+coldbackup precede normal Madrid 0.7.7 update. Health/CLI pass; doctor 9/10 stale account observations. Pro 0.7.6 loadguard refuses; both READY pending. Qualified installed hub CPU/history and 144 protected records and 28 thread references verified privately. Worker excluded; no auth/bridge/production change.",
     "status": "in-progress"
   },
   {

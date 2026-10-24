@@ -2,6 +2,9 @@ import { lstatSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { inside } from './homes.js';
 
+/** Managed launches raise the native document budget without allowing unbounded project input. */
+export const PROJECT_INSTRUCTION_MAX_BYTES = 256 * 1024;
+
 /** Select by presence; an invalid AGENTS.md never silently enables CLAUDE.md. */
 export function projectInstructionFile(cwd: string): { filename: 'AGENTS.md' | 'CLAUDE.md'; text: string } | null {
   const root = realpathSync(cwd);
@@ -12,9 +15,9 @@ export function projectInstructionFile(cwd: string): { filename: 'AGENTS.md' | '
     const target = realpathSync(path);
     if (!inside(root, target)) throw new Error(`Project ${filename} must resolve inside the project.`);
     const info = statSync(target);
-    if (!info.isFile() || info.size > 32_768) throw new Error(`Project ${filename} must be a file of at most 32768 bytes.`);
+    if (!info.isFile() || info.size > PROJECT_INSTRUCTION_MAX_BYTES) throw new Error(`Project ${filename} must be a file of at most ${PROJECT_INSTRUCTION_MAX_BYTES} bytes.`);
     const bytes = readFileSync(target);
-    if (bytes.length > 32_768) throw new Error(`Project ${filename} must be a file of at most 32768 bytes.`);
+    if (bytes.length > PROJECT_INSTRUCTION_MAX_BYTES) throw new Error(`Project ${filename} must be a file of at most ${PROJECT_INSTRUCTION_MAX_BYTES} bytes.`);
     return { filename, text: bytes.toString('utf8') };
   }
   return null;

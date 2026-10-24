@@ -4,7 +4,7 @@ import { constants } from 'node:os';
 import { basename, isAbsolute, join } from 'node:path';
 import { isatty } from 'node:tty';
 import { z } from 'zod';
-import { CLAUDE_FIRST_RUN_SETTLED, CLAUDE_FLAG_SETTINGS, Homes, ThreadAttachViewSchema, ThreadDetachViewSchema, atomicWrite, claudeFirstRunSettled, hasInteractiveClaudeLogin, minimalEnvironment, projectInstructionFile, resolvedPath, runOwnedCommand } from '@jevellan/core';
+import { CLAUDE_FIRST_RUN_SETTLED, CLAUDE_FLAG_SETTINGS, Homes, PROJECT_INSTRUCTION_MAX_BYTES, ThreadAttachViewSchema, ThreadDetachViewSchema, atomicWrite, claudeFirstRunSettled, hasInteractiveClaudeLogin, minimalEnvironment, projectInstructionFile, resolvedPath, runOwnedCommand } from '@jevellan/core';
 import { LocalRequestError, localRequest } from './local-request.js';
 import { findExecutable } from './toolchain.js';
 
@@ -122,7 +122,7 @@ async function prepare(answer: unknown, base: NodeJS.ProcessEnv, homes: Homes, r
       '-c', 'features.hooks=true', '-c', `hooks=${toml(hooks)}`, '-c', `mcp_servers.jevellan.command=${JSON.stringify(integration.bridgeCommand)}`, '-c', `mcp_servers.jevellan.args=${JSON.stringify(integration.bridgeArgs)}`,
       '-c', `mcp_servers.jevellan.env_vars=${JSON.stringify(launchKeys)}`, '-c', 'mcp_servers.jevellan.default_tools_approval_mode="approve"',
       ...(integration.contextWindow ? ['-c', `model_auto_compact_token_limit=${Math.floor(integration.contextWindow * integration.compactAtPercent / 100)}`] : [])] : []),
-      '-c', 'project_doc_fallback_filenames=["CLAUDE.md"]', '-c', 'project_doc_max_bytes=32768',
+      '-c', 'project_doc_fallback_filenames=["CLAUDE.md"]', '-c', `project_doc_max_bytes=${PROJECT_INSTRUCTION_MAX_BYTES}`,
       // Keep instruction contents out of command arguments. The native session reads the freshly validated file.
       ...(rootInstructions ? [`# Project instructions: ${rootInstructions.filename}\nRead the current root ${rootInstructions.filename} in this working folder before acting. It is this project's root instruction file; use it in preference to earlier copies in this resumed session. After reading, wait for the owner's next input.`] : [])];
   return { executable, args, env, cwd: view.cwd, label };

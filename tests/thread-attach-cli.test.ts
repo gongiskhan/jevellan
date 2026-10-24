@@ -205,6 +205,27 @@ test('a Codex thread resumes with its effort as a configuration override, and SI
   expect(worked(f, threadId)).toHaveLength(runs); expect(codex.turnStarts).toHaveLength(1);
 });
 
+test('Codex takeover gives a large UTF-8 root file sufficient native document budget', { timeout: 120_000 }, async () => {
+  const codex = named('codex'), f = await setup({ runtimes: { fake: new FakeRuntime(), codex } });
+  f.app.hub.put('accounts', 'acc_codex', AccountSchema, { schema: 'account-v1', id: 'acc_codex', runtime: 'codex', label: 'Codex', kind: 'subscription', enabled: true, credential: 'per-device' }, 0);
+  await f.app.accounts.check('acc_codex');
+  codex.enqueueTurn(reportStep({ status: 'progress', summary: 'Ready.' }), forThread());
+  const id = await start(f, 'Large instructions', 'Keep every project instruction.', 'codex_fixture'); await rest(f, id);
+  const instructions = 'Keep every instruction.\n' + 'ç'.repeat(21_000) + '\nFINAL_PROJECT_RULE';
+  writeFileSync(join(f.thread(id).cwd, 'AGENTS.md'), instructions);
+  const cli = agents(f), command = jevellan(f, ['thread', 'attach', id], { path: `${cli.bin}:/usr/bin:/bin` });
+  try {
+    const run = await cli.started(1);
+    const config = parseToml(run.argv!.filter((_value, index, args) => args[index - 1] === '-c').join('\n'));
+    expect(config.project_doc_max_bytes).toBeGreaterThanOrEqual(Buffer.byteLength(instructions));
+    expect(run.argv!.at(-1)).toContain('Read the current root AGENTS.md');
+    expect(run.argv!.join('\n').includes('FINAL_PROJECT_RULE')).toBe(false);
+  } finally {
+    command.send('exit 0\n'); expect((await finished(command)).code).toBe(0);
+  }
+  expect(f.thread(id).state).toBe('idle');
+});
+
 test('Codex takeover selects bounded root instructions again on each resume and hands back when AGENTS is invalid', { timeout: 120_000 }, async () => {
   const codex = named('codex'), f = await setup({ runtimes: { fake: new FakeRuntime(), codex } });
   f.app.hub.put('accounts', 'acc_codex', AccountSchema, { schema: 'account-v1', id: 'acc_codex', runtime: 'codex', label: 'Codex', kind: 'subscription', enabled: true, ceilingPct: 90, credential: 'per-device' }, 0);
@@ -223,9 +244,9 @@ test('Codex takeover selects bounded root instructions again on each resume and 
   const second = jevellan(f, ['thread', 'attach', id], { path }), changed = await cli.started(2);
   expect(changed.argv!.at(-1)).toContain('# Project instructions: AGENTS.md');
   second.send('exit 0\n'); expect((await finished(second)).code).toBe(0); await rest(f, id);
-  rmSync(join(cwd, 'AGENTS.md')); writeFileSync(join(cwd, 'AGENTS.md'), 'x'.repeat(32769));
+  rmSync(join(cwd, 'AGENTS.md')); writeFileSync(join(cwd, 'AGENTS.md'), 'x'.repeat(262145));
   const refused = await finished(jevellan(f, ['thread', 'attach', id], { path }));
-  expect(refused.code).toBe(1); expect(refused.errors).toContain('AGENTS.md must be a file of at most 32768 bytes');
+  expect(refused.code).toBe(1); expect(refused.errors).toContain('AGENTS.md must be a file of at most 262144 bytes');
   expect(refused.output).toBe(`${BACK}\n`); expect(cli.records().filter(row => row.kind === 'run')).toHaveLength(2);
   expect(f.thread(id).state).toBe('idle');
 });

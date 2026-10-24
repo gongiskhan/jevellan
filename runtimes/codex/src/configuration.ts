@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-export { projectInstructionFile, projectInstructions, projectInstructionPrompt } from '@jevellan/core';
+export { PROJECT_INSTRUCTION_MAX_BYTES, projectInstructionFile, projectInstructions, projectInstructionPrompt } from '@jevellan/core';
 
 /** Pass secret references through Codex's stdio allow list, never their values. */
 export function codexMcpServers(servers: Record<string, { command: string; args: string[] }>) {
