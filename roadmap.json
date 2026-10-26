@@ -1262,7 +1262,7 @@
   {
     "id": "reset-followup-0711",
     "title": "Keep projects active with all automatic work explicitly paused",
-    "why": "Decision795: disabled memory routines suppress the independent fallback while explicit Run now remains available. Owner archival follow-up keeps projects active and automatic definitions/generators paused with reasons; operational evidence stays private.22/3affected,static/build and5desktop20images pass; settings startup attempt not run, fresh exact attempt passes. Full backend,exact artifacts and guarded paired0.7.11 installation/active-state verification pending.",
-    "status": "in-progress"
+    "why": "Decision795: paused memory routines suppress the independent fallback; explicit Run now remains available. All 22 affected assertions in three files, static/build and five desktop cores with 20 images pass. Complete backend: 403 files, 3,911 first-pass, one first-fail, 16 not run; sole exact rerun passes, 3,912 unique passing cases, zero unresolved. Raw flake retained. Both normal native builds, source/digests, extracted CLI/nativePTY and installed bytes verified. Version 0.7.11 from 4a94200c is published and normally installed Madrid then Pro through strict guards and cold backups, with both actual doctors at 10/10. Archival follow-up and qualified active-project/paused-generator observations complete privately. No production action, new review or unrelated feature phase.",
+    "status": "complete"
   }
 ]
