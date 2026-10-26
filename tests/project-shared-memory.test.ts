@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { join } from 'node:path';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { ProjectMemoryViewSchema, MemoryNoteSchema, ThreadIndexSchema, ThreadCreatedViewSchema } from '../packages/core/dist/index.js';
@@ -119,6 +119,24 @@ test('extraction retries once, waits thirty minutes, and recovers a durable requ
   expect(recovered.session(project.id, 'extraction')).toMatchObject({ id: saved.id, state: 'failed', reason: expect.stringContaining('restarted') });
   expect(f.fake.turnStarts).toHaveLength(2);
 }, 180_000);
+test('an active project respects a paused memory routine outside nightly windows while owner Run now remains available', async () => {
+  const { f, project } = await setup(() => Date.parse('2026-10-26T12:00:00Z')), work = f.app.projectWork, programme = work.memoryProgramme!;
+  const settings = await work.admission.settings(project.id);
+  await f.app.projectHub.putSettings({ ...settings, status: 'active', nightlyWindow: { ...settings.nightlyWindow, enabled: false }, memory: { ...settings.memory, capture: false } }, 0);
+  const daily = await work.daily.createDaily(project.id, { schema: 'daily-create-request-v1', clientRequestId: 'paused_memory', name: 'Memory dream', goalId: null, order: 0, enabled: false, target: { kind: 'memory-dream' } });
+  programme.dream.initialise(project.id, f.git(f.checkout, 'rev-parse', 'HEAD'));
+  const start = vi.spyOn(programme, 'start').mockResolvedValue();
+  try {
+    await programme.sweep(project); await programme.sweep(project);
+    expect(start).not.toHaveBeenCalled();
+    expect((await work.admission.settings(project.id)).status).toBe('active');
+    expect(programme.requests(project.id)).toHaveLength(0);
+    programme.runNow(project, 'owner_memory_run');
+    expect(start).toHaveBeenCalledExactlyOnceWith(project, 'dream', false, undefined, 'owner_memory_run');
+    expect((await work.daily.dailies(project.id)).find(row => row.id === daily.id)?.enabled).toBe(false);
+  } finally { start.mockRestore(); }
+}, 180_000);
+
 test('Project now preserves both sections under its limit, excludes the thread itself and uses the PR merge time', () => {
   const at = new Date().toISOString(), old = '2020-01-01T00:00:00Z', base = { schema: 'project-thread-index-v1', revision: 1, id: 'self', projectId: 'project', title: 'Self', state: 'running', isolation: 'worktree', runtime: 'codex', ownerDeviceId: 'pro', modelLabel: 'Fixture', accountLabel: 'Fixture', effort: 'medium', turns: 1, createdAt: at, updatedAt: at };
   const rows = [ThreadIndexSchema.parse(base), ...Array.from({ length: 20 }, (_, n) => ThreadIndexSchema.parse({ ...base, id: `other_${n}`, title: `Other ${n} ${'x'.repeat(100)}`, changedPaths: ['src/customers.ts'], lastSummary: 'Adding sorting.' })), ThreadIndexSchema.parse({ ...base, id: 'old_merge', title: 'Old merge', state: 'done', pr: { number: 3, url: 'https://github.com/fixture/repo/pull/3', headSha: 'a'.repeat(40), state: 'merged', checks: 'passing', mergeable: 'clean', updatedAt: old } })];

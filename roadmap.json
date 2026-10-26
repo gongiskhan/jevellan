@@ -1258,5 +1258,11 @@
     "title": "Archive project working state and release reset prerequisites as0.7.10",
     "why": "Decisions792\u2013794: empty isolated Check inputs and retained pause reasons/intervals ship as0710. Affected132/12,static/build and5desktop20images accepted. Complete403files:3909firstPASS/2firstFAIL/16NOTRUN; two sole exact reruns pass on unchanged source,3911unique passing cases/0unresolved; raw flakes retained. Both normal native builds/extractedCLI/PTY/source/digest/exclusion/environment/Pro-staging proofs pass. Strict guarded cold-backed Madrid\u2192Pro installs and actualdoctor10both verified. Owner-authorized archival reset/private acceptance complete; mechanisms/logins/settings/rules/prompts/code/main/branches retained. No production action,new review or unrelated feature phase.",
     "status": "complete"
+  },
+  {
+    "id": "reset-followup-0711",
+    "title": "Keep projects active with all automatic work explicitly paused",
+    "why": "Decision795: disabled memory routines suppress the independent fallback while explicit Run now remains available. Owner archival follow-up keeps projects active and automatic definitions/generators paused with reasons; operational evidence stays private.22/3affected,static/build and5desktop20images pass; settings startup attempt not run, fresh exact attempt passes. Full backend,exact artifacts and guarded paired0.7.11 installation/active-state verification pending.",
+    "status": "in-progress"
   }
 ]

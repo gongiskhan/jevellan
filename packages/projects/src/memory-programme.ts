@@ -96,7 +96,7 @@ export class ProjectMemoryProgramme {
     const prior = dream ? new Date(dream.startedAt) : null;
     const alreadyToday = prior && `${prior.getFullYear()}-${String(prior.getMonth()+1).padStart(2,'0')}-${String(prior.getDate()).padStart(2,'0')}` === day;
     const due = settings.nightlyWindow.enabled ? !!window && window.state === 'open' && window.memoryDreamPending && nightlyItem?.enabled && (!dream || Date.parse(dream.startedAt) < Date.parse(window.openedAt))
-      : local.getHours() >= 3 && !alreadyToday;
+      : nightlyItem?.enabled !== false && local.getHours() >= 3 && !alreadyToday;
     if (this.busy(project.id)) return;
     const previous = this.session(project.id, 'extraction'), input = this.o.captures.extractionInput(project.id, { includeText: false });
     const sameFailed = previous?.state === 'failed' && previous.retries >= 1 && input.captures.every(capture => previous.captures.some(old => old.id === capture.id));
