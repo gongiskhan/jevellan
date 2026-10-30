@@ -41,6 +41,8 @@ import type { Application } from './application.js';
 import { streamLedger, type LedgerStreamFrame } from './conversation-events.js';
 import { ProjectStatusStreamRequestSchema, ProjectStatusEventSchema } from '@jevellan/core';
 import { json, requestBody } from './http.js';
+import { worktreeDiff } from './worktree-diff.js';
+import { resolveProjectPath } from '@jevellan/core';
 import { OWNER_REQUEST_TIMEOUT_MS, forwardOwner } from './owner-proxy.js';
 import { readProjectImage } from '@jevellan/conversations';
 import { UiAuth } from '@jevellan/mesh';
@@ -49,7 +51,7 @@ import { ThreadOverrideViewSchema, ProjectThreadWhyViewSchema, ProjectThreadActi
 /** The GET/POST forms return the same pure view; ackKnown affects presentation only. */
 export const PROJECT_PAGE_VIEW_ROUTE = /^\/api\/projects\/([A-Za-z0-9_-]+)\/status-view$/;
 
-export type ProjectWorkRouteName = 'jev-inputs-page' | 'jev-inputs-read' | 'thread-read-view' | 'notebook-editor' | 'coordinator-composer' | 'chat-card-view' | 'chat-view' | 'task-page-view' | 'task-queue-interaction' | 'task-edit-view' | 'task-draft' | 'task-command' | 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-editor' | 'health-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-editor' | 'setup-prepare' | 'setup-command' | 'setup-action' | 'usage' | 'session-history' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
+export type ProjectWorkRouteName = 'jev-inputs-page' | 'jev-inputs-read' | 'thread-read-view' | 'notebook-editor' | 'coordinator-composer' | 'chat-card-view' | 'chat-view' | 'task-page-view' | 'task-queue-interaction' | 'task-edit-view' | 'task-draft' | 'task-command' | 'task-editor' | 'task-editor-preview' | 'environment-editor' | 'environment-preview' | 'environment-save' | 'placement-editor' | 'placement-preview' | 'placement-save' | 'settings-editor' | 'settings-editor-save' | 'landing-editor' | 'landing-editor-save' | 'settings-change-view' | 'coordinator-editor' | 'coordinator-editor-preview' | 'coordinator-editor-save' | 'landing-why' | 'merge-why' | 'landing-why-correction' | 'merge-why-correction' | 'thread-override-editor' | 'thread-override-preview' | 'thread-override-save' | 'thread-why-view' | 'goal-views' | 'goal-editor' | 'goal-editor-save' | 'routine-settings-view' | 'routine-settings-save' | 'deploy-summary' | 'job-editor' | 'job-editor-save' | 'daily-editor' | 'daily-editor-save' | 'jobs-view' | 'daily-enabled' | 'job-paused' | 'waiting-list' | 'waiting-answer' | 'thread-actions-view' | 'sidebar-view' | 'page-view' | 'health-editor' | 'health-view' | 'health-list' | 'health-run' | 'deploy-list' | 'deploy-baseline' | 'deploy-rollback' | 'setup-request' | 'setup-get' | 'setup-editor' | 'setup-prepare' | 'setup-command' | 'setup-action' | 'usage' | 'session-history' | 'checkout-diff' | 'worktree-diff' | 'ekoa-code-setup' | 'list' | 'view' | 'events' | 'message' | 'stop' | 'handoff' | 'fresh' | 'move' | 'settings' | 'settings-undo' | 'notebook' | 'thread-create' | 'thread' | 'thread-message'
   | 'thread-action' | 'thread-image' | 'thread-events' | 'thread-stop' | 'thread-discard' | 'thread-allow' | 'thread-override' | 'landing-route' | 'landing-correction' | 'pr-merge' | 'pr-refresh' | 'pr-route' | 'pr-correction' | 'answer' | 'goal-list' | 'goal-create' | 'goal-update' | 'job-list' | 'job-create' | 'job-update' | 'job-run' | 'job-runs' | 'daily-list' | 'daily-create' | 'daily-update' | 'daily-run' | 'task-list' | 'task-create' | 'task' | 'task-update' | 'task-action';
 /** Where a route runs: this device (`local`), the project's coordinator device, the thread's owner device, or any device. */
 export type ProjectWorkRoute = { name: ProjectWorkRouteName; projectId?: string; threadId?: string; decisionId?: string; taskId?: string; goalId?: string; jobId?: string; dailyId?: string; proposalId?: string;
@@ -117,6 +119,8 @@ const rows: readonly Row[] = [
   { name: 'settings-editor', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/config\/editor$/, methods: ['GET'], target: 'any' },
   { name: 'settings-editor-save', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/config\/editor$/, methods: ['POST'], target: 'any' },
   { name: 'session-history', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/session-transcript$/, methods: ['GET'], target: 'coordinator' },
+  { name: 'checkout-diff', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/changes$/, methods: ['GET'], target: 'coordinator' },
+  { name: 'worktree-diff', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/threads\/([A-Za-z0-9_-]+)\/changes$/, methods: ['GET'], target: 'owner' },
   { name: 'ekoa-code-setup', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/ekoa-code-setup$/, methods: ['POST'], target: 'coordinator' },
   { name: 'job-list', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs$/, methods: ['GET'], target: 'any' },
   { name: 'job-create', pattern: /^\/api\/projects\/([A-Za-z0-9_-]+)\/jobs$/, methods: ['POST'], target: 'coordinator' },
@@ -615,7 +619,7 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
   }
   if (route.target === 'owner') {
     const owner = await (route.name === 'thread-events' ? work.threadStreamOwner(projectId, threadId)
-      : route.name === 'thread' || route.name === 'thread-actions-view' || route.name === 'thread-why-view' || route.name === 'thread-override-editor' || route.name === 'thread-override-preview' || route.name === 'landing-why' || route.name === 'merge-why' ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
+      : route.name === 'thread' || route.name === 'worktree-diff' || route.name === 'thread-actions-view' || route.name === 'thread-why-view' || route.name === 'thread-override-editor' || route.name === 'thread-override-preview' || route.name === 'landing-why' || route.name === 'merge-why' ? work.threadReadOwner(projectId, threadId) : work.threadOwner(projectId, threadId));
     if (owner === null) throw failure(THREAD_NOT_FOUND, 404);
     if (owner !== app.device.deviceId) {
       if (caller.peer) throw failure(THREAD_NOT_FOUND, 404);
@@ -637,6 +641,8 @@ async function run(app: Application, request: IncomingMessage, response: ServerR
     case 'setup-get': send(await work.setupView(projectId, route.proposalId!)); return true;
     case 'setup-action': send(await work.setupAction(projectId, route.proposalId!, SetupActionRequestSchema.parse(await requestBody(request)))); return true;
     case 'usage': send(await work.usage.view(projectId, url.searchParams.get('range') ?? undefined)); return true;
+    case 'checkout-diff': { const project = (await app.state.projects.get(projectId))?.project; if (!project) throw failure('Project not found.', 404); send(await worktreeDiff(resolveProjectPath(project, app.device.deviceId, app.device.name), 'checkout')); return true; }
+    case 'worktree-diff': { const local = work.store.get(threadId); if (!local?.cwd) throw failure('This thread has no working folder yet.', 409); send(await worktreeDiff(local.cwd, 'worktree')); return true; }
     case 'session-history': send(await work.sessionTranscript(projectId, url.searchParams.get('session') ?? '')); return true;
     case 'ekoa-code-setup': send(await work.setupEkoaCode(projectId, EkoaCodeSetupRequestSchema.parse(await requestBody(request)))); return true;
     case 'deploy-list': send(await work.deploys.view(projectId)); return true;

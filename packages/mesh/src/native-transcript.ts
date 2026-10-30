@@ -68,7 +68,7 @@ export function parseNativeTranscript(raw: string, runtime: NativeRuntime, offse
       else if (part.type === 'function_call' || part.type === 'custom_tool_call') call(part.call_id ?? part.id, part.name, part.arguments ?? part.input);
       else if (part.type === 'function_call_output' || part.type === 'custom_tool_call_output') result(part.call_id, part.output, part.is_error === true);
     }
-    if (blocks.length) turns.push({ id, role: blocks.every(block => block.type === 'tool') ? 'assistant' : role, blocks, ...(automated ? { automated: true } : {}) });
+    if (blocks.length) turns.push({ id, role: blocks.every(block => block.type === 'tool') ? 'assistant' : role, blocks, ...(automated ? { automated: true } : {}), ...(typeof row.timestamp === 'string' && Number.isFinite(Date.parse(row.timestamp)) ? { at: row.timestamp } : {}) });
   }
   return turns.map(turn => CursorTurnSchema.parse(turn));
 }

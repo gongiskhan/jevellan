@@ -3,6 +3,7 @@ import { Fragment, memo } from 'react';
 import type { CursorTurn, PreparedTranscriptGroup } from '@jevellan/core/client';
 import { Markdown } from './components.js';
 import { EvidenceLink } from './evidence.js';
+import { ResponseTime } from './response-time.js';
 import { prepareTranscriptGroups, transcriptTurnPresentation } from '@jevellan/core/client';
 import './cursor-sessions.css';
 
@@ -46,6 +47,7 @@ export const TranscriptTurn = memo(function TranscriptTurn({ projectId, turn, on
     {presentation.collapsed
       ? <details className="pw-prompt"><summary><span>{presentation.preview}</span></summary>{blocks}</details>
       : blocks}
+    {turn.role === 'assistant' && turn.at && groups.some(block => block.type === 'text') && <ResponseTime at={turn.at} />}
   </article>;
 }, (previous, next) => previous.projectId === next.projectId && previous.focus === next.focus && previous.active === next.active && previous.onOpen === next.onOpen && previous.onOpenImage === next.onOpenImage && previous.userLabel === next.userLabel && previous.collapseLongUser === next.collapseLongUser
   && JSON.stringify(previous.prepared) === JSON.stringify(next.prepared) && JSON.stringify(previous.turn) === JSON.stringify(next.turn));

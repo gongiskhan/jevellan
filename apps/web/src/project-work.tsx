@@ -1,4 +1,5 @@
 import {ProjectNotebookEditorSchema,projectNotebookEditor,projectNotebookCommand,projectNotebookFailure} from '@jevellan/core/client';
+import { ChangesButton } from './worktree-changes.js';
 import {projectClientIds,projectFailureText,projectLocalFailure,projectCoordinatorComposerFromUi,projectCoordinatorComposerState,projectCoordinatorClearedText,projectCoordinatorMessageCommand,projectCoordinatorControlCommand,projectCoordinatorTransport,type ProjectCoordinatorComposer} from '@jevellan/core/client';
 import {projectChatThreadTitles,projectChatCardContext,type ProjectChatCardContext} from '@jevellan/core/client';
 import { ProjectTaskEditorSchema, taskEditorCommand, type ProjectTaskEditor, type ProjectTaskEditorFields } from '@jevellan/core/client';
@@ -40,6 +41,7 @@ import { projectStreamState, type ProjectStreamUpdate } from '@jevellan/core/cli
 import { ProjectGoals, type GoalEntry } from './project-goals.js';
 import { TaskQueue } from './task-queue.js';
 import { shortTime, timeStamp } from './time.js';
+import { ResponseTime } from './response-time.js';
 import { SessionHistory } from './session-history.js';
 import { SessionCache, SessionsCache } from './session-cache.js';
 
@@ -531,6 +533,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
         <h1 aria-labelledby={titleId}>{navigation}<span id={titleId} className="session-title" title={view.project.name}>{view.project.name}</span></h1>
         <div className="actions">
           <button type="button" className="secondary pw-head-button" aria-label={copy.TAB_LABELS.terminal} title={copy.TAB_LABELS.terminal} aria-pressed={current === 'terminal'} onClick={() => choose(current === 'terminal' ? 'chat' : 'terminal')}><Icon name="runtimes" size={15} /></button>
+          <ChangesButton path={`/api/projects/${id}/changes`} title={`Uncommitted changes · ${view.project.name}`} />
           <button type="button" className="secondary pw-head-button" onClick={() => setDialog('coordinator')}><Icon name="tune" size={15} /><span className="pw-head-label">Override coordinator</span></button>
           <button type="button" className="pw-head-button" onClick={() => setDialog('new-thread')}>
             <Icon name="plus" size={15} /><span className="pw-head-label">{copy.NEW_THREAD}</span>
@@ -697,7 +700,7 @@ function ChatEntry({ item, projectId, navigate, cardContext, settings, changed, 
         </article>
       );
     case 'reply':
-      return <div className="pw-reply"><Markdown>{item.text}</Markdown></div>;
+      return <div className="pw-reply"><Markdown>{item.text}</Markdown>{item.at && <ResponseTime at={item.at} />}</div>;
     case 'tool': {
       const content = <><Icon name={toolIcon(item.tool)} size={14} /><span>{item.summary}</span></>;
       const className = `pw-tool${item.ok ? '' : ' failed'}`;

@@ -15,6 +15,7 @@ import { MergeWhy } from './merge-route.js';
 import { OwnerCommands, OwnerCommandScope } from './owner-commands.js';
 import { OpenTerminalButton } from './terminal.js';
 import { Icon } from './icons.js';
+import { ChangesButton } from './worktree-changes.js';
 import { MessageInput } from './message-delivery.js';
 import * as copy from './project-work-copy.js';
 import {
@@ -192,6 +193,7 @@ export function ThreadPage(props: PageProps & { projectId: string; threadId: str
             aria-expanded={sessionOpen} aria-controls="thread-session-information" onClick={() => { if (!sessionOpen) { following.current = false; setBehind(true); } setSessionOpen(!sessionOpen); }}>
             <Icon name="settings" size={16} /><span className="pw-head-label">Session</span>
           </button>
+          <ChangesButton path={`/api/projects/${projectId}/threads/${threadId}/changes`} title={`Uncommitted changes · ${thread.title}`} />
           {images.length > 0 && <button type="button" className="secondary pw-head-button pw-keep-label" onClick={() => openImage(images[0]!)}>Images <span className="chip">{images.length}</span></button>}
           {actions?.stop && (
             <button type="button" className="secondary pw-head-button" disabled={!controls || !!actions.stopRefusal} title={actions.stopRefusal ?? (!controls ? 'Thread controls are unavailable. Refresh to continue.' : undefined)}

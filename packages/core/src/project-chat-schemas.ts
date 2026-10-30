@@ -6,7 +6,7 @@ import {ProjectSettingsChangeSchema} from './project-parity-schemas.js';
 const count=z.number().int().nonnegative(),id=ProjectLedgerEventSchema.shape.id;
 export const ProjectChatItemSchema=z.discriminatedUnion('kind',[
  z.strictObject({kind:z.literal('owner'),id,text:z.string(),at:z.string(),via:z.string().optional(),heading:z.string(),delivered:z.boolean()}),
- z.strictObject({kind:z.literal('reply'),id,text:z.string()}),
+ z.strictObject({kind:z.literal('reply'),id,text:z.string(),at:z.string().optional()}),
  z.strictObject({kind:z.literal('routed'),id,turn:z.number().int().positive().optional(),taskIds:z.array(IdSchema).optional(),threadId:IdSchema.optional(),message:z.boolean()}),
  z.strictObject({kind:z.literal('setup'),id,proposalId:IdSchema}),
  z.strictObject({kind:z.literal('settings'),id,change:ProjectSettingsChangeSchema}),

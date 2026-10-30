@@ -178,6 +178,10 @@ function App() {
   const [data, setData] = useState<SettingsData>();
   const [path, setPath] = useState(window.location.pathname + window.location.search);
   const [sidebar, setSidebar] = useState(false);
+  const [collapsed, setCollapsedState] = useState(() => { try { return localStorage.getItem('jevellan.sidebar.collapsed') === '1'; } catch { return false; } });
+  const setCollapsed = (value: boolean) => { setCollapsedState(value); try { localStorage.setItem('jevellan.sidebar.collapsed', value ? '1' : '0'); } catch { /* per-browser convenience only */ } };
+  const narrow = () => { try { return window.matchMedia('(max-width: 760px)').matches; } catch { return false; } };
+  const toggleNavigation = () => { if (collapsed && !narrow()) setCollapsed(false); else setSidebar(!sidebar); };
   const [notice, setNotice] = useState<{ text: string; error: boolean }>();
   const [theme, setTheme] = useState(() => localStorage.getItem('jevellan-theme') ?? 'system');
   // Confirmations leave on their own so they never sit over controls; errors stay until dismissed.
@@ -427,10 +431,10 @@ function App() {
   // Project and thread pages hide the header like conversation pages and render the navigation button themselves.
   const project = projectRoute(path);
   const conversation = path.startsWith('/cursor/') || path.startsWith('/sessions/') || path.startsWith('/conversations/') || !!project;
-  const navigation = <button className="menu-button icon-button" aria-label="Open navigation" aria-expanded={sidebar} onClick={() => setSidebar(!sidebar)}><Icon name="menu" /></button>;
+  const navigation = <button className="menu-button icon-button" aria-label="Open navigation" aria-expanded={sidebar} onClick={toggleNavigation}><Icon name="menu" /></button>;
   const settingsLabel = settingsPageModel(data.navigation, currentPage).label;
   return (
-    <div className={`app-shell ${conversation ? 'reading-conversation' : ''}`}>
+    <div className={`app-shell ${conversation ? 'reading-conversation' : ''} ${collapsed ? 'sidebar-collapsed' : ''}`}>
       {sidebar && (
         <div className="sidebar-backdrop" aria-hidden="true" onClick={() => setSidebar(false)} />
       )}
@@ -439,6 +443,9 @@ function App() {
           <button className="wordmark" onClick={() => navigate('/')}>
             <BrandFlag />
             Jevellan
+          </button>
+          <button className="icon-button sidebar-collapse" aria-label="Collapse navigation" title="Collapse navigation" onClick={() => setCollapsed(true)}>
+            <Icon name="back" />
           </button>
           <button
             className="icon-button sidebar-close"
@@ -515,7 +522,7 @@ function App() {
               className="menu-button icon-button"
               aria-label="Open navigation"
               aria-expanded={sidebar}
-              onClick={() => setSidebar(!sidebar)}
+              onClick={toggleNavigation}
             >
               <Icon name="menu" />
             </button>

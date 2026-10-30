@@ -38,6 +38,12 @@ export const dateOnly = (value: string): string => new Date(value).toLocaleDateS
 
 const stamp = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 const fullStamp = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'long' });
+const clock = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+/** HH:MM local time for the end of a chat response, with the full local date and time for its title; null when unreadable. */
+export function clockStamp(value: string): { label: string; title: string } | null {
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? { label: clock.format(date), title: fullStamp.format(date) } : null;
+}
 /** The conversation-page timestamp: a short local label and the full local time for its title, or null when unreadable. */
 export function timeStamp(value: string): { label: string; title: string } | null {
   const date = new Date(value);

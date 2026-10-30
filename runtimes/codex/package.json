@@ -1,6 +1,6 @@
 {
   "name": "@jevellan/runtime-codex",
-  "version": "0.7.11",
+  "version": "0.7.12",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -11,8 +11,8 @@
     }
   },
   "dependencies": {
-    "@jevellan/core": "0.7.11",
-    "@jevellan/runtime-contract": "0.7.11",
+    "@jevellan/core": "0.7.12",
+    "@jevellan/runtime-contract": "0.7.12",
     "@openai/codex-sdk": "0.156.1",
     "zod": "4.6.5"
   },

@@ -1883,3 +1883,34 @@ html:has(.reading-conversation) { scroll-padding-top: 115px; scroll-padding-bott
 .notification-devices li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
 .notification-devices li:last-child { border-bottom: 0; }
 .notification-devices li > div { min-width: 0; overflow-wrap: anywhere; }
+
+/* Uncommitted changes view */
+.worktree-changes-dialog dialog { width: min(1200px, calc(100vw - 24px)); height: min(86dvh, 900px); }
+.worktree-changes-dialog .modal-body { display: flex; flex-direction: column; gap: 10px; }
+.worktree-changes-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.worktree-changes { display: grid; grid-template-columns: minmax(200px, 300px) minmax(0, 1fr); gap: 12px; min-height: 0; flex: 1; }
+.worktree-changes-files { list-style: none; margin: 0; padding: 0; overflow: auto; border: 1px solid var(--edge); border-radius: 10px; }
+.worktree-changes-files button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 10px; border: 0; border-radius: 0; background: none; color: var(--ink); text-align: left; font-family: var(--font-mono); font-size: 11px; cursor: pointer; }
+.worktree-changes-files button:hover { background: var(--bg-2); }
+.worktree-changes-files button.selected { background: color-mix(in srgb, var(--accent, var(--ok)) 16%, transparent); }
+.worktree-file-path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+.worktree-status { flex: none; width: 1.6em; text-align: center; font-weight: 600; border-radius: 4px; }
+.worktree-status.modified { color: var(--warn, #c90); }
+.worktree-status.added, .worktree-status.untracked { color: var(--ok); }
+.worktree-status.deleted { color: var(--bad, #d55); }
+.worktree-changes-diff { min-width: 0; overflow: auto; }
+.worktree-changes-diff .diff-file > summary { display: none; }
+@media (max-width: 760px) { .worktree-changes { grid-template-columns: 1fr; grid-template-rows: minmax(100px, 30%) 1fr; } }
+
+/* Collapsible navigation (desktop) */
+.sidebar-collapse, button.sidebar-collapse { margin-left: auto; }
+@media (min-width: 761px) {
+  .app-shell.sidebar-collapsed { --sidebar-width: 0px; }
+  .app-shell.sidebar-collapsed > .sidebar, .app-shell.sidebar-collapsed > .sidebar-backdrop { display: none; }
+  .app-shell.sidebar-collapsed .menu-button, .app-shell.sidebar-collapsed button.menu-button { display: inline-flex; flex: none; }
+}
+@media (max-width: 760px) { .sidebar-collapse, button.sidebar-collapse { display: none; } }
+
+/* Time at the end of chat responses */
+.response-time { margin: 4px 0 0; font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.response-time time { cursor: default; }

@@ -101,7 +101,7 @@ export function chatItems(events: readonly ProjectLedgerEvent[], titles: ThreadT
   const items = ordered.flatMap((event): ChatItem[] => {
     const id = event.id;
     switch (event.type) {
-      case 'coordinator-text': { const data = payload(event, 'coordinator-text'); return data ? [{ kind: 'reply', id, text: data.text }] : []; }
+      case 'coordinator-text': { const data = payload(event, 'coordinator-text'); return data ? [{ kind: 'reply', id, text: data.text, at: event.t }] : []; }
       case 'coordinator-tool': {
         const data = payload(event, 'coordinator-tool');
         if (data?.ok && data.setupProposalId) return [{ kind: 'setup', id, proposalId: data.setupProposalId }];
