@@ -1,6 +1,6 @@
 {
   "name": "@jevellan/projects",
-  "version": "0.7.13",
+  "version": "0.7.14",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -11,13 +11,13 @@
     }
   },
   "dependencies": {
-    "@jevellan/core": "0.7.13",
-    "@jevellan/runtime-contract": "0.7.13",
-    "@jevellan/accounts": "0.7.13",
-    "@jevellan/memory": "0.7.13",
-    "@jevellan/decisions": "0.7.13",
-    "@jevellan/mesh": "0.7.13",
-    "@jevellan/conversations": "0.7.13",
+    "@jevellan/core": "0.7.14",
+    "@jevellan/runtime-contract": "0.7.14",
+    "@jevellan/accounts": "0.7.14",
+    "@jevellan/memory": "0.7.14",
+    "@jevellan/decisions": "0.7.14",
+    "@jevellan/mesh": "0.7.14",
+    "@jevellan/conversations": "0.7.14",
     "zod": "4.6.5"
   }
 }

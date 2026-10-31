@@ -11,7 +11,7 @@ export * from './conversation-sidebar-view.js';
 import { z } from 'zod';
 
 export const DEFAULT_PORT = 9771;
-export const VERSION = '0.7.13';
+export const VERSION = '0.7.14';
 export const HealthSchema = z.object({
   schema: z.literal('health-v1'),
   status: z.literal('ok'),

@@ -1,6 +1,6 @@
 {
   "name": "@jevellan/runtime-contract",
-  "version": "0.7.13",
+  "version": "0.7.14",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -19,7 +19,7 @@
     }
   },
   "dependencies": {
-    "@jevellan/core": "0.7.13",
+    "@jevellan/core": "0.7.14",
     "@xterm/headless": "6.0.0",
     "node-pty": "1.1.0",
     "zod": "4.6.5",
