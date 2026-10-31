@@ -817,3 +817,10 @@ button.pw-session-badge { display: inline-flex; gap: 6px; min-height: 30px; padd
   .reading-conversation .conversation-heading.pw-heading > .actions { grid-column: 3; grid-row: 1; }
   .reading-conversation .conversation-heading.pw-heading > .conversation-meta.pw-context { grid-column: 1 / -1; grid-row: 2; margin-top: 0; }
 }
+/* Thread transcripts: a collapsed tool call or text step is one slim line, not a tall card. */
+.pw-transcript .cursor-turn { gap: 4px; }
+.pw-transcript details.cursor-tool:not([open]), .pw-transcript .cursor-text-block:not([open]) { padding: 5px 12px; border-radius: 8px; }
+.pw-transcript details.cursor-tool:not([open]) > summary, .pw-transcript .cursor-text-block:not([open]) > summary { min-height: 22px; font-size: 12.5px; }
+/* Decision options sit side by side when they are short, so a waiting card is about half as tall. */
+.pw-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.pw-options > .pw-option, .pw-options > button.pw-option { flex: 1 1 140px; }
