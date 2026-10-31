@@ -1,4 +1,5 @@
 import {ownerToolReply} from './owner-tool-reply.js';
+import { zodFieldMessage } from './zod-message.js';
 import {ownerToolMaintenance} from '@jevellan/core';
 import { healthRefusal } from '@jevellan/core';
 import { ProjectHealthRequestSchema } from '@jevellan/core';
@@ -165,6 +166,6 @@ export async function handleLocalApi(app: Application | undefined, control: Loca
     const status = typeof candidate?.status === 'number' && candidate.status >= 400 && candidate.status <= 599 ? candidate.status : 400;
     json(response, app.redactor.document(ErrorDocumentSchema.parse({ schema: 'error-v1',
       code: error instanceof HubUnavailable ? 'hub-unavailable' : status === 409 ? 'conflict' : status === 404 ? 'not-found' : 'request-failed', ...(error instanceof HubUnavailable ? { retryable: true } : {}),
-      message: healthRefusal(error) ?? (error instanceof z.ZodError ? 'Check the submitted fields.' : typeof candidate?.message === 'string' ? app.redactor.text(candidate.message) : 'The request could not complete.') })), status);
+      message: healthRefusal(error) ?? (error instanceof z.ZodError ? zodFieldMessage(error) : typeof candidate?.message === 'string' ? app.redactor.text(candidate.message) : 'The request could not complete.') })), status);
   } finally { release?.(); }
 }

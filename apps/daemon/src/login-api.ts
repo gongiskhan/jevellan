@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { zodFieldMessage } from './zod-message.js';
 import { z } from 'zod';
 import { DeviceOriginSchema, EmptySchema, ErrorDocumentSchema, HubUnavailable, IdSchema, LoginCodeSchema, LoginStartSchema, PeerLoginSessionInputSchema } from '@jevellan/core';
 import type { Application } from './application.js';
@@ -54,7 +55,7 @@ export async function handleLoginApi(app: Application, request: IncomingMessage,
   } catch (error) {
     const candidate = error as { status?: unknown; message?: unknown };
     const status = typeof candidate?.status === 'number' && candidate.status >= 400 && candidate.status <= 599 ? candidate.status : 400;
-    send(ErrorDocumentSchema.parse({ schema: 'error-v1', code: error instanceof HubUnavailable ? 'hub-unavailable' : status === 409 ? 'conflict' : status === 401 ? 'unauthenticated' : status === 404 ? 'not-found' : 'request-failed', ...(error instanceof HubUnavailable ? { retryable } : {}), message: error instanceof z.ZodError ? 'Check the submitted fields.' : typeof candidate?.message === 'string' ? app.redactor.text(candidate.message) : 'The login could not complete.' }), status);
+    send(ErrorDocumentSchema.parse({ schema: 'error-v1', code: error instanceof HubUnavailable ? 'hub-unavailable' : status === 409 ? 'conflict' : status === 401 ? 'unauthenticated' : status === 404 ? 'not-found' : 'request-failed', ...(error instanceof HubUnavailable ? { retryable } : {}), message: error instanceof z.ZodError ? zodFieldMessage(error) : typeof candidate?.message === 'string' ? app.redactor.text(candidate.message) : 'The login could not complete.' }), status);
   }
   return true;
 }

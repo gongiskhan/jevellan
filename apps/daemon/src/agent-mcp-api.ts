@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { zodFieldMessage } from './zod-message.js';
 import { z } from 'zod';
 import { ErrorDocumentSchema } from '@jevellan/core';
 import { AgentTargetSchema, createAgentMcpServer } from '@jevellan/agent-mcp';
@@ -16,7 +17,7 @@ function refuse(app: Application, response: ServerResponse, error: unknown): voi
   const status = typeof candidate?.status === 'number' && candidate.status >= 400 && candidate.status < 600 ? candidate.status : 400;
   if (status === 401) response.setHeader('WWW-Authenticate', 'Bearer realm="Jevellan MCP"');
   json(response, app.redactor.document(ErrorDocumentSchema.parse({ schema: 'error-v1', code: status === 401 ? 'unauthenticated' : status === 403 ? 'forbidden' : 'request-failed',
-    message: error instanceof z.ZodError ? 'Check the submitted fields.' : typeof candidate.message === 'string' ? candidate.message : 'The agent request could not complete.' })), status);
+    message: error instanceof z.ZodError ? zodFieldMessage(error) : typeof candidate.message === 'string' ? candidate.message : 'The agent request could not complete.' })), status);
 }
 /** Stateless Streamable HTTP: each MCP request is authenticated, and bounded watches recheck expiry/revocation while waiting. */
 export async function handleAgentMcp(app: Application, request: IncomingMessage, response: ServerResponse, options: Origins): Promise<void> {

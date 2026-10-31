@@ -1,4 +1,5 @@
 import { ProjectEnvironmentPurposeSchema } from '@jevellan/core';
+import { zodFieldMessage } from './zod-message.js';
 import {ownerJevControl} from './jev-control-api.js';
 import {readImproverEditor,saveImproverSettings} from './improver-editor.js';
 import {readRiggingEditor,localRiggingAction,localRiggingDetail} from './rigging-editor.js';
@@ -390,6 +391,6 @@ export async function handleApi(app: Application, request: IncomingMessage, resp
   } catch (error) {
     const candidate = error as { status?: unknown; message?: unknown };
     const status = typeof candidate?.status === 'number' && candidate.status >= 400 && candidate.status <= 599 ? candidate.status : 400;
-    send(ErrorDocumentSchema.parse({ schema: 'error-v1', code: error instanceof HubUnavailable ? 'hub-unavailable' : status === 409 ? 'conflict' : status === 401 ? 'unauthenticated' : status === 404 ? 'not-found' : 'request-failed', ...(error instanceof HubUnavailable ? { retryable } : {}), message: healthRefusal(error) ?? (error instanceof z.ZodError ? 'Check the submitted fields.' : typeof candidate?.message === 'string' ? app.redactor.text(candidate.message) : 'The request could not complete.') }), status);
+    send(ErrorDocumentSchema.parse({ schema: 'error-v1', code: error instanceof HubUnavailable ? 'hub-unavailable' : status === 409 ? 'conflict' : status === 401 ? 'unauthenticated' : status === 404 ? 'not-found' : 'request-failed', ...(error instanceof HubUnavailable ? { retryable } : {}), message: healthRefusal(error) ?? (error instanceof z.ZodError ? zodFieldMessage(error) : typeof candidate?.message === 'string' ? app.redactor.text(candidate.message) : 'The request could not complete.') }), status);
   } finally { release?.(); }
 }
