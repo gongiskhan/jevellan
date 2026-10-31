@@ -1,6 +1,6 @@
 {
   "name": "@jevellan/mesh",
-  "version": "0.7.14",
+  "version": "0.7.15",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -11,7 +11,7 @@
     }
   },
   "dependencies": {
-    "@jevellan/core": "0.7.14",
+    "@jevellan/core": "0.7.15",
     "zod": "4.6.5"
   }
 }
