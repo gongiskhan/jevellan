@@ -605,7 +605,7 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             stopping={control.busy} stop={stop} onError={onError} />
         </div>
         <div className="pw-side" id={sideId} {...sidePanel}>
-          <h2 className="pw-overview-title">{copy.OVERVIEW}</h2><LastDeploy projectId={id} fail={onError} />
+          <div className="pw-overview-head"><h2 className="pw-overview-title">{copy.OVERVIEW}</h2><LastDeploy projectId={id} fail={onError} /></div>
           <div className="pw-overview-tabs" role="tablist" aria-label={copy.OVERVIEW}>
             {OVERVIEW_TABS.filter(name => name !== 'pull-requests' || overview.showPullRequestsTab).map(name => <button key={name} role="tab" className="pw-tab" aria-selected={overviewTab === name} onClick={() => setOverviewTab(name)}>{name === 'routines' ? copy.ROUTINES : name === 'library' ? copy.LIBRARY : copy.TAB_LABELS[name]}</button>)}
           </div>
@@ -624,7 +624,12 @@ export function ProjectWorkPage(props: PageProps & { id: string; navigation: Rea
             {sectionHeading(`${sideId}-queue`, 'Queue', overview.queueCount)}
             {goalViews && <TaskQueue projectId={id} tasks={tasks} goals={goals} view={goalViews.queue} grouped navigate={navigate} changed={updated} onError={onError} />}
           </section>
-          {overview.sections.filter(section => section.visible).map(section => <section key={section.id} className="pw-section" hidden={overviewTab !== 'threads'} aria-labelledby={`${sideId}-${section.id}`}>
+          {(() => { const quiet = overview.sections.filter(section => section.visible && !section.threadIds.length);
+            return quiet.length > 0 && <div className="pw-quiet-sections" hidden={overviewTab !== 'threads'} aria-label="Empty sections">
+              {quiet.map(section => <span key={section.id} className="pw-quiet" title={section.emptyText}>{section.label}<span className="pw-quiet-count">0</span></span>)}
+              {quiet.some(section => section.showOlder) && <button className="text-button small" onClick={() => setResolvedDays(days => days + 14)}>{copy.SHOW_OLDER}</button>}
+            </div>; })()}
+          {overview.sections.filter(section => section.visible && section.threadIds.length > 0).map(section => <section key={section.id} className="pw-section" hidden={overviewTab !== 'threads'} aria-labelledby={`${sideId}-${section.id}`}>
             {sectionHeading(`${sideId}-${section.id}`, section.label, section.threadIds.length)}
             {section.threadIds.length ? <div className="pw-list">{rows(section.threadIds).map(thread => <ThreadCard key={thread.id} projectId={id} thread={thread} navigate={navigate} changed={updated} onError={onError} />)}</div> : <p className="pw-empty">{section.emptyText}</p>}
             {section.showOlder && <button className="secondary small" onClick={() => setResolvedDays(days => days + 14)}>{copy.SHOW_OLDER}</button>}
